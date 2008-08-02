@@ -1,5 +1,6 @@
-#include <vga.h>
+#include <ascii.h>
 #include <io.h>
+#include <vga.h>
 
 static vga_pos_t vga_raw_putc(char c, vga_pos_t pos);
 
@@ -106,24 +107,24 @@ static vga_pos_t vga_raw_putc(char c, vga_pos_t pos) {
 	
 	switch(c) {
 	/* backspace */
-	case 0x08:
+	case CHAR_BS:
 		if( VGA_COL(pos) > 0 ) {
 			--pos;
 		}
 		break;
 	
 	/* linefeed - actually does cr + lf */
-	case 0x0a:
+	case CHAR_LF:
 		pos = VGA_WIDTH * (VGA_LINE(pos) + 1);
 		break;
 	
 	/* carriage return */
-	case 0x0d:
+	case CHAR_CR:
 		pos = VGA_WIDTH * VGA_LINE(pos);
 		break;
 	
 	/* tab */
-	case 0x09:
+	case CHAR_HT:
 		pos -= pos % VGA_TAB_WIDTH;
 		pos += VGA_TAB_WIDTH;
 		break;
