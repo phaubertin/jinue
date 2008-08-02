@@ -112,7 +112,7 @@ static vga_pos_t vga_raw_putc(char c, vga_pos_t pos) {
 		}
 		break;
 	
-	/* linefeed */
+	/* linefeed - actually does cr + lf */
 	case 0x0a:
 		pos = VGA_WIDTH * (VGA_LINE(pos) + 1);
 		break;
