@@ -1,7 +1,7 @@
 includes = ../include
 scripts  = ../scripts
 
-OBJS = kernel.o io.o startup.o vga.o
+OBJS = kernel.o io.o printk.o startup.o vga.o
 
 .PHONY: all
 all: kernel
@@ -15,6 +15,7 @@ kernel: $(OBJS) $(scripts)/kernel.lds
 
 kernel.o:  kernel.c    $(includes)/kernel.h
 io.o:      io.asm      $(includes)/io.h
+printk.o:  printk.c    $(includes)/printk.h
 startup.o: startup.asm $(includes)/startup.h
 vga.o:     vga.c       $(includes)/vga.h
 

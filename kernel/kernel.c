@@ -1,7 +1,8 @@
 #include <vga.h>
+#include <printk.h>
 
 void kernel(void) {
 	vga_init();
-	vga_print("Kernel started.");
+	printk("Kernel started.\n");
 }
 

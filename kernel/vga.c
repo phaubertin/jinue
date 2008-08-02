@@ -1,6 +1,8 @@
 #include <vga.h>
 #include <io.h>
 
+static vga_pos_t vga_raw_putc(char c, vga_pos_t pos);
+
 void vga_init(void) {
 	unsigned char data;
 
@@ -78,7 +80,7 @@ void vga_print(const char *message) {
 }
 
 void vga_printn(const char *message, unsigned int n) {
-	unsigned short int pos = vga_get_cursor_pos();
+	vga_pos_t pos = vga_get_cursor_pos();
 	char c;
 	
 	while(n) {
@@ -91,14 +93,14 @@ void vga_printn(const char *message, unsigned int n) {
 }
 
 void vga_putc(char c) {
-	unsigned short int pos = vga_get_cursor_pos();
+	vga_pos_t pos = vga_get_cursor_pos();
 
 	pos = vga_raw_putc(c, pos);
 	
 	vga_set_cursor_pos(pos);
 }
 
-vga_pos_t vga_raw_putc(char c, vga_pos_t pos) {
+static vga_pos_t vga_raw_putc(char c, vga_pos_t pos) {
 	const vga_pos_t limit = VGA_WIDTH * VGA_LINES;
 	char *buffer = (char *)VGA_TEXT_VID_BASE;
 	

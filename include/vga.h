@@ -32,10 +32,10 @@
 #define VGA_WIDTH		80
 #define VGA_TAB_WIDTH	8
 
-#define VGA_LINE(x) ((x) / (VGA_WIDTH))
-#define VGA_COL(x) ((x) % (VGA_WIDTH))
+#define VGA_LINE(x)	((x) / (VGA_WIDTH))
+#define VGA_COL(x)	((x) % (VGA_WIDTH))
 
-typedef unsigned short vga_pos_t;
+typedef unsigned int vga_pos_t;
 
 void vga_init(void);
 void vga_clear(void);
@@ -45,6 +45,5 @@ void vga_putc(char c);
 void vga_scroll(void);
 vga_pos_t vga_get_cursor_pos(void);
 void vga_set_cursor_pos(vga_pos_t pos);
-vga_pos_t vga_raw_putc(char c, vga_pos_t pos);
 
 #endif
