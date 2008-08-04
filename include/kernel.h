@@ -6,5 +6,9 @@ typedef void *addr_t;
 extern addr_t kernel_start;
 extern addr_t kernel_end;
 
+void kernel(void);
+void kinit(void);
+void idle(void);
+
 #endif
 

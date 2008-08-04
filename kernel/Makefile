@@ -1,7 +1,7 @@
 includes = ../include
 scripts  = ../scripts
 
-OBJS = assert.o bios.o kernel.o io.o panic.o printk.o startup.o vga.o
+OBJS = alloc.o assert.o bios.o kernel.o io.o panic.o printk.o startup.o vga.o
 
 .PHONY: all
 all: kernel
@@ -13,6 +13,7 @@ clean:
 kernel: $(OBJS) $(scripts)/kernel.lds
 	$(LD) -r -T $(scripts)/kernel.lds -o $@ $(OBJS)
 
+alloc.o:   alloc.c     $(includes)/alloc.h
 assert.o:  assert.c    $(includes)/assert.h
 bios.o:    bios.c      $(includes)/bios.h
 kernel.o:  kernel.c    $(includes)/kernel.h
