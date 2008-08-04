@@ -1,10 +1,12 @@
 #ifndef _JINUE_BOOT_H_
 #define _JINUE_BOOT_H_
 
+#include <kernel.h>
 #include <stdbool.h>
 
 #define BOOT_SIGNATURE 0xaa55
 #define BOOT_MAGIC     0xcafef00d
+#define SETUP_HEADER   0x53726448  /* "HdrS", reversed */
 
 #define E820_RAM      1
 #define E820_RESERVED 2
@@ -33,11 +35,11 @@ typedef struct {
 } boot_t;
 #pragma pack(pop)
 
-e820_addr_t e820_get_addr(unsigned int idx);
+addr_t e820_get_addr(unsigned int idx);
 
-e820_size_t e820_get_size(unsigned int idx);
+size_t e820_get_size(unsigned int idx);
 
-e820_addr_t e820_get_type(unsigned int idx);
+e820_type_t e820_get_type(unsigned int idx);
 
 bool e820_is_valid(unsigned int idx);
 

@@ -1,19 +1,19 @@
-#include <boot.h> /* includes stdbool.h */
-#include <kernel.h>
+#include <boot.h>   /* includes stdbool.h */
+#include <kernel.h> /* includes stddef.h */
 #include <panic.h>
 
 e820_t *e820_map;
-addr_t boot_setup_addr;
+addr_t  boot_setup_addr;
 
-e820_addr_t e820_get_addr(unsigned int idx) {
-	return e820_map[idx].addr;
+addr_t e820_get_addr(unsigned int idx) {
+	return (addr_t)(unsigned long)e820_map[idx].addr;
 }
 
-e820_size_t e820_get_size(unsigned int idx) {
-	return e820_map[idx].size;
+size_t e820_get_size(unsigned int idx) {
+	return (size_t)e820_map[idx].size;
 }
 
-e820_addr_t e820_get_type(unsigned int idx) {
+e820_type_t e820_get_type(unsigned int idx) {
 	return e820_map[idx].type;
 }
 

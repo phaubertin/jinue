@@ -11,8 +11,6 @@ SECTIONS {
 		. = ALIGN(16);
 	}
 	
-	_etext = .;
-	
 	.data : {
 		*(.data)
 		*(.data.*)
@@ -22,15 +20,11 @@ SECTIONS {
 		. = ALIGN(16);
 	}
 	
-	_edata = .;
-	
 	.bss : {
 		*(.bss)
 		*(.bss.*)
 		
 		. = ALIGN(16);
 	}
-	
-	_end = .;
 }
 
