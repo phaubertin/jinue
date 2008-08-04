@@ -1,11 +1,11 @@
 #include <bios.h>
 #include <kernel.h>
-#include <stddef.h>
 
 #define MEM_BOTTOM 0x200000
+#define PAGE_SIZE  4096
 
 static addr_t _alloc_addr;
-static size_t _alloc_size;
+static unsigned int _alloc_size;
 
 void alloc_init(void) {
 	unsigned int idx;	
@@ -57,10 +57,25 @@ void alloc_init(void) {
 	}
 	
 	_alloc_addr = (addr_t)best_addr;
-	_alloc_size = (size_t)best_size;
+	_alloc_size = best_size / PAGE_SIZE;
 	
-	best_size /= 1024;
-		
-	printk("%u kilobytes available to allocate starting at %xh.\n", best_size, best_addr);
+	printk("%u kilobytes (%u pages) available starting at %xh.\n", 
+		_alloc_size * PAGE_SIZE / 1024, 
+		_alloc_size, 
+		_alloc_addr );
+}
+
+addr_t alloc(unsigned int pages) {
+	addr_t addr;
+	
+	if(_alloc_size < pages) {
+		panic("out of memory.");
+	}
+	
+	addr = _alloc_addr;
+	_alloc_addr += pages * PAGE_SIZE;
+	_alloc_size -= pages;
+	
+	return addr;	
 }
 
