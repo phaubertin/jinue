@@ -302,3 +302,4 @@ gdt_info:
 .addr:	dd 0						; Patched in later
 
 	align 512
+

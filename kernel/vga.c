@@ -73,7 +73,7 @@ void vga_print(const char *message) {
 	unsigned short int pos = vga_get_cursor_pos();
 	char c;
 	
-	while( c = *(message++) ) {
+	while( (c = *(message++)) ) {
 		pos = vga_raw_putc(c, pos);
 	}
 	

@@ -1,6 +1,9 @@
-#include <bios.h> /* includes stdbool.h */
+#include <boot.h> /* includes stdbool.h */
+#include <kernel.h>
+#include <panic.h>
 
 e820_t *e820_map;
+addr_t boot_setup_addr;
 
 e820_addr_t e820_get_addr(unsigned int idx) {
 	return e820_map[idx].addr;
@@ -39,5 +42,19 @@ const char *e820_type_description(e820_type_t type) {
 	}	
 }
 
-
+boot_t *get_boot_data(void) {
+	boot_t *boot;
+	
+	boot = (boot_t *)( boot_setup_addr - sizeof(boot_t) );
+		
+	if(boot->signature != BOOT_SIGNATURE) {
+		panic("bad boot sector signature.");
+	}
+	
+	if(boot->magic != BOOT_MAGIC) {
+		panic("bad boot sector magic.");
+	}
+	
+	return boot;
+}
 

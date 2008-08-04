@@ -1,5 +1,7 @@
-#include <bios.h>
+#include <boot.h>
 #include <kernel.h>
+#include <panic.h>
+#include <printk.h>
 
 #define MEM_BOTTOM 0x200000
 #define PAGE_SIZE  4096

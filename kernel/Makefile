@@ -1,7 +1,7 @@
 includes = ../include
 scripts  = ../scripts
 
-OBJS = alloc.o assert.o bios.o kernel.o io.o panic.o printk.o startup.o vga.o
+OBJS = alloc.o assert.o boot.o kernel.o io.o panic.o printk.o startup.o vga.o
 
 .PHONY: all
 all: kernel
@@ -15,7 +15,7 @@ kernel: $(OBJS) $(scripts)/kernel.lds
 
 alloc.o:   alloc.c     $(includes)/alloc.h
 assert.o:  assert.c    $(includes)/assert.h
-bios.o:    bios.c      $(includes)/bios.h
+boot.o:    boot.c      $(includes)/boot.h
 kernel.o:  kernel.c    $(includes)/kernel.h
 io.o:      io.asm      $(includes)/io.h
 panic.o:   panic.c     $(includes)/panic.h
@@ -24,7 +24,7 @@ startup.o: startup.asm $(includes)/startup.h
 vga.o:     vga.c       $(includes)/vga.h
 
 %.o: %.c
-	$(CC) $(CFLAGS) -g3 -c -nostdinc -fno-builtin -I$(includes) -o $@ $<
+	$(CC) $(CFLAGS) -Wall -g3 -c -nostdinc -fno-builtin -I$(includes) -o $@ $<
 
 %.o: %.asm
 	nasm -f elf -o $@ $<
