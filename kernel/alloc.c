@@ -2,6 +2,7 @@
 #include <boot.h>
 #include <panic.h>
 #include <printk.h>
+#include <stddef.h>
 
 static addr_t _alloc_addr;
 static unsigned int _alloc_size;
@@ -90,8 +91,15 @@ void alloc_init(void) {
 		_alloc_addr );
 }
 
-addr_t alloc(unsigned int pages) {
+addr_t alloc(size_t size) {
 	addr_t addr;
+	size_t pages;
+	
+	pages = size >> PAGE_BITS;
+	
+	if( (size & PAGE_SIZE - 1) != 0 ) {
+		++pages;
+	}
 	
 	if(_alloc_size < pages) {
 		panic("out of memory.");
@@ -101,6 +109,6 @@ addr_t alloc(unsigned int pages) {
 	_alloc_addr += pages * PAGE_SIZE;
 	_alloc_size -= pages;
 	
-	return addr;	
+	return addr;
 }
 
