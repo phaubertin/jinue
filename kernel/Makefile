@@ -4,6 +4,8 @@ scripts  = ../scripts
 OBJS = alloc.o assert.o boot.o kernel.o io.o panic.o printk.o slab.o startup.o \
 	   vm.o vm_alloc.o vga.o
 
+CFLAGS += -g3 -nostdinc -ffreestanding -Wall -ansi
+
 .PHONY: all
 all: kernel
 
@@ -28,7 +30,7 @@ vm.o:       vm.c        $(includes)/vm.h
 vm_alloc.o: vm_alloc.c  $(includes)/vm_alloc.h $(includes)/slab.h
 
 %.o: %.c
-	$(CC) $(CFLAGS) -Wall -g3 -c -nostdinc -fno-builtin -I$(includes) -o $@ $<
+	$(CC) $(CFLAGS) -c -I$(includes) -o $@ $<
 
 %.o: %.asm
 	nasm -f elf -o $@ $<
