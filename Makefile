@@ -17,6 +17,15 @@ clean:
 	make -C kernel clean
 	-rm -f $(unclean)
 
+# ----- documentation
+.PHONY: doc
+doc:
+	make -C doc
+
+.PHONY: clean-doc
+clean-doc:
+	make -C doc clean	
+
 # ----- kernel image
 .PHONY: kernel
 kernel: 
