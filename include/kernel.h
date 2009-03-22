@@ -5,6 +5,7 @@
 #include <stddef.h>
 
 typedef void *addr_t;
+typedef unsigned long count_t;
 
 #define kernel_start ((addr_t)start)
 extern addr_t kernel_top;

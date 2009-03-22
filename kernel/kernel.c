@@ -5,6 +5,10 @@
 #include <panic.h>
 #include <printk.h>
 #include <vga.h>
+#include <vm.h>
+
+#include <vm_alloc.h>
+#include <slab.h>
 
 addr_t kernel_top;
 size_t kernel_size;

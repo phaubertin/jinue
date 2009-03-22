@@ -1,8 +1,10 @@
 #include <alloc.h> /* includes kernel.h */
+#include <assert.h>
 #include <boot.h>
 #include <panic.h>
 #include <printk.h>
 #include <stddef.h>
+#include <vm.h>
 
 static addr_t _alloc_addr;
 static unsigned int _alloc_size;
@@ -42,9 +44,9 @@ void alloc_init(void) {
 		fixed_addr = addr;
 		fixed_size = size;
 		
-		/* is the region completly under the kernel ? */
+		/* is the region completely under the kernel ? */
 		if(addr + size > kernel_start) {
-			/* is the region completly above the kernel ? */
+			/* is the region completely above the kernel ? */
 			if(addr < kernel_top) {			
 				/* if the region touches the kernel, we take only
 				 * the part above the kernel, if there is one... */
@@ -97,7 +99,7 @@ addr_t alloc(size_t size) {
 	
 	pages = size >> PAGE_BITS;
 	
-	if( (size & PAGE_SIZE - 1) != 0 ) {
+	if( (size & PAGE_MASK) != 0 ) {
 		++pages;
 	}
 	
@@ -108,6 +110,9 @@ addr_t alloc(size_t size) {
 	addr = _alloc_addr;
 	_alloc_addr += pages * PAGE_SIZE;
 	_alloc_size -= pages;
+	
+	/* returned address should be aligned on a page boundary */
+	assert( ((unsigned long)addr & PAGE_MASK) == 0 );
 	
 	return addr;
 }
