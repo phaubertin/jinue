@@ -1,5 +1,5 @@
-#ifndef _JINUE_ALLOC_H
-#define _JINUE_ALLOC_H
+#ifndef _JINUE_KERNEL_ALLOC_H
+#define _JINUE_KERNEL_ALLOC_H
 
 #include <kernel.h>
 

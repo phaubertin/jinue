@@ -1,5 +1,5 @@
-#ifndef _JINUE_KERNEL_H_
-#define _JINUE_KERNEL_H_
+#ifndef _JINUE_KERNEL_KERNEL_H_
+#define _JINUE_KERNEL_KERNEL_H_
 
 #include <startup.h>
 #include <stddef.h>

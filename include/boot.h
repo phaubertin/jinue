@@ -1,5 +1,5 @@
-#ifndef _JINUE_BOOT_H_
-#define _JINUE_BOOT_H_
+#ifndef _JINUE_KERNEL_BOOT_H_
+#define _JINUE_KERNEL_BOOT_H_
 
 #include <kernel.h>
 #include <stdbool.h>

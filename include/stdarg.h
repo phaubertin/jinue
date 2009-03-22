@@ -1,5 +1,5 @@
-#ifndef _JINUE_STDARG_H
-#define _JINUE_STDARG_H
+#ifndef _JINUE_KERNEL_STDARG_H
+#define _JINUE_KERNEL_STDARG_H
 
 typedef	__builtin_va_list	va_list;
 

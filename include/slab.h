@@ -1,5 +1,5 @@
-#ifndef _JINUE_SLAB_H
-#define _JINUE_SLAB_H
+#ifndef _JINUE_KERNEL_SLAB_H
+#define _JINUE_KERNEL_SLAB_H
 
 #include <vm_alloc.h> /* includes kernel.h */
 

@@ -1,5 +1,5 @@
-#ifndef _JINUE_VM_ALLOC_H
-#define _JINUE_VM_ALLOC_H
+#ifndef _JINUE_KERNEL_VM_ALLOC_H
+#define _JINUE_KERNEL_VM_ALLOC_H
 
 #include <kernel.h>
 #include <slab.h>

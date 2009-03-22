@@ -1,5 +1,5 @@
-#ifndef _JINUE_VGA_H_
-#define _JINUE_VGA_H_
+#ifndef _JINUE_KERNEL_VGA_H_
+#define _JINUE_KERNEL_VGA_H_
 
 #define VGA_TEXT_VID_BASE	0xb8000
 #define VGA_MISC_OUT_WR		0x3c2

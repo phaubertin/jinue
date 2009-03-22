@@ -1,5 +1,5 @@
-#ifndef _JINUE_IO_H_
-#define _JINUE_IO_H_
+#ifndef _JINUE_KERNEL_IO_H_
+#define _JINUE_KERNEL_IO_H_
 
 unsigned char inb(unsigned short int port);
 unsigned short int inw(unsigned short int port);

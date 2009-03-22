@@ -1,5 +1,5 @@
-#ifndef _JINUE_PRINTK_H_
-#define _JINUE_PRINTK_H_
+#ifndef _JINUE_KERNEL_PRINTK_H_
+#define _JINUE_KERNEL_PRINTK_H_
 
 void printk(const char *format, ...);
 
