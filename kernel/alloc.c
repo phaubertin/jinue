@@ -111,9 +111,14 @@ addr_t alloc(size_t size) {
 	_alloc_addr += pages * PAGE_SIZE;
 	_alloc_size -= pages;
 	
-	/* returned address should be aligned on a page boundary */
+	/** ASSERTION: returned address should be aligned with a page boundary */
 	assert( ((unsigned long)addr & PAGE_MASK) == 0 );
 	
 	return addr;
+}
+
+void free(addr_t addr) {
+	/** ASSERTION: we assume starting address is aligned on a page boundary */
+	assert( PAGE_OFFSET_OF(addr) == 0 );
 }
 

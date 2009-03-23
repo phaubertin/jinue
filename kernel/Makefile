@@ -2,7 +2,7 @@ includes = ../include
 scripts  = ../scripts
 
 OBJS = alloc.o assert.o boot.o kernel.o io.o panic.o printk.o slab.o startup.o \
-	   vm.o vm_alloc.o vga.o
+	   vm.o vm_alloc.o vga.o x86.o
 
 CFLAGS += -g3 -nostdinc -ffreestanding -Wall -ansi
 
@@ -28,6 +28,7 @@ startup.o:  startup.asm $(includes)/startup.h
 vga.o:      vga.c       $(includes)/vga.h
 vm.o:       vm.c        $(includes)/vm.h
 vm_alloc.o: vm_alloc.c  $(includes)/vm_alloc.h $(includes)/slab.h
+x86.o:      x86.asm     $(includes)/x86.h
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -I$(includes) -o $@ $<

@@ -28,7 +28,7 @@ void kinit(void) {
 	vga_init();	
 	printk("Kernel started.\n");
 	
-	/* we assume the kernel starts on a page boundary */
+	/** ASSERTION: we assume the kernel starts on a page boundary */
 	assert((unsigned int)kernel_start % PAGE_SIZE == 0);
 	
 	/* find out kernel size and set kernel_top 

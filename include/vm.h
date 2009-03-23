@@ -24,10 +24,10 @@ typedef unsigned long pte_t;
 /** size of a page table entry, in bytes */
 #define PTE_SIZE 4
 
-/** page table entry offset of virtual address */
+/** page table entry offset of vrtual (linear) address */
 #define PAGE_TABLE_OFFSET_OF(x)  ( ((unsigned long)(x) >> PAGE_BITS) & PAGE_TABLE_MASK )
 
-/** page directory entry offset of virtual address */
+/** page directory entry offset of virtual (linear address) */
 #define PAGE_DIRECTORY_OFFSET_OF(x)  ((unsigned long)(x) >> (PAGE_BITS + PAGE_TABLE_BITS))
 
 /** type of a page table */
@@ -46,9 +46,12 @@ typedef pte_t page_table_t[PAGE_TABLE_ENTRIES];
    reside in region spanning from KLIMIT to PLIMIT. */
 #define PAGE_DIRECTORY_MAPPING (KLIMIT + PAGE_TABLE_ENTRIES * PAGE_TABLE_SIZE)
 
-/** limits of region spanning from KLIMIT to PLIMIT actually available for
-   mappings */
+/** low limit of region spanning from KLIMIT to PLIMIT actually available for
+	mappings */
 #define PMAPPING_START (PAGE_DIRECTORY + PAGE_TABLE_SIZE)
+
+/** high limit of region spanning from KLIMIT to PLIMIT actually available for
+	mappings */
 #define PMAPPING_END   PLIMIT
 
 

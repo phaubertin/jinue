@@ -4,17 +4,30 @@
 #include <kernel.h>
 #include <slab.h>
 	
+/** links forming the linked lists of free virtual memory pages */
 struct vm_link_t {
+	/** next link in list */
 	struct vm_link_t *next;
+	
+	/** size of current virtual memory block */
 	size_t size;
+	
+	/** starting address of current block */
 	addr_t addr;
 };
 
 typedef struct vm_link_t vm_link_t;
 
+/** data structure which keep tracks of free pages in a region of virtual
+	memory */
 struct vm_alloc_t {
+	/** total amount of memory available  */
 	size_t size;
+	
+	/** head of the free list */
 	vm_link_t *head;
+	
+	/** slab cache on which to allocate the links of the free list */
 	struct slab_cache_t *cache;	
 };
 
