@@ -18,7 +18,7 @@ void vm_map(addr_t vaddr, addr_t paddr, unsigned long flags) {
 		
 		/* map page table in the region of memory reserved for that purpose */
 		pte = PAGE_TABLE_PTE_OF(vaddr);
-		*pte = (pte_t)page_table | VM_FLAG_PRESENT;
+		*pte = (pte_t)page_table | VM_FLAGS_PAGE_TABLE | VM_FLAG_PRESENT;
 		
 		/* obtain virtual address of new page table */
 		pte = PAGE_TABLE_OF(vaddr);
@@ -32,7 +32,7 @@ void vm_map(addr_t vaddr, addr_t paddr, unsigned long flags) {
 		}
 		
 		/* link to page table from page directory */
-		*pde = (pte_t)page_table | VM_FLAG_PRESENT;		
+		*pde = (pte_t)page_table | VM_FLAG_USER | VM_FLAG_PRESENT;		
 	}
 	
 	/* perform the actual mapping */
