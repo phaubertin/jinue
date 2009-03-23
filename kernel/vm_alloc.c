@@ -33,7 +33,7 @@ addr_t vm_valloc(vm_alloc_t *pool) {
 	assert( PAGE_OFFSET_OF(size) == 0 );
 	
 	/* if block is made of only one page, we remove it from the free list */
-	if(head->size == 0) {
+	if(size == 0) {
 		pool->head = head->next;
 		slab_free(pool->cache, head);				
 	}

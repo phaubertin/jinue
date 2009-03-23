@@ -1,12 +1,25 @@
 #include <kernel.h>
 #include <alloc.h>
+#include <assert.h>
 #include <vm.h>
 #include <x86.h>
 
+/** 
+	Map a page frame (physical page) to a virtual memory page.
+	@param vaddr virtual address of mapping
+	@param paddr address of page frame
+	@param flags flags used for mapping (see VM_FLAG_x constants in vm.h)
+*/
 void vm_map(addr_t vaddr, addr_t paddr, unsigned long flags) {
 	pte_t *pte, *pde;
 	addr_t page_table;
 	int idx;
+	
+	/** ASSERTION: we assume vaddr is aligned on a page boundary */
+	assert( PAGE_OFFSET_OF(vaddr) == 0 );
+	
+	/** ASSERTION: we assume paddr is aligned on a page boundary */
+	assert( PAGE_OFFSET_OF(paddr) == 0 );
 	
 	/* get page directory entry */
 	pde = PDE_OF(vaddr);
@@ -43,8 +56,15 @@ void vm_map(addr_t vaddr, addr_t paddr, unsigned long flags) {
 	invalidate_tlb(vaddr);
 }
 
+/**
+	Unmap a page from virtual memory.
+	@param addr address of page to unmap
+*/
 void vm_unmap(addr_t addr) {
 	pte_t *pte;
+	
+	/** ASSERTION: we assume addr is aligned on a page boundary */
+	assert( PAGE_OFFSET_OF(addr) == 0 );
 	
 	pte = PTE_OF(addr);
 	*pte = 0;
