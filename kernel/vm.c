@@ -67,7 +67,7 @@ void vm_unmap(addr_t addr) {
 	assert( PAGE_OFFSET_OF(addr) == 0 );
 	
 	pte = PTE_OF(addr);
-	*pte = 0;
+	*pte = NULL;
 	
 	invalidate_tlb(addr);
 }

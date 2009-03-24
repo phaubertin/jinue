@@ -37,11 +37,20 @@ struct slab_cache_t {
 	/** head of list of full slabs */
 	slab_header_t *full;
 	
+	/** flags for mapping slabs in virtual memory */
+	unsigned long vm_flags;
+	
 	/** virtual address space allocator for new slabs */
 	struct vm_alloc_t *vm_allocator;
 };
 
 typedef struct slab_cache_t slab_cache_t;
+
+/* create a slab cache */
+void slab_create(slab_cache_t *cache, unsigned long flags);
+
+/* destroy a slab cache */
+void slab_destroy(slab_cache_t *cache);
 
 /* allocate an object from cache */
 addr_t slab_alloc(slab_cache_t *cache);
@@ -49,11 +58,14 @@ addr_t slab_alloc(slab_cache_t *cache);
 /* deallocate an object from cache */
 void slab_free(slab_cache_t *cache, addr_t obj);
 
-/* prepare a memory page to be used as a slab */
+/* prepare a memory page for use as a slab */
 void slab_prepare(slab_cache_t *cache, addr_t page);
 
-/* insert a slab in a list of slabs */
-void slab_insert(slab_header_t **head, slab_header_t *slab);
+/* add a slab to a list of slabs */
+void slab_add(slab_header_t **head, slab_header_t *slab);
+
+/* remove a slab from a list of slab */
+void slab_remove(slab_header_t **head, slab_header_t *slab);
 
 #endif
 

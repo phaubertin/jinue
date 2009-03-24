@@ -105,7 +105,7 @@ void vm_vfree_block(vm_alloc_t *pool, addr_t addr, size_t size) {
 				
 				/* prepare the slab and add it to cache empty list */
 				slab_prepare(pool->cache, addr);
-				slab_insert(&pool->cache->empty, addr);
+				slab_add(&pool->cache->empty, addr);
 				
 				size -= PAGE_SIZE;
 				
@@ -134,6 +134,8 @@ void vm_vfree_block(vm_alloc_t *pool, addr_t addr, size_t size) {
 */
 addr_t vm_alloc(vm_alloc_t *pool, unsigned long flags) {
 	addr_t paddr, vaddr;
+	
+	/** TODO: handle the NULL pointer */
 	
 	vaddr = vm_valloc(pool);
 	paddr = alloc(PAGE_SIZE);
