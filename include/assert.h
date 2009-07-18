@@ -9,9 +9,9 @@
 		unsigned int line, 
 		const char *func );
 	
-	#define assert(expr) \
-		( (void) ( \
-			(expr)?0:( __assert_failed(#expr, __FILE__, __LINE__, __func__) ) \
-		) )
+#define assert(expr) \
+	( \
+		(expr)?(void)0:( __assert_failed(#expr, __FILE__, __LINE__, __func__) ) \
+	)
 #endif
 
