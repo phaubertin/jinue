@@ -1,10 +1,10 @@
 includes = ../include
 scripts  = ../scripts
 
-OBJS = alloc.o assert.o boot.o kernel.o io.o panic.o printk.o slab.o startup.o \
-	   vm.o vm_alloc.o vga.o x86.o
+OBJS = alloc.o assert.o boot.o kernel.o io.o panic.o printk.o process.o \
+       slab.o startup.o vm.o vm_alloc.o vga.o x86.o
 
-CFLAGS += -g3 -nostdinc -ffreestanding -Wall -ansi
+CFLAGS += -g3 -nostdinc -ffreestanding -fno-common -Wall -ansi
 
 .PHONY: all
 all: kernel
@@ -23,6 +23,7 @@ kernel.o:   kernel.c    $(includes)/kernel.h
 io.o:       io.asm      $(includes)/io.h
 panic.o:    panic.c     $(includes)/panic.h
 printk.o:   printk.c    $(includes)/printk.h
+process.o:  process.c   $(includes)/process.h
 slab.o:     slab.c      $(includes)/vm_alloc.h $(includes)/slab.h
 startup.o:  startup.asm $(includes)/startup.h
 vga.o:      vga.c       $(includes)/vga.h

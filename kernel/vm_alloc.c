@@ -5,6 +5,17 @@
 #include <vm.h>
 #include <vm_alloc.h> /* includes kernel.h */
 
+vm_alloc_t   global_pool;
+
+slab_cache_t global_pool_cache;
+
+
+void vm_create_pool(vm_alloc_t *pool, slab_cache_t *cache) {
+	pool->size = 0;
+	pool->head = NULL;
+	pool->cache = cache;
+}
+
 /**
 	Allocate a page of virtual memory (not backed by physical memory). This
 	page may then be used for temporary mappings, for example. Page is

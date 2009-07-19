@@ -3,7 +3,7 @@
 
 #include <kernel.h>
 #include <slab.h>
-	
+
 /** links forming the linked lists of free virtual memory pages */
 struct vm_link_t {
 	/** next link in list */
@@ -33,6 +33,12 @@ struct vm_alloc_t {
 
 typedef struct vm_alloc_t vm_alloc_t;
 
+extern struct vm_alloc_t global_pool;
+
+extern struct slab_cache_t global_pool_cache;
+
+
+void vm_create_pool(vm_alloc_t *pool, struct slab_cache_t *cache);
 
 addr_t vm_valloc(vm_alloc_t *pool);
 

@@ -47,7 +47,11 @@ struct slab_cache_t {
 typedef struct slab_cache_t slab_cache_t;
 
 /* create a slab cache */
-void slab_create(slab_cache_t *cache, unsigned long flags);
+void slab_create(
+	struct slab_cache_t *cache,
+	struct vm_alloc_t *pool,
+	size_t obj_size,
+	unsigned long flags);
 
 /* destroy a slab cache */
 void slab_destroy(slab_cache_t *cache);

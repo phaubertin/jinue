@@ -4,6 +4,7 @@
 #include <vm.h>
 #include <x86.h>
 
+
 /** 
 	Map a page frame (physical page) to a virtual memory page.
 	@param vaddr virtual address of mapping
@@ -69,6 +70,7 @@ void vm_unmap(addr_t addr) {
 	pte = PTE_OF(addr);
 	*pte = NULL;
 	
+	/* TODO: is this really necessary? */	
 	invalidate_tlb(addr);
 }
 

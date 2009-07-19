@@ -4,10 +4,24 @@
 #include <slab.h>
 #include <vm.h>
 
-void slab_create(slab_cache_t *cache, unsigned long flags) {
+void slab_create(
+	slab_cache_t *cache,
+	vm_alloc_t *pool,
+	size_t obj_size,
+	unsigned long flags) {
+	
+	
+	cache->obj_size = obj_size;
+	cache->per_slab = ( PAGE_SIZE - sizeof(slab_header_t) ) / obj_size;
+	cache->empty = NULL;
+	cache->partial = NULL;
+	cache->full = NULL;
+	cache->vm_flags = flags;
+	cache->vm_allocator = pool;
 }
 
 void slab_destroy(slab_cache_t *cache) {
+	/* TODO: implement slab_destroy */
 }
 
 addr_t slab_alloc(slab_cache_t *cache) {

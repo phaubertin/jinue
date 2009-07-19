@@ -104,6 +104,7 @@ typedef pte_t page_table_t[PAGE_TABLE_ENTRIES];
 
 
 void vm_map(addr_t vaddr, addr_t paddr, unsigned long flags);
+
 void vm_unmap(addr_t addr);
 
 #endif

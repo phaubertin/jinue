@@ -3,7 +3,7 @@
 #include <panic.h>
 
 e820_t *e820_map;
-addr_t  boot_setup_addr;
+addr_t  boot_data;
 
 addr_t e820_get_addr(unsigned int idx) {
 	return (addr_t)(unsigned long)e820_map[idx].addr;
@@ -45,7 +45,7 @@ const char *e820_type_description(e820_type_t type) {
 boot_t *get_boot_data(void) {
 	boot_t *boot;
 	
-	boot = (boot_t *)( boot_setup_addr - sizeof(boot_t) );
+	boot = (boot_t *)boot_data;
 		
 	if(boot->signature != BOOT_SIGNATURE) {
 		panic("bad boot sector signature.");
