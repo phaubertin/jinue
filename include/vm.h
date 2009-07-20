@@ -73,7 +73,10 @@ typedef pte_t page_table_t[PAGE_TABLE_ENTRIES];
 #define VM_FLAG_PRESENT       (1<< 0)
 
 /** page is read only */
-#define VM_FLAG_READ_ONLY     (1<< 1)
+#define VM_FLAG_READ_ONLY     0
+
+/** page is read/write accessible */
+#define VM_FLAG_READ_WRITE    (1<< 1)
 
 /** kernel mode page (default) */
 #define VM_FLAG_KERNEL        0

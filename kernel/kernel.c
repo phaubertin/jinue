@@ -34,6 +34,8 @@ void kernel(void) {
 
 void kinit(void) {
 	pte_t *page_table1, *page_table2, *page_directory;
+	pte_t *pte;
+	addr_t addr;
 	unsigned long idx, idy;
 	unsigned long temp;
 	
@@ -53,6 +55,9 @@ void kinit(void) {
 	assert( PAGE_OFFSET_OF(PAGE_DIRECTORY_ADDR) == 0 );
 	
 	printk("Kernel size is %u bytes.\n", kernel_size);
+	
+	/** TODO: remove */
+	printk("kernel_region_top on entry: 0x%x\n", (unsigned long)kernel_region_top );
 	
 	/* initialize data structures for caches and the global virtual page allocator */
 	slab_create(
@@ -102,20 +107,24 @@ void kinit(void) {
 	kernel_region_top += PAGE_SIZE;
 	
 	for(idx = 0; idx < PAGE_TABLE_ENTRIES; ++idx) {
-		page_directory[idx] = page_directory_template[idx];
+		temp = page_directory_template[idx];
+		page_directory[idx] = temp;
+		page_table1[idx]    = temp;
 	}
 	
 	page_directory[PAGE_DIRECTORY_OFFSET_OF(PAGE_TABLES_ADDR)] =
-		(pte_t)page_table1 | VM_FLAG_PRESENT | VM_FLAG_KERNEL;
+		(pte_t)page_table1 | VM_FLAG_PRESENT | VM_FLAG_USER | VM_FLAG_READ_WRITE;
 		
 	page_directory[PAGE_DIRECTORY_OFFSET_OF(PAGE_DIRECTORY_ADDR)] =
-		(pte_t)page_table2 | VM_FLAG_PRESENT | VM_FLAG_KERNEL;
+		(pte_t)page_table2 | VM_FLAG_PRESENT | VM_FLAG_USER | VM_FLAG_READ_WRITE;
 	
-	for(idx = 0; idx < PAGE_TABLE_ENTRIES; ++idx) {
-		page_table1[idx] = page_directory[idx];
-	}
+	page_table1[PAGE_DIRECTORY_OFFSET_OF(PAGE_TABLES_ADDR)] =
+		(pte_t)page_table1 | VM_FLAG_PRESENT | VM_FLAGS_PAGE_TABLE;
+		
+	page_table1[PAGE_DIRECTORY_OFFSET_OF(PAGE_DIRECTORY_ADDR)] =
+		(pte_t)page_table2 | VM_FLAG_PRESENT | VM_FLAGS_PAGE_TABLE;
 	
-	page_table2[0] = (pte_t)page_directory;
+	page_table2[0] = (pte_t)page_directory | VM_FLAG_PRESENT | VM_FLAGS_PAGE_TABLE;
 	for(idx = 1; idx < PAGE_TABLE_ENTRIES; ++idx) {
 		page_table2[idx] = 0;
 	}
@@ -137,7 +146,97 @@ void kinit(void) {
 		idle_process.name[idx] = 0;
 	}
 	
-	/* TODO: perform 1:1 mapping */
+	/* perform 1:1 mapping of kernel image and data
+	
+	   note: page tables for memory region (0..KLIMIT) are contiguous
+	         in memory */
+	page_table1 =
+		(pte_t *)page_directory[ PAGE_DIRECTORY_OFFSET_OF(kernel_start) ];
+	page_table1 = (pte_t *)( (unsigned int)page_table1 & ~PAGE_MASK  );
+	
+	pte =
+		(pte_t *)&page_table1[ PAGE_TABLE_OFFSET_OF(kernel_start) ];
+	
+	for(addr = kernel_start; addr < kernel_region_top; addr += PAGE_SIZE) {
+		*pte = (pte_t)addr | VM_FLAG_PRESENT | VM_FLAG_KERNEL;
+		++pte;
+	}
+	
+	/** TODO: remove */
+	printk("boot data: 0x%x\n", (unsigned long)get_boot_data() );
+	
+	printk("page directory (0x%x):\n", (unsigned long)page_directory);
+	printk("  0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x\n",
+		(unsigned long)page_directory[0],
+		(unsigned long)page_directory[1],
+		(unsigned long)page_directory[2],
+		(unsigned long)page_directory[3],
+		(unsigned long)page_directory[4],
+		(unsigned long)page_directory[5],
+		(unsigned long)page_directory[6]
+		);
+	
+	if(PAGE_DIRECTORY_OFFSET_OF(kernel_start) != 0) {
+		printk("OOPS: PAGE_DIRECTORY_OFFSET_OF(kernel_start) != 0 (%u)\n",
+			PAGE_DIRECTORY_OFFSET_OF(kernel_start));
+	}
+	
+	if(PAGE_TABLE_OFFSET_OF(kernel_start) != 256) {
+		printk("PAGE_TABLE_OFFSET_OF(kernel_start) != 256 (%u)\n",
+			PAGE_TABLE_OFFSET_OF(kernel_start));
+	}
+	
+	page_table1 = 
+		(pte_t *)page_directory[0];
+	page_table1 = (pte_t *)( (unsigned int)page_table1 & ~PAGE_MASK  );
+	pte = (pte_t *)&page_table1[250];
+	printk("Page table 0 (0x%x) offset 250 (0x%x):\n", (unsigned long)page_table1, (unsigned long) pte);
+	
+	for(idx = 0; idx < 42; ++idx) {
+		if(idx % 7 == 0) {
+			printk("  0x%x ", (unsigned long)pte[idx]);
+		}
+		else if(idx % 7 == 6) {
+			printk("0x%x\n", (unsigned long)pte[idx]);
+		}
+		else {
+			printk("0x%x ", (unsigned long)pte[idx]);
+		}
+	}
+	
+	page_table1 = 
+		(pte_t *)page_directory[4];
+	page_table1 = (pte_t *)( (unsigned int)page_table1 & ~PAGE_MASK  );
+	printk("page table 4 (0x%x):\n", (unsigned long)page_table1);
+	printk("  0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x\n",
+		(unsigned long)page_table1[0],
+		(unsigned long)page_table1[1],
+		(unsigned long)page_table1[2],
+		(unsigned long)page_table1[3],
+		(unsigned long)page_table1[4],
+		(unsigned long)page_table1[5],
+		(unsigned long)page_table1[6]
+		);
+	
+	page_table1 = 
+		(pte_t *)page_directory[5];
+	page_table1 = (pte_t *)( (unsigned int)page_table1 & ~PAGE_MASK  );
+	printk("page table 5 (0x%x):\n", (unsigned long)page_table1);
+	printk("  0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x\n",
+		(unsigned long)page_table1[0],
+		(unsigned long)page_table1[1],
+		(unsigned long)page_table1[2],
+		(unsigned long)page_table1[3],
+		(unsigned long)page_table1[4],
+		(unsigned long)page_table1[5],
+		(unsigned long)page_table1[6]
+		);
+	
+	/** TODO: /remove */
+	
+	
+	
+	
 	
 	/* activate paging */
 	set_cr3( (unsigned long)page_directory );
@@ -145,15 +244,6 @@ void kinit(void) {
 	/*temp = get_cr0();
 	temp |= (1 << X86_FLAG_PG);
 	set_cr0x(temp);*/
-	
-	
-	/* notes, not actual code
-	
-	vm_page_directory_index = PAGE_DIRECTORY_OFFSET_OF(x);
-	vm_page_tables_index    = PAGE_DIRECTORY_OFFSET_OF(x);
-	
-	PAGE_TABLES_ADDR
-	PAGE_DIRECTORY_ADDR*/
 	
 	/* initialize page frame allocator */
 	alloc_init();

@@ -9,6 +9,7 @@
 static addr_t _alloc_addr;
 static unsigned int _alloc_size;
 
+
 void alloc_init(void) {
 	unsigned int idx;
 	unsigned int remainder;
@@ -21,8 +22,8 @@ void alloc_init(void) {
 	idx = 0;
 	best_size = 0;
 	
-	printk("Dump of the BIOS memory map:\n");
-	printk("  address  size     type\n");
+	/*printk("Dump of the BIOS memory map:\n");
+	printk("  address  size     type\n");*/
 	while( e820_is_valid(idx) ) {
 		addr = e820_get_addr(idx);
 		size = e820_get_size(idx);
@@ -31,11 +32,11 @@ void alloc_init(void) {
 		
 		++idx;
 		
-		printk("%c %x %x %s\n",
+		/*printk("(%x) %c %x %x %s\n",
 			avail?'*':' ',
 			addr,
 			size,
-			e820_type_description(type) );
+			e820_type_description(type) );*/
 		
 		if( !avail ) {
 			continue;
@@ -47,15 +48,15 @@ void alloc_init(void) {
 		/* is the region completely under the kernel ? */
 		if(addr + size > kernel_start) {
 			/* is the region completely above the kernel ? */
-			if(addr < kernel_top) {			
+			if(addr < kernel_region_top) {			
 				/* if the region touches the kernel, we take only
 				 * the part above the kernel, if there is one... */
-				if(addr + size <= kernel_top) {
+				if(addr + size <= kernel_region_top) {
 					/* ... and apparently, there is none */
 					continue;
 				}
 				
-				fixed_addr = kernel_top;
+				fixed_addr = kernel_region_top;
 				fixed_size -= fixed_addr - addr;				
 			}
 		}

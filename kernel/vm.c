@@ -46,7 +46,7 @@ void vm_map(addr_t vaddr, addr_t paddr, unsigned long flags) {
 		}
 		
 		/* link to page table from page directory */
-		*pde = (pte_t)page_table | VM_FLAG_USER | VM_FLAG_PRESENT;		
+		*pde = (pte_t)page_table | VM_FLAG_USER | VM_FLAG_READ_WRITE | VM_FLAG_PRESENT;		
 	}
 	
 	/* perform the actual mapping */

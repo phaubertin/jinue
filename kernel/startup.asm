@@ -16,8 +16,8 @@ start:
 	mov esi, eax
 	
 	; figure out size of kernel image and align to page boundary
-	add eax, 7      ; field: syssize
-	mov eax, [eax]
+	add eax, 7      ; field: sysize
+	mov eax, dword [eax]
 	shl eax, 4
 	mov dword [kernel_size], eax
 	
@@ -30,7 +30,7 @@ start:
 	; copy boot sector data
 	mov edi, eax
 	mov dword [boot_data], eax
-	mov cx, 32
+	mov ecx, 32
 	rep movsb
 	mov eax, edi
 	
@@ -42,20 +42,18 @@ start:
 e820_loop:
 	mov eax, edi
 	
-	add eax, 8     ; size field, first word
-	mov ecx, [eax]
-	or  ecx, ecx
-	jnz e820_continue
-	
-	add eax, 4     ; size field, second word
-	mov ecx, [eax]
-	or  ecx, ecx
-	jz e820_end
-	
-e820_continue:
-	; entry is valid so let's copy it
 	mov ecx, 20    ; size of one entry
 	rep movsb
+	
+	add eax, 8     ; size field, first word
+	mov ecx, dword [eax]
+	or  ecx, ecx
+	jnz e820_loop
+	
+	add eax, 4     ; size field, second word
+	mov ecx, dword [eax]
+	or  ecx, ecx
+	jz e820_end
 	
 	jmp e820_loop	
 e820_end:
