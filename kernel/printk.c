@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <vga.h>
 
+/** @cond PRINTK */
 void printk(const char *format, ...) {
 	va_list ap;
 	const char *idx, *anchor;
@@ -29,7 +30,7 @@ void printk(const char *format, ...) {
 			break;
 		}
 		
-		++idx;
+		++idx;		
 		
 		switch( *idx ) {
 		case '%':
@@ -63,6 +64,7 @@ void printk(const char *format, ...) {
 	
 	va_end(ap);		
 }
+/** @endcond PRINTK */
 
 void print_unsigned_int(unsigned int n) {
 	unsigned int flag = 0;
