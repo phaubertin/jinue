@@ -22,21 +22,13 @@ void alloc_init(void) {
 	idx = 0;
 	best_size = 0;
 	
-	/*printk("Dump of the BIOS memory map:\n");
-	printk("  address  size     type\n");*/
 	while( e820_is_valid(idx) ) {
-		addr = e820_get_addr(idx);
-		size = e820_get_size(idx);
+		addr = (addr_t)e820_get_addr(idx);
+		size = (size_t)e820_get_size(idx);
 		type = e820_get_type(idx);
 		avail = e820_is_available(idx);
 		
 		++idx;
-		
-		/*printk("(%x) %c %x %x %s\n",
-			avail?'*':' ',
-			addr,
-			size,
-			e820_type_description(type) );*/
 		
 		if( !avail ) {
 			continue;

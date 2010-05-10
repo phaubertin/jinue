@@ -12,7 +12,7 @@
 
 header:				db "HdrS"
 version:			dw 0x0204
-realmode_swtch:	dd 0
+realmode_swtch:		dd 0
 start_sys:			dw 0x1000
 kernel_version:		dw str_version
 type_of_loader:		db 0

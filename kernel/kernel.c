@@ -56,9 +56,6 @@ void kinit(void) {
 	
 	printk("Kernel size is %u bytes.\n", kernel_size);
 	
-	/** TODO: remove */
-	printk("kernel_region_top on entry: 0x%x\n", (unsigned long)kernel_region_top );
-	
 	/* initialize data structures for caches and the global virtual page allocator */
 	slab_create(
 		&global_pool_cache,
@@ -161,78 +158,6 @@ void kinit(void) {
 		*pte = (pte_t)addr | VM_FLAG_PRESENT | VM_FLAG_KERNEL;
 		++pte;
 	}
-	
-	/** TODO: remove */
-	printk("boot data: 0x%x\n", (unsigned long)get_boot_data() );
-	
-	printk("page directory (0x%x):\n", (unsigned long)page_directory);
-	printk("  0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x\n",
-		(unsigned long)page_directory[0],
-		(unsigned long)page_directory[1],
-		(unsigned long)page_directory[2],
-		(unsigned long)page_directory[3],
-		(unsigned long)page_directory[4],
-		(unsigned long)page_directory[5],
-		(unsigned long)page_directory[6]
-		);
-	
-	if(PAGE_DIRECTORY_OFFSET_OF(kernel_start) != 0) {
-		printk("OOPS: PAGE_DIRECTORY_OFFSET_OF(kernel_start) != 0 (%u)\n",
-			PAGE_DIRECTORY_OFFSET_OF(kernel_start));
-	}
-	
-	if(PAGE_TABLE_OFFSET_OF(kernel_start) != 256) {
-		printk("PAGE_TABLE_OFFSET_OF(kernel_start) != 256 (%u)\n",
-			PAGE_TABLE_OFFSET_OF(kernel_start));
-	}
-	
-	page_table1 = 
-		(pte_t *)page_directory[0];
-	page_table1 = (pte_t *)( (unsigned int)page_table1 & ~PAGE_MASK  );
-	pte = (pte_t *)&page_table1[250];
-	printk("Page table 0 (0x%x) offset 250 (0x%x):\n", (unsigned long)page_table1, (unsigned long) pte);
-	
-	for(idx = 0; idx < 42; ++idx) {
-		if(idx % 7 == 0) {
-			printk("  0x%x ", (unsigned long)pte[idx]);
-		}
-		else if(idx % 7 == 6) {
-			printk("0x%x\n", (unsigned long)pte[idx]);
-		}
-		else {
-			printk("0x%x ", (unsigned long)pte[idx]);
-		}
-	}
-	
-	page_table1 = 
-		(pte_t *)page_directory[4];
-	page_table1 = (pte_t *)( (unsigned int)page_table1 & ~PAGE_MASK  );
-	printk("page table 4 (0x%x):\n", (unsigned long)page_table1);
-	printk("  0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x\n",
-		(unsigned long)page_table1[0],
-		(unsigned long)page_table1[1],
-		(unsigned long)page_table1[2],
-		(unsigned long)page_table1[3],
-		(unsigned long)page_table1[4],
-		(unsigned long)page_table1[5],
-		(unsigned long)page_table1[6]
-		);
-	
-	page_table1 = 
-		(pte_t *)page_directory[5];
-	page_table1 = (pte_t *)( (unsigned int)page_table1 & ~PAGE_MASK  );
-	printk("page table 5 (0x%x):\n", (unsigned long)page_table1);
-	printk("  0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x\n",
-		(unsigned long)page_table1[0],
-		(unsigned long)page_table1[1],
-		(unsigned long)page_table1[2],
-		(unsigned long)page_table1[3],
-		(unsigned long)page_table1[4],
-		(unsigned long)page_table1[5],
-		(unsigned long)page_table1[6]
-		);
-	
-	/** TODO: /remove */
 	
 	
 	

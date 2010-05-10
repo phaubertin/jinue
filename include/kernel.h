@@ -5,6 +5,11 @@
 #include <stddef.h>
 
 typedef void *addr_t;
+
+typedef unsigned long long physaddr_t;
+
+typedef unsigned long long physsize_t;
+
 typedef unsigned long count_t;
 
 #define kernel_start ((addr_t)start)

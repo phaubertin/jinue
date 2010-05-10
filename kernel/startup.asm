@@ -6,26 +6,39 @@ global start
 extern kernel
 extern e820_map
 extern boot_data
+extern boot_heap
 extern kernel_size
 extern kernel_top
 extern kernel_region_top
 
 start:
+	; point esi and eax to the start of boot sector data
+	; (setup code pushed its start address on stack)
 	pop eax
 	sub eax, 19
 	mov esi, eax
 	
-	; figure out size of kernel image and align to page boundary
+	; figure out size of kernel image
 	add eax, 7      ; field: sysize
 	mov eax, dword [eax]
 	shl eax, 4
 	mov dword [kernel_size], eax
 	
-	add eax, 0x1000 ; page size
+	; align to page boundary
+	mov ebx, eax
+	and ebx, 0xfff
+	jz set_kernel_top ; already aligned
+	add eax, 0x1000   ; page size
 	and eax, ~0xfff
 	
+set_kernel_top:
 	add eax, start
 	mov dword [kernel_top], eax
+	
+	; --------------------------------------
+	; setup boot-time heap and kernel stack
+	; see doc/layout.txt
+	; --------------------------------------
 	
 	; copy boot sector data
 	mov edi, eax
@@ -58,13 +71,26 @@ e820_loop:
 	jmp e820_loop	
 e820_end:
 
-	; align address on a page boundary
+	; setup heap and stack:
+	;  - heap size four times the size of the bios memory map
+	;  - stack size 8kb
 	mov eax, edi
-	add eax, 0x1000
+	mov [boot_heap], eax
+	
+	sub eax, [kernel_top]
+	shl eax, 2             ; size of heap
+	add eax, [kernel_top]
+	add eax, 8192          ; size of stack
+	
+	; align address on a page boundary
+	mov ebx, eax
+	and ebx, 0xfff
+	jz switch_stack  ; already aligned
+	add eax, 0x1000  ; page size
 	and eax, ~0xfff
 	
-	; setup new stack
-	add eax, 8192    ; size of stack
+	; use new stack
+switch_stack:
 	mov esp, eax
 	mov dword [kernel_region_top], eax
 	

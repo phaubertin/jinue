@@ -12,13 +12,11 @@
 #define E820_RESERVED 2
 #define E820_ACPI     3
 
-typedef unsigned long long e820_addr_t;
-typedef unsigned long long e820_size_t;
 typedef unsigned long e820_type_t;
 
 typedef struct {
-	e820_addr_t addr;
-	e820_size_t size;
+	physaddr_t addr;
+	physsize_t size;
 	e820_type_t type;
 } e820_t;
 
@@ -35,9 +33,9 @@ typedef struct {
 } boot_t;
 #pragma pack(pop)
 
-addr_t e820_get_addr(unsigned int idx);
+physaddr_t e820_get_addr(unsigned int idx);
 
-size_t e820_get_size(unsigned int idx);
+physsize_t e820_get_size(unsigned int idx);
 
 e820_type_t e820_get_type(unsigned int idx);
 
@@ -48,6 +46,8 @@ bool e820_is_available(unsigned int idx);
 const char *e820_type_description(e820_type_t type);
 
 boot_t *get_boot_data(void);
+
+void e820_dump(void);
 
 #endif
 

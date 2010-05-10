@@ -1,16 +1,17 @@
 #include <boot.h>   /* includes stdbool.h */
 #include <kernel.h> /* includes stddef.h */
 #include <panic.h>
+#include <printk.h>
 
 e820_t *e820_map;
 addr_t  boot_data;
 
-addr_t e820_get_addr(unsigned int idx) {
-	return (addr_t)(unsigned long)e820_map[idx].addr;
+physaddr_t e820_get_addr(unsigned int idx) {
+	return e820_map[idx].addr;
 }
 
-size_t e820_get_size(unsigned int idx) {
-	return (size_t)e820_map[idx].size;
+physsize_t e820_get_size(unsigned int idx) {
+	return e820_map[idx].size;
 }
 
 e820_type_t e820_get_type(unsigned int idx) {
@@ -58,3 +59,19 @@ boot_t *get_boot_data(void) {
 	return boot;
 }
 
+void e820_dump(void) {
+	unsigned int idx;
+	
+	printk("Dump of the BIOS memory map:\n");
+	printk("  address  size     type\n");
+	while( e820_is_valid(idx) ) {		
+		printk("(%x) %c %x %x %s\n",
+			e820_is_available(idx)?'*':' ',
+			e820_get_addr(idx),
+			e820_get_size(idx),
+			e820_type_description( e820_get_type(idx) )
+		);
+		
+		++idx;
+	}
+}

@@ -14,4 +14,3 @@ root_dev:		dw 0
 
 signature:
 	dw 0xaa55
-

@@ -1,0 +1,40 @@
+The kernel image has the following format:
+
+  +---------------------------------------+
+  |              boot sector              |
+  +---------------------------------------+
+  |              setup code               |
+  +---------------------------------------+
+  |                                       |
+  |      kernel and process manager       |
+  |                                       |
+  +---------------------------------------+
+  |                                       |
+  |                payload                |
+  |                                       |
+  +---------------------------------------+
+
+Once it is loaded in memory by the boot loader and the startup code is
+run (startup.asm), this is the layout in memory:
+
+  +---------------------------------------+ kernel_start (0x100000) 
+  |                                       |
+  |      kernel and process manager       |
+  |                                       |
+  +---------------------------------------+    [kernel image]
+  |                                       |
+  |                payload                |
+  |                                       |
+  +=======================================+ kernel_top
+  |            bios memory map            |
+  +---------------------------------------+
+  |           kernel memory map           |
+  +---------------------------------------+
+  |   available memory map (allocator)    |
+  +---------------------------------------+
+  |                                       |
+  |                . . .                  |    [kernel boot heap/stack]
+  |                                       |
+  +---------------------------------------+
+  |              kernel stack             |
+  +---------------------------------------+ kernel_region_top

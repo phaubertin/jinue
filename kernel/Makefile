@@ -1,8 +1,8 @@
 includes = ../include
 scripts  = ../scripts
 
-OBJS = alloc.o assert.o boot.o kernel.o io.o panic.o printk.o process.o \
-       slab.o startup.o vm.o vm_alloc.o vga.o x86.o
+OBJS = alloc.o assert.o boot.o bootmem.o kernel.o io.o panic.o printk.o \
+	   process.o slab.o startup.o vm.o vm_alloc.o vga.o x86.o
 
 CFLAGS += -g3 -nostdinc -ffreestanding -fno-common -Wall -ansi
 
