@@ -94,6 +94,7 @@ void bootmem_init(void) {
 		}
 	}
 	
+	/* TODO: check "loop nesting" order */
 	
 	/* other, well known, holes */
 	for(ptr = ram_map, prev = &ram_map; ptr != NULL; prev = &ptr->next, ptr = ptr->next) {
