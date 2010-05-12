@@ -42,6 +42,10 @@ void printk(const char *format, ...) {
 			vga_putc( (char)va_arg(ap, int) );
 			break;
 		
+		case 'q':
+			print_hex_q( va_arg(ap, unsigned long long) );
+			break;
+		
 		case 's':
 			vga_print( va_arg(ap, const char *) );
 			break;

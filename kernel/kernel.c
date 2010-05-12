@@ -1,6 +1,7 @@
-#include <alloc.h>
+/*#include <alloc.h>*/
 #include <assert.h>
 #include <boot.h>
+#include <bootmem.h>
 #include <kernel.h> /* includes stddef.h */
 #include <panic.h>
 #include <printk.h>
@@ -56,6 +57,7 @@ void kinit(void) {
 	
 	printk("Kernel size is %u bytes.\n", kernel_size);
 	
+#if 0
 	/* initialize data structures for caches and the global virtual page allocator */
 	slab_create(
 		&global_pool_cache,
@@ -172,6 +174,10 @@ void kinit(void) {
 	
 	/* initialize page frame allocator */
 	alloc_init();
+#endif
+
+	/* initialize page frame allocator */
+	bootmem_init();
 }
 
 void idle(void) {

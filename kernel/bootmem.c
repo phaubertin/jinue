@@ -2,6 +2,7 @@
 #include <bootmem.h>
 #include <kernel.h>
 #include <panic.h>
+#include <printk.h>
 #include <stdbool.h>
 #include <vm.h>
 
@@ -9,98 +10,147 @@ bootmem_t *ram_map;
 bootmem_t *bootmem_root;
 addr_t boot_heap;
 
-bootmem_t *new_ram_map_entry(physaddr_t addr, physsize_t size) {
-	( (bootmem_t *)boot_heap )->next = ram_map;
-	ram_map = (bootmem_t *)boot_heap;
+void new_ram_map_entry(physaddr_t addr, physsize_t size, bootmem_t **head) {
+	( (bootmem_t *)boot_heap )->next = *head;
+	*head = (bootmem_t *)boot_heap;
 	boot_heap += sizeof(bootmem_t);
 	
-	ram_map->addr = addr;
-	ram_map->size = size;
+	(*head)->addr = addr;
+	(*head)->size = size;
+}
+
+void apply_mem_hole(bootmem_t **ptr, physaddr_t hole_addr, physsize_t hole_size, bootmem_t **head) {
+	physaddr_t addr, top;
+	physaddr_t hole_top;
+	physsize_t size;
 	
-	return ram_map;
-}			
+	addr     = (*ptr)->addr;
+	size     = (*ptr)->size;
+	top      = addr + size;
+	hole_top = hole_addr + hole_size;
+	
+	
+	/* case where the block is completely inside the hole */
+	if(addr >= hole_addr && top <= hole_top) {
+		/* remove this block */
+		*ptr = (*ptr)->next;
+		
+		return;
+	}
+	
+	/* case where the block must be split in two because the hole is
+	 * inside it */
+	if(addr < hole_addr && top > hole_top) {
+		/* first block: below the hole */
+		(*ptr)->size = hole_addr - addr;
+		
+		/* second block: above the hole */
+		new_ram_map_entry(hole_top, top - hole_top, head);
+		
+		return;
+	}
+	
+	/* fix size or addr if block overlaps hole */
+	if(addr >= hole_addr && addr < hole_top) {
+		(*ptr)->addr = hole_top;
+		(*ptr)->size = top - hole_top;
+		
+		return;
+	}
+	
+	if(top > hole_addr && top <= hole_top) {
+		(*ptr)->size = hole_addr - addr;
+	}
+}
 
 void bootmem_init(void) {
-	const physaddr_t hole_start = 0xA0000;
-	const physaddr_t hole_top   = (physaddr_t)(unsigned int)kernel_region_top;	
-	
-	physaddr_t addr;
-	physsize_t size;
-	physsize_t remainder;
-	e820_type_t type;
-	bool avail;
+	bootmem_t *ptr, **prev;	
+	physsize_t remainder, size;
 	unsigned int idx;
-	
-	idx = 0;
+
 	ram_map = NULL;
 	
-	/* process the bios memory map to create a map of available memory */
-	while( e820_is_valid(idx) ) {
-		addr = e820_get_addr(idx);
-		size = e820_get_size(idx);
-		type = e820_get_type(idx);
-		avail = e820_is_available(idx);
-		
-		++idx;
-				
-		if( !avail ) {
+	/* copy the available ram entries from the e820 map and insert them
+	 * in a linked list */
+	for(idx = 0; e820_is_valid(idx); ++idx) {
+		if( e820_is_available(idx) ) {
+			new_ram_map_entry(e820_get_addr(idx), e820_get_size(idx), &ram_map);
+		}
+	}
+	
+	/* apply every unavailable entries from the e820 map as holes */
+	for(idx = 0; e820_is_valid(idx); ++idx) {
+		if( e820_is_available(idx) ) {
 			continue;
 		}
 		
-		/* align left block boundary on page boundary */
-		remainder = addr % PAGE_SIZE;
-		if(remainder != 0) {
-			remainder = PAGE_SIZE - remainder;
-			if(size < remainder) {
-				continue;
-			}
-			
-			addr += remainder;
-			size -= remainder;
+		for(ptr = ram_map, prev = &ram_map; ptr != NULL; prev = &ptr->next, ptr = ptr->next) {
+			apply_mem_hole(prev, e820_get_addr(idx), e820_get_size(idx), &ram_map);
 		}
+	}
+	
+	
+	/* other, well known, holes */
+	for(ptr = ram_map, prev = &ram_map; ptr != NULL; prev = &ptr->next, ptr = ptr->next) {
+		/* the kernel image and its heap and stack */
+		apply_mem_hole_range(
+			prev,
+			(physaddr_t)(unsigned int)kernel_start,
+			(physaddr_t)(unsigned int)kernel_region_top,
+			&ram_map );
 		
-		/* align right block boundary on page boundary */
-		remainder = size % PAGE_SIZE;
-		if(remainder != 0) {
-			if(size < remainder) {
-				continue;
-			}
-			
-			size -= remainder;
-		}
+		/* Apparently, the first 64k of memory are corrupted by some BIOSes. 
+		 * It would be nice to try to detect this. In the meantime, let's
+		 * assume the problem is present. */
+		apply_mem_hole_range(prev, 0, 0x10000, &ram_map);
+	}
 		
-		/* case where the block is completely inside the hole */
-		if(addr >= hole_start && addr + size <= hole_top) {
+	/* align blocks on page boundaries */
+	for(ptr = ram_map, prev = &ram_map; ptr != NULL; prev = &ptr->next, ptr = ptr->next) {
+		/* if size of block is less than one page, remove it */
+		if(ptr->size < PAGE_SIZE) {
+			(*prev) = ptr->next;			
 			continue;
 		}
 		
-		/* case where the block must be split in two because the hole is
-		 * inside it */
-		if(addr < hole_start && addr + size > hole_top) {
-			/* first block: below the hole */
-			(void)new_ram_map_entry(addr, hole_start - addr);
+		/* left boundary */
+		remainder = ptr->addr % PAGE_SIZE;
+		if(remainder != 0) {
+			remainder = PAGE_SIZE - remainder;			
+			ptr->addr += remainder;
+			ptr->size -= remainder;
 			
-			/* second block: above the hole */
-			(void)new_ram_map_entry(hole_top, addr + size - hole_top);
+			/* if block is now smaller than one page, it will have to
+			 * be removed when aligning to right boundary */
+			if(ptr->size < PAGE_SIZE) {
+				(*prev) = ptr->next;
+				continue;
+			}
 		}
 		
-		
-		/* fix size or addr if block overlaps hole */
-		if(addr >= hole_start && addr < hole_top) {
-			size -= hole_top - addr;
-			addr = hole_top;
-		}
-		
-		if(addr + size > hole_start && addr + size <= hole_top) {
-			size = addr - hole_start;
-		}
-		
-		/* new block */
-		(void)new_ram_map_entry(addr, size);			
+		/* right boundary */		
+		ptr->size -= ( ptr->size % PAGE_SIZE );
 	}
 	
 	/* at this point, we should have at least one block of available RAM */
 	if( ram_map == NULL ) {
 		panic("no available memory.");
-	}	
+	}
+	
+	/* Let's count and display the total amount of available memory */
+	size = 0;
+	for(ptr = ram_map; ptr != NULL; ptr = ptr->next) {
+		size += ptr->size;
+	}
+	
+	printk("%u kilobytes (%u pages) of memory available.\n", 
+		(unsigned long)(size / 1024), 
+		(unsigned long)(size / PAGE_SIZE) );
+		
+	e820_dump();
+	
+	printk("available memory map:\n");
+	for(ptr = ram_map; ptr != NULL; ptr = ptr->next) {
+		printk("\t%q-%q %q (%u)\n", ptr->addr, ptr->addr + ptr->size, ptr->size, (unsigned long)(ptr->size / 1024));
+	}
 }

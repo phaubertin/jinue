@@ -64,14 +64,13 @@ void e820_dump(void) {
 	
 	printk("Dump of the BIOS memory map:\n");
 	printk("  address  size     type\n");
-	while( e820_is_valid(idx) ) {		
-		printk("(%x) %c %x %x %s\n",
+
+	for(idx = 0; e820_is_valid(idx); ++idx) {		
+		printk("%c %q %q %s\n",
 			e820_is_available(idx)?'*':' ',
 			e820_get_addr(idx),
 			e820_get_size(idx),
 			e820_type_description( e820_get_type(idx) )
 		);
-		
-		++idx;
 	}
 }
