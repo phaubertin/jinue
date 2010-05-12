@@ -7,7 +7,9 @@
 #include <vm.h>
 
 bootmem_t *ram_map;
+
 bootmem_t *bootmem_root;
+
 addr_t boot_heap;
 
 void new_ram_map_entry(physaddr_t addr, physsize_t size, bootmem_t **head) {
@@ -19,7 +21,7 @@ void new_ram_map_entry(physaddr_t addr, physsize_t size, bootmem_t **head) {
 	(*head)->size = size;
 }
 
-void apply_mem_hole(bootmem_t **ptr, physaddr_t hole_addr, physsize_t hole_size, bootmem_t **head) {
+void apply_mem_hole(bootmem_t **ptr, physaddr_t hole_addr, physsize_t hole_size, bootmem_t **head) {	
 	physaddr_t addr, top;
 	physaddr_t hole_top;
 	physsize_t size;
@@ -64,7 +66,10 @@ void apply_mem_hole(bootmem_t **ptr, physaddr_t hole_addr, physsize_t hole_size,
 }
 
 void bootmem_init(void) {
+	const addr_t initial_boot_heap = boot_heap;
+	
 	bootmem_t *ptr, **prev;	
+	bootmem_t *temp_root;
 	physsize_t remainder, size;
 	unsigned int idx;
 
@@ -132,10 +137,26 @@ void bootmem_init(void) {
 		ptr->size -= ( ptr->size % PAGE_SIZE );
 	}
 	
+	/* Entry removal may have left garbage on the heap (bootmem_t
+	 * structures which were allocated on the heap but are no longer
+	 * linked). Let's clean up. */
+	temp_root = NULL;
+	
+	for(ptr = ram_map; ptr != NULL; ptr = ptr->next) {
+		new_ram_map_entry(ptr->addr, ptr->size, &temp_root);
+	}
+	
+	ram_map   = NULL;
+	boot_heap = initial_boot_heap;
+	
+	for(ptr = temp_root; ptr != NULL; ptr = ptr->next) {
+		new_ram_map_entry(ptr->addr, ptr->size, &ram_map);
+	}	
+	
 	/* at this point, we should have at least one block of available RAM */
 	if( ram_map == NULL ) {
 		panic("no available memory.");
-	}
+	}	
 	
 	/* Let's count and display the total amount of available memory */
 	size = 0;
@@ -146,11 +167,11 @@ void bootmem_init(void) {
 	printk("%u kilobytes (%u pages) of memory available.\n", 
 		(unsigned long)(size / 1024), 
 		(unsigned long)(size / PAGE_SIZE) );
-		
-	e820_dump();
 	
-	printk("available memory map:\n");
+	/* make a copy of the available memory map for the allocator */
+	bootmem_root = NULL;
+	
 	for(ptr = ram_map; ptr != NULL; ptr = ptr->next) {
-		printk("\t%q-%q %q (%u)\n", ptr->addr, ptr->addr + ptr->size, ptr->size, (unsigned long)(ptr->size / 1024));
+		new_ram_map_entry(ptr->addr, ptr->size, &bootmem_root);
 	}
 }
