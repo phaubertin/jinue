@@ -1,3 +1,5 @@
+%define STACK_SIZE 8192
+
 bits 32
 
 global halt
@@ -7,6 +9,7 @@ extern kernel
 extern e820_map
 extern boot_data
 extern boot_heap
+extern kernel_stack
 extern kernel_size
 extern kernel_top
 extern kernel_region_top
@@ -71,33 +74,32 @@ e820_loop:
 	jmp e820_loop	
 e820_end:
 
-	; setup heap and stack:
-	;  - heap size four times the size of the bios memory map
-	;  - stack size 8kb
+	; setup heap, size is four times the size of the bios memory map
 	mov eax, edi
 	mov [boot_heap], eax
 	
 	sub eax, [kernel_top]
-	shl eax, 2             ; size of heap
+	shl eax, 2             ; size of heap * 4
 	add eax, [kernel_top]
-	add eax, 8192          ; size of stack
 	
 	; align address on a page boundary
 	mov ebx, eax
 	and ebx, 0xfff
-	jz switch_stack  ; already aligned
+	jz setup_stack  ; already aligned
 	add eax, 0x1000  ; page size
 	and eax, ~0xfff
 	
-	; use new stack
-switch_stack:
+	; setup stack and use it
+setup_stack:
+	mov [kernel_stack], eax
+	add eax, STACK_SIZE
 	mov esp, eax
 	mov dword [kernel_region_top], eax
 	
 	xor eax, eax
 	push eax
-	push eax		; End of call stack (useful for debugging)
-	mov ebp, esp	; Initialize frame pointer
+	push eax		; null-terminate call stack (useful for debugging)
+	mov ebp, esp	; initialize frame pointer
 	
 	call kernel
 
@@ -105,4 +107,3 @@ halt:
 	cli
 	hlt
 	jmp halt
-

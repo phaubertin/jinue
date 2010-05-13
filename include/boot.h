@@ -33,6 +33,7 @@ typedef struct {
 } boot_t;
 #pragma pack(pop)
 
+
 physaddr_t e820_get_addr(unsigned int idx);
 
 physsize_t e820_get_size(unsigned int idx);

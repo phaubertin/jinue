@@ -1,7 +1,11 @@
 #ifndef _JINUE_KERNEL_X86_H_
 #define _JINUE_KERNEL_X86_H_
 
-#define X86_FLAG_PG 31
+#define X86_FLAG_PG (1<<31)
+
+void cli(void);
+
+void sti(void);
 
 void invalidate_tlb(addr_t vaddr);
 

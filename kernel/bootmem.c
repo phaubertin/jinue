@@ -1,16 +1,18 @@
 #include <boot.h>
+#include <alloc.h>
 #include <bootmem.h>
 #include <kernel.h>
 #include <panic.h>
 #include <printk.h>
-#include <stdbool.h>
 #include <vm.h>
+
 
 bootmem_t *ram_map;
 
 bootmem_t *bootmem_root;
 
 addr_t boot_heap;
+
 
 void new_ram_map_entry(physaddr_t addr, physsize_t size, bootmem_t **head) {
 	( (bootmem_t *)boot_heap )->next = *head;
@@ -72,11 +74,11 @@ void bootmem_init(void) {
 	bootmem_t *temp_root;
 	physsize_t remainder, size;
 	unsigned int idx;
-
-	ram_map = NULL;
 	
 	/* copy the available ram entries from the e820 map and insert them
 	 * in a linked list */
+	ram_map = NULL;
+	
 	for(idx = 0; e820_is_valid(idx); ++idx) {
 		if( e820_is_available(idx) ) {
 			new_ram_map_entry(e820_get_addr(idx), e820_get_size(idx), &ram_map);
@@ -94,11 +96,11 @@ void bootmem_init(void) {
 		}
 	}
 	
-	/* TODO: check "loop nesting" order */
+	/** TODO: check "loop nesting" order */
 	
 	/* other, well known, holes */
 	for(ptr = ram_map, prev = &ram_map; ptr != NULL; prev = &ptr->next, ptr = ptr->next) {
-		/* the kernel image and its heap and stack */
+		/* the kernel image and its heap and stack early-allocated pages */
 		apply_mem_hole_range(
 			prev,
 			(physaddr_t)(unsigned int)kernel_start,

@@ -109,7 +109,9 @@ void vm_vfree_block(vm_alloc_t *pool, addr_t addr, size_t size) {
 		if(pool->cache->vm_allocator == pool) {
 			if(pool->cache->empty == NULL && pool->cache->partial == NULL) {
 				/* allocate a physical page for slab */
-				phys_page = alloc(PAGE_SIZE);
+				/* phys_page = alloc(PAGE_SIZE); */
+				/** TODO: fix this */
+				phys_page = (addr_t)alloc_page();
 				
 				/* map page */
 				vm_map(addr, phys_page, VM_FLAG_KERNEL);
@@ -148,8 +150,11 @@ addr_t vm_alloc(vm_alloc_t *pool, unsigned long flags) {
 	
 	/** TODO: handle the NULL pointer */
 	
+	
 	vaddr = vm_valloc(pool);
-	paddr = alloc(PAGE_SIZE);
+	/*paddr = alloc(PAGE_SIZE);*/
+	/** TODO: fix this (alloc_page)  */
+	paddr = (addr_t)alloc_page();
 	vm_map(vaddr, paddr, flags);
 	
 	return vaddr;
@@ -162,6 +167,8 @@ addr_t vm_alloc(vm_alloc_t *pool, unsigned long flags) {
 	@param pool data structure managing the virtual memory region to which the page is returned
 	@addr address of page to free
 */
+void vm_free(vm_alloc_t *pool, addr_t addr);
+#if 0
 void vm_free(vm_alloc_t *pool, addr_t addr) {
 	addr_t paddr;
 	
@@ -174,4 +181,4 @@ void vm_free(vm_alloc_t *pool, addr_t addr) {
 	vm_vfree(pool, addr);
 	free(paddr);
 }
-
+#endif

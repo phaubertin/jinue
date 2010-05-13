@@ -28,7 +28,9 @@ void vm_map(addr_t vaddr, addr_t paddr, unsigned long flags) {
 	/* check if page table must be created */
 	if( !(*pde & VM_FLAG_PRESENT) ) {
 		/* allocate a new page table */
-		page_table = alloc(PAGE_SIZE);
+		/* page_table = alloc(PAGE_SIZE);*/
+		/** TODO: fix this */
+		page_table = (addr_t)alloc_page();		
 		
 		/* map page table in the region of memory reserved for that purpose */
 		pte = PAGE_TABLE_PTE_OF(vaddr);
