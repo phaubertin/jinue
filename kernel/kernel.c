@@ -40,13 +40,12 @@ void kinit(void) {
 	pte_t *page_table1, *page_table2, *page_directory;
 	pte_t *pte;
 	addr_t addr;
+	gdt_t gdt;
+	gdt_info_t *gdt_info;
 	unsigned long idx, idy;
 	unsigned long temp;
 	
-	/* say hello */
-	vga_init();	
-	printk("Kernel started.\n");
-
+	
 	/** ASSERTION: we assume the kernel starts on a page boundary */
 	assert( PAGE_OFFSET_OF( (unsigned int)kernel_start ) == 0 );
 	
@@ -57,9 +56,35 @@ void kinit(void) {
 	/** ASSERTION: we assume kernel_start is aligned with a page directory entry boundary */
 	assert( PAGE_TABLE_OFFSET_OF(PAGE_DIRECTORY_ADDR) == 0 );
 	assert( PAGE_OFFSET_OF(PAGE_DIRECTORY_ADDR) == 0 );
+		
 	
+	/* say hello */
+	vga_init();	
+	printk("Kernel started.\n");
 	printk("Kernel size is %u bytes.\n", kernel_size);
 	
+	/* setup a new GDT */
+	gdt_info = (gdt_info_t *)early_alloc_page();
+	gdt = (gdt_t)&gdt_info[2];
+	
+	gdt[GDT_NULL] = SEG_DESCRIPTOR(0, 0, 0);
+	gdt[GDT_KERNEL_CODE] =
+		SEG_DESCRIPTOR(0, 0xfffff, SEG_TYPE_CODE | SEG_FLAG_KERNEL | SEG_FLAG_NORMAL);
+	gdt[GDT_KERNEL_DATA] =
+		SEG_DESCRIPTOR(0, 0xfffff, SEG_TYPE_DATA | SEG_FLAG_KERNEL | SEG_FLAG_NORMAL);
+	gdt[GDT_USER_CODE] =
+		SEG_DESCRIPTOR(0, 0xfffff, SEG_TYPE_CODE | SEG_FLAG_USER   | SEG_FLAG_NORMAL);
+	gdt[GDT_USER_DATA] =
+		SEG_DESCRIPTOR(0, 0xfffff, SEG_TYPE_DATA | SEG_FLAG_USER   | SEG_FLAG_NORMAL);
+	
+	gdt_info->addr  = gdt;
+	gdt_info->limit = GDT_END * 8 - 1;
+	
+	lgdt(gdt_info);
+	set_cs( SEG_SELECTOR(GDT_KERNEL_CODE, 0) );
+	set_ss( SEG_SELECTOR(GDT_KERNEL_DATA, 0) );
+	set_data_segments( SEG_SELECTOR(GDT_KERNEL_DATA, 0) );
+		
 	/* initialize the page allocation stack */
 	page_stack_addr  = (physaddr_t *)early_alloc_page();
 	page_stack_top   = page_stack_addr + PAGE_SIZE;
@@ -85,6 +110,14 @@ void kinit(void) {
 		page_directory[idx] = 0;
 		++idx;
 	}
+	
+	/* perform 1:1 mapping of text video memory */
+	page_table1 = 
+		(pte_t *)page_directory[ PAGE_DIRECTORY_OFFSET_OF(VGA_TEXT_VID_BASE) ];
+	page_table1 = (pte_t *)( (unsigned int)page_table1 & ~PAGE_MASK  );
+	
+	pte = (pte_t *)&page_table1[ PAGE_TABLE_OFFSET_OF(VGA_TEXT_VID_BASE) ];
+	*pte = (pte_t)VGA_TEXT_VID_BASE | VM_FLAG_PRESENT | VM_FLAG_KERNEL | VM_FLAG_READ_WRITE;
 	
 	/** below this point, it is no longer safe to call early_alloc_page() */
 	

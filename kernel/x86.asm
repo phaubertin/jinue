@@ -29,6 +29,18 @@ invalidate_tlb:
 	ret
 
 ; ------------------------------------------------------------------------------
+; FUNCTION: lgdt
+; C PROTOTYPE: void lgdt(gdt_info_t *gdt_info)
+; ------------------------------------------------------------------------------
+	global lgdt
+lgdt:
+	mov eax, [esp+4]	; First param: vaddr
+	add eax, 2          ; gdt_info_t structure contains two bytes of
+	                    ; padding for alignment
+	lgdt [eax]
+	ret
+
+; ------------------------------------------------------------------------------
 ; FUNCTION: get_cr0
 ; C PROTOTYPE: unsigned long get_cr0(void)
 ; ------------------------------------------------------------------------------
@@ -135,3 +147,77 @@ set_cr4:
 	mov cr4, eax
 	ret
 
+; ------------------------------------------------------------------------------
+; FUNCTION: set_cs
+; C PROTOTYPE: void set_cs(unsigned long val)
+; ------------------------------------------------------------------------------
+	global set_cs
+set_cs:
+	mov eax, [esp+4]	; First param: val
+	pop ebx             ; return address
+	push eax
+	push ebx 
+	retf
+
+; ------------------------------------------------------------------------------
+; FUNCTION: set_ds
+; C PROTOTYPE: void set_ds(unsigned long val)
+; ------------------------------------------------------------------------------
+	global set_ds
+set_ds:
+	mov eax, [esp+4]	; First param: val
+	mov ds, eax
+	ret
+
+; ------------------------------------------------------------------------------
+; FUNCTION: set_es
+; C PROTOTYPE: void set_es(unsigned long val)
+; ------------------------------------------------------------------------------
+	global set_es
+set_es:
+	mov eax, [esp+4]	; First param: val
+	mov es, eax
+	ret
+
+; ------------------------------------------------------------------------------
+; FUNCTION: set_fs
+; C PROTOTYPE: void set_fs(unsigned long val)
+; ------------------------------------------------------------------------------
+	global set_fs
+set_fs:
+	mov eax, [esp+4]	; First param: val
+	mov fs, eax
+	ret
+
+; ------------------------------------------------------------------------------
+; FUNCTION: set_gs
+; C PROTOTYPE: void set_gs(unsigned long val)
+; ------------------------------------------------------------------------------
+	global set_gs
+set_gs:
+	mov eax, [esp+4]	; First param: val
+	mov gs, eax
+	ret
+
+; ------------------------------------------------------------------------------
+; FUNCTION: set_ss
+; C PROTOTYPE: void set_ss(unsigned long val)
+; ------------------------------------------------------------------------------
+	global set_ss
+set_ss:
+	mov eax, [esp+4]	; First param: val
+	mov ss, eax
+	ret
+
+; ------------------------------------------------------------------------------
+; FUNCTION: set_data_segments
+; C PROTOTYPE: void set_data_segments(unsigned long val)
+; ------------------------------------------------------------------------------
+	global set_data_segments
+set_data_segments:
+	mov eax, [esp+4]	; First param: val
+	mov ds, eax
+	mov es, eax
+	mov fs, eax
+	mov gs, eax
+	ret
