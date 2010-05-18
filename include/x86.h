@@ -5,6 +5,13 @@
 
 #define X86_FLAG_PG (1<<31)
 
+typedef struct {
+	unsigned long eax;
+	unsigned long ebx;
+	unsigned long ecx;
+	unsigned long edx;
+} x86_regs_t;
+
 void cli(void);
 
 void sti(void);
@@ -12,6 +19,8 @@ void sti(void);
 void invalidate_tlb(addr_t vaddr);
 
 void lgdt(gdt_info_t *gdt_info);
+
+unsigned long cpuid(x86_regs_t *regs);
 
 unsigned long get_cr0(void);
 

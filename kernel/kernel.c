@@ -44,6 +44,8 @@ void kinit(void) {
 	gdt_info_t *gdt_info;
 	unsigned long idx, idy;
 	unsigned long temp;
+	x86_regs_t regs;
+	char str[13];
 	
 	
 	/** ASSERTION: we assume the kernel starts on a page boundary */
@@ -62,6 +64,17 @@ void kinit(void) {
 	vga_init();	
 	printk("Kernel started.\n");
 	printk("Kernel size is %u bytes.\n", kernel_size);
+	
+	/* get cpu info */
+	regs.eax = 0;
+	(void)cpuid(&regs);
+	*(unsigned long *)&str[0] = regs.ebx;
+	*(unsigned long *)&str[4] = regs.edx;
+	*(unsigned long *)&str[8] = regs.ecx;
+	str[12] = '\0';
+	
+	printk("Processor is a: %s\n", str);
+	
 	
 	/* setup a new GDT */
 	gdt_info = (gdt_info_t *)early_alloc_page();

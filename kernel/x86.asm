@@ -41,6 +41,30 @@ lgdt:
 	ret
 
 ; ------------------------------------------------------------------------------
+; FUNCTION: cpuid
+; C PROTOTYPE: unsigned long cpuid(x86_regs_t *regs)
+; ------------------------------------------------------------------------------
+	global cpuid
+cpuid:
+	mov edi, [esp+4]	; First param: regs
+	
+	mov eax, [edi]     ; regs->eax
+	mov ebx, [edi+4]   ; regs->ebx
+	mov ecx, [edi+8]   ; regs->ecx
+	mov edx, [edi+12]  ; regs->edx
+	
+	cpuid
+	
+	mov edi, [esp+4]	; First param: regs
+	
+	mov [edi], eax
+	mov [edi+4], ebx
+	mov [edi+8], ecx
+	mov [edi+12], edx		
+	
+	ret
+
+; ------------------------------------------------------------------------------
 ; FUNCTION: get_cr0
 ; C PROTOTYPE: unsigned long get_cr0(void)
 ; ------------------------------------------------------------------------------
