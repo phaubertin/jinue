@@ -38,7 +38,7 @@ void printk(const char *format, ...) {
 			break;
 		
 		case 'c':
-			vga_putc( va_arg(ap, char) );
+			vga_putc( (char)va_arg(ap, int) );
 			break;
 		
 		case 'q':

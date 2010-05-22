@@ -15,6 +15,7 @@ install: $(kernel_img)
 .PHONY: clean
 clean:
 	make -C kernel clean
+	make -C proc clean
 	-rm -f $(unclean)
 
 # ----- documentation

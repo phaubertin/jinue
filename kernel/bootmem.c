@@ -11,8 +11,23 @@ bootmem_t *ram_map;
 
 bootmem_t *bootmem_root;
 
+bootmem_t *bootmem_cur;
+
 addr_t boot_heap;
 
+physaddr_t bootmem_alloc_page(void) {
+	physaddr_t page;
+	
+	page = bootmem_cur->addr + bootmem_cur->size - PAGE_SIZE;
+	
+	bootmem_cur->size -= PAGE_SIZE;
+	if(bootmem_cur->size < PAGE_SIZE) {
+		/* there is no more pages available in this region, select another */
+		bootmem_set_cur();
+	}
+	
+	return page;
+}
 
 void new_ram_map_entry(physaddr_t addr, physsize_t size, bootmem_t **head) {
 	( (bootmem_t *)boot_heap )->next = *head;
@@ -65,6 +80,65 @@ void apply_mem_hole(bootmem_t **ptr, physaddr_t hole_addr, physsize_t hole_size,
 	if(top > hole_addr && top <= hole_top) {
 		(*ptr)->size = hole_addr - addr;
 	}
+}
+
+void bootmem_set_cur(void) {
+	const physaddr_t limit16M = 0x1000000LL;  /* 16M */
+	const physaddr_t limit4G  = 0x100000000LL; /*  4G */
+	
+	bootmem_t *cur, *ptr, **prev;
+	int czone, pzone;
+	
+	/* find entries which need to be removed because they are empty */
+	for(ptr = bootmem_root, prev = &bootmem_root; ptr != NULL; prev = &ptr->next, ptr = ptr->next) {
+		if(ptr->size < PAGE_SIZE) {
+			(*prev) = ptr->next;			
+			continue;
+		}
+	}
+	
+	/* select the best region for bootmem_cur */	
+	cur = bootmem_root;
+	if(cur->addr < limit16M) {
+		czone = 0;
+	}
+	else if(cur->addr < limit4G) {
+		czone = 1;
+	}
+	else {
+		czone = 2;
+	}
+	
+	for(ptr = cur->next; ptr != NULL; ptr = ptr->next) {
+		if(ptr->addr < limit16M) {
+			pzone = 0;
+		}
+		else if(ptr->addr < limit4G) {
+			pzone = 1;
+		}
+		else {
+			pzone = 2;
+		}
+		
+		if(pzone > czone) {
+			cur = ptr;
+			continue;
+		}
+		
+		if(pzone < czone) {
+			continue;
+		}
+		
+		if(ptr->size > cur->size) {
+			cur = ptr;
+		}
+	}
+	
+	if(cur == NULL)	{
+		panic("out of memory");
+	}
+	
+	bootmem_cur = cur;
 }
 
 void bootmem_init(void) {
@@ -177,4 +251,7 @@ void bootmem_init(void) {
 	for(ptr = ram_map; ptr != NULL; ptr = ptr->next) {
 		new_ram_map_entry(ptr->addr, ptr->size, &bootmem_root);
 	}
+	
+	/* choose a region for boot-time page allocation */
+	bootmem_set_cur();
 }
