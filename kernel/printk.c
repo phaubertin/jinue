@@ -38,8 +38,7 @@ void printk(const char *format, ...) {
 			break;
 		
 		case 'c':
-			/* promotion, promotion */
-			vga_putc( (char)va_arg(ap, int) );
+			vga_putc( va_arg(ap, char) );
 			break;
 		
 		case 'q':

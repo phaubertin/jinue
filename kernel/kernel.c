@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <boot.h>
 #include <bootmem.h>
+#include <elf.h>
 #include <kernel.h> /* includes stddef.h */
 #include <panic.h>
 #include <printk.h>
@@ -64,6 +65,10 @@ void kinit(void) {
 	vga_init();	
 	printk("Kernel started.\n");
 	printk("Kernel size is %u bytes.\n", kernel_size);
+	if(proc_elf == ELF_MAGIC) {
+		printk("Found process manager ELF binary at: 0x%x\n", (unsigned int)&proc_elf);
+	}
+	
 	
 	/* get cpu info */
 	regs.eax = 0;

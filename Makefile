@@ -34,11 +34,16 @@ kernel:
 $(kernel): kernel
 	true
 
-$(kernel_bin): $(kernel)
-	$(LD) -T scripts/kernel-bin.lds -o $@ $<
+$(kernel_bin): $(kernel) proc
+	$(LD) -T scripts/kernel-bin.lds -o $@
 
 $(kernel_img): $(kernel_bin) bin/boot bin/setup
 	$(LD) -T scripts/image.lds -o $@
+
+# ----- process manager
+.PHONY: proc
+proc:
+	make -C proc
 
 # ----- setup code, boot sector, etc.
 bin/boot: boot/boot.asm boot/boot.inc

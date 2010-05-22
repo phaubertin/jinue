@@ -7,6 +7,8 @@ SECTIONS {
 		startup.o(.text)
 		*(.text)
 		*(.text.*)
+		*(.rodata)
+		*(.rodata.*)
 		
 		. = ALIGN(16);
 	}
@@ -14,8 +16,6 @@ SECTIONS {
 	.data : {
 		*(.data)
 		*(.data.*)
-		*(.rodata)
-		*(.rodata.*)
 		
 		. = ALIGN(16);
 	}
