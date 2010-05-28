@@ -100,28 +100,35 @@ void bootmem_set_cur(void) {
 	/* select the best region for bootmem_cur */	
 	cur = bootmem_root;
 	if(cur->addr < limit16M) {
-		czone = 0;
-	}
-	else if(cur->addr < limit4G) {
+		/*czone = 0;*/
 		czone = 1;
 	}
-	else {
+	else if(cur->addr < limit4G) {
+		/* czone = 1; */
 		czone = 2;
+	}
+	else {
+		/* czone = 2; */
+		czone = 0;
 	}
 	
 	for(ptr = cur->next; ptr != NULL; ptr = ptr->next) {
 		if(ptr->addr < limit16M) {
-			pzone = 0;
-		}
-		else if(ptr->addr < limit4G) {
+			/* pzone = 0; */
 			pzone = 1;
 		}
-		else {
+		else if(ptr->addr < limit4G) {
+			/* pzone = 1; */
 			pzone = 2;
+		}
+		else {
+			/* pzone = 2; */
+			pzone = 0;
 		}
 		
 		if(pzone > czone) {
 			cur = ptr;
+			czone = pzone;
 			continue;
 		}
 		
@@ -130,11 +137,13 @@ void bootmem_set_cur(void) {
 		}
 		
 		if(ptr->size > cur->size) {
+			czone = pzone;
 			cur = ptr;
 		}
 	}
 	
-	if(cur == NULL)	{
+	/* if(cur == NULL)	{ */
+	if(cur == NULL || czone == 0)	{
 		panic("out of memory");
 	}
 	
@@ -254,4 +263,7 @@ void bootmem_init(void) {
 	
 	/* choose a region for boot-time page allocation */
 	bootmem_set_cur();
+	
+	/* select the boot-time page allocator */
+	__alloc_page = &bootmem_alloc_page;
 }

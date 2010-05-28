@@ -69,6 +69,9 @@ void kinit(void) {
 		printk("Found process manager ELF binary at: 0x%x\n", (unsigned int)&proc_elf);
 	}
 	
+	/* alloc_page() should not be called yet */
+	__alloc_page = &do_not_call;
+	
 	
 	/* get cpu info */
 	regs.eax = 0;
@@ -103,12 +106,6 @@ void kinit(void) {
 	set_ss( SEG_SELECTOR(GDT_KERNEL_DATA, 0) );
 	set_data_segments( SEG_SELECTOR(GDT_KERNEL_DATA, 0) );
 		
-	/* initialize the page allocation stack */
-	page_stack_addr  = (physaddr_t *)early_alloc_page();
-	page_stack_top   = page_stack_addr + PAGE_SIZE;
-	page_stack       = page_stack_top;
-	page_stack_count = 0;
-	
 	/* Allocate page directory for the process manager. Since paging is
 	 * not yet activated, virtual and physical addresses are the same. */
 	page_directory = (pte_t *)early_alloc_page();
@@ -135,6 +132,8 @@ void kinit(void) {
 	page_table1 = (pte_t *)( (unsigned int)page_table1 & ~PAGE_MASK  );
 	
 	pte = (pte_t *)&page_table1[ PAGE_TABLE_OFFSET_OF(VGA_TEXT_VID_BASE) ];
+	*pte = (pte_t)VGA_TEXT_VID_BASE | VM_FLAG_PRESENT | VM_FLAG_KERNEL | VM_FLAG_READ_WRITE;
+	++pte;
 	*pte = (pte_t)VGA_TEXT_VID_BASE | VM_FLAG_PRESENT | VM_FLAG_KERNEL | VM_FLAG_READ_WRITE;
 	
 	/** below this point, it is no longer safe to call early_alloc_page() */
