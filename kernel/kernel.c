@@ -43,6 +43,7 @@ void kinit(void) {
 	addr_t addr;
 	gdt_t gdt;
 	gdt_info_t *gdt_info;
+	elf_prog_header_t *phdr;
 	unsigned long idx, idy;
 	unsigned long temp;
 	x86_regs_t regs;
@@ -60,18 +61,13 @@ void kinit(void) {
 	assert( PAGE_TABLE_OFFSET_OF(PAGE_DIRECTORY_ADDR) == 0 );
 	assert( PAGE_OFFSET_OF(PAGE_DIRECTORY_ADDR) == 0 );
 		
+	/* alloc_page() should not be called yet -- use early_alloc_page() instead */
+	__alloc_page = &do_not_call;
 	
 	/* say hello */
 	vga_init();	
 	printk("Kernel started.\n");
-	printk("Kernel size is %u bytes.\n", kernel_size);
-	if(proc_elf == ELF_MAGIC) {
-		printk("Found process manager ELF binary at: 0x%x\n", (unsigned int)&proc_elf);
-	}
-	
-	/* alloc_page() should not be called yet */
-	__alloc_page = &do_not_call;
-	
+	printk("Kernel size is %u bytes.\n", kernel_size);	
 	
 	/* get cpu info */
 	regs.eax = 0;
@@ -176,6 +172,15 @@ void kinit(void) {
 	
 	/* initialize boot-time page frame allocator */
 	bootmem_init();
+	
+	if( *(unsigned long *)&proc_elf != ELF_MAGIC ) {
+		panic("Process manager not found");
+	}
+	printk("Found process manager ELF binary at: 0x%x\n", (unsigned int)&proc_elf);
+	phdr = (elf_prog_header_t *)((void *)&proc_elf + proc_elf.e_phoff); 
+	for(idx = 0; idx < proc_elf.e_phnum; ++idx) {
+		printk("%u %x\n", phdr[idx].p_type, phdr[idx].p_paddr);
+	}
 	
 	/* activate paging */
 	set_cr3( (unsigned long)page_directory );

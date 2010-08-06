@@ -3,6 +3,7 @@
 
 #include <startup.h>
 #include <stddef.h>
+#include <elf.h>
 
 typedef void *addr_t;
 
@@ -17,7 +18,7 @@ extern addr_t kernel_top;
 extern addr_t kernel_region_top;
 extern size_t kernel_size;
 extern addr_t kernel_stack;
-extern unsigned long proc_elf;
+extern elf_header_t proc_elf;
 
 void kernel(void);
 void kinit(void);
