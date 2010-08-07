@@ -173,15 +173,6 @@ void kinit(void) {
 	/* initialize boot-time page frame allocator */
 	bootmem_init();
 	
-	if( *(unsigned long *)&proc_elf != ELF_MAGIC ) {
-		panic("Process manager not found");
-	}
-	printk("Found process manager ELF binary at: 0x%x\n", (unsigned int)&proc_elf);
-	phdr = (elf_prog_header_t *)((void *)&proc_elf + proc_elf.e_phoff); 
-	for(idx = 0; idx < proc_elf.e_phnum; ++idx) {
-		printk("%u %x\n", phdr[idx].p_type, phdr[idx].p_paddr);
-	}
-	
 	/* activate paging */
 	set_cr3( (unsigned long)page_directory );
 	
@@ -189,7 +180,75 @@ void kinit(void) {
 	temp |= X86_FLAG_PG;
 	set_cr0x(temp);
 	
-	printk("Still here.\n");
+	printk("Paging activated\n");
+	
+	/* check that Process manager binary is valid */
+	if( *(unsigned long *)&proc_elf != ELF_MAGIC ) {
+		panic("Process manager not found");
+	}
+	printk("Found process manager binary at: 0x%x\n", (unsigned int)&proc_elf);
+		
+	/* CHECK 1: file size */
+	if((unsigned long)&proc_elf_end < (unsigned long)&proc_elf) {
+		panic("Malformed boot image");
+	}
+	
+	if((unsigned int)&proc_elf_end - (unsigned int)&proc_elf < sizeof(elf_header_t)) {
+		panic("Too small to be an ELF binary");
+	}
+	
+	printk("Size of process manager binary: %u\n", (unsigned int)&proc_elf_end - (unsigned int)&proc_elf);
+	
+	/* CHECK 2: 32-bit objects */
+	if(proc_elf.e_ident[ELF_EI_CLASS] != ELFCLASS32) {
+		panic("Bad file class");
+	}
+	
+	/* CHECK 3: endianess */
+	if(proc_elf.e_ident[ELF_EI_DATA] != ELFDATA2LSB) {
+		panic("Bad endianess");
+	}
+	
+	/* CHECK 4: version */
+	if(proc_elf.e_version != 1 || proc_elf.e_ident[ELF_EI_VERSION] != 1) {
+		panic("Not ELF version 1");
+	}
+	
+	/* CHECK 5: machine */
+	if(proc_elf.e_machine != ELF_EM_386) {
+		panic("This process manager binary does not target the x86 architecture");
+	}
+	
+	/* CHECK 6: the 32-bit Intel architecture defines no flags */
+	if(proc_elf.e_flags != 0) {
+		panic("Invalid flags specified");
+	}
+	
+	/* CHECK 7: file type is executable */
+	if(proc_elf.e_type != ELF_ET_EXEC) {
+		panic("process manager binary is not an an executable");
+	}
+	
+	/* CHECK 8: must have a program header */
+	if(proc_elf.e_phoff == 0 || proc_elf.e_phnum == 0) {
+		panic("No program headers");
+	}
+	
+	/* CHECK 9: program header entry size */
+	if(proc_elf.e_phentsize != sizeof(elf_prog_header_t)) {
+		panic("Unsupported program header size");
+	}
+	
+	/*phdr = (elf_prog_header_t *)((void *)&proc_elf + proc_elf.e_phoff); 
+	for(idx = 0; idx < proc_elf.e_phnum; ++idx) {
+		printk("%u %x\n", phdr[idx].p_type, phdr[idx].p_paddr);
+	}*/
+	
+	printk("process manager loaded.\n");
+	
+	
+	
+	
 	
 	/*idx = *(unsigned long *)0x80000000;*/
 	

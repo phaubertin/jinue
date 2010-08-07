@@ -19,6 +19,7 @@ SECTIONS {
 	proc : {
 		proc/proc
 		
+		proc_elf_end = ABSOLUTE(.);
 		. = ALIGN(16);
 	}
 	
