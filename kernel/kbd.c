@@ -7,7 +7,7 @@ void any_key(void) {
 	bool ignore;
 	
 	/* prompt */
-	printk("(press enter)\n");
+	printk("(press enter)");
 	
 	/* wait for key, ignore break codes */
 	ignore = false;
@@ -32,4 +32,7 @@ void any_key(void) {
 			break;
 		}
 	}
+	
+	/* advance cursor */
+	printk("\n");
 }

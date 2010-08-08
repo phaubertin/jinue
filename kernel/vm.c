@@ -15,7 +15,6 @@ void vm_map(addr_t vaddr, physaddr_t paddr, unsigned long flags) {
 	pte_t *pte, *pde;
 	addr_t page_table;
 	int idx;
-	volatile unsigned long test;
 	
 	/** ASSERTION: we assume vaddr is aligned on a page boundary */
 	assert( PAGE_OFFSET_OF(vaddr) == 0 );
@@ -48,7 +47,7 @@ void vm_map(addr_t vaddr, physaddr_t paddr, unsigned long flags) {
 		}
 		
 		/* link to page table from page directory */
-		if(vaddr < PLIMIT) {
+		if(vaddr < (addr_t)PLIMIT) {
 			*pde = (pte_t)page_table | VM_FLAG_KERNEL | VM_FLAG_READ_WRITE | VM_FLAG_PRESENT;
 		}
 		else {
