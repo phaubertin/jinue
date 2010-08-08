@@ -10,6 +10,8 @@ SECTIONS {
 		kernel/kernel(.data)
 		kernel/kernel(.bss)
 		
+		kernel_end = ABSOLUTE(.);
+		
 		. = ALIGN(16);
 	}
 	

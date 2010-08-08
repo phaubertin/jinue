@@ -1,9 +1,11 @@
 includes = ../include
 scripts  = ../scripts
+kernel   = ../kernel
 
-OBJS = proc.o
+OBJS  = proc.o
+KOBJS =  $(kernel)/io.o $(kernel)/printk.o $(kernel)/vga.o
 
-CFLAGS  += -nostdinc -ffreestanding -static -Wall -ansi
+CFLAGS  += -O3 -nostdinc -ffreestanding -static -ansi -Wall -Werror=implicit-function-declaration -Werror=uninitialized
 LDFLAGS += -static -nostdlib -e main
 
 .PHONY: all
@@ -13,7 +15,13 @@ all: proc
 clean:
 	-rm -f proc $(OBJS)
 
-proc: $(OBJS)
+$(KOBJS):
+	make -C ../kernel
+
+proc: $(OBJS) $(KOBJS)
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c -I$(includes) -o $@ $<
 
 %.o: %.asm
 	nasm -f elf -o $@ $<

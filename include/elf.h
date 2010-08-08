@@ -6,75 +6,75 @@
 
 
 /** File identification - byte 0 (0x7f) */
-#define ELF_EI_MAG0 0
+#define EI_MAG0 0
 
 /** File identification - byte 1 ('E') */
-#define ELF_EI_MAG1 1
+#define EI_MAG1 1
 
 /** File identification - byte 2 ('L') */
-#define ELF_EI_MAG2 2
+#define EI_MAG2 2
 
 /** File identification - byte 3 ('F') */
-#define ELF_EI_MAG3 3
+#define EI_MAG3 3
 
 /** File class */
-#define ELF_EI_CLASS 4
+#define EI_CLASS 4
 
 /** Data encoding */
-#define ELF_EI_DATA 5
+#define EI_DATA 5
 
 /** File version  */
-#define ELF_EI_VERSION 6
+#define EI_VERSION 6
 
 /** Start of padding bytes */
-#define ELF_EI_PAD 7
+#define EI_PAD 7
 
 /** size of e_ident[] */
-#define ELF_EI_NIDENT  16
+#define EI_NIDENT  16
 
 
 /** No machine */
-#define ELF_EM_NONE 0
+#define EM_NONE 0
 
 /** AT&T WE 32100 */
-#define ELF_EM_M32 1
+#define EM_M32 1
 
 /** SPARC */
-#define ELF_EM_SPARC 2
+#define EM_SPARC 2
 
 /** Intel 80386 */
-#define ELF_EM_386 3
+#define EM_386 3
 
 /** Motorola 68000 */
-#define ELF_EM_68K 4
+#define EM_68K 4
 
 /** Motorola 88000 */
-#define ELF_EM_88K 5
+#define EM_88K 5
 
 /** Intel 80860 */
-#define ELF_EM_860 7
+#define EM_860 7
 
 /** MIPS RS3000 */
-#define ELF_EM_MIPS 8
+#define EM_MIPS 8
 
 /** Enhanced instruction set SPARC */
-#define ELF_EM_SPARC32PLUS 18
+#define EM_SPARC32PLUS 18
 
 
 /** No file type */
-#define ELF_ET_NONE 0
+#define ET_NONE 0
 
 /** Relocatable file */
-#define ELF_ET_REL 1
+#define ET_REL 1
 
 /** Executable file */
-#define ELF_ET_EXEC 2
+#define ET_EXEC 2
 
 /** Shared object file */
-#define ELF_ET_DYN 3
+#define ET_DYN 3
 
 /** Core file */
-#define ELF_ET_CORE 4
+#define ET_CORE 4
 
 
 /** Invalid class */
@@ -97,19 +97,19 @@
 #define ELFDATA2MSB 2
 
 
-#define ELF_PT_NULL 0
+#define PT_NULL 0
 
-#define ELF_PT_LOAD 1
+#define PT_LOAD 1
 
-#define ELF_PT_DYNAMIC 2
+#define PT_DYNAMIC 2
 
-#define ELF_PT_INTERP 3
+#define PT_INTERP 3
 
-#define ELF_PT_NOTE 4
+#define PT_NOTE 4
 
-#define ELF_PT_SHLIB 5
+#define PT_SHLIB 5
 
-#define ELF_PT_PHDR  6
+#define PT_PHDR  6
 
 
 #define PF_R (1 << 2)
@@ -128,8 +128,10 @@ typedef signed int Elf32_Sword;
 
 typedef unsigned int Elf32_Word;
 
+typedef int (*elf_entry_t)(void);
+
 typedef struct {
-        unsigned char e_ident[ELF_EI_NIDENT];
+        unsigned char e_ident[EI_NIDENT];
         Elf32_Half    e_type;
         Elf32_Half    e_machine;
         Elf32_Word    e_version;
@@ -156,14 +158,10 @@ typedef struct {
         Elf32_Word p_align;
 } elf_prog_header_t;
 
+void elf_check_process_manager(void);
 
-const char *elf_machine(Elf32_Half e_machine);
+void elf_load_process_manager(void);
 
-const char *elf_type(Elf32_Half e_type);
-
-const char *elf_ptype(Elf32_Word p_type);
-
-const char *elf_flags(Elf32_Word p_flags);
-
+void elf_start_process_manager(void);
 
 #endif

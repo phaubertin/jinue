@@ -1,11 +1,17 @@
 #include <alloc.h> /* includes kernel.h */
+#include <assert.h>
 #include <panic.h>
 #include <vm.h>
 
 alloc_page_t __alloc_page;
 
+bool use_early_alloc_page;
+
 
 addr_t early_alloc_page(void) {
+	/** ASSERTION:  early_alloc_page is used early only */
+	assert(use_early_alloc_page);
+	
 	addr_t page = kernel_region_top;
 	kernel_region_top += PAGE_SIZE;
 	

@@ -1,26 +1,31 @@
 #include <boot.h>
 #include <alloc.h>
 #include <bootmem.h>
+#include <kbd.h>
 #include <kernel.h>
 #include <panic.h>
 #include <printk.h>
 #include <vm.h>
 
 
+/** kernel memory map*/
 bootmem_t *ram_map;
 
+/** available memory map (allocator) */
 bootmem_t *bootmem_root;
 
+/** current map entry (allocator) */
 bootmem_t *bootmem_cur;
 
+/** current top of boot heap */
 addr_t boot_heap;
 
 physaddr_t bootmem_alloc_page(void) {
 	physaddr_t page;
 	
 	page = bootmem_cur->addr + bootmem_cur->size - PAGE_SIZE;
-	
 	bootmem_cur->size -= PAGE_SIZE;
+	
 	if(bootmem_cur->size < PAGE_SIZE) {
 		/* there is no more pages available in this region, select another */
 		bootmem_set_cur();
@@ -83,11 +88,13 @@ void apply_mem_hole(bootmem_t **ptr, physaddr_t hole_addr, physsize_t hole_size,
 }
 
 void bootmem_set_cur(void) {
-	const physaddr_t limit16M = 0x1000000LL;  /* 16M */
+	const physaddr_t limit16M = 0x1000000LL;   /* 16M */
 	const physaddr_t limit4G  = 0x100000000LL; /*  4G */
 	
 	bootmem_t *cur, *ptr, **prev;
 	int czone, pzone;
+	
+	/** TODO: fix commented-out stuff ([pc]zone) once PAE is enabled */
 	
 	/* find entries which need to be removed because they are empty */
 	for(ptr = bootmem_root, prev = &bootmem_root; ptr != NULL; prev = &ptr->next, ptr = ptr->next) {
@@ -99,6 +106,11 @@ void bootmem_set_cur(void) {
 	
 	/* select the best region for bootmem_cur */	
 	cur = bootmem_root;
+	
+	if(cur == NULL) {
+		panic("out of memory");
+	}
+	
 	if(cur->addr < limit16M) {
 		/*czone = 0;*/
 		czone = 1;
@@ -142,8 +154,8 @@ void bootmem_set_cur(void) {
 		}
 	}
 	
-	/* if(cur == NULL)	{ */
-	if(cur == NULL || czone == 0)	{
+	/** TODO: remove this once PAE is enabled */
+	if(czone == 0)	{
 		panic("out of memory");
 	}
 	

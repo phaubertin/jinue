@@ -100,7 +100,7 @@ void vm_vfree_block(vm_alloc_t *pool, addr_t addr, size_t size) {
 		allocator and the slab cache. This is not a problem in general, but a
 		special	bootstrapping procedure is needed for initialization of the
 		virtual address space allocator in that case. The virtual address space
-		allocator will actually "donate" a virtual page (backed by physical ram)
+		allocator will actually "donates" a virtual page (backed by physical ram)
 		to the cache for use as a slab.
 	   
 		This case is handled here

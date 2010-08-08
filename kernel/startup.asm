@@ -13,8 +13,14 @@ extern kernel_stack
 extern kernel_size
 extern kernel_top
 extern kernel_region_top
+extern kernel_end
 
 start:
+	; set kernel size
+	mov eax, kernel_end
+	sub eax, start
+	mov dword [kernel_size], eax	
+	
 	; point esi and eax to the start of boot sector data
 	; (setup code pushed its start address on stack)
 	pop eax
@@ -25,7 +31,7 @@ start:
 	add eax, 7      ; field: sysize
 	mov eax, dword [eax]
 	shl eax, 4
-	mov dword [kernel_size], eax
+;	mov dword [kernel_size], eax
 	
 	; align to page boundary
 	mov ebx, eax

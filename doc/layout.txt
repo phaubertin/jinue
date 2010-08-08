@@ -6,7 +6,7 @@ The kernel image has the following format:
   |              setup code               |
   +---------------------------------------+
   |                                       |
-  |      kernel and process manager       |
+  |    microkernel and process manager    |
   |                                       |
   +---------------------------------------+
   |                                       |
@@ -19,7 +19,7 @@ run (startup.asm), this is the layout in memory:
 
   +---------------------------------------+ kernel_start (0x100000) 
   |                                       |
-  |      kernel and process manager       |
+  |    microkernel and process manager    |
   |                                       |
   +---------------------------------------+    [kernel image]
   |                                       |

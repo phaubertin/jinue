@@ -2,13 +2,12 @@ includes = ../include
 scripts  = ../scripts
 
 #OBJS = alloc.o assert.o boot.o bootmem.o kernel.o io.o panic.o printk.o \
-#	   process.o slab.o startup.o vm.o vm_alloc.o vga.o x86.o
+#	    process.o slab.o startup.o vm.o vm_alloc.o vga.o x86.o
 
-OBJS = alloc.o assert.o boot.o bootmem.o kernel.o io.o panic.o printk.o \
-	   startup.o vm.o vga.o x86.o
+OBJS = alloc.o assert.o elf.o boot.o bootmem.o kbd.o kernel.o io.o \
+       panic.o printk.o startup.o vga.o vm.o x86.o
 
-
-CFLAGS += -g3 -nostdinc -ffreestanding -fno-common -Wall -ansi
+CFLAGS += -O1 -g3 -nostdinc -ffreestanding -fno-common -ansi -Wall -Werror=implicit-function-declaration -Werror=uninitialized
 
 .PHONY: all
 all: kernel
@@ -23,6 +22,7 @@ kernel: $(OBJS) $(scripts)/kernel.lds
 alloc.o:    alloc.c     $(includes)/alloc.h
 assert.o:   assert.c    $(includes)/assert.h
 boot.o:     boot.c      $(includes)/boot.h
+kbd.o:      kbd.c       $(includes)/kbd.h
 kernel.o:   kernel.c    $(includes)/kernel.h
 io.o:       io.asm      $(includes)/io.h
 panic.o:    panic.c     $(includes)/panic.h

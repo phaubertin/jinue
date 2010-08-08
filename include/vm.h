@@ -103,12 +103,14 @@ typedef pte_t page_table_t[PAGE_TABLE_ENTRIES];
 #define VM_FLAG_GLOBAL        (1<< 8)
 
 /** set of flags for a page table (or page directory) */
-#define VM_FLAGS_PAGE_TABLE (VM_FLAG_USER | VM_FLAG_READ_ONLY)
+#define VM_FLAGS_PAGE_TABLE (VM_FLAG_KERNEL | VM_FLAG_READ_WRITE)
 
 
-void vm_map(addr_t vaddr, addr_t paddr, unsigned long flags);
+void vm_map(addr_t vaddr, physaddr_t paddr, unsigned long flags);
 
 void vm_unmap(addr_t addr);
+
+void vm_change_flags(addr_t vaddr, unsigned long flags);
 
 #endif
 
