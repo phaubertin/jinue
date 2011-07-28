@@ -105,3 +105,19 @@ void vm_change_flags(addr_t vaddr, unsigned long flags) {
 	/* invalidate TLB entry for the affected page */
 	invalidate_tlb(vaddr);	
 }
+
+void vm_map_early(addr_t vaddr, physaddr_t paddr, unsigned long flags, pte_t *page_directory) {
+	pte_t *page_table;
+	
+	
+	/** ASSERTION: we assume vaddr is aligned on a page boundary */
+	assert( PAGE_OFFSET_OF(vaddr) == 0 );
+	
+	/** ASSERTION: we assume paddr is aligned on a page boundary */
+	assert( PAGE_OFFSET_OF(paddr) == 0 );	
+	
+	page_table = (pte_t *)page_directory[ PAGE_DIRECTORY_OFFSET_OF(vaddr) ];
+	page_table = (pte_t *)( (unsigned int)page_table & ~PAGE_MASK  );
+	
+	page_table[ PAGE_TABLE_OFFSET_OF(vaddr) ] = (pte_t)paddr | flags | VM_FLAG_PRESENT;
+}

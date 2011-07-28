@@ -112,5 +112,7 @@ void vm_unmap(addr_t addr);
 
 void vm_change_flags(addr_t vaddr, unsigned long flags);
 
+void vm_map_early(addr_t vaddr, physaddr_t paddr, unsigned long flags, pte_t *page_directory);
+
 #endif
 

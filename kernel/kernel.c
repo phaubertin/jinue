@@ -123,26 +123,19 @@ void kinit(void) {
 	}
 	
 	/* map page directory */
-	page_table = (pte_t *)page_directory[ PAGE_DIRECTORY_OFFSET_OF(PAGE_DIRECTORY_ADDR) ];
-	page_table = (pte_t *)( (unsigned int)page_table & ~PAGE_MASK  );
-	page_table[ PAGE_TABLE_OFFSET_OF(PAGE_DIRECTORY_ADDR) ] = (pte_t)page_directory | VM_FLAG_PRESENT | VM_FLAGS_PAGE_TABLE;
+	vm_map_early((addr_t)PAGE_DIRECTORY_ADDR, (physaddr_t)page_directory, VM_FLAGS_PAGE_TABLE, page_directory);
 		
 	/* map page tables */
-	page_table = (pte_t *)page_directory[ PAGE_DIRECTORY_OFFSET_OF(PAGE_TABLES_ADDR) ];
-	page_table = (pte_t *)( (unsigned int)page_table & ~PAGE_MASK  );
-	
-	for(idx = 0; idx < PAGE_DIRECTORY_OFFSET_OF(PLIMIT); ++idx)	{
-		page_table[idx] = ( page_directory[idx] & ~PAGE_MASK ) | VM_FLAG_PRESENT | VM_FLAGS_PAGE_TABLE;
+	for(idx = 0, addr = (addr_t)PAGE_TABLES_ADDR; idx < PAGE_DIRECTORY_OFFSET_OF(PLIMIT); ++idx, addr += PAGE_SIZE)	{
+		page_table = (pte_t *)page_directory[idx];
+		page_table = (pte_t *)( (unsigned int)page_table & ~PAGE_MASK  );
+		
+		vm_map_early((addr_t)addr, (physaddr_t)page_table, VM_FLAGS_PAGE_TABLE, page_directory);		
 	}
 	
 	/* perform 1:1 mapping of text video memory */
-	page_table = (pte_t *)page_directory[ PAGE_DIRECTORY_OFFSET_OF(VGA_TEXT_VID_BASE) ];
-	page_table = (pte_t *)( (unsigned int)page_table & ~PAGE_MASK  );
-	
-	pte  = (pte_t *)&page_table[ PAGE_TABLE_OFFSET_OF(VGA_TEXT_VID_BASE) ];
-	*pte = (pte_t)VGA_TEXT_VID_BASE               | VM_FLAG_PRESENT | VM_FLAG_KERNEL | VM_FLAG_READ_WRITE;
-	++pte;
-	*pte = (pte_t)(VGA_TEXT_VID_BASE + PAGE_SIZE) | VM_FLAG_PRESENT | VM_FLAG_KERNEL | VM_FLAG_READ_WRITE;
+	vm_map_early((addr_t)VGA_TEXT_VID_BASE,           (physaddr_t)VGA_TEXT_VID_BASE,           VM_FLAG_KERNEL | VM_FLAG_READ_WRITE, page_directory);
+	vm_map_early((addr_t)VGA_TEXT_VID_BASE+PAGE_SIZE, (physaddr_t)VGA_TEXT_VID_BASE+PAGE_SIZE, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE, page_directory);
 	
 	/** below this point, it is no longer safe to call early_alloc_page() */
 	use_early_alloc_page = false;
@@ -151,14 +144,8 @@ void kinit(void) {
 	
 	   note: page tables for memory region (0..KLIMIT) are contiguous
 	         in physical memory */
-	page_table = (pte_t *)page_directory[ PAGE_DIRECTORY_OFFSET_OF(kernel_start) ];
-	page_table = (pte_t *)( (unsigned int)page_table & ~PAGE_MASK  );
-	
-	pte = (pte_t *)&page_table[ PAGE_TABLE_OFFSET_OF(kernel_start) ];
-	
 	for(addr = kernel_start; addr < kernel_region_top; addr += PAGE_SIZE) {
-		*pte = (pte_t)addr | VM_FLAG_PRESENT | VM_FLAG_KERNEL | VM_FLAG_READ_WRITE;
-		++pte;
+		vm_map_early((addr_t)addr, (physaddr_t)addr, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE, page_directory);
 	}
 	
 	/* initialize boot-time page frame allocator */

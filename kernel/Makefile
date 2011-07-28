@@ -7,8 +7,7 @@ scripts  = ../scripts
 OBJS = alloc.o assert.o elf.o boot.o bootmem.o kbd.o kernel.o io.o \
        panic.o printk.o startup.o vga.o vm.o x86.o
 
-BROKEN_OPTS = -fno-gcse
-CFLAGS     += -O3 $(BROKEN_OPTS)  -fno-thread-jumps -g3 -nostdinc -ffreestanding -fno-common -ansi -Wall -Werror=implicit-function-declaration -Werror=uninitialized
+CFLAGS += -O3 -g3 -nostdinc -ffreestanding -fno-common -ansi -Wall -Werror=implicit-function-declaration -Werror=uninitialized
 
 .PHONY: all
 all: kernel
