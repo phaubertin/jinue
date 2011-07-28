@@ -5,12 +5,12 @@
 
 alloc_page_t __alloc_page;
 
-bool use_early_alloc_page;
+bool use_alloc_page_early;
 
 
-addr_t early_alloc_page(void) {
-	/** ASSERTION:  early_alloc_page is used early only */
-	assert(use_early_alloc_page);
+addr_t alloc_page_early(void) {
+	/** ASSERTION:  alloc_page_early is used early only */
+	assert(use_alloc_page_early);
 	
 	addr_t page = kernel_region_top;
 	kernel_region_top += PAGE_SIZE;

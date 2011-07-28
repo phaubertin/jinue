@@ -60,9 +60,9 @@ void kinit(void) {
 	assert( PAGE_TABLE_OFFSET_OF(PAGE_DIRECTORY_ADDR) == 0 );
 	assert( PAGE_OFFSET_OF(PAGE_DIRECTORY_ADDR) == 0 );
 		
-	/* alloc_page() should not be called yet -- use early_alloc_page() instead */
+	/* alloc_page() should not be called yet -- use alloc_page_early() instead */
 	__alloc_page         = &do_not_call;
-	use_early_alloc_page = true;
+	use_alloc_page_early = true;
 	
 	/* initialize VGA and say hello */
 	vga_init();
@@ -81,7 +81,7 @@ void kinit(void) {
 	printk("Processor is a: %s\n", str);
 	
 	/* setup a new GDT */
-	gdt_info = (gdt_info_t *)early_alloc_page();
+	gdt_info = (gdt_info_t *)alloc_page_early();
 	gdt = (gdt_t)&gdt_info[2];
 	
 	gdt[GDT_NULL] = SEG_DESCRIPTOR(0, 0, 0);
@@ -104,12 +104,12 @@ void kinit(void) {
 		
 	/* Allocate the first page directory. Since paging is not yet
 	   activated, virtual and physical addresses are the same.  */
-	page_directory = (pte_t *)early_alloc_page();
+	page_directory = (pte_t *)alloc_page_early();
 	
 	/* allocate page tables for kernel data/code region (0..PLIMIT) and add
 	   relevant entries to page directory */
 	for(idx = 0; idx < PAGE_DIRECTORY_OFFSET_OF(PLIMIT); ++idx) {
-		pte = (pte_t *)early_alloc_page();		
+		pte = (pte_t *)alloc_page_early();		
 		page_directory[idx] = (pte_t)pte | VM_FLAG_PRESENT | VM_FLAG_KERNEL | VM_FLAG_READ_WRITE;
 		
 		for(idy = 0; idy < PAGE_TABLE_ENTRIES; ++idy) {
@@ -137,8 +137,8 @@ void kinit(void) {
 	vm_map_early((addr_t)VGA_TEXT_VID_BASE,           (physaddr_t)VGA_TEXT_VID_BASE,           VM_FLAG_KERNEL | VM_FLAG_READ_WRITE, page_directory);
 	vm_map_early((addr_t)VGA_TEXT_VID_BASE+PAGE_SIZE, (physaddr_t)VGA_TEXT_VID_BASE+PAGE_SIZE, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE, page_directory);
 	
-	/** below this point, it is no longer safe to call early_alloc_page() */
-	use_early_alloc_page = false;
+	/** below this point, it is no longer safe to call alloc_page_early() */
+	use_alloc_page_early = false;
 	
 	/* perform 1:1 mapping of kernel image and data
 	
