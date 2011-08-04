@@ -4,44 +4,44 @@
 #include <kernel.h>
 
 /** offset of descriptor type in descriptor */
-#define SEG_FLAGS_OFFSET	40
+#define SEG_FLAGS_OFFSET		40
 
 
 /** segment is present */
-#define SEG_FLAG_PRESENT  (1<<7)
+#define SEG_FLAG_PRESENT  		(1<<7)
 
 /** system segment (i.e. call-gate, etc.) */
-#define SEG_FLAG_SYSTEM   0
+#define SEG_FLAG_SYSTEM   		 0
 
 /** code/data/stack segment */
-#define SEG_FLAG_NOSYSTEM (1<<4)
+#define SEG_FLAG_NOSYSTEM 		(1<<4)
 
 /** 32-bit segment */
-#define SEG_FLAG_32BIT    (1<<14)
+#define SEG_FLAG_32BIT    		(1<<14)
 
 /** 16-bit segment */
-#define SEG_FLAG_16BIT    0
+#define SEG_FLAG_16BIT    		 0
 
 /** 32-bit gate */
-#define SEG_FLAG_32BIT_GATE	(1<<3)
+#define SEG_FLAG_32BIT_GATE		(1<<3)
 
 /** 16-bit gate */
-#define SEG_FLAG_16BIT_GATE	0
+#define SEG_FLAG_16BIT_GATE		 0
 
 /** task is busy (for TSS descriptor) */
-#define SEG_FLAG_BUSY		(1<<1)
+#define SEG_FLAG_BUSY			(1<<1)
 
 /** limit has page granularity */
-#define SEG_FLAG_IN_PAGES (1<<15)
+#define SEG_FLAG_IN_PAGES		(1<<15)
 
 /** limit has byte granularity */
-#define SEG_FLAG_IN_BYTES 0
+#define SEG_FLAG_IN_BYTES 	 	 0
 
 /** kernel/supervisor segment (privilege level 0) */
-#define SEG_FLAG_KERNEL   0
+#define SEG_FLAG_KERNEL   	 	 0
 
 /** user segment (privilege level 3) */
-#define SEG_FLAG_USER     (3<<5)
+#define SEG_FLAG_USER    		(3<<5)
 
 /** commonly used segment flags */
 #define SEG_FLAG_NORMAL \
@@ -75,22 +75,22 @@
 
 
 /** GDT entry for the null descriptor */
-#define GDT_NULL        0
+#define GDT_NULL        		 0
 
 /** GDT entry for kernel code segment */
-#define GDT_KERNEL_CODE 1
+#define GDT_KERNEL_CODE 		 1
 
 /** GDT entry for kernel data segment */
-#define GDT_KERNEL_DATA 2
+#define GDT_KERNEL_DATA 		 2
 
 /** GDT entry for user code segment */
-#define GDT_USER_CODE   3
+#define GDT_USER_CODE   		 3
 
 /** GDT entry for user data segment */
-#define GDT_USER_DATA   4
+#define GDT_USER_DATA   		 4
 
 /** end of GDT / next-to-last entry */
-#define GDT_END   5
+#define GDT_END   				 5
 
 typedef unsigned long long seg_descriptor_t;
 
