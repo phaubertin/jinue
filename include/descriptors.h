@@ -6,6 +6,8 @@
 /** offset of descriptor type in descriptor */
 #define SEG_FLAGS_OFFSET		40
 
+/** size of the task-state segment (TSS) */
+#define TSS_LIMIT				104
 
 /** segment is present */
 #define SEG_FLAG_PRESENT  		(1<<7)
@@ -51,6 +53,10 @@
 #define SEG_FLAG_NORMAL_GATE \
 	(SEG_FLAG_32BIT_GATE | SEG_FLAG_SYSTEM | SEG_FLAG_PRESENT)
 
+/** commonly used  flags for task-state segment */
+#define SEG_FLAG_TSS \
+	(SEG_FLAG_IN_BYTES | SEG_FLAG_SYSTEM | SEG_FLAG_PRESENT)
+
 
 /** read-only data segment */
 #define SEG_TYPE_READ_ONLY 	 	 0
@@ -66,6 +72,9 @@
 
 /** trap gate */
 #define SEG_TYPE_TRAP_GATE   	 7
+
+/** task-state segment (TSS) */
+#define SEG_TYPE_TSS		   	 9
 
 /** code segment */
 #define SEG_TYPE_CODE      		10
@@ -89,8 +98,11 @@
 /** GDT entry for user data segment */
 #define GDT_USER_DATA   		 4
 
+/** GDT entry for task-state segment (TSS) */
+#define GDT_TSS			   		 5
+
 /** end of GDT / next-to-last entry */
-#define GDT_END   				 5
+#define GDT_END   				 6
 
 typedef unsigned long long seg_descriptor_t;
 
@@ -98,16 +110,76 @@ typedef seg_descriptor_t *gdt_t;
 
 typedef seg_descriptor_t *ldt_t;
 
-#pragma pack(push, 1)
+typedef seg_descriptor_t *idt_t;
+
+typedef unsigned long seg_selector_t;
+
 typedef struct {
 	unsigned short padding;
 	unsigned short limit;
 	gdt_t          addr;
 } gdt_info_t;
-#pragma pack(pop)
+
+typedef gdt_info_t idt_info_t;
+
+typedef struct {
+	/* offset 0 */
+	unsigned short prev;	
+	/* offset 4 */
+	addr_t         esp0;	
+	/* offset 8 */
+	unsigned short ss0;	
+	/* offset 12 */
+	addr_t         esp1;	
+	/* offset 16 */
+	unsigned short ss1;	
+	/* offset 20 */
+	addr_t         esp2;	
+	/* offset 24 */
+	unsigned short ss2;	
+	/* offset 28 */
+	unsigned long  cr3;	
+	/* offset 32 */
+	unsigned long  eip;	
+	/* offset 36 */
+	unsigned long  eflags;	
+	/* offset 40 */
+	unsigned long  eax;	
+	/* offset 44 */
+	unsigned long  ecx;	
+	/* offset 48 */
+	unsigned long  edx;	
+	/* offset 52 */
+	unsigned long  ebx;	
+	/* offset 56 */
+	unsigned long  esp;	
+	/* offset 60 */
+	unsigned long  ebp;	
+	/* offset 64 */
+	unsigned long  esi;	
+	/* offset 68 */
+	unsigned long  edi;	
+	/* offset 72 */
+	unsigned short es;	
+	/* offset 76 */
+	unsigned short cs;	
+	/* offset 80 */
+	unsigned short ss;	
+	/* offset 84 */
+	unsigned short ds;	
+	/* offset 88 */
+	unsigned short fs;	
+	/* offset 92 */
+	unsigned short gs;	
+	/* offset 96 */
+	unsigned short ldt;	
+	/* offset 100 */
+	unsigned short debug;
+	unsigned short iomap;	
+} tss_t;
 
 #define PACK_DESCRIPTOR(val, mask, shamt1, shamt2) \
-	(  (unsigned long long)(((val) >> shamt1) & mask) << shamt2 )
+	( (((unsigned long long)(val) >> shamt1) & mask) << shamt2 )
 
 #define SEG_DESCRIPTOR(base, limit, type) (\
 	  PACK_DESCRIPTOR((type),  0xf0ff,  0, SEG_FLAGS_OFFSET) \

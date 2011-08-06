@@ -34,10 +34,32 @@ invalidate_tlb:
 ; ------------------------------------------------------------------------------
 	global lgdt
 lgdt:
-	mov eax, [esp+4]	; First param: vaddr
+	mov eax, [esp+4]	; First param: gdt_info
 	add eax, 2          ; gdt_info_t structure contains two bytes of
 	                    ; padding for alignment
 	lgdt [eax]
+	ret
+
+; ------------------------------------------------------------------------------
+; FUNCTION: lidt
+; C PROTOTYPE: void lidt(idt_info_t *idt_info)
+; ------------------------------------------------------------------------------
+	global lidt
+lidt:
+	mov eax, [esp+4]	; First param: idt_info
+	add eax, 2          ; idt_info_t structure contains two bytes of
+	                    ; padding for alignment
+	lidt [eax]
+	ret
+
+; ------------------------------------------------------------------------------
+; FUNCTION: ltr
+; C PROTOTYPE: void ltr(seg_selector_t sel)
+; ------------------------------------------------------------------------------
+	global ltr
+ltr:
+	mov eax, [esp+4]	; First param: sel
+	ltr ax
 	ret
 
 ; ------------------------------------------------------------------------------

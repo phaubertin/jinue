@@ -53,6 +53,10 @@ void printk(const char *format, ...) {
 			print_unsigned_int( va_arg(ap, unsigned int) );
 			break;
 		
+		case 'b':
+			print_hex_b( (unsigned char)va_arg(ap, unsigned long) );
+			break;
+		
 		case 'w':
 			print_hex_w( (unsigned short)va_arg(ap, unsigned long) );
 			break;

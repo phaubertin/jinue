@@ -3,10 +3,13 @@
 #include <boot.h>
 #include <bootmem.h>
 #include <elf.h>
+#include <interrupt.h>
+#include <irq.h>
 #include <kernel.h> /* includes stddef.h */
 #include <panic.h>
 #include <printk.h>
 #include <process.h>
+#include <stddef.h>
 #include <vga.h>
 #include <vm.h>
 #include <vm_alloc.h>
@@ -41,14 +44,18 @@ void kinit(void) {
 	pte_t *page_table, *page_directory;
 	pte_t *pte;
 	addr_t addr;
-	gdt_t gdt;
+	gdt_t  gdt;
+	tss_t *tss;
+	addr_t stack;
 	gdt_info_t *gdt_info;
+	idt_info_t *idt_info;
 	unsigned long idx, idy;
 	unsigned long temp;
+	unsigned long *ulptr;
 	x86_regs_t regs;
 	char str[13];
-	
-	
+		
+
 	/** ASSERTION: we assume the kernel starts on a page boundary */
 	assert( PAGE_OFFSET_OF( (unsigned int)kernel_start ) == 0 );
 	
@@ -80,19 +87,30 @@ void kinit(void) {
 	
 	printk("Processor is a: %s\n", str);
 	
-	/* setup a new GDT */
-	gdt_info = (gdt_info_t *)alloc_page_early();
-	gdt = (gdt_t)&gdt_info[2];
+	syscall_irq = 0;
 	
+	/* allocate new kernel stack */
+	stack = alloc_page_early();
+	stack += PAGE_SIZE / 2;
+	
+	/* allocate space for new GDT and TSS */
+	gdt_info = (gdt_info_t *)alloc_page_early();
+	idt_info = (idt_info_t *)gdt_info;
+	gdt = (gdt_t)&gdt_info[2];
+	tss = (tss_t *)&gdt[GDT_END];
+	
+	/* initialize GDT */
 	gdt[GDT_NULL] = SEG_DESCRIPTOR(0, 0, 0);
 	gdt[GDT_KERNEL_CODE] =
-		SEG_DESCRIPTOR(0, 0xfffff, SEG_TYPE_CODE | SEG_FLAG_KERNEL | SEG_FLAG_NORMAL);
+		SEG_DESCRIPTOR(0, 0xfffff,                      SEG_TYPE_CODE | SEG_FLAG_KERNEL | SEG_FLAG_NORMAL);
 	gdt[GDT_KERNEL_DATA] =
-		SEG_DESCRIPTOR(0, 0xfffff, SEG_TYPE_DATA | SEG_FLAG_KERNEL | SEG_FLAG_NORMAL);
+		SEG_DESCRIPTOR(0, 0xfffff,                      SEG_TYPE_DATA | SEG_FLAG_KERNEL | SEG_FLAG_NORMAL);
 	gdt[GDT_USER_CODE] =
-		SEG_DESCRIPTOR(0, 0xfffff, SEG_TYPE_CODE | SEG_FLAG_USER   | SEG_FLAG_NORMAL);
+		SEG_DESCRIPTOR(0, 0xfffff,                      SEG_TYPE_CODE | SEG_FLAG_USER   | SEG_FLAG_NORMAL);
 	gdt[GDT_USER_DATA] =
-		SEG_DESCRIPTOR(0, 0xfffff, SEG_TYPE_DATA | SEG_FLAG_USER   | SEG_FLAG_NORMAL);
+		SEG_DESCRIPTOR(0, 0xfffff,                      SEG_TYPE_DATA | SEG_FLAG_USER   | SEG_FLAG_NORMAL);
+	gdt[GDT_TSS] =
+		SEG_DESCRIPTOR((unsigned long)tss, TSS_LIMIT-1, SEG_TYPE_TSS  | SEG_FLAG_KERNEL | SEG_FLAG_TSS);
 	
 	gdt_info->addr  = gdt;
 	gdt_info->limit = GDT_END * 8 - 1;
@@ -101,6 +119,43 @@ void kinit(void) {
 	set_cs( SEG_SELECTOR(GDT_KERNEL_CODE, 0) );
 	set_ss( SEG_SELECTOR(GDT_KERNEL_DATA, 0) );
 	set_data_segments( SEG_SELECTOR(GDT_KERNEL_DATA, 0) );
+	
+	/* initialize TSS */
+	ulptr = (unsigned long *)tss;
+	for(idx = 0; idx < TSS_LIMIT / sizeof(unsigned long); ++idx) {
+		ulptr[idx] = 0;
+	}
+ 	
+	tss->ss0 = SEG_SELECTOR(GDT_KERNEL_DATA, 0);
+	tss->ss1 = SEG_SELECTOR(GDT_KERNEL_DATA, 0);
+	tss->ss2 = SEG_SELECTOR(GDT_KERNEL_DATA, 0);
+
+	tss->esp0 = stack;
+	tss->esp1 = stack;
+	tss->esp2 = stack;
+	
+	ltr( SEG_SELECTOR(GDT_TSS, 0) );
+	
+	/* initialize IDT */
+	for(idx = 0; idx < IDT_VECTOR_COUNT; ++idx) {
+		temp = *(unsigned long *)&idt[idx];
+		
+		idt[idx] = GATE_DESCRIPTOR(
+			SEG_SELECTOR(GDT_KERNEL_CODE, 0),
+			temp,
+			SEG_TYPE_INTERRUPT_GATE | SEG_FLAG_KERNEL | SEG_FLAG_NORMAL_GATE,
+			NULL );
+		
+		/*idt[idx] = GATE_DESCRIPTOR(
+			SEG_SELECTOR(GDT_KERNEL_CODE, 0),
+			intr_debug,
+			SEG_TYPE_INTERRUPT_GATE | SEG_FLAG_KERNEL | SEG_FLAG_NORMAL_GATE,
+			NULL );*/
+	}
+	
+	idt_info->addr  = idt;
+	idt_info->limit = IDT_VECTOR_COUNT * sizeof(seg_descriptor_t) - 1;
+	lidt(idt_info);
 		
 	/* Allocate the first page directory. Since paging is not yet
 	   activated, virtual and physical addresses are the same.  */
@@ -159,7 +214,7 @@ void kinit(void) {
 	set_cr0x(temp);
 	
 	printk("Paging activated\n");
-		
+	
 	/* load process manager binary */
 	elf_load_process_manager();
 	

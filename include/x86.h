@@ -20,6 +20,10 @@ void invalidate_tlb(addr_t vaddr);
 
 void lgdt(gdt_info_t *gdt_info);
 
+void lidt(idt_info_t *idt_info);
+
+void ltr(seg_selector_t sel);
+
 unsigned long cpuid(x86_regs_t *regs);
 
 unsigned long get_cr0(void);
