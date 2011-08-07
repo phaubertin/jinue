@@ -4,7 +4,7 @@ ENTRY(start)
 
 SECTIONS {
 	.text 0x100000 : {
-		startup.o(.text)
+		asm/startup.o(.text)
 		*(.text)
 		*(.text.*)
 		*(.rodata)

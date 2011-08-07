@@ -1,0 +1,24 @@
+includes = ../../include
+
+OBJS    = io.o irq.o syscall.o x86.o
+STARTUP = startup.o
+TARGET  = kernel-asm.o
+
+.PHONY: all
+all: $(TARGET) $(STARTUP)
+
+.PHONY: clean
+clean:
+	-rm -f $(TARGET) $(STARTUP) $(OBJS)
+
+$(TARGET): $(OBJS)
+	$(LD) -r -o $@ $(OBJS)
+
+io.o:          io.asm        $(includes)/io.h
+irq.o:         irq.asm       $(includes)/irq.h
+startup.o:     startup.asm   $(includes)/startup.h
+syscall.o:     syscall.asm   $(includes)/syscall.h
+x86.o:         x86.asm       $(includes)/x86.h
+
+%.o: %.asm
+	nasm -f elf -o $@ $<
