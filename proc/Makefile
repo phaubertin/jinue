@@ -2,8 +2,8 @@ includes = ../include
 scripts  = ../scripts
 kernel   = ../kernel
 
-OBJS  = proc.o
-KOBJS =  $(kernel)/asm/io.o $(kernel)/printk.o $(kernel)/vga.o
+OBJS  = proc.o syscall.o vga.o
+KOBJS = $(kernel)/printk.o
 
 CFLAGS  += -O3 -nostdinc -ffreestanding -static -ansi -Wall -Werror=implicit-function-declaration -Werror=uninitialized
 LDFLAGS += -static -nostdlib -e main

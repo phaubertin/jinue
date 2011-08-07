@@ -1,3 +1,4 @@
+#include <jinue/syscall.h>
 #include <alloc.h>
 #include <assert.h>
 #include <boot.h>
@@ -51,6 +52,7 @@ void kinit(void) {
 	idt_info_t *idt_info;
 	unsigned long idx, idy;
 	unsigned long temp;
+	unsigned long flags;
 	unsigned long *ulptr;
 	x86_regs_t regs;
 	char str[13];
@@ -86,9 +88,7 @@ void kinit(void) {
 	str[12] = '\0';
 	
 	printk("Processor is a: %s\n", str);
-	
-	syscall_irq = 0;
-	
+		
 	/* allocate new kernel stack */
 	stack = alloc_page_early();
 	stack += PAGE_SIZE / 2;
@@ -138,19 +138,25 @@ void kinit(void) {
 	
 	/* initialize IDT */
 	for(idx = 0; idx < IDT_VECTOR_COUNT; ++idx) {
-		temp = *(unsigned long *)&idt[idx];
+		/* get address, which is already stored in the IDT entry */
+		addr  = (addr_t)*(unsigned long *)&idt[idx];
 		
+		/* set interrupt gate flags */
+		flags = SEG_TYPE_INTERRUPT_GATE | SEG_FLAG_NORMAL_GATE;
+		
+		if(idx == SYSCALL_IRQ) {
+			flags |= SEG_FLAG_USER;
+		}
+		else {
+			flags |= SEG_FLAG_KERNEL;
+		}
+		
+		/* create interrupt gate descriptor */
 		idt[idx] = GATE_DESCRIPTOR(
 			SEG_SELECTOR(GDT_KERNEL_CODE, 0),
-			temp,
-			SEG_TYPE_INTERRUPT_GATE | SEG_FLAG_KERNEL | SEG_FLAG_NORMAL_GATE,
+			(unsigned long)addr,
+			flags,
 			NULL );
-		
-		/*idt[idx] = GATE_DESCRIPTOR(
-			SEG_SELECTOR(GDT_KERNEL_CODE, 0),
-			intr_debug,
-			SEG_TYPE_INTERRUPT_GATE | SEG_FLAG_KERNEL | SEG_FLAG_NORMAL_GATE,
-			NULL );*/
 	}
 	
 	idt_info->addr  = idt;
@@ -213,7 +219,7 @@ void kinit(void) {
 	temp |= X86_FLAG_PG;
 	set_cr0x(temp);
 	
-	printk("Paging activated\n");
+	printk("Paging enabled\n");
 	
 	/* load process manager binary */
 	elf_load_process_manager();

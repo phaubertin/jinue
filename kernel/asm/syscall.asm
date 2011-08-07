@@ -42,14 +42,14 @@ syscall_fast_amd:
 	ret
 
 ; ------------------------------------------------------------------------------
-; FUNCTION: syscall_slow
-; C PROTOTYPE: int syscall_slow(ipc_ref_t    dest,
+; FUNCTION: syscall_intr
+; C PROTOTYPE: int syscall_intr(ipc_ref_t    dest,
 ;                               unsigned int funct,
 ;                               unsigned int arg1,
 ;                               unsigned int arg2);
 ; ------------------------------------------------------------------------------
-	global syscall_slow
-	global syscall_slow.exit
+	global syscall_intr
+	global syscall_intr.exit
 syscall_intr:
 	mov ebx, [esp+ 4]	; First param:  dest
 	mov eax, [esp+ 8]	; Second param: funct
