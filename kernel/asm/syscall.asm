@@ -1,3 +1,5 @@
+bits 32
+
 ; ------------------------------------------------------------------------------
 ; FUNCTION: syscall_fast_intel
 ; C PROTOTYPE: int syscall_fast_intel(ipc_ref_t    dest,

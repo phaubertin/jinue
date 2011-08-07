@@ -4,6 +4,7 @@
 #include <kernel.h>
 #include <panic.h>
 #include <printk.h>
+#include <process.h>
 #include <vm.h>
 
 void elf_check_process_manager(void) {
@@ -202,16 +203,26 @@ void elf_load_process_manager(void) {
 		}
 	}
 	
+	/** TODO: we should probably do better than this, at least check for overlap */
+	/* setup stack */
+	page  = alloc_page();
+	vpage = (addr_t)0xfffff000;
+	
+	/** TODO:      remove this assert once PAE is enabled 
+	*   ASSERTION: allocated page has a 32-bit address */
+	assert(page < (1LL<<32));
+	vm_map(vpage, page, VM_FLAG_USER | VM_FLAG_READ_WRITE);
+	
 	printk("Process manager loaded.\n");
 }
 
 void elf_start_process_manager(void) {
-	int retval;
 	elf_entry_t entry;
 	
 	entry = (elf_entry_t)proc_elf.e_entry;
 	
-	retval = entry();
+	/* this never returns */
+	process_start((addr_t)entry, (addr_t)0xfffffff0);
 	
-	printk("Process manager returned %u.\n", retval);
+	panic("Process Manager returned");
 }

@@ -3,7 +3,7 @@
 int main(void) {
 	volatile int a, b;
 	
-	printk("Hello World!\n");
+	/*printk("Hello World!\n");*/
 	
 	a = 1;
 	b = 0;

@@ -37,6 +37,8 @@ extern slab_cache_t process_slab_cache;
 extern pte_t *page_directory_template;
 
 
+/* defined in process.c */
+
 process_t *process_create(void);
 
 void process_destroy(process_t *p);
@@ -44,6 +46,10 @@ void process_destroy(process_t *p);
 void process_destroy_by_pid(pid_t pid);
 
 process_t *process_find_by_pid(pid_t pid);
+
+/* defined in asm/process.asm */
+
+void process_start(addr_t entry, addr_t stack);
 
 #endif
 
