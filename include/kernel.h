@@ -1,17 +1,10 @@
 #ifndef _JINUE_KERNEL_KERNEL_H_
 #define _JINUE_KERNEL_KERNEL_H_
 
+#include <jinue/types.h>
+#include <elf.h>
 #include <startup.h>
 #include <stddef.h>
-#include <elf.h>
-
-typedef void *addr_t;
-
-typedef unsigned long long physaddr_t;
-
-typedef unsigned long long physsize_t;
-
-typedef unsigned long count_t;
 
 #define kernel_start ((addr_t)start)
 

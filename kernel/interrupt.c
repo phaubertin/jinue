@@ -32,7 +32,7 @@ void dispatch_interrupt(unsigned int irq, ipc_params_t *ipc_params) {
 	
 	/* slow system call/ipc mechanism */
 	if(irq == SYSCALL_IRQ) {
-		dispatch_ipc(ipc_params->dest, ipc_params->funct, ipc_params->arg1, ipc_params->arg2);
+		dispatch_ipc(ipc_params);
 		return;
 	}
 		

@@ -11,6 +11,7 @@
 #include <printk.h>
 #include <process.h>
 #include <stddef.h>
+#include <syscall.h>
 #include <vga.h>
 #include <vm.h>
 #include <vm_alloc.h>
@@ -88,6 +89,8 @@ void kinit(void) {
 	str[12] = '\0';
 	
 	printk("Processor is a: %s\n", str);
+	
+	syscall_method = SYSCALL_METHOD_INTR;
 		
 	/* allocate new kernel stack */
 	stack = alloc_page_early();

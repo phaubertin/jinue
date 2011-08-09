@@ -1,12 +1,14 @@
 includes = ../include
-scripts  = ../scripts
 kernel   = ../kernel
+lib      = ../lib
+libjinue = $(lib)/jinue
+libproc  = $(lib)/proc
 
-OBJS  = proc.o syscall.o vga.o
-KOBJS = $(kernel)/printk.o
+OBJS  = proc.o
 
 CFLAGS  += -O3 -nostdinc -ffreestanding -static -ansi -Wall -Werror=implicit-function-declaration -Werror=uninitialized
 LDFLAGS += -static -nostdlib -e main
+LIBS    = -L$(libjinue) -L$(libproc) -lproc -ljinue
 
 .PHONY: all
 all: proc
@@ -15,10 +17,14 @@ all: proc
 clean:
 	-rm -f proc $(OBJS)
 
-$(KOBJS):
-	make -C ../kernel
+$(libjinue)/libjinue.a:
+	make -C $(libjinue)
 
-proc: $(OBJS) $(KOBJS)
+$(libproc)/libproc.a:
+	make -C $(libproc)
+
+proc: $(OBJS) $(libjinue)/libjinue.a $(libproc)/libproc.a
+	$(LD) $(LDFLAGS) $(OBJS) -o $@ $(LIBS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -I$(includes) -o $@ $<

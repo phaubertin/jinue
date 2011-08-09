@@ -1,6 +1,6 @@
 includes = ../../include
 
-OBJS    = io.o irq.o process.o syscall.o x86.o
+OBJS    = io.o irq.o process.o x86.o
 STARTUP = startup.o
 TARGET  = kernel-asm.o
 
