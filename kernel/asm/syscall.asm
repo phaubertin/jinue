@@ -16,6 +16,7 @@ fast_intel_entry:
 	; save data segment selectors
 	push ds
 	push es
+	push gs
 	
 	; set data segment
 	mov ecx, GDT_KERNEL_DATA * 8 + 0
@@ -53,12 +54,9 @@ fast_intel_entry:
 	add esp, 24
 	
 	; restore data segment selectors
+	pop gs
 	pop es
 	pop ds
-	
-	; we don't want user space to have our per-cpu data segment selector
-	mov ecx, 0
-	mov gs, cx
 	
 	; restore return address and user stack
 	pop edx		; return address

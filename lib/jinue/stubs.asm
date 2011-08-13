@@ -56,12 +56,13 @@ syscall_fast_amd:
 	push esi
 	push edi
 	push ebp
+	push gs
 	
-	mov ebx, [esp+20]	; First param:  dest
-	mov edx, [esp+24]	; Second param: method
-	mov eax, [esp+28]	; Third param:  funct
-	mov esi, [esp+32]	; Fourth param: arg1
-	mov edi, [esp+36]	; Fifth param:  arg2
+	mov ebx, [esp+24]	; First param:  dest
+	mov edx, [esp+28]	; Second param: method
+	mov eax, [esp+32]	; Third param:  funct
+	mov esi, [esp+36]	; Fourth param: arg1
+	mov edi, [esp+40]	; Fifth param:  arg2
 	
 	syscall
 	
@@ -70,7 +71,8 @@ syscall_fast_amd:
 	
 	mov [edi], ebx
 	
-.noerrno:	
+.noerrno:
+	pop gs
 	pop ebp
 	pop edi
 	pop esi
