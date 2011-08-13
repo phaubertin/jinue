@@ -1,6 +1,7 @@
 #ifndef _JINUE_KERNEL_X86_H_
 #define _JINUE_KERNEL_X86_H_
 
+#include <cpu.h>
 #include <descriptors.h>
 
 #define X86_FLAG_PG (1<<31)
@@ -48,6 +49,10 @@ void set_cr3(unsigned long val);
 
 void set_cr4(unsigned long val);
 
+unsigned long get_eflags(void);
+
+void set_eflags(unsigned long val);
+
 void set_cs(unsigned long val);
 
 void set_ds(unsigned long val);
@@ -61,6 +66,10 @@ void set_gs(unsigned long val);
 void set_ss(unsigned long val);
 
 void set_data_segments(unsigned long val);
+
+unsigned long long rdmsr(msr_addr_t addr);
+
+void wrmsr(msr_addr_t addr, unsigned long long val);
 
 #endif
 

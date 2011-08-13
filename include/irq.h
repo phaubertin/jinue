@@ -65,7 +65,7 @@
 
 #define EXCEPTION_GOT_ERR_CODE(irq) \
 	(irq == EXCEPTION_ALIGNMENT || \
-	 irq >= EXCEPTION_DOUBLE_FAULT && irq <= EXCEPTION_PAGE_FAULT && irq != 9)
+	(irq >= EXCEPTION_DOUBLE_FAULT && irq <= EXCEPTION_PAGE_FAULT && irq != 9))
 
 extern seg_descriptor_t idt[];
 

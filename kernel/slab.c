@@ -21,7 +21,7 @@ void slab_create(
 }
 
 void slab_destroy(slab_cache_t *cache) {
-	/* TODO: implement slab_destroy */
+	/** TODO: implement slab_destroy */
 }
 
 addr_t slab_alloc(slab_cache_t *cache) {

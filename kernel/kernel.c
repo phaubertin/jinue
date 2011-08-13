@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <boot.h>
 #include <bootmem.h>
+#include <cpu.h>
 #include <elf.h>
 #include <interrupt.h>
 #include <irq.h>
@@ -55,9 +56,8 @@ void kinit(void) {
 	unsigned long temp;
 	unsigned long flags;
 	unsigned long *ulptr;
-	x86_regs_t regs;
-	char str[13];
-		
+	unsigned long long msrval;
+
 
 	/** ASSERTION: we assume the kernel starts on a page boundary */
 	assert( PAGE_OFFSET_OF( (unsigned int)kernel_start ) == 0 );
@@ -81,16 +81,8 @@ void kinit(void) {
 	printk("Kernel size is %u bytes.\n", kernel_size);
 	
 	/* get cpu info */
-	regs.eax = 0;
-	(void)cpuid(&regs);
-	*(unsigned long *)&str[0] = regs.ebx;
-	*(unsigned long *)&str[4] = regs.edx;
-	*(unsigned long *)&str[8] = regs.ecx;
-	str[12] = '\0';
-	
-	printk("Processor is a: %s\n", str);
-	
-	syscall_method = SYSCALL_METHOD_INTR;
+	cpu_detect_features();
+	printk("Processor vendor is %s.\n", cpu_vendor_name[cpu_vendor]);
 		
 	/* allocate new kernel stack */
 	stack = alloc_page_early();
@@ -105,15 +97,17 @@ void kinit(void) {
 	/* initialize GDT */
 	gdt[GDT_NULL] = SEG_DESCRIPTOR(0, 0, 0);
 	gdt[GDT_KERNEL_CODE] =
-		SEG_DESCRIPTOR(0, 0xfffff,                      SEG_TYPE_CODE | SEG_FLAG_KERNEL | SEG_FLAG_NORMAL);
+		SEG_DESCRIPTOR(0, 0xfffff,                      SEG_TYPE_CODE  | SEG_FLAG_KERNEL | SEG_FLAG_NORMAL);
 	gdt[GDT_KERNEL_DATA] =
-		SEG_DESCRIPTOR(0, 0xfffff,                      SEG_TYPE_DATA | SEG_FLAG_KERNEL | SEG_FLAG_NORMAL);
+		SEG_DESCRIPTOR(0, 0xfffff,                      SEG_TYPE_DATA  | SEG_FLAG_KERNEL | SEG_FLAG_NORMAL);
 	gdt[GDT_USER_CODE] =
-		SEG_DESCRIPTOR(0, 0xfffff,                      SEG_TYPE_CODE | SEG_FLAG_USER   | SEG_FLAG_NORMAL);
+		SEG_DESCRIPTOR(0, 0xfffff,                      SEG_TYPE_CODE  | SEG_FLAG_USER   | SEG_FLAG_NORMAL);
 	gdt[GDT_USER_DATA] =
-		SEG_DESCRIPTOR(0, 0xfffff,                      SEG_TYPE_DATA | SEG_FLAG_USER   | SEG_FLAG_NORMAL);
+		SEG_DESCRIPTOR(0, 0xfffff,                      SEG_TYPE_DATA  | SEG_FLAG_USER   | SEG_FLAG_NORMAL);
 	gdt[GDT_TSS] =
-		SEG_DESCRIPTOR((unsigned long)tss, TSS_LIMIT-1, SEG_TYPE_TSS  | SEG_FLAG_KERNEL | SEG_FLAG_TSS);
+		SEG_DESCRIPTOR((unsigned long)tss, TSS_LIMIT-1, SEG_TYPE_TSS   | SEG_FLAG_KERNEL | SEG_FLAG_TSS);
+	gdt[GDT_TSS_DATA] =
+		SEG_DESCRIPTOR((unsigned long)tss, TSS_LIMIT-1, SEG_TYPE_DATA  | SEG_FLAG_KERNEL | SEG_FLAG_32BIT | SEG_FLAG_IN_BYTES | SEG_FLAG_NOSYSTEM | SEG_FLAG_PRESENT);
 	
 	gdt_info->addr  = gdt;
 	gdt_info->limit = GDT_END * 8 - 1;
@@ -165,6 +159,31 @@ void kinit(void) {
 	idt_info->addr  = idt;
 	idt_info->limit = IDT_VECTOR_COUNT * sizeof(seg_descriptor_t) - 1;
 	lidt(idt_info);
+	
+	/* choose system call mechanism */
+	syscall_method = SYSCALL_METHOD_INTR;
+	
+	if(cpu_features & CPU_FEATURE_SYSENTER) {
+		syscall_method = SYSCALL_METHOD_FAST_INTEL;
+		
+		wrmsr(MSR_IA32_SYSENTER_CS,  GDT_KERNEL_CODE * 8);
+		wrmsr(MSR_IA32_SYSENTER_EIP, (unsigned long long)(unsigned long)fast_intel_entry);
+		wrmsr(MSR_IA32_SYSENTER_ESP, (unsigned long long)(unsigned long)stack);
+	}
+	
+	if(cpu_features & CPU_FEATURE_SYSCALL) {
+		syscall_method = SYSCALL_METHOD_FAST_AMD;
+		
+		msrval  = rdmsr(MSR_EFER);
+		msrval |= MSR_FLAG_STAR_SCE;
+		wrmsr(MSR_EFER, msrval);
+		
+		msrval  = (unsigned long long)(unsigned long)fast_amd_entry;
+		msrval |= (unsigned long long)SEG_SELECTOR(GDT_KERNEL_CODE, 0) << 32;
+		msrval |= (unsigned long long)SEG_SELECTOR(GDT_USER_CODE,   3) << 48;
+		
+		wrmsr(MSR_STAR, msrval);
+	}
 		
 	/* Allocate the first page directory. Since paging is not yet
 	   activated, virtual and physical addresses are the same.  */

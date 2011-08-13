@@ -1,11 +1,8 @@
 includes = ../include
 scripts  = ../scripts
 
-#OBJS = alloc.o assert.o boot.o bootmem.o kernel.o io.o panic.o printk.o \
-#	    process.o slab.o startup.o vm.o vm_alloc.o vga.o x86.o
-
-OBJS = alloc.o assert.o elf.o boot.o bootmem.o kbd.o kernel.o interrupt.o \
-       ipc.o panic.o printk.o syscall.o vga.o vm.o
+OBJS = alloc.o assert.o boot.o bootmem.o cpu.o elf.o kbd.o kernel.o \
+       interrupt.o ipc.o panic.o printk.o syscall.o thread.o vga.o vm.o
 
 KERNEL-ASM = asm/kernel-asm.o
 STARTUP    = asm/startup.o
@@ -32,6 +29,8 @@ $(STARTUP) $(KERNEL-ASM): asm
 alloc.o:       alloc.c       $(includes)/alloc.h
 assert.o:      assert.c      $(includes)/assert.h
 boot.o:        boot.c        $(includes)/boot.h
+bootmem.o:     bootmem.c     $(includes)/bootmem.h
+cpu.o:         cpu.c         $(includes)/cpu.h
 kbd.o:         kbd.c         $(includes)/kbd.h
 kernel.o:      kernel.c      $(includes)/kernel.h
 interrupt.o:   interrupt.c   $(includes)/interrupt.h
@@ -41,6 +40,7 @@ printk.o:      printk.c      $(includes)/printk.h
 process.o:     process.c     $(includes)/process.h
 slab.o:        slab.c        $(includes)/vm_alloc.h $(includes)/slab.h
 syscall.o:     syscall.c     $(includes)/syscall.h
+thread.o:      thread.c      $(includes)/thread.h
 vga.o:         vga.c         $(includes)/vga.h
 vm.o:          vm.c          $(includes)/vm.h
 vm_alloc.o:    vm_alloc.c    $(includes)/vm_alloc.h $(includes)/slab.h

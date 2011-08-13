@@ -2,6 +2,7 @@
 #include <printk.h>
 #include <stddef.h>
 #include <syscall.h>
+#include <thread.h>
 #include <vga.h>
 
 
@@ -19,7 +20,6 @@ void dispatch_syscall(ipc_params_t *ipc_params) {
 	
 	ipc_params->ret.errno    = 0;
 	ipc_params->ret.perrno   = NULL;
-	ipc_params->ret.reserved = 0;	
 	
 	switch(funct) {
 	
@@ -35,6 +35,23 @@ void dispatch_syscall(ipc_params_t *ipc_params) {
 	case SYSCALL_FUNCT_VGA_PUTS:
 		/** TODO: permission check, sanity check */
 		vga_printn((char *)arg1, arg2);
+		break;
+
+	case SYSCALL_FUNCT_SET_ERRNO_ADDR:
+		current_thread->perrno = (int *)arg1;
+		break;
+
+	case SYSCALL_FUNCT_GET_ERRNO_ADDR:
+		ipc_params->ret.val = (int)current_thread->perrno;
+		break;
+
+	case SYSCALL_FUNCT_SET_THREAD_LOCAL_ADDR:
+		current_thread->local_storage      = (addr_t)arg1;
+		current_thread->local_storage_size = (size_t)arg2;
+		break;
+
+	case SYSCALL_FUNCT_GET_THREAD_LOCAL_ADDR:
+		ipc_params->ret.val = (int)current_thread->local_storage;
 		break;
 	
 	default:

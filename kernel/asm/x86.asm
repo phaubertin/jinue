@@ -68,22 +68,30 @@ ltr:
 ; ------------------------------------------------------------------------------
 	global cpuid
 cpuid:
-	mov edi, [esp+4]	; First param: regs
+	; save registers
+	push ebx
+	push edi
 	
-	mov eax, [edi]     ; regs->eax
-	mov ebx, [edi+4]   ; regs->ebx
-	mov ecx, [edi+8]   ; regs->ecx
-	mov edx, [edi+12]  ; regs->edx
+	mov edi, [esp+12]	; First param: regs
+	
+	mov eax, [edi+ 0]	; regs->eax
+	mov ebx, [edi+ 4]	; regs->ebx
+	mov ecx, [edi+ 8]	; regs->ecx
+	mov edx, [edi+12]	; regs->edx
 	
 	cpuid
 	
-	mov edi, [esp+4]	; First param: regs
+	mov edi, [esp+12]	; First param: regs
 	
-	mov [edi], eax
-	mov [edi+4], ebx
-	mov [edi+8], ecx
-	mov [edi+12], edx		
+	mov [edi+ 0], eax
+	mov [edi+ 4], ebx
+	mov [edi+ 8], ecx
+	mov [edi+12], edx
 	
+	; restore registers
+	pop edi
+	pop ebx
+		
 	ret
 
 ; ------------------------------------------------------------------------------
@@ -194,15 +202,36 @@ set_cr4:
 	ret
 
 ; ------------------------------------------------------------------------------
+; FUNCTION: get_eflags
+; C PROTOTYPE: unsigned long get_eflags(void)
+; ------------------------------------------------------------------------------
+	global get_eflags
+get_eflags:
+	pushfd
+	pop eax
+	ret
+
+; ------------------------------------------------------------------------------
+; FUNCTION: set_eflags
+; C PROTOTYPE: void set_eflags(unsigned long val)
+; ------------------------------------------------------------------------------
+	global set_eflags
+set_eflags:
+	mov eax, [esp+4]	; First param: val
+	push eax
+	popfd
+	ret
+
+; ------------------------------------------------------------------------------
 ; FUNCTION: set_cs
 ; C PROTOTYPE: void set_cs(unsigned long val)
 ; ------------------------------------------------------------------------------
 	global set_cs
 set_cs:
 	mov eax, [esp+4]	; First param: val
-	pop ebx             ; return address
+	pop edx             ; return address
 	push eax
-	push ebx 
+	push edx 
 	retf
 
 ; ------------------------------------------------------------------------------
@@ -266,4 +295,28 @@ set_data_segments:
 	mov es, eax
 	mov fs, eax
 	mov gs, eax
+	ret
+
+; ------------------------------------------------------------------------------
+; FUNCTION: rdmsr
+; C PROTOTYPE: unsigned long long rdmsr(msr_addr_t addr)
+; ------------------------------------------------------------------------------
+	global rdmsr
+rdmsr:
+	mov ecx, [esp+ 4]	; First param:  addr
+	
+	rdmsr
+	ret
+
+; ------------------------------------------------------------------------------
+; FUNCTION: wrmsr
+; C PROTOTYPE: void wrmsr(msr_addr_t addr, unsigned long long val)
+; ------------------------------------------------------------------------------
+	global wrmsr
+wrmsr:
+	mov ecx, [esp+ 4]	; First param:  addr
+	mov eax, [esp+ 8]	; Second param: val (low dword)
+	mov edx, [esp+12]	; Second param: val (high dword)
+	
+	wrmsr
 	ret

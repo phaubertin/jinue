@@ -7,18 +7,21 @@
 typedef union {
 	struct {
 		ipc_ref_t    dest;
+		unsigned int method;
 		unsigned int funct;
 		unsigned int arg1;
 		unsigned int arg2;
 	} args;
 	struct {
 		int  errno;
+		int  reserved1;
 		int  val;
+		int  reserved2;
 		int *perrno;
-		int  reserved;		
 	} ret;
 	struct {
 		unsigned long ebx;
+		unsigned long edx;
 		unsigned long eax;
 		unsigned long esi;
 		unsigned long edi;		

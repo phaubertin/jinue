@@ -8,7 +8,7 @@
 #include <vm.h>
 
 
-/** kernel memory map*/
+/** kernel memory map */
 bootmem_t *ram_map;
 
 /** available memory map (allocator) */
@@ -37,7 +37,7 @@ physaddr_t bootmem_alloc_page(void) {
 void new_ram_map_entry(physaddr_t addr, physsize_t size, bootmem_t **head) {
 	( (bootmem_t *)boot_heap )->next = *head;
 	*head = (bootmem_t *)boot_heap;
-	boot_heap += sizeof(bootmem_t);
+	boot_heap = (bootmem_t *)boot_heap + 1;
 	
 	(*head)->addr = addr;
 	(*head)->size = size;

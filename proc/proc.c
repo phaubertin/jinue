@@ -3,9 +3,13 @@
 
 
 int main(void) {
-	set_syscall_method();
+	int method;
+	
+	method = set_syscall_method();
 	
 	printk("Process manager started.\n");
+	
+	printk("Using system call method '%s'.\n", syscall_stub_names[method]);
 
 	while (1) {}
 	

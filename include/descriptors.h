@@ -101,8 +101,12 @@
 /** GDT entry for task-state segment (TSS) */
 #define GDT_TSS			   		 5
 
+/** GDT entry for task-state segment (TSS) */
+#define GDT_TSS_DATA	   		 6
+
 /** end of GDT / next-to-last entry */
-#define GDT_END   				 6
+#define GDT_END   				 7
+
 
 typedef unsigned long long seg_descriptor_t;
 

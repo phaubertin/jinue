@@ -1,6 +1,6 @@
 includes = ../../include
 
-OBJS    = io.o irq.o process.o x86.o
+OBJS    = io.o irq.o process.o syscall.o thread.o x86.o
 STARTUP = startup.o
 TARGET  = kernel-asm.o
 
@@ -19,6 +19,7 @@ irq.o:         irq.asm       $(includes)/irq.h
 process.o:     process.asm   $(includes)/process.h
 startup.o:     startup.asm   $(includes)/startup.h
 syscall.o:     syscall.asm   $(includes)/syscall.h
+thread.o:      thread.asm    $(includes)/thread.h
 x86.o:         x86.asm       $(includes)/x86.h
 
 %.o: %.asm

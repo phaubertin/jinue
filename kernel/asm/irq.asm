@@ -1,8 +1,9 @@
-bits 32
+%define NVECTORS			256
+%define GDT_KERNEL_DATA		2
 
-%define NVECTORS 256
+	bits 32
 
-extern dispatch_interrupt
+	extern dispatch_interrupt
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: irq_save_state
@@ -26,12 +27,25 @@ irq_save_state:
 	push es   ; 32
 	push ds   ; 28
 	push ebp  ; 24
-	push edx  ; 20
-	push ecx  ; 16
-	push edi  ; 12
-	push esi  ; 8
-	push eax  ; 4
+	push ecx  ; 20
+	push edi  ; 16
+	push esi  ; 12
+	push eax  ; 8
+	push edx  ; 4
 	push ebx  ; 0
+	
+	; set data segment
+	mov eax, GDT_KERNEL_DATA * 8 + 0
+	mov ds, ax
+	mov es, ax
+	
+	; set per-cpu data segment (TSS)
+	;
+	; The entry which follows the TSS descriptor in the GDT is a data segment
+	; which also points to the TSS (same base address and limit).
+	str ax			; get selector for TSS descriptor
+	add ax, 8		; next entry
+	mov gs, ax		; load gs with data segment selector
 	
 	; set function parameters
 	mov eax, [esp+44] ; get interrupt vector
@@ -46,11 +60,11 @@ irq_save_state:
 	
 	; restore thread state
 	pop ebx
+	pop edx
 	pop eax
 	pop esi
 	pop edi
 	pop ecx
-	pop edx
 	pop ebp
 	pop ds
 	pop es

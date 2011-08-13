@@ -1,5 +1,5 @@
-#ifndef _JINUE_PROCESS_H
-#define _JINUE_PROCESS_H
+#ifndef _JINUE_KERNEL_PROCESS_H
+#define _JINUE_KERNEL_PROCESS_H
 
 #include <slab.h>
 #include <vm.h>
@@ -23,10 +23,10 @@ struct process_cb_t {
 
 typedef struct process_cb_t process_cb_t;
 
-struct thread_t {
+/*struct thread_t {
 };
 
-typedef struct thread_t thread_t;
+typedef struct thread_t thread_t;*/
 
 extern pid_t next_pid;
 
