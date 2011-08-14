@@ -1,16 +1,16 @@
 #ifndef _JINUE_ALLOC_H_
 #define _JINUE_ALLOC_H_
 
-#define KERNEL_PAGE_LIST_SIZE	1024
+#include <jinue/types.h>
 
-#define KERNEL_PAGE_LIST_INIT	16
+#define KERNEL_PAGE_STACK_SIZE	512
 
-#define MAX_MEM_BLOCK_COUNT		64
+#define KERNEL_PAGE_STACK_INIT	32
 
 
-struct memblock_t {
+typedef struct  {
 	physaddr_t addr;
 	physsize_t size;
-};
+} memory_block_t;
 
 #endif

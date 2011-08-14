@@ -7,25 +7,28 @@
 #define SYSCALL_IRQ	0x80
 
 /** get best system call method number based on CPU features */
-#define SYSCALL_FUNCT_SYSCALL_METHOD			0
+#define SYSCALL_FUNCT_SYSCALL_METHOD			1
 
 /** send a character to in-kernel vga driver for printing on screen */
-#define SYSCALL_FUNCT_VGA_PUTC					1
+#define SYSCALL_FUNCT_VGA_PUTC					2
 
 /** send a fixed-length string to in-kernel vga driver for printing on screen */
-#define SYSCALL_FUNCT_VGA_PUTS					2
+#define SYSCALL_FUNCT_VGA_PUTS					3
 
 /** set address of errno for current thread */
-#define SYSCALL_FUNCT_SET_ERRNO_ADDR			3
+#define SYSCALL_FUNCT_SET_ERRNO_ADDR			4
 
 /** get address of errno for current thread */
-#define SYSCALL_FUNCT_GET_ERRNO_ADDR			4
+#define SYSCALL_FUNCT_GET_ERRNO_ADDR			5
 
 /** set address and size of thread local storage for current thread */
-#define SYSCALL_FUNCT_SET_THREAD_LOCAL_ADDR		5
+#define SYSCALL_FUNCT_SET_THREAD_LOCAL_ADDR		6
 
 /** get address of thread local storage for current thread */
-#define SYSCALL_FUNCT_GET_THREAD_LOCAL_ADDR		6
+#define SYSCALL_FUNCT_GET_THREAD_LOCAL_ADDR		7
+
+/** get free memory block list for management by process manager */
+#define SYSCALL_FUNCT_GET_FREE_MEMORY			8
 
 
 /** Intel's fast system call method (SYSENTER/SYSEXIT) */
@@ -57,5 +60,7 @@ int syscall_intr(ipc_ref_t dest, unsigned int method, unsigned int funct, unsign
 int get_syscall_method(void);
 
 int set_syscall_method(void);
+
+void set_errno_addr(int *perrno);
 
 #endif

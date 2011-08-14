@@ -1,3 +1,7 @@
+#include <jinue/alloc.h>
+#include <jinue/errno.h>
+#include <alloc.h>
+#include <bootmem.h>
 #include <ipc.h>
 #include <printk.h>
 #include <stddef.h>
@@ -10,6 +14,10 @@ int syscall_method;
 
 
 void dispatch_syscall(ipc_params_t *ipc_params) {
+	bootmem_t      *block;
+	memory_block_t *block_dest;
+	unsigned int count;
+	
 	unsigned int funct;
 	unsigned int arg1;
 	unsigned int arg2;
@@ -54,7 +62,42 @@ void dispatch_syscall(ipc_params_t *ipc_params) {
 		ipc_params->ret.val = (int)current_thread->local_storage;
 		break;
 	
+	case SYSCALL_FUNCT_GET_FREE_MEMORY:
+		/** TODO: check user pointer */
+		block_dest = (memory_block_t *)arg1;
+		
+		/* the boot-time page allocator will no longer be usable after this,
+		 * switch allocator */
+		__alloc_page = &stack_alloc_page;
+		
+		for(count = 0; count < arg2; ++count) {
+			
+			block = bootmem_get_block();
+			
+			if(block == NULL) {
+				break;
+			}
+			
+			block_dest->addr = block->addr;
+			block_dest->size = block->size;
+			
+			++block_dest;
+		}
+		
+		ipc_params->ret.val = count;
+		
+		if(count == arg2) {
+			if(bootmem_root != NULL) {
+				ipc_params->ret.errno    = JINUE_EMORE;
+				ipc_params->ret.perrno   = current_thread->perrno;
+			}
+		}
+		
+		break;
+	
 	default:
-		printk("SYSCALL: funct->%u arg1->%u arg2->%u\n", funct,	arg1, arg2);
+		ipc_params->ret.val    = -1;
+		ipc_params->ret.errno  = JINUE_ENOSYS;
+		ipc_params->ret.perrno = current_thread->perrno;
 	}	
 }

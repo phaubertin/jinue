@@ -86,7 +86,7 @@ void elf_load_process_manager(void) {
 	elf_check_process_manager();
 	
 	/** This is what we do:
-	    - We are only interested loadable segments (PT_LOAD).
+	    - We are only interested in loadable segments (PT_LOAD).
 	   
 	    - It is an error if dynamic linking information (PT_DYNAMIC) is
 	      present, or if a program interpreter is requested (PT_INTERP).

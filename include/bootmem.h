@@ -38,4 +38,6 @@ void bootmem_set_cur(void);
 
 void bootmem_init(void);
 
+bootmem_t *bootmem_get_block(void);
+
 #endif

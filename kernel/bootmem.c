@@ -5,6 +5,7 @@
 #include <kernel.h>
 #include <panic.h>
 #include <printk.h>
+#include <stddef.h>
 #include <vm.h>
 
 
@@ -278,4 +279,16 @@ void bootmem_init(void) {
 	
 	/* select the boot-time page allocator */
 	__alloc_page = &bootmem_alloc_page;
+}
+
+bootmem_t *bootmem_get_block(void) {
+	bootmem_t *block;
+	
+	block = bootmem_root;
+	
+	if(block != NULL) {
+		bootmem_root = block->next;
+	}
+	
+	return block;
 }

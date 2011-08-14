@@ -13,6 +13,7 @@
 #include <process.h>
 #include <stddef.h>
 #include <syscall.h>
+#include <thread.h>
 #include <vga.h>
 #include <vm.h>
 #include <vm_alloc.h>
@@ -57,6 +58,7 @@ void kinit(void) {
 	unsigned long flags;
 	unsigned long *ulptr;
 	unsigned long long msrval;
+	physaddr_t *page_stack_buffer;
 
 
 	/** ASSERTION: we assume the kernel starts on a page boundary */
@@ -86,7 +88,10 @@ void kinit(void) {
 		
 	/* allocate new kernel stack */
 	stack = alloc_page_early();
-	stack += PAGE_SIZE / 2;
+	stack += PAGE_SIZE;
+	
+	/* allocate page stack */
+	page_stack_buffer = (physaddr_t *)alloc_page_early();
 	
 	/* allocate space for new GDT and TSS */
 	gdt_info = (gdt_info_t *)alloc_page_early();
@@ -234,7 +239,7 @@ void kinit(void) {
 	/* initialize boot-time page frame allocator */
 	bootmem_init();
 	
-	/* activate paging */
+	/* enable paging */
 	set_cr3( (unsigned long)page_directory );
 	
 	temp = get_cr0();
@@ -242,6 +247,15 @@ void kinit(void) {
 	set_cr0x(temp);
 	
 	printk("Paging enabled\n");
+	
+	/* initialize page stack */
+	page_stack = &__page_stack;
+	init_page_stack(page_stack, page_stack_buffer);
+	
+	/* create thread control block for first thread */
+	current_thread = (thread_t *)boot_heap;
+	boot_heap = (thread_t *)boot_heap + 1;
+	init_thread(current_thread, stack);
 	
 	/* load process manager binary */
 	elf_load_process_manager();

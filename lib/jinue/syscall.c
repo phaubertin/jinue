@@ -15,3 +15,12 @@ int set_syscall_method(void) {
 	
 	return method;
 }
+
+void set_errno_addr(int *perrno) {
+	(void)syscall(
+		SYSCALL_IPC_REF,
+		NULL,
+		SYSCALL_FUNCT_SET_ERRNO_ADDR,
+		(unsigned int)perrno,
+		NULL );
+}
