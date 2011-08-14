@@ -11,11 +11,11 @@ LDFLAGS += -static -nostdlib -e main
 LIBS    = -L$(libjinue) -L$(libproc) -lproc -ljinue
 
 .PHONY: all
-all: proc
+all: proc-stripped
 
 .PHONY: clean
 clean:
-	-rm -f proc $(OBJS)
+	-rm -f proc proc-stripped $(OBJS)
 
 $(libjinue)/libjinue.a:
 	make -C $(libjinue)
@@ -25,6 +25,9 @@ $(libproc)/libproc.a:
 
 proc: $(OBJS) $(libjinue)/libjinue.a $(libproc)/libproc.a
 	$(LD) $(LDFLAGS) $(OBJS) -o $@ $(LIBS)
+
+proc-stripped: proc
+	strip --strip-debug -o $@ $<
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -I$(includes) -o $@ $<

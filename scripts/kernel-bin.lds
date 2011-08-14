@@ -1,6 +1,6 @@
 OUTPUT_FORMAT("binary")
 TARGET("binary")
-INPUT("proc/proc")
+INPUT("proc/proc-stripped")
 TARGET("elf32-i386")
 INPUT("kernel/kernel")
 
@@ -19,7 +19,7 @@ SECTIONS {
 	proc_elf = .;
 	
 	proc : {
-		proc/proc
+		proc/proc-stripped
 		
 		proc_elf_end = ABSOLUTE(.);
 		. = ALIGN(16);
