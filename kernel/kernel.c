@@ -84,7 +84,12 @@ void kinit(void) {
 	
 	/* get cpu info */
 	cpu_detect_features();
+	
 	printk("Processor vendor is %s.\n", cpu_vendor_name[cpu_vendor]);
+	
+	if(cpu_features & CPU_FEATURE_LOCAL_APIC) {
+		printk("Processor has local APIC.\n");
+	}
 		
 	/* allocate new kernel stack */
 	stack = alloc_page_early();

@@ -24,6 +24,8 @@ typedef unsigned long msr_addr_t;
 
 #define CPU_FEATURE_SYSCALL			(1<<2)
 
+#define CPU_FEATURE_LOCAL_APIC		(1<<3)
+
 
 #define CPU_EFLAGS_ID				(1<<21)
 

@@ -128,5 +128,12 @@ void cpu_detect_features(void) {
 		if(ext_flags & CPUID_EXT_FEATURE_SYSCALL) {
 			cpu_features |= CPU_FEATURE_SYSCALL;
 		}
-	}	
+	}
+	
+	/* support for local APIC */
+	if(cpu_vendor == CPU_VENDOR_AMD || cpu_vendor == CPU_VENDOR_INTEL) {
+		if(ext_flags & CPUID_FEATURE_APIC) {
+			cpu_features |= CPU_FEATURE_LOCAL_APIC;
+		}
+	}
 }
