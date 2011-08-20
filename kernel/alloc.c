@@ -62,7 +62,7 @@ physaddr_t stack_alloc_page(void) {
 	
 	--page_stack->count;
 	
-	return --page_stack->ptr;
+	return *(--page_stack->ptr);
 }
 
 void stack_free_page(physaddr_t page) {
