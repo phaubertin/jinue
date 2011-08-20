@@ -29,7 +29,7 @@ void vm_map(addr_t vaddr, physaddr_t paddr, unsigned long flags) {
 	if( !(*pde & VM_FLAG_PRESENT) ) {
 		/** TODO: fix this once PAE is activated */
 		/* allocate a new page table */
-		page_table = (addr_t)(unsigned long)alloc_page();
+		page_table = (addr_t)alloc_page();
 		
 		/* map page table in the region of memory reserved for that purpose */
 		pte = PAGE_TABLE_PTE_OF(vaddr);
@@ -58,7 +58,7 @@ void vm_map(addr_t vaddr, physaddr_t paddr, unsigned long flags) {
 	/** TODO: fix this once PAE is activated */
 	/* perform the actual mapping */
 	pte = PTE_OF(vaddr);
-	*pte = (pte_t)(unsigned long)paddr | flags | VM_FLAG_PRESENT;
+	*pte = (pte_t)paddr | flags | VM_FLAG_PRESENT;
 	
 	/* invalidate TLB entry for newly mapped page */
 	invalidate_tlb(vaddr);
