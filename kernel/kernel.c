@@ -10,13 +10,11 @@
 #include <kernel.h> /* includes stddef.h */
 #include <panic.h>
 #include <printk.h>
-#include <process.h>
 #include <stddef.h>
 #include <syscall.h>
 #include <thread.h>
 #include <vga.h>
 #include <vm.h>
-#include <vm_alloc.h>
 #include <x86.h>
 
 
@@ -29,9 +27,6 @@ addr_t kernel_top;
 /** top of region of memory mapped 1:1 (kernel image plus some pages for
     data structures allocated during initialization) */
 addr_t kernel_region_top;
-
-/** process descriptor for first process (idle) */
-process_t idle_process;
 
 /** address of kernel stack */
 addr_t kernel_stack;
@@ -260,7 +255,7 @@ void kinit(void) {
 	/* create thread control block for first thread */
 	current_thread = (thread_t *)boot_heap;
 	boot_heap = (thread_t *)boot_heap + 1;
-	init_thread(current_thread, stack);
+	thread_init(current_thread, stack);
 	
 	/* load process manager binary */
 	elf_load_process_manager();

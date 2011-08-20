@@ -37,13 +37,10 @@ interrupt.o:   interrupt.c   $(includes)/interrupt.h
 ipc.o:         ipc.c         $(includes)/ipc.h
 panic.o:       panic.c       $(includes)/panic.h
 printk.o:      printk.c      $(includes)/printk.h
-process.o:     process.c     $(includes)/process.h
-slab.o:        slab.c        $(includes)/vm_alloc.h $(includes)/slab.h
 syscall.o:     syscall.c     $(includes)/syscall.h
 thread.o:      thread.c      $(includes)/thread.h
 vga.o:         vga.c         $(includes)/vga.h
 vm.o:          vm.c          $(includes)/vm.h
-vm_alloc.o:    vm_alloc.c    $(includes)/vm_alloc.h $(includes)/slab.h
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -I$(includes) -o $@ $<

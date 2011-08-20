@@ -4,7 +4,7 @@
 #include <kernel.h>
 #include <panic.h>
 #include <printk.h>
-#include <process.h>
+#include <thread.h>
 #include <vm.h>
 
 void elf_check_process_manager(void) {
@@ -222,7 +222,7 @@ void elf_start_process_manager(void) {
 	entry = (elf_entry_t)proc_elf.e_entry;
 	
 	/* this never returns */
-	process_start((addr_t)entry, (addr_t)0xfffffff0);
+	thread_start((addr_t)entry, (addr_t)0xfffffff0);
 	
 	panic("Process Manager returned");
 }

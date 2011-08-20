@@ -1,8 +1,38 @@
 %define VM_FLAG_PRESENT 1<<0
 
+%define GDT_USER_CODE 	3
+%define GDT_USER_DATA 	4	
+
+	bits 32
 ; ------------------------------------------------------------------------------
-; FUNCTION: switch_thread
-; C PROTOTYPE: int switch_thread(addr_t vstack, phys_addr_t pstack, unsigned int flags, pte_t *pte, int next);
+; FUNCTION: thread_start
+; C PROTOTYPE: void thread_start(addr_t entry, addr_t stack)
+; ------------------------------------------------------------------------------
+	global thread_start
+thread_start:
+	pop eax						; Discard return address: we won't be going back
+								; that way
+	pop ebx						; First param:  entry
+	pop ecx						; Second param: stack
+	
+	; set data segment selectors
+	mov eax, 8 * GDT_USER_DATA + 3
+	mov ds, eax
+	mov es, eax
+	mov fs, eax
+	mov gs, eax
+	
+	push eax					; stack segment (ss), rpl = 3
+	push ecx					; stack pointer (esp)
+	push 2						; flags register (eflags)
+	push 8 * GDT_USER_CODE + 3	; code segment (cs), rpl/cpl = 3
+	push ebx                    ; entry point
+	
+	iretd
+
+; ------------------------------------------------------------------------------
+; FUNCTION: thread_switch
+; C PROTOTYPE: int thread_switch(addr_t vstack, phys_addr_t pstack, unsigned int flags, pte_t *pte, int next);
 ; ------------------------------------------------------------------------------
 ; initial stack layout:
 ;	esp+40	next
@@ -16,8 +46,8 @@
 ;	esp+ 8	stored esi
 ;	esp+ 4	stored edi
 ;	esp+ 0	stored ebp
-	global switch_thread
-switch_thread:
+	global thread_switch
+thread_switch:
 	; we need to store the registers even if we are not using them because
 	; we are about ot switch the stack
 	push ebx

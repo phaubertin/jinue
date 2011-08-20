@@ -16,7 +16,9 @@ typedef struct thread_t thread_t;
 extern thread_t *current_thread;
 
 
-void init_thread(thread_t *thread, addr_t stack);
+void thread_init(thread_t *thread, addr_t stack);
+
+void thread_start(addr_t entry, addr_t stack);
 
 #endif
 
