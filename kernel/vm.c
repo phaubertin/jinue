@@ -80,6 +80,20 @@ void vm_unmap(addr_t addr) {
 	invalidate_tlb(addr);
 }
 
+physaddr_t vm_lookup_physaddr(addr_t addr) {
+	pte_t *pte;
+	physaddr_t paddr;
+	
+	/* get page frame base address from page tables */
+	pte = PTE_OF(addr);
+	paddr = (physaddr_t)( (unsigned long)*pte & ~PAGE_MASK );
+	
+	/* add offset in page */
+	paddr += PAGE_OFFSET_OF(addr);
+	
+	return paddr;	
+}
+
 void vm_change_flags(addr_t vaddr, unsigned long flags) {
 	pte_t *pte, *pde;
 	

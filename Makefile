@@ -4,6 +4,8 @@ kernel_img = bin/jinue
 
 unclean    = $(kernel_bin) $(kernel_img) bin/setup bin/boot boot/boot.inc
 
+DEBUG     ?= yes
+
 # ----- main targets
 .PHONY: all
 all: $(kernel_img)
@@ -32,7 +34,7 @@ clean-doc:
 # ----- kernel image
 .PHONY: kernel
 kernel: 
-	make -C kernel
+	make DEBUG=$(DEBUG) -C kernel
 
 $(kernel): kernel
 	true
@@ -46,7 +48,7 @@ $(kernel_img): $(kernel_bin) bin/boot bin/setup
 # ----- process manager
 .PHONY: proc
 proc:
-	make -C proc
+	make DEBUG=$(DEBUG) -C proc
 
 # ----- setup code, boot sector, etc.
 bin/boot: boot/boot.asm boot/boot.inc

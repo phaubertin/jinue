@@ -8,6 +8,8 @@
 
 #define alloc_page() ( (*__alloc_page)() )
 
+#define free_page(paddr)
+
 
 typedef physaddr_t (*alloc_page_t)(void);
 
@@ -34,6 +36,6 @@ void init_page_stack(page_stack_t *stack, physaddr_t *stack_addr);
 
 physaddr_t stack_alloc_page(void);
 
-void stack_free_page(physaddr_t page) ;
+void stack_free_page(physaddr_t page);
 
 #endif

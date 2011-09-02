@@ -16,7 +16,7 @@ $(TARGET): $(OBJS)
 	ar rcs $@ $^
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c -I$(includes) -o $@ $<
+	$(CC) $(CFLAGS) -c -I$(includes) -I$(includes)/kstdc -o $@ $<
 
 %.o: %.asm
 	nasm -f elf -o $@ $<
