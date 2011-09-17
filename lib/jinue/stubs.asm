@@ -30,7 +30,7 @@ syscall_fast_intel:
 
 .return_here:	
 	or edi, edi			; On return, edi is set to the address of errno if
-	jz .noerrno			; the kernel set an error number in ebx.
+	jz .noerrno			; the kernel has set an error number in ebx.
 	
 	mov [edi], ebx
 	
@@ -67,7 +67,7 @@ syscall_fast_amd:
 	syscall
 	
 	or edi, edi			; On return, edi is set to the address of errno if
-	jz .noerrno			; the kernel set an error number in ebx.
+	jz .noerrno			; the kernel has set an error number in ebx.
 	
 	mov [edi], ebx
 	
@@ -104,7 +104,7 @@ syscall_intr:
 	int 0x80
 	
 	or edi, edi			; On return, edi is set to the address of errno if
-	jz .noerrno			; the kernel set an error number in ebx.
+	jz .noerrno			; the kernel has set an error number in ebx.
 	
 	mov [edi], ebx
 	

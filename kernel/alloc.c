@@ -67,7 +67,7 @@ physaddr_t stack_alloc_page(void) {
 
 void stack_free_page(physaddr_t page) {
 	if(page_stack->count >= KERNEL_PAGE_STACK_SIZE) {
-		/** should we panic here ? */
+		/** We are leaking memory here. Should we panic instead? */
 		return;
 	}
 	

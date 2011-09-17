@@ -34,7 +34,7 @@ thread_start:
 ; FUNCTION: thread_switch
 ; C PROTOTYPE: int thread_switch(addr_t vstack, phys_addr_t pstack, unsigned int flags, pte_t *pte, int next);
 ; ------------------------------------------------------------------------------
-; initial stack layout:
+; stack layout:
 ;	esp+40	next
 ;	esp+36	pte
 ;	esp+32	flags
@@ -49,7 +49,7 @@ thread_start:
 	global thread_switch
 thread_switch:
 	; we need to store the registers even if we are not using them because
-	; we are about ot switch the stack
+	; we are about to switch the stack
 	push ebx
 	push esi
 	push edi

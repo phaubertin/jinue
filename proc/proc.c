@@ -25,7 +25,7 @@ int main(void) {
 	printk("Process manager started.\n");	
 	printk("Using system call method '%s'.\n", syscall_stub_names[method]);	
 	
-	/* get free memory block from microkernel */
+	/* get free memory blocks from microkernel */
 	errno = 0;	
 	count = syscall(SYSCALL_IPC_REF, NULL, SYSCALL_FUNCT_GET_FREE_MEMORY, (unsigned int)blocks, MEMORY_BLOCK_MAX);
 	
