@@ -2,11 +2,19 @@
 #include <io.h>
 #include <vga.h>
 
+
+static unsigned int vga_text_color;
+
+
 static vga_pos_t vga_raw_putc(char c, vga_pos_t pos);
+
 
 void vga_init(void) {
 	unsigned char data;
 
+	/* set text color to default */
+	vga_text_color = VGA_COLOR_DEFAULT;
+	
 	/* Set address select bit in a known state: CRTC regs at 0x3dx */
 	data = inb(VGA_MISC_OUT_RD);
 	data |= 1;
@@ -45,6 +53,14 @@ void vga_scroll(void) {
 		*(di++) = 0x20;
 		*(di++) = VGA_COLOR_ERASE;
 	}
+}
+
+unsigned int vga_get_color(void) {
+	return vga_text_color;
+}
+
+void vga_set_color(unsigned int color)  {
+	vga_text_color = color;
 }
 
 vga_pos_t vga_get_cursor_pos(void) {
@@ -131,8 +147,8 @@ static vga_pos_t vga_raw_putc(char c, vga_pos_t pos) {
 	
 	default:
 		if(c >= 0x20) {
-			buffer[2*pos] = c;
-			buffer[2*pos+1] =  VGA_COLOR_DEFAULT;
+			buffer[2*pos]   = c;
+			buffer[2*pos+1] =  vga_text_color;
 			++pos;
 		}
 	}

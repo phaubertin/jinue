@@ -25,7 +25,7 @@
 #define VGA_COLOR_BRIGHTMAGENTA	0x0d
 #define VGA_COLOR_YELLOW		0x0e
 #define VGA_COLOR_BRIGHTWHITE	0x0f
-#define VGA_COLOR_DEFAULT		VGA_COLOR_GREEN	
+#define VGA_COLOR_DEFAULT		VGA_COLOR_BRIGHTGREEN	
 #define VGA_COLOR_ERASE			VGA_COLOR_RED
 
 #define VGA_LINES		25
@@ -35,15 +35,28 @@
 #define VGA_LINE(x)	((x) / (VGA_WIDTH))
 #define VGA_COL(x)	((x) % (VGA_WIDTH))
 
+
 typedef unsigned int vga_pos_t;
 
+
 void vga_init(void);
+
 void vga_clear(void);
+
 void vga_print(const char *message);
+
 void vga_printn(const char *message, unsigned int n);
+
 void vga_putc(char c);
+
 void vga_scroll(void);
+
+unsigned int vga_get_color(void);
+
+void vga_set_color(unsigned int color);
+
 vga_pos_t vga_get_cursor_pos(void);
+
 void vga_set_cursor_pos(vga_pos_t pos);
 
 #endif
