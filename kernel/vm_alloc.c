@@ -182,24 +182,14 @@ void vm_free(vm_alloc_t *allocator, addr_t page) {
 	}
 }
 
-void vm_alloc_init(vm_alloc_t *allocator, addr_t start_addr, size_t size) {
-	addr_t end_addr;
-	
-	end_addr = (addr_t)( (char *)start_addr + size);
-	
-	vm_alloc_init_allocator(allocator, start_addr, size);
-	
-	vm_alloc_add_region(allocator, start_addr, end_addr);
+void vm_alloc_init(vm_alloc_t *allocator, addr_t start_addr, addr_t end_addr) {
+	vm_alloc_init_allocator( allocator, start_addr, end_addr );
+	vm_alloc_add_region(     allocator, start_addr, end_addr );
 }
 
-void vm_alloc_init_piecewise(vm_alloc_t *allocator, addr_t start_addr, size_t size, size_t full_size) {
-	addr_t end_addr;
-	
-	end_addr = (addr_t)( (char *)start_addr + size);
-	
-	vm_alloc_init_allocator(allocator, start_addr, full_size);
-	
-	vm_alloc_add_region(allocator, start_addr, end_addr);
+void vm_alloc_init_piecewise(vm_alloc_t *allocator, addr_t start_addr, addr_t chunk_end, addr_t region_end) {
+	vm_alloc_init_allocator( allocator, start_addr, region_end );	
+	vm_alloc_add_region(     allocator, start_addr, chunk_end );
 }
 
 void vm_alloc_destroy(vm_alloc_t *allocator) {
@@ -238,8 +228,7 @@ void vm_alloc_destroy(vm_alloc_t *allocator) {
 	@param start_addr start address of the region managed by the allocator
 	@param size       size of the region managed by the allocator
 */
-void vm_alloc_init_allocator(vm_alloc_t *allocator, addr_t start_addr, size_t size) {
-	addr_t        end_addr;			/* end of memory region (start_addr + size) */
+void vm_alloc_init_allocator(vm_alloc_t *allocator, addr_t start_addr, addr_t end_addr) {
 	addr_t        base_addr;		/* block-aligned start address */
 	addr_t        aligned_end;		/* block-aligned end address */
 	addr_t        adjusted_start;	/* actual start of available memory, block array skipped */
@@ -257,12 +246,9 @@ void vm_alloc_init_allocator(vm_alloc_t *allocator, addr_t start_addr, size_t si
 	/** ASSERTION: allocator structure pointer must not be null */
 	assert(allocator != NULL);
 	
-	/** ASSERTION: base address and size must be multiples of page size (page-aligned memory region) */
-	assert( PAGE_OFFSET_OF(start_addr) == 0 && PAGE_OFFSET_OF(size) == 0 );
+	/** ASSERTION: start and end addresses must be multiples of page size (page-aligned memory region) */
+	assert( PAGE_OFFSET_OF(start_addr) == 0 && PAGE_OFFSET_OF(end_addr) == 0 );
 	
-	
-	/* calculate the end address of the virtual memory region */
-	end_addr = (addr_t)( (char *)start_addr + size );
 	
 	/* align base and end addresses to block size */
 	base_addr   = (addr_t)ALIGN_START(start_addr, VM_ALLOC_BLOCK_SIZE);
@@ -333,14 +319,24 @@ void vm_alloc_init_allocator(vm_alloc_t *allocator, addr_t start_addr, size_t si
 	@param end_addr   end address of the region (first unavailable page)
 */
 void vm_alloc_add_region(vm_alloc_t *allocator, addr_t start_addr, addr_t end_addr) {
+	addr_t       start_addr_adjusted;
 	unsigned int start;
 	unsigned int end;
 	unsigned int end_full;
 	unsigned int idx;
 	addr_t       limit;
+
+	/* skip the block array */
+	if(start_addr >= allocator->start_addr) {
+		start_addr_adjusted = start_addr;
+	}
+	else {
+		start_addr_adjusted = allocator->start_addr;
+	} 
 	
-	start = ((unsigned int)start_addr - (unsigned int)allocator->base_addr) / VM_ALLOC_BLOCK_SIZE;
-	end   = ((unsigned int)end_addr   - (unsigned int)allocator->base_addr) / VM_ALLOC_BLOCK_SIZE + 1;
+	/* start and end block indices */
+	start = ((unsigned int)start_addr_adjusted - (unsigned int)allocator->base_addr) / VM_ALLOC_BLOCK_SIZE;	
+	end   = ((unsigned int)end_addr            - (unsigned int)allocator->base_addr) / VM_ALLOC_BLOCK_SIZE;
 	
 	/* check and remember whether last block is partial (last_full < end) or
 	 * completely free (last_full == end) */
@@ -348,33 +344,34 @@ void vm_alloc_add_region(vm_alloc_t *allocator, addr_t start_addr, addr_t end_ad
 		end_full = end;
 	}
 	else {
-		end_full = end - 1;
+		end_full = end + 1;
 	}
 	
 	/* array initialization -- first block (if partial) */
-	idx = 0;
-	if( OFFSET_OF(start_addr, VM_ALLOC_BLOCK_SIZE) != 0 ) {
-		idx   = 1;
-		limit = ALIGN_END(start_addr, VM_ALLOC_BLOCK_SIZE);
+	idx = start;
+	
+	if( OFFSET_OF(start_addr_adjusted, VM_ALLOC_BLOCK_SIZE) != 0 ) {
+		limit = ALIGN_END(start_addr_adjusted, VM_ALLOC_BLOCK_SIZE);
 		
 		if(end_addr < limit) {
 			limit = end_addr;
 		}
 		
-		vm_alloc_custom_block(&allocator->block_array[0], start_addr, limit);
-	}	
+		vm_alloc_custom_block(&allocator->block_array[idx], start_addr_adjusted, limit);
+		
+		++idx;
+	}
 	
-	/* array initialization -- free blocks */	
-	for(; idx < end_full; ++idx) {
+	/* array initialization -- free blocks */
+	for(; idx < end; ++idx) {
 		vm_alloc_free_block(&allocator->block_array[idx]);
 	}
 	
 	/* array initialization -- last block (if partial) */
-	if(idx < end) {
+	if(idx < end_full) {
 		vm_alloc_custom_block(&allocator->block_array[idx], allocator->block_array[idx].base_addr, end_addr);
 	}
 }
-
 
 
 /**
@@ -393,6 +390,9 @@ void vm_alloc_free_block(vm_block_t *block) {
 	
 	/* unlink from partial list if necessary */
 	vm_alloc_unlink_block(block);
+	
+	/** ASSERTION: block->allocator should not be NULL */
+	assert(block->allocator != NULL);
 	
 	/* link block to the free list */
 	if(block->allocator->free_list == NULL) {
@@ -482,6 +482,9 @@ void vm_alloc_partial_block(vm_block_t *block) {
 	paddr       = alloc_page();
 	vm_map((addr_t)stack_addr, paddr, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
 	
+	/** ASSERTION: block->allocator should not be NULL*/
+	assert(block->allocator != NULL);
+	
 	/* link block to the partial list */
 	if(block->allocator->partial_list == NULL) {
 		/* special case: partial list is empty */
@@ -554,7 +557,7 @@ void vm_alloc_custom_block(vm_block_t *block, addr_t start_addr, addr_t end_addr
 	adjusted_start = start_addr;
 	
 	if( VM_ALLOC_IS_USED(block) ) {
-		/* if no stack address is specified at this point, used the first page
+		/* if no stack address is specified at this point, use the first page
 		 * of the address range for this purpose */
 		if( block->stack_addr == NULL ) {
 			block->stack_addr = (addr_t *)start_addr;
@@ -600,6 +603,9 @@ void vm_alloc_unlink_block(vm_block_t *block) {
 	/** ASSERTION: block is either properly linked (no null pointers) or not at
 	 *             all (next is null) */
 	assert(block->prev != NULL || block->next == NULL);
+	
+	/** ASSERTION: block->allocator should not be NULL */
+	assert(block->allocator != NULL);
 	
 	/* get allocator for block (required for next assert as well as subsequent code) */
 	allocator = block->allocator;

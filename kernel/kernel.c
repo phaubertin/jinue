@@ -15,6 +15,7 @@
 #include <thread.h>
 #include <vga.h>
 #include <vm.h>
+#include <vm_alloc.h>
 #include <x86.h>
 
 
@@ -30,6 +31,10 @@ addr_t kernel_region_top;
 
 /** address of kernel stack */
 addr_t kernel_stack;
+
+/** global page allocator (region 0..KLIMIT) */
+static vm_alloc_t __global_page_allocator;
+vm_alloc_t *global_page_allocator;
 
 
 void kernel(void) {
@@ -59,11 +64,11 @@ void kinit(void) {
 	/** ASSERTION: we assume the kernel starts on a page boundary */
 	assert( PAGE_OFFSET_OF( (unsigned int)kernel_start ) == 0 );
 	
-	/** ASSERTION: we assume kernel_start is aligned with a page directory entry boundary */
+	/** ASSERTION: we assume the page tables mapping is aligned on a page directory entry boundary */
 	assert( PAGE_TABLE_OFFSET_OF(PAGE_TABLES_ADDR) == 0 );
 	assert( PAGE_OFFSET_OF(PAGE_TABLES_ADDR) == 0 );
 	
-	/** ASSERTION: we assume kernel_start is aligned with a page directory entry boundary */
+	/** ASSERTION: we assume the page directory mapping is aligned on a page directory entry boundary */
 	assert( PAGE_TABLE_OFFSET_OF(PAGE_DIRECTORY_ADDR) == 0 );
 	assert( PAGE_OFFSET_OF(PAGE_DIRECTORY_ADDR) == 0 );
 		
@@ -248,9 +253,23 @@ void kinit(void) {
 	
 	printk("Paging enabled\n");
 	
-	/* initialize page stack */
+	/* initialize page frame stack */
 	page_stack = &__page_stack;
 	init_page_stack(page_stack, page_stack_buffer);
+	
+	/* initialize global page allocator (region 0..KLIMIT)
+	  
+	   note: we skip the first (i.e. actually allocate the region PAGE_SIZE..KLIMIT)
+	         for two reasons:
+				- We want null pointer deferences to generate a page fault instead
+				  being more or less silently ignored (read) or overwriting something
+				  potentially important (write).
+				- We want to ensure nothing interesting (e.g. address space
+				  management data structures) can have NULL as its valid
+				  address.*/
+	global_page_allocator = &__global_page_allocator;
+	vm_alloc_init_piecewise(global_page_allocator, (addr_t)PAGE_SIZE,  (addr_t)kernel_start, (addr_t)KLIMIT);
+	vm_alloc_add_region(global_page_allocator, (addr_t)kernel_region_top, (addr_t)KLIMIT);
 	
 	/* create thread control block for first thread */
 	current_thread = (thread_t *)boot_heap;
