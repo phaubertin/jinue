@@ -37,7 +37,7 @@ void dump_call_stack(void) {
 debugging_symbol_t *get_debugging_symbol(addr_t addr) {
 	debugging_symbol_t *sym;
 	
-	if(addr >= &kernel_end) {
+	if(addr >= (addr_t)&kernel_end) {
 		return NULL;
 	}
 	
