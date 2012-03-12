@@ -1,9 +1,9 @@
 includes = ../include
 scripts  = ../scripts
 
-OBJS = alloc.o assert.o boot.o bootmem.o cpu.o elf.o kbd.o kernel.o \
-       interrupt.o ipc.o panic.o printk.o syscall.o thread.o vga.o vm.o \
-       vm_alloc.o
+OBJS = alloc.o assert.o boot.o bootmem.o cpu.o debug.o elf.o kbd.o \
+       kernel.o interrupt.o ipc.o panic.o printk.o syscall.o thread.o \
+       vga.o vm.o vm_alloc.o
 
 KERNEL-ASM = asm/kernel-asm.o
 STARTUP    = asm/startup.o

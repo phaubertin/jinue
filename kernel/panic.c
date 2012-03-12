@@ -12,7 +12,8 @@ void panic(const char *message) {
 	
 	printk("KERNEL PANIC: %s\n", message);
 	
-	vga_set_color(color);
-	
+	vga_set_color(color);	
+
+	dump_call_stack();
 	halt();
 }

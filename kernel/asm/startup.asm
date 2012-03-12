@@ -105,7 +105,7 @@ setup_stack:
 	xor eax, eax
 	push eax
 	push eax		; null-terminate call stack (useful for debugging)
-	mov ebp, esp	; initialize frame pointer
+	xor ebp, ebp	; initialize frame pointer
 	
 	call kernel
 

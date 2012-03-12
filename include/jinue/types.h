@@ -9,4 +9,6 @@ typedef unsigned long long physsize_t;
 
 typedef unsigned long count_t;
 
+typedef int linker_defined_t;
+
 #endif
