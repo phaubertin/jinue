@@ -1,13 +1,15 @@
 #ifndef _JINUE_KERNEL_KERNEL_H_
 #define _JINUE_KERNEL_KERNEL_H_
 
-#include <jinue/types.h>
 #include <elf.h>
 #include <startup.h>
 #include <stddef.h>
 #include <vm_alloc.h>
+#include <jinue/types.h>
+
 
 #define kernel_start ((addr_t)start)
+
 
 extern addr_t kernel_top;
 

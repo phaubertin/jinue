@@ -1,6 +1,6 @@
-#include <boot.h>
 #include <alloc.h>
 #include <bootmem.h>
+#include <e820.h>
 #include <kbd.h>
 #include <kernel.h>
 #include <panic.h>
