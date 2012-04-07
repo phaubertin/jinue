@@ -195,7 +195,7 @@ void vm_alloc_init_piecewise(vm_alloc_t *allocator, addr_t start_addr, addr_t ch
 void vm_alloc_destroy(vm_alloc_t *allocator) {
 	vm_block_t   *head;
 	vm_block_t   *block;
-	physaddr_t    paddr;
+	pfaddr_t      paddr;
 	addr_t        addr;
 	unsigned int  idx;
 	
@@ -205,7 +205,7 @@ void vm_alloc_destroy(vm_alloc_t *allocator) {
 	
 	if(block != NULL) {
 		do {
-			paddr = vm_lookup_physaddr((addr_t)block->stack_addr);
+			paddr = vm_lookup_pfaddr((addr_t)block->stack_addr);
 			free_page(paddr);
 			
 			block = block->next;
@@ -215,7 +215,7 @@ void vm_alloc_destroy(vm_alloc_t *allocator) {
 	/* de-allocate block array pages */
 	addr = (addr_t)allocator->block_array;
 	for(idx = 0; idx < allocator->array_pages; ++idx) {
-		paddr = vm_lookup_physaddr(addr);
+		paddr = vm_lookup_pfaddr(addr);
 		free_page(paddr);
 		
 		addr = (addr_t)( (char *)addr + PAGE_SIZE );
@@ -239,7 +239,7 @@ void vm_alloc_init_allocator(vm_alloc_t *allocator, addr_t start_addr, addr_t en
 	unsigned int  array_page_count;	/* array size, in pages */
 	
 	addr_t        addr;				/* some virtual address */
-	physaddr_t    paddr;			/* some physical address */
+	pfaddr_t      paddr;			/* some page frame address */
 	unsigned int  idx;				/* an array index */
 		
 	
@@ -432,7 +432,7 @@ void vm_alloc_partial_block(vm_block_t *block) {
 	vm_block_t  	*prev;
 	vm_block_t  	*next;
 	addr_t       	*stack_addr;
-	physaddr_t   	 paddr;
+	pfaddr_t		 paddr;
 	bool			 was_free;
 	
 	
@@ -595,7 +595,7 @@ void vm_alloc_custom_block(vm_block_t *block, addr_t start_addr, addr_t end_addr
 */
 void vm_alloc_unlink_block(vm_block_t *block) {
 	vm_alloc_t *allocator;
-	physaddr_t  paddr;
+	pfaddr_t    paddr;
 	
 	/** ASSERTION: block is not null */
 	assert(block != NULL);
@@ -620,7 +620,7 @@ void vm_alloc_unlink_block(vm_block_t *block) {
 	
 	/* if block has a stack, discard it */
 	if(block->stack_ptr != NULL) {
-		paddr = vm_lookup_physaddr(block->stack_addr);
+		paddr = vm_lookup_pfaddr(block->stack_addr);
 		free_page(paddr);
 	}
 		

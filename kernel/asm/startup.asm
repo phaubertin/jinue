@@ -3,7 +3,7 @@
 bits 32
 
 global halt
-global start
+global __start
 
 extern kernel
 extern e820_map
@@ -15,10 +15,10 @@ extern kernel_top
 extern kernel_region_top
 extern kernel_end
 
-start:
+__start:
 	; set kernel size
 	mov eax, kernel_end
-	sub eax, start
+	sub eax, __start
 	mov dword [kernel_size], eax	
 	
 	; point esi and eax to the start of boot sector data
@@ -41,7 +41,7 @@ start:
 	and eax, ~0xfff
 	
 set_kernel_top:
-	add eax, start
+	add eax, __start
 	mov dword [kernel_top], eax
 	
 	; --------------------------------------

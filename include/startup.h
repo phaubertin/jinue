@@ -3,7 +3,7 @@
 
 #define KERNEL_STACK_SIZE	8192
 
-void start(void);
+void __start(void);
 void halt(void);
 
 #endif

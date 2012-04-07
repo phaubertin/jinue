@@ -73,7 +73,7 @@ void elf_check_process_manager(void) {
 
 void elf_load_process_manager(void) {
 	elf_prog_header_t *phdr;
-	physaddr_t page;
+	pfaddr_t page;
 	addr_t vpage;
 	char *vptr, *vend, *vfend, *vnext;
 	char *file_ptr;	
@@ -163,10 +163,6 @@ void elf_load_process_manager(void) {
 				
 				/* allocate and map the new page */
 				page = alloc_page();
-								
-				/** TODO:      remove this assert once PAE is enabled 
-				 *  ASSERTION: allocated page has a 32-bit address */
-				assert(page < (1LL<<32));
 				vm_map(vpage, page, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
 				
 				/* copy */
@@ -195,7 +191,7 @@ void elf_load_process_manager(void) {
 				flags = VM_FLAG_USER | VM_FLAG_READ_ONLY;
 			
 				/* perform mapping */
-				vm_map((addr_t)vptr, (physaddr_t)(unsigned long)file_ptr, flags);
+				vm_map((addr_t)vptr, PTR_TO_PFADDR(file_ptr), flags);
 				
 				vptr     += PAGE_SIZE;
 				file_ptr += PAGE_SIZE;
@@ -207,10 +203,6 @@ void elf_load_process_manager(void) {
 	/* setup stack */
 	page  = alloc_page();
 	vpage = (addr_t)0xfffff000;
-	
-	/** TODO:      remove this assert once PAE is enabled 
-	*   ASSERTION: allocated page has a 32-bit address */
-	assert(page < (1LL<<32));
 	vm_map(vpage, page, VM_FLAG_USER | VM_FLAG_READ_WRITE);
 	
 	printk("Process manager loaded.\n");

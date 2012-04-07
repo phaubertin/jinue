@@ -16,7 +16,7 @@ int main(void) {
 	memory_block_t blocks[MEMORY_BLOCK_MAX];
 	int method;
 	int count;
-	physsize_t total_memory;
+	uint32_t total_memory;
 	unsigned int idx;
 	
 	/* set system call method and say hello */
@@ -37,12 +37,12 @@ int main(void) {
 	total_memory = 0;
 	
 	for(idx = 0; idx < count; ++idx) {
-		total_memory += blocks[idx].size;
+		total_memory += blocks[idx].count;
 	}
 	
 	printk("%u kilobytes (%u pages) of memory available to process manager.\n", 
-		(unsigned long)(total_memory / 1024), 
-		(unsigned long)(total_memory / PAGE_SIZE) );	
+		(unsigned long)(total_memory * PAGE_SIZE / 1024), 
+		(unsigned long)(total_memory) );	
 
 	/* loop forever */
 	while (1) {}

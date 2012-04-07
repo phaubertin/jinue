@@ -14,8 +14,9 @@ The kernel image has the following format:
   |                                       |
   +---------------------------------------+
 
-Once it is loaded in memory by the boot loader and the startup code is
-run (startup.asm), this is the layout in memory:
+Once it is loaded in memory by the boot loader, and the startup code
+(startup.asm) and initilization code (kinit()) are run, this is the
+layout in memory:
 
   +---------------------------------------+ kernel_start (0x100000) 
   |                                       |
@@ -30,11 +31,13 @@ run (startup.asm), this is the layout in memory:
   +---------------------------------------+
   |           kernel memory map           |
   +---------------------------------------+
-  |   available memory map (allocator)    |
-  +---------------------------------------+
   |                                       |
   |                . . .                  |    [kernel boot heap/stack]
   |                                       |
+  +-----^---------------------------^-----+
+  |          kernel stack (boot)          |
   +---------------------------------------+
-  |              kernel stack             |
+  |                                       |
+  |       initial page allocations        |
+  |                                       |
   +---------------------------------------+ kernel_region_top

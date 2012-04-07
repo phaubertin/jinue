@@ -23,41 +23,30 @@ addr_t alloc_page_early(void) {
 	return page;
 }
 
-physaddr_t do_not_call(void) {
+pfaddr_t do_not_call(void) {
 	panic("do_not_call()");
 	
 	return NULL; /* never returns */
 }
 
 
-void init_page_stack(page_stack_t *stack, physaddr_t *stack_addr) {
-	physaddr_t *ptr;
-	physaddr_t new_page;
+void init_page_stack(page_stack_t *stack, pfaddr_t *stack_addr) {
+	pfaddr_t *ptr;
 	unsigned int idx;
 	
 	ptr = stack_addr;
 	
-	for(idx = 0; idx < KERNEL_PAGE_STACK_INIT; ++idx) {		
-		new_page = alloc_page();
-		
-		if(new_page == (physaddr_t)NULL) {
-			break;
-		}
-			
-		*(ptr++) = new_page;
+	for(idx = 0;idx < KERNEL_PAGE_STACK_SIZE; ++idx) {
+		ptr[idx] = (pfaddr_t)NULL;
 	}
 	
-	stack->ptr   = ptr;
-	stack->count = idx;
-	
-	for(;idx < KERNEL_PAGE_STACK_SIZE; ++idx) {
-		*(ptr++) = (physaddr_t)NULL;
-	}	
+	stack->ptr   = stack_addr;
+	stack->count = 0;
 }
 
-physaddr_t stack_alloc_page(void) {
+pfaddr_t stack_alloc_page(void) {
 	if(page_stack->count == 0) {
-		return (physaddr_t)NULL;
+		panic("stack_alloc_page(): no more pages to allocate");
 	}	
 	
 	--page_stack->count;
@@ -65,11 +54,13 @@ physaddr_t stack_alloc_page(void) {
 	return *(--page_stack->ptr);
 }
 
-void stack_free_page(physaddr_t page) {
+void stack_free_page(pfaddr_t page) {
 	if(page_stack->count >= KERNEL_PAGE_STACK_SIZE) {
 		/** We are leaking memory here. Should we panic instead? */
 		return;
 	}
+	
+	++page_stack->count;
 	
 	(page_stack->ptr++)[0] = page;
 }

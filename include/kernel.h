@@ -8,7 +8,7 @@
 #include <jinue/types.h>
 
 
-#define kernel_start ((addr_t)start)
+#define kernel_start ((addr_t)__start)
 
 
 extern addr_t kernel_top;

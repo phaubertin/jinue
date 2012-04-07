@@ -4,6 +4,7 @@
 #include <jinue/alloc.h>
 #include <jinue/types.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 
 #define alloc_page() ( (*__alloc_page)() )
@@ -11,11 +12,11 @@
 #define free_page(paddr)
 
 
-typedef physaddr_t (*alloc_page_t)(void);
+typedef pfaddr_t (*alloc_page_t)(void);
 
 typedef struct {
-	physaddr_t  *ptr;
-	unsigned int count;
+	pfaddr_t  *ptr;
+	uint32_t   count;
 } page_stack_t;
 
 
@@ -30,12 +31,12 @@ extern page_stack_t __page_stack;
 
 addr_t alloc_page_early(void);
 
-physaddr_t do_not_call(void);
+pfaddr_t do_not_call(void);
 
-void init_page_stack(page_stack_t *stack, physaddr_t *stack_addr);
+void init_page_stack(page_stack_t *stack, pfaddr_t *stack_addr);
 
-physaddr_t stack_alloc_page(void);
+pfaddr_t stack_alloc_page(void);
 
-void stack_free_page(physaddr_t page);
+void stack_free_page(pfaddr_t page);
 
 #endif

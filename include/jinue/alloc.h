@@ -3,14 +3,14 @@
 
 #include <jinue/types.h>
 
-#define KERNEL_PAGE_STACK_SIZE	512
+#define KERNEL_PAGE_STACK_SIZE	1024
 
-#define KERNEL_PAGE_STACK_INIT	32
+#define KERNEL_PAGE_STACK_INIT	128
 
 
 typedef struct  {
-	physaddr_t addr;
-	physsize_t size;
+	pfaddr_t addr;
+	uint32_t count;
 } memory_block_t;
 
 #endif

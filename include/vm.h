@@ -2,6 +2,7 @@
 #define _JINUE_KERNEL_VM_H_
 
 #include <kernel.h>
+#include <stdint.h>
 #include <jinue/vm.h>
 
 
@@ -11,22 +12,22 @@
 #define PAGE_MASK (PAGE_SIZE - 1)
 
 /** offset in page of virtual address */
-#define PAGE_OFFSET_OF(x)  ((unsigned long)(x) & PAGE_MASK)
+#define PAGE_OFFSET_OF(x)  ((uint32_t)(x) & PAGE_MASK)
 
 
 /* ------ page tables ------ */
 
 /** type of a page table (or page directory) entry */
-typedef unsigned long pte_t;
+typedef uint32_t pte_t;
 
 /** bit mask for page table entry */
 #define PAGE_TABLE_MASK (PAGE_TABLE_ENTRIES - 1)
 
 /** page table entry offset of virtual (linear) address */
-#define PAGE_TABLE_OFFSET_OF(x)  ( ((unsigned long)(x) >> PAGE_BITS) & PAGE_TABLE_MASK )
+#define PAGE_TABLE_OFFSET_OF(x)  ( ((uint32_t)(x) >> PAGE_BITS) & PAGE_TABLE_MASK )
 
 /** page directory entry offset of virtual (linear address) */
-#define PAGE_DIRECTORY_OFFSET_OF(x)  ((unsigned long)(x) >> (PAGE_BITS + PAGE_TABLE_BITS))
+#define PAGE_DIRECTORY_OFFSET_OF(x)  ((uint32_t)(x) >> (PAGE_BITS + PAGE_TABLE_BITS))
 
 /** type of a page table */
 typedef pte_t page_table_t[PAGE_TABLE_ENTRIES];
@@ -106,15 +107,15 @@ typedef pte_t page_table_t[PAGE_TABLE_ENTRIES];
 #define VM_FLAGS_PAGE_TABLE (VM_FLAG_KERNEL | VM_FLAG_READ_WRITE)
 
 
-void vm_map(addr_t vaddr, physaddr_t paddr, unsigned long flags);
+void vm_map(addr_t vaddr, pfaddr_t paddr, uint32_t flags);
 
 void vm_unmap(addr_t addr);
 
-physaddr_t vm_lookup_physaddr(addr_t addr);
+pfaddr_t vm_lookup_pfaddr(addr_t addr);
 
-void vm_change_flags(addr_t vaddr, unsigned long flags);
+void vm_change_flags(addr_t vaddr, uint32_t flags);
 
-void vm_map_early(addr_t vaddr, physaddr_t paddr, unsigned long flags, pte_t *page_directory);
+void vm_map_early(addr_t vaddr, addr_t paddr, uint32_t flags, pte_t *page_directory);
 
 #endif
 

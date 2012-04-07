@@ -32,8 +32,10 @@ addr_t kernel_region_top;
 /** address of kernel stack */
 addr_t kernel_stack;
 
-/** global page allocator (region 0..KLIMIT) */
+
 static vm_alloc_t __global_page_allocator;
+
+/** global page allocator (region 0..KLIMIT) */
 vm_alloc_t *global_page_allocator;
 
 
@@ -58,7 +60,7 @@ void kinit(void) {
 	unsigned long flags;
 	unsigned long *ulptr;
 	unsigned long long msrval;
-	physaddr_t *page_stack_buffer;
+	pfaddr_t *page_stack_buffer;
 
 
 	/** ASSERTION: we assume the kernel starts on a page boundary */
@@ -94,9 +96,6 @@ void kinit(void) {
 	/* allocate new kernel stack */
 	stack = alloc_page_early();
 	stack += PAGE_SIZE;
-	
-	/* allocate page stack */
-	page_stack_buffer = (physaddr_t *)alloc_page_early();
 	
 	/* allocate space for new GDT and TSS */
 	gdt_info = (gdt_info_t *)alloc_page_early();
@@ -169,6 +168,88 @@ void kinit(void) {
 	idt_info->addr  = idt;
 	idt_info->limit = IDT_VECTOR_COUNT * sizeof(seg_descriptor_t) - 1;
 	lidt(idt_info);
+		
+	/* Allocate the first page directory. Since paging is not yet
+	   activated, virtual and physical addresses are the same.  */
+	page_directory = (pte_t *)alloc_page_early();
+	
+	/* allocate page tables for kernel data/code region (0..PLIMIT) and add
+	   relevant entries to page directory */
+	for(idx = 0; idx < PAGE_DIRECTORY_OFFSET_OF(PLIMIT); ++idx) {
+		pte = (pte_t *)alloc_page_early();		
+		page_directory[idx] = (pte_t)pte | VM_FLAG_PRESENT | VM_FLAG_KERNEL | VM_FLAG_READ_WRITE;
+		
+		for(idy = 0; idy < PAGE_TABLE_ENTRIES; ++idy) {
+			pte[idy] = 0;
+		}
+	}
+	
+	while(idx < PAGE_TABLE_ENTRIES) {
+		page_directory[idx] = 0;
+		++idx;
+	}
+	
+	/* map page directory */
+	vm_map_early((addr_t)PAGE_DIRECTORY_ADDR, (addr_t)page_directory, VM_FLAGS_PAGE_TABLE, page_directory);
+		
+	/* map page tables */
+	for(idx = 0, addr = (addr_t)PAGE_TABLES_ADDR; idx < PAGE_DIRECTORY_OFFSET_OF(PLIMIT); ++idx, addr += PAGE_SIZE)	{
+		page_table = (pte_t *)page_directory[idx];
+		page_table = (pte_t *)( (unsigned int)page_table & ~PAGE_MASK  );
+		
+		vm_map_early((addr_t)addr, (addr_t)page_table, VM_FLAGS_PAGE_TABLE, page_directory);		
+	}
+	
+	/* perform 1:1 mapping of text video memory */
+	vm_map_early((addr_t)VGA_TEXT_VID_BASE,           (addr_t)VGA_TEXT_VID_BASE,           VM_FLAG_KERNEL | VM_FLAG_READ_WRITE, page_directory);
+	vm_map_early((addr_t)VGA_TEXT_VID_BASE+PAGE_SIZE, (addr_t)VGA_TEXT_VID_BASE+PAGE_SIZE, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE, page_directory);
+	
+	/* initialize page frame allocator */
+	page_stack_buffer = (pfaddr_t *)alloc_page_early();
+	page_stack = &__page_stack;
+	init_page_stack(page_stack, page_stack_buffer);
+	
+	for(idx = 0; idx < KERNEL_PAGE_STACK_INIT; ++idx) {
+		stack_free_page( PTR_TO_PFADDR( alloc_page_early() ) );
+	}
+	
+	/** below this point, it is no longer safe to call alloc_page_early() */
+	__alloc_page         = &stack_alloc_page;
+	use_alloc_page_early = false;
+	
+	/* perform 1:1 mapping of kernel image and data
+	
+	   note: page tables for memory region (0..KLIMIT) are contiguous
+	         in physical memory */
+	for(addr = kernel_start; addr < kernel_region_top; addr += PAGE_SIZE) {
+		vm_map_early((addr_t)addr, (addr_t)addr, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE, page_directory);
+	}
+	
+	/* enable paging */
+	set_cr3( (unsigned long)page_directory );
+	
+	temp = get_cr0();
+	temp |= X86_FLAG_PG;
+	set_cr0x(temp);
+	
+	printk("Paging enabled\n");
+	
+	/* create system memory map */
+	bootmem_init();
+	
+	/* initialize global page allocator (region 0..KLIMIT)
+	  
+	   note: we skip the first page (i.e. actually allocate the region PAGE_SIZE..KLIMIT)
+	         for two reasons:
+				- We want null pointer deferences to generate a page fault instead
+				  being more or less silently ignored (read) or overwriting something
+				  potentially important (write).
+				- We want to ensure nothing interesting (e.g. address space
+				  management data structures) can have NULL as its valid
+				  address.*/
+	global_page_allocator = &__global_page_allocator;
+	vm_alloc_init_piecewise(global_page_allocator, (addr_t)PAGE_SIZE,  (addr_t)kernel_start, (addr_t)KLIMIT);
+	vm_alloc_add_region(global_page_allocator, (addr_t)kernel_region_top, (addr_t)KLIMIT);
 	
 	/* choose system call mechanism */
 	syscall_method = SYSCALL_METHOD_INTR;
@@ -194,82 +275,6 @@ void kinit(void) {
 		
 		wrmsr(MSR_STAR, msrval);
 	}
-		
-	/* Allocate the first page directory. Since paging is not yet
-	   activated, virtual and physical addresses are the same.  */
-	page_directory = (pte_t *)alloc_page_early();
-	
-	/* allocate page tables for kernel data/code region (0..PLIMIT) and add
-	   relevant entries to page directory */
-	for(idx = 0; idx < PAGE_DIRECTORY_OFFSET_OF(PLIMIT); ++idx) {
-		pte = (pte_t *)alloc_page_early();		
-		page_directory[idx] = (pte_t)pte | VM_FLAG_PRESENT | VM_FLAG_KERNEL | VM_FLAG_READ_WRITE;
-		
-		for(idy = 0; idy < PAGE_TABLE_ENTRIES; ++idy) {
-			pte[idy] = 0;
-		}
-	}
-	
-	while(idx < PAGE_TABLE_ENTRIES) {
-		page_directory[idx] = 0;
-		++idx;
-	}
-	
-	/* map page directory */
-	vm_map_early((addr_t)PAGE_DIRECTORY_ADDR, (physaddr_t)(unsigned long)page_directory, VM_FLAGS_PAGE_TABLE, page_directory);
-		
-	/* map page tables */
-	for(idx = 0, addr = (addr_t)PAGE_TABLES_ADDR; idx < PAGE_DIRECTORY_OFFSET_OF(PLIMIT); ++idx, addr += PAGE_SIZE)	{
-		page_table = (pte_t *)page_directory[idx];
-		page_table = (pte_t *)( (unsigned int)page_table & ~PAGE_MASK  );
-		
-		vm_map_early((addr_t)addr, (physaddr_t)(unsigned long)page_table, VM_FLAGS_PAGE_TABLE, page_directory);		
-	}
-	
-	/* perform 1:1 mapping of text video memory */
-	vm_map_early((addr_t)VGA_TEXT_VID_BASE,           (physaddr_t)VGA_TEXT_VID_BASE,           VM_FLAG_KERNEL | VM_FLAG_READ_WRITE, page_directory);
-	vm_map_early((addr_t)VGA_TEXT_VID_BASE+PAGE_SIZE, (physaddr_t)VGA_TEXT_VID_BASE+PAGE_SIZE, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE, page_directory);
-	
-	/** below this point, it is no longer safe to call alloc_page_early() */
-	use_alloc_page_early = false;
-	
-	/* perform 1:1 mapping of kernel image and data
-	
-	   note: page tables for memory region (0..KLIMIT) are contiguous
-	         in physical memory */
-	for(addr = kernel_start; addr < kernel_region_top; addr += PAGE_SIZE) {
-		vm_map_early((addr_t)addr, (physaddr_t)(unsigned long)addr, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE, page_directory);
-	}
-	
-	/* initialize boot-time page frame allocator */
-	bootmem_init();
-	
-	/* enable paging */
-	set_cr3( (unsigned long)page_directory );
-	
-	temp = get_cr0();
-	temp |= X86_FLAG_PG;
-	set_cr0x(temp);
-	
-	printk("Paging enabled\n");
-	
-	/* initialize page frame stack */
-	page_stack = &__page_stack;
-	init_page_stack(page_stack, page_stack_buffer);
-	
-	/* initialize global page allocator (region 0..KLIMIT)
-	  
-	   note: we skip the first (i.e. actually allocate the region PAGE_SIZE..KLIMIT)
-	         for two reasons:
-				- We want null pointer deferences to generate a page fault instead
-				  being more or less silently ignored (read) or overwriting something
-				  potentially important (write).
-				- We want to ensure nothing interesting (e.g. address space
-				  management data structures) can have NULL as its valid
-				  address.*/
-	global_page_allocator = &__global_page_allocator;
-	vm_alloc_init_piecewise(global_page_allocator, (addr_t)PAGE_SIZE,  (addr_t)kernel_start, (addr_t)KLIMIT);
-	vm_alloc_add_region(global_page_allocator, (addr_t)kernel_region_top, (addr_t)KLIMIT);
 	
 	/* create thread control block for first thread */
 	current_thread = (thread_t *)boot_heap;
@@ -286,4 +291,3 @@ void kinit(void) {
 void idle(void) {
 	while(1) {}
 }
-

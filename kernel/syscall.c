@@ -1,6 +1,5 @@
 #include <jinue/alloc.h>
 #include <jinue/errno.h>
-#include <alloc.h>
 #include <bootmem.h>
 #include <ipc.h>
 #include <printk.h>
@@ -66,10 +65,6 @@ void dispatch_syscall(ipc_params_t *ipc_params) {
 		/** TODO: check user pointer */
 		block_dest = (memory_block_t *)arg1;
 		
-		/* the boot-time page allocator will no longer be usable after this,
-		 * switch allocator */
-		__alloc_page = &stack_alloc_page;
-		
 		for(count = 0; count < arg2; ++count) {
 			
 			block = bootmem_get_block();
@@ -78,8 +73,8 @@ void dispatch_syscall(ipc_params_t *ipc_params) {
 				break;
 			}
 			
-			block_dest->addr = block->addr;
-			block_dest->size = block->size;
+			block_dest->addr  = block->addr;
+			block_dest->count = block->count;
 			
 			++block_dest;
 		}
