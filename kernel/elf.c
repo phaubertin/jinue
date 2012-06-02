@@ -162,7 +162,7 @@ void elf_load_process_manager(void) {
 				vnext = vptr + PAGE_SIZE;
 				
 				/* allocate and map the new page */
-				page = alloc_page();
+				page = pfalloc();
 				vm_map(vpage, page, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
 				
 				/* copy */
@@ -201,7 +201,7 @@ void elf_load_process_manager(void) {
 	
 	/** TODO: we should probably do better than this, at least check for overlap */
 	/* setup stack */
-	page  = alloc_page();
+	page  = pfalloc();
 	vpage = (addr_t)0xfffff000;
 	vm_map(vpage, page, VM_FLAG_USER | VM_FLAG_READ_WRITE);
 	

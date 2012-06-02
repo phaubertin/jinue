@@ -23,6 +23,8 @@
 /** type for a page frame address (32-bit value) */
 typedef uint32_t pfaddr_t;
 
+/** an invalid page frame address used as null value */
+#define PFNULL ((pfaddr_t)-1)
 
 #endif
 

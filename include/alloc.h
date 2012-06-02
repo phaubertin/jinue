@@ -3,40 +3,30 @@
 
 #include <jinue/alloc.h>
 #include <jinue/types.h>
-#include <stdbool.h>
-#include <stdint.h>
 
-
-#define alloc_page() ( (*__alloc_page)() )
-
-#define free_page(paddr)
-
-
-typedef pfaddr_t (*alloc_page_t)(void);
 
 typedef struct {
 	pfaddr_t  *ptr;
 	uint32_t   count;
-} page_stack_t;
+} pfcache_t;
 
 
-extern alloc_page_t __alloc_page;
+extern bool use_pfalloc_early;
 
-extern bool use_alloc_page_early;
-
-extern page_stack_t *page_stack;
-
-extern page_stack_t __page_stack;
+extern pfcache_t global_pfcache;
 
 
-addr_t alloc_page_early(void);
+#define pfalloc() pfalloc_from(&global_pfcache)
 
-pfaddr_t do_not_call(void);
+#define pffree(p) pffree_to(&global_pfcache, (p))
 
-void init_page_stack(page_stack_t *stack, pfaddr_t *stack_addr);
 
-pfaddr_t stack_alloc_page(void);
+addr_t pfalloc_early(void);
 
-void stack_free_page(pfaddr_t page);
+void init_pfcache(pfcache_t *pfcache, pfaddr_t *stack_page);
+
+pfaddr_t pfalloc_from(pfcache_t *pfcache);
+
+void pffree_to(pfcache_t *pfcache, pfaddr_t pf);
 
 #endif

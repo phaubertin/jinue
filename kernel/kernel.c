@@ -55,7 +55,7 @@ void kinit(void) {
 	addr_t stack;
 	gdt_info_t *gdt_info;
 	idt_info_t *idt_info;
-	unsigned long idx, idy;
+	unsigned int idx, idy;
 	unsigned long temp;
 	unsigned long flags;
 	unsigned long *ulptr;
@@ -74,9 +74,8 @@ void kinit(void) {
 	assert( PAGE_TABLE_OFFSET_OF(PAGE_DIRECTORY_ADDR) == 0 );
 	assert( PAGE_OFFSET_OF(PAGE_DIRECTORY_ADDR) == 0 );
 		
-	/* alloc_page() should not be called yet -- use alloc_page_early() instead */
-	__alloc_page         = &do_not_call;
-	use_alloc_page_early = true;
+	/* pfalloc() should not be called yet -- use pfalloc_early() instead */
+	use_pfalloc_early = true;
 	
 	/* initialize VGA and say hello */
 	vga_init();
@@ -94,11 +93,11 @@ void kinit(void) {
 	}
 		
 	/* allocate new kernel stack */
-	stack = alloc_page_early();
+	stack = pfalloc_early();
 	stack += PAGE_SIZE;
 	
 	/* allocate space for new GDT and TSS */
-	gdt_info = (gdt_info_t *)alloc_page_early();
+	gdt_info = (gdt_info_t *)pfalloc_early();
 	idt_info = (idt_info_t *)gdt_info;
 	gdt = (gdt_t)&gdt_info[2];
 	tss = (tss_t *)&gdt[GDT_END];
@@ -171,12 +170,12 @@ void kinit(void) {
 		
 	/* Allocate the first page directory. Since paging is not yet
 	   activated, virtual and physical addresses are the same.  */
-	page_directory = (pte_t *)alloc_page_early();
+	page_directory = (pte_t *)pfalloc_early();
 	
 	/* allocate page tables for kernel data/code region (0..PLIMIT) and add
 	   relevant entries to page directory */
 	for(idx = 0; idx < PAGE_DIRECTORY_OFFSET_OF(PLIMIT); ++idx) {
-		pte = (pte_t *)alloc_page_early();		
+		pte = (pte_t *)pfalloc_early();		
 		page_directory[idx] = (pte_t)pte | VM_FLAG_PRESENT | VM_FLAG_KERNEL | VM_FLAG_READ_WRITE;
 		
 		for(idy = 0; idy < PAGE_TABLE_ENTRIES; ++idy) {
@@ -205,17 +204,15 @@ void kinit(void) {
 	vm_map_early((addr_t)VGA_TEXT_VID_BASE+PAGE_SIZE, (addr_t)VGA_TEXT_VID_BASE+PAGE_SIZE, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE, page_directory);
 	
 	/* initialize page frame allocator */
-	page_stack_buffer = (pfaddr_t *)alloc_page_early();
-	page_stack = &__page_stack;
-	init_page_stack(page_stack, page_stack_buffer);
+	page_stack_buffer = (pfaddr_t *)pfalloc_early();
+	init_pfcache(&global_pfcache, page_stack_buffer);
 	
 	for(idx = 0; idx < KERNEL_PAGE_STACK_INIT; ++idx) {
-		stack_free_page( PTR_TO_PFADDR( alloc_page_early() ) );
+		pffree( PTR_TO_PFADDR( pfalloc_early() ) );
 	}
 	
-	/** below this point, it is no longer safe to call alloc_page_early() */
-	__alloc_page         = &stack_alloc_page;
-	use_alloc_page_early = false;
+	/** below this point, it is no longer safe to call pfalloc_early() */
+	use_pfalloc_early = false;
 	
 	/* perform 1:1 mapping of kernel image and data
 	

@@ -33,7 +33,7 @@ void vm_map(addr_t vaddr, pfaddr_t paddr, uint32_t flags) {
 	if( ! (*pde & VM_FLAG_PRESENT) ) {
 		/** TODO: fix this once PAE is activated */
 		/* allocate a new page table */
-		page_table = (pte_t)alloc_page() << PFADDR_SHIFT;
+		page_table = (pte_t)pfalloc() << PFADDR_SHIFT;
 		
 		/* map page table in the region of memory reserved for that purpose */
 		pte = PAGE_TABLE_PTE_OF(vaddr);
@@ -115,7 +115,7 @@ void vm_change_flags(addr_t vaddr, uint32_t flags) {
 	assert(*pte & VM_FLAG_PRESENT);
 	
 	/* perform the flags change */
-	*pte = (pte_t)( (unsigned long)*pte & ~PAGE_MASK ) | flags | VM_FLAG_PRESENT;
+	*pte = (*pte & ~PAGE_MASK) | flags | VM_FLAG_PRESENT;
 	
 	/* invalidate TLB entry for the affected page */
 	invalidate_tlb(vaddr);	

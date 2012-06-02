@@ -206,7 +206,7 @@ void vm_alloc_destroy(vm_alloc_t *allocator) {
 	if(block != NULL) {
 		do {
 			paddr = vm_lookup_pfaddr((addr_t)block->stack_addr);
-			free_page(paddr);
+			pffree(paddr);
 			
 			block = block->next;
 		} while(block != head);
@@ -216,7 +216,7 @@ void vm_alloc_destroy(vm_alloc_t *allocator) {
 	addr = (addr_t)allocator->block_array;
 	for(idx = 0; idx < allocator->array_pages; ++idx) {
 		paddr = vm_lookup_pfaddr(addr);
-		free_page(paddr);
+		pffree(paddr);
 		
 		addr = (addr_t)( (char *)addr + PAGE_SIZE );
 	}	
@@ -285,7 +285,7 @@ void vm_alloc_init_allocator(vm_alloc_t *allocator, addr_t start_addr, addr_t en
 	addr = (addr_t)block_array;
 	for(idx = 0; idx < array_page_count; ++idx) {
 		/* allocate and map page */
-		paddr = alloc_page();
+		paddr = pfalloc();
 		vm_map(addr, paddr, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
 		
 		/* calculate address of next page */		
@@ -479,7 +479,7 @@ void vm_alloc_partial_block(vm_block_t *block) {
 	
 	/* allocate the page stack */
 	stack_addr  = block->stack_addr;
-	paddr       = alloc_page();
+	paddr       = pfalloc();
 	vm_map((addr_t)stack_addr, paddr, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
 	
 	/** ASSERTION: block->allocator should not be NULL*/
@@ -621,7 +621,7 @@ void vm_alloc_unlink_block(vm_block_t *block) {
 	/* if block has a stack, discard it */
 	if(block->stack_ptr != NULL) {
 		paddr = vm_lookup_pfaddr(block->stack_addr);
-		free_page(paddr);
+		pffree(paddr);
 	}
 		
 	/* special case: block is alone in its list */
