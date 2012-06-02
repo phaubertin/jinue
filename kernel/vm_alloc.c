@@ -1,6 +1,6 @@
 #include <jinue/types.h>
-#include <alloc.h>
 #include <assert.h>
+#include <pfalloc.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <util.h>

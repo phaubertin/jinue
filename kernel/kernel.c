@@ -1,5 +1,4 @@
 #include <jinue/syscall.h>
-#include <alloc.h>
 #include <assert.h>
 #include <boot.h>
 #include <bootmem.h>
@@ -9,6 +8,7 @@
 #include <irq.h>
 #include <kernel.h> /* includes stddef.h */
 #include <panic.h>
+#include <pfalloc.h>
 #include <printk.h>
 #include <stddef.h>
 #include <syscall.h>

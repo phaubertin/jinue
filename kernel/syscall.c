@@ -1,5 +1,5 @@
-#include <jinue/alloc.h>
 #include <jinue/errno.h>
+#include <jinue/pfalloc.h>
 #include <bootmem.h>
 #include <ipc.h>
 #include <printk.h>

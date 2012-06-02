@@ -1,6 +1,6 @@
 #include <kernel.h>
-#include <alloc.h>
 #include <assert.h>
+#include <pfalloc.h>
 #include <stdint.h>
 #include <vm.h>
 #include <x86.h>

@@ -1,5 +1,5 @@
-#include <jinue/alloc.h>
 #include <jinue/errno.h>
+#include <jinue/pfalloc.h>
 #include <jinue/syscall.h>
 #include <jinue/types.h>
 #include <jinue/vm.h>

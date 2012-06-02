@@ -1,6 +1,6 @@
-#include <alloc.h>
 #include <assert.h>
 #include <panic.h>
+#include <pfalloc.h>
 #include <stddef.h>
 #include <vm.h>
 
