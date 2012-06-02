@@ -92,7 +92,7 @@ pfaddr_t vm_lookup_pfaddr(addr_t addr) {
 	pte = PTE_OF(addr);
 	paddr = (uint32_t)*pte & ~PAGE_MASK;
 	
-	return (paddr << PFADDR_SHIFT);
+	return (paddr >> PFADDR_SHIFT);
 }
 
 void vm_change_flags(addr_t vaddr, uint32_t flags) {
