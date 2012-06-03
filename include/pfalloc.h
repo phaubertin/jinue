@@ -1,7 +1,7 @@
 #ifndef _JINUE_KERNEL_ALLOC_H
 #define _JINUE_KERNEL_ALLOC_H
 
-#include <jinue/alloc.h>
+#include <jinue/pfalloc.h>
 #include <jinue/types.h>
 
 
