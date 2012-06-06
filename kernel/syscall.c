@@ -1,7 +1,6 @@
 #include <jinue/errno.h>
 #include <jinue/pfalloc.h>
 #include <bootmem.h>
-#include <ipc.h>
 #include <printk.h>
 #include <stddef.h>
 #include <syscall.h>
@@ -12,7 +11,7 @@
 int syscall_method;
 
 
-void dispatch_syscall(ipc_params_t *ipc_params) {
+void dispatch_syscall(syscall_params_t *syscall_params) {
 	bootmem_t      *block;
 	memory_block_t *block_dest;
 	unsigned int count;
@@ -21,17 +20,17 @@ void dispatch_syscall(ipc_params_t *ipc_params) {
 	unsigned int arg1;
 	unsigned int arg2;
 	
-	funct = ipc_params->args.funct;
-	arg1  = ipc_params->args.arg1;
-	arg2  = ipc_params->args.arg2;
+	funct = syscall_params->args.funct;
+	arg1  = syscall_params->args.arg1;
+	arg2  = syscall_params->args.arg2;
 	
-	ipc_params->ret.errno    = 0;
-	ipc_params->ret.perrno   = NULL;
+	syscall_params->ret.errno    = 0;
+	syscall_params->ret.perrno   = NULL;
 	
 	switch(funct) {
 	
 	case SYSCALL_FUNCT_SYSCALL_METHOD:
-		ipc_params->ret.val = syscall_method;
+		syscall_params->ret.val = syscall_method;
 		break;		
 		
 	case SYSCALL_FUNCT_VGA_PUTC:
@@ -49,7 +48,7 @@ void dispatch_syscall(ipc_params_t *ipc_params) {
 		break;
 
 	case SYSCALL_FUNCT_GET_ERRNO_ADDR:
-		ipc_params->ret.val = (int)current_thread->perrno;
+		syscall_params->ret.val = (int)current_thread->perrno;
 		break;
 
 	case SYSCALL_FUNCT_SET_THREAD_LOCAL_ADDR:
@@ -58,7 +57,7 @@ void dispatch_syscall(ipc_params_t *ipc_params) {
 		break;
 
 	case SYSCALL_FUNCT_GET_THREAD_LOCAL_ADDR:
-		ipc_params->ret.val = (int)current_thread->local_storage;
+		syscall_params->ret.val = (int)current_thread->local_storage;
 		break;
 	
 	case SYSCALL_FUNCT_GET_FREE_MEMORY:
@@ -79,20 +78,20 @@ void dispatch_syscall(ipc_params_t *ipc_params) {
 			++block_dest;
 		}
 		
-		ipc_params->ret.val = count;
+		syscall_params->ret.val = count;
 		
 		if(count == arg2) {
 			if(bootmem_root != NULL) {
-				ipc_params->ret.errno    = JINUE_EMORE;
-				ipc_params->ret.perrno   = current_thread->perrno;
+				syscall_params->ret.errno    = JINUE_EMORE;
+				syscall_params->ret.perrno   = current_thread->perrno;
 			}
 		}
 		
 		break;
 	
 	default:
-		ipc_params->ret.val    = -1;
-		ipc_params->ret.errno  = JINUE_ENOSYS;
-		ipc_params->ret.perrno = current_thread->perrno;
+		syscall_params->ret.val    = -1;
+		syscall_params->ret.errno  = JINUE_ENOSYS;
+		syscall_params->ret.perrno = current_thread->perrno;
 	}	
 }

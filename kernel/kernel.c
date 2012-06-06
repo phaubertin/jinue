@@ -248,7 +248,7 @@ void kinit(void) {
 	vm_alloc_init_piecewise(global_page_allocator, (addr_t)PAGE_SIZE,  (addr_t)kernel_start, (addr_t)KLIMIT);
 	vm_alloc_add_region(global_page_allocator, (addr_t)kernel_region_top, (addr_t)KLIMIT);
 	
-	/* choose system call mechanism */
+	/* choose system call method */
 	syscall_method = SYSCALL_METHOD_INTR;
 	
 	if(cpu_features & CPU_FEATURE_SYSENTER) {

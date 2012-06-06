@@ -1,8 +1,6 @@
 #ifndef _JINUE_SYSCALL_H_
 #define _JINUE_SYSCALL_H_
 
-#include <jinue/ipc.h>
-
 /** interrupt vector for system call software interrupt */
 #define SYSCALL_IRQ	0x80
 
@@ -41,7 +39,11 @@
 #define SYSCALL_METHOD_INTR			2
 
 
-typedef int (*syscall_stub_t)(ipc_ref_t dest, unsigned int method, unsigned int funct, unsigned int arg1, unsigned int arg2);
+/** type for a system call target reference */
+typedef unsigned int syscall_ref_t;
+
+typedef int (*syscall_stub_t)(syscall_ref_t dest, unsigned int method, unsigned int funct, unsigned int arg1, unsigned int arg2);
+
 
 extern syscall_stub_t syscall;
 
@@ -50,11 +52,11 @@ extern syscall_stub_t syscall_stubs[];
 extern char *syscall_stub_names[];
 
 
-int syscall_fast_intel(ipc_ref_t dest, unsigned int method, unsigned int funct, unsigned int arg1, unsigned int arg2);
+int syscall_fast_intel(syscall_ref_t dest, unsigned int method, unsigned int funct, unsigned int arg1, unsigned int arg2);
 
-int syscall_fast_amd(ipc_ref_t dest, unsigned int method, unsigned int funct, unsigned int arg1, unsigned int arg2);
+int syscall_fast_amd(syscall_ref_t dest, unsigned int method, unsigned int funct, unsigned int arg1, unsigned int arg2);
 
-int syscall_intr(ipc_ref_t dest, unsigned int method, unsigned int funct, unsigned int arg1, unsigned int arg2);
+int syscall_intr(syscall_ref_t dest, unsigned int method, unsigned int funct, unsigned int arg1, unsigned int arg2);
 
 
 int get_syscall_method(void);

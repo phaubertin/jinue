@@ -1,10 +1,10 @@
 #ifndef _JINUE_KERNEL_INTERRUPT_H_
 #define _JINUE_KERNEL_INTERRUPT_H_
 
-#include <ipc.h>
+#include <syscall.h>
 
 
-void dispatch_interrupt(unsigned int irq, ipc_params_t *ipc_params);
+void dispatch_interrupt(unsigned int irq, syscall_params_t *syscall_params);
 
 #endif
 

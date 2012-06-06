@@ -2,7 +2,7 @@ includes = ../include
 scripts  = ../scripts
 
 OBJS = assert.o boot.o bootmem.o cpu.o debug.o e820.o elf.o kbd.o \
-       kernel.o interrupt.o ipc.o panic.o pfalloc.o printk.o syscall.o \
+       kernel.o interrupt.o panic.o pfalloc.o printk.o syscall.o \
        thread.o vga.o vm.o vm_alloc.o
 
 KERNEL-ASM = asm/kernel-asm.o
@@ -43,7 +43,6 @@ e820.o:        e820.c        $(includes)/e820.h
 kbd.o:         kbd.c         $(includes)/kbd.h
 kernel.o:      kernel.c      $(includes)/kernel.h
 interrupt.o:   interrupt.c   $(includes)/interrupt.h
-ipc.o:         ipc.c         $(includes)/ipc.h
 panic.o:       panic.c       $(includes)/panic.h
 pfalloc.o:     pfalloc.c     $(includes)/pfalloc.h
 printk.o:      printk.c      $(includes)/printk.h

@@ -3,9 +3,36 @@
 
 #include <jinue/syscall.h>
 
+
+/** system call parameters */
+typedef union {
+	struct {
+		syscall_ref_t 	dest;
+		unsigned int 	method;
+		unsigned int 	funct;
+		unsigned int 	arg1;
+		unsigned int 	arg2;
+	} args;
+	struct {
+		int  errno;
+		int  reserved1;
+		int  val;
+		int  reserved2;
+		int *perrno;
+	} ret;
+	struct {
+		unsigned int ebx;
+		unsigned int edx;
+		unsigned int eax;
+		unsigned int esi;
+		unsigned int edi;		
+	} regs;
+} syscall_params_t;
+
+
 extern int syscall_method;
 
-void dispatch_syscall(ipc_params_t *ipc_params);
+void dispatch_syscall(syscall_params_t *syscall_params);
 
 /** entry point for Intel fast sytem call mechanism (sysenter/sysexit) */
 void fast_intel_entry(void);

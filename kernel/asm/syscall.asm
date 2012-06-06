@@ -32,7 +32,7 @@ fast_intel_entry:
 	add cx, 8		; next entry
 	mov gs, cx		; load gs with data segment selector
 	
-	; ipc_params_t structure
+	; syscall_params_t structure
 	push edi	; 16 args.arg2
 	push esi	; 12 args.arg1
 	push eax	;  8 args.funct
@@ -94,7 +94,7 @@ fast_amd_entry:
 	mov ds, cx
 	mov es, cx
 	
-	; ipc_params_t structure
+	; syscall_params_t structure
 	push edi	; 16 args.arg2
 	push esi	; 12 args.arg1
 	push eax	;  8 args.funct

@@ -3,11 +3,11 @@
 	section .text	
 ; ------------------------------------------------------------------------------
 ; FUNCTION: syscall_fast_intel
-; C PROTOTYPE: int syscall_fast_intel(ipc_ref_t    dest,
-;                                     unsigned int method,
-;                                     unsigned int funct,
-;                                     unsigned int arg1,
-;                                     unsigned int arg2);
+; C PROTOTYPE: int syscall_fast_intel(syscall_ref_t dest,
+;                                     unsigned int 	method,
+;                                     unsigned int 	funct,
+;                                     unsigned int 	arg1,
+;                                     unsigned int 	arg2);
 ; ------------------------------------------------------------------------------
 	global syscall_fast_intel
 syscall_fast_intel:
@@ -44,11 +44,11 @@ syscall_fast_intel:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: syscall_fast_amd
-; C PROTOTYPE: int syscall_fast_amd(ipc_ref_t    dest,
-;                                   unsigned int method,
-;                                   unsigned int funct,
-;                                   unsigned int arg1,
-;                                   unsigned int arg2);
+; C PROTOTYPE: int syscall_fast_amd(syscall_ref_t	dest,
+;                                   unsigned int 	method,
+;                                   unsigned int 	funct,
+;                                   unsigned int 	arg1,
+;                                   unsigned int 	arg2);
 ; ------------------------------------------------------------------------------
 	global syscall_fast_amd
 syscall_fast_amd:
@@ -82,11 +82,11 @@ syscall_fast_amd:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: syscall_intr
-; C PROTOTYPE: int syscall_intr(ipc_ref_t    dest,
-;                               unsigned int method,
-;                               unsigned int funct,
-;                               unsigned int arg1,
-;                               unsigned int arg2);
+; C PROTOTYPE: int syscall_intr(syscall_ref_t	dest,
+;                               unsigned int 	method,
+;                               unsigned int 	funct,
+;                               unsigned int 	arg1,
+;                               unsigned int 	arg2);
 ; ------------------------------------------------------------------------------
 	global syscall_intr
 syscall_intr:

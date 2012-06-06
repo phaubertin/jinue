@@ -6,14 +6,14 @@
 #include <x86.h>
 
 
-void dispatch_interrupt(unsigned int irq, ipc_params_t *ipc_params) {
+void dispatch_interrupt(unsigned int irq, syscall_params_t *syscall_params) {
 	unsigned long errcode;
 	unsigned long eip;
 	unsigned long *return_state;
 	
 	/* exceptions */
 	if(irq < IDT_FIRST_IRQ) {
-		return_state = (unsigned long *)ipc_params;
+		return_state = (unsigned long *)syscall_params;
 		
 		if( EXCEPTION_GOT_ERR_CODE(irq) ) {
 			errcode = return_state[12];
@@ -30,9 +30,9 @@ void dispatch_interrupt(unsigned int irq, ipc_params_t *ipc_params) {
 		panic("caught exception");
 	}
 	
-	/* slow system call/ipc mechanism */
+	/* slow system call method */
 	if(irq == SYSCALL_IRQ) {
-		dispatch_ipc(ipc_params);
+		dispatch_syscall(syscall_params);
 		return;
 	}
 		

@@ -6,7 +6,7 @@ syscall_stub_t syscall = NULL;
 
 
 int get_syscall_method(void) {
-	return syscall_intr(SYSCALL_IPC_REF, NULL, SYSCALL_FUNCT_SYSCALL_METHOD, NULL, NULL);
+	return syscall_intr(NULL, NULL, SYSCALL_FUNCT_SYSCALL_METHOD, NULL, NULL);
 }
 
 int set_syscall_method(void) {
@@ -18,7 +18,7 @@ int set_syscall_method(void) {
 
 void set_errno_addr(int *perrno) {
 	(void)syscall(
-		SYSCALL_IPC_REF,
+		NULL,
 		NULL,
 		SYSCALL_FUNCT_SET_ERRNO_ADDR,
 		(unsigned int)perrno,

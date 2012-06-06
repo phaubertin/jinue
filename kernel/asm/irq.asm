@@ -49,7 +49,7 @@ irq_save_state:
 	
 	; set function parameters
 	mov eax, [esp+44] ; get interrupt vector
-	push esp          ; Second param: IPC parameters (for slow system call/IPC)
+	push esp          ; Second param: system call parameters (for slow system call method)
 	push eax          ; First param:  Interrupt vector
 	
 	; call interrupt dispatching function
