@@ -14,7 +14,7 @@ else
 	DEBUG_FLAGS = -DNDEBUG
 endif
 
-CFLAGS  += -O3 $(DEBUG_FLAGS) -nostdinc -ffreestanding -static -ansi -Wall -Werror=implicit-function-declaration -Werror=uninitialized
+CFLAGS  += -O3 $(DEBUG_FLAGS) -nostdinc -ffreestanding -static -ansi -Wall -Werror=implicit-function-declaration -Werror=uninitialized -Werror=return-type
 LDFLAGS += -static -nostdlib -e main
 LIBS    = -L$(libjinue) -L$(libproc) -lproc -ljinue
 

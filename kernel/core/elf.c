@@ -1,11 +1,12 @@
+#include <hal/kernel.h>
+#include <hal/vm.h>
 #include <assert.h>
 #include <elf.h>
-#include <kernel.h>
 #include <panic.h>
 #include <pfalloc.h>
 #include <printk.h>
 #include <thread.h>
-#include <vm.h>
+
 
 void elf_check_process_manager(void) {
 	/* check that Process manager binary is valid */

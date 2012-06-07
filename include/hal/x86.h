@@ -1,8 +1,8 @@
 #ifndef _JINUE_KERNEL_X86_H_
 #define _JINUE_KERNEL_X86_H_
 
-#include <cpu.h>
-#include <descriptors.h>
+#include <hal/cpu.h>
+#include <hal/descriptors.h>
 
 #define X86_FLAG_PG (1<<31)
 

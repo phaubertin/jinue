@@ -1,8 +1,8 @@
 #ifndef _JINUE_KERNEL_BOOTMEM_H_
 #define _JINUE_KERNEL_BOOTMEM_H_
 
-#include <kernel.h>
-#include <e820.h>
+#include <jinue/types.h>
+#include <hal/e820.h>
 
 
 struct bootmem_t {

@@ -1,7 +1,7 @@
 #ifndef _JINUE_KERNEL_FPOINTER_H_
 #define _JINUE_KERNEL_FPOINTER_H_
 
-#include <kernel.h>
+#include <jinue/types.h>
 
 addr_t get_fpointer(void);
 

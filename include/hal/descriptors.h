@@ -1,7 +1,7 @@
 #ifndef _JINUE_KERNEL_DESCRIPTORS_H_
 #define _JINUE_KERNEL_DESCRIPTORS_H_
 
-#include <kernel.h>
+#include <jinue/types.h>
 
 /** offset of descriptor type in descriptor */
 #define SEG_FLAGS_OFFSET		40

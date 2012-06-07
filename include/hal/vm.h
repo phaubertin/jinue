@@ -1,8 +1,8 @@
 #ifndef _JINUE_KERNEL_VM_H_
 #define _JINUE_KERNEL_VM_H_
 
-#include <kernel.h>
 #include <stdint.h>
+#include <jinue/types.h>
 #include <jinue/vm.h>
 
 

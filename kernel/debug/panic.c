@@ -1,7 +1,7 @@
+#include <hal/startup.h>
+#include <hal/vga.h>
 #include <debug.h>
 #include <printk.h>
-#include <startup.h>
-#include <vga.h>
 
 
 void panic(const char *message) {	

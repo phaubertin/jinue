@@ -1,4 +1,5 @@
 #include <slab.h>
+#include <stddef.h>
 
 void slab_cache_create(
 	slab_cache_t *cache,
@@ -14,9 +15,11 @@ void slab_cache_destroy(slab_cache_t *cache) {
 }
 
 void *slab_cache_alloc(slab_cache_t *cache) {
+	return NULL;
 }
 
 void *slab_cache_alloc_low_latency(slab_cache_t *cache) {
+	return NULL;
 }
 
 void slab_cache_free(slab_cache_t *cache, void *buffer) {

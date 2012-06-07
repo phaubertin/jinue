@@ -32,13 +32,12 @@ thread_start:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: thread_switch
-; C PROTOTYPE: int thread_switch(addr_t vstack, phys_addr_t pstack, unsigned int flags, pte_t *pte, int next);
+; C PROTOTYPE: int thread_switch(addr_t vstack, pfaddr_t pstack, unsigned int flags, pte_t *pte, int next);
 ; ------------------------------------------------------------------------------
 ; stack layout:
-;	esp+40	next
-;	esp+36	pte
-;	esp+32	flags
-;	esp+28	pstack (high dword)
+;	esp+36	next
+;	esp+32	pte
+;	esp+28	flags
 ;	esp+24	pstack (low dword)
 ;	esp+20	vstack
 ;	esp+16	return address
@@ -59,16 +58,17 @@ thread_switch:
 	mov edx, [esp+20]	; First param:  vstack
 	
 	; create page directory entry
-	mov ebx, [esp+24]	; Second param: pstack (low dword)
-	or  ebx, [esp+32]	; Third param:  flags
+	mov ebx, [esp+24]	; Second param: pstack
+	shl ebx, 4          ; convert pfaddr_t value to physical address
+	or  ebx, [esp+28]	; Third param:  flags
 	or  ebx, VM_FLAG_PRESENT
 	
 	; page directory entry address
-	mov edi, [esp+36]	; Fourth param: pte
+	mov edi, [esp+32]	; Fourth param: pte
 	
 	; return value of function, passes information about what to do next
 	; across the call
-	mov eax, [esp+40]	; Fifth param: next
+	mov eax, [esp+36]	; Fifth param: next
 	
 	; switch stack
 	mov [edi], ebx		; write page directory entry

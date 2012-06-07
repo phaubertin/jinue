@@ -1,11 +1,11 @@
-includes = ../../include
-kernel   = ../../kernel
+includes    = ../../include
+kern-debug  = ../../kernel/debug
 
 OBJS   = vga.o
-KOBJS  = $(kernel)/printk.o
+PRINTK = $(kern-debug)/printk.o
 TARGET = libproc.a
 
-CFLAGS  += -O3 -nostdinc -ffreestanding -static -ansi -Wall -Werror=implicit-function-declaration -Werror=uninitialized
+CFLAGS  += -O3 -nostdinc -ffreestanding -static -ansi -Wall -Werror=implicit-function-declaration -Werror=uninitialized -Werror=return-type
 
 .PHONY: all
 all: $(TARGET)
@@ -14,10 +14,10 @@ all: $(TARGET)
 clean:
 	-rm -f $(TARGET) $(OBJS)
 
-$(KOBJS):
-	make -C $(kernel)
+$(PRINTK):
+	make -C $(kern-debug)
 
-$(TARGET): $(KOBJS) $(OBJS)
+$(TARGET): $(PRINTK) $(OBJS)
 	ar rcs $@ $^
 
 %.o: %.c

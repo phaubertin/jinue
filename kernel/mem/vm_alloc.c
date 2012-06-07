@@ -1,10 +1,10 @@
 #include <jinue/types.h>
+#include <hal/vm.h>
 #include <assert.h>
 #include <pfalloc.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <util.h>
-#include <vm.h>
 #include <vm_alloc.h>
 
 

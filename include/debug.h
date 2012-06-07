@@ -1,7 +1,7 @@
 #ifndef _JINUE_KERNEL_DEBUG_H_
 #define _JINUE_KERNEL_DEBUG_H_
 
-#include <kernel.h>
+#include <jinue/types.h>
 
 
 typedef struct {

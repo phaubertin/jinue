@@ -2,8 +2,9 @@
 #define _JINUE_TYPES_H_
 
 #include <jinue/pfaddr.h>
-#include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 
 typedef void *addr_t;

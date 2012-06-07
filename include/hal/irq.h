@@ -1,7 +1,7 @@
 #ifndef _JINUE_KERNEL_IRQ_H_
 #define _JINUE_KERNEL_IRQ_H_
 
-#include <descriptors.h>
+#include <hal/descriptors.h>
 
 
 #define IDT_VECTOR_COUNT	256

@@ -1,11 +1,11 @@
 #ifndef _JINUE_KERNEL_KERNEL_H_
 #define _JINUE_KERNEL_KERNEL_H_
 
-#include <elf.h>
-#include <startup.h>
-#include <stddef.h>
-#include <vm_alloc.h>
 #include <jinue/types.h>
+#include <hal/startup.h>
+#include <stddef.h>
+#include <elf.h>
+#include <vm_alloc.h>
 
 
 #define kernel_start ((addr_t)__start)

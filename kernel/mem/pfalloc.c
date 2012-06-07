@@ -1,8 +1,10 @@
+#include <hal/vm.h>
+#include <hal/kernel.h>
 #include <assert.h>
 #include <panic.h>
 #include <pfalloc.h>
 #include <stddef.h>
-#include <vm.h>
+
 
 bool use_pfalloc_early;
 

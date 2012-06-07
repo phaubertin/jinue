@@ -1,7 +1,8 @@
+#include <hal/vga.h>
 #include <printk.h>
 #include <stdarg.h>
 #include <stddef.h>
-#include <vga.h>
+
 
 /** @cond PRINTK */
 void printk(const char *format, ...) {

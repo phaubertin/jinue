@@ -17,7 +17,7 @@ set in  [open $input_file r]
 set out [open $output_file w]
 
 puts $out {#include <debug.h>}
-puts $out {#include <kernel.h>}
+puts $out {#include <jinue/types.h>}
 puts $out {}
 puts $out "debugging_symbol_t debugging_symbols_table\[\] = {"
 
