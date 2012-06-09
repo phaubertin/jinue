@@ -27,11 +27,8 @@ extern linker_defined_t proc_elf_end;
 
 extern vm_alloc_t *global_page_allocator;
 
-void kernel(void);
 
-void kinit(void);
-
-void idle(void);
+void hal_start(void);
 
 #endif
 

@@ -1,6 +1,6 @@
 includes = ../../include
 
-OBJS   = elf.o thread.o
+OBJS   = core.o elf.o syscall.o thread.o
 TARGET = kern-core.o
 
 DEBUG   ?= yes
@@ -23,7 +23,9 @@ clean:
 $(TARGET): $(OBJS)
 	$(LD) -r -o $@ $^
 
+core.o:        core.c        $(includes)/hal/hal.h
 elf.o:         elf.c         $(includes)/elf.h
+syscall.o:     syscall.c     $(includes)/syscall.h
 thread.o:      thread.c      $(includes)/thread.h
 
 %.o: %.c

@@ -32,7 +32,7 @@ void dispatch_interrupt(unsigned int irq, syscall_params_t *syscall_params) {
 	
 	/* slow system call method */
 	if(irq == SYSCALL_IRQ) {
-		dispatch_syscall(syscall_params);
+		hal_syscall_dispatch(syscall_params);
 		return;
 	}
 		

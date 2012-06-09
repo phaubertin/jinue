@@ -3,7 +3,7 @@
 #include <boot.h>
 #include <bootmem.h>
 #include <cpu.h>
-#include <elf.h>
+#include <hal.h>
 #include <interrupt.h>
 #include <irq.h>
 #include <kernel.h> /* includes stddef.h */
@@ -12,7 +12,6 @@
 #include <printk.h>
 #include <stddef.h>
 #include <syscall.h>
-#include <thread.h>
 #include <vga.h>
 #include <vm.h>
 #include <vm_alloc.h>
@@ -39,14 +38,7 @@ static vm_alloc_t __global_page_allocator;
 vm_alloc_t *global_page_allocator;
 
 
-void kernel(void) {
-	kinit();	
-	idle();
-	
-	panic("idle() returned.");	
-}
-
-void kinit(void) {
+void hal_start(void) {
 	pte_t *page_table, *page_directory;
 	pte_t *pte;
 	addr_t addr;
@@ -273,18 +265,8 @@ void kinit(void) {
 		wrmsr(MSR_STAR, msrval);
 	}
 	
-	/* create thread control block for first thread */
-	current_thread = (thread_t *)boot_heap;
-	boot_heap = (thread_t *)boot_heap + 1;
-	thread_init(current_thread, stack);
+	/* set system call dispatch function to default */
+	set_syscall_funct(NULL);
 	
-	/* load process manager binary */
-	elf_load_process_manager();
-	
-	/* start process manager */
-	elf_start_process_manager();
-}
-
-void idle(void) {
-	while(1) {}
+	main();
 }

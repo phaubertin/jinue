@@ -5,7 +5,7 @@ bits 32
 global halt
 global __start
 
-extern kernel
+extern hal_start
 extern e820_map
 extern boot_data
 extern boot_heap
@@ -107,7 +107,7 @@ setup_stack:
 	push eax		; null-terminate call stack (useful for debugging)
 	xor ebp, ebp	; initialize frame pointer
 	
-	call kernel
+	call hal_start
 
 halt:
 	cli

@@ -2,7 +2,7 @@
 
 	bits 32
 	
-	extern dispatch_syscall
+	extern hal_syscall_dispatch
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: fast_intel_entry
@@ -40,10 +40,10 @@ fast_intel_entry:
 	push ebx	;  0 args.dest
 	
 	; push a pointer to the previous structure as parameter to
-	; the dispatch_syscall function
+	; the hal_syscall_dispatch function
 	push esp
 	
-	call dispatch_syscall
+	call hal_syscall_dispatch
 	
 	; setup return value
 	mov ebx, [esp+4+0]	;  0 ret.errno
@@ -102,10 +102,10 @@ fast_amd_entry:
 	push ebx	;  0 args.dest
 	
 	; push a pointer to the previous structure as parameter to
-	; the dispatch_syscall function
+	; the hal_syscall_dispatch function
 	push esp
 	
-	call dispatch_syscall
+	call hal_syscall_dispatch
 
 	; setup return value
 	mov ebx, [esp+4+0]	;  0 ret.errno
