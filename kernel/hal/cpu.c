@@ -137,4 +137,11 @@ void cpu_detect_features(void) {
 			cpu_features |= CPU_FEATURE_LOCAL_APIC;
 		}
 	}
+	
+	/* support for physical address extension (PAE) */
+	if(cpu_vendor == CPU_VENDOR_AMD || cpu_vendor == CPU_VENDOR_INTEL) {
+		if(flags & CPUID_FEATURE_PAE) {
+			cpu_features |= CPU_FEATURE_PAE;
+		}
+	}
 }

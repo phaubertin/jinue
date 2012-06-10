@@ -83,6 +83,10 @@ void hal_start(void) {
 	if(cpu_features & CPU_FEATURE_LOCAL_APIC) {
 		printk("Processor has local APIC.\n");
 	}
+	
+	if(cpu_features & CPU_FEATURE_PAE) {
+		printk("Processor supports Physical Address Extension (PAE).\n");
+	}
 		
 	/* allocate new kernel stack */
 	stack = pfalloc_early();

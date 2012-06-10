@@ -2,6 +2,7 @@
 #define _JINUE_KERNEL_SLAB_H_
 
 #include <stddef.h>
+#include <pfalloc.h>
 #include <vm_alloc.h>
 
 typedef void (*slab_ctor_t)(void *, size_t);

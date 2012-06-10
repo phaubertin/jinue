@@ -40,7 +40,7 @@ void slab_cache_free(slab_cache_t *cache, void *buffer) {
 
 void slab_cache_set_allocators(slab_cache_t *cache, pfcache_t *pfcache, vm_alloc_t *vma) {
 	if(pfcache == NULL) {
-		cache->pfcache = global_pfcache;
+		cache->pfcache = &global_pfcache;
 	}
 	else {
 		cache->pfcache = pfcache;
