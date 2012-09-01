@@ -1,4 +1,3 @@
-#include <hal/kernel.h>
 #include <hal/thread.h>
 #include <hal/vm.h>
 #include <assert.h>

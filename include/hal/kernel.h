@@ -4,7 +4,6 @@
 #include <jinue/types.h>
 #include <hal/startup.h>
 #include <stddef.h>
-#include <elf.h>
 #include <vm_alloc.h>
 
 
@@ -19,11 +18,7 @@ extern size_t kernel_size;
 
 extern addr_t kernel_stack;
 
-extern elf_header_t proc_elf;
-
 extern linker_defined_t kernel_end;
-
-extern linker_defined_t proc_elf_end;
 
 extern vm_alloc_t *global_page_allocator;
 
