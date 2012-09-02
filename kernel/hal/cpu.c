@@ -102,8 +102,7 @@ void cpu_detect_features(void) {
 	if(cpu_features & CPU_FEATURE_CPUID && cpu_cpuid_ext_max >= 0x80000001) {
 		/* extended function 1: extended feature flags */
 		regs.eax = 0x80000001;
-		/** TODO: check this line */
-		cpu_cpuid_ext_max = cpuid(&regs);
+		(void)cpuid(&regs);
 		
 		/* extended feature flags */
 		ext_flags = regs.edx;
