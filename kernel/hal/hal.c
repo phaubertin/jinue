@@ -53,6 +53,7 @@ void hal_start(void) {
 	unsigned long *ulptr;
 	unsigned long long msrval;
 	pfaddr_t *page_stack_buffer;
+	cpu_cache_t *cache_entry;
 
 
 	/** ASSERTION: we assume the kernel starts on a page boundary */
@@ -86,6 +87,25 @@ void hal_start(void) {
 	
 	if(cpu_features & CPU_FEATURE_PAE) {
 		printk("Processor supports Physical Address Extension (PAE).\n");
+	}
+	
+	cache_entry = cpu_caches;
+	printk("CPU caches:\n");
+	
+	if(cache_entry->type == CPU_CACHE_NONE) {
+		printk("\t(none)\n");
+	}
+	
+	while(cache_entry->type != CPU_CACHE_NONE) {
+		printk("\tL%u %s cache size %u%s cache line %ub associativity %u\n",
+			cache_entry->level,
+			cpu_cache_type_description[cache_entry->type],
+			(cache_entry->size < 1024)?cache_entry->size:cache_entry->size / 1024,
+			(cache_entry->size < 1024)?"kB":"MB",
+			cache_entry->line_size,
+			cache_entry->associativity );
+		
+		++cache_entry;
 	}
 		
 	/* allocate new kernel stack */

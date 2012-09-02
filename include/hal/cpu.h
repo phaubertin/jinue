@@ -61,6 +61,30 @@ typedef unsigned long msr_addr_t;
 #define CPU_VENDOR_INTEL_DW1		0x49656e69	/* ineI */
 #define CPU_VENDOR_INTEL_DW2		0x6c65746e	/* ntel */
 
+#define CPU_CACHE_ENTRIES           8
+
+#define CPU_CACHE_ASSOC_DIRECT      1
+
+#define CPU_CACHE_ASSOC_FULL        (-1)
+
+
+typedef enum {
+    CPU_CACHE_NONE    = 0,
+    CPU_CACHE_INSTR   = 1,
+    CPU_CACHE_DATA    = 2,
+    CPU_CACHE_UNIFIED = 3
+} cpu_cache_type_t;
+
+typedef struct {    
+    cpu_cache_type_t    type;
+    unsigned int        level;
+    unsigned int        size;
+    unsigned int        associativity;
+    unsigned int        line_size;
+} cpu_cache_t;
+
+
+extern cpu_cache_t cpu_caches[];
 
 extern unsigned long cpu_features;
 
@@ -78,8 +102,11 @@ extern unsigned long cpu_vendor;
 
 extern const char *cpu_vendor_name[];
 
+extern const char *cpu_cache_type_description[];
+
 
 void cpu_detect_features(void);
 
+void cpu_detect_caches(void);
 
 #endif
