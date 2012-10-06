@@ -40,6 +40,8 @@ typedef unsigned long msr_addr_t;
 
 #define CPUID_FEATURE_SEP			(1<<11)
 
+#define CPUID_FEATURE_CLFLUSH       (1<<19)
+
 #define CPUID_FEATURE_HTT			(1<<28)
 
 
@@ -85,6 +87,8 @@ typedef struct {
 
 
 extern cpu_cache_t cpu_caches[];
+
+extern unsigned int  cpu_dcache_alignment;
 
 extern unsigned long cpu_features;
 

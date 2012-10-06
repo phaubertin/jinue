@@ -1,5 +1,6 @@
 #include <cpu.h>
 #include <x86.h>
+#include <stdint.h>
 
 typedef struct {    
     unsigned int        descriptor;
@@ -12,6 +13,8 @@ typedef struct {
 
 
 cpu_cache_t cpu_caches[CPU_CACHE_ENTRIES];
+
+unsigned int  cpu_dcache_alignment;
 
 unsigned long cpu_features;
 
@@ -117,11 +120,11 @@ const cpu_intel_cache_descriptor_t cpu_intel_cache_descriptors[] = {
     
 
 void cpu_detect_features(void) {
-	unsigned long  temp;
-	unsigned long  signature;
-	unsigned long  flags, ext_flags;
-	unsigned long  vendor_dw0, vendor_dw1, vendor_dw2;
-	x86_regs_t     regs;
+	uint32_t         temp;
+	uint32_t         signature;
+	uint32_t         flags, ext_flags;
+	uint32_t         vendor_dw0, vendor_dw1, vendor_dw2;
+	x86_regs_t       regs;
 	
 	cpu_features = 0;
 	
@@ -174,6 +177,9 @@ void cpu_detect_features(void) {
 	cpu_stepping       = 0;
 	flags              = 0;
 	
+	/* default value */
+	cpu_dcache_alignment = 32;
+	
 	if(cpu_features & CPU_FEATURE_CPUID && cpu_cpuid_max >= 1) {
 		/* function 1: processor signature and feature flags */
 		regs.eax = 1;
@@ -188,6 +194,11 @@ void cpu_detect_features(void) {
 		
 		/* feature flags */
 		flags = regs.edx;
+		
+		/* cache alignment */
+		if(flags & CPUID_FEATURE_CLFLUSH) {
+		    cpu_dcache_alignment = ((regs.ebx >> 8) & 0xff) * 8;
+		}
 	}
 	
 	/* get extended feature flags */
