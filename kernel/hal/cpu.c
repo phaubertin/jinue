@@ -248,8 +248,6 @@ void cpu_detect_features(void) {
 			cpu_features |= CPU_FEATURE_PAE;
 		}
 	}
-	
-	cpu_detect_caches();
 }
 
 void cpu_detect_caches(void) {

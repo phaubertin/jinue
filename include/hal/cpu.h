@@ -106,11 +106,7 @@ extern unsigned long cpu_vendor;
 
 extern const char *cpu_vendor_name[];
 
-extern const char *cpu_cache_type_description[];
-
 
 void cpu_detect_features(void);
-
-void cpu_detect_caches(void);
 
 #endif
