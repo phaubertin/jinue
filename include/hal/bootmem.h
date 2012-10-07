@@ -20,7 +20,7 @@ extern bootmem_t *ram_map;
 extern bootmem_t *bootmem_root;
 
 /** current top of boot heap */
-extern addr_t boot_heap;
+extern void *boot_heap;
 
 
 void new_ram_map_entry(pfaddr_t addr, uint32_t count, bootmem_t **head);

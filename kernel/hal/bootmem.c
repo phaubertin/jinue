@@ -16,7 +16,7 @@ bootmem_t *ram_map;
 bootmem_t *bootmem_root;
 
 /** current top of boot heap */
-addr_t boot_heap;
+void *boot_heap;
 
 
 void new_ram_map_entry(pfaddr_t addr, uint32_t count, bootmem_t **head) {

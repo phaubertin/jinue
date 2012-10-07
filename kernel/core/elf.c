@@ -123,7 +123,7 @@ void elf_load_process_manager(void) {
 		}
 		
 		/* check that the segment is not in the region reserved for kernel use */
-		if(phdr[idx].p_vaddr < (addr_t)PLIMIT) {
+		if(phdr[idx].p_vaddr < (Elf32_Addr)PLIMIT) {
 			panic("process manager memory layout -- address of segment too low");
 		}
 		

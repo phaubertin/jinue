@@ -218,7 +218,7 @@ void vm_alloc_destroy(vm_alloc_t *allocator) {
 		paddr = vm_lookup_pfaddr(addr);
 		pffree(paddr);
 		
-		addr = (addr_t)( (char *)addr + PAGE_SIZE );
+		addr += PAGE_SIZE;
 	}	
 }
 
@@ -269,7 +269,7 @@ void vm_alloc_init_allocator(vm_alloc_t *allocator, addr_t start_addr, addr_t en
 	block_array = (vm_block_t *)start_addr;
 	
 	/* adjust base address to skip block descriptor array */
-	adjusted_start = (addr_t)( (char *)start_addr + array_page_count * PAGE_SIZE );
+	adjusted_start = start_addr + array_page_count * PAGE_SIZE;
 	
 	/* initialize allocator struct */
 	allocator->start_addr   = adjusted_start;
@@ -289,7 +289,7 @@ void vm_alloc_init_allocator(vm_alloc_t *allocator, addr_t start_addr, addr_t en
 		vm_map(addr, paddr, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
 		
 		/* calculate address of next page */		
-		addr = (addr_t)( (char *)addr + PAGE_SIZE );
+		addr += PAGE_SIZE;
 	}
 	
 	/** ASSERTION: once all the array pages are allocated, we should have reached the allocatable pages region */
@@ -308,7 +308,7 @@ void vm_alloc_init_allocator(vm_alloc_t *allocator, addr_t start_addr, addr_t en
 		block_array[idx].stack_addr = NULL;
 		
 		/* calculate address of next block */
-		addr = (addr_t)( (char *)addr + VM_ALLOC_BLOCK_SIZE );
+		addr += VM_ALLOC_BLOCK_SIZE;
 	}
 }
 
@@ -474,7 +474,7 @@ void vm_alloc_partial_block(vm_block_t *block) {
 		vm_alloc_unlink_block(block);
 		
 		/* use first page of block for the stack */
-		block->stack_addr = block->base_addr;
+		block->stack_addr = (addr_t *)block->base_addr;
 	}
 	
 	/* allocate the page stack */
@@ -522,16 +522,16 @@ void vm_alloc_partial_block(vm_block_t *block) {
 	 * stack_next pointer has reached the end of the block. */
 	
 	/* initialize the stack as empty */
-	block->stack_ptr = (addr_t *)( (char *)stack_addr + PAGE_SIZE );
+	block->stack_ptr = (addr_t *)( (byte_t *)stack_addr + PAGE_SIZE );
 	
 	if(was_free) {
 		/* free block: we skip the first page as it was allocated for the
 		 * stack itself */
-		block->stack_next = (addr_t)( (char *)block->base_addr + PAGE_SIZE );
+		block->stack_next = block->base_addr + PAGE_SIZE;
 	}
 	else {
 		/* used block: sequential allocation no longer possible */
-		block->stack_next = (addr_t)( (char *)block->base_addr + VM_ALLOC_BLOCK_SIZE );
+		block->stack_next = block->base_addr + VM_ALLOC_BLOCK_SIZE;
 	}
 }
 
@@ -546,7 +546,7 @@ void vm_alloc_custom_block(vm_block_t *block, addr_t start_addr, addr_t end_addr
 	/** ASSERTION: start and end addresses must be page aligned */
 	assert(PAGE_OFFSET_OF(start_addr) == 0 && PAGE_OFFSET_OF(end_addr) == 0);
 	
-	limit = (addr_t)( (char *)block->base_addr + VM_ALLOC_BLOCK_SIZE );
+	limit = block->base_addr + VM_ALLOC_BLOCK_SIZE;
 	
 	/** ASSERTION: start and end addr are inside block, address range is non-empty */
 	assert(start_addr >= block->base_addr && end_addr <= limit && start_addr < end_addr );
@@ -561,7 +561,7 @@ void vm_alloc_custom_block(vm_block_t *block, addr_t start_addr, addr_t end_addr
 		 * of the address range for this purpose */
 		if( block->stack_addr == NULL ) {
 			block->stack_addr = (addr_t *)start_addr;
-			adjusted_start    = (addr_t)( (char *)start_addr + PAGE_SIZE );
+			adjusted_start    = start_addr + PAGE_SIZE;
 			
 			/* if the address range contained only a single page, there is
 			 * nothing left to do here */
@@ -583,7 +583,7 @@ void vm_alloc_custom_block(vm_block_t *block, addr_t start_addr, addr_t end_addr
 		assert( ! VM_ALLOC_FULL_STACK(block) );
 		
 		*(--block->stack_ptr) = page;
-		page = (addr_t)( (char *)page + PAGE_SIZE );
+		page += PAGE_SIZE;
 	}
 }
 
@@ -620,7 +620,7 @@ void vm_alloc_unlink_block(vm_block_t *block) {
 	
 	/* if block has a stack, discard it */
 	if(block->stack_ptr != NULL) {
-		paddr = vm_lookup_pfaddr(block->stack_addr);
+		paddr = vm_lookup_pfaddr( (addr_t)block->stack_addr );
 		pffree(paddr);
 	}
 		
@@ -681,7 +681,7 @@ void vm_alloc_grow_stack(vm_block_t *block) {
 	
 	stack_ptr = block->stack_ptr;
 	page      = block->stack_next;
-	limit     = (addr_t)( (char *)block->base_addr + VM_ALLOC_BLOCK_SIZE );
+	limit     = block->base_addr + VM_ALLOC_BLOCK_SIZE;
 		
 	while(page < limit) {
 		/** ASSERTION: stack underflow check */
@@ -689,7 +689,7 @@ void vm_alloc_grow_stack(vm_block_t *block) {
 		
 		*(--stack_ptr) = page;
 		
-		page = (addr_t)( (char *)page + PAGE_SIZE );
+		page += PAGE_SIZE;
 	}
 	
 	block->stack_ptr  = stack_ptr;
@@ -720,7 +720,7 @@ addr_t vm_alloc_grow_single(vm_block_t *block) {
 	assert( ! VM_ALLOC_CANNOT_GROW(block) );
 	
 	page              = block->stack_next;
-	block->stack_next = (addr_t)( (char *)page + PAGE_SIZE );
+	block->stack_next = page + PAGE_SIZE;
 	
 	if( VM_ALLOC_CANNOT_GROW(block) ) {
 		/* block is now used up, remove it from the partial list */

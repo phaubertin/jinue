@@ -101,17 +101,17 @@ void hal_start(void) {
 	/* initialize GDT */
 	gdt[GDT_NULL] = SEG_DESCRIPTOR(0, 0, 0);
 	gdt[GDT_KERNEL_CODE] =
-		SEG_DESCRIPTOR(0, 0xfffff,                      SEG_TYPE_CODE  | SEG_FLAG_KERNEL | SEG_FLAG_NORMAL);
+		SEG_DESCRIPTOR(0,   0xfffff,     SEG_TYPE_CODE  | SEG_FLAG_KERNEL | SEG_FLAG_NORMAL);
 	gdt[GDT_KERNEL_DATA] =
-		SEG_DESCRIPTOR(0, 0xfffff,                      SEG_TYPE_DATA  | SEG_FLAG_KERNEL | SEG_FLAG_NORMAL);
+		SEG_DESCRIPTOR(0,   0xfffff,     SEG_TYPE_DATA  | SEG_FLAG_KERNEL | SEG_FLAG_NORMAL);
 	gdt[GDT_USER_CODE] =
-		SEG_DESCRIPTOR(0, 0xfffff,                      SEG_TYPE_CODE  | SEG_FLAG_USER   | SEG_FLAG_NORMAL);
+		SEG_DESCRIPTOR(0,   0xfffff,     SEG_TYPE_CODE  | SEG_FLAG_USER   | SEG_FLAG_NORMAL);
 	gdt[GDT_USER_DATA] =
-		SEG_DESCRIPTOR(0, 0xfffff,                      SEG_TYPE_DATA  | SEG_FLAG_USER   | SEG_FLAG_NORMAL);
+		SEG_DESCRIPTOR(0,   0xfffff,     SEG_TYPE_DATA  | SEG_FLAG_USER   | SEG_FLAG_NORMAL);
 	gdt[GDT_TSS] =
-		SEG_DESCRIPTOR((unsigned long)tss, TSS_LIMIT-1, SEG_TYPE_TSS   | SEG_FLAG_KERNEL | SEG_FLAG_TSS);
+		SEG_DESCRIPTOR(tss, TSS_LIMIT-1, SEG_TYPE_TSS   | SEG_FLAG_KERNEL | SEG_FLAG_TSS);
 	gdt[GDT_TSS_DATA] =
-		SEG_DESCRIPTOR((unsigned long)tss, TSS_LIMIT-1, SEG_TYPE_DATA  | SEG_FLAG_KERNEL | SEG_FLAG_32BIT | SEG_FLAG_IN_BYTES | SEG_FLAG_NOSYSTEM | SEG_FLAG_PRESENT);
+		SEG_DESCRIPTOR(tss, TSS_LIMIT-1, SEG_TYPE_DATA  | SEG_FLAG_KERNEL | SEG_FLAG_32BIT | SEG_FLAG_IN_BYTES | SEG_FLAG_NOSYSTEM | SEG_FLAG_PRESENT);
 	
 	gdt_info->addr  = gdt;
 	gdt_info->limit = GDT_END * 8 - 1;
@@ -140,7 +140,7 @@ void hal_start(void) {
 	/* initialize IDT */
 	for(idx = 0; idx < IDT_VECTOR_COUNT; ++idx) {
 		/* get address, which is already stored in the IDT entry */
-		addr  = (addr_t)*(unsigned long *)&idt[idx];
+		addr  = (addr_t)*(word32_t *)&idt[idx];
 		
 		/* set interrupt gate flags */
 		flags = SEG_TYPE_INTERRUPT_GATE | SEG_FLAG_NORMAL_GATE;
@@ -155,7 +155,7 @@ void hal_start(void) {
 		/* create interrupt gate descriptor */
 		idt[idx] = GATE_DESCRIPTOR(
 			SEG_SELECTOR(GDT_KERNEL_CODE, 0),
-			(unsigned long)addr,
+			addr,
 			flags,
 			NULL );
 	}

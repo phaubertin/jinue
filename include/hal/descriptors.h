@@ -3,6 +3,7 @@
 
 #include <jinue/types.h>
 
+
 /** offset of descriptor type in descriptor */
 #define SEG_FLAGS_OFFSET		40
 
@@ -108,7 +109,7 @@
 #define GDT_END   				 7
 
 
-typedef unsigned long long seg_descriptor_t;
+typedef word64_t seg_descriptor_t;
 
 typedef seg_descriptor_t *gdt_t;
 
@@ -183,7 +184,7 @@ typedef struct {
 } tss_t;
 
 #define PACK_DESCRIPTOR(val, mask, shamt1, shamt2) \
-	( (((unsigned long long)(val) >> shamt1) & mask) << shamt2 )
+	( (((word64_t)(word32_t)(val) >> shamt1) & mask) << shamt2 )
 
 #define SEG_DESCRIPTOR(base, limit, type) (\
 	  PACK_DESCRIPTOR((type),  0xf0ff,  0, SEG_FLAGS_OFFSET) \

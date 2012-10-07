@@ -7,8 +7,14 @@
 #include <stdint.h>
 
 
-typedef void *addr_t;
+typedef int              linker_defined_t;
 
-typedef int linker_defined_t;
+typedef uint8_t          byte_t;
+
+typedef uintptr_t        word32_t;
+
+typedef uint64_t         word64_t;
+
+typedef byte_t          *addr_t;
 
 #endif
