@@ -2,50 +2,96 @@
 #define _JINUE_KERNEL_SLAB_H_
 
 #include <stddef.h>
-#include <pfalloc.h>
-#include <vm_alloc.h>
+#include <jinue/vm.h>
+
+#define SLAB_SIZE                   PAGE_SIZE
+
+#define SLAB_POISON_ALIVE_VALUE     0xBADCAFE
+
+#define SLAB_POISON_DEAD_VALUE      0xDEADBEEF
+
+#define SLAB_RED_ZONE_VALUE         0x5711600D
+
+#define SLAB_DEFAULT_WORKING_SET    2
+
+
+#define SLAB_DEFAULTS               (0)
+
+#define SLAB_RED_ZONE               (1<<0)
+
+#define SLAB_POISON                 (1<<1)
+
+#define SLAB_HWCACHE_ALIGN          (1<<2)
+
+#define SLAB_COMPACT                (1<<3)
+
 
 typedef void (*slab_ctor_t)(void *, size_t);
 
-
-struct slab_t {};
-
-typedef struct slab_t slab_t;
+struct slab_t;
 
 struct slab_cache_t {
-	char   		*name;
-	size_t       size;
-	size_t       alignment;
-	vm_alloc_t  *vma;
-	pfcache_t   *pfcache;
-	slab_ctor_t	 ctor;
-	slab_ctor_t	 dtor;
+    struct slab_t       *slabs_empty;
+    struct slab_t       *slabs_partial;
+    struct slab_t       *slabs_full;
+    unsigned int         empty_count;
+    size_t               obj_size;
+    size_t               alloc_size;
+    size_t               alignment;
+    size_t               bufctl_offset;
+    size_t               next_colour;
+    size_t               max_colour;
+    unsigned int         working_set;
+    slab_ctor_t          ctor;
+    slab_ctor_t          dtor;
+    char                *name;
+    struct slab_cache_t *prev;
+    struct slab_cache_t *next;
+    int                  flags;
 };
 
 typedef struct slab_cache_t slab_cache_t;
 
+struct slab_bufctl_t {
+    struct slab_bufctl_t *next;
+};
 
-void slab_cache_create(
-	slab_cache_t *cache,
-	size_t        size,
-	size_t        alignment,
-	slab_ctor_t	  ctor,
-	slab_ctor_t	  dtor );
+typedef struct slab_bufctl_t slab_bufctl_t;
+
+struct slab_t {
+    struct slab_t   *prev;
+    struct slab_t   *next;
+    
+    slab_cache_t    *cache;
+    
+    unsigned int     obj_count;
+    size_t           colour;
+    slab_bufctl_t   *free_list;
+};
+
+typedef struct slab_t slab_t;
+
+extern slab_cache_t *slab_cache_list;
+
+
+slab_cache_t *slab_cache_create(
+    char            *name,
+    size_t           size,
+    size_t           alignment,
+    slab_ctor_t      ctor,
+    slab_ctor_t      dtor,
+    int              flags );
 
 void slab_cache_destroy(slab_cache_t *cache);
 
 void *slab_cache_alloc(slab_cache_t *cache);
 
-void *slab_cache_alloc_low_latency(slab_cache_t *cache);
-
-void slab_cache_free(slab_cache_t *cache, void *buffer);
-
-void slab_cache_set_allocators(slab_cache_t *cache, pfcache_t *pfcache, vm_alloc_t *vma);
+void slab_cache_free(void *buffer);
 
 void slab_cache_grow(slab_cache_t *cache);
 
-void slab_cache_grow_low_latency(slab_cache_t *cache);
-
 void slab_cache_reap(slab_cache_t *cache);
+
+void slab_cache_set_working_set(slab_cache_t *cache, unsigned int n);
 
 #endif
