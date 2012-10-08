@@ -28,7 +28,7 @@ while { [gets $in line] >= 0} {
 	set type [lindex $fields 1]
 	set name [lindex $fields 2]
 	
-	if {$type != T} continue
+	if {$type != T && $type != t} continue
 	
 	puts $out "\t{(addr_t)0x$addr, \"$type\", \"$name\"},"
 }
