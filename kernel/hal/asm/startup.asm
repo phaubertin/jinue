@@ -107,6 +107,7 @@ setup_stack:
 	push eax		; null-terminate call stack (useful for debugging)
 	xor ebp, ebp	; initialize frame pointer
 	
+start_kernel:
 	call hal_start
 
 halt:

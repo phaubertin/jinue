@@ -18,6 +18,9 @@
 #include <x86.h>
 
 
+/** if non_zero, we are executing in the kernel */
+int in_kernel;
+
 /** size of the kernel image */
 size_t kernel_size;
 
@@ -30,7 +33,6 @@ addr_t kernel_region_top;
 
 /** address of kernel stack */
 addr_t kernel_stack;
-
 
 static vm_alloc_t __global_page_allocator;
 
@@ -69,6 +71,9 @@ void hal_start(void) {
 	/* pfalloc() should not be called yet -- use pfalloc_early() instead */
 	use_pfalloc_early = true;
 	
+	/* we are in the kernel */
+	in_kernel = 1;
+    
 	/* initialize VGA and say hello */
 	vga_init();
 	

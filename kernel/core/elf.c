@@ -1,3 +1,4 @@
+#include <hal/kernel.h>
 #include <hal/thread.h>
 #include <hal/vm.h>
 #include <assert.h>
@@ -212,6 +213,9 @@ void elf_start_process_manager(void) {
 	elf_entry_t entry;
 	
 	entry = (elf_entry_t)proc_elf.e_entry;
+    
+	/* leaving the kernel */
+	in_kernel = 0;
 	
 	/* this never returns */
 	thread_start((addr_t)entry, (addr_t)0xfffffff0);

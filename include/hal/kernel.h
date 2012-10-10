@@ -9,6 +9,7 @@
 
 #define kernel_start ((addr_t)__start)
 
+extern int in_kernel;
 
 extern addr_t kernel_top;
 

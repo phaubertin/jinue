@@ -3,6 +3,7 @@
 	bits 32
 	
 	extern hal_syscall_dispatch
+	extern in_kernel
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: fast_intel_entry
@@ -12,6 +13,9 @@ fast_intel_entry:
 	; save return address and user stack
 	push ebp	; user stack
 	push ecx	; return address
+    
+	; dummy frame pointer
+	mov ebp, 0
 	
 	; save data segment selectors
 	push ds
@@ -42,8 +46,14 @@ fast_intel_entry:
 	; push a pointer to the previous structure as parameter to
 	; the hal_syscall_dispatch function
 	push esp
+    
+	; entering the kernel
+	mov [in_kernel], dword 1
 	
 	call hal_syscall_dispatch
+    
+	; leaving the kernel
+	mov [in_kernel], dword 0
 	
 	; setup return value
 	mov ebx, [esp+4+0]	;  0 ret.errno
@@ -84,6 +94,9 @@ fast_amd_entry:
 	; save return address and user stack
 	push ebp	; user stack
 	push ecx	; return address
+    
+	; dummy frame pointer
+	mov ebp, 0
 	
 	; save data segment selectors
 	push ds
@@ -104,8 +117,14 @@ fast_amd_entry:
 	; push a pointer to the previous structure as parameter to
 	; the hal_syscall_dispatch function
 	push esp
+    
+	; entering the kernel
+	mov [in_kernel], dword 1
 	
 	call hal_syscall_dispatch
+    
+	; leaving the kernel
+	mov [in_kernel], dword 0
 
 	; setup return value
 	mov ebx, [esp+4+0]	;  0 ret.errno
