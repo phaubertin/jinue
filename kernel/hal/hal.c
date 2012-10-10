@@ -272,5 +272,5 @@ void hal_start(void) {
 	/* set system call dispatch function to default */
 	set_syscall_funct(NULL);
 	
-	main();
+	kmain();
 }

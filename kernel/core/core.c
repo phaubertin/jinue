@@ -4,7 +4,7 @@
 #include <thread.h>
 
 
-void main(void) {
+void kmain(void) {
     /* create thread control block for first thread */
     current_thread = (thread_t *)boot_heap;
     boot_heap = (thread_t *)boot_heap + 1;
