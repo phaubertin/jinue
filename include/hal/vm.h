@@ -117,5 +117,7 @@ void vm_change_flags(addr_t vaddr, uint32_t flags);
 
 void vm_map_early(addr_t vaddr, addr_t paddr, uint32_t flags, pte_t *page_directory);
 
+pte_t *vm_create_addr_space_early(void);
+
 #endif
 

@@ -137,3 +137,44 @@ void vm_map_early(addr_t vaddr, addr_t paddr, uint32_t flags, pte_t *page_direct
 	
 	page_table[ PAGE_TABLE_OFFSET_OF(vaddr) ] = (pte_t)paddr | flags | VM_FLAG_PRESENT;
 }
+
+pte_t *vm_create_addr_space_early(void) {
+    unsigned int idx, idy;
+    addr_t addr;
+    pte_t *page_directory;
+    pte_t *page_table;
+    pte_t *pte;
+    
+    /* Allocate the first page directory. Since paging is not yet
+	   enabled, virtual and physical addresses are the same.  */
+	page_directory = (pte_t *)pfalloc_early();
+	
+	/* allocate page tables for kernel data/code region (0..PLIMIT) and add
+	   relevant entries to page directory */
+	for(idx = 0; idx < PAGE_DIRECTORY_OFFSET_OF(PLIMIT); ++idx) {
+		pte = (pte_t *)pfalloc_early();		
+		page_directory[idx] = (pte_t)pte | VM_FLAG_PRESENT | VM_FLAG_KERNEL | VM_FLAG_READ_WRITE;
+		
+		for(idy = 0; idy < PAGE_TABLE_ENTRIES; ++idy) {
+			pte[idy] = 0;
+		}
+	}
+	
+	while(idx < PAGE_TABLE_ENTRIES) {
+		page_directory[idx] = 0;
+		++idx;
+	}
+	
+	/* map page directory */
+	vm_map_early((addr_t)PAGE_DIRECTORY_ADDR, (addr_t)page_directory, VM_FLAGS_PAGE_TABLE, page_directory);
+		
+	/* map page tables */
+	for(idx = 0, addr = (addr_t)PAGE_TABLES_ADDR; idx < PAGE_DIRECTORY_OFFSET_OF(PLIMIT); ++idx, addr += PAGE_SIZE)	{
+		page_table = (pte_t *)page_directory[idx];
+		page_table = (pte_t *)( (unsigned int)page_table & ~PAGE_MASK  );
+		
+		vm_map_early((addr_t)addr, (addr_t)page_table, VM_FLAGS_PAGE_TABLE, page_directory);		
+	}
+    
+    return page_directory;
+}

@@ -41,15 +41,14 @@ vm_alloc_t *global_page_allocator;
 
 
 void hal_start(void) {
-	pte_t *page_table, *page_directory;
-	pte_t *pte;
+	pte_t *page_directory;
 	addr_t addr;
 	gdt_t  gdt;
 	tss_t *tss;
 	addr_t stack;
 	gdt_info_t *gdt_info;
 	idt_info_t *idt_info;
-	unsigned int idx, idy;
+	unsigned int idx;
 	unsigned long temp;
 	unsigned long flags;
 	unsigned long *ulptr;
@@ -168,49 +167,17 @@ void hal_start(void) {
 	idt_info->addr  = idt;
 	idt_info->limit = IDT_VECTOR_COUNT * sizeof(seg_descriptor_t) - 1;
 	lidt(idt_info);
-		
-	/* Allocate the first page directory. Since paging is not yet
-	   activated, virtual and physical addresses are the same.  */
-	page_directory = (pte_t *)pfalloc_early();
-	
-	/* allocate page tables for kernel data/code region (0..PLIMIT) and add
-	   relevant entries to page directory */
-	for(idx = 0; idx < PAGE_DIRECTORY_OFFSET_OF(PLIMIT); ++idx) {
-		pte = (pte_t *)pfalloc_early();		
-		page_directory[idx] = (pte_t)pte | VM_FLAG_PRESENT | VM_FLAG_KERNEL | VM_FLAG_READ_WRITE;
-		
-		for(idy = 0; idy < PAGE_TABLE_ENTRIES; ++idy) {
-			pte[idy] = 0;
-		}
-	}
-	
-	while(idx < PAGE_TABLE_ENTRIES) {
-		page_directory[idx] = 0;
-		++idx;
-	}
-	
-	/* map page directory */
-	vm_map_early((addr_t)PAGE_DIRECTORY_ADDR, (addr_t)page_directory, VM_FLAGS_PAGE_TABLE, page_directory);
-		
-	/* map page tables */
-	for(idx = 0, addr = (addr_t)PAGE_TABLES_ADDR; idx < PAGE_DIRECTORY_OFFSET_OF(PLIMIT); ++idx, addr += PAGE_SIZE)	{
-		page_table = (pte_t *)page_directory[idx];
-		page_table = (pte_t *)( (unsigned int)page_table & ~PAGE_MASK  );
-		
-		vm_map_early((addr_t)addr, (addr_t)page_table, VM_FLAGS_PAGE_TABLE, page_directory);		
-	}
-	
-	/* perform 1:1 mapping of text video memory */
-	vm_map_early((addr_t)VGA_TEXT_VID_BASE,           (addr_t)VGA_TEXT_VID_BASE,           VM_FLAG_KERNEL | VM_FLAG_READ_WRITE, page_directory);
-	vm_map_early((addr_t)VGA_TEXT_VID_BASE+PAGE_SIZE, (addr_t)VGA_TEXT_VID_BASE+PAGE_SIZE, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE, page_directory);
-	
-	/* initialize page frame allocator */
+    
+    /* initialize the page frame allocator */
 	page_stack_buffer = (pfaddr_t *)pfalloc_early();
 	init_pfcache(&global_pfcache, page_stack_buffer);
 	
 	for(idx = 0; idx < KERNEL_PAGE_STACK_INIT; ++idx) {
 		pffree( PTR_TO_PFADDR( pfalloc_early() ) );
 	}
+		
+    /* create first address space */
+    page_directory = vm_create_addr_space_early();
 	
 	/** below this point, it is no longer safe to call pfalloc_early() */
 	use_pfalloc_early = false;
@@ -222,20 +189,24 @@ void hal_start(void) {
 	for(addr = kernel_start; addr < kernel_region_top; addr += PAGE_SIZE) {
 		vm_map_early((addr_t)addr, (addr_t)addr, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE, page_directory);
 	}
-	
+    	
 	/* enable paging */
-	set_cr3( (unsigned long)page_directory );
+	set_cr3( (uint32_t)page_directory );
 	
 	temp = get_cr0();
 	temp |= X86_FLAG_PG;
 	set_cr0x(temp);
-	
-	printk("Paging enabled\n");
+    
+    /* perform 1:1 mapping of text video memory */
+	vm_map((addr_t)VGA_TEXT_VID_BASE,           PTR_TO_PFADDR(VGA_TEXT_VID_BASE),           VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
+	vm_map((addr_t)VGA_TEXT_VID_BASE+PAGE_SIZE, PTR_TO_PFADDR(VGA_TEXT_VID_BASE+PAGE_SIZE), VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
 	
 	/* create system memory map */
 	bootmem_init();
 	
-	/* initialize global page allocator (region 0..KLIMIT)
+	/** TODO: handle hole due to video memory mapping */
+    
+    /* initialize global page allocator (region 0..KLIMIT)
 	  
 	   note: we skip the first page (i.e. actually allocate the region PAGE_SIZE..KLIMIT)
 	         for two reasons:
