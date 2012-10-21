@@ -6,6 +6,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define KB      (1024)
+
+#define MB      (1024 * 1024)
+
 
 typedef int              linker_defined_t;
 
