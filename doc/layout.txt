@@ -14,6 +14,7 @@ The kernel image has the following format:
   |                                       |
   +---------------------------------------+
 
+
 Once it is loaded in memory by the boot loader, and the startup code
 (startup.asm) and initilization code (kinit()) are run, this is the
 layout in memory:
@@ -41,3 +42,42 @@ layout in memory:
   |       initial page allocations        |
   |                                       |
   +---------------------------------------+ kernel_region_top
+
+
+The whole process address space looks like this:
+
+  +---------------------------------------+ 0x0
+  |                                       |
+  |     available for global mappings     |
+  |                                       |
+  +---------------------------------------+ kernel_start (0x100000) 
+  |    microkernel, process manager,etc.  |
+  |              (see above)              |
+  +---------------------------------------+ kernel_region_top
+  |                                       |
+  |    available for global mappings      |
+  |                                       |
+  +=======================================+ KLIMIT (0x6000000)
+  |    page tables for current process    |
+  +---------------------------------------+
+  | page directory(s) for current process |
+  +---------------------------------------+
+  |                                       |
+  |    available for process-specific     |
+  |              mappings                 |
+  |                                       |
+  +=======================================+ PLIMIT (0x8000000)
+  |                                       |
+  |          User memory space            |
+  |                                       |
+  |                                       |
+  |                                       |
+  +---------------------------------------+ 0x100000000
+
+All memory mappings from 0 to KLIMIT are global kernel mappings. All
+mappings from KLIMIT to PLIMIT are process-specific kernel mappings.
+All mappings from PLIMIT to the top of memory are user mappings which
+belong to the currently running process.
+
+Each time a new page table/directory is allocated, it is mapped at a
+fixed location just above KLIMIT.
