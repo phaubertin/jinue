@@ -6,19 +6,49 @@
 #include <x86.h>
 
 
+addr_t page_directory_addr;
+
+size_t page_table_entries;
+
+/** page table entry offset of virtual (linear) address */
+unsigned int (*page_table_offset_of)(addr_t);
+
+unsigned int (*page_directory_offset_of)(addr_t);
+
+pte_t *(*page_table_of)(addr_t);
+
+pte_t *(*page_table_pte_of)(addr_t);
+
+pte_t *(*get_pte)(addr_t);
+
+pte_t *(*get_pde)(addr_t);
+
+pte_t *(*get_pte_with_offset)(pte_t *, unsigned int);
+
+void (*set_pte)(pte_t *, pfaddr_t, int);
+
+void (*set_pte_flags)(pte_t *, int);
+
+int (*get_pte_flags)(pte_t *);
+
+pfaddr_t (*get_pte_pfaddr)(pte_t *);
+
+void (*clear_pte)(pte_t *);
+
+
 /** 
 	Map a page frame (physical page) to a virtual memory page.
 	@param vaddr virtual address of mapping
 	@param paddr address of page frame
 	@param flags flags used for mapping (see VM_FLAG_x constants in vm.h)
 */
-void vm_map(addr_t vaddr, pfaddr_t paddr, uint32_t flags) {
+void vm_map(addr_t vaddr, pfaddr_t paddr, int flags) {
 	pte_t *pte, *pde;
-	pte_t page_table;
+	pfaddr_t page_table;
 	int idx;
 	
 	/** ASSERTION: we assume vaddr is aligned on a page boundary */
-	assert( PAGE_OFFSET_OF(vaddr) == 0 );
+	assert( page_offset_of(vaddr) == 0 );
 	
 	/** ASSERTION: we assume paddr is aligned on a page boundary */
 	assert( PFADDR_CHECK(paddr) );
@@ -27,42 +57,41 @@ void vm_map(addr_t vaddr, pfaddr_t paddr, uint32_t flags) {
 	assert( PFADDR_CHECK_4GB(paddr) );
 	
 	/* get page directory entry */
-	pde = PDE_OF(vaddr);
+	pde = get_pde(vaddr);
 	
 	/* check if page table must be created */
-	if( ! (*pde & VM_FLAG_PRESENT) ) {
-		/** TODO: fix this once PAE is activated */
+	if( ! (get_pte_flags(pde) & VM_FLAG_PRESENT) ) {
 		/* allocate a new page table */
-		page_table = (pte_t)pfalloc() << PFADDR_SHIFT;
+		page_table = pfalloc();
 		
-		/* map page table in the region of memory reserved for that purpose */
-		pte = PAGE_TABLE_PTE_OF(vaddr);
-		*pte = page_table | VM_FLAGS_PAGE_TABLE | VM_FLAG_PRESENT;
+        /* map page table in the region of memory reserved for that purpose */
+		pte = page_table_pte_of(vaddr);
+        set_pte(pte, page_table, VM_FLAGS_PAGE_TABLE | VM_FLAG_PRESENT);
 		
-		/* obtain virtual address of new page table */
-		pte = PAGE_TABLE_OF(vaddr);
+        /* obtain virtual address of new page table */
+		pte = page_table_of(vaddr);
 		
-		/* invalidate TLB entry for new page table */
+		/** TODO: check this */
+        /* invalidate TLB entry for new page table */
 		invalidate_tlb( (addr_t)pte );
 		
-		/* zero content of page table */
-		for(idx = 0; idx < PAGE_TABLE_ENTRIES; ++idx) {
-			pte[idx] = 0;
+        /* zero content of page table */
+		for(idx = 0; idx < page_table_entries; ++idx) {
+            clear_pte( get_pte_with_offset(pte, idx) );
 		}
 		
 		/* link to page table from page directory */
 		if(vaddr < (addr_t)PLIMIT) {
-			*pde = (pte_t)page_table | VM_FLAG_KERNEL | VM_FLAG_READ_WRITE | VM_FLAG_PRESENT;
+            set_pte(pde, page_table, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE | VM_FLAG_PRESENT);
 		}
 		else {
-			*pde = (pte_t)page_table | VM_FLAG_USER   | VM_FLAG_READ_WRITE | VM_FLAG_PRESENT;
+            set_pte(pde, page_table, VM_FLAG_USER   | VM_FLAG_READ_WRITE | VM_FLAG_PRESENT);
 		}		
 	}
 	
-	/** TODO: fix this once PAE is activated */
 	/* perform the actual mapping */
-	pte = PTE_OF(vaddr);
-	*pte = (pte_t)(paddr << PFADDR_SHIFT) | flags | VM_FLAG_PRESENT;
+	pte = get_pte(vaddr);
+    set_pte(pte, paddr, flags | VM_FLAG_PRESENT);
 	
 	/* invalidate TLB entry for newly mapped page */
 	invalidate_tlb(vaddr);
@@ -76,66 +105,67 @@ void vm_unmap(addr_t addr) {
 	pte_t *pte;
 	
 	/** ASSERTION: we assume addr is aligned on a page boundary */
-	assert( PAGE_OFFSET_OF(addr) == 0 );
+	assert( page_offset_of(addr) == 0 );
 	
-	pte = PTE_OF(addr);
-	*pte = NULL;
+	pte = get_pte(addr);
+    clear_pte(pte);
 	
 	invalidate_tlb(addr);
 }
 
 pfaddr_t vm_lookup_pfaddr(addr_t addr) {
 	pte_t *pte;
-	uint32_t paddr;
 	
 	/* get page frame base address from page tables */
-	pte = PTE_OF(addr);
-	paddr = (uint32_t)*pte & ~PAGE_MASK;
-	
-	return (paddr >> PFADDR_SHIFT);
+	pte = get_pte(addr);
+    
+    return get_pte_pfaddr(pte);
 }
 
-void vm_change_flags(addr_t vaddr, uint32_t flags) {
-	pte_t *pte, *pde;
-	
+void vm_change_flags(addr_t vaddr, int flags) {
+	pte_t *pte;
 	
 	/** ASSERTION: we assume vaddr is aligned on a page boundary */
-	assert( PAGE_OFFSET_OF(vaddr) == 0 );
-
-	/* get page directory entry */
-	pde = PDE_OF(vaddr);
-	
-	/** ASSERTION: there is a page directory entry marked present for this address */
-	assert(*pde & VM_FLAG_PRESENT);
+	assert( page_offset_of(vaddr) == 0 );
 	
 	/* get page table entry */
-	pte = PTE_OF(vaddr);
+	pte = get_pte(vaddr);
 	
 	/** ASSERTION: there is a page table entry marked present for this address */
-	assert(*pte & VM_FLAG_PRESENT);
+    assert( get_pte_flags(pte) & VM_FLAG_PRESENT );
 	
 	/* perform the flags change */
-	*pte = (*pte & ~PAGE_MASK) | flags | VM_FLAG_PRESENT;
+    set_pte_flags(pte, flags | VM_FLAG_PRESENT);
 	
 	/* invalidate TLB entry for the affected page */
 	invalidate_tlb(vaddr);	
 }
 
-void vm_map_early(addr_t vaddr, addr_t paddr, uint32_t flags, pte_t *page_directory) {
+void vm_map_early(addr_t vaddr, addr_t paddr, int flags, pte_t *page_directory) {
 	pte_t *page_table;
+    pte_t *pte;
 	
-	
-	/** ASSERTION: we assume vaddr is aligned on a page boundary */
-	assert( PAGE_OFFSET_OF(vaddr) == 0 );
+	/** ASSERTION: we are mapping in the 0..PLIMIT region */
+    assert(vaddr < PLIMIT);	
+    
+    /** ASSERTION: we assume vaddr is aligned on a page boundary */
+	assert( page_offset_of(vaddr) == 0 );
 	
 	/** ASSERTION: we assume paddr is aligned on a page boundary */
-	assert( PAGE_OFFSET_OF(paddr) == 0 );
+	assert( page_offset_of(paddr) == 0 );
 	
-	
-	page_table = (pte_t *)page_directory[ PAGE_DIRECTORY_OFFSET_OF(vaddr) ];
-	page_table = (pte_t *)( (uint32_t)page_table & ~PAGE_MASK  );
-	
-	page_table[ PAGE_TABLE_OFFSET_OF(vaddr) ] = (pte_t)paddr | flags | VM_FLAG_PRESENT;
+	/* get page directory entry for vaddr */
+    pte        = get_pte_with_offset(page_directory, page_directory_offset_of(vaddr));
+    
+    /* For early allocations (i.e. before paging is enabled) like the inital page
+     * tables, the virtual (linear) address and the physical address are the same. */
+    page_table = (pte_t *)(get_pte_pfaddr(pte) << PFADDR_SHIFT);
+    
+    /* get page table entry for vaddr */
+    pte = get_pte_with_offset(page_table, page_table_offset_of(vaddr));
+    
+    /* perform mapping */
+    set_pte(pte, PTR_TO_PFADDR(paddr), flags | VM_FLAG_PRESENT);
 }
 
 pte_t *vm_create_addr_space_early(void) {
@@ -143,7 +173,7 @@ pte_t *vm_create_addr_space_early(void) {
     addr_t addr;
     pte_t *page_directory;
     pte_t *page_table;
-    pte_t *pte;
+    pte_t *pde;
     
     /* Allocate the first page directory. Since paging is not yet
 	   enabled, virtual and physical addresses are the same.  */
@@ -151,27 +181,31 @@ pte_t *vm_create_addr_space_early(void) {
 	
 	/* allocate page tables for kernel data/code region (0..PLIMIT) and add
 	   relevant entries to page directory */
-	for(idx = 0; idx < PAGE_DIRECTORY_OFFSET_OF(PLIMIT); ++idx) {
-		pte = (pte_t *)pfalloc_early();		
-		page_directory[idx] = (pte_t)pte | VM_FLAG_PRESENT | VM_FLAG_KERNEL | VM_FLAG_READ_WRITE;
+	for(idx = 0; idx < page_directory_offset_of(PLIMIT); ++idx) {
+		page_table = (pte_t *)pfalloc_early();
+        
+        set_pte(
+            get_pte_with_offset(page_directory, idx),
+            PTR_TO_PFADDR(page_table),
+            VM_FLAG_PRESENT | VM_FLAG_KERNEL | VM_FLAG_READ_WRITE );
 		
-		for(idy = 0; idy < PAGE_TABLE_ENTRIES; ++idy) {
-			pte[idy] = 0;
+        for(idy = 0; idy < page_table_entries; ++idy) {
+            clear_pte( get_pte_with_offset(page_table, idy) );
 		}
 	}
 	
-	while(idx < PAGE_TABLE_ENTRIES) {
-		page_directory[idx] = 0;
+    while(idx < page_table_entries) {
+        clear_pte( get_pte_with_offset(page_directory, idx) );
 		++idx;
 	}
-	
-	/* map page directory */
-	vm_map_early((addr_t)PAGE_DIRECTORY_ADDR, (addr_t)page_directory, VM_FLAGS_PAGE_TABLE, page_directory);
+
+    /* map page directory */
+	vm_map_early(page_directory_addr, (addr_t)page_directory, VM_FLAGS_PAGE_TABLE, page_directory);
 		
 	/* map page tables */
-	for(idx = 0, addr = (addr_t)PAGE_TABLES_ADDR; idx < PAGE_DIRECTORY_OFFSET_OF(PLIMIT); ++idx, addr += PAGE_SIZE)	{
-		page_table = (pte_t *)page_directory[idx];
-		page_table = (pte_t *)( (unsigned int)page_table & ~PAGE_MASK  );
+	for(idx = 0, addr = (addr_t)PAGE_TABLES_ADDR; idx < page_directory_offset_of(PLIMIT); ++idx, addr += PAGE_SIZE)	{
+        pde = get_pte_with_offset(page_directory, idx);
+        page_table = (pte_t *)(get_pte_pfaddr(pde) << PFADDR_SHIFT);
 		
 		vm_map_early((addr_t)addr, (addr_t)page_table, VM_FLAGS_PAGE_TABLE, page_directory);		
 	}

@@ -152,7 +152,7 @@ void vm_free(vm_alloc_t *allocator, addr_t page) {
 	assert(page >= allocator->start_addr && page < allocator->end_addr);
 	
 	/** ASSERTION: ensure address is page aligned */
-	assert(PAGE_OFFSET_OF(page) == 0);
+	assert(page_offset_of(page) == 0);
 	
 	/* find the block to which the free page belong */
 	idx = ( (unsigned int)page - (unsigned int)allocator->base_addr ) / VM_ALLOC_BLOCK_SIZE;
@@ -247,7 +247,7 @@ void vm_alloc_init_allocator(vm_alloc_t *allocator, addr_t start_addr, addr_t en
 	assert(allocator != NULL);
 	
 	/** ASSERTION: start and end addresses must be multiples of page size (page-aligned memory region) */
-	assert( PAGE_OFFSET_OF(start_addr) == 0 && PAGE_OFFSET_OF(end_addr) == 0 );
+	assert( page_offset_of(start_addr) == 0 && page_offset_of(end_addr) == 0 );
 	
 	
 	/* align base and end addresses to block size */
@@ -544,7 +544,7 @@ void vm_alloc_custom_block(vm_block_t *block, addr_t start_addr, addr_t end_addr
 	assert(block != NULL);
 	
 	/** ASSERTION: start and end addresses must be page aligned */
-	assert(PAGE_OFFSET_OF(start_addr) == 0 && PAGE_OFFSET_OF(end_addr) == 0);
+	assert(page_offset_of(start_addr) == 0 && page_offset_of(end_addr) == 0);
 	
 	limit = block->base_addr + VM_ALLOC_BLOCK_SIZE;
 	

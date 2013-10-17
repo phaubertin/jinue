@@ -6,66 +6,54 @@
 #include <jinue/vm.h>
 
 
-/* ------ page offset ------ */
+/* ------ page tables ------ */
+
+/** size of a page table */
+#define PAGE_TABLE_SIZE PAGE_SIZE
+
+/** incomplete struct type used for the definition of pte_t */
+struct __pte_t;
+
+/** type of a page table entry */
+typedef struct __pte_t pte_t;
+
+
+/* ------ virtual address offsets ------ */
 
 /** bit mask for offset in page */
 #define PAGE_MASK (PAGE_SIZE - 1)
 
-/** offset in page of virtual address */
-#define PAGE_OFFSET_OF(x)  ((uint32_t)(x) & PAGE_MASK)
+/** byte offset in page of virtual (linear) address */
+#define page_offset_of(x)  ((uintptr_t)(x) & PAGE_MASK)
 
+extern addr_t page_directory_addr;
 
-/* ------ page tables ------ */
-
-/** type of a page table (or page directory) entry */
-typedef uint32_t pte_t;
-
-/** bit mask for page table entry */
-#define PAGE_TABLE_MASK (PAGE_TABLE_ENTRIES - 1)
+extern size_t page_table_entries;
 
 /** page table entry offset of virtual (linear) address */
-#define PAGE_TABLE_OFFSET_OF(x)  ( ((uint32_t)(x) >> PAGE_BITS) & PAGE_TABLE_MASK )
+extern unsigned int (*page_table_offset_of)(addr_t);
 
-/** page directory entry offset of virtual (linear address) */
-#define PAGE_DIRECTORY_OFFSET_OF(x)  ((uint32_t)(x) >> (PAGE_BITS + PAGE_TABLE_BITS))
+extern unsigned int (*page_directory_offset_of)(addr_t);
 
-/** type of a page table */
-typedef pte_t page_table_t[PAGE_TABLE_ENTRIES];
+extern pte_t *(*page_table_of)(addr_t);
 
+extern pte_t *(*page_table_pte_of)(addr_t);
 
-/* ------ virtual memory layout ------ */
+extern pte_t *(*get_pte)(addr_t);
 
-/** low limit of region spanning from KLIMIT to PLIMIT actually available for
-	mappings */
-#define PMAPPING_START (PAGE_DIRECTORY_ADDR + PAGE_TABLE_SIZE)
+extern pte_t *(*get_pde)(addr_t);
 
-/** high limit of region spanning from KLIMIT to PLIMIT actually available for
-	mappings */
-#define PMAPPING_END   PLIMIT
+extern pte_t *(*get_pte_with_offset)(pte_t *, unsigned int);
 
+extern void (*set_pte)(pte_t *, pfaddr_t, int);
 
-/* ------ mapping of page tables in virtual memory ------ */
+extern void (*set_pte_flags)(pte_t *, int);
 
-/** page directory in virtual memory */
-#define PAGE_DIRECTORY ( (pte_t *)PAGE_DIRECTORY_ADDR )
+extern int (*get_pte_flags)(pte_t *);
 
-/** page tables in virtual memory */
-#define PAGE_TABLES ( (page_table_t *)PAGE_TABLES_ADDR )
+extern pfaddr_t (*get_pte_pfaddr)(pte_t *);
 
-/** page table in virtual memory */
-#define PAGE_TABLE_OF(x) ( PAGE_TABLES[ PAGE_DIRECTORY_OFFSET_OF(x) ] )
-
-/** address of page directory entry in virtual memory */
-#define PDE_OF(x) ( &PAGE_DIRECTORY[ PAGE_DIRECTORY_OFFSET_OF(x) ] )
-
-/** address of page table entry in virtual memory */
-#define PTE_OF(x) ( &PAGE_TABLE_OF(x)[ PAGE_TABLE_OFFSET_OF(x) ] )
-
-/** page table which maps all page tables in memory */
-#define PAGE_TABLES_TABLE ( PAGE_TABLE_OF( PAGE_TABLES_ADDR ) )
-
-/** address of page entry in PAGE_OF_PAGE_TABLES */
-#define PAGE_TABLE_PTE_OF(x) ( &PAGE_TABLES_TABLE[ PAGE_DIRECTORY_OFFSET_OF(x) ] )
+extern void (*clear_pte)(pte_t *);
 
 
 /* ------ flags for page attributes ------ */
@@ -107,15 +95,15 @@ typedef pte_t page_table_t[PAGE_TABLE_ENTRIES];
 #define VM_FLAGS_PAGE_TABLE (VM_FLAG_KERNEL | VM_FLAG_READ_WRITE)
 
 
-void vm_map(addr_t vaddr, pfaddr_t paddr, uint32_t flags);
+void vm_map(addr_t vaddr, pfaddr_t paddr, int flags);
 
 void vm_unmap(addr_t addr);
 
 pfaddr_t vm_lookup_pfaddr(addr_t addr);
 
-void vm_change_flags(addr_t vaddr, uint32_t flags);
+void vm_change_flags(addr_t vaddr, int flags);
 
-void vm_map_early(addr_t vaddr, addr_t paddr, uint32_t flags, pte_t *page_directory);
+void vm_map_early(addr_t vaddr, addr_t paddr, int flags, pte_t *page_directory);
 
 pte_t *vm_create_addr_space_early(void);
 

@@ -15,6 +15,7 @@
 #include <vga.h>
 #include <vm.h>
 #include <vm_alloc.h>
+#include <vm_x86.h>
 #include <x86.h>
 
 
@@ -54,19 +55,10 @@ void hal_start(void) {
 	unsigned long *ulptr;
 	unsigned long long msrval;
 	pfaddr_t *page_stack_buffer;
+    
+    /** ASSERTION: we assume the kernel starts on a page boundary */
+	assert( page_offset_of( (unsigned int)kernel_start ) == 0 );
 	
-
-	/** ASSERTION: we assume the kernel starts on a page boundary */
-	assert( PAGE_OFFSET_OF( (unsigned int)kernel_start ) == 0 );
-	
-	/** ASSERTION: we assume the page tables mapping is aligned on a page directory entry boundary */
-	assert( PAGE_TABLE_OFFSET_OF(PAGE_TABLES_ADDR) == 0 );
-	assert( PAGE_OFFSET_OF(PAGE_TABLES_ADDR) == 0 );
-	
-	/** ASSERTION: we assume the page directory mapping is aligned on a page directory entry boundary */
-	assert( PAGE_TABLE_OFFSET_OF(PAGE_DIRECTORY_ADDR) == 0 );
-	assert( PAGE_OFFSET_OF(PAGE_DIRECTORY_ADDR) == 0 );
-		
 	/* pfalloc() should not be called yet -- use pfalloc_early() instead */
 	use_pfalloc_early = true;
 	
@@ -78,7 +70,7 @@ void hal_start(void) {
 	
 	printk("Kernel started.\n");
 	printk("Kernel size is %u bytes.\n", kernel_size);
-	
+    
 	/* get cpu info */
 	cpu_detect_features();
 	
@@ -167,6 +159,9 @@ void hal_start(void) {
 	idt_info->addr  = idt;
 	idt_info->limit = IDT_VECTOR_COUNT * sizeof(seg_descriptor_t) - 1;
 	lidt(idt_info);
+    
+    /* initialize virtual memory management */
+    vm_init_x86();
     
     /* initialize the page frame allocator */
 	page_stack_buffer = (pfaddr_t *)pfalloc_early();

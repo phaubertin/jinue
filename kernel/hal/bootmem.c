@@ -1,3 +1,4 @@
+#include <jinue/types.h>
 #include <bootmem.h>
 #include <e820.h>
 #include <kbd.h>
@@ -169,7 +170,7 @@ void bootmem_init(void) {
 	}
 	
 	printk("%u kilobytes (%u pages) of memory available.\n", 
-		(uint32_t)(size * PAGE_SIZE / 1024), 
+		(uint32_t)(size * PAGE_SIZE / KB), 
 		(uint32_t)(size) );
 	
 	/* head pointer for bootmem_get_block() */

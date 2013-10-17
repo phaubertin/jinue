@@ -41,7 +41,7 @@ int main(void) {
 	}
 	
 	printk("%u kilobytes (%u pages) of memory available to process manager.\n", 
-		(unsigned long)(total_memory * PAGE_SIZE / 1024), 
+		(unsigned long)(total_memory * PAGE_SIZE / KB), 
 		(unsigned long)(total_memory) );	
 
 	/* loop forever */

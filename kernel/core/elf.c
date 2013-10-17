@@ -139,7 +139,7 @@ void elf_load_process_manager(void) {
 		file_ptr = (char *) ( (unsigned long)file_ptr & ~PAGE_MASK );
 		vptr     = (char *) ( (unsigned long)vptr  & ~PAGE_MASK );
 		
-		if(PAGE_OFFSET_OF(vend) != 0) {
+		if(page_offset_of(vend) != 0) {
 			vend  = (char *) ( (unsigned long)vend  & ~PAGE_MASK );
 			vend +=  PAGE_SIZE;
 		}		
