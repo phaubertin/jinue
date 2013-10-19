@@ -1,6 +1,9 @@
 #ifndef _JINUE_KERNEL_CPU_H_
 #define _JINUE_KERNEL_CPU_H_
 
+#include <hal/descriptors.h>
+
+
 typedef unsigned long msr_addr_t;
 
 
@@ -85,6 +88,13 @@ typedef struct {
     unsigned int        line_size;
 } cpu_cache_t;
 
+typedef struct {
+    seg_descriptor_t    gdt[GDT_LENGTH];
+    tss_t               tss;
+} cpu_data_t;
+
+#define CPU_DATA_ALIGNMENT      256
+
 
 extern cpu_cache_t cpu_caches[];
 
@@ -107,6 +117,11 @@ extern unsigned long cpu_vendor;
 extern const char *cpu_vendor_name[];
 
 
+void cpu_init_data(cpu_data_t *data, addr_t kernel_stack);
+
 void cpu_detect_features(void);
+
+void cpu_detect_caches(void);
+
 
 #endif

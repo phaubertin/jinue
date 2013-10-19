@@ -1,6 +1,7 @@
 #ifndef _JINUE_KERNEL_DESCRIPTORS_H_
 #define _JINUE_KERNEL_DESCRIPTORS_H_
 
+#include <jinue/descriptors.h>
 #include <jinue/types.h>
 
 
@@ -84,48 +85,15 @@
 #define SEG_TYPE_CALL_GATE		12
 
 
-/** GDT entry for the null descriptor */
-#define GDT_NULL        		 0
-
-/** GDT entry for kernel code segment */
-#define GDT_KERNEL_CODE 		 1
-
-/** GDT entry for kernel data segment */
-#define GDT_KERNEL_DATA 		 2
-
-/** GDT entry for user code segment */
-#define GDT_USER_CODE   		 3
-
-/** GDT entry for user data segment */
-#define GDT_USER_DATA   		 4
-
-/** GDT entry for task-state segment (TSS) */
-#define GDT_TSS			   		 5
-
-/** GDT entry for task-state segment (TSS) */
-#define GDT_TSS_DATA	   		 6
-
-/** end of GDT / next-to-last entry */
-#define GDT_END   				 7
-
-
 typedef word64_t seg_descriptor_t;
-
-typedef seg_descriptor_t *gdt_t;
-
-typedef seg_descriptor_t *ldt_t;
-
-typedef seg_descriptor_t *idt_t;
 
 typedef unsigned long seg_selector_t;
 
 typedef struct {
 	unsigned short padding;
 	unsigned short limit;
-	gdt_t          addr;
-} gdt_info_t;
-
-typedef gdt_info_t idt_info_t;
+	addr_t         addr;
+} pseudo_descriptor_t;
 
 typedef struct {
 	/* offset 0 */
@@ -202,8 +170,5 @@ typedef struct {
 	| PACK_DESCRIPTOR((offset),      0xffff, 16,  48) \
 	| PACK_DESCRIPTOR((offset),      0xffff,  0,   0) \
 )
-
-#define SEG_SELECTOR(index, rpl) \
-	( ((index) << 3) | ((rpl) & 0x3) )
 
 #endif

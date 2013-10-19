@@ -30,7 +30,7 @@ invalidate_tlb:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: lgdt
-; C PROTOTYPE: void lgdt(gdt_info_t *gdt_info)
+; C PROTOTYPE: void lgdt(x86_pseudo_descriptor_t *gdt_desc)
 ; ------------------------------------------------------------------------------
 	global lgdt
 lgdt:
@@ -42,7 +42,7 @@ lgdt:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: lidt
-; C PROTOTYPE: void lidt(idt_info_t *idt_info)
+; C PROTOTYPE: void lidt(x86_pseudo_descriptor_t *idt_desc)
 ; ------------------------------------------------------------------------------
 	global lidt
 lidt:

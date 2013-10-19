@@ -1,4 +1,5 @@
 #include <cpu.h>
+#include <descriptors.h>
 #include <x86.h>
 #include <stdint.h>
 
@@ -117,7 +118,52 @@ const cpu_intel_cache_descriptor_t cpu_intel_cache_descriptors[] = {
     
     {   0x00,   0, 0, 0, 0, 0}
 };
+
+void cpu_init_data(cpu_data_t *data, addr_t kernel_stack) {
+    unsigned int *ptr;
+    unsigned int  idx;
+    tss_t        *tss;
     
+    tss = &data->tss;
+    
+    /* initialize with zeroes  */
+	ptr = (unsigned int *)data;
+	for(idx = 0; idx < sizeof(cpu_data_t) / sizeof(unsigned int); ++idx) {
+		ptr[idx] = 0;
+	}
+    
+    /* initialize GDT */
+	data->gdt[GDT_NULL] = SEG_DESCRIPTOR(0, 0, 0);
+	
+    data->gdt[GDT_KERNEL_CODE] =
+		SEG_DESCRIPTOR( 0,      0xfffff,                SEG_TYPE_CODE  | SEG_FLAG_KERNEL | SEG_FLAG_NORMAL);
+	
+    data->gdt[GDT_KERNEL_DATA] =
+		SEG_DESCRIPTOR( 0,      0xfffff,                SEG_TYPE_DATA  | SEG_FLAG_KERNEL | SEG_FLAG_NORMAL);
+	
+    data->gdt[GDT_USER_CODE] =
+		SEG_DESCRIPTOR( 0,      0xfffff,                SEG_TYPE_CODE  | SEG_FLAG_USER   | SEG_FLAG_NORMAL);
+	
+    data->gdt[GDT_USER_DATA] =
+		SEG_DESCRIPTOR( 0,      0xfffff,                SEG_TYPE_DATA  | SEG_FLAG_USER   | SEG_FLAG_NORMAL);
+	
+    data->gdt[GDT_TSS] =
+		SEG_DESCRIPTOR( tss,    TSS_LIMIT-1,            SEG_TYPE_TSS   | SEG_FLAG_KERNEL | SEG_FLAG_TSS);
+	
+    data->gdt[GDT_PER_CPU_DATA] =
+		SEG_DESCRIPTOR( data,   sizeof(cpu_data_t)-1,   SEG_TYPE_DATA  | SEG_FLAG_KERNEL | SEG_FLAG_32BIT | SEG_FLAG_IN_BYTES | SEG_FLAG_NOSYSTEM | SEG_FLAG_PRESENT);
+    
+    data->gdt[GDT_USER_TLS_DATA] = SEG_DESCRIPTOR(0, 0, 0);
+    
+    /* setup kernel stack in TSS */
+    tss->ss0 = SEG_SELECTOR(GDT_KERNEL_DATA, 0);
+	tss->ss1 = SEG_SELECTOR(GDT_KERNEL_DATA, 0);
+	tss->ss2 = SEG_SELECTOR(GDT_KERNEL_DATA, 0);
+
+	tss->esp0 = kernel_stack;
+	tss->esp1 = kernel_stack;
+	tss->esp2 = kernel_stack;
+}    
 
 void cpu_detect_features(void) {
 	uint32_t         temp;

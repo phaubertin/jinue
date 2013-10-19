@@ -12,11 +12,13 @@
 #include <pfalloc.h>
 #include <printk.h>
 #include <syscall.h>
+#include <util.h>
 #include <vga.h>
 #include <vm.h>
 #include <vm_alloc.h>
 #include <vm_x86.h>
 #include <x86.h>
+#include <stdint.h>
 
 
 /** if non_zero, we are executing in the kernel */
@@ -44,17 +46,15 @@ vm_alloc_t *global_page_allocator;
 void hal_start(void) {
 	pte_t *page_directory;
 	addr_t addr;
-	gdt_t  gdt;
-	tss_t *tss;
 	addr_t stack;
-	gdt_info_t *gdt_info;
-	idt_info_t *idt_info;
-	unsigned int idx;
+    cpu_data_t *cpu_data;
+    pseudo_descriptor_t *pseudo;
+    unsigned int idx;
 	unsigned long temp;
 	unsigned long flags;
-	unsigned long *ulptr;
 	unsigned long long msrval;
 	pfaddr_t *page_stack_buffer;
+    addr_t  boot_heap_old;
     
     /** ASSERTION: we assume the kernel starts on a page boundary */
 	assert( page_offset_of( (unsigned int)kernel_start ) == 0 );
@@ -87,49 +87,38 @@ void hal_start(void) {
 	/* allocate new kernel stack */
 	stack = pfalloc_early();
 	stack += PAGE_SIZE;
-	
-	/* allocate space for new GDT and TSS */
-	gdt_info = (gdt_info_t *)pfalloc_early();
-	idt_info = (idt_info_t *)gdt_info;
-	gdt = (gdt_t)&gdt_info[2];
-	tss = (tss_t *)&gdt[GDT_END];
-	
-	/* initialize GDT */
-	gdt[GDT_NULL] = SEG_DESCRIPTOR(0, 0, 0);
-	gdt[GDT_KERNEL_CODE] =
-		SEG_DESCRIPTOR(0,   0xfffff,     SEG_TYPE_CODE  | SEG_FLAG_KERNEL | SEG_FLAG_NORMAL);
-	gdt[GDT_KERNEL_DATA] =
-		SEG_DESCRIPTOR(0,   0xfffff,     SEG_TYPE_DATA  | SEG_FLAG_KERNEL | SEG_FLAG_NORMAL);
-	gdt[GDT_USER_CODE] =
-		SEG_DESCRIPTOR(0,   0xfffff,     SEG_TYPE_CODE  | SEG_FLAG_USER   | SEG_FLAG_NORMAL);
-	gdt[GDT_USER_DATA] =
-		SEG_DESCRIPTOR(0,   0xfffff,     SEG_TYPE_DATA  | SEG_FLAG_USER   | SEG_FLAG_NORMAL);
-	gdt[GDT_TSS] =
-		SEG_DESCRIPTOR(tss, TSS_LIMIT-1, SEG_TYPE_TSS   | SEG_FLAG_KERNEL | SEG_FLAG_TSS);
-	gdt[GDT_TSS_DATA] =
-		SEG_DESCRIPTOR(tss, TSS_LIMIT-1, SEG_TYPE_DATA  | SEG_FLAG_KERNEL | SEG_FLAG_32BIT | SEG_FLAG_IN_BYTES | SEG_FLAG_NOSYSTEM | SEG_FLAG_PRESENT);
-	
-	gdt_info->addr  = gdt;
-	gdt_info->limit = GDT_END * 8 - 1;
-	
-	lgdt(gdt_info);
+    
+    /* allocate per-CPU data
+     * 
+     * We need to ensure that the Task State Segment (TSS) contained in this
+     * memory block does not cross a page boundary. */
+    assert(sizeof(cpu_data_t) < CPU_DATA_ALIGNMENT);
+    
+    boot_heap = ALIGN_END(boot_heap, CPU_DATA_ALIGNMENT);
+    
+    cpu_data  = (cpu_data_t *)boot_heap;
+    boot_heap = (cpu_data_t *)boot_heap + 1;
+    
+    /* initialize per-CPU data */
+    cpu_init_data(cpu_data, stack);
+    
+    /* allocate pseudo-descriptor for GDT and IDT (temporary allocation) */
+    boot_heap_old = boot_heap;
+    
+    boot_heap = ALIGN_END(boot_heap, sizeof(pseudo_descriptor_t));
+    
+    pseudo    = (pseudo_descriptor_t *)boot_heap;
+    boot_heap = (pseudo_descriptor_t *)boot_heap + 1;
+    
+    /* load new GDT and TSS */
+    pseudo->addr    = (addr_t)&cpu_data->gdt;
+    pseudo->limit   = GDT_LENGTH * 8 - 1;
+    
+    lgdt(pseudo);
+    
 	set_cs( SEG_SELECTOR(GDT_KERNEL_CODE, 0) );
 	set_ss( SEG_SELECTOR(GDT_KERNEL_DATA, 0) );
 	set_data_segments( SEG_SELECTOR(GDT_KERNEL_DATA, 0) );
-	
-	/* initialize TSS */
-	ulptr = (unsigned long *)tss;
-	for(idx = 0; idx < TSS_LIMIT / sizeof(unsigned long); ++idx) {
-		ulptr[idx] = 0;
-	}
- 	
-	tss->ss0 = SEG_SELECTOR(GDT_KERNEL_DATA, 0);
-	tss->ss1 = SEG_SELECTOR(GDT_KERNEL_DATA, 0);
-	tss->ss2 = SEG_SELECTOR(GDT_KERNEL_DATA, 0);
-
-	tss->esp0 = stack;
-	tss->esp1 = stack;
-	tss->esp2 = stack;
 	
 	ltr( SEG_SELECTOR(GDT_TSS, 0) );
 	
@@ -156,9 +145,12 @@ void hal_start(void) {
 			NULL );
 	}
 	
-	idt_info->addr  = idt;
-	idt_info->limit = IDT_VECTOR_COUNT * sizeof(seg_descriptor_t) - 1;
-	lidt(idt_info);
+	pseudo->addr  = (addr_t)idt;
+	pseudo->limit = IDT_VECTOR_COUNT * sizeof(seg_descriptor_t) - 1;
+	lidt(pseudo);
+    
+    /* de-allocate pseudo-descriptor */
+    boot_heap = boot_heap_old;
     
     /* initialize virtual memory management */
     vm_init_x86();
@@ -184,21 +176,21 @@ void hal_start(void) {
 	for(addr = kernel_start; addr < kernel_region_top; addr += PAGE_SIZE) {
 		vm_map_early((addr_t)addr, (addr_t)addr, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE, page_directory);
 	}
-    	
-	/* enable paging */
+    
+    /* enable paging */
 	set_cr3( (uint32_t)page_directory );
-	
+    
 	temp = get_cr0();
 	temp |= X86_FLAG_PG;
 	set_cr0x(temp);
     
     /* perform 1:1 mapping of text video memory */
 	vm_map((addr_t)VGA_TEXT_VID_BASE,           PTR_TO_PFADDR(VGA_TEXT_VID_BASE),           VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
-	vm_map((addr_t)VGA_TEXT_VID_BASE+PAGE_SIZE, PTR_TO_PFADDR(VGA_TEXT_VID_BASE+PAGE_SIZE), VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
+    vm_map((addr_t)VGA_TEXT_VID_BASE+PAGE_SIZE, PTR_TO_PFADDR(VGA_TEXT_VID_BASE+PAGE_SIZE), VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
 	
 	/* create system memory map */
 	bootmem_init();
-	
+    
 	/** TODO: handle hole due to video memory mapping */
     
     /* initialize global page allocator (region 0..KLIMIT)
