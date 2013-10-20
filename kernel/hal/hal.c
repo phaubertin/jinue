@@ -16,7 +16,6 @@
 #include <vga.h>
 #include <vm.h>
 #include <vm_alloc.h>
-#include <vm_x86.h>
 #include <x86.h>
 #include <stdint.h>
 
@@ -71,6 +70,9 @@ void hal_start(void) {
 	printk("Kernel started.\n");
 	printk("Kernel size is %u bytes.\n", kernel_size);
     
+    /* create system memory map */
+	bootmem_init();
+    
 	/* get cpu info */
 	cpu_detect_features();
 	
@@ -78,10 +80,6 @@ void hal_start(void) {
 	
 	if(cpu_features & CPU_FEATURE_LOCAL_APIC) {
 		printk("Processor has local APIC.\n");
-	}
-	
-	if(cpu_features & CPU_FEATURE_PAE) {
-		printk("Processor supports Physical Address Extension (PAE).\n");
 	}
 		
 	/* allocate new kernel stack */
@@ -153,7 +151,7 @@ void hal_start(void) {
     boot_heap = boot_heap_old;
     
     /* initialize virtual memory management */
-    vm_init_x86();
+    vm_init();
     
     /* initialize the page frame allocator */
 	page_stack_buffer = (pfaddr_t *)pfalloc_early();
@@ -187,9 +185,6 @@ void hal_start(void) {
     /* perform 1:1 mapping of text video memory */
 	vm_map((addr_t)VGA_TEXT_VID_BASE,           PTR_TO_PFADDR(VGA_TEXT_VID_BASE),           VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
     vm_map((addr_t)VGA_TEXT_VID_BASE+PAGE_SIZE, PTR_TO_PFADDR(VGA_TEXT_VID_BASE+PAGE_SIZE), VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
-	
-	/* create system memory map */
-	bootmem_init();
     
 	/** TODO: handle hole due to video memory mapping */
     

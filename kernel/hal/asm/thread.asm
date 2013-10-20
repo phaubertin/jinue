@@ -1,19 +1,21 @@
 %define VM_FLAG_PRESENT 1<<0
 
+%define PFADDR_SHIFT    4
+
 %define GDT_USER_CODE 	3
 %define GDT_USER_DATA 	4	
 
 	bits 32
 ; ------------------------------------------------------------------------------
 ; FUNCTION: thread_start
-; C PROTOTYPE: void thread_start(addr_t entry, addr_t stack)
+; C PROTOTYPE: void thread_start(addr_t entry, addr_t user_stack)
 ; ------------------------------------------------------------------------------
 	global thread_start
 thread_start:
 	pop eax						; Discard return address: we won't be going back
 								; that way
 	pop ebx						; First param:  entry
-	pop ecx						; Second param: stack
+	pop ecx						; Second param: user_stack
 	
 	; set data segment selectors
 	mov eax, 8 * GDT_USER_DATA + 3
@@ -55,24 +57,24 @@ thread_switch:
 	push ebp
 	
 	; virtual address of stack
-	mov edx, [esp+20]	; First param:  vstack
+	mov edx, [esp+20]	    ; First param:  vstack
 	
 	; create page directory entry
-	mov ebx, [esp+24]	; Second param: pstack
-	shl ebx, 4          ; convert pfaddr_t value to physical address
-	or  ebx, [esp+28]	; Third param:  flags
+	mov ebx, [esp+24]	    ; Second param: pstack
+	shl ebx, PFADDR_SHIFT   ; convert pfaddr_t value to physical address
+	or  ebx, [esp+28]	    ; Third param:  flags
 	or  ebx, VM_FLAG_PRESENT
 	
 	; page directory entry address
-	mov edi, [esp+32]	; Fourth param: pte
+	mov edi, [esp+32]	    ; Fourth param: pte
 	
 	; return value of function, passes information about what to do next
 	; across the call
-	mov eax, [esp+36]	; Fifth param: next
+	mov eax, [esp+36]	    ; Fifth param: next
 	
 	; switch stack
-	mov [edi], ebx		; write page directory entry
-	invlpg [edx]		; invalidate TLB entry
+	mov [edi], ebx		    ; write page directory entry
+	invlpg [edx]		    ; invalidate TLB entry
 	
 	pop ebp
 	pop edi

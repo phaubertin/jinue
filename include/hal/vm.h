@@ -94,6 +94,7 @@ extern void (*clear_pte)(pte_t *);
 /** set of flags for a page table (or page directory) */
 #define VM_FLAGS_PAGE_TABLE (VM_FLAG_KERNEL | VM_FLAG_READ_WRITE)
 
+void vm_init(void);
 
 void vm_map(addr_t vaddr, pfaddr_t paddr, int flags);
 

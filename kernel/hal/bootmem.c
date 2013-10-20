@@ -20,12 +20,16 @@ void *boot_heap;
 
 
 void new_ram_map_entry(pfaddr_t addr, uint32_t count, bootmem_t **head) {
-	( (bootmem_t *)boot_heap )->next = *head;
-	*head = (bootmem_t *)boot_heap;
-	boot_heap = (bootmem_t *)boot_heap + 1;
+    bootmem_t   *entry;
+    
+    entry     = (bootmem_t *)boot_heap;
+    boot_heap = (bootmem_t *)boot_heap + 1;
 	
-	(*head)->addr  = addr;
-	(*head)->count = count;
+    entry->next  = *head;
+	entry->addr  = addr;
+	entry->count = count;
+    
+    *head = entry;
 }
 
 void apply_mem_hole(e820_addr_t hole_start, e820_addr_t hole_end, bootmem_t **head) {	

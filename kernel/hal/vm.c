@@ -1,8 +1,10 @@
 #include <kernel.h>
 #include <assert.h>
 #include <pfalloc.h>
+#include <printk.h>
 #include <stdint.h>
 #include <vm.h>
+#include <vm_x86.h>
 #include <x86.h>
 
 
@@ -34,6 +36,19 @@ int (*get_pte_flags)(pte_t *);
 pfaddr_t (*get_pte_pfaddr)(pte_t *);
 
 void (*clear_pte)(pte_t *);
+
+
+void vm_init(void) {
+    if(cpu_features & CPU_FEATURE_PAE) {
+		printk("Processor supports Physical Address Extension (PAE).\n");
+        
+        /** TODO: change me once PAE support is implemented */
+        vm_init_x86();
+    }
+    else {
+        vm_init_x86();
+    }
+}
 
 
 /** 
