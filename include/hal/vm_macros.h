@@ -14,12 +14,11 @@
 /** page table entry offset of virtual (linear) address */
 #define PAGE_TABLE_OFFSET_OF(x)  ( ((uint32_t)(x) / PAGE_SIZE) & PAGE_TABLE_MASK )
 
+/** global page table entry offset of virtual (linear) address */
+#define GLOBAL_PAGE_TABLE_OFFSET_OF(x)  ((uint32_t)(x) / PAGE_SIZE)
+
 /** page directory entry offset of virtual (linear address) */
 #define PAGE_DIRECTORY_OFFSET_OF(x)  ((uint32_t)(x) / (PAGE_SIZE * PAGE_TABLE_ENTRIES))
-
-/** This is where the page directory is mapped in every address space. It must
-   reside in the region spanning from KLIMIT to PLIMIT. */
-#define PAGE_DIRECTORY_ADDR (PAGE_TABLES_ADDR + PAGE_TABLE_ENTRIES * PAGE_TABLE_SIZE)
 
 /* ------ virtual memory layout ------ */
 
@@ -30,18 +29,12 @@
 
 /* ------ mapping of page tables in virtual memory ------ */
 
-/** page directory in virtual memory */
-#define PAGE_DIRECTORY ( (pte_t *)PAGE_DIRECTORY_ADDR )
-
 /** page tables in virtual memory */
 /** TODO: revert this once vm_x86.c is reverted also */
 #define PAGE_TABLES ( (pte_t *)PAGE_TABLES_ADDR )
 
 /** page table in virtual memory */
 #define PAGE_TABLE_OF(x) ( &PAGE_TABLES[ PAGE_DIRECTORY_OFFSET_OF(x) * PAGE_TABLE_ENTRIES ] )
-
-/** address of page directory entry in virtual memory */
-#define PDE_OF(x) ( &PAGE_DIRECTORY[ PAGE_DIRECTORY_OFFSET_OF(x) ] )
 
 /** address of page table entry in virtual memory */
 #define PTE_OF(x) ( &PAGE_TABLE_OF(x)[ PAGE_TABLE_OFFSET_OF(x) ] )

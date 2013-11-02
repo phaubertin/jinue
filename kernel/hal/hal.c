@@ -36,20 +36,13 @@ addr_t kernel_region_top;
 /** address of kernel stack */
 addr_t kernel_stack;
 
-static vm_alloc_t __global_page_allocator;
-
-/** global page allocator (region 0..KLIMIT) */
-vm_alloc_t *global_page_allocator;
-
 
 void hal_start(void) {
-	pte_t *page_directory;
 	addr_t addr;
 	addr_t stack;
     cpu_data_t *cpu_data;
     pseudo_descriptor_t *pseudo;
     unsigned int idx;
-	unsigned long temp;
 	unsigned long flags;
 	unsigned long long msrval;
 	pfaddr_t *page_stack_buffer;
@@ -76,12 +69,6 @@ void hal_start(void) {
 	/* get cpu info */
 	cpu_detect_features();
 	
-	printk("Processor vendor is %s.\n", cpu_vendor_name[cpu_vendor]);
-	
-	if(cpu_features & CPU_FEATURE_LOCAL_APIC) {
-		printk("Processor has local APIC.\n");
-	}
-		
 	/* allocate new kernel stack */
 	stack = pfalloc_early();
 	stack += PAGE_SIZE;
@@ -117,8 +104,9 @@ void hal_start(void) {
 	set_cs( SEG_SELECTOR(GDT_KERNEL_CODE, 0) );
 	set_ss( SEG_SELECTOR(GDT_KERNEL_DATA, 0) );
 	set_data_segments( SEG_SELECTOR(GDT_KERNEL_DATA, 0) );
+	set_gs( SEG_SELECTOR(GDT_PER_CPU_DATA, 0) );
 	
-	ltr( SEG_SELECTOR(GDT_TSS, 0) );
+    ltr( SEG_SELECTOR(GDT_TSS, 0) );
 	
 	/* initialize IDT */
 	for(idx = 0; idx < IDT_VECTOR_COUNT; ++idx) {
@@ -150,9 +138,6 @@ void hal_start(void) {
     /* de-allocate pseudo-descriptor */
     boot_heap = boot_heap_old;
     
-    /* initialize virtual memory management */
-    vm_init();
-    
     /* initialize the page frame allocator */
 	page_stack_buffer = (pfaddr_t *)pfalloc_early();
 	init_pfcache(&global_pfcache, page_stack_buffer);
@@ -160,47 +145,11 @@ void hal_start(void) {
 	for(idx = 0; idx < KERNEL_PAGE_STACK_INIT; ++idx) {
 		pffree( PTR_TO_PFADDR( pfalloc_early() ) );
 	}
-		
-    /* create first address space */
-    page_directory = vm_create_addr_space_early();
-	
-	/** below this point, it is no longer safe to call pfalloc_early() */
-	use_pfalloc_early = false;
-	
-	/* perform 1:1 mapping of kernel image and data
-	
-	   note: page tables for memory region (0..KLIMIT) are contiguous
-	         in physical memory */
-	for(addr = kernel_start; addr < kernel_region_top; addr += PAGE_SIZE) {
-		vm_map_early((addr_t)addr, (addr_t)addr, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE, page_directory);
-	}
     
-    /* enable paging */
-	set_cr3( (uint32_t)page_directory );
-    
-	temp = get_cr0();
-	temp |= X86_FLAG_PG;
-	set_cr0x(temp);
-    
-    /* perform 1:1 mapping of text video memory */
-	vm_map((addr_t)VGA_TEXT_VID_BASE,           PTR_TO_PFADDR(VGA_TEXT_VID_BASE),           VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
-    vm_map((addr_t)VGA_TEXT_VID_BASE+PAGE_SIZE, PTR_TO_PFADDR(VGA_TEXT_VID_BASE+PAGE_SIZE), VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
-    
-	/** TODO: handle hole due to video memory mapping */
-    
-    /* initialize global page allocator (region 0..KLIMIT)
-	  
-	   note: we skip the first page (i.e. actually allocate the region PAGE_SIZE..KLIMIT)
-	         for two reasons:
-				- We want null pointer deferences to generate a page fault instead
-				  being more or less silently ignored (read) or overwriting something
-				  potentially important (write).
-				- We want to ensure nothing interesting (e.g. address space
-				  management data structures) can have NULL as its valid
-				  address.*/
-	global_page_allocator = &__global_page_allocator;
-	vm_alloc_init_piecewise(global_page_allocator, (addr_t)PAGE_SIZE,  (addr_t)kernel_start, (addr_t)KLIMIT);
-	vm_alloc_add_region(global_page_allocator, (addr_t)kernel_region_top, (addr_t)KLIMIT);
+    /* initialize virtual memory management, enable paging
+     * 
+     * below this point, it is no longer safe to call pfalloc_early() */
+    vm_init();
 	
 	/* choose system call method */
 	syscall_method = SYSCALL_METHOD_INTR;
@@ -229,6 +178,6 @@ void hal_start(void) {
 	
 	/* set system call dispatch function to default */
 	set_syscall_funct(NULL);
-	
+    
 	kmain();
 }

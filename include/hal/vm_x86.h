@@ -4,15 +4,19 @@
 #include <jinue/types.h>
 
 
-void vm_init_x86(void);
+void vm_set_pointers_x86(void);
 
 unsigned int page_table_offset_of_x86(addr_t addr);
+
+unsigned int global_page_table_offset_of_x86(addr_t addr);
 
 unsigned int page_directory_offset_of_x86(addr_t addr);
 
 pte_t *page_table_of_x86(addr_t addr);
 
 pte_t *page_table_pte_of_x86(addr_t addr);
+
+pte_t *page_directory_addr_x86(void);
 
 pte_t *get_pte_x86(addr_t addr);
 
@@ -29,5 +33,7 @@ int get_pte_flags_x86(pte_t *pte);
 pfaddr_t get_pte_pfaddr_x86(pte_t *pte);
 
 void clear_pte_x86(pte_t *pte);
+
+void copy_pte_x86(pte_t *dest, pte_t *src);
 
 #endif

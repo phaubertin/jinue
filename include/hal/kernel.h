@@ -23,7 +23,6 @@ extern linker_defined_t kernel_end;
 
 extern vm_alloc_t *global_page_allocator;
 
-
 void hal_start(void);
 
 #endif

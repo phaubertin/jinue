@@ -2,6 +2,7 @@
 #define _JINUE_KERNEL_VGA_H_
 
 #define VGA_TEXT_VID_BASE	0xb8000
+#define VGA_TEXT_VID_TOP    0xc0000
 #define VGA_MISC_OUT_WR		0x3c2
 #define VGA_MISC_OUT_RD		0x3cc
 #define VGA_CRTC_ADDR		0x3d4

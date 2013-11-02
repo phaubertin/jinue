@@ -33,6 +33,8 @@ extern size_t page_table_entries;
 /** page table entry offset of virtual (linear) address */
 extern unsigned int (*page_table_offset_of)(addr_t);
 
+extern unsigned int (*global_page_table_offset_of)(addr_t);
+
 extern unsigned int (*page_directory_offset_of)(addr_t);
 
 extern pte_t *(*page_table_of)(addr_t);
@@ -54,6 +56,8 @@ extern int (*get_pte_flags)(pte_t *);
 extern pfaddr_t (*get_pte_pfaddr)(pte_t *);
 
 extern void (*clear_pte)(pte_t *);
+
+extern void (*copy_pte)(pte_t *, pte_t *);
 
 
 /* ------ flags for page attributes ------ */
@@ -106,7 +110,7 @@ void vm_change_flags(addr_t vaddr, int flags);
 
 void vm_map_early(addr_t vaddr, addr_t paddr, int flags, pte_t *page_directory);
 
-pte_t *vm_create_addr_space_early(void);
+pte_t *vm_create_initial_addr_space(void);
 
 #endif
 
