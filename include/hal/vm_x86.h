@@ -4,36 +4,36 @@
 #include <jinue/types.h>
 
 
-void vm_set_pointers_x86(void);
+void vm_x86_set_pointers(void);
 
-unsigned int page_table_offset_of_x86(addr_t addr);
+unsigned int vm_x86_page_table_offset_of(addr_t addr);
 
-unsigned int global_page_table_offset_of_x86(addr_t addr);
+unsigned int vm_x86_global_page_table_offset_of(addr_t addr);
 
-unsigned int page_directory_offset_of_x86(addr_t addr);
+unsigned int vm_x86_page_directory_offset_of(addr_t addr);
 
-pte_t *page_table_of_x86(addr_t addr);
+pte_t *vm_x86_page_table_of(addr_t addr);
 
-pte_t *page_table_pte_of_x86(addr_t addr);
+pte_t *vm_x86_page_table_pte_of(addr_t addr);
 
-pte_t *page_directory_addr_x86(void);
+pte_t *vm_x86_get_pte(addr_t addr);
 
-pte_t *get_pte_x86(addr_t addr);
+pte_t *vm_x86_get_pde(addr_t addr);
 
-pte_t *get_pde_x86(addr_t addr);
+pte_t *vm_x86_get_pte_with_offset(pte_t *pte, unsigned int offset);
 
-pte_t *get_pte_with_offset_x86(pte_t *pte, unsigned int offset);
+void vm_x86_set_pte(pte_t *pte, pfaddr_t paddr, int flags);
 
-void set_pte_x86(pte_t *pte, pfaddr_t paddr, int flags);
+void vm_x86_set_pte_flags(pte_t *pte, int flags);
 
-void set_pte_flags_x86(pte_t *pte, int flags);
+int vm_x86_get_pte_flags(pte_t *pte);
 
-int get_pte_flags_x86(pte_t *pte);
+pfaddr_t vm_x86_get_pte_pfaddr(pte_t *pte);
 
-pfaddr_t get_pte_pfaddr_x86(pte_t *pte);
+void vm_x86_clear_pte(pte_t *pte);
 
-void clear_pte_x86(pte_t *pte);
+void vm_x86_copy_pte(pte_t *dest, pte_t *src);
 
-void copy_pte_x86(pte_t *dest, pte_t *src);
+void vm_x86_alloc_page_table(addr_t vaddr);
 
 #endif

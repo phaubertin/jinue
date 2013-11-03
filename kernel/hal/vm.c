@@ -10,6 +10,8 @@
 #include <x86.h>
 
 
+bool vm_use_pae;
+
 addr_t page_directory_addr;
 
 size_t page_table_entries;
@@ -22,8 +24,6 @@ unsigned int (*global_page_table_offset_of)(addr_t);
 unsigned int (*page_directory_offset_of)(addr_t);
 
 pte_t *(*page_table_of)(addr_t);
-
-pte_t *(*page_table_pte_of)(addr_t);
 
 pte_t *(*get_pte)(addr_t);
 
@@ -43,6 +43,8 @@ void (*clear_pte)(pte_t *);
 
 void (*copy_pte)(pte_t *, pte_t *);
 
+void (*alloc_page_table)(addr_t);
+
 
 static vm_alloc_t __global_page_allocator;
 
@@ -59,10 +61,12 @@ void vm_init(void) {
 		printk("Processor supports Physical Address Extension (PAE).\n");
         
         /** TODO: change me once PAE support is implemented */
-        vm_set_pointers_x86();
+        vm_x86_set_pointers();
+        vm_use_pae = false;
     }
     else {
-        vm_set_pointers_x86();
+        vm_x86_set_pointers();
+        vm_use_pae = false;
     }
     
     /* create initial address space */
@@ -118,60 +122,18 @@ void vm_init(void) {
 	@param flags flags used for mapping (see VM_FLAG_x constants in vm.h)
 */
 void vm_map(addr_t vaddr, pfaddr_t paddr, int flags) {
-	pte_t *pte, *pde;
-	pfaddr_t page_table;
-	int idx;
+	pte_t *pte;
 	
 	/** ASSERTION: we assume vaddr is aligned on a page boundary */
 	assert( page_offset_of(vaddr) == 0 );
 	
-	/** ASSERTION: we assume paddr is aligned on a page boundary */
-	assert( PFADDR_CHECK(paddr) );
-	
 	/** ASSERTION: we assume the page frame is below the 4GB limit */
 	assert( PFADDR_CHECK_4GB(paddr) );
     
+    /* make sure page table exists: user space page tables are allocated
+     * on demand */
     if(vaddr >= PLIMIT) {
-        /* get page directory entry */
-        pde = get_pde(vaddr);
-        
-        /* check if page table must be created (user space page tables are
-         * allocated on demand) */
-        if( ! (get_pte_flags(pde) & VM_FLAG_PRESENT) ) {
-            /* allocate a new page table */
-            page_table = pfalloc();
-            
-            /* map page table in the region of memory reserved for that purpose */
-            pte = page_table_pte_of(vaddr);
-            set_pte(pte, page_table, VM_FLAGS_PAGE_TABLE | VM_FLAG_PRESENT);
-            
-            /* obtain virtual address of new page table */
-            pte = page_table_of(vaddr);
-            
-            /** TODO: check this */
-            /* invalidate TLB entry for new page table */
-            invalidate_tlb( (addr_t)pte );
-            
-            /* zero content of page table */
-            for(idx = 0; idx < page_table_entries; ++idx) {
-                clear_pte( get_pte_with_offset(pte, idx) );
-            }
-            
-            /* link to page table from page directory */
-            if(vaddr < (addr_t)PLIMIT) {
-                set_pte(pde, page_table, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE | VM_FLAG_PRESENT);
-            }
-            else {
-                set_pte(pde, page_table, VM_FLAG_USER   | VM_FLAG_READ_WRITE | VM_FLAG_PRESENT);
-            }		
-        }
-    }
-    else {
-        /* get page directory entry for assertion */
-        pde = get_pde(vaddr);
-        
-        /** ASSERTION: page table exists if address < PLIMIT (allocated at process creation) */
-        assert(get_pte_flags(pde) & VM_FLAG_PRESENT);
+        alloc_page_table(vaddr);
     }
 	
 	/* perform the actual mapping */
@@ -313,6 +275,6 @@ pte_t *vm_create_initial_addr_space(void) {
     
     /* map page directory */
     vm_map_early(page_directory_addr, (addr_t)page_directory, VM_FLAGS_PAGE_TABLE, page_directory);
-		
+    
     return page_directory;
 }

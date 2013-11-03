@@ -2,6 +2,7 @@
 #define _JINUE_KERNEL_VM_H_
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <jinue/types.h>
 #include <jinue/vm.h>
 
@@ -25,40 +26,6 @@ typedef struct __pte_t pte_t;
 
 /** byte offset in page of virtual (linear) address */
 #define page_offset_of(x)  ((uintptr_t)(x) & PAGE_MASK)
-
-extern addr_t page_directory_addr;
-
-extern size_t page_table_entries;
-
-/** page table entry offset of virtual (linear) address */
-extern unsigned int (*page_table_offset_of)(addr_t);
-
-extern unsigned int (*global_page_table_offset_of)(addr_t);
-
-extern unsigned int (*page_directory_offset_of)(addr_t);
-
-extern pte_t *(*page_table_of)(addr_t);
-
-extern pte_t *(*page_table_pte_of)(addr_t);
-
-extern pte_t *(*get_pte)(addr_t);
-
-extern pte_t *(*get_pde)(addr_t);
-
-extern pte_t *(*get_pte_with_offset)(pte_t *, unsigned int);
-
-extern void (*set_pte)(pte_t *, pfaddr_t, int);
-
-extern void (*set_pte_flags)(pte_t *, int);
-
-extern int (*get_pte_flags)(pte_t *);
-
-extern pfaddr_t (*get_pte_pfaddr)(pte_t *);
-
-extern void (*clear_pte)(pte_t *);
-
-extern void (*copy_pte)(pte_t *, pte_t *);
-
 
 /* ------ flags for page attributes ------ */
 
@@ -97,6 +64,49 @@ extern void (*copy_pte)(pte_t *, pte_t *);
 
 /** set of flags for a page table (or page directory) */
 #define VM_FLAGS_PAGE_TABLE (VM_FLAG_KERNEL | VM_FLAG_READ_WRITE)
+
+
+typedef struct {
+    uint32_t     cr3;
+    pte_t       *top_level;
+} addr_space_t;
+
+
+extern bool vm_use_pae;
+
+extern addr_t page_directory_addr;
+
+extern size_t page_table_entries;
+
+/** page table entry offset of virtual (linear) address */
+extern unsigned int (*page_table_offset_of)(addr_t);
+
+extern unsigned int (*global_page_table_offset_of)(addr_t);
+
+extern unsigned int (*page_directory_offset_of)(addr_t);
+
+extern pte_t *(*page_table_of)(addr_t);
+
+extern pte_t *(*get_pte)(addr_t);
+
+extern pte_t *(*get_pde)(addr_t);
+
+extern pte_t *(*get_pte_with_offset)(pte_t *, unsigned int);
+
+extern void (*set_pte)(pte_t *, pfaddr_t, int);
+
+extern void (*set_pte_flags)(pte_t *, int);
+
+extern int (*get_pte_flags)(pte_t *);
+
+extern pfaddr_t (*get_pte_pfaddr)(pte_t *);
+
+extern void (*clear_pte)(pte_t *);
+
+extern void (*copy_pte)(pte_t *, pte_t *);
+
+extern void (*alloc_page_table)(addr_t);
+
 
 void vm_init(void);
 

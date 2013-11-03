@@ -10,7 +10,7 @@ typedef uint32_t pfaddr_t;
 
 
 /** number of bits by which the page frame address is shifted to the right */
-#define PFADDR_SHIFT	4
+#define PFADDR_SHIFT	PAGE_SHIFT
 
 /** convert an address in an integer to a page frame address */
 #define ADDR_TO_PFADDR(x)	( (pfaddr_t)(  (uint64_t)(x) >> PFADDR_SHIFT ) )
