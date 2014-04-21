@@ -21,7 +21,6 @@ clean:
 	make -C kernel clean
 	make -C proc clean
 	make -C lib/jinue clean
-	make -C lib/proc clean
 	-rm -f $(unclean)
 
 # ----- documentation

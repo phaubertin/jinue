@@ -39,8 +39,6 @@ unsigned long get_cr4(void);
 
 void set_cr0(unsigned long val);
 
-void set_cr0x(unsigned long val);
-
 void set_cr1(unsigned long val);
 
 void set_cr2(unsigned long val);

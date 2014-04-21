@@ -1,7 +1,7 @@
 includes = ../../include
 
-OBJS   = debug.o kbd.o panic.o
-TARGET = kern-debug.o
+OBJS   = assert.o string.o
+TARGET = kern-stdc.o
 
 DEBUG   ?= yes
 
@@ -23,9 +23,8 @@ clean:
 $(TARGET): $(OBJS)
 	$(LD) -r -o $@ $^
 
-debug.o:       debug.c       $(includes)/debug.h
-kbd.o:         kbd.c         $(includes)/kbd.h
-panic.o:       panic.c       $(includes)/panic.h
+assert.o:      assert.c      $(includes)/kstdc/assert.h
+string.o:      string.c      $(includes)/kstdc/string.h
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -I$(includes) -I$(includes)/kstdc -o $@ $<

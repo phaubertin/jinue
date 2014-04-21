@@ -1,16 +1,16 @@
 scripts  = ../scripts
 
-
+KERN-STARTUP = hal/asm/startup.o
 KERN-CORE    = core/kern-core.o
 KERN-DEBUG   = debug/kern-debug.o
 KERN-HAL     = hal/kern-hal.o
+KERN-LIB     = ../lib/jinue/libjinue-kernel.a
 KERN-MEM     = mem/kern-mem.o
-KERN-STARTUP = hal/asm/startup.o
+KERN-STDC    = kstdc/kern-stdc.o
 
-OBJS = $(KERN-STARTUP) $(KERN-CORE) $(KERN-DEBUG) $(KERN-HAL) $(KERN-MEM)
 
-KERNEL-ASM = asm/kernel-asm.o
-STARTUP    = asm/startup.o
+OBJS = $(KERN-STARTUP) $(KERN-CORE) $(KERN-DEBUG) $(KERN-HAL) \
+       $(KERN-LIB) $(KERN-MEM) $(KERN-STDC)
 
 DEBUG   ?= yes
 
@@ -29,6 +29,7 @@ clean:
 	make -C core  clean
 	make -C debug clean
 	make -C hal   clean
+	make -C kstdc clean
 	make -C mem   clean
 	-rm -f kernel
 
@@ -36,6 +37,9 @@ kernel: $(OBJS) $(scripts)/kernel.lds
 	$(LD) -r -T $(scripts)/kernel.lds -o $@ $(OBJS)
 	
 
+$(KERN-STARTUP):
+	make -C hal hal-startup
+	
 $(KERN-CORE):
 	make -C core
 	
@@ -44,9 +48,12 @@ $(KERN-DEBUG):
 	
 $(KERN-HAL):
 	make -C hal
+
+$(KERN-LIB):
+	make -C ../lib/jinue all-kernel
 	
 $(KERN-MEM):
 	make -C mem
-	
-$(KERN-STARTUP):
-	make -C hal hal-startup
+
+$(KERN-STDC):
+	make -C kstdc

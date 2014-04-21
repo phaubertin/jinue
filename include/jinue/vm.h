@@ -9,6 +9,12 @@
 /** size of page */
 #define PAGE_SIZE (1<<PAGE_SHIFT) /* 4096 */
 
+/** bit mask for offset in page */
+#define PAGE_MASK (PAGE_SIZE - 1)
+
+/** byte offset in page of virtual (linear) address */
+#define page_offset_of(x)  ((uintptr_t)(x) & PAGE_MASK)
+
 /** Virtual address range 0 to KLIMIT is reserved by kernel to store global
    data structures. 
    

@@ -147,18 +147,9 @@ get_cr4:
 set_cr0:
 	mov eax, [esp+4]	; First param: val
 	mov cr0, eax
-	ret
-
-; ------------------------------------------------------------------------------
-; FUNCTION: set_cr0x
-; C PROTOTYPE: void set_cr0x(unsigned long val)
-; ------------------------------------------------------------------------------
-	global set_cr0x
-set_cr0x:
-	mov eax, [esp+4]	; First param: val
-	mov cr0, eax
-	jmp do_ret			; jump to flush the instruction queue
-do_ret:
+	
+	jmp .do_ret			; jump to flush the instruction queue
+.do_ret:
 	ret
 
 ; ------------------------------------------------------------------------------

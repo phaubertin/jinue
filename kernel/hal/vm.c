@@ -29,20 +29,6 @@ pte_t *(*get_pte)(addr_t);
 
 pte_t *(*get_pde)(addr_t);
 
-pte_t *(*get_pte_with_offset)(pte_t *, unsigned int);
-
-void (*set_pte)(pte_t *, pfaddr_t, int);
-
-void (*set_pte_flags)(pte_t *, int);
-
-int (*get_pte_flags)(pte_t *);
-
-pfaddr_t (*get_pte_pfaddr)(pte_t *);
-
-void (*clear_pte)(pte_t *);
-
-void (*copy_pte)(pte_t *, pte_t *);
-
 void (*alloc_page_table)(addr_t);
 
 
@@ -93,7 +79,7 @@ void vm_init(void) {
     
 	temp = get_cr0();
 	temp |= X86_FLAG_PG;
-	set_cr0x(temp);
+	set_cr0(temp);
     
     /* initialize global page allocator (region 0..KLIMIT)
 	  

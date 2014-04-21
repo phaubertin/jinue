@@ -2,7 +2,6 @@ includes = ../include
 kernel   = ../kernel
 lib      = ../lib
 libjinue = $(lib)/jinue
-libproc  = $(lib)/proc
 
 OBJS  = proc.o
 
@@ -16,7 +15,7 @@ endif
 
 CFLAGS  += -O3 $(DEBUG_FLAGS) -nostdinc -ffreestanding -static -ansi -Wall -Werror=implicit-function-declaration -Werror=uninitialized -Werror=return-type
 LDFLAGS += -static -nostdlib -e main
-LIBS    = -L$(libjinue) -L$(libproc) -lproc -ljinue
+LIBS    = -L$(libjinue) -ljinue -ljinue-proc
 
 .PHONY: all
 all: proc-stripped
@@ -25,13 +24,10 @@ all: proc-stripped
 clean:
 	-rm -f proc proc-stripped $(OBJS)
 
-$(libjinue)/libjinue.a:
+$(libjinue)/libjinue.a $(libjinue)/libjinue-proc.a:
 	make -C $(libjinue)
 
-$(libproc)/libproc.a:
-	make -C $(libproc)
-
-proc: $(OBJS) $(libjinue)/libjinue.a $(libproc)/libproc.a
+proc: $(OBJS) $(libjinue)/libjinue.a $(libjinue)/libjinue-proc.a
 	$(LD) $(LDFLAGS) $(OBJS) -o $@ $(LIBS)
 
 proc-stripped: proc
@@ -42,4 +38,3 @@ proc-stripped: proc
 
 %.o: %.asm
 	nasm -f elf -o $@ $<
-

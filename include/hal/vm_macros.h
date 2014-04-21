@@ -20,12 +20,6 @@
 /** page directory entry offset of virtual (linear address) */
 #define PAGE_DIRECTORY_OFFSET_OF(x)  ((uint32_t)(x) / (PAGE_SIZE * PAGE_TABLE_ENTRIES))
 
-/* ------ virtual memory layout ------ */
-
-/** low limit of region spanning from KLIMIT to PLIMIT actually available for
-	mappings */
-#define PMAPPING_START (PAGE_DIRECTORY_ADDR + PAGE_TABLE_SIZE)
-
 
 /* ------ mapping of page tables in virtual memory ------ */
 

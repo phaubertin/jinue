@@ -1,5 +1,4 @@
 #include <jinue/syscall.h>
-#include <proc/vga.h>
 #include <stddef.h>
 
 void vga_printn(const char *message, unsigned int n) {

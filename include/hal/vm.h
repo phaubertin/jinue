@@ -3,29 +3,10 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <jinue/page_tables.h>
 #include <jinue/types.h>
 #include <jinue/vm.h>
 
-
-/* ------ page tables ------ */
-
-/** size of a page table */
-#define PAGE_TABLE_SIZE PAGE_SIZE
-
-/** incomplete struct type used for the definition of pte_t */
-struct __pte_t;
-
-/** type of a page table entry */
-typedef struct __pte_t pte_t;
-
-
-/* ------ virtual address offsets ------ */
-
-/** bit mask for offset in page */
-#define PAGE_MASK (PAGE_SIZE - 1)
-
-/** byte offset in page of virtual (linear) address */
-#define page_offset_of(x)  ((uintptr_t)(x) & PAGE_MASK)
 
 /* ------ flags for page attributes ------ */
 
@@ -90,20 +71,6 @@ extern pte_t *(*page_table_of)(addr_t);
 extern pte_t *(*get_pte)(addr_t);
 
 extern pte_t *(*get_pde)(addr_t);
-
-extern pte_t *(*get_pte_with_offset)(pte_t *, unsigned int);
-
-extern void (*set_pte)(pte_t *, pfaddr_t, int);
-
-extern void (*set_pte_flags)(pte_t *, int);
-
-extern int (*get_pte_flags)(pte_t *);
-
-extern pfaddr_t (*get_pte_pfaddr)(pte_t *);
-
-extern void (*clear_pte)(pte_t *);
-
-extern void (*copy_pte)(pte_t *, pte_t *);
 
 extern void (*alloc_page_table)(addr_t);
 

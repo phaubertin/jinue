@@ -110,7 +110,7 @@ void print_hex_nibble(unsigned char byte) {
 		c += '0';
 	}
 	else {
-		c+= ('a' - 10);
+		c += ('a' - 10);
 	}
 	
 	vga_putc(c);
@@ -144,4 +144,3 @@ void print_hex_q(unsigned long long qword) {
 		print_hex_nibble( (char)(qword>>off) );
 	}
 }
-
