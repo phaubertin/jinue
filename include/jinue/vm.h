@@ -7,13 +7,16 @@
 #define PAGE_SHIFT 12
 
 /** size of page */
-#define PAGE_SIZE (1<<PAGE_SHIFT) /* 4096 */
+#define PAGE_SIZE           (1<<PAGE_SHIFT) /* 4096 */
 
 /** bit mask for offset in page */
-#define PAGE_MASK (PAGE_SIZE - 1)
+#define PAGE_MASK           (PAGE_SIZE - 1)
 
 /** byte offset in page of virtual (linear) address */
-#define page_offset_of(x)  ((uintptr_t)(x) & PAGE_MASK)
+#define page_offset_of(x)   ((uintptr_t)(x) & PAGE_MASK)
+
+/** sequential page number of virtual (linear) address */
+#define page_number_of(x)   ((uintptr_t)(x) >> PAGE_SHIFT)
 
 /** Virtual address range 0 to KLIMIT is reserved by kernel to store global
    data structures. 
@@ -29,11 +32,5 @@
    The mapping of this region changes from one address space to the next. Size
    must be a multiple of the size described by a single page directory entry */
 #define PLIMIT ((addr_t)( KLIMIT + 32 * MB)) /* 32M */
-
-/** This is where the page tables are mapped in every address space. This
-   requires a virtual memory region of size 4M, which must reside completely
-   inside region spanning from KLIMIT to PLIMIT. Must be aligned on a 4M
-   boundary */
-#define PAGE_TABLES_ADDR KLIMIT
 
 #endif

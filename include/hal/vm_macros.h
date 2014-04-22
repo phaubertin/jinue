@@ -12,31 +12,9 @@
 #define PAGE_TABLE_MASK (PAGE_TABLE_ENTRIES - 1)
 
 /** page table entry offset of virtual (linear) address */
-#define PAGE_TABLE_OFFSET_OF(x)  ( ((uint32_t)(x) / PAGE_SIZE) & PAGE_TABLE_MASK )
-
-/** global page table entry offset of virtual (linear) address */
-#define GLOBAL_PAGE_TABLE_OFFSET_OF(x)  ((uint32_t)(x) / PAGE_SIZE)
+#define PAGE_TABLE_OFFSET_OF(x)     ( ((uint32_t)(x) / PAGE_SIZE) & PAGE_TABLE_MASK )
 
 /** page directory entry offset of virtual (linear address) */
-#define PAGE_DIRECTORY_OFFSET_OF(x)  ((uint32_t)(x) / (PAGE_SIZE * PAGE_TABLE_ENTRIES))
-
-
-/* ------ mapping of page tables in virtual memory ------ */
-
-/** page tables in virtual memory */
-/** TODO: revert this once vm_x86.c is reverted also */
-#define PAGE_TABLES ( (pte_t *)PAGE_TABLES_ADDR )
-
-/** page table in virtual memory */
-#define PAGE_TABLE_OF(x) ( &PAGE_TABLES[ PAGE_DIRECTORY_OFFSET_OF(x) * PAGE_TABLE_ENTRIES ] )
-
-/** address of page table entry in virtual memory */
-#define PTE_OF(x) ( &PAGE_TABLE_OF(x)[ PAGE_TABLE_OFFSET_OF(x) ] )
-
-/** page table which maps all page tables in memory */
-#define PAGE_TABLES_TABLE ( PAGE_TABLE_OF( PAGE_TABLES_ADDR ) )
-
-/** address of page entry in PAGE_OF_PAGE_TABLES */
-#define PAGE_TABLE_PTE_OF(x) ( &PAGE_TABLES_TABLE[ PAGE_DIRECTORY_OFFSET_OF(x) ] )
+#define PAGE_DIRECTORY_OFFSET_OF(x) ( ((uint32_t)(x) / (PAGE_SIZE * PAGE_TABLE_ENTRIES)) & PAGE_TABLE_MASK )
 
 #endif

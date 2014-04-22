@@ -49,45 +49,39 @@
 
 typedef struct {
     uint32_t     cr3;
-    pte_t       *top_level;
+    union {
+        pfaddr_t     pd;    /* non-PAE: page directory */
+        pte_t       *pdpt;  /* PAE: page directory pointer table */
+    } top_level;
 } addr_space_t;
 
 
 extern bool vm_use_pae;
 
-extern addr_t page_directory_addr;
-
 extern size_t page_table_entries;
+
+extern pte_t *global_page_tables;
+
+extern addr_space_t initial_addr_space;
 
 /** page table entry offset of virtual (linear) address */
 extern unsigned int (*page_table_offset_of)(addr_t);
 
-extern unsigned int (*global_page_table_offset_of)(addr_t);
-
 extern unsigned int (*page_directory_offset_of)(addr_t);
-
-extern pte_t *(*page_table_of)(addr_t);
-
-extern pte_t *(*get_pte)(addr_t);
-
-extern pte_t *(*get_pde)(addr_t);
-
-extern void (*alloc_page_table)(addr_t);
-
 
 void vm_init(void);
 
-void vm_map(addr_t vaddr, pfaddr_t paddr, int flags);
+void vm_map(addr_space_t *addr_space, addr_t vaddr, pfaddr_t paddr, int flags);
 
-void vm_unmap(addr_t addr);
+void vm_unmap(addr_space_t *addr_space, addr_t addr);
 
-pfaddr_t vm_lookup_pfaddr(addr_t addr);
+pfaddr_t vm_lookup_pfaddr(addr_space_t *addr_space, addr_t addr);
 
-void vm_change_flags(addr_t vaddr, int flags);
+void vm_change_flags(addr_space_t *addr_space, addr_t addr, int flags);
 
-void vm_map_early(addr_t vaddr, addr_t paddr, int flags, pte_t *page_directory);
+void vm_map_early(addr_t vaddr, addr_t paddr, int flags);
 
-pte_t *vm_create_initial_addr_space(void);
+addr_space_t *vm_create_initial_addr_space(void);
 
 #endif
 

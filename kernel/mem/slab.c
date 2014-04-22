@@ -48,8 +48,8 @@ static void destroy_slab(slab_cache_t *cache, slab_t *slab) {
     }
     
     /* return the memory */
-    paddr = vm_lookup_pfaddr(start_addr);
-    vm_unmap(start_addr);
+    paddr = vm_lookup_pfaddr(NULL, start_addr);
+    vm_unmap(NULL, start_addr);
     vm_free(global_page_allocator, start_addr);
     pffree(paddr);
 }
@@ -429,7 +429,7 @@ void slab_cache_grow(slab_cache_t *cache) {
     /** ASSERTION: slab address is not null */
     assert(slab_addr != NULL);
     
-    vm_map(slab_addr, pfalloc(), VM_FLAG_KERNEL | VM_FLAG_READ_WRITE | VM_FLAG_GLOBAL);
+    vm_map(NULL, slab_addr, pfalloc(), VM_FLAG_KERNEL | VM_FLAG_READ_WRITE | VM_FLAG_GLOBAL);
     
     slab = (slab_t *)( (byte_t *)slab_addr + SLAB_SIZE - sizeof(slab_t) );
     

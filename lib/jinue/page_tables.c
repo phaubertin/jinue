@@ -24,6 +24,7 @@ static pte_t *vm_x86_get_pte_with_offset(pte_t *pte, unsigned int offset) {
 }
 
 static void vm_x86_set_pte(pte_t *pte, pfaddr_t paddr, int flags) {
+    /** TODO: check paddr for 4GB limit */
     pte->entry = ((uint32_t)paddr << PFADDR_SHIFT) | flags;
 }
 

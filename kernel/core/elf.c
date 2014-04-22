@@ -72,7 +72,7 @@ void elf_check_process_manager(void) {
 	}
 }
 
-void elf_load_process_manager(void) {
+void elf_load_process_manager(addr_space_t *addr_space) {
 	elf_prog_header_t *phdr;
 	pfaddr_t page;
 	addr_t vpage;
@@ -164,7 +164,7 @@ void elf_load_process_manager(void) {
 				
 				/* allocate and map the new page */
 				page = pfalloc();
-				vm_map(vpage, page, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
+				vm_map(addr_space, vpage, page, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
 				
 				/* copy */
 				stop     = vnext;
@@ -182,7 +182,7 @@ void elf_load_process_manager(void) {
 				}
 				
 				/* set proper flags for page now that we no longer need to write in it */
-				vm_change_flags(vpage, flags);				
+				vm_change_flags(addr_space, vpage, flags);				
 			}
 		}
 		else {			
@@ -192,7 +192,7 @@ void elf_load_process_manager(void) {
 				flags = VM_FLAG_USER | VM_FLAG_READ_ONLY;
 			
 				/* perform mapping */
-				vm_map((addr_t)vptr, PTR_TO_PFADDR(file_ptr), flags);
+				vm_map(addr_space, (addr_t)vptr, PTR_TO_PFADDR(file_ptr), flags);
 				
 				vptr     += PAGE_SIZE;
 				file_ptr += PAGE_SIZE;
@@ -204,7 +204,7 @@ void elf_load_process_manager(void) {
 	/* setup stack */
 	page  = pfalloc();
 	vpage = (addr_t)0xfffff000;
-	vm_map(vpage, page, VM_FLAG_USER | VM_FLAG_READ_WRITE);
+	vm_map(addr_space, vpage, page, VM_FLAG_USER | VM_FLAG_READ_WRITE);
 	
 	printk("Process manager loaded.\n");
 }
