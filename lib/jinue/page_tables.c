@@ -49,7 +49,7 @@ static void vm_x86_copy_pte(pte_t *dest, pte_t *src) {
 }
 
 void vm_x86_set_pte_pointers(void) {
-	get_pte_with_offset         = vm_x86_get_pte_with_offset;
+    get_pte_with_offset         = vm_x86_get_pte_with_offset;
     set_pte                     = vm_x86_set_pte;
     set_pte_flags               = vm_x86_set_pte_flags;
     get_pte_flags               = vm_x86_get_pte_flags;

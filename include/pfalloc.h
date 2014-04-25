@@ -6,8 +6,8 @@
 
 
 typedef struct {
-	pfaddr_t  *ptr;
-	uint32_t   count;
+    pfaddr_t  *ptr;
+    uint32_t   count;
 } pfcache_t;
 
 

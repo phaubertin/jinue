@@ -5,10 +5,10 @@
 
 
 struct thread_t {
-	addr_t	kernel_stack;
-	addr_t  local_storage;
-	size_t  local_storage_size;
-	int    *perrno;
+    addr_t   kernel_stack;
+    addr_t   local_storage;
+    size_t   local_storage_size;
+    int     *perrno;
 };
 
 typedef struct thread_t thread_t;

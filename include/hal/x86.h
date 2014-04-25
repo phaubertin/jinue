@@ -8,10 +8,10 @@
 #define X86_FLAG_PG (1<<31)
 
 typedef struct {
-	unsigned long eax;
-	unsigned long ebx;
-	unsigned long ecx;
-	unsigned long edx;
+    unsigned long eax;
+    unsigned long ebx;
+    unsigned long ecx;
+    unsigned long edx;
 } x86_regs_t;
 
 typedef uint32_t msr_addr_t;

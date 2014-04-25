@@ -12,9 +12,9 @@ void kmain(void) {
     thread_init(current_thread, NULL);
     
     /* set system call dispatch function */
-	set_syscall_funct(dispatch_syscall);
+    set_syscall_funct(dispatch_syscall);
 
-	/* load process manager binary */
+    /* load process manager binary */
     elf_load_process_manager(&initial_addr_space);
     
     /* start process manager */

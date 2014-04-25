@@ -6,9 +6,9 @@
 
 
 struct bootmem_t {
-	struct bootmem_t *next;
-	pfaddr_t addr;
-	uint32_t count;
+    struct bootmem_t *next;
+    pfaddr_t addr;
+    uint32_t count;
 };
 
 typedef struct bootmem_t bootmem_t;
@@ -21,8 +21,6 @@ extern bootmem_t *bootmem_root;
 
 /** current top of boot heap */
 extern void *boot_heap;
-
-
 
 
 void new_ram_map_entry(pfaddr_t addr, uint32_t count, bootmem_t **head);

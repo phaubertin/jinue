@@ -5,9 +5,9 @@
 
 
 typedef struct {
-	addr_t addr;
-	char *type;
-	char *name;
+    addr_t addr;
+    char *type;
+    char *name;
 } debugging_symbol_t;
 
 
