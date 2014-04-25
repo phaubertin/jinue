@@ -1,10 +1,8 @@
 #ifndef _JINUE_KERNEL_CPU_H_
 #define _JINUE_KERNEL_CPU_H_
 
+#include <hal/cpu_data.h>
 #include <hal/descriptors.h>
-
-
-typedef unsigned long msr_addr_t;
 
 
 #define MSR_IA32_SYSENTER_CS	0x174
@@ -80,20 +78,13 @@ typedef enum {
     CPU_CACHE_UNIFIED = 3
 } cpu_cache_type_t;
 
-typedef struct {    
+typedef struct {
     cpu_cache_type_t    type;
     unsigned int        level;
     unsigned int        size;
     unsigned int        associativity;
     unsigned int        line_size;
 } cpu_cache_t;
-
-typedef struct {
-    seg_descriptor_t    gdt[GDT_LENGTH];
-    tss_t               tss;
-} cpu_data_t;
-
-#define CPU_DATA_ALIGNMENT      256
 
 
 extern cpu_cache_t cpu_caches[];

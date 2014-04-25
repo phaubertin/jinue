@@ -1,8 +1,9 @@
 #ifndef _JINUE_KERNEL_X86_H_
 #define _JINUE_KERNEL_X86_H_
 
-#include <hal/cpu.h>
+#include <stdint.h>
 #include <hal/descriptors.h>
+
 
 #define X86_FLAG_PG (1<<31)
 
@@ -12,6 +13,9 @@ typedef struct {
 	unsigned long ecx;
 	unsigned long edx;
 } x86_regs_t;
+
+typedef uint32_t msr_addr_t;
+
 
 void cli(void);
 
@@ -68,6 +72,8 @@ void set_data_segments(unsigned long val);
 unsigned long long rdmsr(msr_addr_t addr);
 
 void wrmsr(msr_addr_t addr, unsigned long long val);
+
+uint32_t get_gs_ptr(uint32_t *ptr);
 
 #endif
 

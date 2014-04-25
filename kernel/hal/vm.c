@@ -1,3 +1,5 @@
+#include <cpu.h>
+#include <cpu_data.h>
 #include <kernel.h>
 #include <assert.h>
 #include <pfalloc.h>
@@ -65,10 +67,11 @@ void vm_init(void) {
 		vm_map_early((addr_t)addr, (addr_t)addr, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
 	}
     
-    /* enable paging */
-	set_cr3(addr_space->cr3);
+    /* switch to new address space */
+	vm_switch_addr_space(addr_space);
     
-	temp = get_cr0();
+	/* enable paging */
+    temp = get_cr0();
 	temp |= X86_FLAG_PG;
 	set_cr0(temp);
     
@@ -129,7 +132,7 @@ void vm_map(addr_space_t *addr_space, addr_t vaddr, pfaddr_t paddr, int flags) {
         
         /* map page directory temporarily */
         page_directory = (pte_t *)vm_alloc(global_page_allocator);
-        vm_map(NULL, (addr_t)page_directory, addr_space->top_level.pd, VM_FLAGS_PAGE_TABLE);
+        vm_map_global((addr_t)page_directory, addr_space->top_level.pd, VM_FLAGS_PAGE_TABLE);
         
         /* lookup page directory entry */
         pde = get_pte_with_offset(page_directory, page_directory_offset_of(vaddr));
@@ -138,12 +141,12 @@ void vm_map(addr_space_t *addr_space, addr_t vaddr, pfaddr_t paddr, int flags) {
         page_table = (pte_t *)vm_alloc(global_page_allocator);
         
         if( get_pte_flags(pde) & VM_FLAG_PRESENT ) {
-            vm_map(NULL, (addr_t)page_table, get_pte_pfaddr(pde), VM_FLAGS_PAGE_TABLE);
+            vm_map_global((addr_t)page_table, get_pte_pfaddr(pde), VM_FLAGS_PAGE_TABLE);
         }
         else {
             pf_page_table = pfalloc();
             
-            vm_map(NULL, (addr_t)page_table, pf_page_table, VM_FLAGS_PAGE_TABLE);
+            vm_map_global((addr_t)page_table, pf_page_table, VM_FLAGS_PAGE_TABLE);
             
             /* zero content of page table */
             for(idx = 0; idx < page_table_entries; ++idx) {
@@ -157,8 +160,8 @@ void vm_map(addr_space_t *addr_space, addr_t vaddr, pfaddr_t paddr, int flags) {
         pte = get_pte_with_offset(page_table, page_table_offset_of(vaddr));
         set_pte(pte, paddr, flags | VM_FLAG_PRESENT);
         
-        vm_unmap(NULL, (addr_t)page_directory);
-        vm_unmap(NULL, (addr_t)page_table);
+        vm_unmap_global((addr_t)page_directory);
+        vm_unmap_global((addr_t)page_table);
     }
         
     /* invalidate TLB entry for newly mapped page */
@@ -202,27 +205,27 @@ void vm_unmap(addr_space_t *addr_space, addr_t addr) {
         
         /* map page directory temporarily */
         page_directory = (pte_t *)vm_alloc(global_page_allocator);
-        vm_map(NULL, (addr_t)page_directory, addr_space->top_level.pd, VM_FLAGS_PAGE_TABLE);
+        vm_map_global((addr_t)page_directory, addr_space->top_level.pd, VM_FLAGS_PAGE_TABLE);
         
         /* lookup page directory entry */
         pde = get_pte_with_offset(page_directory, page_directory_offset_of(addr));
         
         if( ! (get_pte_flags(pde) & VM_FLAG_PRESENT) ) {
             /* nothing to do */
-            vm_unmap(NULL, (addr_t)page_directory);
+            vm_unmap_global((addr_t)page_directory);
             return;
         }
         
         /* map page table */
         page_table = (pte_t *)vm_alloc(global_page_allocator);
-        vm_map(NULL, (addr_t)page_table, get_pte_pfaddr(pde), VM_FLAGS_PAGE_TABLE);
+        vm_map_global((addr_t)page_table, get_pte_pfaddr(pde), VM_FLAGS_PAGE_TABLE);
                 
         /* clear page table entry */
         pte = get_pte_with_offset(page_table, page_table_offset_of(addr));
         clear_pte(pte);
         
-        vm_unmap(NULL, (addr_t)page_directory);
-        vm_unmap(NULL, (addr_t)page_table);
+        vm_unmap_global((addr_t)page_directory);
+        vm_unmap_global((addr_t)page_table);
     }
     
     /* invalidate TLB entry for newly mapped page */
@@ -251,7 +254,7 @@ pfaddr_t vm_lookup_pfaddr(addr_space_t *addr_space, addr_t addr) {
         
         /* map page directory temporarily */
         page_directory = (pte_t *)vm_alloc(global_page_allocator);
-        vm_map(NULL, (addr_t)page_directory, addr_space->top_level.pd, VM_FLAGS_PAGE_TABLE);
+        vm_map_global((addr_t)page_directory, addr_space->top_level.pd, VM_FLAGS_PAGE_TABLE);
         
         /* lookup page directory entry */
         pde = get_pte_with_offset(page_directory, page_directory_offset_of(addr));
@@ -261,7 +264,7 @@ pfaddr_t vm_lookup_pfaddr(addr_space_t *addr_space, addr_t addr) {
         
         /* map page table */
         page_table = (pte_t *)vm_alloc(global_page_allocator);
-        vm_map(NULL, (addr_t)page_table, get_pte_pfaddr(pde), VM_FLAGS_PAGE_TABLE);
+        vm_map_global((addr_t)page_table, get_pte_pfaddr(pde), VM_FLAGS_PAGE_TABLE);
         
         pte = get_pte_with_offset(page_table, page_table_offset_of(addr));
                 
@@ -270,8 +273,8 @@ pfaddr_t vm_lookup_pfaddr(addr_space_t *addr_space, addr_t addr) {
         
         pfaddr = get_pte_pfaddr(pte);
         
-        vm_unmap(NULL, (addr_t)page_directory);
-        vm_unmap(NULL, (addr_t)page_table);
+        vm_unmap_global((addr_t)page_directory);
+        vm_unmap_global((addr_t)page_table);
     }
     
     return pfaddr;
@@ -302,7 +305,7 @@ void vm_change_flags(addr_space_t *addr_space, addr_t addr, int flags) {
         
         /* map page directory temporarily */
         page_directory = (pte_t *)vm_alloc(global_page_allocator);
-        vm_map(NULL, (addr_t)page_directory, addr_space->top_level.pd, VM_FLAGS_PAGE_TABLE);
+        vm_map_global((addr_t)page_directory, addr_space->top_level.pd, VM_FLAGS_PAGE_TABLE);
         
         /* lookup page directory entry */
         pde = get_pte_with_offset(page_directory, page_directory_offset_of(addr));
@@ -312,7 +315,7 @@ void vm_change_flags(addr_space_t *addr_space, addr_t addr, int flags) {
         
         /* map page table */
         page_table = (pte_t *)vm_alloc(global_page_allocator);
-        vm_map(NULL, (addr_t)page_table, get_pte_pfaddr(pde), VM_FLAGS_PAGE_TABLE);
+        vm_map_global((addr_t)page_table, get_pte_pfaddr(pde), VM_FLAGS_PAGE_TABLE);
         
         pte = get_pte_with_offset(page_table, page_table_offset_of(addr));
                 
@@ -322,8 +325,8 @@ void vm_change_flags(addr_space_t *addr_space, addr_t addr, int flags) {
         /* perform the flags change */
         set_pte_flags(pte, flags | VM_FLAG_PRESENT);
         
-        vm_unmap(NULL, (addr_t)page_directory);
-        vm_unmap(NULL, (addr_t)page_table);
+        vm_unmap_global((addr_t)page_directory);
+        vm_unmap_global((addr_t)page_table);
     }
 	
 	/* invalidate TLB entry for the affected page */
@@ -391,4 +394,13 @@ addr_space_t *vm_create_initial_addr_space(void) {
     initial_addr_space.cr3          = (uint32_t)page_directory;
     
     return &initial_addr_space;
+}
+
+void vm_switch_addr_space(addr_space_t *addr_space) {
+    cpu_data_t *cpu_data;
+    
+    set_cr3(addr_space->cr3);
+    
+    cpu_data = get_cpu_local_data();
+    cpu_data->current_addr_space = addr_space;
 }

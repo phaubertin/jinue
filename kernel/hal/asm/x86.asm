@@ -311,3 +311,12 @@ wrmsr:
 	
 	wrmsr
 	ret
+; ------------------------------------------------------------------------------
+; FUNCTION: get_gs_ptr
+; C PROTOTYPE: uint32_t get_gs_ptr(uint32_t *ptr);
+; ------------------------------------------------------------------------------
+    global get_gs_ptr
+get_gs_ptr:
+    mov ecx, [esp+ 4]	; First param:  ptr
+    mov eax, [gs:ecx]
+    ret
