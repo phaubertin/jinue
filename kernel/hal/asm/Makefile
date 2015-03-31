@@ -12,7 +12,7 @@ clean:
 	-rm -f $(TARGET) $(STARTUP) $(OBJS)
 
 $(TARGET): $(OBJS)
-	$(LD) -r -o $@ $^
+	$(LD) -r -m elf_i386 -o $@ $^
 
 frame_pointer.o:    frame_pointer.asm	$(includes)/hal/frame_pointer.h
 io.o:          		io.asm        		$(includes)/hal/io.h
@@ -23,4 +23,4 @@ thread.o:      		thread.asm    		$(includes)/thread.h
 x86.o:         		x86.asm       		$(includes)/hal/x86.h
 
 %.o: %.asm
-	nasm -f elf -o $@ $<
+	nasm -f elf32 -o $@ $<

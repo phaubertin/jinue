@@ -11,7 +11,7 @@ else
 	DEBUG_FLAGS = -DNDEBUG
 endif
 
-CFLAGS += -O3 $(DEBUG_FLAGS) -nostdinc -ffreestanding -fno-common -fno-inline -fno-omit-frame-pointer -ansi -Wall -Werror=implicit-function-declaration -Werror=uninitialized -Werror=return-type
+CFLAGS += -m32 -O3 $(DEBUG_FLAGS) -nostdinc -ffreestanding -fno-common -fno-inline -fno-omit-frame-pointer -ansi -Wall -Werror=implicit-function-declaration -Werror=uninitialized -Werror=return-type
 
 .PHONY: all
 all: $(TARGET)
@@ -21,7 +21,7 @@ clean:
 	-rm -f $(TARGET) $(OBJS)
 
 $(TARGET): $(OBJS)
-	$(LD) -r -o $@ $^
+	$(LD) -r -m elf_i386 -o $@ $^
 
 core.o:        core.c        $(includes)/hal/hal.h
 elf.o:         elf.c         $(includes)/elf.h

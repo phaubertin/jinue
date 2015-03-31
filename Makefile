@@ -41,10 +41,10 @@ $(kernel): kernel
 	true
 
 $(kernel_bin): $(kernel) proc symbols
-	$(LD) -T scripts/kernel-bin.lds -o $@
+	$(LD) -m elf_i386 -T scripts/kernel-bin.lds -o $@
 
 $(kernel_img): $(kernel_bin) bin/boot bin/setup
-	$(LD) -T scripts/image.lds -o $@
+	$(LD) -m elf_i386 -T scripts/image.lds -o $@
 
 # ----- process manager
 .PHONY: proc
@@ -62,7 +62,7 @@ symbols.c: symbols.txt
 	scripts/mksymbols.tcl $< $@
 
 symbols.o: symbols.c
-	$(CC) -c -nostdinc -ffreestanding -fno-common -ansi -Wall -Iinclude -Iinclude/kstdc -o $@ $<
+	$(CC) -c -m32 -nostdinc -ffreestanding -fno-common -ansi -Wall -Iinclude -Iinclude/kstdc -o $@ $<
 
 # ----- setup code, boot sector, etc.
 bin/boot: boot/boot.asm boot/boot.inc

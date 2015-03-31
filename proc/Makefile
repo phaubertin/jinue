@@ -13,8 +13,8 @@ else
 	DEBUG_FLAGS = -DNDEBUG
 endif
 
-CFLAGS  += -O3 $(DEBUG_FLAGS) -nostdinc -ffreestanding -static -ansi -Wall -Werror=implicit-function-declaration -Werror=uninitialized -Werror=return-type
-LDFLAGS += -static -nostdlib -e main
+CFLAGS  += -m32 -O3 $(DEBUG_FLAGS) -nostdinc -ffreestanding -static -ansi -Wall -Werror=implicit-function-declaration -Werror=uninitialized -Werror=return-type
+LDFLAGS += -m elf_i386 -static -nostdlib -e main
 LIBS    = -L$(libjinue) -ljinue -ljinue-proc
 
 .PHONY: all

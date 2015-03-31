@@ -16,7 +16,7 @@ else
 	DEBUG_FLAGS = -DNDEBUG
 endif
 
-CFLAGS += -O3 $(DEBUG_FLAGS) -nostdinc -ffreestanding -fno-common -fno-inline -fno-omit-frame-pointer -ansi -Wall -Werror=implicit-function-declaration -Werror=uninitialized -Werror=return-type
+CFLAGS += -m32 -O3 $(DEBUG_FLAGS) -nostdinc -ffreestanding -fno-common -fno-inline -fno-omit-frame-pointer -ansi -Wall -Werror=implicit-function-declaration -Werror=uninitialized -Werror=return-type
 
 .PHONY: all
 all: $(TARGET)
@@ -36,7 +36,7 @@ hal-startup : $(HAL-STARTUP)
 $(HAL-STARTUP) $(HAL-ASM): asm
 
 $(TARGET): $(OBJS) $(HAL-ASM)
-	$(LD) -r -o $@ $^
+	$(LD) -r -m elf_i386 -o $@ $^
 
 
 boot.o:        boot.c        $(includes)/hal/boot.h
