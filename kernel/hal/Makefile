@@ -16,7 +16,7 @@ else
 	DEBUG_FLAGS = -DNDEBUG
 endif
 
-CFLAGS += -m32 -O3 $(DEBUG_FLAGS) -nostdinc -ffreestanding -fno-common -fno-inline -fno-omit-frame-pointer -ansi -Wall -Werror=implicit-function-declaration -Werror=uninitialized -Werror=return-type
+CFLAGS += -m32 -march=i686 -O3 $(DEBUG_FLAGS) -nostdinc -ffreestanding -fno-common -fno-inline -fno-omit-frame-pointer -ansi -Wall -Werror=implicit-function-declaration -Werror=uninitialized -Werror=return-type
 
 .PHONY: all
 all: $(TARGET)
