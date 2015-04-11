@@ -37,7 +37,7 @@ addr_t kernel_region_top;
 addr_t kernel_stack;
 
 
-void hal_start(void) {
+void hal_init(void) {
     addr_t addr;
     addr_t stack;
     cpu_data_t *cpu_data;
@@ -175,9 +175,4 @@ void hal_start(void) {
         
         wrmsr(MSR_STAR, msrval);
     }
-    
-    /* set system call dispatch function to default */
-    set_syscall_funct(NULL);
-    
-    kmain();
 }

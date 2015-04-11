@@ -5,7 +5,7 @@ bits 32
 global halt
 global __start
 
-extern hal_start
+extern kmain
 extern e820_map
 extern boot_data
 extern boot_heap
@@ -108,7 +108,7 @@ setup_stack:
     xor ebp, ebp    ; initialize frame pointer
     
 start_kernel:
-    call hal_start
+    call kmain
 
 halt:
     cli

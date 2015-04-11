@@ -1,8 +1,7 @@
 includes = ../../include
 scripts  = ../../scripts
 
-OBJS = boot.o bootmem.o cpu.o e820.o hal.o interrupt.o syscall.o vga.o \
-       vm.o vm_x86.o
+OBJS = boot.o bootmem.o cpu.o e820.o hal.o interrupt.o vga.o vm.o vm_x86.o
 
 HAL-ASM     = asm/kern-hal-asm.o
 HAL-STARTUP = asm/startup.o
@@ -45,7 +44,6 @@ cpu.o:         cpu.c         $(includes)/hal/cpu.h
 e820.o:        e820.c        $(includes)/hal/e820.h
 hal.o:         hal.c         $(includes)/hal/kernel.h
 interrupt.o:   interrupt.c   $(includes)/hal/interrupt.h
-syscall.o:     syscall.c     $(includes)/hal/syscall.h
 vga.o:         vga.c         $(includes)/hal/vga.h
 vm.o:          vm.c          $(includes)/hal/vm.h
 vm_x86.o:      vm_x86.c      $(includes)/hal/vm_x86.h

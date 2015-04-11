@@ -2,7 +2,8 @@
 
     bits 32
     
-    extern hal_syscall_dispatch
+    global syscall_method
+    extern dispatch_syscall
     extern in_kernel
 
 ; ------------------------------------------------------------------------------
@@ -50,7 +51,7 @@ fast_intel_entry:
     ; entering the kernel
     mov [in_kernel], dword 1
     
-    call hal_syscall_dispatch
+    call dispatch_syscall
     
     ; leaving the kernel
     mov [in_kernel], dword 0
@@ -121,7 +122,7 @@ fast_amd_entry:
     ; entering the kernel
     mov [in_kernel], dword 1
     
-    call hal_syscall_dispatch
+    call dispatch_syscall
     
     ; leaving the kernel
     mov [in_kernel], dword 0
@@ -147,3 +148,11 @@ fast_amd_entry:
     pop esp         ; user stack
     
     sysret
+
+; ------------------------------------------------------------------------------
+; System call method
+; ------------------------------------------------------------------------------
+    section .rodata
+
+syscall_method:
+    dd 0

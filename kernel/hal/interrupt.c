@@ -1,4 +1,3 @@
-#include <jinue/syscall.h>
 #include <jinue/types.h>
 #include <hal/frame_pointer.h>
 #include <hal/kernel.h>
@@ -6,6 +5,7 @@
 #include <irq.h>
 #include <panic.h>
 #include <printk.h>
+#include <syscall.h>
 #include <x86.h>
 
 
@@ -23,7 +23,7 @@ void dispatch_interrupt(unsigned int irq, uintptr_t eip, uint32_t errcode, sysca
     
     /* slow system call method */
     if(irq == SYSCALL_IRQ) {
-        hal_syscall_dispatch(syscall_params);
+        dispatch_syscall(syscall_params);
     }
     else {        
         printk("INTR: irq %u (vector %u)\n", irq - IDT_FIRST_IRQ, irq);
