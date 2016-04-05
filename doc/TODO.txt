@@ -1,0 +1,50 @@
+--- Issues:
+
+- Pointer aliasing in hal_start()
+
+--- Roadmap
+
+1  - System calls infrastructure + function naming (library), param validation
+
+2  - Thread management (create, thread queue) and yield()
+
+3  - IPC mechanism (doors) and file descriptors
+
+4  - Memory and namespace management (process manager)
+
+5  - Process management and fork()
+
+6  - Interrupt handling, clock interrupt, clock
+
+7  - Thread scheduler
+
+8  - Image filesystem (process manager)
+
+9  - vfork() and exec()
+
+--- Design:
+
+- process and thread management
+
+- thread scheduler
+
+- IPC mechanism
+
+- interrupt handling
+
+- Clock
+
+- multiprocessor support -> ACPI tables (?)
+
+- kernel debugging/tracing
+
+- kernel objects
+
+System calls:
+    - Map page table
+    - Invalidate TLB
+    - IPC: send/receive/return
+    - Clock: query, adjust
+    - Thread: create/destroy, suspend/resume
+    - Process: create/destroy
+

@@ -1,0 +1,59 @@
+Types of page files:
+    - Files in memory (page cache)
+    - RAM disk files
+    - Shared and anonymous memory, backed by swap device
+
+-----
+
+Main IPC mechanism (summary): Solaris-style doors and filesystem namespace
+managed by process manager like QNX.
+
+IPC basic model:
+    - Process performs a system call to process manager asking to create an
+      IPC object, optionaly specifying a name.
+    - Process manager checks:
+        - that caller (security domain) is authorized to create an IPC object.
+        - that caller is authorized to create a "system" IPC object if that
+          was requested.
+        - that caller is authorized to create an IPC object with that name.
+        - that an IPC object with that name does not already exist.
+        - what should be the security type of the IPC object.
+    - If all checks out, process manager performs (a) system call(s) to the
+      microkernel to create the IPC object, and create an owner reference for
+      the caller and a reference for its own use.
+    - If applicable, process manager creates a map entry that maps the requested
+      name to the new reference, then returns.
+    (...)
+    - User process performs a system call to the process manager requesting
+      a reference to the IPC object.
+    - Process manager checks that caller security domain is authorized for that
+      object security type.
+    - If check OK, process manager creates a reference for the caller and
+      returns it.
+    - User process uses the new reference to make IPC calls to the IPC object
+      owner.
+    - When the user process is finished with the IPC object, it closes its
+      reference. Reference is automatically closed when the process exits (TBD
+      by the process manager or by the microkernel).
+
+IPC function/method numbers:
+    0x0+    (A) microkernel system calls
+    0x400+  (B) process manager system calls
+    0x1000  (C) SYSTEM_BASE
+    0x8000  (D) USER_BASE
+
+(A) Target is NULL, an IPC object or another kernel object. Valid target depends
+    on function number.
+
+(B) Target is NULL or an IPC object, maybe other object types. Valid target
+    depends on function number. Message sent to Process manager. Process manager
+    itself cannot call these.
+
+(C) and (D) Target is an IPC object. Message sent to IPC object owner process
+    (only process authorized to wait on this object).
+
+(C) Only function numbers in this range are allowed for "system" IPC objects.
+    creating a system IPC object is a priviledged operation (i.e. subject
+    to check of security domain).
+
+(D) Only function numbers in this range are allowed for "user" IPC objects.
