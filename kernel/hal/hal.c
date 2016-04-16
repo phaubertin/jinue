@@ -112,7 +112,7 @@ void hal_init(void) {
     /* initialize IDT */
     for(idx = 0; idx < IDT_VECTOR_COUNT; ++idx) {
         /* get address, which is already stored in the IDT entry */
-        addr  = (addr_t)*(word32_t *)&idt[idx];
+        addr  = (addr_t)(word32_t)idt[idx];
         
         /* set interrupt gate flags */
         flags = SEG_TYPE_INTERRUPT_GATE | SEG_FLAG_NORMAL_GATE;
