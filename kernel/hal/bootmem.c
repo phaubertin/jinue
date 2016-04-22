@@ -143,7 +143,7 @@ void bootmem_init(void) {
     apply_mem_hole(0, 0x10000, &ram_map);
     
     /* the kernel image and its heap and stack early-allocated pages */
-    apply_mem_hole((uint32_t)kernel_start, (uint32_t)kernel_region_top, &ram_map);
+    apply_mem_hole((uint32_t)&kernel_start, (uint32_t)kernel_region_top, &ram_map);
 
     /* Entry removal may have left garbage on the heap (bootmem_t
      * structures which were allocated on the heap but are no longer

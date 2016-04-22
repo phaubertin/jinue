@@ -1,162 +1,241 @@
 #ifndef _JINUE_ELF_H_
 #define _JINUE_ELF_H_
 
-/** 0x7f 'E' 'L' 'F' */
-#define ELF_MAGIC 0x464c457f
+/** Index of file identification - byte 0 */
+#define EI_MAG0 		 0
+
+/** Index of file identification - byte 1 */
+#define EI_MAG1 		 1
+
+/** Index of file identification - byte 2 */
+#define EI_MAG2 		 2
+
+/** Index of file identification - byte 3 */
+#define EI_MAG3 		 3
+
+/** File class */
+#define EI_CLASS 		 4
+
+/** Data encoding */
+#define EI_DATA 		 5
+
+/** File version  */
+#define EI_VERSION 		 6
+
+/** Start of padding bytes */
+#define EI_PAD 			 7
+
+/** size of e_ident[] */
+#define EI_NIDENT  		16
 
 
 /** File identification - byte 0 (0x7f) */
-#define EI_MAG0 0
+#define ELF_MAGIC0 		 0x7f
 
 /** File identification - byte 1 ('E') */
-#define EI_MAG1 1
+#define ELF_MAGIC1 		 'E'
 
 /** File identification - byte 2 ('L') */
-#define EI_MAG2 2
+#define ELF_MAGIC2 		 'L'
 
 /** File identification - byte 3 ('F') */
-#define EI_MAG3 3
-
-/** File class */
-#define EI_CLASS 4
-
-/** Data encoding */
-#define EI_DATA 5
-
-/** File version  */
-#define EI_VERSION 6
-
-/** Start of padding bytes */
-#define EI_PAD 7
-
-/** size of e_ident[] */
-#define EI_NIDENT  16
+#define ELF_MAGIC3 		 'F'
 
 
 /** No machine */
-#define EM_NONE 0
-
-/** AT&T WE 32100 */
-#define EM_M32 1
+#define EM_NONE 		  0
 
 /** SPARC */
-#define EM_SPARC 2
+#define EM_SPARC 		  2
 
 /** Intel 80386 */
-#define EM_386 3
-
-/** Motorola 68000 */
-#define EM_68K 4
-
-/** Motorola 88000 */
-#define EM_88K 5
-
-/** Intel 80860 */
-#define EM_860 7
+#define EM_386 			  3
 
 /** MIPS RS3000 */
-#define EM_MIPS 8
+#define EM_MIPS 		  8
 
 /** Enhanced instruction set SPARC */
-#define EM_SPARC32PLUS 18
+#define EM_SPARC32PLUS 	 18
+
+/** 32-bit ARM */
+#define EM_ARM			 40
+
+/** AMD64/X86-64  */
+#define EM_X86_64        62
+
+/** OpenRISC 32-bit embedded processor */
+#define EM_OPENRISC      92
+
+/** Altera Nios 2 32-bit soft processor */
+#define EM_ALTERA_NIOS2	113
+
+/** 64-bit AARCH64 ARM */
+#define EM_AARCH64      183
+
+/** Xilinx MicroBlaze 32-bit soft processor */
+#define EM_MICROBLAZE   189
 
 
 /** No file type */
-#define ET_NONE 0
+#define ET_NONE 		0
 
 /** Relocatable file */
-#define ET_REL 1
+#define ET_REL 			1
 
 /** Executable file */
-#define ET_EXEC 2
+#define ET_EXEC 		2
 
 /** Shared object file */
-#define ET_DYN 3
+#define ET_DYN 			3
 
 /** Core file */
-#define ET_CORE 4
+#define ET_CORE 		4
 
 
 /** Invalid class */
-#define ELFCLASSNONE 0
+#define ELFCLASSNONE 	0
 
 /** 32-bit objects */
-#define ELFCLASS32 1
+#define ELFCLASS32		1
 
 /** 64-bit objects */
-#define ELFCLASS64 2
+#define ELFCLASS64 		2
 
 
 /** Invalid data encoding */
-#define ELFDATANONE 0
+#define ELFDATANONE		0
 
-/** little-endian */
-#define ELFDATA2LSB 1
+/** Little-endian */
+#define ELFDATA2LSB 	1
 
-/** big-endian  */
-#define ELFDATA2MSB 2
-
-
-#define PT_NULL 0
-
-#define PT_LOAD 1
-
-#define PT_DYNAMIC 2
-
-#define PT_INTERP 3
-
-#define PT_NOTE 4
-
-#define PT_SHLIB 5
-
-#define PT_PHDR  6
+/** Big-endian  */
+#define ELFDATA2MSB 	2
 
 
-#define PF_R (1 << 2)
+/** Unused entry */
+#define PT_NULL 		0
 
-#define PF_W (1 << 1)
+/** Loadable segment */
+#define PT_LOAD 		1
 
-#define PF_X (1 << 0)
+/** Dynamic linking information */
+#define PT_DYNAMIC 		2
 
-typedef void *Elf32_Addr;
+/** Path to program interpreter */
+#define PT_INTERP 		3
 
-typedef unsigned short Elf32_Half;
+/** Location and size of notes */
+#define PT_NOTE 		4
 
-typedef unsigned int Elf32_Off;
+/** Unspecified semantics */
+#define PT_SHLIB 		5
 
-typedef signed int Elf32_Sword;
+/** Program header table */
+#define PT_PHDR  		6
 
-typedef unsigned int Elf32_Word;
 
-typedef int (*elf_entry_t)(void);
+#define PF_R 			(1 << 2)
 
-typedef struct {
-        unsigned char e_ident[EI_NIDENT];
-        Elf32_Half    e_type;
-        Elf32_Half    e_machine;
-        Elf32_Word    e_version;
-        Elf32_Addr    e_entry;
-        Elf32_Off     e_phoff;
-        Elf32_Off     e_shoff;
-        Elf32_Word    e_flags;
-        Elf32_Half    e_ehsize;
-        Elf32_Half    e_phentsize;
-        Elf32_Half    e_phnum;
-        Elf32_Half    e_shentsize;
-        Elf32_Half    e_shnum;
-        Elf32_Half    e_shstrndx;
-} elf_header_t;
+#define PF_W 			(1 << 1)
+
+#define PF_X 			(1 << 0)
+
+typedef uint32_t Elf32_Addr;
+
+typedef uint16_t Elf32_Half;
+
+typedef uint32_t Elf32_Off;
+
+typedef int32_t Elf32_Sword;
+
+typedef uint32_t Elf32_Word;
 
 typedef struct {
-        Elf32_Word p_type;
-        Elf32_Off  p_offset;
-        Elf32_Addr p_vaddr;
-        Elf32_Addr p_paddr;
-        Elf32_Word p_filesz;
-        Elf32_Word p_memsz;
-        Elf32_Word p_flags;
-        Elf32_Word p_align;
-} elf_prog_header_t;
+        unsigned char	e_ident[EI_NIDENT];
+        Elf32_Half    	e_type;
+        Elf32_Half    	e_machine;
+        Elf32_Word    	e_version;
+        Elf32_Addr    	e_entry;
+        Elf32_Off     	e_phoff;
+        Elf32_Off     	e_shoff;
+        Elf32_Word    	e_flags;
+        Elf32_Half    	e_ehsize;
+        Elf32_Half    	e_phentsize;
+        Elf32_Half    	e_phnum;
+        Elf32_Half    	e_shentsize;
+        Elf32_Half    	e_shnum;
+        Elf32_Half		e_shstrndx;
+} Elf32_Ehdr;
 
+typedef struct {
+        Elf32_Word 		p_type;
+        Elf32_Off  		p_offset;
+        Elf32_Addr 		p_vaddr;
+        Elf32_Addr 		p_paddr;
+        Elf32_Word 		p_filesz;
+        Elf32_Word 		p_memsz;
+        Elf32_Word 		p_flags;
+        Elf32_Word 		p_align;
+} Elf32_Phdr;
+
+typedef struct {
+    int a_type;
+    union {
+        int32_t aval;
+    } a_un;
+} Elf32_auxv_t;
+
+typedef Elf32_auxv_t auxv_t;
+
+/** Last entry  */
+#define AT_NULL			 0
+
+/** Ignore entry */
+#define AT_IGNORE		 1
+
+/** Program file descriptor */
+#define AT_EXECFD		 2
+
+/** Program headers address */
+#define AT_PHDR			 3
+
+/** Size of program header entry */
+#define AT_PHENT		 4
+
+/** Number of program header entries */
+#define AT_PHNUM		 5
+
+/** Page size */
+#define AT_PAGESZ		 6
+
+/** Base address */
+#define AT_BASE			 7
+
+/** Flags */
+#define AT_FLAGS		 8
+
+/** Program entry point */
+#define AT_ENTRY		 9
+
+/** Data cache block size */
+#define AT_DCACHEBSIZE	10
+
+/** Instruction cache block size */
+#define AT_ICACHEBSIZE	11
+
+/** Unified cache block size */
+#define AT_UCACHEBSIZE	12
+
+/** Stack base address for main thread */
+#define AT_STACKBASE	13
+
+/** Machine-dependent processor feature flags */
+#define AT_HWCAP		16
+
+/** More machine-dependent processor feature flags */
+#define AT_HWCAP2		26
+
+/** Address of vDSO */
+#define AT_SYSINFO_EHDR	33
 
 #endif

@@ -7,8 +7,6 @@
 #include <vm_alloc.h>
 
 
-#define kernel_start ((addr_t)__start)
-
 extern int in_kernel;
 
 extern addr_t kernel_top;
@@ -19,7 +17,10 @@ extern size_t kernel_size;
 
 extern addr_t kernel_stack;
 
-extern linker_defined_t kernel_end;
+/* These next two symbols are defined by a linker script */
+extern int kernel_start;
+
+extern int kernel_end;
 
 extern vm_alloc_t *global_page_allocator;
 

@@ -8,91 +8,76 @@
 #include <printk.h>
 
 
-void elf_check_process_manager(void) {
-    /* check that Process manager binary is valid */
-    if( *(unsigned long *)&proc_elf != ELF_MAGIC ) {
+void elf_check(Elf32_Ehdr *elf) {
+    /* check: valid ELF binary magic number */
+    if(		elf->e_ident[EI_MAG0] != ELF_MAGIC0 ||
+    		elf->e_ident[EI_MAG1] != ELF_MAGIC1 ||
+			elf->e_ident[EI_MAG2] != ELF_MAGIC2 ||
+			elf->e_ident[EI_MAG3] != ELF_MAGIC3 ) {
         panic("Process manager not found");
     }
-        
-    /* CHECK 1: file size */
-    if((unsigned long)&proc_elf_end < (unsigned long)&proc_elf) {
-        panic("Malformed boot image");
-    }
     
-    if((unsigned int)&proc_elf_end - (unsigned int)&proc_elf < sizeof(elf_header_t)) {
-        panic("Too small to be an ELF binary");
-    }
-    
-    printk("Found process manager binary with size %u bytes.\n", (unsigned int)&proc_elf_end - (unsigned int)&proc_elf);
-    
-    /* CHECK 2: 32-bit objects */
-    if(proc_elf.e_ident[EI_CLASS] != ELFCLASS32) {
+    /* check: 32-bit objects */
+    if(elf->e_ident[EI_CLASS] != ELFCLASS32) {
         panic("Bad file class");
     }
     
-    /* CHECK 3: endianess */
-    if(proc_elf.e_ident[EI_DATA] != ELFDATA2LSB) {
+    /* check: endianess */
+    if(elf->e_ident[EI_DATA] != ELFDATA2LSB) {
         panic("Bad endianess");
     }
     
-    /* CHECK 4: version */
-    if(proc_elf.e_version != 1 || proc_elf.e_ident[EI_VERSION] != 1) {
+    /* check: version */
+    if(elf->e_version != 1 || elf->e_ident[EI_VERSION] != 1) {
         panic("Not ELF version 1");
     }
     
-    /* CHECK 5: machine */
-    if(proc_elf.e_machine != EM_386) {
+    /* check: machine */
+    if(elf->e_machine != EM_386) {
         panic("This process manager binary does not target the x86 architecture");
     }
     
-    /* CHECK 6: the 32-bit Intel architecture defines no flags */
-    if(proc_elf.e_flags != 0) {
+    /* check: the 32-bit Intel architecture defines no flags */
+    if(elf->e_flags != 0) {
         panic("Invalid flags specified");
     }
     
-    /* CHECK 7: file type is executable */
-    if(proc_elf.e_type != ET_EXEC) {
+    /* check: file type is executable */
+    if(elf->e_type != ET_EXEC) {
         panic("process manager binary is not an an executable");
     }
     
-    /* CHECK 8: must have a program header */
-    if(proc_elf.e_phoff == 0 || proc_elf.e_phnum == 0) {
+    /* check: must have a program header */
+    if(elf->e_phoff == 0 || elf->e_phnum == 0) {
         panic("No program headers");
     }
     
-    /* CHECK 9: must have an entry point */
-    if(proc_elf.e_entry == 0) {
+    /* check: must have an entry point */
+    if(elf->e_entry == 0) {
         panic("No entry point for process manager");
     }
     
-    /** TODO: we can do better than this */
-    /* CHECK 10: program header entry size */
-    if(proc_elf.e_phentsize != sizeof(elf_prog_header_t)) {
+    /* check: program header entry size */
+    if(elf->e_phentsize != sizeof(Elf32_Phdr)) {
         panic("Unsupported program header size");
     }
 }
 
-void elf_load_process_manager(addr_space_t *addr_space) {
-    elf_prog_header_t *phdr;
+void elf_load(Elf32_Ehdr *elf, addr_space_t *addr_space) {
+    Elf32_Phdr *phdr;
     pfaddr_t page;
     addr_t vpage;
     char *vptr, *vend, *vfend, *vnext;
     char *file_ptr;    
     char *stop;
-    unsigned long idx;
+    unsigned int idx;
     unsigned long flags;
     
     
-    /* check that Process manager binary is valid */
-    elf_check_process_manager();
+    /* check that ELF binary is valid */
+    elf_check(elf);
     
     /** This is what we do:
-        - We are only interested in loadable segments (PT_LOAD).
-       
-        - It is an error if dynamic linking information (PT_DYNAMIC) is
-          present, or if a program interpreter is requested (PT_INTERP).
-      
-        - All other segment types are ignored
       
         - For writable loadable segments and for loadable segments of
           which the memory size is greater than the file size, the
@@ -105,20 +90,10 @@ void elf_load_process_manager(addr_space_t *addr_space) {
      */
     
     /* get the program header table */
-    phdr = (elf_prog_header_t *)((void *)&proc_elf + proc_elf.e_phoff); 
+    phdr = (Elf32_Phdr *)((char *)elf + elf->e_phoff);
     
-    /* look for PT_DYNAMIC and PT_INTERP segments */
-    for(idx = 0; idx < proc_elf.e_phnum; ++idx) {
-        if(phdr[idx].p_type == PT_DYNAMIC) {
-            panic("Process manager binary contains dynamic linking information");
-        }
-        if(phdr[idx].p_type == PT_INTERP) {
-            panic("Program interpreter requested for process manager binary");
-        }
-    }
-    
-    /* load the process manager */
-    for(idx = 0; idx < proc_elf.e_phnum; ++idx) {
+    /* load the ELF binary*/
+    for(idx = 0; idx < elf->e_phnum; ++idx) {
         if(phdr[idx].p_type != PT_LOAD) {
             continue;
         }
@@ -129,18 +104,18 @@ void elf_load_process_manager(addr_space_t *addr_space) {
         }
         
         /* set start and end addresses for mapping and copying */
-        file_ptr = (char *)&proc_elf + phdr[idx].p_offset;
+        file_ptr = (char *)elf + phdr[idx].p_offset;
         vptr     = (char *)phdr[idx].p_vaddr;
         vend     = vptr  + phdr[idx].p_memsz;  /* limit for padding */
         vfend    = vptr  + phdr[idx].p_filesz; /* limit for copy */
                 
         /* align on page boundaries, be inclusive, 
            note that vfend is not aligned        */
-        file_ptr = (char *) ( (unsigned long)file_ptr & ~PAGE_MASK );
-        vptr     = (char *) ( (unsigned long)vptr  & ~PAGE_MASK );
+        file_ptr = (char *) ( (uintptr_t)file_ptr & ~PAGE_MASK );
+        vptr     = (char *) ( (uintptr_t)vptr  & ~PAGE_MASK );
         
         if(page_offset_of(vend) != 0) {
-            vend  = (char *) ( (unsigned long)vend  & ~PAGE_MASK );
+            vend  = (char *) ( (uintptr_t)vend  & ~PAGE_MASK );
             vend +=  PAGE_SIZE;
         }        
     
@@ -209,16 +184,12 @@ void elf_load_process_manager(addr_space_t *addr_space) {
     printk("Process manager loaded.\n");
 }
 
-void elf_start_process_manager(void) {
-    elf_entry_t entry;
-    
-    entry = (elf_entry_t)proc_elf.e_entry;
-    
+void elf_start(Elf32_Ehdr *elf) {
     /* leaving the kernel */
     in_kernel = 0;
     
     /* this never returns */
-    thread_start((addr_t)entry, (addr_t)0xfffffff0);
+    thread_start((addr_t)elf->e_entry, (addr_t)0xfffffff0);
     
     panic("Process Manager returned");
 }

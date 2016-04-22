@@ -7,6 +7,8 @@ INPUT("symbols.o")
 
 SECTIONS {
     kernel 0x100000 : {
+        kernel_start = ABSOLUTE(.);
+        
         kernel/kernel(.text)
         kernel/kernel(.data)
         symbols.o(.rodata)

@@ -1,9 +1,26 @@
 #include <hal/bootmem.h>
 #include <hal/hal.h>
 #include <hal/vm.h>
+#include <core.h>
 #include <elf.h>
+#include <panic.h>
+#include <printk.h>
 #include <syscall.h>
 #include <thread.h>
+
+static Elf32_Ehdr *find_process_manager(void) {
+	if((uintptr_t)&proc_elf_end < (uintptr_t)&proc_elf) {
+		panic("Malformed boot image");
+	}
+
+	if((uintptr_t)&proc_elf_end - (uintptr_t)&proc_elf < sizeof(Elf32_Ehdr)) {
+		panic("Too small to be an ELF binary");
+	}
+
+	printk("Found process manager binary with size %u bytes.\n", (unsigned int)&proc_elf_end - (unsigned int)&proc_elf);
+
+	return &proc_elf;
+}
 
 
 void kmain(void) {
@@ -16,8 +33,9 @@ void kmain(void) {
     thread_init(current_thread, NULL);
     
     /* load process manager binary */
-    elf_load_process_manager(&initial_addr_space);
+    Elf32_Ehdr *elf = find_process_manager();
+    elf_load(elf, &initial_addr_space);
     
     /* start process manager */
-    elf_start_process_manager();
+    elf_start(elf);
 }

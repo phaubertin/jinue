@@ -49,7 +49,7 @@ void hal_init(void) {
     addr_t  boot_heap_old;
     
     /** ASSERTION: we assume the kernel starts on a page boundary */
-    assert( page_offset_of( (unsigned int)kernel_start ) == 0 );
+    assert( page_offset_of( (unsigned int)&kernel_start ) == 0 );
     
     /* pfalloc() should not be called yet -- use pfalloc_early() instead */
     use_pfalloc_early = true;

@@ -62,7 +62,7 @@ symbols.c: symbols.txt
 	scripts/mksymbols.tcl $< $@
 
 symbols.o: symbols.c
-	$(CC) -c -m32 -nostdinc -ffreestanding -fno-common -ansi -Wall -Iinclude -Iinclude/kstdc -o $@ $<
+	$(CC) -c -m32 -nostdinc -ffreestanding -fno-common -std=c99 -pedantic -Wall -Iinclude -Iinclude/kstdc -o $@ $<
 
 # ----- setup code, boot sector, etc.
 bin/boot: boot/boot.asm boot/boot.inc

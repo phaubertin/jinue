@@ -11,7 +11,7 @@ OBJS-PROC   = page_tables.o printk.o vga.o
 OBJS-KERN   = page_tables.o printk.o
 OBJS        = $(OBJS-USER) $(OBJS-PROC)
 
-CFLAGS  += -m32 -march=i686 -O3 -nostdinc -ffreestanding -static -ansi -Wall -Werror=implicit-function-declaration -Werror=uninitialized
+CFLAGS  += -m32 -march=i686 -O3 -nostdinc -ffreestanding -static -std=c99 -pedantic -Wall -Werror=implicit-function-declaration -Werror=uninitialized
 
 .PHONY: all
 all: $(TARGETS)
