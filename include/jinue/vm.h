@@ -33,4 +33,13 @@
    must be a multiple of the size described by a single page directory entry */
 #define PLIMIT ((addr_t)( KLIMIT + 32 * MB)) /* 32M */
 
+/** stack base address (stack top) */
+#define STACK_BASE      (0 - PAGE_SIZE)
+
+/** initial stack size */
+#define STACK_SIZE      (8 * PAGE_SIZE)
+
+/** initial stack lower address */
+#define STACK_START     (STACK_BASE - STACK_SIZE)
+
 #endif

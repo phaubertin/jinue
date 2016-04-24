@@ -14,7 +14,7 @@ void elf_check(Elf32_Ehdr *elf) {
     		elf->e_ident[EI_MAG1] != ELF_MAGIC1 ||
 			elf->e_ident[EI_MAG2] != ELF_MAGIC2 ||
 			elf->e_ident[EI_MAG3] != ELF_MAGIC3 ) {
-        panic("Process manager not found");
+        panic("Not an ELF binary");
     }
     
     /* check: 32-bit objects */
@@ -63,7 +63,7 @@ void elf_check(Elf32_Ehdr *elf) {
     }
 }
 
-void elf_load(Elf32_Ehdr *elf, addr_space_t *addr_space) {
+void elf_load(elf_info_t *info, Elf32_Ehdr *elf, addr_space_t *addr_space) {
     Elf32_Phdr *phdr;
     pfaddr_t page;
     addr_t vpage;
@@ -77,20 +77,14 @@ void elf_load(Elf32_Ehdr *elf, addr_space_t *addr_space) {
     /* check that ELF binary is valid */
     elf_check(elf);
     
-    /** This is what we do:
-      
-        - For writable loadable segments and for loadable segments of
-          which the memory size is greater than the file size, the
-          content is copied in newly allocated memory pages, and then
-          mapped.
-      
-        - For other loadable segments (ie. read-only and for which
-          memory size and file size are the same), the segment is
-          directly mapped at its proper address without copying.      
-     */
-    
     /* get the program header table */
     phdr = (Elf32_Phdr *)((char *)elf + elf->e_phoff);
+    
+    info->at_phdr       = (addr_t)phdr;
+    info->at_phnum      = elf->e_phnum;
+    info->at_phent      = elf->e_phentsize;
+    info->addr_space    = addr_space;
+    info->entry         = (addr_t)elf->e_entry;
     
     /* load the ELF binary*/
     for(idx = 0; idx < elf->e_phnum; ++idx) {
@@ -175,21 +169,76 @@ void elf_load(Elf32_Ehdr *elf, addr_space_t *addr_space) {
         }
     }
     
-    /** TODO: we should probably do better than this, at least check for overlap */
-    /* setup stack */
-    page  = pfalloc();
-    vpage = (addr_t)0xfffff000;
-    vm_map(addr_space, vpage, page, VM_FLAG_USER | VM_FLAG_READ_WRITE);
+    elf_setup_stack(info);
     
-    printk("Process manager loaded.\n");
+    printk("ELF binary loaded.\n");
 }
 
-void elf_start(Elf32_Ehdr *elf) {
+void elf_setup_stack(elf_info_t *info) {
+    pfaddr_t page;
+    addr_t vpage;
+    
+    /** TODO: check for overlap of stack with loaded segments */
+    
+    /* initial stack allocation */
+    for(vpage = (addr_t)STACK_START; vpage < (addr_t)STACK_BASE; vpage += PAGE_SIZE) {        
+        page  = pfalloc();
+        vm_map(info->addr_space, vpage, page, VM_FLAG_USER | VM_FLAG_READ_WRITE);
+    }
+    
+    uint32_t *sp = (uint32_t *)STACK_BASE;
+    
+    /* Program name string: "proc", null-terminated */
+    *(--sp) = 0;
+    *(--sp) = 0x636f7270;
+    
+    char *argv0 = (char *)sp;
+    
+    /* auxiliary vectors */
+    Elf32_auxv_t *auxvp = (Elf32_auxv_t *)sp - 7;
+    
+    auxvp[0].a_type     = AT_PHDR;
+    auxvp[0].a_un.a_val = (int32_t)info->at_phdr;
+    
+    auxvp[1].a_type     = AT_PHENT;
+    auxvp[1].a_un.a_val = (int32_t)info->at_phent;
+    
+    auxvp[2].a_type     = AT_PHNUM;
+    auxvp[2].a_un.a_val = (int32_t)info->at_phnum;
+    
+    auxvp[3].a_type     = AT_PAGESZ;
+    auxvp[3].a_un.a_val = PAGE_SIZE;
+    
+    auxvp[4].a_type     = AT_ENTRY;
+    auxvp[4].a_un.a_val = (int32_t)info->entry;
+    
+    auxvp[5].a_type     = AT_STACKBASE;
+    auxvp[5].a_un.a_val = STACK_BASE;
+    
+    auxvp[6].a_type     = AT_NULL;
+    auxvp[6].a_un.a_val = 0;
+    
+    sp = (uint32_t *)auxvp;
+    
+    /* empty environment variables */
+    *(--sp) = 0;
+    
+    /* argv with only program name */
+    *(--sp) = 0;
+    *(--sp) = (uint32_t)argv0;
+    
+    /* argc */
+    *(--sp) = 1;
+    
+    info->stack_addr = (addr_t)sp;
+}
+
+void elf_start(elf_info_t *info) {
     /* leaving the kernel */
     in_kernel = 0;
     
     /* this never returns */
-    thread_start((addr_t)elf->e_entry, (addr_t)0xfffffff0);
+    thread_start(info->entry, info->stack_addr);
     
-    panic("Process Manager returned");
+    panic("thread_start() returned in elf_start()");
 }

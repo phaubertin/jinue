@@ -24,6 +24,8 @@ static Elf32_Ehdr *find_process_manager(void) {
 
 
 void kmain(void) {
+    elf_info_t elf_info;
+    
     /* initialize hardware abstraction layer */
     hal_init();
     
@@ -34,8 +36,8 @@ void kmain(void) {
     
     /* load process manager binary */
     Elf32_Ehdr *elf = find_process_manager();
-    elf_load(elf, &initial_addr_space);
+    elf_load(&elf_info, elf, &initial_addr_space);
     
     /* start process manager */
-    elf_start(elf);
+    elf_start(&elf_info);
 }

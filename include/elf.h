@@ -5,10 +5,22 @@
 #include <jinue/types.h>
 
 
-void elf_check(Elf32_Ehdr *);
+typedef struct {
+    addr_t           entry;
+    addr_t           stack_addr;
+    addr_t           at_phdr;
+    int              at_phent;
+    int              at_phnum;
+    addr_space_t    *addr_space;
+} elf_info_t;
 
-void elf_load(Elf32_Ehdr *elf, addr_space_t *addr_space);
 
-void elf_start(Elf32_Ehdr *elf);
+void elf_check(Elf32_Ehdr *elf);
+
+void elf_load(elf_info_t *info, Elf32_Ehdr *elf, addr_space_t *addr_space);
+
+void elf_setup_stack(elf_info_t *info);
+
+void elf_start(elf_info_t *info);
 
 #endif

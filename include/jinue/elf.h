@@ -1,6 +1,8 @@
 #ifndef _JINUE_ELF_H_
 #define _JINUE_ELF_H_
 
+#include <stdint.h>
+
 /** Index of file identification - byte 0 */
 #define EI_MAG0 		 0
 
@@ -181,7 +183,7 @@ typedef struct {
 typedef struct {
     int a_type;
     union {
-        int32_t aval;
+        int32_t a_val;
     } a_un;
 } Elf32_auxv_t;
 

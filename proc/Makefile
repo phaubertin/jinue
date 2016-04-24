@@ -3,7 +3,7 @@ kernel   = ../kernel
 lib      = ../lib
 libjinue = $(lib)/jinue
 
-OBJS  = proc.o
+OBJS  = crt.o proc.o
 
 DEBUG   ?= yes
 
@@ -14,7 +14,7 @@ else
 endif
 
 CFLAGS  += -m32 -march=i686 -O3 $(DEBUG_FLAGS) -nostdinc -ffreestanding -static -std=c99 -pedantic -Wall -Werror=implicit-function-declaration -Werror=uninitialized -Werror=return-type
-LDFLAGS += -m elf_i386 -static -nostdlib -e main
+LDFLAGS += -m elf_i386 -static -nostdlib -e crt_start
 LIBS    = -L$(libjinue) -ljinue -ljinue-proc
 
 .PHONY: all
