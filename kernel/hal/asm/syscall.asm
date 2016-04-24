@@ -1,4 +1,5 @@
-%define GDT_KERNEL_DATA        2
+%define GDT_KERNEL_DATA         2
+%define GDT_LENGTH              8
 
     bits 32
     
@@ -28,11 +29,10 @@ fast_intel_entry:
     mov ds, cx
     mov es, cx
     
-    ; set per-cpu data segment (TSS)
+    ; set per-cpu data segment
     ;
-    ; The entry which follows the TSS descriptor in the GDT is a data segment
-    ; which also points to the TSS (same base address and limit). We use
-    ; otherwise unused entries in the TSS to store per-cpu data.
+    ; The entry which follows the TSS descriptor in the GDT is a data
+    ; segment which points to per-cpu data, including the TSS.
     str cx          ; get selector for TSS descriptor
     add cx, 8       ; next entry
     mov gs, cx      ; load gs with data segment selector
@@ -83,14 +83,16 @@ fast_amd_entry:
     ; save user stack pointer temporarily in ebp
     mov ebp, esp
     
-    ; get kernel stack pointer from TSS
+    ; set per-cpu data segment and get kernel stack pointer from TSS
     ;
-    ; The entry which follows the TSS descriptor in the GDT is a data segment
-    ; which also points to the TSS (same base address and limit).
-    str sp              ; get selector for TSS descriptor
-    add sp, 8           ; next entry
-    mov gs, sp          ; load gs with data segment selector
-    mov esp, [gs:4]     ; load kernel stack pointer from TSS
+    ; The entry which follows the TSS descriptor in the GDT is a data
+    ; segment which points to per-cpu data, including the TSS.
+    str sp                              ; get selector for TSS descriptor
+    add sp, 8                           ; next entry
+    mov gs, sp                          ; load gs with data segment selector
+    mov esp, [gs:GDT_LENGTH * 8 + 4]    ; load kernel stack pointer from TSS
+                                        ; Stack pointer is at offset 4 in the TSS, and
+                                        ; the TSS follows the GDT (see cpu_data_t).
     
     ; save return address and user stack
     push ebp    ; user stack
