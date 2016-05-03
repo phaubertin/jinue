@@ -57,3 +57,124 @@ IPC function/method numbers:
     to check of security domain).
 
 (D) Only function numbers in this range are allowed for "user" IPC objects.
+
+Message-passing IPC primitives are the only microkernel primitives accessible to
+user space. Microkernel system calls are implemented as synchronous messages
+sent to the microkernel.
+
+Implementation of message-passing IPC primitives is system-dependent, but uses
+the mechanisms typically used for system calls (e.g interrupts and/or sysenter 
+or syscall instructions on x86). To ease OS emulation, the following could be
+put in place:
+
+ - Per-process (per thread?) configurable interrupt numbers for invoking the
+   operating system.
+ - A mechanism where, when a thread calls a software interrupt and/or uses the
+   syscall/syscall instructions, control is passed to a second thread in the
+   same process which is responsible for creating an sending the appropriate
+   message (i.e. "sandboxed" threads).
+   
+Message format:
+
+                +-----------------------+   msgPtr
+                |                       |
+                |                       |
+                |                       |
+                |    Message data       |
+                |                       |
+                |                       |
+                |                       |
+                +.......................+   msgPtr + msgDataSize
+                |       Padding         |
+                +-----------------------+
+                |     Descriptor 1      |
+                |     Descriptor 2      |
+                |         ...           |
+                |     Descriptor N      |
+                +-----------------------+
+                |                       |
+                |  Reserved for return  |
+                |       message         |    
+                |                       |
+                +-----------------------+   msgPtr + msgTotalSize
+                
+A send/receive buffer is defined by its starting address (msgPtr) and its size
+(msgTotalSize). The same buffer is used for sending the message and receiving
+the corresponding response, which means the buffer may need to be bigger than
+the message if the response is expected to be bigger.
+
+The first msgDataSize bytes of the buffer contain the message data. The semantic
+of this data is agreed upon between the sender and the recipient and is in no
+way interpreted by the microkernel (unless the microkernel is the recipient).
+
+Following the message data may be some padding to ensure the platform-dependent
+alignment of the start of the descriptors relative to the start of the message
+buffer is respected. Following are descriptors which are to be sent along with
+the message. The microkernel will copy the descriptors into the recipient's
+process and adjust the descriptors in the message accordingly.
+
+Send message arguments (passed in registers):
+
+    +----------------------------------------------------------------+
+    |                          msgPtr                                |  arg0
+    +----------------------------------------------------------------+
+    31                                                               0
+    
+    +-----------------------+------------------------+---------------+
+    |     msgTotalSize      |      msgDataSize       |   msgDescN    |  arg1
+    +-----------------------+------------------------+---------------+
+    31                    20 19                     8 7              0
+
+    +-------------------------------+--------------------------------+
+    |           Reserved            |        msgTargetDesc           |  arg2
+    +-------------------------------+--------------------------------+
+    31                             ? ?                                0
+
+    +----------------------------------------------------------------+
+    |                          msgFunction                           |  arg3
+    +----------------------------------------------------------------+
+    31                                                               0
+    
+Where:
+    
+    msgPtr          is address of the start of the message buffer
+    msgTotalSize    is the total size of the buffer, in bytes
+    msgDataSize     is the size of the message data, in bytes
+    msgDescN        is the number of descriptors
+    msgTargetDesc   is the descriptor for the target of the call (door, thread)
+    msgFunction     is the function/method/system call number
+
+When received, the arguments passed by the microkernel are these:
+
+    +----------------------------------------------------------------+
+    |                          msgPtr                                |  arg0
+    +----------------------------------------------------------------+
+    31                                                               0
+    
+    +-----------------------+------------------------+---------------+
+    |     msgTotalSize      |      msgDataSize       |   msgDescN    |  arg1
+    +-----------------------+------------------------+---------------+
+    31                    20 19                     8 7              0
+
+    +----------------------------------------------------------------+
+    |                           msgCookie                            |  arg2
+    +----------------------------------------------------------------+
+    31                                                               0
+
+    +----------------------------------------------------------------+
+    |                          msgFunction                           |  arg3
+    +----------------------------------------------------------------+
+    31                                                               0
+    
+Where:
+    
+    msgPtr          is address of the start of the message buffer (in the
+                    recipient address space)
+    msgTotalSize    is the total size of the sender's buffer, in bytes
+    msgDataSize     is the size of the message data, in bytes
+    msgDescN        is the number of descriptors
+    msgCookie       is the message cookie, as stored by the recipient into the
+                    sender's descriptor when given
+    msgFunction     is the function/method/system call number
+
+arg1 and arg3 are copied as-is from the sender's arguments.
