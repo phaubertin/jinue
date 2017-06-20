@@ -41,6 +41,7 @@ IPC function/method numbers:
     0x400+  (B) process manager system calls
     0x1000  (C) SYSTEM_BASE
     0x8000  (D) USER_BASE
+    -1          INVALID/ERROR
 
 (A) Target is NULL, an IPC object or another kernel object. Valid target depends
     on function number.
@@ -116,65 +117,190 @@ process and adjust the descriptors in the message accordingly.
 Send message arguments (passed in registers):
 
     +----------------------------------------------------------------+
-    |                          msgPtr                                |  arg0
+    |                          msgFunction                           |  arg0
     +----------------------------------------------------------------+
     31                                                               0
     
-    +-----------------------+------------------------+---------------+
-    |     msgTotalSize      |      msgDataSize       |   msgDescN    |  arg1
-    +-----------------------+------------------------+---------------+
-    31                    20 19                     8 7              0
-
     +-------------------------------+--------------------------------+
-    |           Reserved            |        msgTargetDesc           |  arg2
+    |           Reserved            |        msgTargetDesc           |  arg1
     +-------------------------------+--------------------------------+
     31                             ? ?                                0
 
     +----------------------------------------------------------------+
-    |                          msgFunction                           |  arg3
+    |                            msgPtr                              |  arg2
     +----------------------------------------------------------------+
     31                                                               0
+
+    +-----------------------+------------------------+---------------+
+    |     msgTotalSize      |      msgDataSize       |   msgDescN    |  arg3
+    +-----------------------+------------------------+---------------+
+    31                    20 19                     8 7              0
+   
     
 Where:
     
-    msgPtr          is address of the start of the message buffer
-    msgTotalSize    is the total size of the buffer, in bytes
-    msgDataSize     is the size of the message data, in bytes
-    msgDescN        is the number of descriptors
-    msgTargetDesc   is the descriptor for the target of the call (door, thread)
-    msgFunction     is the function/method/system call number
+    msgFunction     is the function or system call number.
+    msgTargetDesc   is the descriptor for the target of the call (door, thread).
+    msgPtr          is address of the start of the message buffer.
+    msgTotalSize    is the total size of the buffer, in bytes.
+    msgDataSize     is the size of the message data, in bytes.
+    msgDescN        is the number of descriptors.
 
-When received, the arguments passed by the microkernel are these:
+Receive system call arguments (passed in registers):
 
     +----------------------------------------------------------------+
-    |                          msgPtr                                |  arg0
+    |                     msgFunction = RECEIVE                      |  arg0
+    +----------------------------------------------------------------+
+    31                                                               0
+    
+    +-------------------------------+--------------------------------+
+    |           Reserved            |          msgRecvDesc           |  arg1
+    +-------------------------------+--------------------------------+
+    31                             ? ?                                0
+
+    +----------------------------------------------------------------+
+    |                            msgPtr                              |  arg2
+    +----------------------------------------------------------------+
+    31                                                               0
+
+    +-----------------------+------------------------+---------------+
+    |     msgTotalSize      |           0            |       0       |  arg3
+    +-----------------------+------------------------+---------------+
+    31                    20 19                     8 7              0
+    
+Where:
+
+    msgFunction     is the system call number for RECEIVE.
+    msgRecvDesc     is the descriptor for the door from which to receive a
+                    message. It must be the owning descriptor for this door.
+    msgPtr          is address of the start of the buffer in which to receive
+                    the message.
+    msgTotalSize    is the total size of the receive buffer, in bytes.
+    
+
+A message can also be received by calling the combined REPLY/RECEIVE system
+call. This is described below.
+
+When the RECEIVE or REPLY/RECEIVE system call returns, the arguments provided by
+the microkernel are as follow:
+
+    +----------------------------------------------------------------+
+    |                        msgFunction (or -1)                     |  arg0
+    +----------------------------------------------------------------+
+    31                                                               0
+    
+    +----------------------------------------------------------------+
+    |                         msgCookie (or error)                   |  arg1
+    +----------------------------------------------------------------+
+    31                                                               0
+
+    +----------------------------------------------------------------+
+    |                            msgPtr                              |  arg2
     +----------------------------------------------------------------+
     31                                                               0
     
     +-----------------------+------------------------+---------------+
-    |     msgTotalSize      |      msgDataSize       |   msgDescN    |  arg1
+    |     msgTotalSize      |      msgDataSize       |   msgDescN    |  arg3
     +-----------------------+------------------------+---------------+
     31                    20 19                     8 7              0
 
-    +----------------------------------------------------------------+
-    |                           msgCookie                            |  arg2
-    +----------------------------------------------------------------+
-    31                                                               0
-
-    +----------------------------------------------------------------+
-    |                          msgFunction                           |  arg3
-    +----------------------------------------------------------------+
-    31                                                               0
     
 Where:
-    
-    msgPtr          is address of the start of the message buffer (in the
-                    recipient address space)
-    msgTotalSize    is the total size of the sender's buffer, in bytes
-    msgDataSize     is the size of the message data, in bytes
-    msgDescN        is the number of descriptors
-    msgCookie       is the message cookie, as stored by the recipient into the
-                    sender's descriptor when given
-    msgFunction     is the function/method/system call number
 
-arg1 and arg3 are copied as-is from the sender's arguments.
+    msgFunction     is the function number (or -1 if the call to the receive
+                    system call fails).
+    msgCookie       is the message cookie, as stored by the recipient into the
+                    sender's descriptor (or the error number if the call to the
+                    receive system call fails).
+    msgPtr          is the address of the start of the message buffer (in the
+                    recipient's address space).
+    msgTotalSize    is the total size of the *sender's* buffer, in bytes. This
+                    allows the receiver to know the maximum size allowed for the
+                    reply message (and to return an error if it is insufficient).
+    msgDataSize     is the size of the message data, in bytes.
+    msgDescN        is the number of descriptors.
+
+arg0 and arg3 are copied as-is from the sender's arguments (if the call to the
+receive system call is successful).
+
+When replying, the receiver sets the message arguments as follow:
+
+    +----------------------------------------------------------------+
+    |              msgFunction = REPLY or REPLY/RECEIVE              |  arg0
+    +----------------------------------------------------------------+
+    31                                                               0
+    
+    +----------------------------------------------------------------+
+    |                           msgCookie                            |  arg1
+    +----------------------------------------------------------------+
+    31                                                               0
+
+    +----------------------------------------------------------------+
+    |                            msgPtr                              |  arg2
+    +----------------------------------------------------------------+
+    31                                                               0
+
+    +-----------------------+------------------------+---------------+
+    |     msgTotalSize      |      msgDataSize       |   msgDescN    |  arg3
+    +-----------------------+------------------------+---------------+
+    31                    20 19                     8 7              0
+
+Where:
+
+    msgFunction     is the system call number for REPLY or REPLY/RECEIVE
+    msgCookie       is the updated value of the cookie. This value will be
+                    stored, in the sender's descriptor.
+    msgPtr          is the address of the start of the reply message buffer. It
+                    may or may not be the buffer where the message being replied
+                    to was received. For a combined REPLY/RECEIVE, this is also
+                    the buffer in which to receive the next message.
+    msgTotalSize    is the total size of the receive buffer, in bytes. This
+                    field is only relevant for a combined REPLY/RECEIVE).
+    msgDataSize     is the size of the message data, in bytes.
+    msgDescN        is the number of descriptors.
+
+
+When the send primitive returns to the original caller, the arguments provided
+by the microkernel are as follow:
+
+    +----------------------------------------------------------------+
+    |                            msgRetVal                           |  arg0
+    +----------------------------------------------------------------+
+    31                                                               0
+    
+    +----------------------------------------------------------------+
+    |                            msgErrno                            |  arg1
+    +----------------------------------------------------------------+
+    31                                                               0
+
+    +----------------------------------------------------------------+
+    |                            Reserved                            |  arg2
+    +----------------------------------------------------------------+
+    31                                                               0
+    
+    +-----------------------+------------------------+---------------+
+    |       Reserved        |      msgDataSize       |   msgDescN    |  arg3
+    +-----------------------+------------------------+---------------+
+    31                    20 19                     8 7              0
+
+Where:
+
+    msgRetVal       is the first 32-bit value at the start of the message buffer
+                    if msgDataSize is at least 4 bytes, and zero otherwise. By
+                    convention, this is typically used to provide a return value.
+    msgErrno        is the second 32-bit value from the start of the message
+                    buffer if msgDataSize is at least 8 bytes, and zero
+                    otherwise. By convention, this is typically used to provide
+                    an error code (or zero if the call was successful).
+    msgDataSize     is the size of the reply message data, in bytes.
+    msgDescN        is the number of descriptors in the reply.
+
+Corner case to consider: What if the receiver calls REPLY with a message too big
+for the sender's buffer. Do we fail the call and hope the receiver will provide
+another reply? Do we return an error to the sender because of (potentially) an
+error on the receiver's part?
+
+To clarify: Is the second word always the error number. The receiver may use the
+second word for something else, while the kernel may set an error of its own if
+the send fails for some reason. Should we provide a separate REPLY_ERROR (and
+REPLY_ERROR/RECEIVE) system call?
