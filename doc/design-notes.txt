@@ -43,12 +43,18 @@ IPC function/method numbers:
     0x8000  (D) USER_BASE
     -1          INVALID/ERROR
 
-(A) Target is NULL, an IPC object or another kernel object. Valid target depends
-    on function number.
+(A) When sent from a process, target is NULL (?), an IPC object or another
+    kernel object. Valid target depends on function number.
+    
+    The microkernel also uses function numbers in this range when delivering
+    messages to processes.
 
-(B) Target is NULL or an IPC object, maybe other object types. Valid target
-    depends on function number. Message sent to Process manager. Process manager
-    itself cannot call these.
+(B) When sent from a process other than Process manager, target is (?) NULL (?)
+    or an IPC object, maybe other object types. Valid target depends on function
+    number. The message is sent to Process manager.
+    
+    When called from Process manager, Target is an IPC object. The message is
+    sent to IPC object owner process.
 
 (C) and (D) Target is an IPC object. Message sent to IPC object owner process
     (only process authorized to wait on this object).
