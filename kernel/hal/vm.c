@@ -181,20 +181,18 @@ void vm_unmap(addr_space_t *addr_space, addr_t addr) {
     /** ASSERTION: we assume addr is aligned on a page boundary */
     assert( page_offset_of(addr) == 0 );
     
-    /* Performance optimization: vm_unmap is a no-op for kernel mappings
-     * when compiling non-debug.
-     * 
-     * When compiling in debug mode, we still do the Right Thing(TM) so
-     * that buggy code which accesses pages it shouldn't trigger a page
-     * fault, to help track such accesses. */
-#ifdef NDEBUG
-    if(addr < PLIMIT) {
-        return;
-    }
-#endif
-    
     if(addr < KLIMIT) {
-        /* fast path for global allocations by the kernel (see vm_map()) */
+        /* fast path for global allocations by the kernel (see vm_map())
+         *
+         * Performance optimization: vm_unmap is a no-op for kernel mappings
+         * when compiling non-debug.
+         * 
+         * When compiling in debug mode, we still do the Right Thing(TM) so
+         * that buggy code which accesses pages it shouldn't trigger a page
+         * fault, to help track such accesses. */
+#ifdef NDEBUG
+        return;
+#endif
         
         pte = get_pte_with_offset(global_page_tables, page_number_of(addr));
         clear_pte(pte);

@@ -24,14 +24,7 @@
    Kernel image must be completely inside this region. This region has the same
    mapping in the address space of all processes. Size must be a multiple of the
    size described by a single page directory entry. */
-#define KLIMIT ((addr_t)(96 * MB)) /* 96M */
-
-/** Virtual address range KLIMIT to PLIMIT is reserved by kernel to store data
-   structures specific to the current process.
-   
-   The mapping of this region changes from one address space to the next. Size
-   must be a multiple of the size described by a single page directory entry */
-#define PLIMIT ((addr_t)( KLIMIT + 32 * MB)) /* 32M */
+#define KLIMIT ((addr_t)(128 * MB)) /* 128MB */
 
 /** stack base address (stack top) */
 #define STACK_BASE      (0 - PAGE_SIZE)

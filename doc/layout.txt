@@ -57,16 +57,7 @@ The whole process address space looks like this:
   |                                       |
   |    available for global mappings      |
   |                                       |
-  +=======================================+ KLIMIT (0x6000000)
-  |    page tables for current process    |
-  +---------------------------------------+
-  | page directory(s) for current process |
-  +---------------------------------------+
-  |                                       |
-  |    available for process-specific     |
-  |              mappings                 |
-  |                                       |
-  +=======================================+ PLIMIT (0x8000000)
+  +=======================================+ KLIMIT (0x8000000)
   |                                       |
   |          User memory space            |
   |                                       |
@@ -74,10 +65,5 @@ The whole process address space looks like this:
   |                                       |
   +---------------------------------------+ 0x100000000
 
-All memory mappings from 0 to KLIMIT are global kernel mappings. All
-mappings from KLIMIT to PLIMIT are process-specific kernel mappings.
-All mappings from PLIMIT to the top of memory are user mappings which
-belong to the currently running process.
-
-Each time a new page table/directory is allocated, it is mapped at a
-fixed location just above KLIMIT.
+All memory mappings from 0 to KLIMIT are global kernel mappings. Mappings above
+KLIMIT are user mappings which belong to the currently running process.
