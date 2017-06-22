@@ -35,4 +35,33 @@
 			<locationURI>$%7BWORKSPACE_LOC%7D/proc</locationURI>
 		</link>
 	</linkedResources>
+	<filteredResources>
+		<filter>
+			<id>1498090212148</id>
+			<name>proc</name>
+			<type>6</type>
+			<matcher>
+				<id>org.eclipse.ui.ide.multiFilter</id>
+				<arguments>1.0-name-matches-false-false-*.o</arguments>
+			</matcher>
+		</filter>
+		<filter>
+			<id>1498090212160</id>
+			<name>proc</name>
+			<type>6</type>
+			<matcher>
+				<id>org.eclipse.ui.ide.multiFilter</id>
+				<arguments>1.0-name-matches-false-false-proc</arguments>
+			</matcher>
+		</filter>
+		<filter>
+			<id>1498090212182</id>
+			<name>proc</name>
+			<type>6</type>
+			<matcher>
+				<id>org.eclipse.ui.ide.multiFilter</id>
+				<arguments>1.0-name-matches-false-false-proc-stripped</arguments>
+			</matcher>
+		</filter>
+	</filteredResources>
 </projectDescription>

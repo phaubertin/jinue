@@ -49,13 +49,16 @@
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
 		<project id="libjinue.null.1817647620" name="libjinue"/>
 	</storageModule>
-	<storageModule moduleId="scannerConfiguration">
-		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="refreshScope" versionNumber="2">
 		<configuration configurationName="Default">
 			<resource resourceType="PROJECT" workspacePath="/libjinue"/>
 		</configuration>
+	</storageModule>
+	<storageModule moduleId="scannerConfiguration">
+		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.627163573;cdt.managedbuild.toolchain.gnu.base.627163573.1662776091;cdt.managedbuild.tool.gnu.c.compiler.base.868045110;cdt.managedbuild.tool.gnu.c.compiler.input.679816523">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
 	</storageModule>
 </cproject>
