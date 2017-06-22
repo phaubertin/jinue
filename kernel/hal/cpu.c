@@ -128,7 +128,7 @@ void cpu_detect_features(void) {
     /* default value */
     cpu_dcache_alignment = 32;
     
-    if(cpu_features & CPU_FEATURE_CPUID && cpu_cpuid_max >= 1) {
+    if((cpu_features & CPU_FEATURE_CPUID) && cpu_cpuid_max >= 1) {
         /* function 1: processor signature and feature flags */
         regs.eax = 1;
         
@@ -152,7 +152,7 @@ void cpu_detect_features(void) {
     /* get extended feature flags */
     ext_flags = 0;
     
-    if(cpu_features & CPU_FEATURE_CPUID && cpu_cpuid_ext_max >= 0x80000001) {
+    if((cpu_features & CPU_FEATURE_CPUID) && cpu_cpuid_ext_max >= 0x80000001) {
         /* extended function 1: extended feature flags */
         regs.eax = 0x80000001;
         (void)cpuid(&regs);
