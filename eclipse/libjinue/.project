@@ -27,7 +27,7 @@
 		<link>
 			<name>include</name>
 			<type>2</type>
-			<locationURI>$%7BWORKSPACE_LOC%7D/include/jinue</locationURI>
+			<locationURI>$%7BWORKSPACE_LOC%7D/include</locationURI>
 		</link>
 		<link>
 			<name>jinue</name>
