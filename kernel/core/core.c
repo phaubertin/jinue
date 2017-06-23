@@ -24,20 +24,22 @@ static Elf32_Ehdr *find_process_manager(void) {
 
 
 void kmain(void) {
+    addr_space_t *proc_man_addr_space;    
     elf_info_t elf_info;
     
     /* initialize hardware abstraction layer */
     hal_init();
     
     /* create thread control block for first thread */
-    current_thread = (thread_t *)boot_heap;
-    boot_heap = (thread_t *)boot_heap + 1;
-    thread_init(current_thread, NULL);
+    current_thread = create_initial_thread(NULL);
     
+    proc_man_addr_space = vm_create_addr_space();
+
     /* load process manager binary */
     Elf32_Ehdr *elf = find_process_manager();
-    elf_load(&elf_info, elf, &initial_addr_space);
+    elf_load(&elf_info, elf, proc_man_addr_space);
     
     /* start process manager */
+    vm_switch_addr_space(proc_man_addr_space);
     elf_start(&elf_info);
 }

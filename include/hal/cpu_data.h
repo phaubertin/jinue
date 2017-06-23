@@ -18,6 +18,6 @@ typedef struct cpu_data_t cpu_data_t;
 
 #define get_cpu_local_data() ( (cpu_data_t *)get_gs_ptr( (uint32_t *)&( ((cpu_data_t *)0)->self ) ) )
 
-#define get_current_addr_space() ( get_cpu_local_data().current_addr_space )
+#define get_current_addr_space() ( get_cpu_local_data()->current_addr_space )
 
 #endif

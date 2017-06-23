@@ -34,6 +34,9 @@ void cpu_init_data(cpu_data_t *data, addr_t kernel_stack) {
     /* initialize with zeroes  */
     memset(data, '\0', sizeof(cpu_data_t));
     
+    data->self = data;
+    data->current_addr_space = NULL;
+    
     /* initialize GDT */
     data->gdt[GDT_NULL] = SEG_DESCRIPTOR(0, 0, 0);
     

@@ -82,7 +82,11 @@ void vm_change_flags(addr_space_t *addr_space, addr_t addr, int flags);
 
 void vm_map_early(addr_t vaddr, addr_t paddr, int flags);
 
+addr_space_t *vm_create_addr_space(void);
+
 addr_space_t *vm_create_initial_addr_space(void);
+
+void vm_destroy_addr_space(addr_space_t *addr_space);
 
 void vm_switch_addr_space(addr_space_t *addr_space);
 

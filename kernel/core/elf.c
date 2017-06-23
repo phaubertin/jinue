@@ -70,6 +70,7 @@ void elf_load(elf_info_t *info, Elf32_Ehdr *elf, addr_space_t *addr_space) {
     char *vptr, *vend, *vfend, *vnext;
     char *file_ptr;    
     char *stop;
+    char *dest, *dest_page;
     unsigned int idx;
     unsigned long flags;
     
@@ -86,7 +87,9 @@ void elf_load(elf_info_t *info, Elf32_Ehdr *elf, addr_space_t *addr_space) {
     info->addr_space    = addr_space;
     info->entry         = (addr_t)elf->e_entry;
     
-    /* load the ELF binary*/
+    /* temporary page for copies */
+    dest_page = (char *)vm_alloc(global_page_allocator);
+
     for(idx = 0; idx < elf->e_phnum; ++idx) {
         if(phdr[idx].p_type != PT_LOAD) {
             continue;
@@ -133,8 +136,10 @@ void elf_load(elf_info_t *info, Elf32_Ehdr *elf, addr_space_t *addr_space) {
                 
                 /* allocate and map the new page */
                 page = pfalloc();
-                vm_map(addr_space, vpage, page, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
+                vm_map_global((addr_t)dest_page, page, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
                 
+                dest = dest_page;
+                                
                 /* copy */
                 stop     = vnext;
                 if(stop > vfend) {
@@ -142,16 +147,20 @@ void elf_load(elf_info_t *info, Elf32_Ehdr *elf, addr_space_t *addr_space) {
                 }
                 
                 while(vptr < stop) {
-                    *(vptr++) = *(file_ptr++);
+                    *(dest++) = *(file_ptr++);
+                    ++vptr;
                 }
                 
                 /* pad */
                 while(vptr < vnext) {
-                    *(vptr++) = 0;
+                    *(dest++) = 0;
+                    ++vptr;
                 }
                 
-                /* set proper flags for page now that we no longer need to write in it */
-                vm_change_flags(addr_space, vpage, flags);                
+                /* undo temporary mapping and map page in proper address
+                 * space */
+                vm_unmap_global((addr_t)dest_page);
+                vm_map(addr_space, (addr_t)vpage, page, flags);               
             }
         }
         else {            
@@ -168,6 +177,8 @@ void elf_load(elf_info_t *info, Elf32_Ehdr *elf, addr_space_t *addr_space) {
             }            
         }
     }
+    
+    vm_free(global_page_allocator, (addr_t)dest_page);
     
     elf_setup_stack(info);
     
@@ -186,13 +197,20 @@ void elf_setup_stack(elf_info_t *info) {
         vm_map(info->addr_space, vpage, page, VM_FLAG_USER | VM_FLAG_READ_WRITE);
     }
     
-    uint32_t *sp = (uint32_t *)STACK_BASE;
+    /* At this point, page has the address of the stack's top-most page frame,
+     * which is the one in which we are about to copy the auxiliary vectors. Map
+     * it temporarily in this address space so we can write to it. */
+    addr_t top_page = vm_alloc(global_page_allocator);
+    vm_map_global(top_page, page, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
+
+    /* start at the top */
+    uint32_t *sp = (uint32_t *)(top_page + PAGE_SIZE);
     
     /* Program name string: "proc", null-terminated */
     *(--sp) = 0;
     *(--sp) = 0x636f7270;
     
-    char *argv0 = (char *)sp;
+    char *argv0 = (char *)STACK_BASE - 2 * sizeof(uint32_t);
     
     /* auxiliary vectors */
     Elf32_auxv_t *auxvp = (Elf32_auxv_t *)sp - 7;
@@ -229,8 +247,12 @@ void elf_setup_stack(elf_info_t *info) {
     
     /* argc */
     *(--sp) = 1;
-    
-    info->stack_addr = (addr_t)sp;
+
+    info->stack_addr = (addr_t)STACK_BASE - PAGE_SIZE + ((addr_t)sp - top_page);
+
+    /* unmap and free temporary page */
+    vm_unmap_global(top_page);
+    vm_free(global_page_allocator, top_page);
 }
 
 void elf_start(elf_info_t *info) {
