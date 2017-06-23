@@ -36,6 +36,8 @@ addr_t kernel_region_top;
 /** address of kernel stack */
 addr_t kernel_stack;
 
+/** Specifies the entry point to use for system calls */
+int syscall_method;
 
 void hal_init(void) {
     addr_t addr;
