@@ -7,4 +7,6 @@
 
 #define JINUE_ENOSYS    3
 
+#define JINUE_EINVAL    4
+
 #endif

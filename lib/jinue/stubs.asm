@@ -3,38 +3,54 @@
     section .text    
 ; ------------------------------------------------------------------------------
 ; FUNCTION: syscall_fast_intel
-; C PROTOTYPE: int syscall_fast_intel(syscall_ref_t dest,
-;                                     unsigned int     method,
-;                                     unsigned int     funct,
-;                                     unsigned int     arg1,
-;                                     unsigned int     arg2);
+; C PROTOTYPE: void syscall_fast_intel(jinue_syscall_args_t *args);
 ; ------------------------------------------------------------------------------
     global syscall_fast_intel
 syscall_fast_intel:
+    ; System V ABI calling convention: these four registers must be preserved
     push ebx
     push esi
     push edi
     push ebp
     
-    mov ebx, [esp+20]   ; First param:  dest
-    mov edx, [esp+24]   ; Second param: method
-    mov eax, [esp+28]   ; Third param:  funct
-    mov esi, [esp+32]   ; Fourth param: arg1
-    mov edi, [esp+36]   ; Fifth param:  arg2
-    
-    ; save return address and stack pointer
+    ; At this point, the stack looks like this:
+    ;
+    ; esp+20  args pointer (first function argument)
+    ; esp+16  return address
+    ; esp+12  ebx
+    ; esp+ 8  esi
+    ; esp+ 4  edi
+    ; esp+ 0  ebp
+
+    ; first function argument: pointer to system call arguments structure
+    mov edi, [esp+20]
+
+	; kernel calling convention: load system call arguments in registers eax,
+	; ebx, esi and edi
+    mov eax, [edi+ 0]   ; arg0 (function/system call number)
+    mov ebx, [edi+ 4]   ; arg1 (target descriptor)
+    mov esi, [edi+ 8]   ; arg2 (message pointer)
+    mov edi, [edi+12]  	; arg3 (message size)
+
+    ; kernel calling convention: save return address and stack pointer in ecx
+    ; and ebp
+    ;
+    ; This only applies when entering the kernel through the SYSENTER instruction.
     mov ecx, .return_here
     mov ebp, esp
         
     sysenter
 
-.return_here:    
-    or edi, edi         ; On return, edi is set to the address of errno if
-    jz .noerrno         ; the kernel has set an error number in ebx.
+.return_here:
+    ; restore arguments structure pointer
+    mov ebp, [esp+20]
     
-    mov [edi], ebx
+    ; store the system call return values back into the arguments structure
+    mov [ebp+ 0], eax   ; arg0 (system call-specific/return value)
+    mov [ebp+ 4], ebx   ; arg1 (system call-specific/error number)
+    mov [ebp+ 8], esi   ; arg2 (system call-specific/reserved)
+    mov [ebp+12], edi  	; arg3 (system call-specific/reserved)
     
-.noerrno:    
     pop ebp
     pop edi
     pop esi
@@ -44,34 +60,52 @@ syscall_fast_intel:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: syscall_fast_amd
-; C PROTOTYPE: int syscall_fast_amd(syscall_ref_t    dest,
-;                                   unsigned int     method,
-;                                   unsigned int     funct,
-;                                   unsigned int     arg1,
-;                                   unsigned int     arg2);
+; C PROTOTYPE: void syscall_fast_amd(jinue_syscall_args_t *args);
 ; ------------------------------------------------------------------------------
     global syscall_fast_amd
 syscall_fast_amd:
+    ; System V ABI calling convention: these four registers must be preserved
     push ebx
     push esi
     push edi
     push ebp
+
+    ; kernel calling convention: the kernel does not preserve gs
+    ;
+    ; This only applies when entering the kernel through the SYSCALL instruction.
     push gs
     
-    mov ebx, [esp+24]   ; First param:  dest
-    mov edx, [esp+28]   ; Second param: method
-    mov eax, [esp+32]   ; Third param:  funct
-    mov esi, [esp+36]   ; Fourth param: arg1
-    mov edi, [esp+40]   ; Fifth param:  arg2
+	; At this point, the stack looks like this:
+    ;
+    ; esp+24  args pointer (first function argument)
+    ; esp+20  return address
+    ; esp+16  ebx
+    ; esp+12  esi
+    ; esp+ 8  edi
+    ; esp+ 4  ebp
+    ; esp+ 0  gs
+
+    ; first function argument: pointer to system call arguments structure
+    mov edi, [esp+24]
+
+    ; Kernel calling convention: load system call arguments in registers eax,
+    ; ebx, esi and edi
+    mov eax, [edi+ 0]   ; arg0 (function/system call number)
+    mov ebx, [edi+ 4]   ; arg1 (target descriptor)
+    mov esi, [edi+ 8]   ; arg2 (message pointer)
+    mov edi, [edi+12]  	; arg3 (message size)
     
     syscall
     
-    or edi, edi         ; On return, edi is set to the address of errno if
-    jz .noerrno         ; the kernel has set an error number in ebx.
+    ; restore arguments structure pointer
+    mov ebp, [esp+24]
     
-    mov [edi], ebx
-    
-.noerrno:
+    ; store the system call return values back into the arguments structure
+    mov [ebp+ 0], eax   ; arg0 (system call-specific/return value)
+    mov [ebp+ 4], ebx   ; arg1 (system call-specific/error number)
+    mov [ebp+ 8], esi   ; arg2 (system call-specific/reserved)
+    mov [ebp+12], edi  	; arg3 (system call-specific/reserved)
+
     pop gs
     pop ebp
     pop edi
@@ -82,60 +116,49 @@ syscall_fast_amd:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: syscall_intr
-; C PROTOTYPE: int syscall_intr(syscall_ref_t    dest,
-;                               unsigned int     method,
-;                               unsigned int     funct,
-;                               unsigned int     arg1,
-;                               unsigned int     arg2);
+; C PROTOTYPE: void syscall_intr(jinue_syscall_args_t *args);
 ; ------------------------------------------------------------------------------
     global syscall_intr
 syscall_intr:
+    ; System V ABI calling convention: these four registers must be preserved.
     push ebx
     push esi
     push edi
     push ebp
     
-    mov ebx, [esp+20]   ; First param:  dest
-    mov edx, [esp+24]   ; Second param: method
-    mov eax, [esp+28]   ; Third param:  funct
-    mov esi, [esp+32]   ; Fourth param: arg1
-    mov edi, [esp+36]   ; Fifth param:  arg2
-    
+    ; At this point, the stack looks like this:
+    ;
+    ; esp+20  args pointer (first function argument)
+    ; esp+16  return address
+    ; esp+12  ebx
+    ; esp+ 8  esi
+    ; esp+ 4  edi
+    ; esp+ 0  ebp
+
+    ; first function argument: pointer to system call arguments structure
+    mov edi, [esp+20]
+
+    ; kernel calling convention: load system call arguments in registers eax,
+    ; ebx, esi and edi
+    mov eax, [edi+ 0]   ; arg0 (function/system call number)
+    mov ebx, [edi+ 4]   ; arg1 (target descriptor)
+    mov esi, [edi+ 8]   ; arg2 (message pointer)
+    mov edi, [edi+12]  	; arg3 (message size)
+
     int 0x80
     
-    or edi, edi         ; On return, edi is set to the address of errno if
-    jz .noerrno         ; the kernel has set an error number in ebx.
+    ; restore arguments structure pointer
+    mov ebp, [esp+20]
     
-    mov [edi], ebx
-    
-.noerrno:    
+    ; store the system call return values back into the arguments structure
+    mov [ebp+ 0], eax   ; arg0 (system call-specific/return value)
+    mov [ebp+ 4], ebx   ; arg1 (system call-specific/error number)
+    mov [ebp+ 8], esi   ; arg2 (system call-specific/reserved)
+    mov [ebp+12], edi  	; arg3 (system call-specific/reserved)
+
     pop ebp
     pop edi
     pop esi
     pop ebx
 
     ret
-
-; ------------------------------------------------------------------------------
-; system call stubs table
-; ------------------------------------------------------------------------------
-    section .rodata
-
-    global syscall_stubs
-syscall_stubs:
-    dd syscall_fast_intel
-    dd syscall_fast_amd
-    dd syscall_intr
-
-    global syscall_stub_names
-syscall_stub_names:
-    dd .str0
-    dd .str1
-    dd .str2
-.str0:
-    db "sysenter/sysexit (fast Intel)", 0
-.str1:
-    db "syscall/sysret (fast AMD)", 0
-.str2:
-    db "interrupt", 0
-

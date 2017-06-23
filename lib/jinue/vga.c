@@ -2,11 +2,38 @@
 #include <stddef.h>
 
 void vga_printn(const char *message, unsigned int n) {
-    syscall(NULL, NULL, SYSCALL_FUNCT_VGA_PUTS, (unsigned int)message, n);
+	const char *ptr = message;
+
+    while(n > 0) {
+    	unsigned int size = n;
+
+    	if(size > JINUE_SEND_MAX_SIZE) {
+    		size = JINUE_SEND_MAX_SIZE;
+    	}
+
+    	(void)jinue_send(
+    	        SYSCALL_FUNCT_VGA_PUTS,
+    	        -1,             /* target */
+    	        (char *)ptr,    /* buffer */
+    	        size,           /* buffer size */
+    	        size,           /* data size */
+    	        0,              /* number of descriptors */
+    	        NULL);          /* perrno */
+
+    	ptr += size;
+    	n   -= size;
+    }
 }
 
 void vga_putc(char c) {
-    syscall(NULL, NULL, SYSCALL_FUNCT_VGA_PUTC, (unsigned int)c, NULL);
+	jinue_syscall_args_t args;
+
+	args.arg0 = SYSCALL_FUNCT_VGA_PUTC;
+	args.arg1 = (uintptr_t)c;
+	args.arg2 = 0;
+	args.arg3 = 0;
+
+	(void)jinue_call(&args, NULL);
 }
 
 void vga_print(const char *message) {

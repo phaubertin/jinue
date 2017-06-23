@@ -36,14 +36,21 @@ irq_save_state:
     push es   ; 28
     push ds   ; 24
     push ecx  ; 20
-    push edi  ; 16
-    push esi  ; 12
-    push eax  ; 8
-    push edx  ; 4
-    push ebx  ; 0
+    push edx  ; 16
+
+    ; system call arguments (pushed in reverse order)
+    ;
+    ; The interrupt dispatcher is passed a pointer to these four arguments.
+    ; If this interrupt request turns out to be a system call, this pointer
+    ; gets passed to the system call dispatcher where the values pushed here
+    ; may be modified.
+    push edi  ; 12  arg3
+    push esi  ; 8   arg2
+    push ebx  ; 4   arg1
+    push eax  ; 0   arg0
     
     ; set data segment
-    mov eax, GDT_KERNEL_DATA * 8 + 0
+    mov eax, GDT_KERNEL_DATA * 8
     mov ds, ax
     mov es, ax
     
@@ -51,15 +58,15 @@ irq_save_state:
     ;
     ; The entry which follows the TSS descriptor in the GDT is a data segment
     ; which also points to the TSS (same base address and limit).
-    str ax            ; get selector for TSS descriptor
-    add ax, 8        ; next entry
-    mov gs, ax        ; load gs with data segment selector
+    str ax              ; get selector for TSS descriptor
+    add ax, 8           ; next entry
+    mov gs, ax          ; load gs with data segment selector
     
     ; We want to save the frame pointer for debugging purposes, to
     ; ensure we have a complete call stack dump if we need it.
     ;
     ; If we were executing in-kernel before the interrupt/exception
-    ; occured, we save the frame pointer (ebp), which mean we can
+    ; occured, we save the frame pointer (ebp), which means we can
     ; actually know what the kernel was doing at the time the interrupt
     ; happened. If, on the other hand, the cpu was executing user code
     ; at the time, ebp is neither trustworthy nor useful, so we store
@@ -151,16 +158,22 @@ irq_save_state:
     pop ebp
     
     ; restore thread state
-    pop ebx
+    ;
+    ; These first four registers are the system call arguments (and return
+    ; values). If this interrupt request is a system call, the values we are
+    ; popping here are (likely) not the same as the ones we pushed at the
+    ; beginning of this function.
+    pop eax     ; arg0
+    pop ebx     ; arg1
+    pop esi     ; arg2
+    pop edi     ; arg3
+
     pop edx
-    pop eax
-    pop esi
-    pop edi
     pop ecx
     pop ds
     pop es
-    pop    fs
-    pop    gs
+    pop fs
+    pop gs
     
     ; try to remember where we left ebp
     cmp ebp, GOT_ERROR_CODE
@@ -197,8 +210,8 @@ stone:
                 .irq %+ ivt:
                 
                 ; This if statement is not technically necessary, but it
-                ; prevents the assembler from warning us that the operand is
-                ; out of bound for all vectors > 127.
+                ; prevents the assembler from warning that the operand is
+                ; out of bound for vectors > 127.
                 %if ivt < 128
                     push byte ivt
                 %else

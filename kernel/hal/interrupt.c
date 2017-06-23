@@ -9,7 +9,7 @@
 #include <x86.h>
 
 
-void dispatch_interrupt(unsigned int irq, uintptr_t eip, uint32_t errcode, syscall_params_t *syscall_params) {
+void dispatch_interrupt(unsigned int irq, uintptr_t eip, uint32_t errcode, jinue_syscall_args_t *syscall_args) {
     /* entering (or re-entering) the kernel */
     ++in_kernel;
     
@@ -23,9 +23,9 @@ void dispatch_interrupt(unsigned int irq, uintptr_t eip, uint32_t errcode, sysca
     
     /* slow system call method */
     if(irq == SYSCALL_IRQ) {
-        dispatch_syscall(syscall_params);
+        dispatch_syscall(syscall_args);
     }
-    else {        
+    else {
         printk("INTR: irq %u (vector %u)\n", irq - IDT_FIRST_IRQ, irq);
     }
     

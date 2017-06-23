@@ -2,6 +2,8 @@
 
 - Pointer aliasing in hal_start()
 
+- Stack alignment (?)
+
 --- Roadmap
 
 1  - System calls infrastructure + function naming (library), param validation

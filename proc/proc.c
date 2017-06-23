@@ -18,21 +18,23 @@ Elf32_auxv_t *auxvp;
 
 int main(int argc, char *argv[], char *envp[]) {
     memory_block_t blocks[MEMORY_BLOCK_MAX];
-    int method;
     int count;
     uint32_t total_memory;
     unsigned int idx;
     
-    /* set system call method and say hello */
-    method = set_syscall_method();
-    
+    /* say hello */
     printk("Process manager (%s) started.\n", argv[0]);
-    printk("Using system call method '%s'.\n", syscall_stub_names[method]);    
+
+    /* get system call implementation so we can use something faster than the
+     * interrupt-based one if available */
+    jinue_get_syscall_implementation();
+    
+    printk("Using system call method '%s'.\n", jinue_get_syscall_implementation_name());
     
     /* get free memory blocks from microkernel */
-    errno = 0;    
-    count = syscall(NULL, NULL, SYSCALL_FUNCT_GET_FREE_MEMORY, (unsigned int)blocks, MEMORY_BLOCK_MAX);
-    
+    errno = 0;
+    count = jinue_get_free_memory(blocks, sizeof(blocks), &errno);
+
     if(errno == JINUE_EMORE) {
         printk("warning: could not get all memory blocks because buffer is too small.\n");
     }
