@@ -11,13 +11,13 @@
 #include <panic.h>
 #include <pfalloc.h>
 #include <printk.h>
+#include <stdint.h>
 #include <syscall.h>
 #include <util.h>
 #include <vga.h>
 #include <vm.h>
 #include <vm_alloc.h>
 #include <x86.h>
-#include <stdint.h>
 
 
 /** if non_zero, we are executing in the kernel */
@@ -160,8 +160,8 @@ void hal_init(void) {
         syscall_method = SYSCALL_METHOD_FAST_INTEL;
         
         wrmsr(MSR_IA32_SYSENTER_CS,  GDT_KERNEL_CODE * 8);
-        wrmsr(MSR_IA32_SYSENTER_EIP, (unsigned long long)(unsigned long)fast_intel_entry);
-        wrmsr(MSR_IA32_SYSENTER_ESP, (unsigned long long)(unsigned long)stack);
+        wrmsr(MSR_IA32_SYSENTER_EIP, (uint64_t)(uintptr_t)fast_intel_entry);
+        wrmsr(MSR_IA32_SYSENTER_ESP, (uint64_t)(uintptr_t)stack);
     }
     
     if(cpu_features & CPU_FEATURE_SYSCALL) {
@@ -171,9 +171,9 @@ void hal_init(void) {
         msrval |= MSR_FLAG_STAR_SCE;
         wrmsr(MSR_EFER, msrval);
         
-        msrval  = (unsigned long long)(unsigned long)fast_amd_entry;
-        msrval |= (unsigned long long)SEG_SELECTOR(GDT_KERNEL_CODE, 0) << 32;
-        msrval |= (unsigned long long)SEG_SELECTOR(GDT_USER_CODE,   3) << 48;
+        msrval  = (uint64_t)(uintptr_t)fast_amd_entry;
+        msrval |= (uint64_t)SEG_SELECTOR(GDT_KERNEL_CODE, 0) << 32;
+        msrval |= (uint64_t)SEG_SELECTOR(GDT_USER_CODE,   3) << 48;
         
         wrmsr(MSR_STAR, msrval);
     }
