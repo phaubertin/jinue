@@ -16,8 +16,7 @@ thread_t *create_thread(addr_t kernel_stack) {
     /* initialize fields */
     thread->kernel_stack  = kernel_stack;
     thread->local_storage = NULL;
-    thread->perrno        = NULL;
-    
+
     return thread;
 }
 
