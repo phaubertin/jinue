@@ -1,4 +1,5 @@
 includes = ../../include
+scripts = ../../scripts
 
 OBJS   = core.o elf.o syscall.o thread.o
 TARGET = kern-core.o
@@ -23,10 +24,15 @@ clean:
 $(TARGET): $(OBJS)
 	$(LD) -r -m elf_i386 -o $@ $^
 
-core.o:        core.c        $(includes)/hal/hal.h
+core.o:        core.c        $(includes)/hal/hal.h build-info.h
 elf.o:         elf.c         $(includes)/elf.h
 syscall.o:     syscall.c     $(includes)/syscall.h
 thread.o:      thread.c      $(includes)/thread.h
 
+build-info.h: FORCE
+	$(scripts)/gen_build_info_h.sh > $@
+
 %.o: %.c
 	$(CC) $(CFLAGS) -c -I$(includes) -I$(includes)/kstdc -o $@ $<
+
+FORCE:

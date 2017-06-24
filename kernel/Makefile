@@ -39,8 +39,10 @@ kernel: $(OBJS) $(scripts)/kernel.lds
 
 $(KERN-STARTUP):
 	make -C hal hal-startup
-	
-$(KERN-CORE):
+
+# The core directory must be re-maked every build because of the auto-generated
+# information about the build date and time.
+$(KERN-CORE): FORCE
 	make -C core
 	
 $(KERN-DEBUG):
@@ -57,3 +59,6 @@ $(KERN-MEM):
 
 $(KERN-STDC):
 	make -C kstdc
+
+FORCE:
+	

@@ -63,7 +63,6 @@ void hal_init(void) {
     vga_init();
     
     printk("Kernel started.\n");
-    printk("Kernel build " __DATE__ " " __TIME__ "\n");
     printk("Kernel size is %u bytes.\n", kernel_size);
     
     /* create system memory map */

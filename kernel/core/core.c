@@ -7,6 +7,7 @@
 #include <printk.h>
 #include <syscall.h>
 #include <thread.h>
+#include "build-info.h"
 
 static Elf32_Ehdr *find_process_manager(void) {
 	if((uintptr_t)&proc_elf_end < (uintptr_t)&proc_elf) {
@@ -30,6 +31,8 @@ void kmain(void) {
     /* initialize hardware abstraction layer */
     hal_init();
     
+    printk("Kernel build " GIT_REVISION " " BUILD_TIME "\n");
+
     /* create thread control block for first thread */
     current_thread = create_initial_thread(NULL);
     
