@@ -102,7 +102,7 @@ slab_cache_t *slab_cache_create(
         cache->alignment = alignment;
     }
     
-    if(flags & SLAB_HWCACHE_ALIGN && cache->alignment < cpu_dcache_alignment) {
+    if((flags & SLAB_HWCACHE_ALIGN) && cache->alignment < cpu_dcache_alignment) {
         cache->alignment = cpu_dcache_alignment;
     }
     
@@ -117,11 +117,11 @@ slab_cache_t *slab_cache_create(
         cache->obj_size += sizeof(word32_t) - cache->obj_size % sizeof(word32_t);
     }
     
-    if(flags & SLAB_POISON && flags & SLAB_RED_ZONE) {
+    if((flags & SLAB_POISON) && (flags & SLAB_RED_ZONE)) {
         /* bufctl and redzone word appended to buffer */
         cache->alloc_size = cache->obj_size + sizeof(word32_t) + sizeof(slab_bufctl_t);
     }
-    else if(flags & SLAB_POISON || flags & SLAB_RED_ZONE) {
+    else if((flags & SLAB_POISON) || (flags & SLAB_RED_ZONE)) {
         /* bufctl and/or redzone word appended to buffer
          * (can be shared) */
         cache->alloc_size = cache->obj_size + sizeof(word32_t);

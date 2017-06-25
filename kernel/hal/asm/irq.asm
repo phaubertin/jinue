@@ -119,7 +119,7 @@ irq_save_state:
 
 .no_error_code:
 
-    ; check if we were in kernel before interrupt occured
+    ; check if we were in kernel before the interrupt occurred
     mov esi, [in_kernel]
     or esi, esi
     jz .not_in_kernel   ; not in kernel if non-zero
@@ -153,7 +153,7 @@ irq_save_state:
     
     ; remove parameters from stack
     add esp, 16
-    
+
     ; error code/no error code
     pop ebp
     

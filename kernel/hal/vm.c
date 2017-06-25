@@ -96,7 +96,7 @@ void vm_init(void) {
     vm_alloc_add_region(global_page_allocator,           (addr_t)VGA_TEXT_VID_TOP,  (addr_t)&kernel_start);
     vm_alloc_add_region(global_page_allocator,           (addr_t)kernel_region_top, (addr_t)KLIMIT);
     
-    /* create slab cache for address space decriptors */
+    /* create slab cache for address space descriptors */
     addr_space_cache = slab_cache_create(
         "addr_space_cache",
         sizeof(addr_space_t),
@@ -454,6 +454,9 @@ void vm_destroy_addr_space(addr_space_t *addr_space) {
     pte_t *page_directory;
     unsigned int idx;
     
+    /** ASSERTION: address space must not be NULL */
+    assert(addr_space != NULL);
+
     /** ASSERTION: the initial address space should not be destroyed */
     assert(addr_space != &initial_addr_space);
     
@@ -477,10 +480,5 @@ void vm_destroy_addr_space(addr_space_t *addr_space) {
 }
 
 void vm_switch_addr_space(addr_space_t *addr_space) {
-    cpu_data_t *cpu_data;
-    
     set_cr3(addr_space->cr3);
-    
-    cpu_data = get_cpu_local_data();
-    cpu_data->current_addr_space = addr_space;
 }

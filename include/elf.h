@@ -21,6 +21,4 @@ void elf_load(elf_info_t *info, Elf32_Ehdr *elf, addr_space_t *addr_space);
 
 void elf_setup_stack(elf_info_t *info);
 
-void elf_start(elf_info_t *info);
-
 #endif

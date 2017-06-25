@@ -1,84 +1,104 @@
-%define VM_FLAG_PRESENT 1<<0
-
-%define PFADDR_SHIFT    4
+%define THREAD_SIZE     512
 
 %define GDT_USER_CODE   3
 %define GDT_USER_DATA   4    
 
     bits 32
-; ------------------------------------------------------------------------------
-; FUNCTION: thread_start
-; C PROTOTYPE: void thread_start(addr_t entry, addr_t user_stack)
-; ------------------------------------------------------------------------------
-    global thread_start
-thread_start:
-    pop eax                     ; Discard return address: we won't be going back
-                                ; that way
-    pop ebx                     ; First param:  entry
-    pop ecx                     ; Second param: user_stack
     
-    ; set data segment selectors
-    mov eax, 8 * GDT_USER_DATA + 3
-    mov ds, eax
-    mov es, eax
-    mov fs, eax
-    mov gs, eax
-    
-    push eax                    ; stack segment (ss), rpl = 3
-    push ecx                    ; stack pointer (esp)
-    push 2                      ; flags register (eflags)
-    push 8 * GDT_USER_CODE + 3  ; code segment (cs), rpl/cpl = 3
-    push ebx                    ; entry point
-    
-    iretd
+    extern in_kernel
 
 ; ------------------------------------------------------------------------------
-; FUNCTION: thread_switch
-; C PROTOTYPE: int thread_switch(addr_t vstack, pfaddr_t pstack, unsigned int flags, pte_t *pte, int next);
+; FUNCTION: thread_context_switch_stack
+; C PROTOTYPE: void thread_context_switch_stack(
+;               thread_context_t *from_ctx,
+;               thread_context_t *to_ctx)
 ; ------------------------------------------------------------------------------
-; stack layout:
-;    esp+36    next
-;    esp+32    pte
-;    esp+28    flags
-;    esp+24    pstack (low dword)
-;    esp+20    vstack
-;    esp+16    return address
-;    esp+12    stored ebx
-;    esp+ 8    stored esi
-;    esp+ 4    stored edi
-;    esp+ 0    stored ebp
-    global thread_switch
-thread_switch:
-    ; we need to store the registers even if we are not using them because
-    ; we are about to switch the stack
+    global thread_context_switch_stack
+thread_context_switch_stack:
+    ; System V ABI calling convention: these four registers must be preserved
+    ;
+    ; We must store these registers whether we are actually using them here or
+    ; not since we are about to switch to another thread that will.
     push ebx
     push esi
     push edi
     push ebp
     
-    ; virtual address of stack
-    mov edx, [esp+20]       ; First param:  vstack
+    ; At this point, the stack looks like this:
+    ;
+    ; esp+24  to thread context pointer (second function argument)
+    ; esp+20  from thread context pointer (first function argument)
+    ; esp+16  return address
+    ; esp+12  ebx
+    ; esp+ 8  esi
+    ; esp+ 4  edi
+    ; esp+ 0  ebp
     
-    ; create page directory entry
-    mov ebx, [esp+24]       ; Second param: pstack
-    shl ebx, PFADDR_SHIFT   ; convert pfaddr_t value to physical address
-    or  ebx, [esp+28]       ; Third param:  flags
-    or  ebx, VM_FLAG_PRESENT
+    ; retrieve the from thread context argument
+    mov edi, [esp+20]
+
+    ; On the first thread context switch after boot, the kernel is using a
+    ; temporary stack and the from/current thread context is NULL. Skip saving
+    ; the current stack pointer in that case.
+    or edi, edi
+    jz .do_switch
+
+    ; store the current stack pointer in the first member of the thread context
+    ; structure
+    mov [edi], esp
+
+.do_switch:
+    ; load the saved stack pointer from the thread context to which we are
+    ; switching
+    mov esi, [esp+24]   ; thread context pointer (first function argument)
+    mov eax, [esi]      ; saved stack pointer is the first member
     
-    ; page directory entry address
-    mov edi, [esp+32]       ; Fourth param: pte
+    ; If the saved stack pointer is NULL, this is a new thread that never ran
+    ; before and that will start by "returning" directly to user space.
+    or eax, eax
+    jz .new_thread
     
-    ; return value of function, passes information about what to do next
-    ; across the call
-    mov eax, [esp+36]       ; Fifth param: next
-    
-    ; switch stack
-    mov [edi], ebx          ; write page directory entry
-    invlpg [edx]            ; invalidate TLB entry
-    
+    ; This is where we actually switch thread by loading the stack pointer.
+    mov esp, eax
+
     pop ebp
     pop edi
     pop esi
     pop ebx
     
     ret
+    
+.new_thread:
+    ; leaving the kernel
+    mov [in_kernel], dword 0
+    
+    ; set user space data segment selectors
+    mov eax, 8 * GDT_USER_DATA + 3  ; user data segment, rpl=3
+    mov ds, eax
+    mov es, eax
+    mov fs, eax
+    mov gs, eax
+    
+    ; The thread context creation code has already setup the stack with the
+    ; following data for an interrupt return to user space with iretd:
+    ;
+    ;   - user stack segment (ss)
+    ;   - user stack pointer (esp)
+    ;   - flags register (eflags)
+    ;   - code segment (cs)
+    ;   - return address (entry point)
+    ;
+    ; ... for a total of 20 bytes on the stack.
+    add esi, THREAD_SIZE - 20
+    mov esp, esi
+    
+    ; clear registers
+    xor eax, eax
+    mov ebx, eax
+    mov ecx, eax
+    mov edx, eax
+    mov esi, eax
+    mov edi, eax
+    mov ebp, eax
+    
+    iretd

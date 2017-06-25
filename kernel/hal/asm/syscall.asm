@@ -106,7 +106,8 @@ fast_amd_entry:
     ; segment which points to per-cpu data, including the TSS.
     ;
     ; Kernel calling convention: the calling code is responsible for saving the
-    ; gs segment selector before calling into the kernel.
+    ; gs segment selector before calling into the kernel with the SYSCALL
+    ; instruction.
     str sp                              ; get selector for TSS descriptor
     add sp, 8                           ; next entry
     mov gs, sp                          ; load gs with data segment selector

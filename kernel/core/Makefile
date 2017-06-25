@@ -1,7 +1,7 @@
 includes = ../../include
 scripts = ../../scripts
 
-OBJS   = core.o elf.o syscall.o thread.o
+OBJS   = core.o elf.o syscall.o
 TARGET = kern-core.o
 
 DEBUG   ?= yes
@@ -27,7 +27,6 @@ $(TARGET): $(OBJS)
 core.o:        core.c        $(includes)/hal/hal.h build-info.h
 elf.o:         elf.c         $(includes)/elf.h
 syscall.o:     syscall.c     $(includes)/syscall.h
-thread.o:      thread.c      $(includes)/thread.h
 
 build-info.h: FORCE
 	$(scripts)/gen_build_info_h.sh > $@

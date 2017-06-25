@@ -34,8 +34,8 @@ void cpu_init_data(cpu_data_t *data, addr_t kernel_stack) {
     /* initialize with zeroes  */
     memset(data, '\0', sizeof(cpu_data_t));
     
-    data->self = data;
-    data->current_addr_space = NULL;
+    data->self                      = data;
+    data->current_thread_context    = NULL;
     
     /* initialize GDT */
     data->gdt[GDT_NULL] = SEG_DESCRIPTOR(0, 0, 0);
@@ -65,9 +65,10 @@ void cpu_init_data(cpu_data_t *data, addr_t kernel_stack) {
     tss->ss1  = SEG_SELECTOR(GDT_KERNEL_DATA, 0);
     tss->ss2  = SEG_SELECTOR(GDT_KERNEL_DATA, 0);
 
-    tss->esp0 = kernel_stack;
-    tss->esp1 = kernel_stack;
-    tss->esp2 = kernel_stack;
+    /* kernel stack address is updated by thread_context_switch() */
+    tss->esp0 = NULL;
+    tss->esp1 = NULL;
+    tss->esp2 = NULL;
 }    
 
 void cpu_detect_features(void) {

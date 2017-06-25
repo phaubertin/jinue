@@ -13,6 +13,7 @@
 #include <printk.h>
 #include <stdint.h>
 #include <syscall.h>
+#include <thread.h>
 #include <util.h>
 #include <vga.h>
 #include <vm.h>
@@ -32,9 +33,6 @@ addr_t kernel_top;
 /** top of region of memory mapped 1:1 (kernel image plus some pages for
     data structures allocated during initialization) */
 addr_t kernel_region_top;
-
-/** address of kernel stack */
-addr_t kernel_stack;
 
 /** Specifies the entry point to use for system calls */
 int syscall_method;
@@ -161,7 +159,9 @@ void hal_init(void) {
         
         wrmsr(MSR_IA32_SYSENTER_CS,  GDT_KERNEL_CODE * 8);
         wrmsr(MSR_IA32_SYSENTER_EIP, (uint64_t)(uintptr_t)fast_intel_entry);
-        wrmsr(MSR_IA32_SYSENTER_ESP, (uint64_t)(uintptr_t)stack);
+
+        /* kernel stack address is set when switching thread context */
+        wrmsr(MSR_IA32_SYSENTER_ESP, (uint64_t)(uintptr_t)NULL);
     }
     
     if(cpu_features & CPU_FEATURE_SYSCALL) {
@@ -177,4 +177,7 @@ void hal_init(void) {
         
         wrmsr(MSR_STAR, msrval);
     }
+
+    /* intialize thread context slab cache */
+    thread_context_init_cache();
 }

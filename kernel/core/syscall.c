@@ -1,11 +1,12 @@
 #include <jinue/errno.h>
 #include <jinue/pfalloc.h>
 #include <hal/bootmem.h>
+#include <hal/cpu_data.h>
+#include <hal/thread.h>
 #include <hal/vga.h>
 #include <printk.h>
 #include <stddef.h>
 #include <syscall.h>
-#include <thread.h>
 
 
 void dispatch_syscall(jinue_syscall_args_t *args) {
@@ -28,13 +29,18 @@ void dispatch_syscall(jinue_syscall_args_t *args) {
         break;
 
     case SYSCALL_FUNCT_SET_THREAD_LOCAL_ADDR:
-        current_thread->local_storage      = (addr_t)args->arg1;
-        current_thread->local_storage_size = (size_t)args->arg2;
+        thread_context_set_local_storage(
+                get_current_thread_context(),
+                (addr_t)args->arg1,
+                (size_t)args->arg2);
         syscall_args_set_return(args, 0);
         break;
 
     case SYSCALL_FUNCT_GET_THREAD_LOCAL_ADDR:
-        syscall_args_set_return_ptr(args, current_thread->local_storage);
+        syscall_args_set_return_ptr(
+                args,
+                thread_context_get_local_storage(
+                        get_current_thread_context()));
         break;
     
     case SYSCALL_FUNCT_GET_FREE_MEMORY:

@@ -9,7 +9,6 @@ extern kmain
 extern e820_map
 extern boot_data
 extern boot_heap
-extern kernel_stack
 extern kernel_size
 extern kernel_top
 extern kernel_region_top
@@ -97,7 +96,6 @@ e820_end:
     
     ; setup stack and use it
 setup_stack:
-    mov [kernel_stack], eax
     add eax, STACK_SIZE
     mov esp, eax
     mov dword [kernel_region_top], eax

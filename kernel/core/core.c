@@ -1,13 +1,14 @@
 #include <hal/bootmem.h>
 #include <hal/hal.h>
+#include <hal/thread.h>
 #include <hal/vm.h>
 #include <core.h>
 #include <elf.h>
 #include <panic.h>
 #include <printk.h>
 #include <syscall.h>
-#include <thread.h>
 #include "build-info.h"
+
 
 static Elf32_Ehdr *find_process_manager(void) {
 	if((uintptr_t)&proc_elf_end < (uintptr_t)&proc_elf) {
@@ -25,7 +26,6 @@ static Elf32_Ehdr *find_process_manager(void) {
 
 
 void kmain(void) {
-    addr_space_t *proc_man_addr_space;    
     elf_info_t elf_info;
     
     /* initialize hardware abstraction layer */
@@ -33,16 +33,19 @@ void kmain(void) {
     
     printk("Kernel build " GIT_REVISION " " BUILD_TIME "\n");
 
-    /* create thread control block for first thread */
-    current_thread = create_initial_thread(NULL);
-    
-    proc_man_addr_space = vm_create_addr_space();
-
     /* load process manager binary */
     Elf32_Ehdr *elf = find_process_manager();
-    elf_load(&elf_info, elf, proc_man_addr_space);
+    elf_load(&elf_info, elf, &initial_addr_space);
+
+    /* create initial thread context */
+    thread_context_t *thread_ctx = thread_context_create(
+            &initial_addr_space,
+            elf_info.entry,
+            elf_info.stack_addr);
     
     /* start process manager */
-    vm_switch_addr_space(proc_man_addr_space);
-    elf_start(&elf_info);
+    thread_context_switch(thread_ctx);
+
+    /* should never happen */
+    panic("thread_context_switch() returned in kmain()");
 }

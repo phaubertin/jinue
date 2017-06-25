@@ -1,5 +1,4 @@
 #include <hal/kernel.h>
-#include <hal/thread.h>
 #include <hal/vm.h>
 #include <assert.h>
 #include <elf.h>
@@ -253,14 +252,4 @@ void elf_setup_stack(elf_info_t *info) {
     /* unmap and free temporary page */
     vm_unmap_global(top_page);
     vm_free(global_page_allocator, top_page);
-}
-
-void elf_start(elf_info_t *info) {
-    /* leaving the kernel */
-    in_kernel = 0;
-    
-    /* this never returns */
-    thread_start(info->entry, info->stack_addr);
-    
-    panic("thread_start() returned in elf_start()");
 }
