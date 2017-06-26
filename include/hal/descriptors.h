@@ -3,6 +3,7 @@
 
 #include <jinue/descriptors.h>
 #include <jinue/types.h>
+#include <stdint.h>
 
 
 /** offset of descriptor type in descriptor */
@@ -85,74 +86,74 @@
 #define SEG_TYPE_CALL_GATE          12
 
 
-typedef word64_t seg_descriptor_t;
+typedef uint64_t seg_descriptor_t;
 
-typedef unsigned long seg_selector_t;
+typedef uint32_t seg_selector_t;
 
 typedef struct {
-    unsigned short padding;
-    unsigned short limit;
+    uint16_t padding;
+    uint16_t limit;
     addr_t         addr;
 } pseudo_descriptor_t;
 
 typedef struct {
     /* offset 0 */
-    unsigned short prev;    
+    uint16_t prev;
     /* offset 4 */
     addr_t         esp0;    
     /* offset 8 */
-    unsigned short ss0;    
+    uint16_t ss0;
     /* offset 12 */
     addr_t         esp1;    
     /* offset 16 */
-    unsigned short ss1;    
+    uint16_t ss1;
     /* offset 20 */
     addr_t         esp2;    
     /* offset 24 */
-    unsigned short ss2;    
+    uint16_t ss2;
     /* offset 28 */
-    unsigned long  cr3;    
+    uint32_t  cr3;
     /* offset 32 */
-    unsigned long  eip;    
+    uint32_t  eip;
     /* offset 36 */
-    unsigned long  eflags;    
+    uint32_t  eflags;
     /* offset 40 */
-    unsigned long  eax;    
+    uint32_t  eax;
     /* offset 44 */
-    unsigned long  ecx;    
+    uint32_t  ecx;
     /* offset 48 */
-    unsigned long  edx;    
+    uint32_t  edx;
     /* offset 52 */
-    unsigned long  ebx;    
+    uint32_t  ebx;
     /* offset 56 */
-    unsigned long  esp;    
+    uint32_t  esp;
     /* offset 60 */
-    unsigned long  ebp;    
+    uint32_t  ebp;
     /* offset 64 */
-    unsigned long  esi;    
+    uint32_t  esi;
     /* offset 68 */
-    unsigned long  edi;    
+    uint32_t  edi;
     /* offset 72 */
-    unsigned short es;    
+    uint16_t es;
     /* offset 76 */
-    unsigned short cs;    
+    uint16_t cs;
     /* offset 80 */
-    unsigned short ss;    
+    uint16_t ss;
     /* offset 84 */
-    unsigned short ds;    
+    uint16_t ds;
     /* offset 88 */
-    unsigned short fs;    
+    uint16_t fs;
     /* offset 92 */
-    unsigned short gs;    
+    uint16_t gs;
     /* offset 96 */
-    unsigned short ldt;    
+    uint16_t ldt;
     /* offset 100 */
-    unsigned short debug;
-    unsigned short iomap;    
+    uint16_t debug;
+    uint16_t iomap;
 } tss_t;
 
 #define PACK_DESCRIPTOR(val, mask, shamt1, shamt2) \
-    ( (((word64_t)(word32_t)(val) >> shamt1) & mask) << shamt2 )
+    ( (((uint64_t)(uintptr_t)(val) >> shamt1) & mask) << shamt2 )
 
 #define SEG_DESCRIPTOR(base, limit, type) (\
       PACK_DESCRIPTOR((type),  0xf0ff,  0, SEG_FLAGS_OFFSET) \

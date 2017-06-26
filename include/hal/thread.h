@@ -3,6 +3,7 @@
 
 #include <jinue/types.h>
 #include <hal/vm.h>
+#include <stddef.h>
 
 #define THREAD_CONTEXT_BITS     9
 

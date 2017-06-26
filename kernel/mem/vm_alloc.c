@@ -523,7 +523,7 @@ void vm_alloc_partial_block(vm_block_t *block) {
      * stack_next pointer has reached the end of the block. */
     
     /* initialize the stack as empty */
-    block->stack_ptr = (addr_t *)( (byte_t *)stack_addr + PAGE_SIZE );
+    block->stack_ptr = (addr_t *)( (char *)stack_addr + PAGE_SIZE );
     
     if(was_free) {
         /* free block: we skip the first page as it was allocated for the

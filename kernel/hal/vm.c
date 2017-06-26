@@ -35,9 +35,9 @@ vm_alloc_t *global_page_allocator;
 
 
 void vm_init(void) {
-    addr_t addr;
-    addr_space_t *addr_space;
-    unsigned long temp;
+    addr_t           addr;
+    addr_space_t    *addr_space;
+    uint32_t         temp;
     
     if(cpu_features & CPU_FEATURE_PAE) {
         printk("Processor supports Physical Address Extension (PAE).\n");

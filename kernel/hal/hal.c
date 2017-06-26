@@ -39,14 +39,14 @@ int syscall_method;
 
 void hal_init(void) {
     addr_t addr;
-    addr_t stack;
-    cpu_data_t *cpu_data;
+    addr_t               stack;
+    cpu_data_t          *cpu_data;
     pseudo_descriptor_t *pseudo;
-    unsigned int idx;
-    unsigned long flags;
-    unsigned long long msrval;
-    pfaddr_t *page_stack_buffer;
-    addr_t  boot_heap_old;
+    unsigned int         idx;
+    unsigned int         flags;
+    uint64_t             msrval;
+    pfaddr_t            *page_stack_buffer;
+    addr_t               boot_heap_old;
     
     /** ASSERTION: we assume the kernel starts on a page boundary */
     assert( page_offset_of( (unsigned int)&kernel_start ) == 0 );
@@ -111,7 +111,7 @@ void hal_init(void) {
     /* initialize IDT */
     for(idx = 0; idx < IDT_VECTOR_COUNT; ++idx) {
         /* get address, which is already stored in the IDT entry */
-        addr  = (addr_t)(word32_t)idt[idx];
+        addr  = (addr_t)(uintptr_t)idt[idx];
         
         /* set interrupt gate flags */
         flags = SEG_TYPE_INTERRUPT_GATE | SEG_FLAG_NORMAL_GATE;

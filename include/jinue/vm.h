@@ -2,6 +2,7 @@
 #define _JINUE_VM_H_
 
 #include <jinue/types.h>
+#include <stdint.h>
 
 /** number of bits in virtual address for offset inside page */
 #define PAGE_SHIFT 12

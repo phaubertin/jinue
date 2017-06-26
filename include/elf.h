@@ -3,6 +3,7 @@
 
 #include <jinue/elf.h>
 #include <jinue/types.h>
+#include <hal/vm.h>
 
 
 typedef struct {

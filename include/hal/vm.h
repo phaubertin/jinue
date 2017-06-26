@@ -1,11 +1,12 @@
 #ifndef _JINUE_KERNEL_VM_H_
 #define _JINUE_KERNEL_VM_H_
 
-#include <stdint.h>
-#include <stdbool.h>
 #include <jinue/page_tables.h>
 #include <jinue/types.h>
 #include <jinue/vm.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdbool.h>
 
 
 /* ------ flags for page attributes ------ */

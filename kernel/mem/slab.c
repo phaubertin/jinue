@@ -6,6 +6,7 @@
 #include <pfalloc.h>
 #include <printk.h>
 #include <slab.h>
+#include <stdint.h>
 #include <util.h>
 #include <vm_alloc.h>
 
@@ -17,7 +18,7 @@ static slab_cache_t slab_cache_cache = {
     0,                                              /* empty_count */
     sizeof(slab_cache_t),                           /* obj_size */
     sizeof(slab_cache_t),                           /* alloc_size */
-    sizeof(word32_t),                               /* alignment */
+    sizeof(uint32_t),                               /* alignment */
     sizeof(slab_cache_t) - sizeof(slab_bufctl_t),   /* bufctl_offset */
     0,                                              /* next_colour */
     0,                                              /* max_colour */
@@ -96,7 +97,7 @@ slab_cache_t *slab_cache_create(
     
     /* compute actual alignment */
     if(alignment == 0) {
-        cache->alignment = sizeof(word32_t);
+        cache->alignment = sizeof(uint32_t);
     }
     else {
         cache->alignment = alignment;
@@ -106,25 +107,25 @@ slab_cache_t *slab_cache_create(
         cache->alignment = cpu_dcache_alignment;
     }
     
-    if(cache->alignment % sizeof(word32_t) != 0) {
-        cache->alignment += sizeof(word32_t) - cache->alignment % sizeof(word32_t);
+    if(cache->alignment % sizeof(uint32_t) != 0) {
+        cache->alignment += sizeof(uint32_t) - cache->alignment % sizeof(uint32_t);
     }
     
-    /* reserve space for bufctl and/ord redzone word */
+    /* reserve space for bufctl and/or redzone word */
     cache->obj_size = size;
     
-    if(cache->obj_size % sizeof(word32_t) != 0) {
-        cache->obj_size += sizeof(word32_t) - cache->obj_size % sizeof(word32_t);
+    if(cache->obj_size % sizeof(uint32_t) != 0) {
+        cache->obj_size += sizeof(uint32_t) - cache->obj_size % sizeof(uint32_t);
     }
     
     if((flags & SLAB_POISON) && (flags & SLAB_RED_ZONE)) {
         /* bufctl and redzone word appended to buffer */
-        cache->alloc_size = cache->obj_size + sizeof(word32_t) + sizeof(slab_bufctl_t);
+        cache->alloc_size = cache->obj_size + sizeof(uint32_t) + sizeof(slab_bufctl_t);
     }
     else if((flags & SLAB_POISON) || (flags & SLAB_RED_ZONE)) {
         /* bufctl and/or redzone word appended to buffer
          * (can be shared) */
-        cache->alloc_size = cache->obj_size + sizeof(word32_t);
+        cache->alloc_size = cache->obj_size + sizeof(uint32_t);
     }
     else if(ctor != NULL && ! (flags & SLAB_COMPACT)) {
         /* If a constructor is defined, we cannot put the bufctl inside
@@ -196,7 +197,7 @@ void slab_cache_destroy(slab_cache_t *cache) {
 void *slab_cache_alloc(slab_cache_t *cache) {
     slab_t          *slab;
     slab_bufctl_t   *bufctl;
-    word32_t        *buffer;
+    uint32_t        *buffer;
     unsigned int     idx;
     unsigned int     dump_lines;
     
@@ -266,12 +267,12 @@ void *slab_cache_alloc(slab_cache_t *cache) {
         }
     }
     
-    buffer = (word32_t *)( (byte_t *)bufctl - cache->bufctl_offset );
+    buffer = (uint32_t *)( (char *)bufctl - cache->bufctl_offset );
     
     if(cache->flags & SLAB_POISON) {
         dump_lines = 0;
         
-        for(idx = 0; idx < cache->obj_size / sizeof(word32_t); ++idx) {
+        for(idx = 0; idx < cache->obj_size / sizeof(uint32_t); ++idx) {
             if(buffer[idx] != SLAB_POISON_DEAD_VALUE) {
                 if(dump_lines == 0) {
                     printk("detected write to freed object, cache: %s buffer: 0x%x:\n",
@@ -281,7 +282,7 @@ void *slab_cache_alloc(slab_cache_t *cache) {
                 }
                 
                 if(dump_lines < 4) {
-                    printk(" value 0x%x at byte offset %u\n", buffer[idx], idx * sizeof(word32_t));
+                    printk(" value 0x%x at byte offset %u\n", buffer[idx], idx * sizeof(uint32_t));
                 }
                 
                 ++dump_lines;
@@ -309,7 +310,7 @@ void *slab_cache_alloc(slab_cache_t *cache) {
         }
     }
     else if(cache->flags & SLAB_RED_ZONE) {
-        buffer[cache->obj_size / sizeof(word32_t)] = SLAB_RED_ZONE_VALUE;
+        buffer[cache->obj_size / sizeof(uint32_t)] = SLAB_RED_ZONE_VALUE;
     }
         
     return (void *)buffer;
@@ -320,8 +321,8 @@ void slab_cache_free(void *buffer) {
     slab_t          *slab;
     slab_cache_t    *cache;
     slab_bufctl_t   *bufctl;
-    word32_t        *rz_word;
-    word32_t        *buffer32;
+    uint32_t        *rz_word;
+    uint32_t        *buffer32;
     unsigned int     idx;
     
     /* compute address of slab data structure */
@@ -330,7 +331,7 @@ void slab_cache_free(void *buffer) {
     
     /* obtain address of cache and bufctl */
     cache  = slab->cache;
-    bufctl = (slab_bufctl_t *)((byte_t *)buffer + cache->bufctl_offset);
+    bufctl = (slab_bufctl_t *)((char *)buffer + cache->bufctl_offset);
     
     /* If slab is on the full slabs list, move it to the partial list
      * since we are about to return a buffer to it. */
@@ -357,7 +358,7 @@ void slab_cache_free(void *buffer) {
     }
     
     if(cache->flags & SLAB_RED_ZONE) {
-        rz_word = (word32_t *)( (byte_t *)buffer + cache->obj_size );
+        rz_word = (uint32_t *)( (char *)buffer + cache->obj_size );
         
         if(*rz_word != SLAB_RED_ZONE_VALUE) {
             printk("detected write past the end of object, cache: %s buffer: 0x%x value: 0x%x\n",
@@ -375,9 +376,9 @@ void slab_cache_free(void *buffer) {
             cache->dtor(buffer, cache->obj_size);
         }
         
-        buffer32 = (word32_t *)buffer;
+        buffer32 = (uint32_t *)buffer;
         
-        for(idx = 0; idx < cache->obj_size / sizeof(word32_t); ++idx) {
+        for(idx = 0; idx < cache->obj_size / sizeof(uint32_t); ++idx) {
             buffer32[idx] = SLAB_POISON_DEAD_VALUE;
         }
     }
@@ -431,7 +432,7 @@ void slab_cache_grow(slab_cache_t *cache) {
     
     vm_map_global(slab_addr, pfalloc(), VM_FLAG_KERNEL | VM_FLAG_READ_WRITE | VM_FLAG_GLOBAL);
     
-    slab = (slab_t *)( (byte_t *)slab_addr + SLAB_SIZE - sizeof(slab_t) );
+    slab = (slab_t *)( (char *)slab_addr + SLAB_SIZE - sizeof(slab_t) );
     
     slab->cache = cache;
     
@@ -458,7 +459,7 @@ void slab_cache_grow(slab_cache_t *cache) {
     }
     
     /* compute address of first bufctl */
-    bufctl          = (slab_bufctl_t *)( (byte_t *)slab_addr + slab->colour + cache->bufctl_offset );
+    bufctl          = (slab_bufctl_t *)( (char *)slab_addr + slab->colour + cache->bufctl_offset );
     slab->free_list = bufctl;
     
     while(1) {        
@@ -481,7 +482,7 @@ void slab_cache_grow(slab_cache_t *cache) {
             cache->ctor((void *)buffer, cache->obj_size);
         }
         
-        next = (slab_bufctl_t *)( (byte_t *)bufctl + cache->alloc_size );
+        next = (slab_bufctl_t *)( (char *)bufctl + cache->alloc_size );
         
         /** TODO: check this condition */
         if(next >= (slab_bufctl_t *)slab) {
