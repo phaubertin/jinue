@@ -1,6 +1,6 @@
 The kernel image has the following format:
 
-  +---------------------------------------+
+  +---------------------------------------+ (start)
   |              boot sector              |
   +---------------------------------------+
   |              setup code               |
@@ -12,58 +12,62 @@ The kernel image has the following format:
   |                                       |
   |                payload                |
   |                                       |
-  +---------------------------------------+
-
+  +---------------------------------------+ (end)
 
 Once it is loaded in memory by the boot loader, and the startup code
-(startup.asm) and initilization code (kinit()) are run, this is the
-layout in memory:
+(startup.asm) and initilization code are run, this is the layout in memory:
 
-  +---------------------------------------+ kernel_start (0x100000) 
-  |                                       |
-  |    microkernel and process manager    |
-  |                                       |
-  +---------------------------------------+    [kernel image]
-  |                                       |
-  |                payload                |
-  |                                       |
-  +=======================================+ kernel_top
-  |            bios memory map            |
-  +---------------------------------------+
-  |           kernel memory map           |
-  +---------------------------------------+
-  |                                       |
-  |                . . .                  |    [kernel boot heap/stack]
-  |                                       |
-  +-----^---------------------------^-----+
-  |          kernel stack (boot)          |
-  +---------------------------------------+
+  +---------------------------------------+ kernel_region_top
   |                                       |
   |       initial page allocations        |
   |                                       |
-  +---------------------------------------+ kernel_region_top
+  +---------------------------------------+
+  |          kernel stack (boot)          |
+  +-----v---------------------------v-----+
+  |                                       |
+  |                . . .                  |    [kernel boot heap/stack]
+  |                                       |
+  +---------------------------------------+
+  |           kernel memory map           |
+  +---------------------------------------+
+  |            bios memory map            |
+  +=======================================+ kernel_top
+  |                                       |
+  |                payload                |
+  |                                       |
+  +---------------------------------------+    [kernel image]
+  |                                       |
+  |    microkernel and process manager    |
+  |                                       |
+  +---------------------------------------+ kernel_start (0x100000)
+  
+The boot kernel stack is used only during initialization. Once the first thread
+context is created, per-thread kernel stacks are used instead.
 
 
 The whole process address space looks like this:
 
-  +---------------------------------------+ 0x0
-  |                                       |
-  |     available for global mappings     |
-  |                                       |
-  +---------------------------------------+ kernel_start (0x100000) 
-  |    microkernel, process manager,etc.  |
-  |              (see above)              |
-  +---------------------------------------+ kernel_region_top
-  |                                       |
-  |    available for global mappings      |
-  |                                       |
-  +=======================================+ KLIMIT (0x8000000)
+  +---------------------------------------+ 0x100000000 = 4GB
   |                                       |
   |          User memory space            |
   |                                       |
   |                                       |
   |                                       |
-  +---------------------------------------+ 0x100000000
+  +=======================================+ KLIMIT (0x8000000 = 128MB)
+  |                                       |
+  |     available for global mappings     |
+  |                                       |
+  +---------------------------------------+ kernel_region_top
+  |    microkernel, process manager,etc.  |
+  |              (see above)              |  
+  +---------------------------------------+ kernel_start (0x100000 = 1MB)
+  |                                       |
+  |     available for global mappings     |
+  |                                       |
+  +---------------------------------------+ 0x0
 
 All memory mappings from 0 to KLIMIT are global kernel mappings. Mappings above
 KLIMIT are user mappings which belong to the currently running process.
+
+The first page is permanently unmapped to ensure NULL pointer dereferences are
+detected.

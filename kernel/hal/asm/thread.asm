@@ -1,7 +1,7 @@
-%define THREAD_SIZE     512
+%define THREAD_CONTEXT_SIZE 512
 
-%define GDT_USER_CODE   3
-%define GDT_USER_DATA   4    
+%define GDT_USER_CODE       3
+%define GDT_USER_DATA       4
 
     bits 32
     
@@ -89,7 +89,7 @@ thread_context_switch_stack:
     ;   - return address (entry point)
     ;
     ; ... for a total of 20 bytes on the stack.
-    add esi, THREAD_SIZE - 20
+    add esi, THREAD_CONTEXT_SIZE - 20
     mov esp, esi
     
     ; clear registers

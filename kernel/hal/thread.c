@@ -17,11 +17,8 @@ static slab_cache_t *thread_cache;
 void thread_context_init_cache(void) {
     thread_cache = slab_cache_create(
         "thread_context_cache", /* name */
-        THREAD_SIZE,            /* size */
-        /* THREAD_SIZE is a power of two and each thread object must be aligned
-         * on that size so its address can be computed from the kernel stack
-         * pointer (which points somewhere in that object). */
-        THREAD_SIZE,            /* alignment */
+        THREAD_CONTEXT_SIZE,    /* size */
+        THREAD_CONTEXT_SIZE,    /* alignment */
         NULL,                   /* ctor */
         NULL,                   /* dtor */
         0 );                    /* flags */
