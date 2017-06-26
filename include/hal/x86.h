@@ -1,18 +1,17 @@
 #ifndef _JINUE_KERNEL_X86_H_
 #define _JINUE_KERNEL_X86_H_
 
-#include <stdint.h>
 #include <hal/descriptors.h>
-
+#include <stdint.h>
 
 #define X86_FLAG_PG (1<<31)
 
 typedef struct {
-    unsigned long eax;
-    unsigned long ebx;
-    unsigned long ecx;
-    unsigned long edx;
-} x86_regs_t;
+    uint32_t eax;
+    uint32_t ebx;
+    uint32_t ecx;
+    uint32_t edx;
+} x86_cpuid_regs_t;
 
 typedef uint32_t msr_addr_t;
 
@@ -29,49 +28,49 @@ void lidt(pseudo_descriptor_t *idt_info);
 
 void ltr(seg_selector_t sel);
 
-unsigned long cpuid(x86_regs_t *regs);
+uint32_t cpuid(x86_cpuid_regs_t *regs);
 
-unsigned long get_cr0(void);
+uint32_t get_cr0(void);
 
-unsigned long get_cr1(void);
+uint32_t get_cr1(void);
 
-unsigned long get_cr2(void);
+uint32_t get_cr2(void);
 
-unsigned long get_cr3(void);
+uint32_t get_cr3(void);
 
-unsigned long get_cr4(void);
+uint32_t get_cr4(void);
 
-void set_cr0(unsigned long val);
+void set_cr0(uint32_t val);
 
-void set_cr1(unsigned long val);
+void set_cr1(uint32_t val);
 
-void set_cr2(unsigned long val);
+void set_cr2(uint32_t val);
 
-void set_cr3(unsigned long val);
+void set_cr3(uint32_t val);
 
-void set_cr4(unsigned long val);
+void set_cr4(uint32_t val);
 
-unsigned long get_eflags(void);
+uint32_t get_eflags(void);
 
-void set_eflags(unsigned long val);
+void set_eflags(uint32_t val);
 
-void set_cs(unsigned long val);
+void set_cs(uint32_t val);
 
-void set_ds(unsigned long val);
+void set_ds(uint32_t val);
 
-void set_es(unsigned long val);
+void set_es(uint32_t val);
 
-void set_fs(unsigned long val);
+void set_fs(uint32_t val);
 
-void set_gs(unsigned long val);
+void set_gs(uint32_t val);
 
-void set_ss(unsigned long val);
+void set_ss(uint32_t val);
 
-void set_data_segments(unsigned long val);
+void set_data_segments(uint32_t val);
 
-unsigned long long rdmsr(msr_addr_t addr);
+uint64_t rdmsr(msr_addr_t addr);
 
-void wrmsr(msr_addr_t addr, unsigned long long val);
+void wrmsr(msr_addr_t addr, uint64_t val);
 
 uint32_t get_gs_ptr(uint32_t *ptr);
 

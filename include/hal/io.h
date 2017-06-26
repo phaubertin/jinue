@@ -1,13 +1,15 @@
 #ifndef _JINUE_KERNEL_IO_H_
 #define _JINUE_KERNEL_IO_H_
 
-unsigned char inb(unsigned short int port);
-unsigned short int inw(unsigned short int port);
-unsigned int inl(unsigned short int port);
+#include <stdint.h>
 
-void outb(unsigned short int port, unsigned char value);
-void outw(unsigned short int port, unsigned short int value);
-void outl(unsigned short int port, unsigned int value);
+uint8_t  inb(uint16_t port);
+uint16_t inw(uint16_t port);
+uint32_t inl(uint16_t port);
+
+void outb(uint16_t port, uint8_t  value);
+void outw(uint16_t port, uint16_t value);
+void outl(uint16_t port, uint32_t value);
 
 #endif
 

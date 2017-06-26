@@ -1,4 +1,4 @@
-%define STACK_SIZE 8192
+%define BOOT_STACK_SIZE 8192
 
 bits 32
 
@@ -96,7 +96,7 @@ e820_end:
     
     ; setup stack and use it
 setup_stack:
-    add eax, STACK_SIZE
+    add eax, BOOT_STACK_SIZE
     mov esp, eax
     mov dword [kernel_region_top], eax
     

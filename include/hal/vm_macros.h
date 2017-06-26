@@ -1,7 +1,8 @@
 #ifndef _JINUE_KERNEL_VM_MACROS_H_
 #define _JINUE_KERNEL_VM_MACROS_H_
 
-#include <vm.h>
+#include <jinue/vm.h>
+#include <stdint.h>
 
 /* ------ page tables ------ */
 

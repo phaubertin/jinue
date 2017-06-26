@@ -72,11 +72,11 @@ void cpu_init_data(cpu_data_t *data, addr_t kernel_stack) {
 }    
 
 void cpu_detect_features(void) {
-    uint32_t        temp;
-    uint32_t        signature;
-    uint32_t        flags, ext_flags;
-    uint32_t        vendor_dw0, vendor_dw1, vendor_dw2;
-    x86_regs_t      regs;
+    uint32_t            temp;
+    uint32_t            signature;
+    uint32_t            flags, ext_flags;
+    uint32_t            vendor_dw0, vendor_dw1, vendor_dw2;
+    x86_cpuid_regs_t    regs;
     
     cpu_features = 0;
     

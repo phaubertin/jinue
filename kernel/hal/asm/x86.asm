@@ -64,7 +64,7 @@ ltr:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: cpuid
-; C PROTOTYPE: unsigned long cpuid(x86_regs_t *regs)
+; C PROTOTYPE: uint32_t cpuid(x86_regs_t *regs)
 ; ------------------------------------------------------------------------------
     global cpuid
 cpuid:
@@ -96,7 +96,7 @@ cpuid:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: get_cr0
-; C PROTOTYPE: unsigned long get_cr0(void)
+; C PROTOTYPE: uint32_t get_cr0(void)
 ; ------------------------------------------------------------------------------
     global get_cr0
 get_cr0:
@@ -105,7 +105,7 @@ get_cr0:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: get_cr1
-; C PROTOTYPE: unsigned long get_cr1(void)
+; C PROTOTYPE: uint32_t get_cr1(void)
 ; ------------------------------------------------------------------------------
     global get_cr1
 get_cr1:
@@ -114,7 +114,7 @@ get_cr1:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: get_cr2
-; C PROTOTYPE: unsigned long get_cr2(void)
+; C PROTOTYPE: uint32_t get_cr2(void)
 ; ------------------------------------------------------------------------------
     global get_cr2
 get_cr2:
@@ -123,7 +123,7 @@ get_cr2:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: get_cr3
-; C PROTOTYPE: unsigned long get_cr3(void)
+; C PROTOTYPE: uint32_t get_cr3(void)
 ; ------------------------------------------------------------------------------
     global get_cr3
 get_cr3:
@@ -132,7 +132,7 @@ get_cr3:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: get_cr4
-; C PROTOTYPE: unsigned long get_cr4(void)
+; C PROTOTYPE: uint32_t get_cr4(void)
 ; ------------------------------------------------------------------------------
     global get_cr4
 get_cr4:
@@ -141,7 +141,7 @@ get_cr4:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: set_cr0
-; C PROTOTYPE: void set_cr0(unsigned long val)
+; C PROTOTYPE: void set_cr0(uint32_t val)
 ; ------------------------------------------------------------------------------
     global set_cr0
 set_cr0:
@@ -154,7 +154,7 @@ set_cr0:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: set_cr1
-; C PROTOTYPE: void set_cr1(unsigned long val)
+; C PROTOTYPE: void set_cr1(uint32_t val)
 ; ------------------------------------------------------------------------------
     global set_cr1
 set_cr1:
@@ -164,7 +164,7 @@ set_cr1:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: set_cr2
-; C PROTOTYPE: void set_cr2(unsigned long val)
+; C PROTOTYPE: void set_cr2(uint32_t val)
 ; ------------------------------------------------------------------------------
     global set_cr2
 set_cr2:
@@ -174,7 +174,7 @@ set_cr2:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: set_cr3
-; C PROTOTYPE: void set_cr3(unsigned long val)
+; C PROTOTYPE: void set_cr3(uint32_t val)
 ; ------------------------------------------------------------------------------
     global set_cr3
 set_cr3:
@@ -184,7 +184,7 @@ set_cr3:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: set_cr4
-; C PROTOTYPE: void set_cr4(unsigned long val)
+; C PROTOTYPE: void set_cr4(uint32_t val)
 ; ------------------------------------------------------------------------------
     global set_cr4
 set_cr4:
@@ -194,7 +194,7 @@ set_cr4:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: get_eflags
-; C PROTOTYPE: unsigned long get_eflags(void)
+; C PROTOTYPE: uint32_t get_eflags(void)
 ; ------------------------------------------------------------------------------
     global get_eflags
 get_eflags:
@@ -204,7 +204,7 @@ get_eflags:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: set_eflags
-; C PROTOTYPE: void set_eflags(unsigned long val)
+; C PROTOTYPE: void set_eflags(uint32_t val)
 ; ------------------------------------------------------------------------------
     global set_eflags
 set_eflags:
@@ -215,7 +215,7 @@ set_eflags:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: set_cs
-; C PROTOTYPE: void set_cs(unsigned long val)
+; C PROTOTYPE: void set_cs(uint32_t val)
 ; ------------------------------------------------------------------------------
     global set_cs
 set_cs:
@@ -227,7 +227,7 @@ set_cs:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: set_ds
-; C PROTOTYPE: void set_ds(unsigned long val)
+; C PROTOTYPE: void set_ds(uint32_t val)
 ; ------------------------------------------------------------------------------
     global set_ds
 set_ds:
@@ -237,7 +237,7 @@ set_ds:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: set_es
-; C PROTOTYPE: void set_es(unsigned long val)
+; C PROTOTYPE: void set_es(uint32_t val)
 ; ------------------------------------------------------------------------------
     global set_es
 set_es:
@@ -247,7 +247,7 @@ set_es:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: set_fs
-; C PROTOTYPE: void set_fs(unsigned long val)
+; C PROTOTYPE: void set_fs(uint32_t val)
 ; ------------------------------------------------------------------------------
     global set_fs
 set_fs:
@@ -257,7 +257,7 @@ set_fs:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: set_gs
-; C PROTOTYPE: void set_gs(unsigned long val)
+; C PROTOTYPE: void set_gs(uint32_t val)
 ; ------------------------------------------------------------------------------
     global set_gs
 set_gs:
@@ -267,7 +267,7 @@ set_gs:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: set_ss
-; C PROTOTYPE: void set_ss(unsigned long val)
+; C PROTOTYPE: void set_ss(uint32_t val)
 ; ------------------------------------------------------------------------------
     global set_ss
 set_ss:
@@ -277,7 +277,7 @@ set_ss:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: set_data_segments
-; C PROTOTYPE: void set_data_segments(unsigned long val)
+; C PROTOTYPE: void set_data_segments(uint32_t val)
 ; ------------------------------------------------------------------------------
     global set_data_segments
 set_data_segments:
@@ -290,7 +290,7 @@ set_data_segments:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: rdmsr
-; C PROTOTYPE: unsigned long long rdmsr(msr_addr_t addr)
+; C PROTOTYPE: uint64_t rdmsr(msr_addr_t addr)
 ; ------------------------------------------------------------------------------
     global rdmsr
 rdmsr:
@@ -301,7 +301,7 @@ rdmsr:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: wrmsr
-; C PROTOTYPE: void wrmsr(msr_addr_t addr, unsigned long long val)
+; C PROTOTYPE: void wrmsr(msr_addr_t addr, uint64_t val)
 ; ------------------------------------------------------------------------------
     global wrmsr
 wrmsr:
