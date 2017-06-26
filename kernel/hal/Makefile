@@ -52,4 +52,4 @@ vm.o:           vm.c            $(hal_includes)/vm.h
 vm_x86.o:       vm_x86.c        $(hal_includes)/vm_x86.h
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c -I$(includes)/hal -I$(includes) -I$(includes)/kstdc -o $@ $<
+	$(CC) $(CFLAGS) -c -I$(includes) -I$(includes)/kstdc -o $@ $<

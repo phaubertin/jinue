@@ -1,6 +1,6 @@
 #include <ascii.h>
-#include <io.h>
-#include <vga.h>
+#include <hal/io.h>
+#include <hal/vga.h>
 
 
 static unsigned int vga_text_color;

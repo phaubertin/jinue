@@ -1,5 +1,5 @@
-#include <boot.h>
-#include <kernel.h>
+#include <hal/boot.h>
+#include <hal/kernel.h>
 #include <panic.h>
 
 

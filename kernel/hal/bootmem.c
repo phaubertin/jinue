@@ -1,12 +1,12 @@
 #include <jinue/types.h>
-#include <bootmem.h>
-#include <e820.h>
-#include <kernel.h>
+#include <hal/bootmem.h>
+#include <hal/e820.h>
+#include <hal/kernel.h>
+#include <hal/vm.h>
 #include <panic.h>
 #include <printk.h>
 #include <stddef.h>
 #include <util.h>
-#include <vm.h>
 
 
 /** kernel memory map */

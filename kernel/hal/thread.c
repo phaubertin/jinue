@@ -1,11 +1,12 @@
 #include <jinue/descriptors.h>
+#include <hal/cpu.h>
+#include <hal/cpu_data.h>
+#include <hal/thread.h>
+#include <hal/vm.h>
 #include <assert.h>
-#include <cpu.h>
-#include <cpu_data.h>
 #include <stddef.h>
 #include <slab.h>
-#include <thread.h>
-#include <vm.h>
+
 
 /* defined in thread.asm */
 void thread_context_switch_stack(

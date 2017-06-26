@@ -1,11 +1,11 @@
+#include <jinue/page_tables.h>
+#include <hal/vm_macros.h>
+#include <hal/vm_x86.h>
+#include <hal/vm.h>
+#include <hal/x86.h>
 #include <assert.h>
 #include <stdint.h>
 #include <pfalloc.h>
-#include <vm_macros.h>
-#include <vm_x86.h>
-#include <vm.h>
-#include <x86.h>
-#include <jinue/page_tables.h>
 
 
 struct __pte_t {

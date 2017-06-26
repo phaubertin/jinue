@@ -1,16 +1,16 @@
 #include <assert.h>
-#include <cpu.h>
-#include <cpu_data.h>
-#include <kernel.h>
+#include <hal/cpu.h>
+#include <hal/cpu_data.h>
+#include <hal/kernel.h>
+#include <hal/vga.h>
+#include <hal/vm.h>
+#include <hal/vm_x86.h>
+#include <hal/x86.h>
 #include <pfalloc.h>
 #include <printk.h>
 #include <slab.h>
 #include <stdint.h>
-#include <vga.h>
-#include <vm.h>
 #include <vm_alloc.h>
-#include <vm_x86.h>
-#include <x86.h>
 
 
 bool vm_use_pae;

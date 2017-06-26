@@ -1,4 +1,4 @@
-#include <e820.h>   /* includes stdbool.h */
+#include <hal/e820.h>
 #include <printk.h>
 
 

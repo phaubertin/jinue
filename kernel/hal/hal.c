@@ -1,24 +1,24 @@
 #include <jinue/syscall.h>
 #include <jinue/types.h>
 #include <assert.h>
-#include <boot.h>
-#include <bootmem.h>
-#include <cpu.h>
-#include <hal.h>
-#include <interrupt.h>
-#include <irq.h>
-#include <kernel.h>
+#include <hal/boot.h>
+#include <hal/bootmem.h>
+#include <hal/cpu.h>
+#include <hal/hal.h>
+#include <hal/interrupt.h>
+#include <hal/irq.h>
+#include <hal/kernel.h>
+#include <hal/thread.h>
+#include <hal/vga.h>
+#include <hal/vm.h>
+#include <hal/x86.h>
 #include <panic.h>
 #include <pfalloc.h>
 #include <printk.h>
 #include <stdint.h>
 #include <syscall.h>
-#include <thread.h>
 #include <util.h>
-#include <vga.h>
-#include <vm.h>
 #include <vm_alloc.h>
-#include <x86.h>
 
 
 /** if non_zero, we are executing in the kernel */

@@ -1,6 +1,6 @@
-#include <cpu.h>
-#include <descriptors.h>
-#include <x86.h>
+#include <hal/cpu.h>
+#include <hal/descriptors.h>
+#include <hal/x86.h>
 #include <stdint.h>
 #include <string.h>
 
