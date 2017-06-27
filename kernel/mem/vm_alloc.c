@@ -13,18 +13,14 @@
   
   Virtual memory allocator
   
-  Fonctions in this file are used to manage the virtual address space. Each
-  region of the address space is represented by a vm_alloc_t structure. The
-  kernel uses one of these structures to manage the address space region
-  reserved for global data (addresses 0..KLIMIT) and one per process for
-  the region reserved for process-specific data (addresses KLIMIT..plimit).
-  The address space region above plimit is managed in user space.
+  Functions in this file are used to manage the virtual address space. Each
+  region of the address space is represented by a vm_alloc_t structure.
 
   Pages are allocated one at a time. There is no way to allocate groups of
   contiguous pages in the kernel.
   
-  Address space regions are split in 4MB-sized, 4MB-aligned blocks (1024 pages)
-  represented by vm_block_t structures. Each block may be either free (all
+  Address space regions are split in 4MB-sized, 4MB-aligned blocks (1024 pages),
+  each represented by vm_block_t structures. Each block may be either free (all
   pages available for allocation), partial (some pages available) or used (all
   pages allocated). For partial blocks, a page is used as a page stack for
   fast allocation and de-allocation. 
@@ -47,7 +43,7 @@
     partial blocks. If the next member is NULL, then the block is unlinked,
     otherwise it is linked either to the free or the partial list. When the
     block is unlinked, the prev and stack_ptr members are undefined (probably
-    not NULL). When it the block is linked, either the stack_ptr member is NULL,
+    not NULL). When the block is linked, either the stack_ptr member is NULL,
     in which case the block is free (linked to the free list), or it is non-NULL,
     in which case it is a partial block (linked to the partial list).
 */
