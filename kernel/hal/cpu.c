@@ -4,27 +4,9 @@
 #include <stdint.h>
 #include <string.h>
 
-unsigned int  cpu_dcache_alignment;
 
-unsigned long cpu_features;
+cpu_info_t cpu_info;
 
-unsigned long cpu_cpuid_max;
-
-unsigned long cpu_cpuid_ext_max;
-
-unsigned long cpu_family;
-
-unsigned long cpu_model;
-
-unsigned long cpu_stepping;
-
-unsigned long cpu_vendor;
-
-const char *cpu_vendor_name[] = {
-    "Generic x86",  /* CPU_VENDOR_GENERIC */
-    "AMD",          /* CPU_VENDOR_AMD */
-    "Intel"         /* CPU_VENDOR_INTEL */
-};
 
 void cpu_init_data(cpu_data_t *data, addr_t kernel_stack) {
     tss_t *tss;
@@ -72,31 +54,43 @@ void cpu_init_data(cpu_data_t *data, addr_t kernel_stack) {
 }    
 
 void cpu_detect_features(void) {
-    uint32_t            temp;
-    uint32_t            signature;
-    uint32_t            flags, ext_flags;
-    uint32_t            vendor_dw0, vendor_dw1, vendor_dw2;
-    x86_cpuid_regs_t    regs;
+    uint32_t temp_eflags;
     
-    cpu_features = 0;
+    /* default values */
+    cpu_info.dcache_alignment   = 32;
+    cpu_info.features           = 0;
+    cpu_info.vendor             = CPU_VENDOR_GENERIC;
+    cpu_info.family             = 0;
+    cpu_info.model              = 0;
+    cpu_info.stepping           = 0;
     
     /* The CPUID instruction is available if we can change the value of eflags
      * bit 21 (ID) */
-    temp  = get_eflags();
-    temp ^= CPU_EFLAGS_ID;
-    set_eflags(temp);
+    temp_eflags  = get_eflags();
+    temp_eflags ^= CPU_EFLAGS_ID;
+    set_eflags(temp_eflags);
     
-    if(temp == get_eflags()) {
-        cpu_features |= CPU_FEATURE_CPUID;
+    if(temp_eflags == get_eflags()) {
+        cpu_info.features |= CPU_FEATURE_CPUID;
     }
     
-    /* get CPU vendor ID string */    
-    if(cpu_features & CPU_FEATURE_CPUID) {
+    if(cpu_has_feature(CPU_FEATURE_CPUID)) {
+        uint32_t            signature;
+        uint32_t            flags, ext_flags;
+        uint32_t            vendor_dw0, vendor_dw1, vendor_dw2;
+        uint32_t            cpuid_max;
+        uint32_t            cpuid_ext_max;
+        x86_cpuid_regs_t    regs;
+
+        /* default values */
+        flags               = 0;
+        ext_flags           = 0;
+
         /* function 0: vendor ID string, max value of eax when calling CPUID */
         regs.eax = 0;
         
         /* call CPUID instruction */
-        cpu_cpuid_max = cpuid(&regs);
+        cpuid_max  = cpuid(&regs);
         vendor_dw0 = regs.ebx;
         vendor_dw1 = regs.edx;
         vendor_dw2 = regs.ecx;
@@ -106,98 +100,85 @@ void cpu_detect_features(void) {
             && vendor_dw1 == CPU_VENDOR_AMD_DW1
             && vendor_dw2 == CPU_VENDOR_AMD_DW2) {
                 
-            cpu_vendor = CPU_VENDOR_AMD;
+            cpu_info.vendor = CPU_VENDOR_AMD;
         }
         else if (vendor_dw0 == CPU_VENDOR_INTEL_DW0
             &&   vendor_dw1 == CPU_VENDOR_INTEL_DW1
             &&   vendor_dw2 == CPU_VENDOR_INTEL_DW2) {
                 
-            cpu_vendor = CPU_VENDOR_INTEL;
-        }
-        else {
-            cpu_vendor = CPU_VENDOR_GENERIC;
+            cpu_info.vendor = CPU_VENDOR_INTEL;
         }
         
+        /* get processor signature (family/model/stepping) and feature flags */
+        if(cpuid_max >= 1) {
+            /* function 1: processor signature and feature flags */
+            regs.eax = 1;
+
+            /* call CPUID instruction */
+            signature = cpuid(&regs);
+
+            /* set processor signature */
+            cpu_info.stepping  = signature       & 0xf;
+            cpu_info.model     = (signature>>4)  & 0xf;
+            cpu_info.family    = (signature>>8)  & 0xf;
+
+            /* feature flags */
+            flags = regs.edx;
+
+            /* cache alignment */
+            if(flags & CPUID_FEATURE_CLFLUSH) {
+                cpu_info.dcache_alignment = ((regs.ebx >> 8) & 0xff) * 8;
+            }
+        }
+
         /* extended function 0: max value of eax when calling CPUID (extended function) */
         regs.eax = 0x80000000;
-        cpu_cpuid_ext_max = cpuid(&regs);
-    }
-    
-    /* get processor signature (family/model/stepping) and feature flags */
-    cpu_family      = 0;
-    cpu_model       = 0;
-    cpu_stepping    = 0;
-    flags           = 0;
-    
-    /* default value */
-    cpu_dcache_alignment = 32;
-    
-    if((cpu_features & CPU_FEATURE_CPUID) && cpu_cpuid_max >= 1) {
-        /* function 1: processor signature and feature flags */
-        regs.eax = 1;
-        
-        /* call CPUID instruction */
-        signature = cpuid(&regs);
-        
-        /* set processor signature */
-        cpu_stepping    = signature       & 0xf;
-        cpu_model       = (signature>>4)  & 0xf;
-        cpu_family      = (signature>>8)  & 0xf;
-        
-        /* feature flags */
-        flags = regs.edx;
-        
-        /* cache alignment */
-        if(flags & CPUID_FEATURE_CLFLUSH) {
-            cpu_dcache_alignment = ((regs.ebx >> 8) & 0xff) * 8;
+        cpuid_ext_max = cpuid(&regs);
+
+        /* get extended feature flags */
+        if(cpuid_ext_max >= 0x80000001) {
+            /* extended function 1: extended feature flags */
+            regs.eax = 0x80000001;
+            (void)cpuid(&regs);
+
+            /* extended feature flags */
+            ext_flags = regs.edx;
         }
-    }
-    
-    /* get extended feature flags */
-    ext_flags = 0;
-    
-    if((cpu_features & CPU_FEATURE_CPUID) && cpu_cpuid_ext_max >= 0x80000001) {
-        /* extended function 1: extended feature flags */
-        regs.eax = 0x80000001;
-        (void)cpuid(&regs);
-        
-        /* extended feature flags */
-        ext_flags = regs.edx;
-    }
-    
-    /* support for sysenter/sysexit */
-    if(flags & CPUID_FEATURE_SEP) {
-        if(cpu_vendor == CPU_VENDOR_AMD) {
-            cpu_features |= CPU_FEATURE_SYSENTER;
-        }
-        else if(cpu_vendor == CPU_VENDOR_INTEL) {
-            if(cpu_family == 6 && cpu_model < 3 && cpu_stepping < 3) {
-                /* not supported */
+
+        /* support for SYSENTER/SYSEXIT instructions */
+        if(flags & CPUID_FEATURE_SEP) {
+            if(cpu_info.vendor == CPU_VENDOR_AMD) {
+                cpu_info.features |= CPU_FEATURE_SYSENTER;
             }
-            else {
-                cpu_features |= CPU_FEATURE_SYSENTER;
+            else if(cpu_info.vendor == CPU_VENDOR_INTEL) {
+                if(cpu_info.family == 6 && cpu_info.model < 3 && cpu_info.stepping < 3) {
+                    /* not supported */
+                }
+                else {
+                    cpu_info.features |= CPU_FEATURE_SYSENTER;
+                }
             }
         }
-    }
-    
-    /* support for syscall/sysret */
-    if(cpu_vendor == CPU_VENDOR_AMD) {
-        if(ext_flags & CPUID_EXT_FEATURE_SYSCALL) {
-            cpu_features |= CPU_FEATURE_SYSCALL;
+
+        /* support for SYSCALL/SYSRET instructions */
+        if(cpu_info.vendor == CPU_VENDOR_AMD) {
+            if(ext_flags & CPUID_EXT_FEATURE_SYSCALL) {
+                cpu_info.features |= CPU_FEATURE_SYSCALL;
+            }
         }
-    }
-    
-    /* support for local APIC */
-    if(cpu_vendor == CPU_VENDOR_AMD || cpu_vendor == CPU_VENDOR_INTEL) {
-        if(flags & CPUID_FEATURE_APIC) {
-            cpu_features |= CPU_FEATURE_LOCAL_APIC;
+
+        /* support for local APIC */
+        if(cpu_info.vendor == CPU_VENDOR_AMD || cpu_info.vendor == CPU_VENDOR_INTEL) {
+            if(flags & CPUID_FEATURE_APIC) {
+                cpu_info.features |= CPU_FEATURE_LOCAL_APIC;
+            }
         }
-    }
-    
-    /* support for physical address extension (PAE) */
-    if(cpu_vendor == CPU_VENDOR_AMD || cpu_vendor == CPU_VENDOR_INTEL) {
-        if(flags & CPUID_FEATURE_PAE) {
-            cpu_features |= CPU_FEATURE_PAE;
+
+        /* support for physical address extension (PAE) */
+        if(cpu_info.vendor == CPU_VENDOR_AMD || cpu_info.vendor == CPU_VENDOR_INTEL) {
+            if(flags & CPUID_FEATURE_PAE) {
+                cpu_info.features |= CPU_FEATURE_PAE;
+            }
         }
     }
 }

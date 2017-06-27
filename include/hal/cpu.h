@@ -3,7 +3,7 @@
 
 #include <hal/cpu_data.h>
 #include <hal/descriptors.h>
-
+#include <stdbool.h>
 
 #define MSR_IA32_SYSENTER_CS        0x174
 
@@ -64,25 +64,20 @@
 #define CPU_VENDOR_INTEL_DW1        0x49656e69    /* ineI */
 #define CPU_VENDOR_INTEL_DW2        0x6c65746e    /* ntel */
 
+typedef struct {
+    unsigned int     dcache_alignment;
+    uint32_t         features;
+    int              vendor;
+    int              family;
+    int              model;
+    int              stepping;
+} cpu_info_t;
 
-extern unsigned int  cpu_dcache_alignment;
+extern cpu_info_t cpu_info;
 
-extern unsigned long cpu_features;
-
-extern unsigned long cpu_cpuid_max;
-
-extern unsigned long cpu_cpuid_ext_max;
-
-extern unsigned long cpu_family;
-
-extern unsigned long cpu_model;
-
-extern unsigned long cpu_stepping;
-
-extern unsigned long cpu_vendor;
-
-extern const char *cpu_vendor_name[];
-
+static inline bool cpu_has_feature(uint32_t mask) {
+    return (cpu_info.features & mask) == mask;
+}
 
 void cpu_init_data(cpu_data_t *data, addr_t kernel_stack);
 

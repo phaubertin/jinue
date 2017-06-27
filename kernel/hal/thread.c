@@ -80,7 +80,7 @@ void thread_context_switch(thread_context_t *thread_ctx) {
         tss->esp2 = kernel_stack_base;
 
         /* update kernel stack address for SYSENTER instruction */
-        if(cpu_features & CPU_FEATURE_SYSENTER) {
+        if(cpu_has_feature(CPU_FEATURE_SYSENTER)) {
             wrmsr(MSR_IA32_SYSENTER_ESP, (uint64_t)(uintptr_t)kernel_stack_base);
         }
 

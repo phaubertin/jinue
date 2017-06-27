@@ -154,7 +154,7 @@ void hal_init(void) {
     /* choose system call method */
     syscall_method = SYSCALL_METHOD_INTR;
     
-    if(cpu_features & CPU_FEATURE_SYSENTER) {
+    if(cpu_has_feature(CPU_FEATURE_SYSENTER)) {
         syscall_method = SYSCALL_METHOD_FAST_INTEL;
         
         wrmsr(MSR_IA32_SYSENTER_CS,  GDT_KERNEL_CODE * 8);
@@ -164,7 +164,7 @@ void hal_init(void) {
         wrmsr(MSR_IA32_SYSENTER_ESP, (uint64_t)(uintptr_t)NULL);
     }
     
-    if(cpu_features & CPU_FEATURE_SYSCALL) {
+    if(cpu_has_feature(CPU_FEATURE_SYSCALL)) {
         syscall_method = SYSCALL_METHOD_FAST_AMD;
         
         msrval  = rdmsr(MSR_EFER);

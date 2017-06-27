@@ -39,7 +39,7 @@ void vm_init(void) {
     addr_space_t    *addr_space;
     uint32_t         temp;
     
-    if(cpu_features & CPU_FEATURE_PAE) {
+    if(cpu_has_feature(CPU_FEATURE_PAE)) {
         printk("Processor supports Physical Address Extension (PAE).\n");
         
         /** TODO: change me once PAE support is implemented */

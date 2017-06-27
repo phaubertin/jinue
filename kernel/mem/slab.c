@@ -103,8 +103,8 @@ slab_cache_t *slab_cache_create(
         cache->alignment = alignment;
     }
     
-    if((flags & SLAB_HWCACHE_ALIGN) && cache->alignment < cpu_dcache_alignment) {
-        cache->alignment = cpu_dcache_alignment;
+    if((flags & SLAB_HWCACHE_ALIGN) && cache->alignment < cpu_info.dcache_alignment) {
+        cache->alignment = cpu_info.dcache_alignment;
     }
     
     if(cache->alignment % sizeof(uint32_t) != 0) {
