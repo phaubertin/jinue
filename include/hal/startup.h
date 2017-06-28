@@ -1,7 +1,7 @@
-#ifndef _JINUE_KERNEL_STARTUP_H_
-#define _JINUE_KERNEL_STARTUP_H_
+#ifndef _JINUE_KERNEL_HAL_STARTUP_H_
+#define _JINUE_KERNEL_HAL_STARTUP_H_
 
-#define BOOT_STACK_SIZE    8192
+#include <hal/asm/startup.h>
 
 void __start(void);
 

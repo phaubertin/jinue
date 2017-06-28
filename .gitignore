@@ -4,6 +4,9 @@
 # static libraries
 *.a
 
+# pre-processed NASM assembly language files
+*.nasm
+
 # files created during build process
 symbols.c
 symbols.txt

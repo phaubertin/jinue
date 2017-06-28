@@ -1,0 +1,7 @@
+#ifndef _JINUE_KERNEL_HAL_ASM_STARTUP_H_
+#define _JINUE_KERNEL_HAL_ASM_STARTUP_H_
+
+#define BOOT_STACK_SIZE    8192
+
+#endif
+

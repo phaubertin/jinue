@@ -5,11 +5,7 @@
 #include <hal/vm.h>
 #include <stddef.h>
 
-#define THREAD_CONTEXT_BITS     9
-
-#define THREAD_CONTEXT_SIZE     (1 << THREAD_CONTEXT_BITS)
-
-#define THREAD_CONTEXT_MASK     (THREAD_CONTEXT_SIZE - 1)
+#include <hal/asm/thread.h>
 
 
 /* For each thread context, a block is allocated that contains the thread

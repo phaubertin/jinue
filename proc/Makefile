@@ -32,9 +32,6 @@ proc: $(OBJS) $(libjinue)/libjinue.a $(libjinue)/libjinue-proc.a
 
 proc-stripped: proc
 
-%.o: %.asm
-	nasm -f elf -o $@ $<
-
 %-stripped: %
 	strip --strip-debug -o $@ $<
 

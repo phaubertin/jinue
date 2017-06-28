@@ -1,10 +1,12 @@
-#ifndef _JINUE_KERNEL_KERNEL_H_
-#define _JINUE_KERNEL_KERNEL_H_
+#ifndef _JINUE_KERNEL_HAL_KERNEL_H_
+#define _JINUE_KERNEL_HAL_KERNEL_H_
 
 #include <jinue/types.h>
 #include <hal/startup.h>
 #include <stddef.h>
 #include <vm_alloc.h>
+
+#include <hal/asm/kernel.h>
 
 
 extern int in_kernel;

@@ -20,7 +20,7 @@ fi
 
 
 # Output everything
-echo "%define SETUP_SIZE"  `stat -c "%s" $2` > $1
-echo "%define KERNEL_SIZE" `stat -c "%s" $3` >> $1
-echo "%define PAYLOAD_SIZE 0" >> $1
+echo "#define SETUP_SIZE"  `stat -c "%s" $2` > $1
+echo "#define KERNEL_SIZE" `stat -c "%s" $3` >> $1
+echo "#define PAYLOAD_SIZE 0" >> $1
 

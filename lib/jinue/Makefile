@@ -11,7 +11,8 @@ OBJS-PROC   = page_tables.o printk.o vga.o
 OBJS-KERN   = page_tables.o printk.o
 OBJS        = $(OBJS-USER) $(OBJS-PROC)
 
-CFLAGS  += -m32 -march=i686 -O3 -nostdinc -ffreestanding -static -std=c99 -pedantic -Wall -Werror=implicit-function-declaration -Werror=uninitialized
+CPPFLAGS	+= -I$(includes) -I$(includes)/kstdc -nostdinc
+CFLAGS  	+= -m32 -march=i686 -O3 -nostdinc -ffreestanding -static -std=c99 -pedantic -Wall -Werror=implicit-function-declaration -Werror=uninitialized
 
 .PHONY: all
 all: $(TARGETS)
@@ -24,7 +25,7 @@ all-proc: $(TARGET-USER) $(TARGET-PROC)
 
 .PHONY: clean
 clean:
-	-rm -f $(TARGETS) $(OBJS)
+	-rm -f $(TARGETS) $(OBJS) $(OBJS:%.o=%.nasm)
 
 $(TARGET-USER): $(OBJS-USER)
 
@@ -35,8 +36,8 @@ $(TARGET-KERN): $(OBJS-KERN)
 %.a:
 	ar rcs $@ $^
 
-%.o: %.c
-	$(CC) $(CFLAGS) -c -I$(includes) -I$(includes)/kstdc -o $@ $<
+%.nasm: %.asm
+	$(CPP) $(CPPFLAGS) -x assembler-with-cpp -o $@ $<
 
-%.o: %.asm
+%.o: %.nasm
 	nasm -f elf -o $@ $<

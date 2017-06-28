@@ -1,5 +1,4 @@
-%define GDT_KERNEL_DATA         2
-%define GDT_LENGTH              8
+#include <jinue/asm/descriptors.h>
 
     bits 32
     

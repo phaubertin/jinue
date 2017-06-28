@@ -1,7 +1,5 @@
-%define THREAD_CONTEXT_SIZE 512
-
-%define GDT_USER_CODE       3
-%define GDT_USER_DATA       4
+#include <jinue/asm/descriptors.h>
+#include <hal/asm/thread.h>
 
     bits 32
     

@@ -1,10 +1,5 @@
-%define NVECTORS                    256
-%define GDT_KERNEL_DATA             2
-
-%define EXCEPTION_DOUBLE_FAULT           8
-%define EXCEPTION_INVALID_TSS           10
-%define EXCEPTION_PAGE_FAULT            14
-%define EXCEPTION_ALIGNMENT             17
+#include <jinue/asm/descriptors.h>
+#include <hal/asm/irq.h>
 
 %define NO_ERROR_CODE                   0
 %define GOT_ERROR_CODE                  1
@@ -198,15 +193,15 @@ align 32
 irq_jtable:
     
     %assign ivt 0
-    %rep NVECTORS / 7 + 1
+    %rep IDT_VECTOR_COUNT / 7 + 1
         %assign stone_ivt ivt
         %define stone .jump %+ stone_ivt
 stone:
         jmp irq_save_state
         
         %rep 7
-            %if ivt < NVECTORS
-                ; set irq_jtable.irqxx label 
+            %if ivt < IDT_VECTOR_COUNT
+                ; set irq_jtable.irqxx label
                 .irq %+ ivt:
                 
                 ; This if statement is not technically necessary, but it
@@ -240,8 +235,8 @@ align 32
     global idt
 idt:
     %assign ivt 0
-    %rep NVECTORS
-        ; set to irq_jtable.irqxx label 
+    %rep IDT_VECTOR_COUNT
+        ; set to irq_jtable.irqxx label
         dd irq_jtable.irq %+ ivt
         dd 0
         %assign ivt ivt+1

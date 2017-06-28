@@ -1,4 +1,4 @@
-%define BOOT_STACK_SIZE 8192
+#include <hal/asm/startup.h>
 
 bits 32
 

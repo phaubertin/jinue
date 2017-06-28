@@ -1,10 +1,13 @@
+includes   = include/
 kernel     = kernel/kernel
 kernel_bin = bin/kernel-bin
 kernel_img = bin/jinue
 
 symbols    = symbols.o symbols.c symbols.txt
 unclean    = $(kernel_bin) $(kernel_img) $(symbols) bin/setup bin/boot \
-	         boot/boot.inc
+	         boot/setup.nasm boot/boot.nasm boot/boot.h
+
+CPPFLAGS   = -I$(includes) -nostdinc
 
 DEBUG     ?= yes
 
@@ -65,11 +68,15 @@ symbols.o: symbols.c
 	$(CC) -c -m32 -nostdinc -ffreestanding -fno-common -std=c99 -pedantic -Wall -Iinclude -Iinclude/kstdc -o $@ $<
 
 # ----- setup code, boot sector, etc.
-bin/boot: boot/boot.asm boot/boot.inc
-	nasm -f bin -Iboot/ -o $@ $<
+bin/boot: boot/boot.asm boot/boot.h
 
 bin/setup: boot/setup.asm
-	nasm -f bin -o $@ $<
 
-boot/boot.inc: $(kernel_bin) bin/setup
-	scripts/boot_sector_inc.sh boot/boot.inc bin/setup $(kernel_bin)
+boot/boot.h: $(kernel_bin) bin/setup
+	scripts/boot_sector_inc.sh $@ bin/setup $(kernel_bin)
+
+%.nasm: %.asm
+	$(CPP) $(CPPFLAGS) -x assembler-with-cpp -o $@ $<
+
+bin/%: boot/%.nasm
+	nasm -f bin -Iboot/ -o $@ $<

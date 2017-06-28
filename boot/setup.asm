@@ -1,7 +1,8 @@
+#include <hal/asm/kernel.h>
+
 %define CODE_SEG        1
 %define DATA_SEG        2
 %define SETUP_SEG       3
-%define KERNEL_START    0x100000
 
 %define SMAP            0x534d4150
 %define E820_MAX        20
