@@ -533,18 +533,22 @@ void vm_alloc_partial_block(vm_block_t *block) {
 }
 
 void vm_alloc_custom_block(vm_block_t *block, addr_t start_addr, addr_t end_addr) {
-    addr_t      page;
+#ifndef NDEBUG
     addr_t      limit;
+#endif
+    addr_t      page;
     addr_t      adjusted_start;
-    
+
     /** ASSERTION: block is not null */
     assert(block != NULL);
     
     /** ASSERTION: start and end addresses must be page aligned */
     assert(page_offset_of(start_addr) == 0 && page_offset_of(end_addr) == 0);
-    
+
+#ifndef NDEBUG
     limit = block->base_addr + VM_ALLOC_BLOCK_SIZE;
-    
+#endif
+
     /** ASSERTION: start and end addr are inside block, address range is non-empty */
     assert(start_addr >= block->base_addr && end_addr <= limit && start_addr < end_addr );
     
