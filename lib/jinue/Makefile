@@ -6,7 +6,7 @@ TARGET-KERN = libjinue-kernel.a
 
 TARGETS     = $(TARGET-USER) $(TARGET-KERN) $(TARGET-PROC)
 
-OBJS-USER   = stubs.o syscall.o
+OBJS-USER   = crt.o stubs.o syscall.o
 OBJS-PROC   = page_tables.o printk.o vga.o
 OBJS-KERN   = page_tables.o printk.o
 OBJS        = $(OBJS-USER) $(OBJS-PROC)

@@ -3,7 +3,7 @@ kernel   = ../kernel
 lib      = ../lib
 libjinue = $(lib)/jinue
 
-OBJS  = crt.o proc.o
+OBJS  = proc.o
 
 DEBUG   ?= yes
 
@@ -13,9 +13,10 @@ else
 	DEBUG_FLAGS = -DNDEBUG
 endif
 
-CFLAGS  += -m32 -march=i686 -O3 $(DEBUG_FLAGS) -nostdinc -ffreestanding -static -std=c99 -pedantic -Wall -Werror=implicit-function-declaration -Werror=uninitialized -Werror=return-type
-LDFLAGS += -m elf_i386 -static -nostdlib -e crt_start
-LIBS    = -L$(libjinue) -ljinue -ljinue-proc
+CPPFLAGS	+= -I$(includes) -I$(includes)/kstdc
+CFLAGS  	+= -m32 -march=i686 -O3 $(DEBUG_FLAGS) -nostdinc -ffreestanding -static -std=c99 -pedantic -Wall -Werror=implicit-function-declaration -Werror=uninitialized -Werror=return-type
+LDFLAGS 	+= -Wl,-m,elf_i386 -static -nostdlib
+LIBS    	 = -L$(libjinue) -ljinue -ljinue-proc
 
 .PHONY: all
 all: proc-stripped
@@ -24,17 +25,17 @@ all: proc-stripped
 clean:
 	-rm -f proc proc-stripped $(OBJS)
 
-$(libjinue)/libjinue.a $(libjinue)/libjinue-proc.a:
+$(libjinue)/libjinue.a $(libjinue)/libjinue-proc.a: FORCE
 	make -C $(libjinue)
 
 proc: $(OBJS) $(libjinue)/libjinue.a $(libjinue)/libjinue-proc.a
-	$(LD) $(LDFLAGS) $(OBJS) -o $@ $(LIBS)
 
 proc-stripped: proc
-	strip --strip-debug -o $@ $<
-
-%.o: %.c
-	$(CC) $(CFLAGS) -c -I$(includes) -I$(includes)/kstdc -o $@ $<
 
 %.o: %.asm
 	nasm -f elf -o $@ $<
+
+%-stripped: %
+	strip --strip-debug -o $@ $<
+
+FORCE:
