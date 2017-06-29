@@ -1,29 +1,24 @@
 include header.mk
 
-kernel     = kernel/kernel
-kernel_bin = bin/kernel-bin
-kernel_img = bin/jinue
+subdirs		 = doc kernel proc $(libjinue)
 
-boot_h	   = boot/boot.gen.h
+kernel     	 = kernel/kernel
+kernel_bin 	 = bin/kernel-bin
+kernel_img 	 = bin/jinue
 
-symbols    = symbols.o symbols.c symbols.txt
-unclean    = $(kernel_bin) $(kernel_img) $(symbols) bin/setup bin/boot \
-	         boot/setup.nasm boot/boot.nasm boot/boot.h
+boot_h	   	 = boot/boot.gen.h
+
+symbols    	 = symbols.o symbols.c symbols.txt
+UNCLEAN    	 = $(kernel_bin) $(kernel_img) $(symbols) bin/setup bin/boot \
+	           boot/setup.nasm boot/boot.nasm $(boot_h)
+TARGET		 = $(kernel_img)
 
 # ----- main targets
-.PHONY: all
-all: $(kernel_img)
+include $(common)
 
 .PHONY: install
-install: $(kernel_img)
-	install -m644 $(kernel_img) /boot
-
-.PHONY: clean
-clean:
-	make -C kernel clean
-	make -C proc clean
-	make -C lib/jinue clean
-	-rm -f $(unclean)
+install: $(TARGET)
+	install -m644 $< /boot
 
 # ----- documentation
 .PHONY: doc
@@ -75,5 +70,3 @@ $(boot_h): $(kernel_bin) bin/setup
 
 bin/%: boot/%.nasm
 	nasm -f bin -Iboot/ -o $@ $<
-
-include footer.mk

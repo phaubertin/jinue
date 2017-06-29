@@ -1,10 +1,10 @@
+jinue_root = ..
+include $(jinue_root)/header.mk
 
-.PHONY: all
-all: doc pdf
+UNCLEAN		 	 = latex html
+PHONY_TARGETS	 = pdf
 
-.PHONY: clean
-clean:
-	-rm -rf latex html
+include $(common)
 
 .PHONY: doc
 doc:

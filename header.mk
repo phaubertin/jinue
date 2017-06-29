@@ -12,6 +12,20 @@ hal_includes		 = $(includes)/hal
 kstdc_includes		 = $(includes)/kstdc
 libjinue			 = $(lib)/jinue
 
+# object files
+C_OBJS				 = $(C_SOURCES:%.c=%.o)
+NASM_OBJS			 = $(NASM_SOURCES:%.asm=%.o)
+EXTRA_OBJS			 =
+OBJS				 = $(C_OBJS) $(NASM_OBJS) $(EXTRA_OBJS)
+
+# built targets
+PHONY_TARGETS		?=
+TARGETS				?= $(TARGET)
+ALL_TARGETS			 = $(TARGETS) $(PHONY_TARGETS)
+
+# files to clean up
+UNCLEAN				 = $(OBJS) $(TARGETS) $(NASM_SOURCES:%.asm=%.nasm)
+
 # debug/release build
 #
 # Anything other than DEBUG=yes means release
@@ -50,3 +64,6 @@ LDFLAGS 			 = $(ARCH_LDFLAGS) $(OTHER_LDFLAGS)
 ARCH_NASMFLAGS		 = -felf
 OTHER_NASMFLAGS		 =
 NASMFLAGS			 = $(ARCH_NASMFLAGS) $(DEBUG_NASMFLAGS) $(OTHER_NASMFLAGS)
+
+# macro to include common target definitions (all, clean, implicit rules)
+common				 = $(jinue_root)/common.mk

@@ -1,6 +1,8 @@
 jinue_root = ..
 include $(jinue_root)/header.mk
 
+subdirs		 = core debug hal kstdc mem
+
 KERN-STARTUP = hal/asm/startup.o
 KERN-CORE    = core/kern-core.o
 KERN-DEBUG   = debug/kern-debug.o
@@ -9,23 +11,19 @@ KERN-LIB     = ../lib/jinue/libjinue-kernel.a
 KERN-MEM     = mem/kern-mem.o
 KERN-STDC    = kstdc/kern-stdc.o
 
+TARGET	 	 = kernel
+TARGET_OBJS	 = \
+	$(KERN-STARTUP) \
+	$(KERN-CORE) \
+	$(KERN-DEBUG) \
+	$(KERN-HAL) \
+    $(KERN-LIB) \
+    $(KERN-MEM) \
+    $(KERN-STDC) \
 
-OBJS = $(KERN-STARTUP) $(KERN-CORE) $(KERN-DEBUG) $(KERN-HAL) \
-       $(KERN-LIB) $(KERN-MEM) $(KERN-STDC)
+include $(common)
 
-.PHONY: all
-all: kernel
-
-.PHONY: clean
-clean:
-	make -C core  clean
-	make -C debug clean
-	make -C hal   clean
-	make -C kstdc clean
-	make -C mem   clean
-	-rm -f kernel
-
-kernel: $(OBJS) $(scripts)/kernel.lds
+$(TARGET): $(TARGET_OBJS) $(scripts)/kernel.lds
 	$(LINK.o) -r $^ $(LOADLIBES) $(LDLIBS) -o $@
 
 $(KERN-STARTUP):
@@ -50,5 +48,3 @@ $(KERN-MEM):
 
 $(KERN-STDC):
 	make -C kstdc
-
-include $(jinue_root)/footer.mk	
