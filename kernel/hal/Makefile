@@ -15,8 +15,6 @@ C_SOURCES	 = \
 	vm.c \
 	vm_x86.c \
 
-OBJS = boot.o bootmem.o cpu.o e820.o hal.o interrupt.o thread.o vga.o vm.o vm_x86.o
-
 HAL-ASM     = asm/kern-hal-asm.o
 HAL-STARTUP = asm/startup.o
 TARGET      = kern-hal.o
