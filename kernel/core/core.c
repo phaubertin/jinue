@@ -7,7 +7,7 @@
 #include <panic.h>
 #include <printk.h>
 #include <syscall.h>
-#include "build-info.h"
+#include "build-info.gen.h"
 
 
 static Elf32_Ehdr *find_process_manager(void) {

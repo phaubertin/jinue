@@ -4,6 +4,8 @@ kernel     = kernel/kernel
 kernel_bin = bin/kernel-bin
 kernel_img = bin/jinue
 
+boot_h	   = boot/boot.gen.h
+
 symbols    = symbols.o symbols.c symbols.txt
 unclean    = $(kernel_bin) $(kernel_img) $(symbols) bin/setup bin/boot \
 	         boot/setup.nasm boot/boot.nasm boot/boot.h
@@ -64,11 +66,11 @@ symbols.c: symbols.txt
 symbols.o: symbols.c
 
 # ----- setup code, boot sector, etc.
-bin/boot: boot/boot.asm boot/boot.h
+bin/boot: boot/boot.asm $(boot_h)
 
 bin/setup: boot/setup.asm
 
-boot/boot.h: $(kernel_bin) bin/setup
+$(boot_h): $(kernel_bin) bin/setup
 	scripts/boot_sector_inc.sh $@ bin/setup $(kernel_bin)
 
 bin/%: boot/%.nasm

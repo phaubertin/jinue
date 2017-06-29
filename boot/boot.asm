@@ -1,4 +1,4 @@
-#include "boot.h"
+#include "boot.gen.h"
 
     times 0x1ed-($-$$) db 0
 
