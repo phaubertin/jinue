@@ -1,21 +1,10 @@
-includes = ../include
-kernel   = ../kernel
-lib      = ../lib
-libjinue = $(lib)/jinue
+jinue_root = ..
+include $(jinue_root)/header.mk
+
+kernel   = $(jinue_root)/kernel
 
 OBJS  = proc.o
 
-DEBUG   ?= yes
-
-ifeq ($(DEBUG), yes)
-	DEBUG_FLAGS = -g3
-else
-	DEBUG_FLAGS = -DNDEBUG
-endif
-
-CPPFLAGS	+= -I$(includes) -I$(includes)/kstdc
-CFLAGS  	+= -m32 -march=i686 -O3 $(DEBUG_FLAGS) -nostdinc -ffreestanding -static -std=c99 -pedantic -Wall -Werror=implicit-function-declaration -Werror=uninitialized -Werror=return-type
-LDFLAGS 	+= -Wl,-m,elf_i386 -static -nostdlib
 LIBS    	 = -L$(libjinue) -ljinue -ljinue-proc
 
 .PHONY: all
@@ -32,7 +21,4 @@ proc: $(OBJS) $(libjinue)/libjinue.a $(libjinue)/libjinue-proc.a
 
 proc-stripped: proc
 
-%-stripped: %
-	strip --strip-debug -o $@ $<
-
-FORCE:
+include $(jinue_root)/footer.mk

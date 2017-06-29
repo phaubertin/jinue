@@ -1,4 +1,5 @@
-scripts  = ../scripts
+jinue_root = ..
+include $(jinue_root)/header.mk
 
 KERN-STARTUP = hal/asm/startup.o
 KERN-CORE    = core/kern-core.o
@@ -11,15 +12,6 @@ KERN-STDC    = kstdc/kern-stdc.o
 
 OBJS = $(KERN-STARTUP) $(KERN-CORE) $(KERN-DEBUG) $(KERN-HAL) \
        $(KERN-LIB) $(KERN-MEM) $(KERN-STDC)
-
-DEBUG   ?= yes
-
-ifeq ($(DEBUG), yes)
-	DEBUG_FLAGS = -g3
-else
-	DEBUG_FLAGS = -DNDEBUG
-endif
-
 
 .PHONY: all
 all: kernel
@@ -34,8 +26,7 @@ clean:
 	-rm -f kernel
 
 kernel: $(OBJS) $(scripts)/kernel.lds
-	$(LD) -r -T $(scripts)/kernel.lds -o $@ $(OBJS)
-	
+	$(LINK.o) -r $^ $(LOADLIBES) $(LDLIBS) -o $@
 
 $(KERN-STARTUP):
 	make -C hal hal-startup
@@ -60,5 +51,4 @@ $(KERN-MEM):
 $(KERN-STDC):
 	make -C kstdc
 
-FORCE:
-	
+include $(jinue_root)/footer.mk	

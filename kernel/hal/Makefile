@@ -1,5 +1,5 @@
-includes = ../../include
-scripts  = ../../scripts
+jinue_root = ../..
+include $(jinue_root)/header.mk
 
 hal_includes = $(includes)/hal
 
@@ -8,16 +8,6 @@ OBJS = boot.o bootmem.o cpu.o e820.o hal.o interrupt.o thread.o vga.o vm.o vm_x8
 HAL-ASM     = asm/kern-hal-asm.o
 HAL-STARTUP = asm/startup.o
 TARGET      = kern-hal.o
-
-DEBUG   ?= yes
-
-ifeq ($(DEBUG), yes)
-	DEBUG_FLAGS = -g3
-else
-	DEBUG_FLAGS = -DNDEBUG
-endif
-
-CFLAGS += -m32 -march=i686 -O3 $(DEBUG_FLAGS) -nostdinc -ffreestanding -fno-common -fno-inline -fno-omit-frame-pointer -std=c99 -pedantic -Wall -Werror=implicit-function-declaration -Werror=uninitialized -Werror=return-type
 
 .PHONY: all
 all: $(TARGET)
@@ -29,7 +19,7 @@ clean:
 	
 .PHONY: asm
 asm:
-	make DEBUG=$(DEBUG) -C asm
+	make -C asm
 
 .PHONY: hal-startup
 hal-startup : $(HAL-STARTUP)
@@ -37,7 +27,7 @@ hal-startup : $(HAL-STARTUP)
 $(HAL-STARTUP) $(HAL-ASM): asm
 
 $(TARGET): $(OBJS) $(HAL-ASM)
-	$(LD) -r -m elf_i386 -o $@ $^
+	$(LINK.o) -r $^ $(LOADLIBES) $(LDLIBS) -o $@
 
 
 boot.o:         boot.c          $(hal_includes)/boot.h
@@ -51,5 +41,4 @@ vga.o:          vga.c           $(hal_includes)/vga.h
 vm.o:           vm.c            $(hal_includes)/vm.h
 vm_x86.o:       vm_x86.c        $(hal_includes)/vm_x86.h
 
-%.o: %.c
-	$(CC) $(CFLAGS) -c -I$(includes) -I$(includes)/kstdc -o $@ $<
+include $(jinue_root)/footer.mk
