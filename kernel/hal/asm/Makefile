@@ -1,8 +1,8 @@
 jinue_root = ../../..
 include $(jinue_root)/header.mk
 
-STARTUP_SOURCES	 = startup.asm
-TARGET_SOURCES	 = \
+sources.startup	 = startup.asm
+sources.target	 = \
 	frame_pointer.asm \
 	io.asm \
 	irq.asm \
@@ -10,15 +10,15 @@ TARGET_SOURCES	 = \
 	thread.asm \
 	x86.asm \
 
-NASM_SOURCES	 = $(TARGET_SOURCES) $(STARTUP_SOURCES)
+sources.nasm     = $(sources.target) $(sources.startup)
 
-STARTUP			 = $(STARTUP_SOURCES:%.asm=%.o)
-TARGET 			 = kern-hal-asm.o
-TARGET_OBJS		 = $(TARGET_SOURCES:%.asm=%.o)
+startup          = $(sources.startup:%.asm=%.o)
+target           = kern-hal-asm.o
+objects.target   = $(sources.target:%.asm=%.o)
 
-TARGETS			 = $(TARGET) $(STARTUP)
+targets          = $(target) $(startup)
 
 include $(common)
 
-$(TARGET): $(TARGET_OBJS)
+$(target): $(objects.target)
 	$(LINK.o) -r $^ $(LOADLIBES) $(LDLIBS) -o $@

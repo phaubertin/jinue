@@ -1,29 +1,29 @@
 jinue_root = ../..
 include $(jinue_root)/header.mk
 
-C_SOURCES		 = page_tables.c printk.c syscall.c vga.c
-NASM_SOURCES	 = crt.asm stubs.asm
+sources.c        = page_tables.c printk.c syscall.c vga.c
+sources.nasm     = crt.asm stubs.asm
 
-TARGET-USER		 = libjinue.a
-TARGET-PROC		 = libjinue-proc.a
-TARGET-KERN		 = libjinue-kernel.a
+target.user      = libjinue.a
+target.proc      = libjinue-proc.a
+target.kernel    = libjinue-kernel.a
 
-TARGETS    		 = $(TARGET-USER) $(TARGET-KERN) $(TARGET-PROC)
+targets          = $(target.user) $(target.kernel) $(target.proc)
 
-OBJS-USER  		 = crt.o stubs.o syscall.o
-OBJS-PROC  		 = page_tables.o printk.o vga.o
-OBJS-KERN  		 = page_tables.o printk.o
+objects.user     = crt.o stubs.o syscall.o
+objects.proc     = page_tables.o printk.o vga.o
+objects.kernel   = page_tables.o printk.o
 
 include $(common)
 
 .PHONY: all-kernel
-all-kernel: $(TARGET-KERN)
+all-kernel: $(target.kernel)
 
 .PHONY: all-proc
-all-proc: $(TARGET-USER) $(TARGET-PROC)
+all-proc: $(target.user) $(target.proc)
 
-$(TARGET-USER): $(OBJS-USER)
+$(target.user): $(objects.user)
 
-$(TARGET-PROC): $(OBJS-PROC)
+$(target.proc): $(objects.proc)
 
-$(TARGET-KERN): $(OBJS-KERN)
+$(target.kernel): $(objects.kernel)

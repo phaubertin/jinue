@@ -3,7 +3,7 @@ include $(jinue_root)/header.mk
 
 subdirs = asm
 
-C_SOURCES	 = \
+sources.c    = \
 	boot.c \
 	bootmem.c \
 	cpu.c \
@@ -15,9 +15,9 @@ C_SOURCES	 = \
 	vm.c \
 	vm_x86.c \
 
-HAL-ASM     = asm/kern-hal-asm.o
-HAL-STARTUP = asm/startup.o
-TARGET      = kern-hal.o
+hal.asm     = asm/kern-hal-asm.o
+hal.startup = asm/startup.o
+target      = kern-hal.o
 
 include $(common)
 
@@ -26,9 +26,9 @@ asm:
 	make -C asm
 
 .PHONY: hal-startup
-hal-startup : $(HAL-STARTUP)
+hal-startup : $(hal.startup)
 
-$(HAL-STARTUP) $(HAL-ASM): asm
+$(hal.startup) $(hal.asm): asm
 
-$(TARGET): $(OBJS) $(HAL-ASM)
+$(target): $(objects) $(hal.asm)
 	$(LINK.o) -r $^ $(LOADLIBES) $(LDLIBS) -o $@

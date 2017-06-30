@@ -1,10 +1,10 @@
 jinue_root = ../..
 include $(jinue_root)/header.mk
 
-C_SOURCES		 = pfalloc.c slab.c vm_alloc.c
-TARGET			 = kern-mem.o
+sources.c		 = pfalloc.c slab.c vm_alloc.c
+target			 = kern-mem.o
 
 include $(common)
 
-$(TARGET): $(OBJS)
+$(target): $(objects)
 	$(LINK.o) -r $^ $(LOADLIBES) $(LDLIBS) -o $@

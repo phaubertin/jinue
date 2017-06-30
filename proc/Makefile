@@ -1,18 +1,19 @@
 jinue_root = ..
 include $(jinue_root)/header.mk
 
-C_SOURCES		 = proc.c
-PROC			 = proc
-TARGET			 = $(PROC)-stripped
+sources.c		 = proc.c
+proc			 = proc
+target			 = $(proc)-stripped
+
 LIBS    		 = -L$(libjinue) -ljinue -ljinue-proc
 
-UNCLEAN			+= $(PROC)
+unclean			+= $(proc)
 
 include $(common)
 
 $(libjinue)/libjinue.a $(libjinue)/libjinue-proc.a: FORCE
 	make -C $(libjinue)
 
-$(PROC): $(OBJS) $(libjinue)/libjinue.a $(libjinue)/libjinue-proc.a
+$(proc): $(objects) $(libjinue)/libjinue.a $(libjinue)/libjinue-proc.a
 
-$(TARGET): $(PROC)
+$(target): $(proc)

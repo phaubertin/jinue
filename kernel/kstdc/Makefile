@@ -1,10 +1,10 @@
 jinue_root = ../..
 include $(jinue_root)/header.mk
 
-C_SOURCES	 = assert.c string.c
-TARGET		 = kern-stdc.o
+sources.c	 = assert.c string.c
+target		 = kern-stdc.o
 
 include $(common)
 
-$(TARGET): $(OBJS)
+$(target): $(objects)
 	$(LINK.o) -r $^ $(LOADLIBES) $(LDLIBS) -o $@

@@ -1,8 +1,8 @@
 jinue_root = ..
 include $(jinue_root)/header.mk
 
-UNCLEAN		 	 = latex html
-PHONY_TARGETS	 = pdf
+unclean          = latex html
+targets.phony	 = pdf
 
 include $(common)
 

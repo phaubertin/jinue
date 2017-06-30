@@ -1,12 +1,12 @@
 .PHONY: all
-all: $(ALL_TARGETS)
+all: $(targets.all)
 
 .PHONY: clean
 clean:
 ifneq ($(strip $(subdirs)),)
 	for i in $(subdirs); do make -C $$i clean; done
 endif
-	-rm -f $(UNCLEAN)
+	-rm -f $(unclean)
 
 FORCE:
 

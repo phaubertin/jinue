@@ -9,15 +9,15 @@ kernel_img 	 = bin/jinue
 boot_h	   	 = boot/boot.gen.h
 
 symbols    	 = symbols.o symbols.c symbols.txt
-UNCLEAN    	 = $(kernel_bin) $(kernel_img) $(symbols) bin/setup bin/boot \
+unclean    	 = $(kernel_bin) $(kernel_img) $(symbols) bin/setup bin/boot \
 	           boot/setup.nasm boot/boot.nasm $(boot_h)
-TARGET		 = $(kernel_img)
+target		 = $(kernel_img)
 
 # ----- main targets
 include $(common)
 
 .PHONY: install
-install: $(TARGET)
+install: $(target)
 	install -m644 $< /boot
 
 # ----- documentation
