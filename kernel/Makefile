@@ -26,9 +26,6 @@ include $(common)
 $(target): $(objects.target) $(scripts)/kernel.lds
 	$(LINK.o) -r $^ $(LOADLIBES) $(LDLIBS) -o $@
 
-$(kernel.startup):
-	make -C hal hal-startup
-
 # The core directory must be re-maked every build because of the auto-generated
 # information about the build date and time.
 $(kernel.core): FORCE
@@ -37,7 +34,7 @@ $(kernel.core): FORCE
 $(kernel.debug):
 	make -C debug
 	
-$(kernel.hal):
+$(kernel.hal) $(kernel.startup):
 	make -C hal
 
 $(kernel.lib):

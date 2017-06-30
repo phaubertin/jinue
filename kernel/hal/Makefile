@@ -25,9 +25,6 @@ include $(common)
 asm:
 	make -C asm
 
-.PHONY: hal-startup
-hal-startup : $(hal.startup)
-
 $(hal.startup) $(hal.asm): asm
 
 $(target): $(objects) $(hal.asm)
