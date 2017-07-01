@@ -30,7 +30,7 @@ target               = $(jinue_iso)
 include $(common)
 
 .PHONY: install
-install: $(target)
+install: $(kernel_img)
 	install -m644 $< /boot
 
 # ----- documentation
