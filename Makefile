@@ -86,10 +86,10 @@ bin/%: boot/%.nasm
 
 # ----- bootable ISO image for virtual machine
 $(temp_iso_fs): $(kernel_img) $(grub_config) FORCE
-	mkdir -pv $(temp_iso_fs)/boot/grub/i386-pc
-	cp -v $(grub_modules)/* $(temp_iso_fs)/boot/grub/i386-pc/
-	cp -v $(kernel_img) $(temp_iso_fs)/boot/
-	cp -v $(grub_config) $(temp_iso_fs)/boot/grub/
+	mkdir -p $(temp_iso_fs)/boot/grub/i386-pc
+	cp $(grub_modules)/* $(temp_iso_fs)/boot/grub/i386-pc/
+	cp $(kernel_img) $(temp_iso_fs)/boot/
+	cp $(grub_config) $(temp_iso_fs)/boot/grub/
 	touch $(temp_iso_fs)
 
 $(grub_image): $(temp_iso_fs)
