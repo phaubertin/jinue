@@ -39,18 +39,22 @@ start:
     mov ss, ax
     sub sp, 0x200
     
-    ; Push setup code address on stack for the protected mode kernel
+    ; Compute the setup code start address
     movzx eax, ax
     shl eax, 4
-    push eax
+    
+    ; Push the real mode code start address (setup code start address - 0x200)
+    ; on the stack for later
+    mov ebx, eax
+    sub ebx, 0x200    
+    push ebx
     
     ; Determine the address of the GDT    
-    push eax
-    add eax, gdt
-    mov [gdt_info.addr], eax
+    mov ebx, eax
+    add ebx, gdt
+    mov [gdt_info.addr], ebx
     
     ; Patch the GDT
-    pop eax
     or eax, dword [gdt.setup+2]
     mov [gdt.setup+2], eax
     
@@ -111,6 +115,9 @@ code_32:
     mov fs, ax
     mov gs, ax
     mov ss, ax
+    
+    ; Restore real mode code start address and pass to kernel in esi
+    pop esi
     
     ; Jump to the kernel entry point    
     jmp dword (CODE_SEG * 8):KERNEL_START

@@ -22,9 +22,8 @@ __start:
     
     ; point esi and eax to the start of boot sector data
     ; (setup code pushed its start address on stack)
-    pop eax
-    sub eax, 19
-    mov esi, eax
+    add esi, 0x1ed
+    mov eax, esi
     
     ; figure out size of kernel image
     add eax, 7              ; field: sysize
