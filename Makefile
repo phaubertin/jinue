@@ -1,17 +1,30 @@
 include header.mk
 
-subdirs		 = doc kernel proc $(libjinue)
+subdirs              = doc kernel proc $(libjinue)
 
-kernel     	 = kernel/kernel
-kernel_bin 	 = bin/kernel-bin
-kernel_img 	 = bin/jinue
+kernel               = kernel/kernel
+kernel_bin           = bin/kernel-bin
+kernel_img           = bin/jinue
+jinue_iso            = bin/jinue.iso
 
-boot_h	   	 = boot/boot.gen.h
+boot_h               = boot/boot.gen.h
+temp_iso_fs          = bin/iso-tmp
+grub_config          = boot/grub.cfg
+grub_image_rel       = boot/grub/i386-pc/jinue.img
+grub_image           = $(temp_iso_fs)/$(grub_image_rel)
 
-symbols    	 = symbols.o symbols.c symbols.txt
-unclean    	 = $(kernel_bin) $(kernel_img) $(symbols) bin/setup bin/boot \
-	           boot/setup.nasm boot/boot.nasm $(boot_h)
-target		 = $(kernel_img)
+symbols              = symbols.o symbols.c symbols.txt
+unclean              =  $(kernel_bin) \
+                        $(kernel_img) \
+                        $(symbols) \
+                        bin/setup \
+                        bin/boot \
+                        boot/setup.nasm \
+                        boot/boot.nasm \
+                        $(boot_h) \
+                        $(jinue_iso)
+unclean_recursive    = $(temp_iso_fs)
+target               = $(jinue_iso)
 
 # ----- main targets
 include $(common)
@@ -70,3 +83,17 @@ $(boot_h): $(kernel_bin) bin/setup
 
 bin/%: boot/%.nasm
 	nasm -f bin -Iboot/ -o $@ $<
+
+# ----- bootable ISO image for virtual machine
+$(temp_iso_fs): $(kernel_img) $(grub_config) FORCE
+	mkdir -pv $(temp_iso_fs)/boot/grub/i386-pc
+	cp -v $(grub_modules)/* $(temp_iso_fs)/boot/grub/i386-pc/
+	cp -v $(kernel_img) $(temp_iso_fs)/boot/
+	cp -v $(grub_config) $(temp_iso_fs)/boot/grub/
+	touch $(temp_iso_fs)
+
+$(grub_image): $(temp_iso_fs)
+	grub2-mkimage --prefix '/boot/grub' --output $(grub_image) --format i386-pc-eltorito --compression auto --config $(grub_config) biosdisk iso9660
+
+$(jinue_iso): $(grub_image)
+	xorriso -as mkisofs -graft-points -b $(grub_image_rel) -no-emul-boot -boot-load-size 4 -boot-info-table --grub2-boot-info --grub2-mbr $(grub_modules)/boot_hybrid.img --protective-msdos-label -o $(jinue_iso) -r $(temp_iso_fs) --sort-weight 0 / --sort-weight 1 /boot

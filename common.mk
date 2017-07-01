@@ -7,6 +7,9 @@ ifneq ($(strip $(subdirs)),)
 	for i in $(subdirs); do make -C $$i clean; done
 endif
 	-rm -f $(unclean)
+ifneq ($(strip $(unclean_recursive)),)
+	-rm -rf $(unclean_recursive)
+endif
 
 FORCE:
 

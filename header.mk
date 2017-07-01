@@ -25,6 +25,7 @@ targets.all          = $(targets) $(targets.phony)
 
 # files to clean up
 unclean              = $(objects) $(targets) $(sources.nasm:%.asm=%.nasm)
+unclean_recursive   ?=
 
 # debug/release build
 #
@@ -64,6 +65,11 @@ LDFLAGS              = $(LDFLAGS.arch) $(LDFLAGS.others) $(LDFLAGS.extra)
 NASMFLAGS.arch       = -felf
 NASMFLAGS.others     =
 NASMFLAGS            = $(NASMFLAGS.arch) $(NASMFLAGS.debug) $(NASMFLAGS.others) $(NASMFLAGS.extra)
+
+# GRUB location (for creation of bootable ISO for virtual machine)
+#
+# This should probably be configurable through some sort of configure script
+grub_modules         = /usr/lib/grub/i386-pc
 
 # macro to include common target definitions (all, clean, implicit rules)
 common               = $(jinue_root)/common.mk
