@@ -3,6 +3,8 @@ include $(jinue_root)/header.mk
 
 subdirs			 = core debug hal kstdc mem
 
+LDFLAGS         += -T $(scripts)/kernel.lds
+
 kernel.startup	 = hal/asm/startup.o
 kernel.core   	 = core/kern-core.o
 kernel.debug  	 = debug/kern-debug.o
@@ -24,7 +26,7 @@ objects.target	 = \
 include $(common)
 
 $(target): $(objects.target) $(scripts)/kernel.lds
-	$(LINK.o) -r $^ $(LOADLIBES) $(LDLIBS) -o $@
+	$(LINK.o) -r $(objects.target) $(LOADLIBES) $(LDLIBS) -o $@
 
 # The core directory must be re-maked every build because of the auto-generated
 # information about the build date and time.
