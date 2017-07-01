@@ -12,7 +12,9 @@ SECTIONS {
         kernel/kernel(.text)
         kernel/kernel(.data)
         symbols.o(.rodata)
+        symbols.o(.rodata.*)
         symbols.o(.data)
+        symbols.o(.data.*)
         kernel/kernel(.bss)
                 
         kernel_end = ABSOLUTE(.);
