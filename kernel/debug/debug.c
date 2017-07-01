@@ -6,7 +6,7 @@
 
 
 void dump_call_stack(void) {
-    addr_t               ret;
+    addr_t               return_addr;
     addr_t               fptr;
     debugging_symbol_t  *sym;
     
@@ -14,20 +14,26 @@ void dump_call_stack(void) {
     fptr = get_fpointer();
     
     while(fptr != NULL) {
-        ret = get_ret_addr(fptr);
-        if(ret == NULL) {
+        return_addr = get_ret_addr(fptr);
+        if(return_addr == NULL) {
             break;
         }
         
         /* assume e8 xx xx xx xx for call instruction encoding */
-        ret -= 5;
+        return_addr -= 5;
         
-        sym = get_debugging_symbol(ret);
+        sym = get_debugging_symbol(return_addr);
         if(sym == NULL) {
-            printk("\t0x%x (unknown)\n", ret);            
+            printk("\t0x%x (unknown)\n", return_addr);
         }
         else {
-            printk("\t0x%x (%s+%u)\n", ret, sym->name, ret - sym->addr);
+            const char *name = sym->name;
+
+            if(name == NULL) {
+                name = "[unknown]";
+            }
+
+            printk("\t0x%x (%s+%u)\n", return_addr, name, return_addr - sym->addr);
         }
         
         fptr = get_caller_fpointer(fptr);
