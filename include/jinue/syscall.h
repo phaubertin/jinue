@@ -12,11 +12,11 @@
 /** get best system call implementation number based on CPU features */
 #define SYSCALL_FUNCT_SYSCALL_METHOD             1
 
-/** send a character to in-kernel VGA driver for printing on screen */
-#define SYSCALL_FUNCT_VGA_PUTC                   2
+/** send a character to in-kernel console driver */
+#define SYSCALL_FUNCT_CONSOLE_PUTC               2
 
-/** send a fixed-length string to in-kernel VGA driver for printing on screen */
-#define SYSCALL_FUNCT_VGA_PUTS                   3
+/** send a fixed-length string to in-kernel console driver */
+#define SYSCALL_FUNCT_CONSOLE_PUTS               3
 
 /** set address and size of thread local storage for current thread */
 #define SYSCALL_FUNCT_SET_THREAD_LOCAL_ADDR      6

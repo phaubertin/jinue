@@ -12,7 +12,7 @@ void console_printn(const char *message, unsigned int n) {
     	}
 
     	(void)jinue_send(
-    	        SYSCALL_FUNCT_VGA_PUTS,
+    	        SYSCALL_FUNCT_CONSOLE_PUTS,
     	        -1,             /* target */
     	        (char *)ptr,    /* buffer */
     	        size,           /* buffer size */
@@ -28,7 +28,7 @@ void console_printn(const char *message, unsigned int n) {
 void console_putc(char c) {
 	jinue_syscall_args_t args;
 
-	args.arg0 = SYSCALL_FUNCT_VGA_PUTC;
+	args.arg0 = SYSCALL_FUNCT_CONSOLE_PUTC;
 	args.arg1 = (uintptr_t)c;
 	args.arg2 = 0;
 	args.arg3 = 0;

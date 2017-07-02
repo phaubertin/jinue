@@ -1,9 +1,9 @@
+#include <jinue/console.h>
 #include <jinue/errno.h>
 #include <jinue/pfalloc.h>
 #include <hal/bootmem.h>
 #include <hal/cpu_data.h>
 #include <hal/thread.h>
-#include <hal/vga.h>
 #include <printk.h>
 #include <stddef.h>
 #include <syscall.h>
@@ -16,15 +16,15 @@ void dispatch_syscall(jinue_syscall_args_t *args) {
         syscall_args_set_return(args, syscall_method);
         break;
         
-    case SYSCALL_FUNCT_VGA_PUTC:
+    case SYSCALL_FUNCT_CONSOLE_PUTC:
         /** TODO: permission check */
-        vga_putc((char)args->arg1);
+        console_putc((char)args->arg1);
         syscall_args_set_return(args, 0);
         break;
     
-    case SYSCALL_FUNCT_VGA_PUTS:
+    case SYSCALL_FUNCT_CONSOLE_PUTS:
         /** TODO: permission check, sanity check (data size vs buffer size) */
-        vga_printn((char *)args->arg2, jinue_args_get_data_size(args));
+        console_printn((char *)args->arg2, jinue_args_get_data_size(args));
         syscall_args_set_return(args, 0);
         break;
 
