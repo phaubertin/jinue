@@ -1,4 +1,4 @@
-#include <hal/vga.h>
+#include <jinue/console.h>
 #include <printk.h>
 #include <stdarg.h>
 #include <stddef.h>
@@ -24,7 +24,7 @@ void printk(const char *format, ...) {
         size = idx - anchor;
         
         if(size > 0) {
-            vga_printn(anchor, size);
+            console_printn(anchor, size);
         }
         
         if(*idx == 0 || *(idx+1) == 0) {
@@ -35,11 +35,11 @@ void printk(const char *format, ...) {
         
         switch( *idx ) {
         case '%':
-            vga_putc('%');
+            console_putc('%');
             break;
         
         case 'c':
-            vga_putc( (char)va_arg(ap, int) );
+            console_putc( (char)va_arg(ap, int) );
             break;
         
         case 'q':
@@ -47,7 +47,7 @@ void printk(const char *format, ...) {
             break;
         
         case 's':
-            vga_print( va_arg(ap, const char *) );
+            console_print( va_arg(ap, const char *) );
             break;
         
         case 'u':
@@ -85,7 +85,7 @@ void print_unsigned_int(unsigned int n) {
     char c;
     
     if(n == 0) {
-        vga_putc('0');
+        console_putc('0');
         return;
     }
     
@@ -94,7 +94,7 @@ void print_unsigned_int(unsigned int n) {
         
         if(digit != 0 || flag) {
             c = (char)digit + '0';
-            vga_putc(c);
+            console_putc(c);
             
             flag = 1;
             n -= digit * pwr;
@@ -113,7 +113,7 @@ void print_hex_nibble(unsigned char byte) {
         c += ('a' - 10);
     }
     
-    vga_putc(c);
+    console_putc(c);
 }
 
 void print_hex_b(unsigned char byte) {

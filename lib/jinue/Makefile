@@ -1,7 +1,7 @@
 jinue_root = ../..
 include $(jinue_root)/header.mk
 
-sources.c        = page_tables.c printk.c syscall.c vga.c
+sources.c        = page_tables.c printk.c syscall.c console.c
 sources.nasm     = crt.asm stubs.asm
 
 target.user      = libjinue.a
@@ -11,7 +11,7 @@ target.kernel    = libjinue-kernel.a
 targets          = $(target.user) $(target.kernel) $(target.proc)
 
 objects.user     = crt.o stubs.o syscall.o
-objects.proc     = page_tables.o printk.o vga.o
+objects.proc     = page_tables.o printk.o console.o
 objects.kernel   = page_tables.o printk.o
 
 include $(common)
