@@ -1,4 +1,5 @@
 #include <hal/asm/startup.h>
+#include <hal/asm/boot.h>
 
 bits 32
 
@@ -18,18 +19,13 @@ __start:
     ; set kernel size
     mov eax, kernel_end
     sub eax, __start
-    mov dword [kernel_size], eax    
+    mov dword [kernel_size], eax
     
-    ; point esi and eax to the start of boot sector data
-    ; (setup code pushed its start address on stack)
-    add esi, 0x1ed
-    mov eax, esi
-    
-    ; figure out size of kernel image
-    add eax, 7              ; field: sysize
-    mov eax, dword [eax]
+    ; On entry, esi points to the real mode code start/zero-page address
+
+    ; figure out the size of the kernel image
+    mov eax, dword [esi + BOOT_SYSIZE]
     shl eax, 4
-;    mov dword [kernel_size], eax
     
     ; align to page boundary
     mov ebx, eax
@@ -51,34 +47,35 @@ set_kernel_top:
     mov edi, eax
     mov dword [boot_data], eax
     mov ecx, 32
+    
+    push esi
+    
+    add esi, BOOT_DATA_STRUCT
     rep movsb
-    mov eax, edi
+    
+    ; Restore esi
+    ;
+    ; edi still points to the first byte after the copied data.
+    pop esi
     
     ; copy e820 map data
-    mov dword [e820_map], eax
-    mov edi, eax
-    mov esi, 0x7c00
-
-e820_loop:
-    mov eax, edi
+    mov dword [e820_map], edi
     
-    mov ecx, 20     ; size of one entry
+    mov cl, byte [esi + BOOT_E820_ENTRIES]
+    movzx ecx, cl               ; number of entries
+    lea ecx, [5 * ecx]          ; times 20 (size of one entry), which is 5 ...
+    shl ecx, 2                  ; ... times 2^2
+    
+    add esi, BOOT_E820_MAP
+    
     rep movsb
     
-    add eax, 8      ; size field, first word
-    mov ecx, dword [eax]
-    or  ecx, ecx
-    jnz e820_loop
+    ; add a zero-length entry to indicate the end of the map
+    mov ecx, 20
+    xor eax, eax
+    rep stosb
     
-    add eax, 4      ; size field, second word
-    mov ecx, dword [eax]
-    or  ecx, ecx
-    jz e820_end
-    
-    jmp e820_loop    
-e820_end:
-
-    ; setup heap, size is four times the size of the bios memory map
+    ; setup heap: size is four times the size of the bios memory map
     mov eax, edi
     mov [boot_heap], eax
     

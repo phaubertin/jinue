@@ -1,12 +1,10 @@
+#include <hal/asm/boot.h>
+#include <hal/asm/e820.h>
 #include <hal/asm/kernel.h>
 
 %define CODE_SEG        1
 %define DATA_SEG        2
 %define SETUP_SEG       3
-
-%define SMAP            0x534d4150
-%define E820_MAX        20
-%define E820_SEG        0x07c0
 
     bits 16
     jmp short start
@@ -37,6 +35,9 @@ start:
     mov fs, ax
     mov gs, ax
     mov ss, ax
+    
+    ; Adjust the stack pointer to point to the same address as before in the new
+    ; segment
     sub sp, 0x200
     
     ; Compute the setup code start address
@@ -68,13 +69,8 @@ start:
     lgdt [gdt_info]
     lidt [gdt.null+2]   ; A bunch of zeros, properly aligned
     
-    ; Reset the fpu
-    xor ax, ax
-    out 0xf0, al
-    call iodelay
-    
-    out 0xf1, al
-    call iodelay
+    ; Reset the floating-point unit
+    call reset_fpu
     
     ; Mask all external interrupts
     mov al, 0xff
@@ -122,15 +118,19 @@ code_32:
     ; Jump to the kernel entry point    
     jmp dword (CODE_SEG * 8):KERNEL_START
     
+    ; This adds only a few bytes (or none). The main reason for this line is to
+    ; ensure an error is generated (TIMES value is negative) if the code above
+    ; crosses into the e820 memory map.
+    times BOOT_SETUP_ADDR(BOOT_E820_MAP) -($-$$) db 0
 
 ;------------------------------------------------------------------------
-; FUNCTION:    iodelay
-; DESCRIPTION:    Wait for about 1 µs.
+; E820 Memory map
+;
+; The e820 memory map starts here. The code below gets overwritten by the
+; memory map. Only code that runs *before* the memory map is generated
+; should go here.
 ;------------------------------------------------------------------------
-iodelay:
-    out 0x80, al
-    ret
-
+e820_map:
 
 ;------------------------------------------------------------------------
 ; FUNCTION:    check_a20
@@ -177,7 +177,6 @@ check_a20:
     
     sti
     ret
-
 
 ;------------------------------------------------------------------------
 ; FUNCTION:    enable_a20
@@ -230,29 +229,44 @@ enable_a20:
     test al, 2
     jnz .empty_8042
     ret
+    
+    ; Skip to end of e820 memory map
+    times BOOT_SETUP_ADDR(BOOT_E820_MAP_END)-($-$$) db 0
 
+;------------------------------------------------------------------------
+; End of E820 Memory map
+;
+; Code below is safe: it does not get overwritten by the e820 memory map.
+;------------------------------------------------------------------------
+e820_map_end:
+
+;------------------------------------------------------------------------
+; FUNCTION:    iodelay
+; DESCRIPTION:    Wait for about 1 µs.
+;------------------------------------------------------------------------
+iodelay:
+    out 0x80, al
+    ret
 
 ;------------------------------------------------------------------------
 ; FUNCTION:    bios_e820
 ; DESCRIPTION:    Obtain physical memory map from BIOS.
 ;------------------------------------------------------------------------
 bios_e820:
-    mov ax, E820_SEG
-    mov es, ax
-    mov di, 0               ; Buffer
+    mov di, e820_map        ; Buffer (start of memory map)
     mov ebx, 0              ; Continuation set to 0
     cld
     
 .loop:
     mov eax, 0xe820         ; Function number e820
-    mov ecx, 20             ; Size of buffer
-    mov edx, SMAP           ; Signature
+    mov ecx, 20             ; Size of buffer, in bytes
+    mov edx, E820_SMAP      ; Signature
     
     int 0x15
     
     jc .exit                ; Carry flag set indicates error or end
 
-    cmp eax, SMAP           ; EAX should contain signature
+    cmp eax, E820_SMAP      ; EAX should contain signature
     jne .exit
 
     cmp ecx, 20             ; 20 bytes should have been returned
@@ -261,27 +275,50 @@ bios_e820:
     or ebx, ebx             ; EBX (maybe) set to 0 on end of map
     jz .exit
     
-    mov ax, di
-    add ax, 20
-    mov di, ax
+    add di, 20              ; Go to next entry in memory map
     
-    cmp ax, 20 * E820_MAX
-    jb .loop
+    mov ax, di              ; Check that we can still fit one more entry
+    add ax, 20
+    cmp ax, e820_map_end
+    jbe .loop
     
 .exit:
-    mov ax, di              ; Let's add a zero-length record to indicate end
-    add ax, 8
-    mov di, ax
+    ; Compute number of entries
+    mov ax, di              ; Size is end ...
+    sub ax, e820_map        ; ... minus start
+    xor dx, dx              ; High 16-bits of dx:ax (i.e. dx) are zero
+    mov bx, 20              ; Divide by 20
+    div bx
     
-    xor eax, eax
-    stosd
-    stosd
+    ; The e820_entries field is not in our current segment. Change segment to
+    ; the the previous 512-byte sector (see boot.asm).
+    push es
     
-    mov ax, cs              ; Restore ES
-    mov es, ax
+    mov bx, es
+    sub bx, 0x20
+    mov es, bx
+    
+    ; Set number of entries
+    mov byte [es:BOOT_E820_ENTRIES], al
+    
+    ; Restore ES
+    pop es
         
     ret
 
+;------------------------------------------------------------------------
+; FUNCTION:    reset_fpu
+; DESCRIPTION:    Reset the floating-point unit.
+;------------------------------------------------------------------------
+reset_fpu:
+    xor ax, ax
+    out 0xf0, al
+    call iodelay
+    
+    out 0xf1, al
+    call iodelay
+    
+    ret
 
 ;------------------------------------------------------------------------
 ; Data section
@@ -310,4 +347,3 @@ gdt_info:
 .addr:  dd 0            ; Patched in later
 
     align 512
-

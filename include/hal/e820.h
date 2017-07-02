@@ -1,15 +1,10 @@
 #ifndef _JINUE_KERNEL_E820_H_
 #define _JINUE_KERNEL_E820_H_
 
+#include <hal/asm/e820.h>
+
 #include <stdbool.h>
 #include <stdint.h>
-
-
-#define E820_RAM        1
-
-#define E820_RESERVED   2
-
-#define E820_ACPI       3
 
 
 typedef uint32_t e820_type_t;
