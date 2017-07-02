@@ -18,3 +18,9 @@ symbols.txt
 .metadata/
 RemoteSystemsTempFiles/
 
+# log files
+*.log
+
+# directory for storing local temporary/debugging files
+wrk/
+
