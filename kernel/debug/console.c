@@ -29,6 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <hal/serial.h>
 #include <hal/vga.h>
 #include <console.h>
 #include <string.h>
@@ -36,14 +37,17 @@
 
 void console_init(void) {
     vga_init();
+    serial_init(CONSOLE_SERIAL_IOPORT, CONSOLE_SERIAL_BAUD_RATE);
 }
 
 void console_printn(const char *message, unsigned int n, int colour) {
     vga_printn(message, n, colour);
+    serial_printn(CONSOLE_SERIAL_IOPORT, message, n);
 }
 
 void console_putc(char c, int colour) {
     vga_putc(c, colour);
+    serial_putc(CONSOLE_SERIAL_IOPORT, c);
 }
 
 void console_print(const char *message, int colour) {
