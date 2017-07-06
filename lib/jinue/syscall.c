@@ -109,6 +109,7 @@ int jinue_send(
 		return -1;
 	}
 
+	/* Silently crop the buffer size if it is greater than the maximum allowed. */
 	if(buffer_size > JINUE_SEND_MAX_SIZE) {
 		buffer_size = JINUE_SEND_MAX_SIZE;
 	}

@@ -1,11 +1,13 @@
 #include <jinue/descriptors.h>
 #include <hal/cpu.h>
 #include <hal/cpu_data.h>
+#include <hal/kernel.h>
 #include <hal/thread.h>
 #include <hal/vm.h>
 #include <assert.h>
+#include <pfalloc.h>
 #include <stddef.h>
-#include <slab.h>
+#include <vm_alloc.h>
 
 
 /* defined in thread.asm */
@@ -13,17 +15,44 @@ void thread_context_switch_stack(
         thread_context_t *from_ctx,
         thread_context_t *to_ctx);
 
-static slab_cache_t *thread_cache;
-
-void thread_context_init_cache(void) {
-    thread_cache = slab_cache_create(
-        "thread_context_cache", /* name */
-        THREAD_CONTEXT_SIZE,    /* size */
-        THREAD_CONTEXT_SIZE,    /* alignment */
-        NULL,                   /* ctor */
-        NULL,                   /* dtor */
-        0 );                    /* flags */
-}
+/* For each thread context, a page is allocated to contain three things:
+ *  - The thread context structure (thread_context_t);
+ *  - The message buffer in which messages sent from this thread are copied; and
+ *  - This thread's kernel stack.
+ *
+ * Switching thread context (see thread_context_switch()) basically means
+ * switching the kernel stack.
+ *
+ * The layout of this page is as follow:
+ *
+ *  +--------v-----------------v--------+ thread_ctx
+ *  |                                   |   +(THREAD_CONTEXT_SIZE == PAGE_SIZE)
+ *  |                                   |
+ *  |                                   |
+ *  |            Kernel stack           |
+ *  |                                   |
+ *  |                                   |
+ *  |                                   |
+ *  +-----------------------------------+ thread_ctx
+ *  |                                   |   + THREAD_CONTEXT_MESSAGE_OFFSET
+ *  |                                   |   + JINUE_SEND_MAX_SIZE
+ *  |          Message buffer           |
+ *  |                                   |
+ *  |                                   |
+ *  +--------^-----------------^--------+ thread_ctx
+ *  |               unused              |   + THREAD_CONTEXT_MESSAGE_OFFSET
+ *  |                                   |
+ *  +-----------------------------------+ thread_ctx
+ *  |                                   |   + sizeof(thread_context_t)
+ *  |     Thread context structure      |
+ *  |        (thread_context_t)         |
+ *  |                                   |
+ *  +-----------------------------------+ thread_ctx
+ *
+ * The start of this page, and from there the current thread context structure
+ * and message buffer, can be found quickly by masking the least significant
+ * bits of the stack pointer (with THREAD_CONTEXT_MASK).
+ */
 
 thread_context_t *thread_context_create(
         addr_space_t    *addr_space,
@@ -31,24 +60,35 @@ thread_context_t *thread_context_create(
         addr_t           user_stack) {
 
     /* allocate thread context */
-    thread_context_t *thread_ctx = slab_cache_alloc(thread_cache);
+    thread_context_t *thread_ctx = (thread_context_t *)vm_alloc( global_page_allocator );
 
-    /* initialize fields
-     *
-     * A NULL saved stack pointer indicates to the thread context switching code
-     * that this is a new thread that needs to return directly to user space. */
-    thread_ctx->saved_stack_pointer = NULL;
-    thread_ctx->addr_space          = addr_space;
-    thread_ctx->local_storage_addr  = NULL;
-    
-    /* setup stack for initial return to user space */
-    uint32_t *kernel_stack_base = (uint32_t *)get_kernel_stack_base(thread_ctx);
-    
-    kernel_stack_base[-1]   = 8 * GDT_USER_DATA + 3;    /* user stack segment (ss), rpl = 3 */
-    kernel_stack_base[-2]   = (uint32_t)user_stack;     /* user stack pointer (esp) */
-    kernel_stack_base[-3]   = 2;                        /* flags register (eflags) */
-    kernel_stack_base[-4]   = 8 * GDT_USER_CODE + 3;    /* user  code segment (cs), rpl/cpl = 3 */
-    kernel_stack_base[-5]   = (uint32_t)entry;          /* entry point */
+    if(thread_ctx != NULL) {
+        pfaddr_t pf = pfalloc();
+
+        if(pf == PFNULL) {
+            vm_free(global_page_allocator, (addr_t)thread_ctx);
+            return NULL;
+        }
+
+        vm_map_global((addr_t)thread_ctx, pf, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE | VM_FLAG_GLOBAL);
+
+        /* initialize fields
+         *
+         * A NULL saved stack pointer indicates to the thread context switching code
+         * that this is a new thread that needs to return directly to user space. */
+        thread_ctx->saved_stack_pointer = NULL;
+        thread_ctx->addr_space          = addr_space;
+        thread_ctx->local_storage_addr  = NULL;
+
+        /* setup stack for initial return to user space */
+        uint32_t *kernel_stack_base = (uint32_t *)get_kernel_stack_base(thread_ctx);
+
+        kernel_stack_base[-1]   = 8 * GDT_USER_DATA + 3;    /* user stack segment (ss), rpl = 3 */
+        kernel_stack_base[-2]   = (uint32_t)user_stack;     /* user stack pointer (esp) */
+        kernel_stack_base[-3]   = 2;                        /* flags register (eflags) */
+        kernel_stack_base[-4]   = 8 * GDT_USER_CODE + 3;    /* user  code segment (cs), rpl/cpl = 3 */
+        kernel_stack_base[-5]   = (uint32_t)entry;          /* entry point */
+    }
 
     return thread_ctx;
 }

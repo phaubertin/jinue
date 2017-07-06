@@ -177,7 +177,4 @@ void hal_init(void) {
         
         wrmsr(MSR_STAR, msrval);
     }
-
-    /* intialize thread context slab cache */
-    thread_context_init_cache();
 }

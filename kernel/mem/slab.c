@@ -427,7 +427,7 @@ void slab_cache_grow(slab_cache_t *cache) {
     /* allocate new slab */
     slab_addr = vm_alloc( global_page_allocator );
     
-    /** ASSERTION: slab address is not null */
+    /** ASSERTION: slab address is not NULL */
     assert(slab_addr != NULL);
     
     vm_map_global(slab_addr, pfalloc(), VM_FLAG_KERNEL | VM_FLAG_READ_WRITE | VM_FLAG_GLOBAL);

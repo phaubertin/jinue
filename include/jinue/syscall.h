@@ -44,10 +44,16 @@
 #define JINUE_SEND_N_DESC_BITS          8
 
 /** maximum size of a message buffer and of the data inside that buffer */
-#define JINUE_SEND_MAX_SIZE             ((1 << JINUE_SEND_SIZE_BITS) - 1)
+#define JINUE_SEND_MAX_SIZE             (1 << (JINUE_SEND_SIZE_BITS - 1))
 
 /** maximum number of descriptors inside a message */
 #define JINUE_SEND_MAX_N_DESC           ((1 << JINUE_SEND_N_DESC_BITS) - 1)
+
+/** mask to extract the message buffer or data size fields */
+#define JINUE_SEND_SIZE_MASK            ((1 << JINUE_SEND_SIZE_BITS) - 1)
+
+/** mask to extract the number of descriptors inside a message */
+#define JINUE_SEND_N_DESC_MASK          JINUE_SEND_MAX_N_DESC
 
 typedef struct {
     uintptr_t arg0;
@@ -78,15 +84,15 @@ static inline char *jinue_args_get_buffer_ptr(const jinue_syscall_args_t *args) 
 }
 
 static inline size_t jinue_args_get_buffer_size(const jinue_syscall_args_t *args) {
-    return ((size_t)(args->arg3) >> (JINUE_SEND_N_DESC_BITS + JINUE_SEND_SIZE_BITS)) & JINUE_SEND_MAX_SIZE;
+    return ((size_t)(args->arg3) >> (JINUE_SEND_N_DESC_BITS + JINUE_SEND_SIZE_BITS)) & JINUE_SEND_SIZE_MASK;
 }
 
 static inline size_t jinue_args_get_data_size(const jinue_syscall_args_t *args) {
-    return ((size_t)(args->arg3) >> JINUE_SEND_N_DESC_BITS) & JINUE_SEND_MAX_SIZE;
+    return ((size_t)(args->arg3) >> JINUE_SEND_N_DESC_BITS) & JINUE_SEND_SIZE_MASK;
 }
 
 static inline unsigned int jinue_args_get_n_desc(const jinue_syscall_args_t *args) {
-    return (unsigned int)(args->arg3) & JINUE_SEND_MAX_N_DESC;
+    return (unsigned int)(args->arg3) & JINUE_SEND_N_DESC_MASK;
 }
 
 static inline uintptr_t jinue_get_return_uintptr(const jinue_syscall_args_t *args) {
