@@ -93,26 +93,20 @@ thread_context_t *thread_context_create(
     return thread_ctx;
 }
 
-void thread_context_switch(thread_context_t *thread_ctx) {
-    cpu_data_t *cpu_data;
-    thread_context_t *current_ctx;
-
-    /** ASSERTION: thread context argument must not be NULL */
-    assert(thread_ctx != NULL);
-
-    cpu_data        = get_cpu_local_data();
-    current_ctx     = cpu_data->current_thread_context;
+void thread_context_switch(thread_context_t *from_ctx, thread_context_t *to_ctx) {
+    /** ASSERTION: to_ctx argument must not be NULL */
+    assert(to_ctx != NULL);
 
     /* nothing to do if this is already the current thread */
-    if(current_ctx != thread_ctx) {
+    if(from_ctx != to_ctx) {
         /* Current thread context is NULL on boot before we switch to the first
          * thread. */
-        if(current_ctx == NULL || current_ctx->addr_space != thread_ctx->addr_space) {
-            vm_switch_addr_space(thread_ctx->addr_space);
+        if(from_ctx == NULL || from_ctx->addr_space != to_ctx->addr_space) {
+            vm_switch_addr_space(to_ctx->addr_space);
         }
 
         /* setup TSS with kernel stack base for this thread context */
-        addr_t kernel_stack_base = get_kernel_stack_base(thread_ctx);
+        addr_t kernel_stack_base = get_kernel_stack_base(to_ctx);
         tss_t *tss = get_tss();
 
         tss->esp0 = kernel_stack_base;
@@ -124,12 +118,7 @@ void thread_context_switch(thread_context_t *thread_ctx) {
             wrmsr(MSR_IA32_SYSENTER_ESP, (uint64_t)(uintptr_t)kernel_stack_base);
         }
 
-        /* Set the thread context to which we are switching as the new current.
-         *
-         * The current_ctx pointer still refers to the previous thread context. */
-        cpu_data-> current_thread_context = thread_ctx;
-
         /* switch thread context stack */
-        thread_context_switch_stack(current_ctx, thread_ctx);
+        thread_context_switch_stack(from_ctx, to_ctx);
     }
 }

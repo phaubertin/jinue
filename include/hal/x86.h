@@ -30,6 +30,8 @@ void ltr(seg_selector_t sel);
 
 uint32_t cpuid(x86_cpuid_regs_t *regs);
 
+uint32_t get_esp(void);
+
 uint32_t get_cr0(void);
 
 uint32_t get_cr1(void);

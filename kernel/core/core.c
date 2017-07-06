@@ -43,8 +43,10 @@ void kmain(void) {
             elf_info.entry,
             elf_info.stack_addr);
     
-    /* start process manager */
-    thread_context_switch(thread_ctx);
+    /* start process manager
+     *
+     * We switch from NULL since this is the first thread. */
+    thread_context_switch(NULL, thread_ctx);
 
     /* should never happen */
     panic("thread_context_switch() returned in kmain()");

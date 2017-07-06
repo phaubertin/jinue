@@ -12,7 +12,7 @@ struct cpu_data_t {
      * of the TSS within this structure. */
     tss_t                tss;
     struct cpu_data_t   *self;
-    thread_context_t    *current_thread_context;
+    addr_space_t        *current_addr_space;
 };
 
 typedef struct cpu_data_t cpu_data_t;
@@ -32,18 +32,11 @@ static inline tss_t *get_tss(void) {
 }
 
 static inline thread_context_t *get_current_thread_context(void) {
-    return get_cpu_local_data()->current_thread_context;
+    return (thread_context_t *)(get_esp() & THREAD_CONTEXT_MASK);
 }
 
 static inline addr_space_t *get_current_addr_space(void) {
-    thread_context_t *thread_ctx = get_current_thread_context();
-
-    if(thread_ctx == NULL) {
-        return NULL;
-    }
-    else {
-        return thread_ctx->addr_space;
-    }
+    return get_cpu_local_data()->current_addr_space;
 }
 
 #endif

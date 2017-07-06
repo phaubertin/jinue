@@ -481,4 +481,6 @@ void vm_destroy_addr_space(addr_space_t *addr_space) {
 
 void vm_switch_addr_space(addr_space_t *addr_space) {
     set_cr3(addr_space->cr3);
+
+    get_cpu_local_data()->current_addr_space = addr_space;
 }

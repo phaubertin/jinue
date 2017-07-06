@@ -41,6 +41,6 @@ thread_context_t *thread_context_create(
         addr_t           entry,
         addr_t           user_stack);
 
-void thread_context_switch(thread_context_t *thread_ctx);
+void thread_context_switch(thread_context_t *from_ctx, thread_context_t *to_ctx);
 
 #endif
