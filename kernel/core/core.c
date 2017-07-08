@@ -1,12 +1,12 @@
 #include <hal/bootmem.h>
 #include <hal/hal.h>
-#include <hal/thread.h>
 #include <hal/vm.h>
 #include <core.h>
 #include <elf.h>
 #include <panic.h>
 #include <printk.h>
 #include <syscall.h>
+#include <thread.h>
 #include "build-info.gen.h"
 
 
@@ -38,7 +38,7 @@ void kmain(void) {
     elf_load(&elf_info, elf, &initial_addr_space);
 
     /* create initial thread context */
-    thread_context_t *thread_ctx = thread_context_create(
+    thread_t *thread = thread_create(
             &initial_addr_space,
             elf_info.entry,
             elf_info.stack_addr);
@@ -46,7 +46,7 @@ void kmain(void) {
     /* start process manager
      *
      * We switch from NULL since this is the first thread. */
-    thread_context_switch(NULL, thread_ctx);
+    thread_switch(NULL, thread);
 
     /* should never happen */
     panic("thread_context_switch() returned in kmain()");

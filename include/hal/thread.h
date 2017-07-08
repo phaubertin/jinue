@@ -1,23 +1,13 @@
 #ifndef _JINUE_KERNEL_HAL_THREAD_H_
 #define _JINUE_KERNEL_HAL_THREAD_H_
 
-#include <jinue/types.h>
-#include <hal/vm.h>
-#include <stddef.h>
-
 #include <hal/asm/thread.h>
 
-struct thread_context_t {
-    /* The assembly language thread switching code makes the assumption that
-     * saved_stack_pointer is the first member of this struct. */
-    addr_t           saved_stack_pointer;
-    addr_space_t    *addr_space;
-    addr_t           local_storage_addr;
-    size_t           local_storage_size;
-};
-
-typedef struct thread_context_t thread_context_t;
-
+#include <jinue/types.h>
+#include <hal/thread_ctx.h>
+#include <hal/vm.h>
+#include <stddef.h>
+#include <thread_decl.h>
 
 static inline void thread_context_set_local_storage(
         thread_context_t    *thread_ctx,
@@ -36,7 +26,7 @@ static inline addr_t get_kernel_stack_base(thread_context_t *thread_ctx) {
     return (addr_t)thread_ctx + THREAD_CONTEXT_SIZE;
 }
 
-thread_context_t *thread_context_create(
+thread_t *thread_page_create(
         addr_space_t    *addr_space,
         addr_t           entry,
         addr_t           user_stack);

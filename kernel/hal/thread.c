@@ -15,8 +15,8 @@ void thread_context_switch_stack(
         thread_context_t *from_ctx,
         thread_context_t *to_ctx);
 
-/* For each thread context, a page is allocated to contain three things:
- *  - The thread context structure (thread_context_t);
+/* For each thread, a page is allocated which contains three things:
+ *  - The thread structure (thread_t);
  *  - The message buffer in which messages sent from this thread are copied; and
  *  - This thread's kernel stack.
  *
@@ -25,7 +25,7 @@ void thread_context_switch_stack(
  *
  * The layout of this page is as follow:
  *
- *  +--------v-----------------v--------+ thread_ctx
+ *  +--------v-----------------v--------+ thread
  *  |                                   |   +(THREAD_CONTEXT_SIZE == PAGE_SIZE)
  *  |                                   |
  *  |                                   |
@@ -33,49 +33,50 @@ void thread_context_switch_stack(
  *  |                                   |
  *  |                                   |
  *  |                                   |
- *  +-----------------------------------+ thread_ctx
+ *  +-----------------------------------+ thread
  *  |                                   |   + THREAD_CONTEXT_MESSAGE_OFFSET
  *  |                                   |   + JINUE_SEND_MAX_SIZE
- *  |          Message buffer           |
+ *  |           Message buffer          |
  *  |                                   |
  *  |                                   |
- *  +--------^-----------------^--------+ thread_ctx
+ *  +-----------------------------------+ thread
  *  |               unused              |   + THREAD_CONTEXT_MESSAGE_OFFSET
- *  |                                   |
- *  +-----------------------------------+ thread_ctx
- *  |                                   |   + sizeof(thread_context_t)
+ *  +-----------------------------------+ thread
+ *  |                                   |   + sizeof(thread_t)
  *  |     Thread context structure      |
- *  |        (thread_context_t)         |
+ *  |             (thread_t)            |
  *  |                                   |
- *  +-----------------------------------+ thread_ctx
+ *  +-----------------------------------+ thread
  *
- * The start of this page, and from there the current thread context structure
- * and message buffer, can be found quickly by masking the least significant
+ * The start of this page, and from there the thread structure, message buffer
+ * and kernel stack base, can be found quickly by masking the least significant
  * bits of the stack pointer (with THREAD_CONTEXT_MASK).
  */
 
-thread_context_t *thread_context_create(
+thread_t *thread_page_create(
         addr_space_t    *addr_space,
         addr_t           entry,
         addr_t           user_stack) {
 
     /* allocate thread context */
-    thread_context_t *thread_ctx = (thread_context_t *)vm_alloc( global_page_allocator );
+    thread_t *thread = (thread_t *)vm_alloc( global_page_allocator );
 
-    if(thread_ctx != NULL) {
+    if(thread != NULL) {
         pfaddr_t pf = pfalloc();
 
         if(pf == PFNULL) {
-            vm_free(global_page_allocator, (addr_t)thread_ctx);
+            vm_free(global_page_allocator, (addr_t)thread);
             return NULL;
         }
 
-        vm_map_global((addr_t)thread_ctx, pf, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE | VM_FLAG_GLOBAL);
+        vm_map_global((addr_t)thread, pf, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE | VM_FLAG_GLOBAL);
 
         /* initialize fields
          *
          * A NULL saved stack pointer indicates to the thread context switching code
          * that this is a new thread that needs to return directly to user space. */
+        thread_context_t *thread_ctx = &thread->thread_ctx;
+         
         thread_ctx->saved_stack_pointer = NULL;
         thread_ctx->addr_space          = addr_space;
         thread_ctx->local_storage_addr  = NULL;
@@ -90,7 +91,7 @@ thread_context_t *thread_context_create(
         kernel_stack_base[-5]   = (uint32_t)entry;          /* entry point */
     }
 
-    return thread_ctx;
+    return thread;
 }
 
 void thread_context_switch(thread_context_t *from_ctx, thread_context_t *to_ctx) {

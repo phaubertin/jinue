@@ -9,6 +9,17 @@ struct jinue_node_t {
 
 typedef struct jinue_node_t jinue_node_t;
 
+static inline void jinue_node_init(jinue_node_t *node) {
+#ifndef NDEBUG
+    /* A node initializer function is not strictly necessary because a node is
+     * (re)-initialized when it is added to a list. When compiling in debug mode,
+     * this function initializes a node by putting a recognizable value in the
+     * next member so initialization bugs are easier to track. When not in debug
+     * mode, this function comiles to nothing. */
+    node->next = (jinue_node_t *)0xdeadbeef;
+#endif
+}
+
 typedef struct  {
     jinue_node_t   *head;
     jinue_node_t   *tail;
@@ -69,14 +80,14 @@ static inline jinue_node_t *jinue_list_dequeue(jinue_list_t *list) {
 
 #define jinue_list_pop(l)   ( jinue_list_dequeue((l)) )
 
-static inline void *jinue_node_by_offset(jinue_node_t *node, size_t offset) {
+static inline void *jinue_node_entry_by_offset(jinue_node_t *node, size_t offset) {
     return &((char *)node)[-offset];
 }
 
 /** TODO move this to a more general-purpose header file */
 #define JINUE_OFFSETOF(type, member) ((size_t)(&((type *)0)->member))
 
-#define jinue_node_entry(node, type, member)   (jinue_node_by_offset(node, JINUE_OFFSETOF(type, member)))
+#define jinue_node_entry(node, type, member)   (jinue_node_entry_by_offset(node, JINUE_OFFSETOF(type, member)))
 
 static inline jinue_node_t *jinue_cursor_node(jinue_cursor_t cur) {
     if(cur == NULL) {
@@ -86,11 +97,11 @@ static inline jinue_node_t *jinue_cursor_node(jinue_cursor_t cur) {
     return *cur;
 }
 
-static inline jinue_node_t *jinue_cursor_by_offset(jinue_cursor_t cur, size_t offset) {
-    return jinue_node_by_offset(*cur, offset);
+static inline jinue_node_t *jinue_cursor_entry_by_offset(jinue_cursor_t cur, size_t offset) {
+    return jinue_node_entry_by_offset(*cur, offset);
 }
 
-#define jinue_cursor_entry(cur, type, member)   (jinue_cursor_by_offset(cur, JINUE_OFFSETOF(type, member)))
+#define jinue_cursor_entry(cur, type, member)   (jinue_cursor_entry_by_offset(cur, JINUE_OFFSETOF(type, member)))
 
 static inline jinue_cursor_t jinue_list_head_cursor(jinue_list_t *list) {
     return &(list->head);
