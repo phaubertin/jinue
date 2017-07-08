@@ -134,3 +134,25 @@ int jinue_get_free_memory(memory_block_t *buffer, size_t buffer_size, int *perrn
 	        0,                  /* number of descriptors */
 	        perrno);            /* perrno */
 }
+
+int jinue_thread_create(void (*entry)(), void *stack, int *perrno) {
+    jinue_syscall_args_t args;
+
+    args.arg0 = SYSCALL_FUNCT_THREAD_CREATE;
+    args.arg1 = 0;
+    args.arg2 = (uintptr_t)entry;
+    args.arg3 = (uintptr_t)stack;
+
+    return jinue_call(&args, perrno);
+}
+
+int jinue_yield(void) {
+    jinue_syscall_args_t args;
+
+    args.arg0 = SYSCALL_FUNCT_THREAD_YIELD;
+    args.arg1 = 0;
+    args.arg2 = 0;
+    args.arg3 = 0;
+
+    return jinue_call(&args, NULL);
+}

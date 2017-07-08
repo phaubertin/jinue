@@ -1,6 +1,7 @@
 #ifndef _JINUE_LIST_H_
 #define _JINUE_LIST_H_
 
+#include <stdbool.h>
 #include <stddef.h>
 
 struct jinue_node_t {
@@ -27,11 +28,15 @@ typedef struct  {
 
 typedef jinue_node_t **jinue_cursor_t;
 
-#define JINUE_LIST_INIT {.head = NULL, .tail = NULL}
+#define JINUE_LIST_STATIC   {.head = NULL, .tail = NULL}
 
 static inline void jinue_list_init(jinue_list_t *list) {
     list->head = NULL;
     list->tail = NULL;
+}
+
+static inline bool jinue_list_is_empty(const jinue_list_t *list) {
+    return list->head == NULL;
 }
 
 static inline void jinue_list_enqueue(jinue_list_t *list, jinue_node_t *node) {
@@ -44,7 +49,7 @@ static inline void jinue_list_enqueue(jinue_list_t *list, jinue_node_t *node) {
         list->head = node;
     }
     else {
-        /* ... otherwise, the new tail node is the old one's next node */
+        /* ... otherwise, the old tail node's successor is the new tail node */
         list->tail->next = node;
     }
     
@@ -67,6 +72,10 @@ static inline void jinue_list_push(jinue_list_t *list, jinue_node_t *node) {
 static inline jinue_node_t *jinue_list_dequeue(jinue_list_t *list) {
     jinue_node_t *node = list->head;
     
+    if(node == NULL) {
+        return NULL;
+    }
+
     list->head = node->next;
     
     /* if removing the last node from the list ... */
@@ -81,6 +90,20 @@ static inline jinue_node_t *jinue_list_dequeue(jinue_list_t *list) {
 #define jinue_list_pop(l)   ( jinue_list_dequeue((l)) )
 
 static inline void *jinue_node_entry_by_offset(jinue_node_t *node, size_t offset) {
+    /* We specifically want to allow the return of jinue_list_dequeue() to be
+     * passed to this function directly, i.e.
+     * 
+     *  foo_t *foo = jinue_node_entry(
+     *          jinue_list_dequeue(some_list),
+     *          foo_t,
+     *          list_member);
+     * 
+     * This means handling the case where NULL is returned because there are no
+     * items to dequeue in the list. */
+    if(node == NULL) {
+        return NULL;
+    }
+    
     return &((char *)node)[-offset];
 }
 

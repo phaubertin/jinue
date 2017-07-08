@@ -18,6 +18,12 @@
 /** send a fixed-length string to in-kernel console driver */
 #define SYSCALL_FUNCT_CONSOLE_PUTS               3
 
+/** create a new thread */
+#define SYSCALL_FUNCT_THREAD_CREATE              4
+
+/** relinquish the CPU and allow the next thread to run */
+#define SYSCALL_FUNCT_THREAD_YIELD               5
+
 /** set address and size of thread local storage for current thread */
 #define SYSCALL_FUNCT_SET_THREAD_LOCAL_ADDR      6
 
@@ -134,5 +140,9 @@ int jinue_send(
         int             *perrno);
 
 int jinue_get_free_memory(memory_block_t *buffer, size_t buffer_size, int *perrno);
+
+int jinue_thread_create(void (*entry)(), void *stack, int *perrno);
+
+int jinue_yield(void);
 
 #endif

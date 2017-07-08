@@ -6,8 +6,13 @@
 #include <jinue/types.h>
 #include <hal/thread_ctx.h>
 #include <hal/vm.h>
+#include <hal/x86.h>
 #include <stddef.h>
 #include <thread_decl.h>
+
+static inline thread_t *get_current_thread(void) {
+    return (thread_t *)(get_esp() & THREAD_CONTEXT_MASK);
+}
 
 static inline void thread_context_set_local_storage(
         thread_context_t    *thread_ctx,

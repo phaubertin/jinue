@@ -9,4 +9,6 @@
 
 #define JINUE_EINVAL    4
 
+#define JINUE_EAGAIN    5
+
 #endif

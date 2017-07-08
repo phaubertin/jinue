@@ -7,6 +7,7 @@
 #include <printk.h>
 #include <stddef.h>
 #include <syscall.h>
+#include <thread.h>
 
 
 void dispatch_syscall(jinue_syscall_args_t *args) {
@@ -27,10 +28,32 @@ void dispatch_syscall(jinue_syscall_args_t *args) {
         console_printn((char *)args->arg2, jinue_args_get_data_size(args));
         syscall_args_set_return(args, 0);
         break;
+    
+    case SYSCALL_FUNCT_THREAD_CREATE:
+    {
+        thread_t *thread = thread_create(
+                /* TODO use arg1 as an address space reference if specified */
+                get_current_addr_space(),
+                (addr_t)args->arg2,
+                (addr_t)args->arg3);
+
+        if(thread == NULL) {
+            syscall_args_set_error(args, JINUE_EAGAIN);
+        }
+        else {
+            syscall_args_set_return(args, 0);
+        }
+    }
+        break;
+    
+    case SYSCALL_FUNCT_THREAD_YIELD:
+        thread_yield_from( get_current_thread() );
+        syscall_args_set_return(args, 0);
+        break;
 
     case SYSCALL_FUNCT_SET_THREAD_LOCAL_ADDR:
         thread_context_set_local_storage(
-                get_current_thread_context(),
+                &get_current_thread()->thread_ctx,
                 (addr_t)args->arg1,
                 (size_t)args->arg2);
         syscall_args_set_return(args, 0);
@@ -40,7 +63,7 @@ void dispatch_syscall(jinue_syscall_args_t *args) {
         syscall_args_set_return_ptr(
                 args,
                 thread_context_get_local_storage(
-                        get_current_thread_context()));
+                        &get_current_thread()->thread_ctx));
         break;
     
     case SYSCALL_FUNCT_GET_FREE_MEMORY:

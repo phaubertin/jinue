@@ -43,11 +43,15 @@ void kmain(void) {
             elf_info.entry,
             elf_info.stack_addr);
     
+    if(thread == NULL) {
+        panic("Could not create initial thread.");
+    }
+    
     /* start process manager
      *
      * We switch from NULL since this is the first thread. */
-    thread_switch(NULL, thread);
+    thread_yield_from(NULL);
 
     /* should never happen */
-    panic("thread_context_switch() returned in kmain()");
+    panic("thread_yield_from() returned in kmain()");
 }

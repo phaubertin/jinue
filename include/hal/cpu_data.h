@@ -1,9 +1,9 @@
 #ifndef _JINUE_KERNEL_CPU_DATA_H_
 #define _JINUE_KERNEL_CPU_DATA_H_
 
+#include <hal/descriptors.h>
 #include <hal/thread.h>
 #include <hal/vm.h>
-#include <hal/x86.h>
 
 struct cpu_data_t {
     seg_descriptor_t     gdt[GDT_LENGTH];
@@ -29,10 +29,6 @@ static inline cpu_data_t *get_cpu_local_data(void) {
 
 static inline tss_t *get_tss(void) {
     return &get_cpu_local_data()->tss;
-}
-
-static inline thread_context_t *get_current_thread_context(void) {
-    return (thread_context_t *)(get_esp() & THREAD_CONTEXT_MASK);
 }
 
 static inline addr_space_t *get_current_addr_space(void) {
