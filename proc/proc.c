@@ -11,10 +11,29 @@
 
 #define MEMORY_BLOCK_MAX    32
 
+#define THREAD_STACK_SIZE   4096
 
 int errno;
 
 Elf32_auxv_t *auxvp;
+
+char thread_a_stack[THREAD_STACK_SIZE];
+
+char thread_b_stack[THREAD_STACK_SIZE];
+
+void thread_a(void) {
+    while (1) {
+        printk("Thread A is running.\n");
+        (void)jinue_yield();
+    }
+}
+
+void thread_b(void) {
+    while (1) {
+        printk("Thread B is running.\n");
+        (void)jinue_yield();
+    }
+}
 
 int main(int argc, char *argv[], char *envp[]) {
     memory_block_t blocks[MEMORY_BLOCK_MAX];
@@ -46,12 +65,20 @@ int main(int argc, char *argv[], char *envp[]) {
         total_memory += blocks[idx].count;
     }
     
+    (void)jinue_yield();
+
     printk("%u kilobytes (%u pages) of memory available to process manager.\n", 
         (unsigned long)(total_memory * PAGE_SIZE / KB), 
         (unsigned long)(total_memory) );
 
-    /* loop forever */
-    while (1) {}
+    (void)jinue_thread_create(thread_a, &thread_a_stack[THREAD_STACK_SIZE], NULL);
+
+    (void)jinue_thread_create(thread_b, &thread_b_stack[THREAD_STACK_SIZE], NULL);
+
+    while (1) {
+        printk("Main thread is running.\n");
+        (void)jinue_yield();
+    }
     
     return 0;
 }
