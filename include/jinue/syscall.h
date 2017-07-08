@@ -145,4 +145,6 @@ int jinue_thread_create(void (*entry)(), void *stack, int *perrno);
 
 int jinue_yield(void);
 
+void jinue_thread_exit(void);
+
 #endif

@@ -50,7 +50,7 @@ void kmain(void) {
     /* start process manager
      *
      * We switch from NULL since this is the first thread. */
-    thread_yield_from(NULL);
+    thread_yield_from(NULL, false);
 
     /* should never happen */
     panic("thread_yield_from() returned in kmain()");

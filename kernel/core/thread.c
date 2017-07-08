@@ -22,7 +22,7 @@ thread_t *thread_create(
     return thread;
 }
 
-void thread_yield_from(thread_t *from_thread) {
+void thread_yield_from(thread_t *from_thread, bool do_destroy) {
     thread_t *to_thread = jinue_node_entry(
             jinue_list_dequeue(&ready_list),
             thread_t,
@@ -50,13 +50,16 @@ void thread_yield_from(thread_t *from_thread) {
         else {
             from_context = &from_thread->thread_ctx;
             
-            /* add thread to the tail of the ready list so other threads run
-             * first */
-            jinue_list_enqueue(&ready_list, &from_thread->thread_list);
+            if(! do_destroy) {
+                /* add thread to the tail of the ready list so other threads run
+                 * first */
+                jinue_list_enqueue(&ready_list, &from_thread->thread_list);
+            }
         }
 
         thread_context_switch(
             from_context,
-            &to_thread->thread_ctx );
+            &to_thread->thread_ctx,
+            do_destroy);
     }
 }

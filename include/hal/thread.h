@@ -8,6 +8,7 @@
 #include <hal/vm.h>
 #include <hal/x86.h>
 #include <stddef.h>
+#include <stdbool.h>
 #include <thread_decl.h>
 
 static inline thread_t *get_current_thread(void) {
@@ -36,6 +37,11 @@ thread_t *thread_page_create(
         addr_t           entry,
         addr_t           user_stack);
 
-void thread_context_switch(thread_context_t *from_ctx, thread_context_t *to_ctx);
+void thread_page_destroy(thread_t *thread) ;
+
+void thread_context_switch(
+        thread_context_t    *from_ctx,
+        thread_context_t    *to_ctx,
+        bool                 destroy_from);
 
 #endif

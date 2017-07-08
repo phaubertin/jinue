@@ -47,7 +47,7 @@ void dispatch_syscall(jinue_syscall_args_t *args) {
         break;
     
     case SYSCALL_FUNCT_THREAD_YIELD:
-        thread_yield_from( get_current_thread() );
+        thread_yield_from(get_current_thread(), args->arg1);
         syscall_args_set_return(args, 0);
         break;
 

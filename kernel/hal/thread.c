@@ -14,7 +14,8 @@
 /* defined in thread.asm */
 void thread_context_switch_stack(
         thread_context_t *from_ctx,
-        thread_context_t *to_ctx);
+        thread_context_t *to_ctx,
+        bool destroy_from);
 
 /* For each thread, a page is allocated which contains three things:
  *  - The thread structure (thread_t);
@@ -121,9 +122,23 @@ thread_t *thread_page_create(
     return thread;
 }
 
-void thread_context_switch(thread_context_t *from_ctx, thread_context_t *to_ctx) {
+void thread_page_destroy(thread_t *thread) {
+    pfaddr_t pfaddr = vm_lookup_pfaddr(NULL, (addr_t)thread);
+    vm_unmap_global((addr_t)thread);
+    vm_free(global_page_allocator, (addr_t)thread);
+    pffree(pfaddr);
+}
+
+void thread_context_switch(
+        thread_context_t    *from_ctx,
+        thread_context_t    *to_ctx,
+        bool                 destroy_from) {
+
     /** ASSERTION: to_ctx argument must not be NULL */
     assert(to_ctx != NULL);
+    
+    /** ASSERTION: from_ctx argument must not be NULL if destroy_from is true */
+    assert(from_ctx != NULL || ! destroy_from);
 
     /* nothing to do if this is already the current thread */
     if(from_ctx != to_ctx) {
@@ -147,6 +162,6 @@ void thread_context_switch(thread_context_t *from_ctx, thread_context_t *to_ctx)
         }
 
         /* switch thread context stack */
-        thread_context_switch_stack(from_ctx, to_ctx);
+        thread_context_switch_stack(from_ctx, to_ctx, destroy_from);
     }
 }

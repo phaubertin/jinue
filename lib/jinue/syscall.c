@@ -1,5 +1,6 @@
 #include <jinue/errno.h>
 #include <jinue/syscall.h>
+#include <stdbool.h>
 
 
 typedef void (*syscall_stub_t)(jinue_syscall_args_t *args);
@@ -150,9 +151,20 @@ int jinue_yield(void) {
     jinue_syscall_args_t args;
 
     args.arg0 = SYSCALL_FUNCT_THREAD_YIELD;
-    args.arg1 = 0;
+    args.arg1 = false;
     args.arg2 = 0;
     args.arg3 = 0;
 
     return jinue_call(&args, NULL);
+}
+
+void jinue_thread_exit(void) {
+    jinue_syscall_args_t args;
+
+    args.arg0 = SYSCALL_FUNCT_THREAD_YIELD;
+    args.arg1 = true;
+    args.arg2 = 0;
+    args.arg3 = 0;
+
+    (void)jinue_call(&args, NULL);
 }

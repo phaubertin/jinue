@@ -4,12 +4,14 @@
     bits 32
     
     extern in_kernel
+    extern thread_page_destroy
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: thread_context_switch_stack
 ; C PROTOTYPE: void thread_context_switch_stack(
 ;               thread_context_t *from_ctx,
-;               thread_context_t *to_ctx)
+;               thread_context_t *to_ctx,
+;               bool destroy_from);
 ; ------------------------------------------------------------------------------
     global thread_context_switch_stack
 thread_context_switch_stack:
@@ -24,6 +26,7 @@ thread_context_switch_stack:
     
     ; At this point, the stack looks like this:
     ;
+    ; esp+28  destroy_from boolean (third function argument)
     ; esp+24  to thread context pointer (second function argument)
     ; esp+20  from thread context pointer (first function argument)
     ; esp+16  return address
@@ -52,7 +55,22 @@ thread_context_switch_stack:
     
     ; This is where we actually switch thread by loading the stack pointer.
     mov esp, [esi]      ; saved stack pointer is the first member
+    
+    ; Now that we switched stack, see if the caller requested the from thread
+    ; context be destroyed.
+    mov eax, [esp+28]   ; destroy_from boolean (third function argument)
+    or eax, eax
+    jz .skip_destroy
+    
+    ; destroy from thread context
+    and edi, THREAD_CONTEXT_MASK
+    push edi
+    call thread_page_destroy
+    
+    ; cleanup thread_page_destroy() arguments from stack
+    add esp, 4
 
+.skip_destroy:
     pop ebp
     pop edi
     pop esi
