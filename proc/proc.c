@@ -29,10 +29,15 @@ void thread_a(void) {
 }
 
 void thread_b(void) {
-    while (1) {
-        printk("Thread B is running.\n");
+    int counter;
+    
+    for(counter = 10; counter > 0; --counter) {
+        printk("Thread B is running (%u).\n", counter);
         (void)jinue_yield();
     }
+    
+    printk("Thread B is exiting.\n");
+    jinue_thread_exit();
 }
 
 int main(int argc, char *argv[], char *envp[]) {
