@@ -33,7 +33,7 @@ thread_context_switch_stack:
     ; esp+ 0  ebp
     
     ; retrieve the from thread context argument
-    mov edi, [esp+20]
+    mov edi, [esp+20]   ; from thread context (first function argument)
 
     ; On the first thread context switch after boot, the kernel is using a
     ; temporary stack and the from/current thread context is NULL. Skip saving
@@ -48,16 +48,10 @@ thread_context_switch_stack:
 .do_switch:
     ; load the saved stack pointer from the thread context to which we are
     ; switching
-    mov esi, [esp+24]   ; thread context pointer (first function argument)
-    mov eax, [esi]      ; saved stack pointer is the first member
-    
-    ; If the saved stack pointer is NULL, this is a new thread that never ran
-    ; before and that will start by "returning" directly to user space.
-    or eax, eax
-    jz .new_thread
+    mov esi, [esp+24]   ; to thread context (second function argument)
     
     ; This is where we actually switch thread by loading the stack pointer.
-    mov esp, eax
+    mov esp, [esi]      ; saved stack pointer is the first member
 
     pop ebp
     pop edi
@@ -65,38 +59,3 @@ thread_context_switch_stack:
     pop ebx
     
     ret
-    
-.new_thread:
-    ; leaving the kernel
-    mov [in_kernel], dword 0
-    
-    ; set user space data segment selectors
-    mov eax, 8 * GDT_USER_DATA + 3  ; user data segment, rpl=3
-    mov ds, eax
-    mov es, eax
-    mov fs, eax
-    mov gs, eax
-    
-    ; The thread context creation code has already setup the stack with the
-    ; following data for an interrupt return to user space with iretd:
-    ;
-    ;   - user stack segment (ss)
-    ;   - user stack pointer (esp)
-    ;   - flags register (eflags)
-    ;   - code segment (cs)
-    ;   - return address (entry point)
-    ;
-    ; ... for a total of 20 bytes on the stack.
-    add esi, THREAD_CONTEXT_SIZE - 20
-    mov esp, esi
-    
-    ; clear registers
-    xor eax, eax
-    mov ebx, eax
-    mov ecx, eax
-    mov edx, eax
-    mov esi, eax
-    mov edi, eax
-    mov ebp, eax
-    
-    iretd

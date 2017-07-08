@@ -11,5 +11,9 @@
 
 extern seg_descriptor_t idt[];
 
+/* do not call - used by new user threads to "return" to user space for the
+ * first time. See thread_page_create(). */
+void return_from_interrupt(void);
+
 #endif
 

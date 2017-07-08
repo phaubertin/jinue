@@ -1,6 +1,7 @@
 #include <jinue/descriptors.h>
 #include <hal/cpu.h>
 #include <hal/cpu_data.h>
+#include <hal/irq.h>
 #include <hal/kernel.h>
 #include <hal/thread.h>
 #include <hal/vm.h>
@@ -71,24 +72,50 @@ thread_t *thread_page_create(
 
         vm_map_global((addr_t)thread, pf, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE | VM_FLAG_GLOBAL);
 
-        /* initialize fields
-         *
-         * A NULL saved stack pointer indicates to the thread context switching code
-         * that this is a new thread that needs to return directly to user space. */
+        /* initialize fields */
         thread_context_t *thread_ctx = &thread->thread_ctx;
-         
-        thread_ctx->saved_stack_pointer = NULL;
+        
         thread_ctx->addr_space          = addr_space;
         thread_ctx->local_storage_addr  = NULL;
 
         /* setup stack for initial return to user space */
         uint32_t *kernel_stack_base = (uint32_t *)get_kernel_stack_base(thread_ctx);
+        int idx = 0;
 
-        kernel_stack_base[-1]   = 8 * GDT_USER_DATA + 3;    /* user stack segment (ss), rpl = 3 */
-        kernel_stack_base[-2]   = (uint32_t)user_stack;     /* user stack pointer (esp) */
-        kernel_stack_base[-3]   = 2;                        /* flags register (eflags) */
-        kernel_stack_base[-4]   = 8 * GDT_USER_CODE + 3;    /* user  code segment (cs), rpl/cpl = 3 */
-        kernel_stack_base[-5]   = (uint32_t)entry;          /* entry point */
+        /* the following values are put on the stack for use by the iret instruction */
+        kernel_stack_base[--idx]   = 8 * GDT_USER_DATA + 3;     /* user stack segment (ss), rpl = 3 */
+        kernel_stack_base[--idx]   = (uint32_t)user_stack;      /* user stack pointer (esp) */
+        kernel_stack_base[--idx]   = 2;                         /* flags register (eflags) */
+        kernel_stack_base[--idx]   = 8 * GDT_USER_CODE + 3;     /* user code segment (cs), rpl/cpl = 3 */
+        kernel_stack_base[--idx]   = (uint32_t)entry;           /* user code entry point */
+        
+        /* the following values are popped by return_from_interrupt() */
+        kernel_stack_base[--idx]   = 0;                         /* ebp */
+        kernel_stack_base[--idx]   = 8 * GDT_USER_DATA + 3;     /* gs: user data segment, rpl = 3 */
+        kernel_stack_base[--idx]   = 8 * GDT_USER_DATA + 3;     /* fs: user data segment, rpl = 3 */
+        kernel_stack_base[--idx]   = 8 * GDT_USER_DATA + 3;     /* es: user data segment, rpl = 3 */
+        kernel_stack_base[--idx]   = 8 * GDT_USER_DATA + 3;     /* ds: user data segment, rpl = 3 */
+        kernel_stack_base[--idx]   = 0;                         /* ecx */
+        kernel_stack_base[--idx]   = 0;                         /* edx */
+        kernel_stack_base[--idx]   = 0;                         /* edi */
+        kernel_stack_base[--idx]   = 0;                         /* esi */
+        kernel_stack_base[--idx]   = 0;                         /* ebx */
+        kernel_stack_base[--idx]   = 0;                         /* eax */        
+        kernel_stack_base[--idx]   = 0;                         /* no error code */
+        kernel_stack_base[--idx]   = 0;                         /* in_kernel */
+        
+        /* this is the address thread_context_switch_stack() will return to */
+        kernel_stack_base[--idx]   = (uint32_t)return_from_interrupt;
+        
+        /* the following values are popped by address thread_context_switch_stack()
+         * as part of its cleanup before returning (saved registers). */
+        kernel_stack_base[--idx]   = 0;                         /* ebx */
+        kernel_stack_base[--idx]   = 0;                         /* esi */
+        kernel_stack_base[--idx]   = 0;                         /* edi */
+        kernel_stack_base[--idx]   = 0;                         /* ebp */
+        
+        /* set thread stack pointer */
+        thread_ctx->saved_stack_pointer = (addr_t)&kernel_stack_base[idx];
     }
 
     return thread;

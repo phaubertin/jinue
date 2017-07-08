@@ -134,9 +134,13 @@ irq_save_state:
     ; remember whether we have an error code or not
     push ecx
     
+    ; (re)-entering the kernel
+    push dword [in_kernel]
+    inc dword [in_kernel]
+    
     ; set function parameters
     mov  ecx, esp
-    add  ecx, 4
+    add  ecx, 8
     push ecx            ; Fourth param: system call parameters (for slow system call method)
     push edx            ; Third param:  error code
     push dword [edi+4]  ; Second param: return address (eip)
@@ -148,6 +152,13 @@ irq_save_state:
     
     ; remove parameters from stack
     add esp, 16
+
+    ; new threads start here
+    global return_from_interrupt
+return_from_interrupt:
+
+    ; restore in_kernel
+    pop dword [in_kernel]
 
     ; error code/no error code
     pop ebp
