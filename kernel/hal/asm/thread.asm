@@ -19,10 +19,11 @@ thread_context_switch_stack:
     ;
     ; We must store these registers whether we are actually using them here or
     ; not since we are about to switch to another thread that will.
+    push ebp
+    mov ebp, esp    ; setup frame pointer
     push ebx
     push esi
     push edi
-    push ebp
     
     ; At this point, the stack looks like this:
     ;
@@ -71,9 +72,9 @@ thread_context_switch_stack:
     add esp, 4
 
 .skip_destroy:
-    pop ebp
     pop edi
     pop esi
     pop ebx
+    pop ebp
     
     ret
