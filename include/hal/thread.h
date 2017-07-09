@@ -29,7 +29,9 @@ static inline addr_t thread_context_get_local_storage(thread_context_t *thread_c
 }
 
 static inline addr_t get_kernel_stack_base(thread_context_t *thread_ctx) {
-    return (addr_t)thread_ctx + THREAD_CONTEXT_SIZE;
+    thread_t *thread = (thread_t *)( (uintptr_t)thread_ctx & THREAD_CONTEXT_MASK );
+    
+    return (addr_t)thread + THREAD_CONTEXT_SIZE;
 }
 
 thread_t *thread_page_create(

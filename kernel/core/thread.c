@@ -13,6 +13,7 @@ thread_t *thread_create(
     thread_t *thread = thread_page_create(addr_space, entry, user_stack);
     
     if(thread != NULL) {
+        object_header_init(&thread->header, OBJECT_TYPE_THREAD);
         jinue_node_init(&thread->thread_list);
         
         /* add the the head so it is scheduled next */

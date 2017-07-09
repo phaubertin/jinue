@@ -3,8 +3,10 @@
 
 #include <jinue/list.h>
 #include <hal/thread_ctx.h>
+#include <object.h>
 
 struct thread_t {
+    object_header_t     header;
     thread_context_t    thread_ctx;
     jinue_node_t        thread_list;
 };
