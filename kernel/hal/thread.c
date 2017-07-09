@@ -17,9 +17,8 @@ void thread_context_switch_stack(
         thread_context_t *to_ctx,
         bool destroy_from);
 
-/* For each thread, a page is allocated which contains three things:
- *  - The thread structure (thread_t);
- *  - The message buffer in which messages sent from this thread are copied; and
+/* For each thread, a page is allocated which contains:
+ *  - The thread structure (thread_t); and
  *  - This thread's kernel stack.
  *
  * Switching thread context (see thread_context_switch()) basically means
@@ -36,23 +35,18 @@ void thread_context_switch_stack(
  *  |                                   |
  *  |                                   |
  *  +-----------------------------------+ thread
- *  |                                   |   + THREAD_CONTEXT_MESSAGE_OFFSET
- *  |                                   |   + JINUE_SEND_MAX_SIZE
- *  |           Message buffer          |
- *  |                                   |
- *  |                                   |
- *  +-----------------------------------+ thread
- *  |               unused              |   + THREAD_CONTEXT_MESSAGE_OFFSET
- *  +-----------------------------------+ thread
  *  |                                   |   + sizeof(thread_t)
- *  |     Thread context structure      |
+ *  |          Thread structure         |
  *  |             (thread_t)            |
  *  |                                   |
  *  +-----------------------------------+ thread
  *
- * The start of this page, and from there the thread structure, message buffer
- * and kernel stack base, can be found quickly by masking the least significant
- * bits of the stack pointer (with THREAD_CONTEXT_MASK).
+ * The start of this page, and from there the thread structure, and kernel stack
+ * base, can be found quickly by masking the least significant bits of the stack
+ * pointer (with THREAD_CONTEXT_MASK).
+ *
+ * All members of the thread structure (thread_t) used by the HAL are grouped
+ * in the thread context (sub-)structure (thread_context_t).
  */
 
 thread_t *thread_page_create(
