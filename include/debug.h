@@ -1,5 +1,5 @@
-#ifndef _JINUE_KERNEL_DEBUG_H_
-#define _JINUE_KERNEL_DEBUG_H_
+#ifndef JINUE_KERNEL_DEBUG_H
+#define JINUE_KERNEL_DEBUG_H
 
 #include <jinue/types.h>
 

@@ -1,5 +1,5 @@
-#ifndef _JINUE_ALLOC_H_
-#define _JINUE_ALLOC_H_
+#ifndef _JINUE_ALLOC_H
+#define _JINUE_ALLOC_H
 
 #include <jinue/types.h>
 

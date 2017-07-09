@@ -1,5 +1,5 @@
-#ifndef _JINUE_KERNEL_VM_ALLOC_H_
-#define _JINUE_KERNEL_VM_ALLOC_H_
+#ifndef JINUE_KERNEL_VM_ALLOC_H
+#define JINUE_KERNEL_VM_ALLOC_H
 
 #include <jinue/types.h>
 #include <hal/vm.h>

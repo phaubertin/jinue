@@ -1,5 +1,5 @@
-#ifndef _JINUE_KERNEL_DESCRIPTORS_H_
-#define _JINUE_KERNEL_DESCRIPTORS_H_
+#ifndef JINUE_HAL_DESCRIPTORS_H
+#define JINUE_HAL_DESCRIPTORS_H
 
 #include <jinue/descriptors.h>
 #include <jinue/types.h>

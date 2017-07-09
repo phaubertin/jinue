@@ -1,5 +1,5 @@
-#ifndef _JINUE_KERNEL_HAL_THREAD_H_
-#define _JINUE_KERNEL_HAL_THREAD_H_
+#ifndef JINUE_HAL_THREAD_H
+#define JINUE_HAL_THREAD_H
 
 #include <hal/asm/thread.h>
 

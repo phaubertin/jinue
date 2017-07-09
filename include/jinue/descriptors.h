@@ -1,5 +1,5 @@
-#ifndef _JINUE_DESCRIPTORS_H_
-#define _JINUE_DESCRIPTORS_H_
+#ifndef _JINUE_DESCRIPTORS_H
+#define _JINUE_DESCRIPTORS_H
 
 #include <jinue/asm/descriptors.h>
 

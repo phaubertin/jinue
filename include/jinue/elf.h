@@ -1,5 +1,5 @@
-#ifndef _JINUE_ELF_H_
-#define _JINUE_ELF_H_
+#ifndef _JINUE_ELF_H
+#define _JINUE_ELF_H
 
 #include <stdint.h>
 

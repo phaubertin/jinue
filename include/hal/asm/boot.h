@@ -1,5 +1,5 @@
-#ifndef _JINUE_KERNEL_ASM_BOOT_H_
-#define _JINUE_KERNEL_ASM_BOOT_H_
+#ifndef JINUE_HAL_ASM_BOOT_H
+#define JINUE_HAL_ASM_BOOT_H
 
 
 #define BOOT_SIGNATURE          0xaa55

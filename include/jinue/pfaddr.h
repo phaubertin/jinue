@@ -1,5 +1,5 @@
-#ifndef _JINUE_PFADDR_H_
-#define _JINUE_PFADDR_H_
+#ifndef _JINUE_PFADDR_H
+#define _JINUE_PFADDR_H
 
 #include <stdint.h>
 #include <jinue/vm.h>

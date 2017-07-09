@@ -1,5 +1,5 @@
-#ifndef _JINUE_KERNEL_ELF_H_
-#define _JINUE_KERNEL_ELF_H_
+#ifndef JINUE_KERNEL_ELF_H
+#define JINUE_KERNEL_ELF_H
 
 #include <jinue/elf.h>
 #include <jinue/types.h>

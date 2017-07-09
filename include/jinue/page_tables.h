@@ -1,5 +1,5 @@
-#ifndef _JINUE_PAGE_TABLES_H_
-#define _JINUE_PAGE_TABLES_H_
+#ifndef _JINUE_PAGE_TABLES_H
+#define _JINUE_PAGE_TABLES_H
 
 #include <jinue/types.h>
 

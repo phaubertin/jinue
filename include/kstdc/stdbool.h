@@ -1,5 +1,5 @@
-#ifndef _JINUE_KERNEL_STDBOOL_H
-#define _JINUE_KERNEL_STDBOOL_H
+#ifndef _JINUE_KSTDC_STDBOOL_H
+#define _JINUE_KSTDC_STDBOOL_H
 
 #define bool    _Bool
 #define true    1

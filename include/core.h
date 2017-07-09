@@ -1,12 +1,5 @@
-/*
- * core.h
- *
- *  Created on: 2016-04-21
- *      Author: phil
- */
-
-#ifndef JINUE_KERNEL_CORE_H_
-#define JINUE_KERNEL_CORE_H_
+#ifndef JINUE_KERNEL_CORE_H
+#define JINUE_KERNEL_CORE_H
 
 #include <elf.h>
 

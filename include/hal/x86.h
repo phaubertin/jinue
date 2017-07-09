@@ -1,5 +1,5 @@
-#ifndef _JINUE_KERNEL_X86_H_
-#define _JINUE_KERNEL_X86_H_
+#ifndef JINUE_HAL_X86_H
+#define JINUE_HAL_X86_H
 
 #include <hal/descriptors.h>
 #include <stdint.h>

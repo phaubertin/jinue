@@ -1,5 +1,5 @@
-#ifndef _JINUE_KERNEL_HAL_H_
-#define _JINUE_KERNEL_HAL_H_
+#ifndef JINUE_HAL_H
+#define JINUE_HAL_H
 
 void hal_init(void);
 

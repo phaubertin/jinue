@@ -1,5 +1,5 @@
-#ifndef _JINUE_KERNEL_PANIC_H_
-#define _JINUE_KERNEL_PANIC_H_
+#ifndef JINUE_KERNEL_PANIC_H
+#define JINUE_KERNEL_PANIC_H
 
 void panic(const char *message);
 

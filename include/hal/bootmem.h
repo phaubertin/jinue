@@ -1,5 +1,5 @@
-#ifndef _JINUE_KERNEL_BOOTMEM_H_
-#define _JINUE_KERNEL_BOOTMEM_H_
+#ifndef JINUE_HAL_BOOTMEM_H
+#define JINUE_HAL_BOOTMEM_H
 
 #include <jinue/pfaddr.h>
 #include <jinue/types.h>

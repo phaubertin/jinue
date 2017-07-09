@@ -1,5 +1,5 @@
-#ifndef _JINUE_KERNEL_STDINT_H
-#define _JINUE_KERNEL_STDINT_H
+#ifndef _JINUE_KSTDC_STDINT_H
+#define _JINUE_KSTDC_STDINT_H
 
 typedef signed char             int8_t;
 

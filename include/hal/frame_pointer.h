@@ -1,5 +1,5 @@
-#ifndef _JINUE_KERNEL_FPOINTER_H_
-#define _JINUE_KERNEL_FPOINTER_H_
+#ifndef JINUE_HAL_FPOINTER_H
+#define JINUE_HAL_FPOINTER_H
 
 #include <jinue/types.h>
 

@@ -1,5 +1,5 @@
-#ifndef _JINUE_KERNEL_CPU_DATA_H_
-#define _JINUE_KERNEL_CPU_DATA_H_
+#ifndef JINUE_HAL_CPU_DATA_H
+#define JINUE_HAL_CPU_DATA_H
 
 #include <hal/descriptors.h>
 #include <hal/thread.h>

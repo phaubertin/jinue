@@ -1,5 +1,5 @@
-#ifndef JINUE_ASM_VM_H_
-#define JINUE_ASM_VM_H_
+#ifndef _JINUE_ASM_VM_H
+#define _JINUE_ASM_VM_H
 
 /** number of bits in virtual address for offset inside page */
 #define PAGE_SHIFT 12

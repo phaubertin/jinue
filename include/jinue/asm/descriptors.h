@@ -1,5 +1,5 @@
-#ifndef _JINUE_ASM_DESCRIPTORS_H_
-#define _JINUE_ASM_DESCRIPTORS_H_
+#ifndef _JINUE_ASM_DESCRIPTORS_H
+#define _JINUE_ASM_DESCRIPTORS_H
 
 /** GDT entry for the null descriptor */
 #define GDT_NULL                 0

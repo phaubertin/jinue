@@ -1,5 +1,5 @@
-#ifndef _JINUE_KERNEL_VM_MACROS_H_
-#define _JINUE_KERNEL_VM_MACROS_H_
+#ifndef JINUE_HAL_VM_MACROS_H
+#define JINUE_HAL_VM_MACROS_H
 
 #include <jinue/vm.h>
 #include <stdint.h>

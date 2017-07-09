@@ -1,5 +1,5 @@
-#ifndef _JINUE_KERNEL_SLAB_H_
-#define _JINUE_KERNEL_SLAB_H_
+#ifndef JINUE_KERNEL_SLAB_H
+#define JINUE_KERNEL_SLAB_H
 
 #include <stddef.h>
 #include <jinue/vm.h>

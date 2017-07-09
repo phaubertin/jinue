@@ -1,5 +1,5 @@
-#ifndef _JINUE_KERNEL_INTERRUPT_H_
-#define _JINUE_KERNEL_INTERRUPT_H_
+#ifndef JINUE_HAL_INTERRUPT_H
+#define JINUE_HAL_INTERRUPT_H
 
 #include <hal/syscall.h>
 #include <stdint.h>

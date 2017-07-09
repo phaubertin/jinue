@@ -1,5 +1,5 @@
-#ifndef _JINUE_KERNEL_STDDEF_H
-#define _JINUE_KERNEL_STDDEF_H
+#ifndef _JINUE_KSTDC_STDDEF_H
+#define _JINUE_KSTDC_STDDEF_H
 
 typedef signed long     ptrdiff_t;
 typedef unsigned long   size_t;

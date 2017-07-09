@@ -1,5 +1,5 @@
-#ifndef _JINUE_KERNEL_HAL_IRQ_H_
-#define _JINUE_KERNEL_HAL_IRQ_H_
+#ifndef JINUE_HAL_IRQ_H
+#define JINUE_HAL_IRQ_H
 
 #include <hal/descriptors.h>
 

@@ -1,5 +1,5 @@
-#ifndef _JINUE_ERRNO_H_
-#define _JINUE_ERRNO_H_
+#ifndef _JINUE_ERRNO_H
+#define _JINUE_ERRNO_H
 
 #define JINUE_EMORE     1
 

@@ -1,5 +1,5 @@
-#ifndef _JINUE_TYPES_H_
-#define _JINUE_TYPES_H_
+#ifndef _JINUE_TYPES_H
+#define _JINUE_TYPES_H
 
 #include <jinue/pfaddr.h>
 

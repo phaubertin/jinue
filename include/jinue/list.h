@@ -1,5 +1,5 @@
-#ifndef _JINUE_LIST_H_
-#define _JINUE_LIST_H_
+#ifndef _JINUE_LIST_H
+#define _JINUE_LIST_H
 
 #include <stdbool.h>
 #include <stddef.h>

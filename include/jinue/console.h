@@ -1,5 +1,5 @@
-#ifndef JINUE_CONSOLE_H_
-#define JINUE_CONSOLE_H_
+#ifndef _JINUE_CONSOLE_H
+#define _JINUE_CONSOLE_H
 
 void console_printn(const char *message, unsigned int n);
 

@@ -1,5 +1,5 @@
-#ifndef _JINUE_KERNEL_IO_H_
-#define _JINUE_KERNEL_IO_H_
+#ifndef JINUE_HAL_IO_H
+#define JINUE_HAL_IO_H
 
 #include <stdint.h>
 

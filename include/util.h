@@ -1,5 +1,5 @@
-#ifndef _JINUE_KERNEL_UTIL_H_
-#define _JINUE_KERNEL_UTIL_H_
+#ifndef JINUE_KERNEL_UTIL_H
+#define JINUE_KERNEL_UTIL_H
 
 #include <jinue/types.h>
 #include <stddef.h>

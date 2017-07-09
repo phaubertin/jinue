@@ -1,5 +1,5 @@
-#ifndef _JINUE_KERNEL_BOOT_H_
-#define _JINUE_KERNEL_BOOT_H_
+#ifndef JINUE_HAL_BOOT_H
+#define JINUE_HAL_BOOT_H
 
 #include <hal/asm/boot.h>
 

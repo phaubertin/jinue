@@ -1,5 +1,5 @@
-#ifndef CONSOLE_H_
-#define CONSOLE_H_
+#ifndef JINUE_KERNEL_CONSOLE_H
+#define JINUE_KERNEL_CONSOLE_H
 
 #include <jinue/console.h>
 
@@ -7,4 +7,4 @@
 
 #define CONSOLE_SERIAL_BAUD_RATE    115200
 
-#endif /* CONSOLE_H_ */
+#endif

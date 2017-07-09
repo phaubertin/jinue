@@ -1,5 +1,5 @@
-#ifndef JINUE_KERNEL_HAL_THREAD_CTX_H_
-#define JINUE_KERNEL_HAL_THREAD_CTX_H_
+#ifndef JINUE_HAL_THREAD_CTX_H
+#define JINUE_HAL_THREAD_CTX_H
 
 #include <jinue/types.h>
 #include <hal/vm.h>

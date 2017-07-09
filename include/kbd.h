@@ -1,5 +1,5 @@
-#ifndef _JINUE_KERNEL_KBD_H_
-#define _JINUE_KERNEL_KBD_H_
+#ifndef JINUE_KERNEL_KBD_H
+#define JINUE_KERNEL_KBD_H
 
 void any_key(void);
 

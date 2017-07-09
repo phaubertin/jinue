@@ -1,5 +1,5 @@
-#ifndef _JINUE_KERNEL_HAL_KERNEL_H_
-#define _JINUE_KERNEL_HAL_KERNEL_H_
+#ifndef JINUE_HAL_KERNEL_H
+#define JINUE_HAL_KERNEL_H
 
 #include <jinue/types.h>
 #include <hal/startup.h>

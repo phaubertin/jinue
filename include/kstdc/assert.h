@@ -1,3 +1,6 @@
+#ifndef _JINUE_KSTDC_ASSERT_H
+#define _JINUE_KSTDC_ASSERT_H
+
 #undef assert
 
 #ifdef NDEBUG
@@ -15,3 +18,4 @@
     )
 #endif
 
+#endif

@@ -1,5 +1,5 @@
-#ifndef _JINUE_SYSCALL_H_
-#define _JINUE_SYSCALL_H_
+#ifndef _JINUE_SYSCALL_H
+#define _JINUE_SYSCALL_H
 
 #include <jinue/pfalloc.h>
 #include <jinue/types.h>

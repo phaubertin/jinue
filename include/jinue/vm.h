@@ -1,5 +1,5 @@
-#ifndef _JINUE_VM_H_
-#define _JINUE_VM_H_
+#ifndef _JINUE_VM_H
+#define _JINUE_VM_H
 
 #include <jinue/asm/vm.h>
 

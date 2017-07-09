@@ -1,5 +1,5 @@
-#ifndef _JINUE_KERNEL_E820_H_
-#define _JINUE_KERNEL_E820_H_
+#ifndef JINUE_HAL_E820_H
+#define JINUE_HAL_E820_H
 
 #include <hal/asm/e820.h>
 

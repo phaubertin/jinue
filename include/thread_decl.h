@@ -1,5 +1,5 @@
-#ifndef _JINUE_KERNEL_THREAD_DECL_H_
-#define _JINUE_KERNEL_THREAD_DECL_H_
+#ifndef JINUE_KERNEL_THREAD_DECL_H
+#define JINUE_KERNEL_THREAD_DECL_H
 
 #include <jinue/list.h>
 #include <hal/thread_ctx.h>
