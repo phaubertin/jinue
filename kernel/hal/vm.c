@@ -21,7 +21,7 @@ pte_t *global_page_tables;
 
 addr_space_t initial_addr_space;
 
-slab_cache_t *addr_space_cache;
+static slab_cache_t *addr_space_cache;
 
 /** page table entry offset of virtual (linear) address */
 unsigned int (*page_table_offset_of)(addr_t);

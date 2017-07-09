@@ -1,12 +1,12 @@
 #ifndef JINUE_KERNEL_SLAB_H
 #define JINUE_KERNEL_SLAB_H
 
-#include <stddef.h>
 #include <jinue/vm.h>
+#include <stddef.h>
 
 #define SLAB_SIZE                   PAGE_SIZE
 
-#define SLAB_POISON_ALIVE_VALUE     0xBADCAFE
+#define SLAB_POISON_ALIVE_VALUE     0x0BADCAFE
 
 #define SLAB_POISON_DEAD_VALUE      0xDEADBEEF
 
