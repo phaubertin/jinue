@@ -1,4 +1,5 @@
 #include <jinue/errno.h>
+#include <jinue/ipc.h>
 #include <jinue/syscall.h>
 #include <stdbool.h>
 
@@ -87,42 +88,6 @@ void *jinue_get_thread_local_storage(void) {
 	(void)jinue_call(&args, NULL);
 
 	return (void *)jinue_get_return_uintptr(&args);
-}
-
-int jinue_send(
-		int              function,
-		int              target,
-		char            *buffer,
-		size_t           buffer_size,
-		size_t           data_size,
-		unsigned int     n_desc,
-		int             *perrno) {
-
-	jinue_syscall_args_t args;
-
-	/* The library has to perform this check and set the appropriate error
-	 * because the kernel cannot check this once the values have been packed. */
-	if(data_size > JINUE_SEND_MAX_SIZE || n_desc > JINUE_SEND_MAX_N_DESC) {
-		if(perrno != NULL) {
-			*perrno = JINUE_EINVAL;
-		}
-
-		return -1;
-	}
-
-	/* Silently crop the buffer size if it is greater than the maximum allowed. */
-	if(buffer_size > JINUE_SEND_MAX_SIZE) {
-		buffer_size = JINUE_SEND_MAX_SIZE;
-	}
-
-	args.arg0 = (uintptr_t)function;
-	args.arg1 = (uintptr_t)target;
-	args.arg2 = (uintptr_t)buffer;
-	args.arg3 =     jinue_args_pack_buffer_size(buffer_size)
-			  	  | jinue_args_pack_data_size(data_size)
-			  	  | jinue_args_pack_n_desc(n_desc);
-
-	return jinue_call(&args, perrno);
 }
 
 int jinue_get_free_memory(memory_block_t *buffer, size_t buffer_size, int *perrno) {

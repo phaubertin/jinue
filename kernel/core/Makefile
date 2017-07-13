@@ -3,7 +3,7 @@ include $(jinue_root)/header.mk
 
 build_info_h     = build-info.gen.h
 
-sources.c        = core.c elf.c syscall.c thread.c
+sources.c        = core.c elf.c ipc.c object.c syscall.c thread.c
 target           = kern-core.o
 
 unclean         += $(build_info_h)

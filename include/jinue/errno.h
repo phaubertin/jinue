@@ -11,4 +11,12 @@
 
 #define JINUE_EAGAIN    5
 
+#define JINUE_EBADF     6
+
+#define JINUE_EIO       7
+
+#define JINUE_EPERM     8
+
+#define JINUE_E2BIG     9
+
 #endif

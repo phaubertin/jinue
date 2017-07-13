@@ -237,12 +237,12 @@ When replying, the receiver sets the message arguments as follow:
     31                                                               0
     
     +----------------------------------------------------------------+
-    |                           msgCookie                            |  arg1
+    |                         Reserved (0)                           |  arg1
     +----------------------------------------------------------------+
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                            msgPtr                              |  arg2
+    |                           msgPtr                               |  arg2
     +----------------------------------------------------------------+
     31                                                               0
 
@@ -254,8 +254,6 @@ When replying, the receiver sets the message arguments as follow:
 Where:
 
     msgFunction     is the system call number for REPLY or REPLY/RECEIVE
-    msgCookie       is the updated value of the cookie. This value will be
-                    stored, in the sender's descriptor.
     msgPtr          is the address of the start of the reply message buffer. It
                     may or may not be the buffer where the message being replied
                     to was received. For a combined REPLY/RECEIVE, this is also

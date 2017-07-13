@@ -1,7 +1,9 @@
 #include <jinue/list.h>
 #include <hal/thread.h>
+#include <object.h>
 #include <panic.h>
 #include <thread.h>
+#include <string.h>
 
 static jinue_list_t ready_list = JINUE_LIST_STATIC;
 
@@ -13,48 +15,45 @@ thread_t *thread_create(
     thread_t *thread = thread_page_create(addr_space, entry, user_stack);
     
     if(thread != NULL) {
-        object_header_init(&thread->header, OBJECT_TYPE_THREAD);
+        object_header_init(&thread->header, OBJECT_TYPE_THREAD);        
         jinue_node_init(&thread->thread_list);
         
-        /* add the the head so it is scheduled next */
-        jinue_list_push(&ready_list, &thread->thread_list);
+        thread->sender = NULL;
+        
+        memset(&thread->descriptors, 0, sizeof(thread->descriptors));
+        
+        thread_ready(thread);
     }
     
     return thread;
 }
 
-void thread_yield_from(thread_t *from_thread, bool do_destroy) {
-    thread_t *to_thread = jinue_node_entry(
-            jinue_list_dequeue(&ready_list),
-            thread_t,
-            thread_list );
-    
-    if(to_thread == NULL) {
-        if(from_thread == NULL) {
-            /* Currently, scheduling is purely cooperative and only one CPU is
-             * supported (so, there are no threads currently running on other
-             * CPUs). What this means is that, once there are no more threads
-             * running or ready to run, this situation will never change. */
-            panic("No more threads to schedule");
-        }
-        else {
-            /* We just let the current thread run because there are no others to
-             * yield to. */
-        }
-    }
-    else {
+void thread_ready(thread_t *thread) {
+    /* add thread to the tail of the ready list to give other threads a chance
+     * to run */
+    jinue_list_enqueue(&ready_list, &thread->thread_list);
+}
+
+void thread_switch(
+        thread_t *from_thread,
+        thread_t *to_thread,
+        bool blocked,
+        bool do_destroy) {
+
+    if(to_thread != from_thread) {
         thread_context_t *from_context;
-        
+
         if(from_thread == NULL) {
             from_context = NULL;
         }
         else {
             from_context = &from_thread->thread_ctx;
-            
-            if(! do_destroy) {
-                /* add thread to the tail of the ready list so other threads run
-                 * first */
-                jinue_list_enqueue(&ready_list, &from_thread->thread_list);
+
+            /* Put the the thread we are switching away from (the current thread)
+             * back into the ready list, unless it just blocked or it is being
+             * destroyed. */
+            if(! (do_destroy || blocked)) {
+                thread_ready(from_thread);
             }
         }
 
@@ -63,4 +62,38 @@ void thread_yield_from(thread_t *from_thread, bool do_destroy) {
             &to_thread->thread_ctx,
             do_destroy);
     }
+}
+
+static thread_t *reschedule(thread_t *from_thread, bool from_can_run) {
+    thread_t *to_thread = jinue_node_entry(
+            jinue_list_dequeue(&ready_list),
+            thread_t,
+            thread_list );
+    
+    if(to_thread == NULL) {
+        if(from_thread != NULL && from_can_run) {
+            /* We just let the current thread run because there are no other
+             * threads to run. */
+            return from_thread;
+        }
+        else {
+            /* Currently, scheduling is purely cooperative and only one CPU is
+             * supported (so, there are no threads currently running on other
+             * CPUs). What this means is that, once there are no more threads
+             * running or ready to run, this situation will never change. */
+            panic("No more threads to schedule");
+        }
+    }
+
+    return to_thread;
+}
+
+void thread_yield_from(thread_t *from_thread, bool blocked, bool do_destroy) {
+    bool from_can_run = ! (blocked || do_destroy);
+    
+    thread_switch(
+            from_thread,
+            reschedule(from_thread, from_can_run),
+            blocked,
+            do_destroy);
 }

@@ -1,3 +1,4 @@
+#include <jinue/ipc.h>
 #include <jinue/syscall.h>
 #include <stddef.h>
 

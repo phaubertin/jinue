@@ -3,6 +3,7 @@
 #include <hal/vm.h>
 #include <core.h>
 #include <elf.h>
+#include <ipc.h>
 #include <panic.h>
 #include <printk.h>
 #include <syscall.h>
@@ -33,6 +34,9 @@ void kmain(void) {
     
     printk("Kernel build " GIT_REVISION " " BUILD_TIME "\n");
 
+    /* initialize caches */
+    ipc_boot_init();
+
     /* load process manager binary */
     Elf32_Ehdr *elf = find_process_manager();
     elf_load(&elf_info, elf, &initial_addr_space);
@@ -50,7 +54,10 @@ void kmain(void) {
     /* start process manager
      *
      * We switch from NULL since this is the first thread. */
-    thread_yield_from(NULL, false);
+    thread_yield_from(NULL,
+            false,      /* don't block */
+            false);     /* don't destroy */
+                        /* just be nice */
 
     /* should never happen */
     panic("thread_yield_from() returned in kmain()");
