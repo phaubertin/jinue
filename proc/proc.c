@@ -1,5 +1,6 @@
 #include <jinue/elf.h>
 #include <jinue/errno.h>
+#include <jinue/ipc.h>
 #include <jinue/pfalloc.h>
 #include <jinue/syscall.h>
 #include <jinue/types.h>
@@ -19,24 +20,42 @@ Elf32_auxv_t *auxvp;
 
 char thread_a_stack[THREAD_STACK_SIZE];
 
-char thread_b_stack[THREAD_STACK_SIZE];
 
 void thread_a(void) {
-    while (1) {
-        printk("Thread A is running.\n");
-        (void)jinue_yield();
-    }
-}
+    int errno;
+    char message[] = "Hello World!";
 
-void thread_b(void) {
-    int counter;
-    
-    for(counter = 10; counter > 0; --counter) {
-        printk("Thread B is running (%u).\n", counter);
-        (void)jinue_yield();
+    printk("Thread A is getting IPC object descriptor.\n");
+
+    int fd = jinue_create_ipc(JINUE_IPC_PROC, &errno);
+
+    if(fd < 0) {
+        printk("Error number: %u.\n", errno);
     }
-    
-    printk("Thread B is exiting.\n");
+    else {
+        printk("IPC object has descriptor %u.\n", fd);
+
+        printk("Thread A is sending message: %s\n", message);
+
+        int ret = jinue_send(
+                SYSCALL_FUNCT_USER_BASE,    /* function number */
+                fd,                         /* target descriptor */
+                message,                    /* buffer address */
+                sizeof(message),            /* buffer size */
+                sizeof(message),            /* data size */
+                0,                          /* number of descriptors */
+                &errno);                    /* error number */
+
+        if(ret < 0) {
+            printk("jinue_send() failed with error: %u.\n", errno);
+        }
+        else {
+            printk("Got reply from main thread: %s\n", message);
+        }
+    }
+
+    printk("Thread A is exiting.\n");
+
     jinue_thread_exit();
 }
 
@@ -76,12 +95,52 @@ int main(int argc, char *argv[], char *envp[]) {
         (unsigned long)(total_memory * PAGE_SIZE / KB), 
         (unsigned long)(total_memory) );
 
+    printk("Creating thread A.\n");
+
     (void)jinue_thread_create(thread_a, &thread_a_stack[THREAD_STACK_SIZE], NULL);
 
-    (void)jinue_thread_create(thread_b, &thread_b_stack[THREAD_STACK_SIZE], NULL);
+    printk("Main thread is getting IPC object descriptor.\n");
+
+    int fd = jinue_create_ipc(JINUE_IPC_PROC, &errno);
+
+    if(fd < 0) {
+        printk("Error number: %u\n", errno);
+    }
+    else {
+        char buffer[128];
+        jinue_message_t message;
+
+        int ret = jinue_receive(
+                fd,
+                buffer,
+                sizeof(buffer),
+                &message,
+                &errno);
+
+        if(ret < 0) {
+            printk("jinue_receive() failed with error: %u.\n", errno);
+        }
+        else {
+            char reply[] = "OK";
+
+            printk("Main thread received message: %s\n", buffer);
+
+            ret = jinue_reply(
+                    reply,                      /* buffer address */
+                    sizeof(reply),              /* buffer size */
+                    sizeof(reply),              /* data size */
+                    0,                          /* number of descriptors */
+                    &errno);                    /* error number */
+
+            if(ret < 0) {
+                printk("jinue_reply() failed with error: %u.\n", errno);
+            }
+        }
+    }
+
+    printk("Main thread is running.\n");
 
     while (1) {
-        printk("Main thread is running.\n");
         (void)jinue_yield();
     }
     
