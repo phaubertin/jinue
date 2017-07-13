@@ -26,6 +26,8 @@
 
 9  - vfork() and exec()
 
+10 - Capabilities
+
 --- Design:
 
 - process and thread management
