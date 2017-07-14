@@ -7,6 +7,14 @@ target			 = $(proc)-stripped
 
 LIBS    		 = -L$(libjinue) -ljinue -ljinue-proc
 
+# The linker might not link crt.o from libjinue.a, which is required to
+# provide the _start entry point but otherwise contains no symbol that
+# other object files are interested in. I have seen different behaviour
+# in this regard on different machines with different versions of the
+# linker. By explicitly forcing _start as an undefined symbol, we
+# ensure the linker links the startup code. 
+LDFLAGS         += -Wl,-u,_start
+
 unclean			+= $(proc)
 
 include $(common)
