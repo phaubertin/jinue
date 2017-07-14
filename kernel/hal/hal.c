@@ -149,7 +149,7 @@ void hal_init(void) {
     /* initialize virtual memory management, enable paging
      * 
      * below this point, it is no longer safe to call pfalloc_early() */
-    vm_init();
+    vm_boot_init();
     
     /* choose system call method */
     syscall_method = SYSCALL_METHOD_INTR;

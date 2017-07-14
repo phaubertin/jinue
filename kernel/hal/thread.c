@@ -50,7 +50,6 @@ void thread_context_switch_stack(
  */
 
 thread_t *thread_page_create(
-        addr_space_t    *addr_space,
         addr_t           entry,
         addr_t           user_stack) {
 
@@ -70,7 +69,6 @@ thread_t *thread_page_create(
         /* initialize fields */
         thread_context_t *thread_ctx = &thread->thread_ctx;
         
-        thread_ctx->addr_space          = addr_space;
         thread_ctx->local_storage_addr  = NULL;
 
         /* setup stack for initial return to user space */
@@ -136,12 +134,6 @@ void thread_context_switch(
 
     /* nothing to do if this is already the current thread */
     if(from_ctx != to_ctx) {
-        /* Current thread context is NULL on boot before we switch to the first
-         * thread. */
-        if(from_ctx == NULL || from_ctx->addr_space != to_ctx->addr_space) {
-            vm_switch_addr_space(to_ctx->addr_space);
-        }
-
         /* setup TSS with kernel stack base for this thread context */
         addr_t kernel_stack_base = get_kernel_stack_base(to_ctx);
         tss_t *tss = get_tss();

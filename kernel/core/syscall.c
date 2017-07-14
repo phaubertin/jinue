@@ -40,7 +40,7 @@ void dispatch_syscall(jinue_syscall_args_t *args) {
         {
             thread_t *thread = thread_create(
                     /* TODO use arg1 as an address space reference if specified */
-                    get_current_addr_space(),
+                    get_current_thread()->process,
                     (addr_t)args->arg2,
                     (addr_t)args->arg3);
 
@@ -121,7 +121,7 @@ void dispatch_syscall(jinue_syscall_args_t *args) {
 
             thread_t *thread = get_current_thread();
             
-            int fd = find_unused_descriptor(thread);
+            int fd = process_unused_descriptor(thread->process);
             
             if(fd < 0) {
                 syscall_args_set_error(args, JINUE_EAGAIN);
@@ -146,7 +146,7 @@ void dispatch_syscall(jinue_syscall_args_t *args) {
                 }
             }
             
-            object_ref_t *ref = get_descriptor(thread, fd);
+            object_ref_t *ref = process_get_descriptor(thread->process, fd);
             
             object_addref(&ipc->header);
             

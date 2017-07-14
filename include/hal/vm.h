@@ -71,7 +71,7 @@ extern unsigned int (*page_table_offset_of)(addr_t);
 extern unsigned int (*page_directory_offset_of)(addr_t);
 
 
-void vm_init(void);
+void vm_boot_init(void);
 
 void vm_map(addr_space_t *addr_space, addr_t vaddr, pfaddr_t paddr, int flags);
 
@@ -83,7 +83,7 @@ void vm_change_flags(addr_space_t *addr_space, addr_t addr, int flags);
 
 void vm_map_early(addr_t vaddr, addr_t paddr, int flags);
 
-addr_space_t *vm_create_addr_space(void);
+addr_space_t *vm_create_addr_space(addr_space_t *addr_space);
 
 addr_space_t *vm_create_initial_addr_space(void);
 

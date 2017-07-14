@@ -21,8 +21,6 @@ pte_t *global_page_tables;
 
 addr_space_t initial_addr_space;
 
-static slab_cache_t *addr_space_cache;
-
 /** page table entry offset of virtual (linear) address */
 unsigned int (*page_table_offset_of)(addr_t);
 
@@ -34,7 +32,7 @@ static vm_alloc_t __global_page_allocator;
 vm_alloc_t *global_page_allocator;
 
 
-void vm_init(void) {
+void vm_boot_init(void) {
     addr_t           addr;
     addr_space_t    *addr_space;
     uint32_t         temp;
@@ -95,17 +93,7 @@ void vm_init(void) {
     vm_alloc_init_piecewise(global_page_allocator, NULL, (addr_t)PAGE_SIZE,         (addr_t)VGA_TEXT_VID_BASE, (addr_t)KLIMIT);
     vm_alloc_add_region(global_page_allocator,           (addr_t)VGA_TEXT_VID_TOP,  (addr_t)&kernel_start);
     vm_alloc_add_region(global_page_allocator,           (addr_t)kernel_region_top, (addr_t)KLIMIT);
-    
-    /* create slab cache for address space descriptors */
-    addr_space_cache = slab_cache_create(
-        "addr_space_cache",
-        sizeof(addr_space_t),
-        0,
-        NULL,
-        NULL,
-        0 );
 }
-
 
 /** 
     Map a page frame (physical page) to a virtual memory page.
@@ -359,12 +347,11 @@ void vm_map_early(addr_t vaddr, addr_t paddr, int flags) {
     set_pte(pte, PTR_TO_PFADDR(paddr), flags | VM_FLAG_PRESENT);
 }
 
-addr_space_t *vm_create_addr_space(void) {
+addr_space_t *vm_create_addr_space(addr_space_t *addr_space) {
     unsigned int idx;
     pfaddr_t pfaddr;
     pte_t *page_directory;
     pte_t *template;
-    addr_space_t *addr_space;
     
     /* allocate and map new page directory */
     page_directory = (pte_t *)vm_alloc(global_page_allocator);
@@ -390,8 +377,6 @@ addr_space_t *vm_create_addr_space(void) {
         clear_pte( get_pte_with_offset(page_directory, idx) );
         ++idx;
     }
-    
-    addr_space = slab_cache_alloc(addr_space_cache);
     
     vm_unmap_global((addr_t)page_directory);
     vm_unmap_global((addr_t)template);

@@ -2,6 +2,7 @@
 #include <jinue/ipc.h>
 #include <ipc.h>
 #include <panic.h>
+#include <process.h>
 #include <slab.h>
 #include <stddef.h>
 #include <string.h>
@@ -28,7 +29,7 @@ void ipc_boot_init(void) {
             0,
             ipc_object_ctor,
             NULL,
-            0 );
+            SLAB_DEFAULTS );
 
     proc_ipc = slab_cache_alloc(ipc_object_cache);
 
@@ -87,13 +88,7 @@ void ipc_send(jinue_syscall_args_t *args) {
 
     int fd = (int)args->arg1;
 
-    if(fd < 0 || fd > THREAD_MAX_DESCRIPTORS) {
-        syscall_args_set_error(args, JINUE_EINVAL);
-        return;
-    }
-
-    object_ref_t *ref = get_descriptor(thread, fd);
-    message_info->cookie = ref->cookie;
+    object_ref_t *ref = process_get_descriptor(thread->process, fd);
 
     if(! object_ref_is_valid(ref)) {
         syscall_args_set_error(args, JINUE_EBADF);
@@ -104,6 +99,8 @@ void ipc_send(jinue_syscall_args_t *args) {
         syscall_args_set_error(args, JINUE_EIO);
         return;
     }
+
+    message_info->cookie = ref->cookie;
 
     object_header_t *header = ref->object;
 
@@ -180,12 +177,7 @@ void ipc_receive(jinue_syscall_args_t *args) {
 
     int fd = (int)args->arg1;
 
-    if(fd < 0 || fd > THREAD_MAX_DESCRIPTORS) {
-        syscall_args_set_error(args, JINUE_EINVAL);
-        return;
-    }
-
-    object_ref_t *ref = get_descriptor(thread, fd);
+    object_ref_t *ref = process_get_descriptor(thread->process, fd);
 
     if(! object_ref_is_valid(ref)) {
         syscall_args_set_error(args, JINUE_EBADF);

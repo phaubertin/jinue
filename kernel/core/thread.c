@@ -3,25 +3,25 @@
 #include <object.h>
 #include <panic.h>
 #include <thread.h>
-#include <string.h>
+
 
 static jinue_list_t ready_list = JINUE_LIST_STATIC;
 
 thread_t *thread_create(
-        addr_space_t    *addr_space,
+        process_t       *process,
         addr_t           entry,
         addr_t           user_stack) {
             
-    thread_t *thread = thread_page_create(addr_space, entry, user_stack);
+    thread_t *thread = thread_page_create(entry, user_stack);
     
     if(thread != NULL) {
-        object_header_init(&thread->header, OBJECT_TYPE_THREAD);        
+        object_header_init(&thread->header, OBJECT_TYPE_THREAD);
+
         jinue_node_init(&thread->thread_list);
         
-        thread->sender = NULL;
-        
-        memset(&thread->descriptors, 0, sizeof(thread->descriptors));
-        
+        thread->process     = process;
+        thread->sender      = NULL;
+
         thread_ready(thread);
     }
     
@@ -41,13 +41,16 @@ void thread_switch(
         bool do_destroy) {
 
     if(to_thread != from_thread) {
-        thread_context_t *from_context;
+        thread_context_t    *from_context;
+        process_t           *from_process;
 
         if(from_thread == NULL) {
             from_context = NULL;
+            from_process = NULL;
         }
         else {
             from_context = &from_thread->thread_ctx;
+            from_process = from_thread->process;
 
             /* Put the the thread we are switching away from (the current thread)
              * back into the ready list, unless it just blocked or it is being
@@ -55,6 +58,10 @@ void thread_switch(
             if(! (do_destroy || blocked)) {
                 thread_ready(from_thread);
             }
+        }
+
+        if(from_process != to_thread->process) {
+            vm_switch_addr_space(&to_thread->process->addr_space);
         }
 
         thread_context_switch(

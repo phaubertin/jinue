@@ -6,7 +6,7 @@
 #include <thread_decl.h>
 
 thread_t *thread_create(
-        addr_space_t    *addr_space,
+        process_t       *process,
         addr_t           entry,
         addr_t           user_stack);
         

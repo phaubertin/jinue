@@ -6,6 +6,7 @@
 #include <ipc.h>
 #include <panic.h>
 #include <printk.h>
+#include <process.h>
 #include <syscall.h>
 #include <thread.h>
 #include "build-info.gen.h"
@@ -36,14 +37,18 @@ void kmain(void) {
 
     /* initialize caches */
     ipc_boot_init();
+    process_boot_init();
+
+    /* create process for process manager */
+    process_t *process = process_create();
 
     /* load process manager binary */
     Elf32_Ehdr *elf = find_process_manager();
-    elf_load(&elf_info, elf, &initial_addr_space);
+    elf_load(&elf_info, elf, &process->addr_space);
 
-    /* create initial thread context */
+    /* create initial thread */
     thread_t *thread = thread_create(
-            &initial_addr_space,
+            process,
             elf_info.entry,
             elf_info.stack_addr);
     
@@ -54,7 +59,8 @@ void kmain(void) {
     /* start process manager
      *
      * We switch from NULL since this is the first thread. */
-    thread_yield_from(NULL,
+    thread_yield_from(
+            NULL,
             false,      /* don't block */
             false);     /* don't destroy */
                         /* just be nice */

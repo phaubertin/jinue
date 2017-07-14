@@ -21,16 +21,19 @@
 #define OBJECT_REF_FLAG_OWNER   (1<<2)
 
 
-#define OBJECT_TYPE_THREAD  1
+#define OBJECT_TYPE_THREAD      1
 
-#define OBJECT_TYPE_IPC     2
+#define OBJECT_TYPE_IPC         2
+
+#define OBJECT_TYPE_PROCESS     3
+
 
 static inline bool object_is_destroyed(object_header_t *header) {
     return !!(header->flags & OBJECT_FLAG_DESTROYED);
 }
 
 static inline bool object_ref_is_valid(object_ref_t *ref) {
-    return !!(ref->flags & OBJECT_REF_FLAG_VALID);
+    return ref != NULL && (ref->flags & OBJECT_REF_FLAG_VALID);
 }
 
 static inline bool object_ref_is_closed(object_ref_t *ref) {
