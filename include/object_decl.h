@@ -13,7 +13,6 @@ typedef struct {
     object_header_t *object;
     uintptr_t        flags;
     uintptr_t        cookie;
-    uintptr_t        reserved;
 } object_ref_t;
 
 #endif
