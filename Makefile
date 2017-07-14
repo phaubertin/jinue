@@ -24,7 +24,7 @@ unclean              =  $(kernel_bin) \
                         $(boot_h) \
                         $(jinue_iso)
 unclean_recursive    = $(temp_iso_fs)
-target               = $(jinue_iso)
+target               = $(kernel_img)
 
 # ----- main targets
 include $(common)
@@ -32,6 +32,9 @@ include $(common)
 .PHONY: install
 install: $(kernel_img)
 	install -m644 $< /boot
+
+.PHONY: vbox
+vbox: $(jinue_iso)
 
 # ----- documentation
 .PHONY: doc
