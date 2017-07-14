@@ -33,7 +33,7 @@ void thread_a(void) {
         printk("Error number: %u.\n", errno);
     }
     else {
-        printk("IPC object has descriptor %u.\n", fd);
+        printk("Thread A got descriptor %u.\n", fd);
 
         printk("Thread A is sending message: %s\n", message);
 
@@ -50,7 +50,7 @@ void thread_a(void) {
             printk("jinue_send() failed with error: %u.\n", errno);
         }
         else {
-            printk("Got reply from main thread: %s\n", message);
+            printk("Thread A got reply from main thread: %s\n", message);
         }
     }
 
@@ -109,6 +109,8 @@ int main(int argc, char *argv[], char *envp[]) {
     else {
         char buffer[128];
         jinue_message_t message;
+
+        printk("Main thread got descriptor %u.\n", fd);
 
         int ret = jinue_receive(
                 fd,
