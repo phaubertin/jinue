@@ -28,22 +28,40 @@ include $(common)
 $(target): $(objects.target) $(scripts)/kernel.lds
 	$(LINK.o) -r $(objects.target) $(LOADLIBES) $(LDLIBS) -o $@
 
+.PHONY: core
+core:
+	make -C $@
+
+.PHONY: debug
+debug:
+	make -C $@
+
+.PHONY: hal
+hal:
+	make -C $@
+
+.PHONY: kstdc
+kstdc:
+	make -C $@
+
+.PHONY: mem
+mem:
+	make -C $@
+
+.PHONY: libjinue
+libjinue:
+	make -C $(libjinue) all-kernel
+
 # The core directory must be re-maked every build because of the auto-generated
 # information about the build date and time.
-$(kernel.core): FORCE
-	make -C core
-	
-$(kernel.debug):
-	make -C debug
-	
-$(kernel.hal) $(kernel.startup):
-	make -C hal
+$(kernel.core): core
 
-$(kernel.lib):
-	make -C ../lib/jinue all-kernel
-	
-$(kernel.mem):
-	make -C mem
+$(kernel.debug): debug
 
-$(kernel.stdc):
-	make -C kstdc
+$(kernel.hal) $(kernel.startup): hal
+
+$(kernel.lib): libjinue
+
+$(kernel.mem): mem
+
+$(kernel.stdc): kstdc

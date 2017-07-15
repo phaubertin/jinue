@@ -27,3 +27,6 @@ $(target.user): $(objects.user)
 $(target.proc): $(objects.proc)
 
 $(target.kernel): $(objects.kernel)
+
+%.a:
+	ar rcs $@ $^

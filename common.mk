@@ -19,9 +19,6 @@ FORCE:
 %.o: %.nasm
 	nasm $(NASMFLAGS) -o $@ $<
 
-%.a:
-	ar rcs $@ $^
-
 %-stripped: %
 	strip --strip-debug -o $@ $<
 
