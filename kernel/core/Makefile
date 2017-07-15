@@ -6,7 +6,7 @@ build_info_h     = build-info.gen.h
 sources.c        = core.c elf.c ipc.c process.c syscall.c thread.c
 target           = kern-core.o
 
-unclean         += $(build_info_h)
+unclean.extra    = $(build_info_h)
 
 include $(common)
 

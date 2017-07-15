@@ -24,3 +24,5 @@ FORCE:
 
 %-stripped: %
 	strip --strip-debug -o $@ $<
+
+include $(wildcard $(patsubst %,%.d,$(basename $(objects))))

@@ -1,6 +1,9 @@
 # object files
 *.o
 
+# Build dependency information
+*.d
+
 # static libraries
 *.a
 

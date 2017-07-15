@@ -14,8 +14,8 @@ grub_image_rel       = boot/grub/i386-pc/jinue.img
 grub_image           = $(temp_iso_fs)/$(grub_image_rel)
 
 symbols              = symbols.o symbols.c symbols.txt
-unclean              =  $(kernel_bin) \
-                        $(kernel_img) \
+target               = $(kernel_img)
+unclean.extra        =  $(kernel_bin) \
                         $(symbols) \
                         bin/setup \
                         bin/boot \
@@ -24,7 +24,7 @@ unclean              =  $(kernel_bin) \
                         $(boot_h) \
                         $(jinue_iso)
 unclean_recursive    = $(temp_iso_fs)
-target               = $(kernel_img)
+
 
 # ----- main targets
 include $(common)

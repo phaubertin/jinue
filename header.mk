@@ -24,7 +24,9 @@ targets             ?= $(target)
 targets.all          = $(targets) $(targets.phony)
 
 # files to clean up
-unclean              = $(objects) $(targets) $(sources.nasm:%.asm=%.nasm)
+unclean.build		 = $(objects) $(targets) $(objects:%.o=%.d) $(sources.nasm:%.asm=%.nasm)
+unclean.extra        =
+unclean				 = $(unclean.build) $(unclean.extra)
 unclean_recursive   ?=
 
 # debug/release build
@@ -65,6 +67,12 @@ LDFLAGS              = $(LDFLAGS.arch) $(LDFLAGS.others) $(LDFLAGS.extra)
 NASMFLAGS.arch       = -felf
 NASMFLAGS.others     =
 NASMFLAGS            = $(NASMFLAGS.arch) $(NASMFLAGS.debug) $(NASMFLAGS.others) $(NASMFLAGS.extra)
+
+# Automatic dependencies generation flags
+DEPFLAGS			 = -MT $@ -MD -MP -MF $*.d
+
+# Add dependencies generation flags when compiling object files from C source code
+COMPILE.c = $(CC) $(DEPFLAGS) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
 
 # GRUB location (for creation of bootable ISO for virtual machine)
 #
