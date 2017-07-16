@@ -2,11 +2,8 @@
 #define _JINUE_PFADDR_H
 
 #include <stdint.h>
+#include <jinue/types.h>
 #include <jinue/vm.h>
-
-
-/** type for a page frame address (32-bit value) */
-typedef uint32_t pfaddr_t;
 
 
 /** number of bits by which the page frame address is shifted to the right */

@@ -10,5 +10,8 @@
 
 typedef unsigned char   *addr_t;
 
+/** type for a page frame address (32-bit value) */
+typedef uint32_t pfaddr_t;
+
 
 #endif
