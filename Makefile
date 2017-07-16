@@ -7,7 +7,6 @@ kernel_bin           = bin/kernel-bin
 kernel_img           = bin/jinue
 jinue_iso            = bin/jinue.iso
 
-boot_h               = boot/boot.gen.h
 temp_iso_fs          = bin/iso-tmp
 grub_config          = boot/grub.cfg
 grub_image_rel       = boot/grub/i386-pc/jinue.img
@@ -21,7 +20,6 @@ unclean.extra        =  $(kernel_bin) \
                         bin/boot \
                         boot/setup.nasm \
                         boot/boot.nasm \
-                        $(boot_h) \
                         $(jinue_iso)
 unclean_recursive    = $(temp_iso_fs)
 
@@ -77,14 +75,10 @@ symbols.c: symbols.txt
 symbols.o: symbols.c
 
 # ----- setup code, boot sector, etc.
-bin/boot: boot/boot.asm $(boot_h)
+bin/boot: boot/boot.nasm
+	nasm -f elf -Iboot/ -o $@ $<
 
-bin/setup: boot/setup.asm
-
-$(boot_h): $(kernel_bin) bin/setup
-	scripts/boot_sector_inc.sh $@ bin/setup $(kernel_bin)
-
-bin/%: boot/%.nasm
+bin/setup: boot/setup.nasm
 	nasm -f bin -Iboot/ -o $@ $<
 
 # ----- bootable ISO image for virtual machine
