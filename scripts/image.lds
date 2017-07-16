@@ -1,16 +1,16 @@
 OUTPUT_FORMAT("binary")
 TARGET("elf32-i386")
-INPUT("bin/boot")
+INPUT("boot/boot.o")
 TARGET("binary")
-INPUT("bin/setup" "bin/kernel-bin")
+INPUT("boot/setup.bin" "bin/kernel-bin")
 
 SECTIONS {
     boot : {
-        bin/boot
+        boot/boot.o
     }
     
     setup : {
-        bin/setup
+        boot/setup.bin
     }
     
     kernel : {

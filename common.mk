@@ -17,7 +17,10 @@ FORCE:
 	$(CPP) $(CPPFLAGS) -x assembler-with-cpp -o $@ $<
 
 %.o: %.nasm
-	nasm $(NASMFLAGS) -o $@ $<
+	nasm -f elf $(NASMFLAGS) -o $@ $<
+
+%.bin: %.nasm
+	nasm -f bin $(NASMFLAGS) -o $@ $<
 
 %-stripped: %
 	strip --strip-debug -o $@ $<

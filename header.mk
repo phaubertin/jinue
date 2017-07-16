@@ -64,7 +64,7 @@ LDFLAGS.others       = -static -nostdlib
 LDFLAGS              = $(LDFLAGS.arch) $(LDFLAGS.others) $(LDFLAGS.extra)
 
 # NASM assembler flags
-NASMFLAGS.arch       = -felf
+NASMFLAGS.arch       =
 NASMFLAGS.others     =
 NASMFLAGS            = $(NASMFLAGS.arch) $(NASMFLAGS.debug) $(NASMFLAGS.others) $(NASMFLAGS.extra)
 

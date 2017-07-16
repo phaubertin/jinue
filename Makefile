@@ -1,9 +1,11 @@
 include header.mk
 
-subdirs              = doc kernel proc $(libjinue)
+subdirs              = boot doc kernel proc $(libjinue)
 
 kernel               = kernel/kernel
 kernel_bin           = bin/kernel-bin
+setup_boot           = boot/boot.o
+setup16              = boot/setup.bin
 kernel_img           = bin/jinue
 jinue_iso            = bin/jinue.iso
 
@@ -16,10 +18,8 @@ symbols              = symbols.o symbols.c symbols.txt
 target               = $(kernel_img)
 unclean.extra        =  $(kernel_bin) \
                         $(symbols) \
-                        bin/setup \
-                        bin/boot \
-                        boot/setup.nasm \
-                        boot/boot.nasm \
+                        $(setup_boot) \
+                        $(setup16) \
                         $(jinue_iso)
 unclean_recursive    = $(temp_iso_fs)
 
@@ -54,7 +54,7 @@ $(kernel): kernel
 $(kernel_bin): $(kernel) proc symbols $(scripts)/kernel-bin.lds
 	$(LINK.o) -Wl,-T,$(scripts)/kernel-bin.lds $(LOADLIBES) $(LDLIBS) -o $@
 
-$(kernel_img): $(kernel_bin) bin/boot bin/setup $(scripts)/image.lds
+$(kernel_img): $(kernel_bin) $(setup_boot) $(setup16) $(scripts)/image.lds
 	$(LINK.o) -Wl,-T,$(scripts)/image.lds $(LOADLIBES) $(LDLIBS) -o $@
 
 # ----- process manager
@@ -75,11 +75,11 @@ symbols.c: symbols.txt
 symbols.o: symbols.c
 
 # ----- setup code, boot sector, etc.
-bin/boot: boot/boot.nasm
-	nasm -f elf -Iboot/ -o $@ $<
+.PHONY: boot
+boot:
+	make -C boot
 
-bin/setup: boot/setup.nasm
-	nasm -f bin -Iboot/ -o $@ $<
+$(setup_boot) $(setup16): boot
 
 # ----- bootable ISO image for virtual machine
 $(temp_iso_fs): $(kernel_img) $(grub_config) FORCE
