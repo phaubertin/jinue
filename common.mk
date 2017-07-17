@@ -14,7 +14,7 @@ endif
 FORCE:
 
 %.nasm: %.asm
-	$(CPP) $(CPPFLAGS) -x assembler-with-cpp -o $@ $<
+	$(CPP) $(DEPFLAGS) $(CPPFLAGS) -x assembler-with-cpp -o $@ $<
 
 %.o: %.nasm
 	nasm -f elf $(NASMFLAGS) -o $@ $<
@@ -24,5 +24,7 @@ FORCE:
 
 %-stripped: %
 	strip --strip-debug -o $@ $<
+
+.PRECIOUS: %.nasm
 
 include $(wildcard $(patsubst %,%.d,$(basename $(objects))))
