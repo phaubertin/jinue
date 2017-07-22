@@ -18,6 +18,8 @@ int errno;
 
 Elf32_auxv_t *auxvp;
 
+int fd;
+
 char thread_a_stack[THREAD_STACK_SIZE];
 
 
@@ -25,12 +27,8 @@ void thread_a(void) {
     int errno;
     char message[] = "Hello World!";
 
-    printk("Thread A is getting IPC object descriptor.\n");
-
-    int fd = jinue_create_ipc(JINUE_IPC_PROC, &errno);
-
     if(fd < 0) {
-        printk("Error number: %u.\n", errno);
+        printk("Thread A has invalid descriptor.\n");
     }
     else {
         printk("Thread A got descriptor %u.\n", fd);
@@ -95,13 +93,9 @@ int main(int argc, char *argv[], char *envp[]) {
         (unsigned long)(total_memory * PAGE_SIZE / KB), 
         (unsigned long)(total_memory) );
 
-    printk("Creating thread A.\n");
+    printk("Creating IPC object descriptor.\n");
 
-    (void)jinue_thread_create(thread_a, &thread_a_stack[THREAD_STACK_SIZE], NULL);
-
-    printk("Main thread is getting IPC object descriptor.\n");
-
-    int fd = jinue_create_ipc(JINUE_IPC_PROC, &errno);
+    int fd = jinue_create_ipc(JINUE_IPC_NONE, &errno);
 
     if(fd < 0) {
         printk("Error number: %u\n", errno);
@@ -111,6 +105,10 @@ int main(int argc, char *argv[], char *envp[]) {
         jinue_message_t message;
 
         printk("Main thread got descriptor %u.\n", fd);
+        
+        printk("Creating thread A.\n");
+
+        (void)jinue_thread_create(thread_a, &thread_a_stack[THREAD_STACK_SIZE], NULL);
 
         int ret = jinue_receive(
                 fd,
