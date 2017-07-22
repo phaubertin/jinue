@@ -18,4 +18,4 @@ vid_mode:       dw 0xffff
 root_dev:       dw 0
 
 signature:
-    dw BOOT_SIGNATURE
+    dw BOOT_MAGIC

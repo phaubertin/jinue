@@ -1,20 +1,24 @@
+#include <jinue/types.h>
+#include <hal/boot.h>
 #include <hal/frame_pointer.h>
 #include <hal/kernel.h>
+#include <elf.h>
 #include <stddef.h>
 #include <debug.h>
 #include <printk.h>
 
 
 void dump_call_stack(void) {
-    addr_t               return_addr;
     addr_t               fptr;
-    debugging_symbol_t  *sym;
-    
+
+    const boot_info_t *boot_info = get_boot_info();
+
     printk("Call stack dump:\n");
+
     fptr = get_fpointer();
     
     while(fptr != NULL) {
-        return_addr = get_ret_addr(fptr);
+        addr_t return_addr = get_ret_addr(fptr);
         if(return_addr == NULL) {
             break;
         }
@@ -22,43 +26,30 @@ void dump_call_stack(void) {
         /* assume e8 xx xx xx xx for call instruction encoding */
         return_addr -= 5;
         
-        sym = get_debugging_symbol(return_addr);
-        if(sym == NULL) {
+        elf_symbol_t symbol;
+        int retval = elf_lookup_symbol(
+                boot_info->kernel_start,
+                (Elf32_Addr)return_addr,
+                STT_FUNCTION,
+                &symbol);
+
+        if(retval < 0) {
             printk("\t0x%x (unknown)\n", return_addr);
         }
         else {
-            const char *name = sym->name;
+            const char *name = symbol.name;
 
             if(name == NULL) {
                 name = "[unknown]";
             }
 
-            printk("\t0x%x (%s+%u)\n", return_addr, name, return_addr - sym->addr);
+            printk(
+                    "\t0x%x (%s+%u)\n",
+                    return_addr,
+                    name,
+                    return_addr - symbol.addr);
         }
         
         fptr = get_caller_fpointer(fptr);
     }
-}
-
-debugging_symbol_t *get_debugging_symbol(addr_t addr) {
-    debugging_symbol_t *sym;
-    
-    if(addr >= (addr_t)&kernel_end) {
-        return NULL;
-    }
-    
-    sym = debugging_symbols_table;
-    
-    if(addr < sym->addr) {
-        return NULL;
-    }
-    
-    while(sym->addr) {
-        if(addr < sym->addr) {
-            return sym - 1;
-        }
-        ++sym;
-    }
-    
-    return sym - 1;
 }

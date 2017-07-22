@@ -6,6 +6,7 @@ kernel               = kernel/kernel
 kernel_bin           = bin/kernel-bin
 setup_boot           = boot/boot.o
 setup16              = boot/setup.bin
+setup32				 = boot/setup32.o
 kernel_img           = bin/jinue
 jinue_iso            = bin/jinue.iso
 
@@ -14,13 +15,8 @@ grub_config          = boot/grub.cfg
 grub_image_rel       = boot/grub/i386-pc/jinue.img
 grub_image           = $(temp_iso_fs)/$(grub_image_rel)
 
-symbols              = symbols.o symbols.c symbols.txt
 target               = $(kernel_img)
-unclean.extra        =  $(kernel_bin) \
-                        $(symbols) \
-                        $(setup_boot) \
-                        $(setup16) \
-                        $(jinue_iso)
+unclean.extra        = $(kernel_bin) $(jinue_iso)
 unclean_recursive    = $(temp_iso_fs)
 
 
@@ -51,7 +47,7 @@ kernel:
 $(kernel): kernel
 	true
 
-$(kernel_bin): $(kernel) proc symbols $(scripts)/kernel-bin.lds
+$(kernel_bin): $(setup32) $(kernel) proc $(scripts)/kernel-bin.lds
 	$(LINK.o) -Wl,-T,$(scripts)/kernel-bin.lds $(LOADLIBES) $(LDLIBS) -o $@
 
 $(kernel_img): $(kernel_bin) $(setup_boot) $(setup16) $(scripts)/image.lds
@@ -62,24 +58,12 @@ $(kernel_img): $(kernel_bin) $(setup_boot) $(setup16) $(scripts)/image.lds
 proc:
 	make -C proc
 
-# ----- kernel debugging symbols
-.PHONY: symbols
-symbols: symbols.o
-
-symbols.txt: $(kernel)
-	nm -n $< > $@
-
-symbols.c: symbols.txt
-	scripts/mksymbols.tcl $< $@
-
-symbols.o: symbols.c
-
 # ----- setup code, boot sector, etc.
 .PHONY: boot
 boot:
 	make -C boot
 
-$(setup_boot) $(setup16): boot
+$(setup_boot) $(setup16) $(setup32): boot
 
 # ----- bootable ISO image for virtual machine
 $(temp_iso_fs): $(kernel_img) $(grub_config) FORCE

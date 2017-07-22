@@ -13,7 +13,7 @@
 ;               thread_context_t *to_ctx,
 ;               bool destroy_from);
 ; ------------------------------------------------------------------------------
-    global thread_context_switch_stack
+    global thread_context_switch_stack:function (thread_context_switch_stack.end - thread_context_switch_stack)
 thread_context_switch_stack:
     ; System V ABI calling convention: these four registers must be preserved
     ;
@@ -78,3 +78,5 @@ thread_context_switch_stack:
     pop ebp
     
     ret
+
+.end

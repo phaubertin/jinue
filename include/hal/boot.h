@@ -3,23 +3,32 @@
 
 #include <hal/asm/boot.h>
 
+#include <jinue/elf.h>
+#include <hal/e820.h>
+#include <stdbool.h>
 #include <stdint.h>
 
-#pragma pack(push, 1)
+
+/* The declaration below must match the structure defined at the start of the
+ * 32-bit setup code. See boot_info_struct in boot/setup32.asm. */
 typedef struct {
-    uint8_t     e820_entries;
-    uint8_t     unused[BOOT_SETUP_SECTS - BOOT_E820_ENTRIES - 1];
-    uint8_t     setup_sects;
-    uint16_t    root_flags;
-    uint32_t    sysize;
-    uint16_t    ram_size;
-    uint16_t    vid_mode;
-    uint16_t    root_dev;
-    uint16_t    signature;
-} boot_t;
-#pragma pack(pop)
+    Elf32_Ehdr  *kernel_start;
+    uint32_t     kernel_size;
+    Elf32_Ehdr  *proc_start;
+    uint32_t     proc_size;
+    void        *image_start;
+    void        *image_top;
+    uint32_t     e820_entries;
+    e820_t      *e820_map;
+    void        *boot_heap;
+    void        *boot_end;
+    uint32_t     setup_signature;
+} boot_info_t;
 
+bool boot_info_check(bool panic_on_failure);
 
-boot_t *get_boot_data(void);
+const boot_info_t *get_boot_info(void);
+
+void boot_info_dump(void);
 
 #endif

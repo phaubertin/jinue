@@ -1,3 +1,4 @@
+#include <hal/boot.h>
 #include <hal/startup.h>
 #include <hal/vga.h>
 #include <debug.h>
@@ -12,8 +13,14 @@ void panic(const char *message) {
     
     printk("KERNEL PANIC: %s\n", message);
     
-    vga_set_color(color);    
+    vga_set_color(color);
 
-    dump_call_stack();
+    if( boot_info_check(false) ) {
+        dump_call_stack();
+    }
+    else {
+        printk("Cannot dump call stack because boot information structure is invalid.\n");
+    }
+    
     halt();
 }

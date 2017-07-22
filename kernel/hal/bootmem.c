@@ -1,4 +1,5 @@
 #include <jinue/types.h>
+#include <hal/boot.h>
 #include <hal/bootmem.h>
 #include <hal/e820.h>
 #include <hal/kernel.h>
@@ -86,8 +87,6 @@ void apply_mem_hole(e820_addr_t hole_start, e820_addr_t hole_end, bootmem_t **he
             ptr->count = (hole_addr - addr) / (PAGE_SIZE >> PFADDR_SHIFT);
         }
     }
-    
-    /* apply_mem_hole(prev, ADDR_TO_PFADDR( e820_get_addr(idx) ), e820_get_size(idx) / PAGE_SIZE, &ram_map); */
 }
 
 void bootmem_init(void) {
@@ -95,19 +94,25 @@ void bootmem_init(void) {
     
     bootmem_t *ptr;
     bootmem_t *temp_root;
-    e820_addr_t start, end;
-    uint32_t   size;
     unsigned int idx;
     
+    const boot_info_t *boot_info = get_boot_info();
+
     /* copy the available ram entries from the e820 map and insert them
      * in a linked list */
     ram_map = NULL;
     
-    for(idx = 0; e820_is_valid(idx); ++idx) {
-        if( e820_is_available(idx) ) {
+    for(idx = 0; idx < boot_info->e820_entries; ++idx) {
+        const e820_t *e820_entry = &boot_info->e820_map[idx];
+
+        if(! e820_is_valid(e820_entry)) {
+            continue;
+        }
+
+        if( e820_is_available(e820_entry) ) {
             /* get memory entry start and end addresses */
-            start = e820_get_addr(idx);
-            end   = start + e820_get_size(idx);
+            e820_addr_t start = e820_entry->addr;
+            e820_addr_t end   = start + e820_entry->size;
             
             /* align on page boundaries */
             if( OFFSET_OF(start, PAGE_SIZE) != 0 ) {
@@ -126,13 +131,19 @@ void bootmem_init(void) {
     }
 
     /* apply every unavailable entries from the e820 map as holes */
-    for(idx = 0; e820_is_valid(idx); ++idx) {
-        if( e820_is_available(idx) ) {
+    for(idx = 0; idx < boot_info->e820_entries; ++idx) {
+        const e820_t *e820_entry = &boot_info->e820_map[idx];
+
+        if(! e820_is_valid(e820_entry)) {
+            continue;
+        }
+
+        if( e820_is_available(e820_entry) ) {
             continue;
         }
         
-        start = e820_get_addr(idx);
-        end   = start + e820_get_size(idx);
+        e820_addr_t start = e820_entry->addr;
+        e820_addr_t end   = start + e820_entry->size;
         
         apply_mem_hole(start, end, &ram_map);
     }
@@ -142,8 +153,8 @@ void bootmem_init(void) {
          * assume the problem is present. */
     apply_mem_hole(0, 0x10000, &ram_map);
     
-    /* the kernel image and its heap and stack early-allocated pages */
-    apply_mem_hole((uint32_t)&kernel_start, (uint32_t)kernel_region_top, &ram_map);
+    /* the kernel image, its heap and stack, and early-allocated pages */
+    apply_mem_hole((uint32_t)boot_info->image_start, (uint32_t)kernel_region_top, &ram_map);
 
     /* Entry removal may have left garbage on the heap (bootmem_t
      * structures which were allocated on the heap but are no longer
@@ -167,14 +178,15 @@ void bootmem_init(void) {
     }    
     
     /* Let's count and display the total amount of available memory */
-    size = 0;
+    uint32_t page_count = 0;
     for(ptr = ram_map; ptr != NULL; ptr = ptr->next) {
-        size += ptr->count;
+        page_count += ptr->count;
     }
     
+    /** TODO this won't work for available memory > 4GB */
     printk("%u kilobytes (%u pages) of memory available.\n", 
-        (uint32_t)(size * PAGE_SIZE / KB), 
-        (uint32_t)(size) );
+        (uint32_t)(page_count * PAGE_SIZE / KB),
+        (uint32_t)(page_count) );
     
     /* head pointer for bootmem_get_block() */
     bootmem_root = ram_map;

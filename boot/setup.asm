@@ -17,7 +17,7 @@ kernel_version:     dw str_version
 type_of_loader:     db 0
 loadflags:          db 1
 setup_move_size:    dw 0
-code32_start:       dd 0x100000
+code32_start:       dd BOOT_SETUP32_ADDR
 ramdisk_image:      dd 0
 ramdisk_size:       dd 0
 bootsect_kludge:    dd 0

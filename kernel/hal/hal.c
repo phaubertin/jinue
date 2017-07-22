@@ -15,6 +15,7 @@
 #include <panic.h>
 #include <pfalloc.h>
 #include <printk.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <syscall.h>
 #include <util.h>
@@ -23,12 +24,6 @@
 
 /** if non_zero, we are executing in the kernel */
 int in_kernel;
-
-/** size of the kernel image */
-size_t kernel_size;
-
-/** address of top of kernel image (kernel_start + kernel_size) */
-addr_t kernel_top;
 
 /** top of region of memory mapped 1:1 (kernel image plus some pages for
     data structures allocated during initialization) */
@@ -48,9 +43,6 @@ void hal_init(void) {
     pfaddr_t            *page_stack_buffer;
     addr_t               boot_heap_old;
     
-    /** ASSERTION: we assume the kernel starts on a page boundary */
-    assert( page_offset_of( (unsigned int)&kernel_start ) == 0 );
-    
     /* pfalloc() should not be called yet -- use pfalloc_early() instead */
     use_pfalloc_early = true;
     
@@ -60,9 +52,28 @@ void hal_init(void) {
     /* initialize VGA and say hello */
     vga_init();
     
-    printk("Kernel started.\n");
-    printk("Kernel size is %u bytes.\n", kernel_size);
+    /* We want this call and the assertions below after vga_init() so that if
+     * any of them fail, we have a useful error message on screen. */
+    (void)boot_info_check(true);
     
+    const boot_info_t *boot_info = get_boot_info();
+
+    /** ASSERTION: we assume the image starts on a page boundary */
+    assert(page_offset_of(boot_info->image_start) == 0);
+
+    /** ASSERTION: we assume the kernel starts on a page boundary */
+    assert(page_offset_of(boot_info->kernel_start) == 0);
+
+    printk("Kernel started.\n");
+    printk("Kernel size is %u bytes.\n", boot_info->kernel_size);
+    
+    /* This must be done before calling bootmem_init() */
+    boot_heap = boot_info->boot_heap;
+
+    /* This must be done before calling bootmem_init() or any call to
+     * pfalloc_early(). */
+    kernel_region_top = boot_info->boot_end;
+
     /* create system memory map */
     bootmem_init();
     

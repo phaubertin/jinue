@@ -1,45 +1,56 @@
-The kernel image has the following format:
+The kernel image has the following format. It conforms to the Linux boot
+protocol (version 2.4).
 
-  +---------------------------------------+ (start)
-  |              boot sector              |
-  +---------------------------------------+
-  |              setup code               |
-  +---------------------------------------+
-  |                                       |
-  |    microkernel and process manager    |
-  |                                       |
-  +---------------------------------------+
-  |                                       |
-  |                payload                |
-  |                                       |
-  +---------------------------------------+ (end)
+  +---------------------------------------+ (file start)-+-
+  |              boot sector              |              |
+  |            (boot/boot.asm)            |              |
+  +---------------------------------------+              | Real mode code
+  |           16-bit setup code           |              |
+  |            (boot/setup.asm)           |              |
+  +---------------------------------------+             -+-
+  |           32-bit setup code           |              |
+  |           (boot/setup32.asm)          |              |
+  +---------------------------------------+              |
+  |                                       |              |
+  |           microkernel (ELF)           |              | Protected mode
+  |                                       |              | kernel
+  +---------------------------------------+              |
+  |                                       |              |
+  |         process manager (ELF)         |              |
+  |                                       |              |
+  +---------------------------------------+ (file end)  -+-
 
-Once it is loaded in memory by the boot loader, and the startup code
-(startup.asm) and initilization code are run, this is the layout in memory:
+
+Once it is loaded in memory by the boot loader and all the setup, startup and
+initialization code has run, the layout in memory is as shown below. boot_info
+is a data structure located at the beginning of the 32-bit setup code.
 
   +---------------------------------------+ kernel_region_top
   |                                       |
-  |       initial page allocations        |
+  |        initial page allocations       |
+  |      (1:1 virtual memory mapping)     |
+  +=======================================+ boot_info.boot_end  -+-
+  |          kernel stack (boot)          |                      |
+  +-----v---------------------------v-----+ (stack pointer)      |
+  |                                       |                      |
+  |                . . .                  |                      |
+  |                                       |                      | kernel boot
+  +-----^---------------------------^-----+ boot_heap            | stack/heap
+  |     kernel heap allocations (boot)    |                      |
+  |      kernel physical memory map       |                      |
+  +---------------------------------------+ boot_info.boot_heap  |
+  |       BIOS physical memory map        |                      |
+  +=======================================+ boot_info.image_top -+-
+  |                                       | = boot_info.e820_map
+  |         process manager (ELF)         |
   |                                       |
-  +---------------------------------------+
-  |          kernel stack (boot)          |
-  +-----v---------------------------v-----+
+  +---------------------------------------+ boot_info.proc_start
   |                                       |
-  |                . . .                  |    [kernel boot heap/stack]
+  |           microkernel (ELF)           |
   |                                       |
-  +---------------------------------------+
-  |           kernel memory map           |
-  +---------------------------------------+
-  |            bios memory map            |
-  +=======================================+ kernel_top
-  |                                       |
-  |                payload                |
-  |                                       |
-  +---------------------------------------+    [kernel image]
-  |                                       |
-  |    microkernel and process manager    |
-  |                                       |
-  +---------------------------------------+ kernel_start (0x100000)
+  +---------------------------------------+ boot_info.kernel_start
+  |           32-bit setup code           |
+  +---------------------------------------+ boot_info.image_start (0x100000)
   
 The boot kernel stack is used only during initialization. Once the first thread
 context is created, per-thread kernel stacks are used instead.

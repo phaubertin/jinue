@@ -5,7 +5,6 @@ subdirs			 = core debug hal kstdc mem
 
 LDFLAGS         += -T $(scripts)/kernel.lds
 
-kernel.startup	 = hal/asm/startup.o
 kernel.core   	 = core/kern-core.o
 kernel.debug  	 = debug/kern-debug.o
 kernel.hal    	 = hal/kern-hal.o
@@ -13,9 +12,9 @@ kernel.lib    	 = ../lib/jinue/libjinue-kernel.a
 kernel.mem    	 = mem/kern-mem.o
 kernel.stdc   	 = kstdc/kern-stdc.o
 
-target	 		 = kernel
-objects.target	 = \
-	$(kernel.startup) \
+target	 		 = kernel-stripped
+unclean.extra    = kernel
+objects.kernel	 = \
 	$(kernel.core) \
 	$(kernel.debug) \
 	$(kernel.hal) \
@@ -25,8 +24,10 @@ objects.target	 = \
 
 include $(common)
 
-$(target): $(objects.target) $(scripts)/kernel.lds
-	$(LINK.o) -r $(objects.target) $(LOADLIBES) $(LDLIBS) -o $@
+kernel: $(objects.kernel) $(scripts)/kernel.lds
+	$(LINK.o) $(objects.kernel) $(LOADLIBES) $(LDLIBS) -o $@
+
+$(target): kernel
 
 .PHONY: core
 core:
@@ -58,7 +59,7 @@ $(kernel.core): core
 
 $(kernel.debug): debug
 
-$(kernel.hal) $(kernel.startup): hal
+$(kernel.hal): hal
 
 $(kernel.lib): libjinue
 

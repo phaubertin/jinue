@@ -23,7 +23,7 @@ FORCE:
 	nasm -f bin $(NASMFLAGS) -o $@ $<
 
 %-stripped: %
-	strip --strip-debug -o $@ $<
+	strip $(STRIPFLAGS) -o $@ $<
 
 .PRECIOUS: %.nasm
 

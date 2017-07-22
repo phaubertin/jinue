@@ -16,7 +16,6 @@ sources.c    = \
 	vm_x86.c \
 
 hal.asm     = asm/kern-hal-asm.o
-hal.startup = asm/startup.o
 target      = kern-hal.o
 
 include $(common)
@@ -25,7 +24,7 @@ include $(common)
 asm:
 	make -C asm
 
-$(hal.startup) $(hal.asm): asm
+$(hal.asm): asm
 
 $(target): $(objects) $(hal.asm)
 	$(LINK.o) -r $^ $(LOADLIBES) $(LDLIBS) -o $@

@@ -136,6 +136,78 @@
 #define PT_PHDR  		6
 
 
+/** Inactive section */
+#define SHT_NULL        0
+
+/** Program data */
+#define SHT_PROGBITS    1
+
+/** Symbol table */
+#define SHT_SYMTAB	    2
+
+/** String table */
+#define SHT_STRTAB	    3
+
+/** Relocations with addends */
+#define SHT_RELA	    4
+
+/** Symbol hash table */
+#define SHT_HASH	    5
+
+/** Information for dynamic linking */
+#define SHT_DYNAMIC	    6
+
+/** Notes section */
+#define SHT_NOTE	    7
+
+/** Section without data (.bss) */
+#define SHT_NOBITS	    8
+
+/** Relocations without addends */
+#define SHT_REL		    9
+
+/** Reserved, unspecified semantic, not ABI compliant */
+#define SHT_SHLIB	    10
+
+/** Dynamic symbols table */
+#define SHT_DYNSYM	    11
+
+
+/** Local binding */
+#define STB_LOCAL       0
+
+/** Global binding */
+#define STB_GLOBAL      1
+
+/** Weak binding */
+#define STB_WEAK        2
+
+
+/** Unspecified type */
+#define STT_NOTYPE      0
+
+/** Data object */
+#define STT_OBJECT      1
+
+/** Function or other executable code */
+#define STT_FUNCTION    2
+
+/** Section symbol */
+#define STT_SECTION     3
+
+/** Source file */
+#define STT_FILE        4
+
+
+#define ELF32_ST_BIND(i)    ((i) >> 4)
+
+#define ELF32_ST_TYPE(i)    ((i) & 0xf)
+
+
+/** Undefined symbol index */
+#define STN_UNDEF       0
+
+
 #define PF_R 			(1 << 2)
 
 #define PF_W 			(1 << 1)
@@ -179,6 +251,28 @@ typedef struct {
         Elf32_Word 		p_flags;
         Elf32_Word 		p_align;
 } Elf32_Phdr;
+
+typedef struct {
+        Elf32_Word 		sh_name;
+        Elf32_Word 		sh_type;
+        Elf32_Word 		sh_flags;
+        Elf32_Addr 		sh_addr;
+        Elf32_Off  		sh_offset;
+        Elf32_Word 		sh_size;
+        Elf32_Word 		sh_link;
+        Elf32_Word 		sh_info;
+        Elf32_Word 		sh_addralign;
+        Elf32_Word 		sh_entsize;
+} Elf32_Shdr;
+
+typedef struct {
+        Elf32_Word 		st_name;
+        Elf32_Addr 		st_value;
+        Elf32_Word 		st_size;
+        unsigned char   st_info;
+        unsigned char   st_other;
+        Elf32_Half      st_shndx;
+} Elf32_Sym;
 
 typedef struct {
     int a_type;

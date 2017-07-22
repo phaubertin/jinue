@@ -1,37 +1,40 @@
 OUTPUT_FORMAT("binary")
+
 TARGET("binary")
 INPUT("proc/proc-stripped")
+INPUT("kernel/kernel-stripped")
+
 TARGET("elf32-i386")
-INPUT("kernel/kernel")
-INPUT("symbols.o")
+INPUT("boot/setup32.o")
+
 
 SECTIONS {
-    kernel 0x100000 : {
-        kernel_start = ABSOLUTE(.);
+    setup32 0x100000 : {
+        boot/setup32.o
         
-        kernel/kernel(.text)
-        kernel/kernel(.data)
-        symbols.o(.rodata)
-        symbols.o(.rodata.*)
-        symbols.o(.data)
-        symbols.o(.data.*)
-        kernel/kernel(.bss)
-                
-        kernel_end = ABSOLUTE(.);
-        . = ALIGN(16);
+        . = ALIGN(4096);
     }
     
-    . = ALIGN(4096);
-    proc_elf = .;
+    kernel_start = .;
+    
+    kernel : {
+        kernel/kernel-stripped
+        kernel_end = ABSOLUTE(.);
+        
+        . = ALIGN(4096);
+    }
+    
+    proc_start = .;
     
     proc : {
         proc/proc-stripped
+        proc_end = ABSOLUTE(.);
         
-        proc_elf_end = ABSOLUTE(.);
-        . = ALIGN(16);
+        . = ALIGN(4096);
     }
     
-    /DISCARD/ : {
-        *(.*)
-    }
+    kernel_top = .;
+    
+    kernel_size = kernel_end - kernel_start;
+    proc_size   = proc_end   - proc_start;
 }

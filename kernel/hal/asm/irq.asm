@@ -14,7 +14,7 @@
 ; DESCRIPTION : Save current thread state, call interrupt dispatching function,
 ;               then restore state and return from interrupt.
 ; ------------------------------------------------------------------------------
-    global irq_save_state
+    global irq_save_state:function (return_from_interrupt.end - irq_save_state)
 irq_save_state:
     ; We use the version of the push instruction with a byte operand in the
     ; jump table because it is the shortest form of this instruction (2 bytes).
@@ -192,7 +192,9 @@ return_from_interrupt:
     pop ebp
     
     ; return from interrupt
-    iret    
+    iret
+
+.end:
 
 ; ------------------------------------------------------------------------------
 ; Interrupt Jump Table (irq_jtable)

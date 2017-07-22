@@ -1,3 +1,4 @@
+#include <hal/boot.h>
 #include <hal/bootmem.h>
 #include <hal/hal.h>
 #include <hal/vm.h>
@@ -7,23 +8,26 @@
 #include <panic.h>
 #include <printk.h>
 #include <process.h>
+#include <stddef.h>
 #include <syscall.h>
 #include <thread.h>
 #include "build-info.gen.h"
 
 
 static Elf32_Ehdr *find_process_manager(void) {
-	if((uintptr_t)&proc_elf_end < (uintptr_t)&proc_elf) {
-		panic("Malformed boot image");
-	}
+    const boot_info_t *boot_info = get_boot_info();
 
-	if((uintptr_t)&proc_elf_end - (uintptr_t)&proc_elf < sizeof(Elf32_Ehdr)) {
-		panic("Too small to be an ELF binary");
-	}
+    if(boot_info->proc_start == NULL) {
+        panic("Malformed boot image");
+    }
 
-	printk("Found process manager binary with size %u bytes.\n", (unsigned int)&proc_elf_end - (unsigned int)&proc_elf);
+    if(boot_info->proc_size < sizeof(Elf32_Ehdr)) {
+        panic("Too small to be an ELF binary");
+    }
 
-	return &proc_elf;
+    printk("Found process manager binary with size %u bytes.\n", boot_info->proc_size);
+
+    return boot_info->proc_start;
 }
 
 

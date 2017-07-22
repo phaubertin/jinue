@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <hal/boot.h>
 #include <hal/cpu.h>
 #include <hal/cpu_data.h>
 #include <hal/kernel.h>
@@ -62,9 +63,11 @@ void vm_boot_init(void) {
     
     /* perform 1:1 mapping of kernel image and data
     
-       note: page tables for memory region (0..KLIMIT) are contiguous
-             in physical memory */
-    for(addr = (addr_t)&kernel_start; addr < kernel_region_top; addr += PAGE_SIZE) {
+       note: page tables for memory region (0..KLIMIT) are contiguous in
+       physical memory */
+    const boot_info_t *boot_info = get_boot_info();
+
+    for(addr = (addr_t)boot_info->image_start; addr < kernel_region_top; addr += PAGE_SIZE) {
         vm_map_early((addr_t)addr, (addr_t)addr, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
     }
     
@@ -91,7 +94,7 @@ void vm_boot_init(void) {
       the first page) up to KLIMIT, with two holes: the VGA video buffer and the kernel. */
     global_page_allocator = &__global_page_allocator;
     vm_alloc_init_piecewise(global_page_allocator, NULL, (addr_t)PAGE_SIZE,         (addr_t)VGA_TEXT_VID_BASE, (addr_t)KLIMIT);
-    vm_alloc_add_region(global_page_allocator,           (addr_t)VGA_TEXT_VID_TOP,  (addr_t)&kernel_start);
+    vm_alloc_add_region(global_page_allocator,           (addr_t)VGA_TEXT_VID_TOP,  (addr_t)boot_info->image_start);
     vm_alloc_add_region(global_page_allocator,           (addr_t)kernel_region_top, (addr_t)KLIMIT);
 }
 

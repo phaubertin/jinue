@@ -68,6 +68,9 @@ NASMFLAGS.arch       =
 NASMFLAGS.others     =
 NASMFLAGS            = $(NASMFLAGS.arch) $(NASMFLAGS.debug) $(NASMFLAGS.others) $(NASMFLAGS.extra)
 
+# strip utility flags
+STRIPFLAGS			= --strip-debug
+
 # Automatic dependencies generation flags
 DEPFLAGS			 = -MT $@ -MD -MP -MF $*.d
 

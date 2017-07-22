@@ -253,3 +253,65 @@ void elf_setup_stack(elf_info_t *info) {
     vm_unmap_global(top_page);
     vm_free(global_page_allocator, top_page);
 }
+
+int elf_lookup_symbol(
+        const Elf32_Ehdr    *elf_header,
+        Elf32_Addr           addr,
+        int                  type,
+        elf_symbol_t        *result) {
+
+    int     idx;
+    size_t  symbol_entry_size;
+    size_t  symbol_table_size;
+    
+    const char *elf_file        = elf_file_bytes(elf_header);
+    const char *symbols_table   = NULL;
+    const char *string_table    = NULL;
+    
+    for(idx = 0; idx < elf_header->e_shnum; ++idx) {
+        const Elf32_Shdr *section_header = elf_get_section_header(elf_header, idx);
+        
+        if(section_header->sh_type == SHT_SYMTAB) {
+            symbols_table       = &elf_file[section_header->sh_offset];
+            symbol_entry_size   = section_header->sh_entsize;
+            symbol_table_size   = section_header->sh_size;
+            
+            const Elf32_Shdr *string_section_header = elf_get_section_header(
+                    elf_header,
+                    section_header->sh_link);
+                    
+            string_table = &elf_file[string_section_header->sh_offset];
+
+            break;
+        }
+    }
+    
+    if(symbols_table == NULL) {
+        /* no symbol table */
+        return -1;
+    }
+    
+    const char *symbol = symbols_table;
+    
+    while(symbol < symbols_table + symbol_table_size) {
+        const Elf32_Sym *symbol_header = (const Elf32_Sym *)symbol;
+        
+        if(ELF32_ST_TYPE(symbol_header->st_info) == type) {
+            Elf32_Addr lookup_addr  = (Elf32_Addr)addr;
+            Elf32_Addr start        = symbol_header->st_value;
+            Elf32_Addr end          = start + symbol_header->st_size;
+            
+            if(lookup_addr >= start && lookup_addr < end) {
+                result->addr = symbol_header->st_value;
+                result->name = &string_table[symbol_header->st_name];
+                
+                return 0;
+            }
+        }
+        
+        symbol += symbol_entry_size;
+    }
+    
+    /* not found */
+    return -1;    
+}

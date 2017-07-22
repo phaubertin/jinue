@@ -9,7 +9,7 @@
 ; ------------------------------------------------------------------------------
 ; FUNCTION: fast_intel_entry
 ; ------------------------------------------------------------------------------
-    global fast_intel_entry
+    global fast_intel_entry:function (fast_intel_entry.end - fast_intel_entry)
 fast_intel_entry:
     ; save return address and user stack pointer
     ;
@@ -91,10 +91,12 @@ fast_intel_entry:
     
     sysexit
 
+.end:
+
 ; ------------------------------------------------------------------------------
 ; FUNCTION: fast_amd_entry
 ; ------------------------------------------------------------------------------
-    global fast_amd_entry
+    global fast_amd_entry:function (fast_amd_entry.end - fast_amd_entry)
 fast_amd_entry:
     ; save user stack pointer temporarily in ebp
     mov ebp, esp
@@ -183,3 +185,5 @@ fast_amd_entry:
     pop esp         ; user stack
     
     sysret
+
+.end:
