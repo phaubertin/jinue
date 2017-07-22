@@ -55,7 +55,7 @@ CPPFLAGS             = $(CPPFLAGS.includes) $(CPPFLAGS.debug) $(CPPFLAGS.others)
 CFLAGS.warnings      = -std=c99 -pedantic -Wall -Werror=implicit-function-declaration -Werror=uninitialized
 CFLAGS.arch          = -m32 -march=i686
 CFLAGS.optimization  = -O3
-CFLAGS.others        = -ffreestanding -fno-common -fno-inline -fno-omit-frame-pointer
+CFLAGS.others        = -ffreestanding -fno-common -fno-omit-frame-pointer
 CFLAGS               = $(CFLAGS.arch) $(CFLAGS.optimization) $(CFLAGS.debug) $(CFLAGS.warnings) $(CFLAGS.others) $(CFLAGS.extra)
 
 # Linker flags
