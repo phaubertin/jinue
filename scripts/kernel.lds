@@ -42,6 +42,4 @@ SECTIONS {
     .strtab             : { *(.strtab) }
     .comment            : { *(.comment) }
     .note.gnu.build-id  : { *(.note.gnu.build-id)}
-    
-    /DISCARD/ : { *(*) }
 }
