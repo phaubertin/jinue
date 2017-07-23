@@ -88,7 +88,7 @@ static thread_t *reschedule(thread_t *from_thread, bool from_can_run) {
              * supported (so, there are no threads currently running on other
              * CPUs). What this means is that, once there are no more threads
              * running or ready to run, this situation will never change. */
-            panic("No more threads to schedule");
+            panic("No more thread to schedule");
         }
     }
 
