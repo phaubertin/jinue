@@ -1,10 +1,10 @@
 #ifndef JINUE_HAL_BOOTMEM_H
 #define JINUE_HAL_BOOTMEM_H
 
-#include <jinue/pfaddr.h>
-#include <jinue/types.h>
 #include <hal/e820.h>
+#include <hal/pfaddr.h>
 #include <stdint.h>
+#include <types.h>
 
 
 struct bootmem_t {

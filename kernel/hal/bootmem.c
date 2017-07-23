@@ -1,4 +1,3 @@
-#include <jinue/types.h>
 #include <hal/boot.h>
 #include <hal/bootmem.h>
 #include <hal/e820.h>
@@ -7,6 +6,7 @@
 #include <panic.h>
 #include <printk.h>
 #include <stddef.h>
+#include <types.h>
 #include <util.h>
 
 

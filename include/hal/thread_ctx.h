@@ -1,9 +1,9 @@
 #ifndef JINUE_HAL_THREAD_CTX_H
 #define JINUE_HAL_THREAD_CTX_H
 
-#include <jinue/types.h>
 #include <hal/vm.h>
 #include <stddef.h>
+#include <types.h>
 
 typedef struct {
     /* The assembly language thread switching code makes the assumption that

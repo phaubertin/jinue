@@ -89,8 +89,8 @@ int main(int argc, char *argv[], char *envp[]) {
     
     (void)jinue_yield();
 
-    printk("%u kilobytes (%u pages) of memory available to process manager.\n", 
-        (unsigned long)(total_memory * PAGE_SIZE / KB), 
+    printk("%u kilobytes (%u pages) of memory available to process manager.\n",
+        (unsigned long)(total_memory * PAGE_SIZE / KB),
         (unsigned long)(total_memory) );
 
     printk("Creating IPC object descriptor.\n");

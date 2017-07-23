@@ -3,13 +3,14 @@
 
 #include <hal/asm/thread.h>
 
-#include <jinue/types.h>
 #include <hal/thread_ctx.h>
 #include <hal/vm.h>
 #include <hal/x86.h>
 #include <stddef.h>
 #include <stdbool.h>
 #include <thread_decl.h>
+#include <types.h>
+
 
 static inline thread_t *get_current_thread(void) {
     return (thread_t *)(get_esp() & THREAD_CONTEXT_MASK);

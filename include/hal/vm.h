@@ -1,12 +1,12 @@
 #ifndef JINUE_HAL_VM_H
 #define JINUE_HAL_VM_H
 
-#include <jinue/page_tables.h>
-#include <jinue/types.h>
 #include <jinue/vm.h>
+#include <hal/page_tables.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <types.h>
 
 
 /* ------ flags for page attributes ------ */

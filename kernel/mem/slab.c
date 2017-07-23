@@ -1,4 +1,3 @@
-#include <jinue/types.h>
 #include <hal/cpu.h>
 #include <hal/kernel.h>
 #include <hal/vm.h>
@@ -7,6 +6,7 @@
 #include <printk.h>
 #include <slab.h>
 #include <stdint.h>
+#include <types.h>
 #include <util.h>
 #include <vm_alloc.h>
 

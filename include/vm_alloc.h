@@ -1,9 +1,9 @@
 #ifndef JINUE_KERNEL_VM_ALLOC_H
 #define JINUE_KERNEL_VM_ALLOC_H
 
-#include <jinue/types.h>
 #include <hal/vm.h>
 #include <stddef.h>
+#include <types.h>
 
 
 #define VM_ALLOC_STACK_ENTRIES    1024

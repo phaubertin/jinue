@@ -1,4 +1,4 @@
-#include <jinue/page_tables.h>
+#include <hal/page_tables.h>
 #include <hal/vm_macros.h>
 #include <hal/vm_x86.h>
 #include <hal/vm.h>

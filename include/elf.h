@@ -2,8 +2,8 @@
 #define JINUE_KERNEL_ELF_H
 
 #include <jinue/elf.h>
-#include <jinue/types.h>
 #include <hal/vm.h>
+#include <types.h>
 
 
 typedef struct {

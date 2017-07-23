@@ -1,8 +1,9 @@
 #ifndef JINUE_KERNEL_UTIL_H
 #define JINUE_KERNEL_UTIL_H
 
-#include <jinue/types.h>
 #include <stddef.h>
+#include <types.h>
+
 
 #define OFFSET_OF(x, s)     ( (uint32_t)(x) & ((s)-1) )
 

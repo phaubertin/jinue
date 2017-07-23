@@ -5,7 +5,6 @@
 
 #include <jinue/pfalloc.h>
 #include <jinue/syscall_args.h>
-#include <jinue/types.h>
 #include <stddef.h>
 #include <stdint.h>
 

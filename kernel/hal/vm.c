@@ -1,9 +1,9 @@
 #include <assert.h>
-#include <jinue/pfaddr.h>
 #include <hal/boot.h>
 #include <hal/cpu.h>
 #include <hal/cpu_data.h>
 #include <hal/kernel.h>
+#include <hal/pfaddr.h>
 #include <hal/vga.h>
 #include <hal/vm.h>
 #include <hal/vm_x86.h>

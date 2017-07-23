@@ -1,4 +1,3 @@
-#include <jinue/types.h>
 #include <hal/frame_pointer.h>
 #include <hal/kernel.h>
 #include <hal/interrupt.h>
@@ -7,6 +6,7 @@
 #include <hal/x86.h>
 #include <panic.h>
 #include <printk.h>
+#include <types.h>
 
 
 void dispatch_interrupt(unsigned int irq, uintptr_t eip, uint32_t errcode, jinue_syscall_args_t *syscall_args) {

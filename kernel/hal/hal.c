@@ -1,5 +1,4 @@
 #include <jinue/syscall.h>
-#include <jinue/types.h>
 #include <assert.h>
 #include <hal/boot.h>
 #include <hal/bootmem.h>
@@ -18,6 +17,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <syscall.h>
+#include <types.h>
 #include <util.h>
 #include <vm_alloc.h>
 

@@ -2,8 +2,8 @@
 #define JINUE_HAL_DESCRIPTORS_H
 
 #include <jinue/descriptors.h>
-#include <jinue/types.h>
 #include <stdint.h>
+#include <types.h>
 
 
 /** offset of descriptor type in descriptor */

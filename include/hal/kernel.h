@@ -1,9 +1,9 @@
 #ifndef JINUE_HAL_KERNEL_H
 #define JINUE_HAL_KERNEL_H
 
-#include <jinue/types.h>
 #include <hal/startup.h>
 #include <stddef.h>
+#include <types.h>
 #include <vm_alloc.h>
 
 #include <hal/asm/kernel.h>

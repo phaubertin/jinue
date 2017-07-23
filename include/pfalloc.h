@@ -2,7 +2,7 @@
 #define JINUE_KERNEL_ALLOC_H
 
 #include <jinue/pfalloc.h>
-#include <jinue/types.h>
+#include <types.h>
 
 
 typedef struct {

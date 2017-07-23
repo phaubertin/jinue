@@ -1,7 +1,7 @@
-#ifndef _JINUE_PAGE_TABLES_H
-#define _JINUE_PAGE_TABLES_H
+#ifndef JINUE_HAL_PAGE_TABLES_H
+#define JINUE_HAL_PAGE_TABLES_H
 
-#include <jinue/types.h>
+#include <types.h>
 
 
 /** incomplete struct type used for the definition of pte_t */
