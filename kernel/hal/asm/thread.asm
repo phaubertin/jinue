@@ -1,4 +1,4 @@
-#include <jinue/asm/descriptors.h>
+#include <hal/asm/descriptors.h>
 #include <hal/asm/thread.h>
 
     bits 32

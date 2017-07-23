@@ -1,4 +1,4 @@
-#include <jinue/asm/descriptors.h>
+#include <hal/asm/descriptors.h>
 #include <hal/asm/irq.h>
 
 %define NO_ERROR_CODE                   0
