@@ -1,4 +1,5 @@
 #include <jinue/descriptors.h>
+#include <jinue/pfaddr.h>
 #include <hal/cpu.h>
 #include <hal/cpu_data.h>
 #include <hal/irq.h>

@@ -1,4 +1,5 @@
 #include <jinue/page_tables.h>
+#include <jinue/pfaddr.h>
 
 struct __pte_t {
     uint32_t entry;

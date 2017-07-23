@@ -1,3 +1,4 @@
+#include <jinue/pfaddr.h>
 #include <hal/kernel.h>
 #include <hal/vm.h>
 #include <assert.h>

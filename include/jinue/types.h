@@ -1,7 +1,7 @@
 #ifndef _JINUE_TYPES_H
 #define _JINUE_TYPES_H
 
-#include <jinue/pfaddr.h>
+#include <stdint.h>
 
 
 #define KB      (1024)
