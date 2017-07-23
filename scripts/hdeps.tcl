@@ -121,7 +121,7 @@ glob_recursive $INCLUDES ""
 
 # Graphviz syntax output starts here
 puts "digraph hdeps {"
-puts [indent 1 "ranksep = 2.5;"]
+puts [indent 1 "ranksep = 2.2;"]
 puts ""
 puts [indent 1 [comment "node declarations"]]
 
