@@ -3,7 +3,6 @@
 
 #include <object_decl.h>
 #include <stdbool.h>
-#include <thread_decl.h>
 
 /* flag bits 0..7 are common flags, flag bits 8 and up are per object type flags */
 
@@ -58,9 +57,5 @@ static inline void object_subref(object_header_t *header) {
     /** TODO free at zero */
     --header->ref_count;
 }
-
-object_ref_t *get_descriptor(thread_t *thread, int n);
-
-int find_unused_descriptor(thread_t *thread);
 
 #endif
