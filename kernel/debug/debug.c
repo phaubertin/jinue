@@ -1,4 +1,4 @@
-#include <jinue/types.h>
+#include <jinue-common/types.h>
 #include <hal/boot.h>
 #include <hal/frame_pointer.h>
 #include <hal/kernel.h>

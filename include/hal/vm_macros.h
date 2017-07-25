@@ -1,7 +1,7 @@
 #ifndef JINUE_HAL_VM_MACROS_H
 #define JINUE_HAL_VM_MACROS_H
 
-#include <jinue/vm.h>
+#include <jinue-common/vm.h>
 #include <stdint.h>
 
 /* ------ page tables ------ */

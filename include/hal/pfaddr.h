@@ -1,7 +1,7 @@
 #ifndef JINUE_HAL_PFADDR_H
 #define JINUE_HAL_PFADDR_H
 
-#include <jinue/pfaddr.h>
+#include <jinue-common/pfaddr.h>
 #include <stdint.h>
 
 /** convert an address in an integer to a page frame address */

@@ -64,15 +64,15 @@ proc glob_recursive {path prefix} {
 #   2) Always generate the same node name for a given header file name; and
 #   3) Generate different node names for different header file names.
 #
-# The currently implemented mangling procedure is to replace each period (.) and
-# path name separator (/) with a double underscore (__).
+# The currently implemented mangling procedure is to replace each period (.),
+# path name separator (/) and dash (-) with a double underscore (__).
 proc mangle {file_name} {
     set buffer ""
     
     for {set idx 0} {$idx < [string length $file_name]} {incr idx} {
         set c [string index $file_name $idx]
         
-        if {$c == "/" || $c == "."} {
+        if {$c == "/" || $c == "."|| $c == "-"} {
             set s "__"
         } else {
             set s $c
@@ -98,10 +98,10 @@ proc comment {str} {
 
 # Emit a node declaration for the specified header file in Graphviz syntax
 proc node_decl {file_name} {
-    if {[string match "jinue/*" $file_name]} {
-        set shape box
-    } else {
-        set shape ellipse
+    switch -glob $file_name {
+        "jinue/*"           {set shape box}
+        "jinue-common/*"    {set shape octagon}
+        default             {set shape ellipse}
     }
     
     return [format {%s[label="%s", shape="%s"];} [mangle $file_name] $file_name $shape]

@@ -1,7 +1,7 @@
 #ifndef JINUE_HAL_ASM_THREAD_H
 #define JINUE_HAL_ASM_THREAD_H
 
-#include <jinue/asm/vm.h>
+#include <jinue-common/asm/vm.h>
 
 
 #define THREAD_CONTEXT_SIZE     PAGE_SIZE

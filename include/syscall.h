@@ -1,7 +1,7 @@
 #ifndef JINUE_KERNEL_SYSCALL_H
 #define JINUE_KERNEL_SYSCALL_H
 
-#include <jinue/syscall.h>
+#include <jinue-common/syscall.h>
 #include <hal/syscall.h>
 #include <stdint.h>
 

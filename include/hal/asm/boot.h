@@ -1,9 +1,8 @@
 #ifndef JINUE_HAL_ASM_BOOT_H
 #define JINUE_HAL_ASM_BOOT_H
 
-#include <jinue/asm/vm.h>
+#include <jinue-common/asm/vm.h>
 
-       
 
 #define BOOT_E820_ENTRIES       0x1e8
 

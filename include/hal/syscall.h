@@ -1,7 +1,7 @@
 #ifndef JINUE_HAL_SYSCALL_H
 #define JINUE_HAL_SYSCALL_H
 
-#include <jinue/syscall.h>
+#include <jinue-common/syscall.h>
 
 
 extern int syscall_method;

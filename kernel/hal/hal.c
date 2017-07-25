@@ -1,4 +1,3 @@
-#include <jinue/syscall.h>
 #include <assert.h>
 #include <hal/boot.h>
 #include <hal/bootmem.h>

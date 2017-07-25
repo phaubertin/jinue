@@ -1,5 +1,5 @@
-#ifndef _JINUE_ASM_IPC_H
-#define _JINUE_ASM_IPC_H
+#ifndef _JINUE_COMMON_ASM_IPC_H
+#define _JINUE_COMMON_ASM_IPC_H
 
 /*  +-----------------------+------------------------+---------------+
     |      buffer_size      |       data_size        |     n_desc    |  arg3

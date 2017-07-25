@@ -3,7 +3,7 @@
 
 #include <hal/asm/boot.h>
 
-#include <jinue/elf.h>
+#include <jinue-common/elf.h>
 #include <hal/e820.h>
 #include <stdbool.h>
 #include <stdint.h>

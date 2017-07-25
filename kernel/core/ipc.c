@@ -1,5 +1,5 @@
-#include <jinue/errno.h>
-#include <jinue/ipc.h>
+#include <jinue-common/errno.h>
+#include <jinue-common/ipc.h>
 #include <ipc.h>
 #include <panic.h>
 #include <process.h>

@@ -1,6 +1,7 @@
-#include <jinue/console.h>
+#include <jinue-common/console.h>
 #include <hal/vga.h>
 #include <stddef.h>
+
 
 void console_printn(const char *message, unsigned int n) {
     vga_printn(message, n);

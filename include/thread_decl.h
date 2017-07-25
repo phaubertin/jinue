@@ -1,9 +1,9 @@
 #ifndef JINUE_KERNEL_THREAD_DECL_H
 #define JINUE_KERNEL_THREAD_DECL_H
 
-#include <jinue/ipc.h>
-#include <jinue/list.h>
-#include <jinue/syscall.h>
+#include <jinue-common/ipc.h>
+#include <jinue-common/list.h>
+#include <jinue-common/syscall.h>
 #include <hal/thread_ctx.h>
 #include <message.h>
 #include <object_decl.h>

@@ -1,8 +1,8 @@
 #ifndef JINUE_KERNEL_IPC_H
 #define JINUE_KERNEL_IPC_H
 
-#include <jinue/list.h>
-#include <jinue/syscall_args.h>
+#include <jinue-common/list.h>
+#include <jinue-common/syscall.h>
 #include <object.h>
 
 

@@ -1,6 +1,6 @@
-#include <jinue/console.h>
-#include <jinue/errno.h>
-#include <jinue/pfalloc.h>
+#include <jinue-common/console.h>
+#include <jinue-common/errno.h>
+#include <jinue-common/pfalloc.h>
 #include <hal/bootmem.h>
 #include <hal/cpu_data.h>
 #include <hal/thread.h>
