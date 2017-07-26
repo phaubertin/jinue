@@ -2,7 +2,6 @@
 #define JINUE_KERNEL_ELF_H
 
 #include <jinue-common/elf.h>
-#include <hal/vm.h>
 #include <types.h>
 
 

@@ -1,7 +1,7 @@
 #ifndef JINUE_HAL_PAGE_TABLES_H
 #define JINUE_HAL_PAGE_TABLES_H
 
-#include <types.h>
+#include <hal/types.h>
 
 
 extern pte_t *(*get_pte_with_offset)(pte_t *, unsigned int);

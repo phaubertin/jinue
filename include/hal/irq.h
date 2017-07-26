@@ -1,9 +1,10 @@
 #ifndef JINUE_HAL_IRQ_H
 #define JINUE_HAL_IRQ_H
 
-#include <hal/descriptors.h>
-
 #include <hal/asm/irq.h>
+
+#include <hal/types.h>
+
 
 #define EXCEPTION_GOT_ERR_CODE(irq) \
     (irq == EXCEPTION_ALIGNMENT || \

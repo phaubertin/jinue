@@ -1,4 +1,3 @@
-#include <hal/kernel.h>
 #include <hal/pfaddr.h>
 #include <hal/vm.h>
 #include <assert.h>
@@ -6,6 +5,7 @@
 #include <panic.h>
 #include <pfalloc.h>
 #include <printk.h>
+#include <vm_alloc.h>
 
 
 void elf_check(Elf32_Ehdr *elf) {

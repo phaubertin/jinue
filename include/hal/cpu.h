@@ -1,9 +1,8 @@
 #ifndef JINUE_HAL_CPU_H
 #define JINUE_HAL_CPU_H
 
-#include <hal/cpu_data.h>
-#include <hal/descriptors.h>
-#include <stdbool.h>
+#include <hal/types.h>
+
 
 #define MSR_IA32_SYSENTER_CS        0x174
 

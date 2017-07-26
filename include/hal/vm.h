@@ -2,7 +2,7 @@
 #define JINUE_HAL_VM_H
 
 #include <jinue-common/vm.h>
-#include <types.h>
+#include <hal/types.h>
 
 
 /* ------ flags for page attributes ------ */

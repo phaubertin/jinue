@@ -1,3 +1,4 @@
+#include <hal/vm.h>
 #include <process.h>
 #include <object.h>
 #include <slab.h>

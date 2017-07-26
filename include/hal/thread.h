@@ -3,7 +3,6 @@
 
 #include <hal/asm/thread.h>
 
-#include <hal/vm.h>
 #include <hal/x86.h>
 #include <types.h>
 

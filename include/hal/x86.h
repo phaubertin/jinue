@@ -1,8 +1,8 @@
 #ifndef JINUE_HAL_X86_H
 #define JINUE_HAL_X86_H
 
-#include <hal/descriptors.h>
-#include <stdint.h>
+#include <hal/types.h>
+
 
 #define X86_FLAG_PG (1<<31)
 

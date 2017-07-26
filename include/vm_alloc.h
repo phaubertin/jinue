@@ -1,7 +1,6 @@
 #ifndef JINUE_KERNEL_VM_ALLOC_H
 #define JINUE_KERNEL_VM_ALLOC_H
 
-#include <hal/vm.h>
 #include <types.h>
 
 
@@ -87,6 +86,9 @@ struct vm_block_t {
 typedef struct vm_alloc_t vm_alloc_t;
 
 typedef struct vm_block_t vm_block_t;
+
+
+extern vm_alloc_t *global_page_allocator;
 
 
 addr_t vm_alloc(vm_alloc_t *allocator);

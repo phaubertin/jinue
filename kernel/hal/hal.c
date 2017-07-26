@@ -2,6 +2,8 @@
 #include <hal/boot.h>
 #include <hal/bootmem.h>
 #include <hal/cpu.h>
+#include <hal/cpu_data.h>
+#include <hal/descriptors.h>
 #include <hal/hal.h>
 #include <hal/interrupt.h>
 #include <hal/irq.h>

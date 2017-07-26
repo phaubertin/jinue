@@ -1,5 +1,6 @@
 #include <jinue-common/list.h>
 #include <hal/thread.h>
+#include <hal/vm.h>
 #include <object.h>
 #include <panic.h>
 #include <thread.h>

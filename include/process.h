@@ -1,7 +1,6 @@
 #ifndef JINUE_KERNEL_PROCESS_H
 #define JINUE_KERNEL_PROCESS_H
 
-#include <hal/vm.h>
 #include <types.h>
 
 
