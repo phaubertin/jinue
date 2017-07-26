@@ -1,6 +1,8 @@
 #include <jinue-common/errno.h>
 #include <jinue-common/ipc.h>
+#include <hal/thread.h>
 #include <ipc.h>
+#include <object.h>
 #include <panic.h>
 #include <process.h>
 #include <slab.h>

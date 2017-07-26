@@ -1,9 +1,7 @@
 #ifndef JINUE_KERNEL_IPC_H
 #define JINUE_KERNEL_IPC_H
 
-#include <jinue-common/list.h>
-#include <jinue-common/syscall.h>
-#include <object.h>
+#include <types.h>
 
 
 /* object header flag bits 0..7 are reserved for common flags, flag bits 8 and
@@ -12,12 +10,6 @@
 #define IPC_FLAG_NONE           0
 
 #define IPC_FLAG_SYSTEM         (1<<8)
-
-typedef struct {
-    object_header_t header;
-    jinue_list_t    send_list;
-    jinue_list_t    recv_list;
-} ipc_t;
 
 
 void ipc_boot_init(void);

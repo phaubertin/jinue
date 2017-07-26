@@ -1,15 +1,7 @@
 #ifndef JINUE_HAL_PAGE_TABLES_H
 #define JINUE_HAL_PAGE_TABLES_H
 
-#include <hal/pfaddr.h>
 #include <types.h>
-
-
-/** incomplete struct type used for the definition of pte_t */
-struct __pte_t;
-
-/** type of a page table entry */
-typedef struct __pte_t pte_t;
 
 
 extern pte_t *(*get_pte_with_offset)(pte_t *, unsigned int);

@@ -2,8 +2,6 @@
 #define JINUE_HAL_BOOTMEM_H
 
 #include <hal/e820.h>
-#include <hal/pfaddr.h>
-#include <stdint.h>
 #include <types.h>
 
 

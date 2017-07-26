@@ -3,7 +3,6 @@
 
 #include <hal/asm/descriptors.h>
 
-#include <stdint.h>
 #include <types.h>
 
 

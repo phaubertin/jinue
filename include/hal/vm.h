@@ -2,11 +2,6 @@
 #define JINUE_HAL_VM_H
 
 #include <jinue-common/vm.h>
-#include <hal/page_tables.h>
-#include <hal/pfaddr.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdbool.h>
 #include <types.h>
 
 
@@ -47,15 +42,6 @@
 
 /** set of flags for a page table (or page directory) */
 #define VM_FLAGS_PAGE_TABLE (VM_FLAG_KERNEL | VM_FLAG_READ_WRITE)
-
-
-typedef struct {
-    uint32_t     cr3;
-    union {
-        pfaddr_t     pd;    /* non-PAE: page directory */
-        pte_t       *pdpt;  /* PAE: page directory pointer table */
-    } top_level;
-} addr_space_t;
 
 
 extern bool vm_use_pae;

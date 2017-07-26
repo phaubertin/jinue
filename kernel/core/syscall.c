@@ -5,7 +5,9 @@
 #include <hal/cpu_data.h>
 #include <hal/thread.h>
 #include <ipc.h>
+#include <object.h>
 #include <printk.h>
+#include <process.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <syscall.h>

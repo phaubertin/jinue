@@ -2,7 +2,6 @@
 #define JINUE_KERNEL_VM_ALLOC_H
 
 #include <hal/vm.h>
-#include <stddef.h>
 #include <types.h>
 
 

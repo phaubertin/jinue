@@ -2,8 +2,9 @@
 #define JINUE_HAL_CPU_DATA_H
 
 #include <hal/descriptors.h>
-#include <hal/thread.h>
-#include <hal/vm.h>
+#include <hal/x86.h>
+#include <types.h>
+
 
 struct cpu_data_t {
     seg_descriptor_t     gdt[GDT_LENGTH];

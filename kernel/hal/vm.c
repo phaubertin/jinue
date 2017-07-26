@@ -3,6 +3,7 @@
 #include <hal/cpu.h>
 #include <hal/cpu_data.h>
 #include <hal/kernel.h>
+#include <hal/page_tables.h>
 #include <hal/pfaddr.h>
 #include <hal/vga.h>
 #include <hal/vm.h>

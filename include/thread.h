@@ -1,9 +1,8 @@
 #ifndef JINUE_KERNEL_THREAD_H
 #define JINUE_KERNEL_THREAD_H
 
-#include <hal/thread.h>
-#include <stdbool.h>
-#include <thread_decl.h>
+#include <types.h>
+
 
 thread_t *thread_create(
         process_t       *process,
