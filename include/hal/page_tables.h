@@ -1,6 +1,7 @@
 #ifndef JINUE_HAL_PAGE_TABLES_H
 #define JINUE_HAL_PAGE_TABLES_H
 
+#include <hal/pfaddr.h>
 #include <types.h>
 
 

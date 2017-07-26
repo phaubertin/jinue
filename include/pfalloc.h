@@ -2,6 +2,7 @@
 #define JINUE_KERNEL_ALLOC_H
 
 #include <jinue-common/pfalloc.h>
+#include <jinue-common/pfaddr.h>
 #include <types.h>
 
 

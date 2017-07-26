@@ -3,6 +3,7 @@
 
 #include <jinue-common/vm.h>
 #include <hal/page_tables.h>
+#include <hal/pfaddr.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>

@@ -1,7 +1,7 @@
 #ifndef _JINUE_COMMON_PFALLOC_H
 #define _JINUE_COMMON_PFALLOC_H
 
-#include <jinue-common/types.h>
+#include <jinue-common/pfaddr.h>
 
 #define KERNEL_PAGE_STACK_SIZE    1024
 

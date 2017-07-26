@@ -7,7 +7,4 @@
 
 #define MB      (1024 * 1024)
 
-/** type for a page frame address (32-bit value) */
-typedef uint32_t pfaddr_t;
-
 #endif

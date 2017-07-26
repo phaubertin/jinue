@@ -6,6 +6,7 @@
 #include <hal/interrupt.h>
 #include <hal/irq.h>
 #include <hal/kernel.h>
+#include <hal/pfaddr.h>
 #include <hal/thread.h>
 #include <hal/vga.h>
 #include <hal/vm.h>

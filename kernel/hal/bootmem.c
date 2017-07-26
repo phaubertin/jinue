@@ -2,6 +2,7 @@
 #include <hal/bootmem.h>
 #include <hal/e820.h>
 #include <hal/kernel.h>
+#include <hal/pfaddr.h>
 #include <hal/vm.h>
 #include <panic.h>
 #include <printk.h>

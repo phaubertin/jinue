@@ -1,5 +1,6 @@
 #include <hal/cpu.h>
 #include <hal/kernel.h>
+#include <hal/pfaddr.h>
 #include <hal/vm.h>
 #include <assert.h>
 #include <pfalloc.h>
