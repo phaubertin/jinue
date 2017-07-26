@@ -3,21 +3,7 @@
 
 #include <hal/asm/e820.h>
 
-#include <stdbool.h>
-#include <stdint.h>
-
-
-typedef uint32_t e820_type_t;
-
-typedef uint64_t e820_size_t;
-
-typedef uint64_t e820_addr_t;
-
-typedef struct {
-    e820_addr_t addr;
-    e820_size_t size;
-    e820_type_t type;
-} e820_t;
+#include <hal/types.h>
 
 
 bool e820_is_valid(const e820_t *e820_entry);
