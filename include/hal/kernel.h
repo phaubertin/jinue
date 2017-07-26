@@ -6,15 +6,11 @@
 #include <types.h>
 #include <vm_alloc.h>
 
-#include <hal/asm/kernel.h>
-
 
 extern int in_kernel;
 
 extern addr_t kernel_region_top;
 
 extern vm_alloc_t *global_page_allocator;
-
-void hal_start(void);
 
 #endif

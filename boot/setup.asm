@@ -1,6 +1,5 @@
 #include <hal/asm/boot.h>
 #include <hal/asm/e820.h>
-#include <hal/asm/kernel.h>
 
 %define CODE_SEG        1
 %define DATA_SEG        2
@@ -116,7 +115,7 @@ code_32:
     pop esi
     
     ; Jump to the kernel entry point    
-    jmp dword (CODE_SEG * 8):KERNEL_START
+    jmp dword (CODE_SEG * 8):BOOT_SETUP32_ADDR
     
     ; This adds only a few bytes (or none). The main reason for this line is to
     ; ensure an error is generated (TIMES value is negative) if the code above

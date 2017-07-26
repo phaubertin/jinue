@@ -1,7 +1,0 @@
-#ifndef JINUE_HAL_ASM_KERNEL_H
-#define JINUE_HAL_ASM_KERNEL_H
-
-#define KERNEL_START    0x100000
-
-#endif
-
