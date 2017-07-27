@@ -10,7 +10,6 @@ sources.c    = \
 	e820.c \
 	hal.c \
 	interrupt.c \
-	page_tables.c \
 	thread.c \
 	vga.c \
 	vm.c \

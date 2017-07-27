@@ -44,18 +44,9 @@
 #define VM_FLAGS_PAGE_TABLE (VM_FLAG_KERNEL | VM_FLAG_READ_WRITE)
 
 
-extern bool vm_use_pae;
-
-extern size_t page_table_entries;
-
 extern pte_t *global_page_tables;
 
 extern addr_space_t initial_addr_space;
-
-/** page table entry offset of virtual (linear) address */
-extern unsigned int (*page_table_offset_of)(addr_t);
-
-extern unsigned int (*page_directory_offset_of)(addr_t);
 
 
 void vm_boot_init(void);

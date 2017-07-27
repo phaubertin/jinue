@@ -3,7 +3,6 @@
 #include <hal/cpu.h>
 #include <hal/cpu_data.h>
 #include <hal/kernel.h>
-#include <hal/page_tables.h>
 #include <hal/pfaddr.h>
 #include <hal/vga.h>
 #include <hal/vm.h>
@@ -16,18 +15,9 @@
 #include <vm_alloc.h>
 
 
-bool vm_use_pae;
-
-size_t page_table_entries;
-
 pte_t *global_page_tables;
 
 addr_space_t initial_addr_space;
-
-/** page table entry offset of virtual (linear) address */
-unsigned int (*page_table_offset_of)(addr_t);
-
-unsigned int (*page_directory_offset_of)(addr_t);
 
 static vm_alloc_t __global_page_allocator;
 
@@ -43,13 +33,7 @@ void vm_boot_init(void) {
     if(cpu_has_feature(CPU_FEATURE_PAE)) {
         printk("Processor supports Physical Address Extension (PAE).\n");
         
-        /** TODO: change me once PAE support is implemented */
-        vm_x86_set_pointers();
-        vm_use_pae = false;
-    }
-    else {
-        vm_x86_set_pointers();
-        vm_use_pae = false;
+        /** TODO: enable PAE once implemented */
     }
     
     /* create initial address space */
@@ -85,7 +69,7 @@ void vm_boot_init(void) {
       
        note: We skip the first page (i.e. actually allocate the region PAGE_SIZE..KLIMIT)
              for two reasons:
-                - We want null pointer deferences to generate a page fault instead of
+                - We want null pointer dereferences to generate a page fault instead of
                   being more or less silently ignored (read) or overwriting something
                   potentially important (write).
                 - We want to ensure nothing interesting (e.g. address space
@@ -118,7 +102,7 @@ void vm_map(addr_space_t *addr_space, addr_t vaddr, pfaddr_t paddr, int flags) {
     assert( page_offset_of(vaddr) == 0 );
     
     if(vaddr < KLIMIT) {
-        /* fast path for global allocations by the kernel:
+        /* Fast path for global allocations by the kernel:
          *  - The page tables for the region below KLIMIT are
          *    pre-allocated during the creation of the address space, so
          *    no need to check and allocate them;
