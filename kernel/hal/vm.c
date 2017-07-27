@@ -101,7 +101,7 @@ void vm_map(addr_space_t *addr_space, addr_t vaddr, pfaddr_t paddr, int flags) {
     /** ASSERTION: we assume vaddr is aligned on a page boundary */
     assert( page_offset_of(vaddr) == 0 );
     
-    if(vaddr < KLIMIT) {
+    if(is_fast_map_pointer(vaddr)) {
         /* Fast path for global allocations by the kernel:
          *  - The page tables for the region below KLIMIT are
          *    pre-allocated during the creation of the address space, so
@@ -170,7 +170,7 @@ void vm_unmap(addr_space_t *addr_space, addr_t addr) {
     /** ASSERTION: we assume addr is aligned on a page boundary */
     assert( page_offset_of(addr) == 0 );
     
-    if(addr < KLIMIT) {
+    if(is_fast_map_pointer(addr)) {
         /* fast path for global allocations by the kernel (see vm_map())
          *
          * Performance optimization: vm_unmap is a no-op for kernel mappings
@@ -225,7 +225,7 @@ pfaddr_t vm_lookup_pfaddr(addr_space_t *addr_space, addr_t addr) {
     pte_t *page_directory;
     pfaddr_t pfaddr;
     
-    if(addr < KLIMIT) {
+    if(is_fast_map_pointer(addr)) {
         /* fast path for global allocations by the kernel (see vm_map()) */
         
         pte = get_pte_with_offset(global_page_tables, page_number_of(addr));
@@ -275,7 +275,7 @@ void vm_change_flags(addr_space_t *addr_space, addr_t addr, int flags) {
     /** ASSERTION: we assume addr is aligned on a page boundary */
     assert( page_offset_of(addr) == 0 );
     
-    if(addr < KLIMIT) {
+    if(is_fast_map_pointer(addr)) {
         /* fast path for global allocations by the kernel (see vm_map()) */
         
         pte = get_pte_with_offset(global_page_tables, page_number_of(addr));
@@ -324,7 +324,7 @@ void vm_map_early(addr_t vaddr, addr_t paddr, int flags) {
     pte_t *pte;
     
     /** ASSERTION: we are mapping in the 0..KLIMIT region */
-    assert(vaddr < KLIMIT);
+    assert( is_fast_map_pointer(vaddr) );
     
     /** ASSERTION: we assume vaddr is aligned on a page boundary */
     assert( page_offset_of(vaddr) == 0 );
@@ -354,7 +354,7 @@ addr_space_t *vm_create_addr_space(addr_space_t *addr_space) {
     
     /* the page tables for the global allocations region (0..KLIMIT) are
      * the same in all address spaces, so copy them from the template */
-    for(idx = 0; idx < page_directory_offset_of(KLIMIT); idx++) {
+    for(idx = 0; idx < page_directory_offset_of((addr_t)KLIMIT); idx++) {
         copy_pte(
             get_pte_with_offset(page_directory, idx),
             get_pte_with_offset(template, idx)
@@ -386,7 +386,7 @@ addr_space_t *vm_create_initial_addr_space(void) {
     page_directory = (pte_t *)pfalloc_early();
         
     /* allocate page tables for kernel data/code region (0..KLIMIT) */
-    for(idx = 0; idx < page_directory_offset_of(KLIMIT); ++idx) {
+    for(idx = 0; idx < page_directory_offset_of((addr_t)KLIMIT); ++idx) {
         /* allocate the page table
          * 
          * Note that the use of pfalloc_early() here guarantees that the
@@ -440,7 +440,7 @@ void vm_destroy_addr_space(addr_space_t *addr_space) {
     page_directory = (pte_t *)vm_alloc(global_page_allocator);
     vm_map_global((addr_t)page_directory, addr_space->top_level.pd, VM_FLAGS_PAGE_TABLE);
     
-    for(idx = page_directory_offset_of(KLIMIT); idx < page_table_entries; ++idx) {
+    for(idx = page_directory_offset_of((addr_t)KLIMIT); idx < page_table_entries; ++idx) {
         pte = get_pte_with_offset(page_directory, idx);
         
         if( get_pte_flags(pte) & VM_FLAG_PRESENT ) {

@@ -1,6 +1,9 @@
 #ifndef _JINUE_ASM_VM_H
 #define _JINUE_ASM_VM_H
 
+#include <jinue-common/asm/types.h>
+
+
 /** number of bits in virtual address for offset inside page */
 #define PAGE_SHIFT 12
 
@@ -16,15 +19,15 @@
    Kernel image must be completely inside this region. This region has the same
    mapping in the address space of all processes. Size must be a multiple of the
    size described by a single page directory entry. */
-#define KLIMIT ((addr_t)(128 * MB)) /* 128MB */
+#define KLIMIT              (128 * MB) /* 128MB */
 
 /** stack base address (stack top) */
-#define STACK_BASE      (0 - PAGE_SIZE)
+#define STACK_BASE          (0 - PAGE_SIZE)
 
 /** initial stack size */
-#define STACK_SIZE      (8 * PAGE_SIZE)
+#define STACK_SIZE          (8 * PAGE_SIZE)
 
 /** initial stack lower address */
-#define STACK_START     (STACK_BASE - STACK_SIZE)
+#define STACK_START         (STACK_BASE - STACK_SIZE)
 
 #endif

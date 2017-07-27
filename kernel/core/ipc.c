@@ -123,12 +123,7 @@ void ipc_send(jinue_syscall_args_t *args) {
 
     char *user_ptr = (char *)args->arg2;
     
-    if((uintptr_t)user_ptr < (uintptr_t)KLIMIT) {
-        syscall_args_set_error(args, JINUE_EINVAL);
-        return;
-    }
-    
-    if((uintptr_t)0 - (uintptr_t)user_ptr < message_info->buffer_size) {
+    if(! user_buffer_check(user_ptr, message_info->buffer_size)) {
         syscall_args_set_error(args, JINUE_EINVAL);
         return;
     }
@@ -216,12 +211,7 @@ void ipc_receive(jinue_syscall_args_t *args) {
     char *user_ptr = (char *)args->arg2;
     size_t buffer_size = jinue_args_get_buffer_size(args);
     
-    if((uintptr_t)user_ptr < (uintptr_t)KLIMIT) {
-        syscall_args_set_error(args, JINUE_EINVAL);
-        return;
-    }
-    
-    if((uintptr_t)0 - (uintptr_t)user_ptr < buffer_size) {
+    if(! user_buffer_check(user_ptr, buffer_size)) {
         syscall_args_set_error(args, JINUE_EINVAL);
         return;
     }
@@ -324,12 +314,7 @@ void ipc_reply(jinue_syscall_args_t *args) {
 
     const char *user_ptr = (const char *)args->arg2;
 
-    if((uintptr_t)user_ptr < (uintptr_t)KLIMIT) {
-        syscall_args_set_error(args, JINUE_EINVAL);
-        return;
-    }
-
-    if((uintptr_t)0 - (uintptr_t)user_ptr < buffer_size) {
+    if(! user_buffer_check(user_ptr, buffer_size)) {
         syscall_args_set_error(args, JINUE_EINVAL);
         return;
     }
