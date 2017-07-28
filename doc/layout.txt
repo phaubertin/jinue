@@ -25,7 +25,10 @@ Once it is loaded in memory by the boot loader and all the setup, startup and
 initialization code has run, the layout in memory is as shown below. boot_info
 is a data structure located at the beginning of the 32-bit setup code.
 
-  +---------------------------------------+ kernel_region_top
+  +---------------------------------------+ kernel_region_top + VGA_TEXT_VID_SIZE
+  |          VGA text video buffer        |
+  |             (maps 0xb8000)            |
+  +=======================================+ kernel_region_top
   |                                       |
   |        initial page allocations       |
   |      (1:1 virtual memory mapping)     |
