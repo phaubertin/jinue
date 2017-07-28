@@ -1,6 +1,26 @@
+# Each Makefile is expected to:
+#
+#    1) Set the jinue_root variable to the path of the directory that contains
+#       that Makefile relative to the top directory of the project (i.e. the one
+#       that contains this file).
+#
+#   2) Include this file at the top of the Makefile.
+#
+#   3) Have the following statement at the point in the Makefile where the first
+#      make target (i.e. all) should be included:
+#           include $(common)
+#
+# This file defines default flags used when calling the various build tools as
+# well as other useful variables. Any variable defined in this file can be
+# overwritten or added to by each individual Makefile if needed.
+#
+# The $(common) variable is defined in this file and refers to common.mk, which
+# is a Make include file that contains definitions for the generic targets
+# (all, clean), implicit rules, as well as other useful definitions.
+
 # relative path to the root of the project
 #
-# Makefiles that include this file should define this.
+# Makefiles that include this file must define this.
 jinue_root 			?= .
 
 # project directory structure
