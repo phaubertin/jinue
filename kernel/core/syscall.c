@@ -1,9 +1,9 @@
-#include <jinue-common/console.h>
 #include <jinue-common/errno.h>
 #include <jinue-common/pfalloc.h>
 #include <hal/bootmem.h>
 #include <hal/cpu_data.h>
 #include <hal/thread.h>
+#include <console.h>
 #include <ipc.h>
 #include <object.h>
 #include <printk.h>

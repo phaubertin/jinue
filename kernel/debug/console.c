@@ -1,5 +1,5 @@
-#include <jinue-common/console.h>
 #include <hal/vga.h>
+#include <console.h>
 #include <stddef.h>
 
 
