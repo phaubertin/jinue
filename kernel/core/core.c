@@ -38,7 +38,7 @@ void kmain(void) {
     /* initialize console and say hello */
     console_init();
     
-    printk("Kernel build " GIT_REVISION " " BUILD_TIME "\n");
+    printk("Kernel revision " GIT_REVISION " built " BUILD_TIME " on " BUILD_HOST "\n");
     
     /* initialize hardware abstraction layer */
     hal_init();
