@@ -69,15 +69,11 @@ void hal_init(void) {
     printk("Kernel started.\n");
     printk("Kernel size is %u bytes.\n", boot_info->kernel_size);
     
-    /* This must be done before calling bootmem_init() */
+    /* This must be done before any boot heap allocation. */
     boot_heap = boot_info->boot_heap;
 
-    /* This must be done before calling bootmem_init() or any call to
-     * pfalloc_early(). */
+    /* This must be done before any call to pfalloc_early(). */
     kernel_region_top = boot_info->boot_end;
-
-    /* create system memory map */
-    bootmem_init();
     
     /* get cpu info */
     cpu_detect_features();

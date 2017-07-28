@@ -1,4 +1,5 @@
 #include <hal/boot.h>
+#include <hal/bootmem.h>
 #include <hal/cpu.h>
 #include <hal/cpu_data.h>
 #include <hal/kernel.h>
@@ -48,6 +49,13 @@ void vm_boot_init(void) {
     
     /** below this point, it is no longer safe to call pfalloc_early() */
     use_pfalloc_early = false;
+    
+    /* create system physical memory (RAM) map
+     * 
+     * Among other things, this function marks the memory used by the kernel
+     * (i.e. kernel_start..kernel_region_top) as in use. This must be done after
+     * all early page frame allocations with fpalloc_early() have been done. */
+    bootmem_init();
     
     /* perform 1:1 mapping of kernel image and data
     
