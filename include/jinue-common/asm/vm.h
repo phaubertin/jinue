@@ -5,10 +5,10 @@
 
 
 /** number of bits in virtual address for offset inside page */
-#define PAGE_SHIFT 12
+#define PAGE_BITS           12
 
 /** size of page */
-#define PAGE_SIZE           (1<<PAGE_SHIFT) /* 4096 */
+#define PAGE_SIZE           (1<<PAGE_BITS) /* 4096 */
 
 /** bit mask for offset in page */
 #define PAGE_MASK           (PAGE_SIZE - 1)

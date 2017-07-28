@@ -7,7 +7,7 @@
 typedef uint32_t pfaddr_t;
 
 /** number of bits by which the page frame address is shifted to the right */
-#define PFADDR_SHIFT        PAGE_SHIFT
+#define PFADDR_SHIFT        PAGE_BITS
 
 /** an invalid page frame address used as null value */
 #define PFNULL              ((pfaddr_t)-1)

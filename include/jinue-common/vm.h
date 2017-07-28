@@ -11,7 +11,7 @@
 #define page_offset_of(x)   ((uintptr_t)(x) & PAGE_MASK)
 
 /** sequential page number of virtual (linear) address */
-#define page_number_of(x)   ((uintptr_t)(x) >> PAGE_SHIFT)
+#define page_number_of(x)   ((uintptr_t)(x) >> PAGE_BITS)
 
 /** Check whether a pointer points to kernel space */
 static inline bool is_kernel_pointer(const void *addr) {
