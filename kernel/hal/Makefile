@@ -12,8 +12,7 @@ sources.c    = \
 	interrupt.c \
 	thread.c \
 	vga.c \
-	vm.c \
-	vm_x86.c \
+	vm.c
 
 hal.asm     = asm/kern-hal-asm.o
 target      = kern-hal.o
