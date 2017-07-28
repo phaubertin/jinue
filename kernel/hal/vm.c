@@ -42,11 +42,6 @@ void vm_boot_init(void) {
     /* create initial address space */
     addr_space = vm_create_initial_addr_space();
     
-    /* perform 1:1 mapping of text video memory */
-    for(addr = (addr_t)VGA_TEXT_VID_BASE; addr < (addr_t)VGA_TEXT_VID_TOP; addr += PAGE_SIZE) {
-        vm_map_early((addr_t)addr, (addr_t)addr, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
-    }
-    
     /** below this point, it is no longer safe to call pfalloc_early() */
     use_pfalloc_early = false;
     
@@ -65,6 +60,26 @@ void vm_boot_init(void) {
 
     for(addr = (addr_t)boot_info->image_start; addr < kernel_region_top; addr += PAGE_SIZE) {
         vm_map_early((addr_t)addr, (addr_t)addr, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
+    }
+    
+    /* map video memory
+     * 
+     * 
+     * We want do this now because it is our last chance to allocated a continuous
+     * region of virtual memory. Once the page allocator initialization have been
+     * done (see below in this function) and we start using vm_alloc() to allocate
+     * memory, pages can only be allocated one at a time. */
+    addr_t kernel_vm_top = kernel_region_top;
+    addr = (addr_t)VGA_TEXT_VID_BASE;
+    
+    printk("Remapping text video memory at 0x%x\n", kernel_vm_top);
+    
+    vga_set_base_addr(kernel_vm_top);
+    
+    while(addr < (addr_t)VGA_TEXT_VID_TOP) {
+        vm_map_early(kernel_vm_top, addr, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
+        kernel_vm_top   += PAGE_SIZE;
+        addr            += PAGE_SIZE;
     }
     
     /* switch to new address space */
@@ -89,9 +104,8 @@ void vm_boot_init(void) {
       This allocator manages the region from the start of the address space (exluding
       the first page) up to KLIMIT, with two holes: the VGA video buffer and the kernel. */
     global_page_allocator = &__global_page_allocator;
-    vm_alloc_init_piecewise(global_page_allocator, NULL, (addr_t)PAGE_SIZE,         (addr_t)VGA_TEXT_VID_BASE, (addr_t)KLIMIT);
-    vm_alloc_add_region(global_page_allocator,           (addr_t)VGA_TEXT_VID_TOP,  (addr_t)boot_info->image_start);
-    vm_alloc_add_region(global_page_allocator,           (addr_t)kernel_region_top, (addr_t)KLIMIT);
+    vm_alloc_init_piecewise(global_page_allocator, NULL, (addr_t)PAGE_SIZE,         (addr_t)boot_info->image_start, (addr_t)KLIMIT);
+    vm_alloc_add_region(global_page_allocator,           (addr_t)kernel_vm_top,     (addr_t)KLIMIT);
 }
 
 /** 

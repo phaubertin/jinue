@@ -5,9 +5,9 @@
 
 static unsigned int vga_text_color;
 
+static unsigned char *video_base_addr = (void *)VGA_TEXT_VID_BASE;
 
 static vga_pos_t vga_raw_putc(char c, vga_pos_t pos);
-
 
 void vga_init(void) {
     unsigned char data;
@@ -30,22 +30,25 @@ void vga_init(void) {
     vga_clear();
 }
 
+void vga_set_base_addr(void *base_addr) {
+    video_base_addr = base_addr;
+}
+
 void vga_clear(void) {
-    unsigned char *buffer = (unsigned char *)VGA_TEXT_VID_BASE;
     unsigned int idx = 0;
     
-    while( idx < (VGA_LINES * VGA_WIDTH * 2) )     {
-        buffer[idx++] = 0x20;
-        buffer[idx++] = VGA_COLOR_ERASE;
+    while( idx < (VGA_LINES * VGA_WIDTH * 2) ) {
+        video_base_addr[idx++] = 0x20;
+        video_base_addr[idx++] = VGA_COLOR_ERASE;
     }
 }
 
 void vga_scroll(void) {
-    unsigned char *di = (unsigned char *)VGA_TEXT_VID_BASE;
-    unsigned char *si = (unsigned char *)(VGA_TEXT_VID_BASE + 2 * VGA_WIDTH);
+    unsigned char *di = video_base_addr;
+    unsigned char *si = video_base_addr + 2 * VGA_WIDTH;
     unsigned int idx;
     
-    for(idx = 0; idx < 2 * VGA_WIDTH * (VGA_LINES - 1); ++idx) {    
+    for(idx = 0; idx < 2 * VGA_WIDTH * (VGA_LINES - 1); ++idx) {
         *(di++) = *(si++);
     }
     
@@ -119,7 +122,6 @@ void vga_putc(char c) {
 
 static vga_pos_t vga_raw_putc(char c, vga_pos_t pos) {
     const vga_pos_t limit = VGA_WIDTH * VGA_LINES;
-    char *buffer = (char *)VGA_TEXT_VID_BASE;
     
     switch(c) {
     /* backspace */
@@ -147,8 +149,8 @@ static vga_pos_t vga_raw_putc(char c, vga_pos_t pos) {
     
     default:
         if(c >= 0x20) {
-            buffer[2*pos]   = c;
-            buffer[2*pos+1] =  vga_text_color;
+            video_base_addr[2 * pos]     = (unsigned char)c;
+            video_base_addr[2 * pos + 1] = vga_text_color;
             ++pos;
         }
     }
