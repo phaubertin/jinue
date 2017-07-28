@@ -51,9 +51,6 @@ void hal_init(void) {
     /* we are in the kernel */
     in_kernel = 1;
     
-    /* initialize VGA and say hello */
-    vga_init();
-    
     /* We want this call and the assertions below after vga_init() so that if
      * any of them fail, we have a useful error message on screen. */
     (void)boot_info_check(true);
@@ -66,7 +63,6 @@ void hal_init(void) {
     /** ASSERTION: we assume the kernel starts on a page boundary */
     assert(page_offset_of(boot_info->kernel_start) == 0);
 
-    printk("Kernel started.\n");
     printk("Kernel size is %u bytes.\n", boot_info->kernel_size);
     
     /* This must be done before any boot heap allocation. */

@@ -3,6 +3,7 @@
 #include <hal/hal.h>
 #include <hal/vm.h>
 #include <core.h>
+#include <console.h>
 #include <elf.h>
 #include <ipc.h>
 #include <panic.h>
@@ -34,10 +35,13 @@ static Elf32_Ehdr *find_process_manager(void) {
 void kmain(void) {
     elf_info_t elf_info;
     
-    /* initialize hardware abstraction layer */
-    hal_init();
+    /* initialize console and say hello */
+    console_init();
     
     printk("Kernel build " GIT_REVISION " " BUILD_TIME "\n");
+    
+    /* initialize hardware abstraction layer */
+    hal_init();
 
     /* initialize caches */
     ipc_boot_init();

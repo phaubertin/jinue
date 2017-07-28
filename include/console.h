@@ -7,4 +7,6 @@
 
 #define CONSOLE_SERIAL_BAUD_RATE    115200
 
+void console_init(void);
+
 #endif

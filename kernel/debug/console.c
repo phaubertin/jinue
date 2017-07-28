@@ -3,6 +3,10 @@
 #include <stddef.h>
 
 
+void console_init(void) {
+    vga_init();
+}
+
 void console_printn(const char *message, unsigned int n) {
     vga_printn(message, n);
 }
