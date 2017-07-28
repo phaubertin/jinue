@@ -1,3 +1,6 @@
+#include <jinue-common/asm/vm.h>
+#include <hal/asm/boot.h>
+
 OUTPUT_FORMAT("binary")
 
 TARGET("binary")
@@ -9,19 +12,18 @@ INPUT("boot/setup32.o")
 
 
 SECTIONS {
-    setup32 0x100000 : {
+    setup32 BOOT_SETUP32_ADDR : {
         boot/setup32.o
-        
-        . = ALIGN(4096);
     }
     
+    . = BOOT_SETUP32_ADDR + BOOT_SETUP32_SIZE;
     kernel_start = .;
     
     kernel : {
         kernel/kernel-stripped
         kernel_end = ABSOLUTE(.);
         
-        . = ALIGN(4096);
+        . = ALIGN(PAGE_SIZE);
     }
     
     proc_start = .;
@@ -30,7 +32,7 @@ SECTIONS {
         proc/proc-stripped
         proc_end = ABSOLUTE(.);
         
-        . = ALIGN(4096);
+        . = ALIGN(PAGE_SIZE);
     }
     
     kernel_top = .;

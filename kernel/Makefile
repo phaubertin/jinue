@@ -3,7 +3,9 @@ include $(jinue_root)/header.mk
 
 subdirs			 = core debug hal kstdc mem
 
-LDFLAGS         += -T $(scripts)/kernel.lds
+kernel_ldscript	 = $(scripts)/kernel.ld
+
+LDFLAGS         += -T $(kernel_ldscript)
 
 kernel.core   	 = core/kern-core.o
 kernel.debug  	 = debug/kern-debug.o
@@ -24,7 +26,13 @@ objects.kernel	 = \
 
 include $(common)
 
-kernel: $(objects.kernel) $(scripts)/kernel.lds
+.PHONY: scripts
+scripts:
+	make -C $(scripts)
+
+$(kernel_ldscript): scripts
+
+kernel: $(objects.kernel) $(kernel_ldscript)
 	$(LINK.o) $(objects.kernel) $(LOADLIBES) $(LDLIBS) -o $@
 
 $(target): kernel

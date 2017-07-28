@@ -10,6 +10,9 @@
 # pre-processed NASM assembly language files
 *.nasm
 
+# pre-processed linker scripts
+*.ld
+
 # auto-generated header files
 *.gen.h
 

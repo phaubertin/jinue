@@ -1,10 +1,12 @@
+#include <jinue-common/asm/vm.h>
+#include <hal/asm/boot.h>
+
 OUTPUT_FORMAT("elf32-i386", "elf32-i386", "elf32-i386")
 OUTPUT_ARCH(i386)
 ENTRY(_start)
 
 SECTIONS {
-    /* TODO process this file with C preprocessor and use constant names below */
-    . = 0x100000 + 0x1000 + SIZEOF_HEADERS;
+    . = BOOT_SETUP32_ADDR + BOOT_SETUP32_SIZE + SIZEOF_HEADERS;
     .text : {
         *(.text)
         *(.text.*)
@@ -21,8 +23,8 @@ SECTIONS {
          * 
          * For this to work, we must ensure that the end of the text section and
          * the start of the data section are on different pages. */
-        . = ALIGN(4096);
-    }    
+        . = ALIGN(PAGE_SIZE);
+    }
     
     .data : {
         *(.data)

@@ -1,6 +1,6 @@
 include header.mk
 
-subdirs              = boot doc kernel proc $(libjinue)
+subdirs              = boot doc kernel proc $(libjinue) $(scripts)
 
 kernel               = kernel/kernel
 kernel_bin           = bin/kernel-bin
@@ -9,6 +9,9 @@ setup16              = boot/setup.bin
 setup32				 = boot/setup32.o
 kernel_img           = bin/jinue
 jinue_iso            = bin/jinue.iso
+
+kernel_bin_ldscript	 = $(scripts)/kernel-bin.ld
+image_ldscript	 	 = $(scripts)/image.ld
 
 temp_iso_fs          = bin/iso-tmp
 grub_config          = boot/grub.cfg
@@ -37,21 +40,27 @@ doc:
 
 .PHONY: clean-doc
 clean-doc:
-	make -C doc clean	
+	make -C doc clean
 
 # ----- kernel image
+.PHONY: scripts
+scripts:
+	make -C $(scripts)
+
 .PHONY: kernel
 kernel:
 	make -C kernel
 
+$(kernel_bin_ldscript) $(image_ldscript): scripts
+
 $(kernel): kernel
 	true
 
-$(kernel_bin): $(setup32) $(kernel) proc $(scripts)/kernel-bin.lds
-	$(LINK.o) -Wl,-T,$(scripts)/kernel-bin.lds $(LOADLIBES) $(LDLIBS) -o $@
+$(kernel_bin): $(setup32) $(kernel) proc $(kernel_bin_ldscript)
+	$(LINK.o) -Wl,-T,$(kernel_bin_ldscript) $(LOADLIBES) $(LDLIBS) -o $@
 
-$(kernel_img): $(kernel_bin) $(setup_boot) $(setup16) $(scripts)/image.lds
-	$(LINK.o) -Wl,-T,$(scripts)/image.lds $(LOADLIBES) $(LDLIBS) -o $@
+$(kernel_img): $(kernel_bin) $(setup_boot) $(setup16) $(image_ldscript)
+	$(LINK.o) -Wl,-T,$(image_ldscript) $(LOADLIBES) $(LDLIBS) -o $@
 
 # ----- process manager
 .PHONY: proc
