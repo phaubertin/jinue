@@ -31,7 +31,6 @@ vm_alloc_t *global_page_allocator;
 void vm_boot_init(void) {
     addr_t           addr;
     addr_space_t    *addr_space;
-    uint32_t         temp;
     
     if(cpu_has_feature(CPU_FEATURE_PAE)) {
         printk("Processor supports Physical Address Extension (PAE).\n");
@@ -84,11 +83,6 @@ void vm_boot_init(void) {
     
     /* switch to new address space */
     vm_switch_addr_space(addr_space);
-    
-    /* enable paging */
-    temp = get_cr0();
-    temp |= X86_FLAG_PG;
-    set_cr0(temp);
     
     /* initialize global page allocator (region 0..KLIMIT)
       
@@ -438,8 +432,8 @@ void vm_switch_addr_space(addr_space_t *addr_space) {
 /* Above this point, functions can pass around pointers to page table entries
  * (pte_t) but must never dereference them. This is because, depending on
  * whether Physical Address Extension (PAE) is enabled or not, these pointers
- * can either refer to objects that match either the struct definition just
- * below (32-bit entries) or the PAE definition (64-bit entries).
+ * can refer to objects that match either the struct definition just below
+ * (32-bit entries) or the PAE definition (64-bit entries).
  * 
  * This structure is declared late in the file on purpose to help detect
  * inappropriate pointer dereferences. */

@@ -1,4 +1,6 @@
 #include <hal/asm/boot.h>
+#include <hal/asm/vm.h>
+#include <hal/asm/x86.h>
 
     bits 32
     
@@ -33,6 +35,9 @@ header_end:
     jmp start
 
 start:
+    ; we are going up
+    cld
+    
     ; On entry, esi points to the real mode code start/zero-page address
     
     ; Copy signature so it can be checked by the kernel
@@ -77,14 +82,55 @@ start:
     shl eax, 2          ; size of heap * 4
     add eax, [_image_top]
     
-    ; align address on a page boundary
-    add eax, PAGE_SIZE - 1
-    and eax, ~PAGE_MASK
-    
     ; setup stack and use it
-    add eax, BOOT_STACK_SIZE
-    mov esp, eax
+    add eax, BOOT_STACK_SIZE            ; add stack size
+    add eax, PAGE_SIZE - 1              ; align address...
+    and eax, ~PAGE_MASK                 ; ... on a page boundary
+    mov esp, eax                        ; set stack pointer
+    
+    ; allocate initial page table and page directory
+    mov dword [page_table], eax
+    add eax, PAGE_SIZE
+    mov dword [page_directory], eax
+    add eax, PAGE_SIZE
     mov dword [_boot_end], eax
+    
+    ; initialize initial page table for a 1:1 mapping of the first 4MB
+    mov eax, 0 | VM_FLAG_READ_WRITE | VM_FLAG_PRESENT   ; start address is 0, flags
+    mov edi, dword [page_table]                         ; write address
+    mov ecx, (PAGE_SIZE / 4)                            ; number of entries
+
+init_page_table:
+    ; store eax in current page table entry pointed to by edi, then add 4 to edi
+    ; to point to the next entry
+    stosd
+    
+    ; update physical address
+    add eax, PAGE_SIZE
+    
+    ; decrement ecx, we are done when it reaches 0, otherwise loop
+    loop init_page_table
+
+    ; clear initial page directory
+    mov edi, dword [page_directory]     ; write address
+    xor eax, eax                        ; write value: 0
+    mov cx, PAGE_SIZE                   ; write PAGE_SIZE bytes
+    
+    rep stosb
+    
+    ; add entry for the page table that maps the first 4MB
+    mov edi, dword [page_directory]
+    mov eax, dword [page_table]
+    or eax, VM_FLAG_READ_WRITE | VM_FLAG_PRESENT
+    mov dword [edi], eax
+    
+    ; set page directory address in CR3
+    mov cr3, edi
+    
+    ; enable paging
+    mov eax, cr0
+    or eax, X86_CR0_PG
+    mov cr0, eax
     
     xor eax, eax
     push eax
@@ -100,3 +146,6 @@ start:
     
     ; jump to kernel entry point
     jmp eax
+
+page_table:     dd 0
+page_directory: dd 0

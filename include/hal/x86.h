@@ -1,10 +1,9 @@
 #ifndef JINUE_HAL_X86_H
 #define JINUE_HAL_X86_H
 
+#include <hal/asm/x86.h>
+
 #include <hal/types.h>
-
-
-#define X86_FLAG_PG (1<<31)
 
 typedef struct {
     uint32_t eax;
