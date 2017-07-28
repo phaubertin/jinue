@@ -11,7 +11,9 @@
 #include <pfalloc.h>
 #include <printk.h>
 #include <slab.h>
+#include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 #include <vm_alloc.h>
 
 
@@ -85,23 +87,34 @@ void vm_boot_init(void) {
 }
 
 /** 
-    Map a page frame (physical page) to a virtual memory page.
-    @param addr_space address space in which to map, can be NULL for global mappings (vaddr < KLIMIT)
-    @param vaddr virtual address of mapping
-    @param paddr address of page frame
-    @param flags flags used for mapping (see VM_FLAG_x constants in vm.h)
+    Given a page table entry, unmap the page table to which it belongs and return
+    the (virtual) page where it was mapped to the allocator.
+    @param pte pointer to page table entry
 */
-void vm_map(addr_space_t *addr_space, addr_t vaddr, pfaddr_t paddr, int flags) {
-    pte_t *pte, *pde;
-    pte_t *page_table;
-    pte_t *page_directory;
-    pfaddr_t pf_page_table;
-    unsigned int idx;
+static void vm_unmap_free_page_table(pte_t *pte) {
+    void *page_table = (void *)((uintptr_t)pte & ~PAGE_MASK);
+    vm_unmap_global(page_table);
+    vm_free(global_page_allocator, page_table);
+}
+
+/** 
+    Lookup a page table entry for a specified address and address space.
     
+    If the create_as_needed argument is true, new page tables are allocated as
+    needed. Otherwise, NULL is returned if there is currently no page table for
+    the specified address and address space.
+    
+    If a non-NULL value is returned, it is the caller's responsibility to call
+    vm_unmap_free_page_table() when they are done with it.
+    @param addr_space address space in which the address is looked up.
+    @param addr address to look up
+    @param create_as_need Whether a page table is allocated if it does not exist
+*/
+static pte_t *vm_lookup_page_table_entry(addr_space_t *addr_space, void *addr, bool create_as_needed) {
     /** ASSERTION: we assume vaddr is aligned on a page boundary */
-    assert( page_offset_of(vaddr) == 0 );
+    assert( page_offset_of(addr) == 0 );
     
-    if(is_fast_map_pointer(vaddr)) {
+    if(is_fast_map_pointer(addr)) {
         /* Fast path for global allocations by the kernel:
          *  - The page tables for the region below KLIMIT are
          *    pre-allocated during the creation of the address space, so
@@ -112,10 +125,14 @@ void vm_map(addr_space_t *addr_space, addr_t vaddr, pfaddr_t paddr, int flags) {
          *  - The mappings for this region are global, so we don't care
          *    about the specified address space.  */
         
-        pte = get_pte_with_offset(global_page_tables, page_number_of(vaddr));
-        set_pte(pte, paddr, flags | VM_FLAG_PRESENT);
+        return get_pte_with_offset(global_page_tables, page_number_of(addr));
     }
     else {
+        pte_t *page_table;
+        pte_t *page_directory;
+        pte_t *pte;
+        pte_t *pde;
+    
         /** ASSERTION: addr_space cannot be NULL for non-global mappings */
         assert(addr_space != NULL);
         
@@ -124,33 +141,67 @@ void vm_map(addr_space_t *addr_space, addr_t vaddr, pfaddr_t paddr, int flags) {
         vm_map_global((addr_t)page_directory, addr_space->top_level.pd, VM_FLAGS_PAGE_TABLE);
         
         /* lookup page directory entry */
-        pde = get_pte_with_offset(page_directory, page_directory_offset_of(vaddr));
-        
-        /* map page table, allocate as needed */
-        page_table = (pte_t *)vm_alloc(global_page_allocator);
-        
+        pde = get_pte_with_offset(page_directory, page_directory_offset_of(addr));
+
         if( get_pte_flags(pde) & VM_FLAG_PRESENT ) {
+            /* map page table */
+            page_table = (pte_t *)vm_alloc(global_page_allocator);
+            
             vm_map_global((addr_t)page_table, get_pte_pfaddr(pde), VM_FLAGS_PAGE_TABLE);
+            
+            /* get page table entry */
+            pte = get_pte_with_offset(page_table, page_table_offset_of(addr));
         }
         else {
-            pf_page_table = pfalloc();
+            if(create_as_needed) {
+                pfaddr_t pf_page_table;
+                
+                /* allocate a new page table and map it */
+                page_table      = (pte_t *)vm_alloc(global_page_allocator);
+                pf_page_table   = pfalloc();
             
-            vm_map_global((addr_t)page_table, pf_page_table, VM_FLAGS_PAGE_TABLE);
-            
-            /* zero content of page table */
-            for(idx = 0; idx < page_table_entries; ++idx) {
-                clear_pte( get_pte_with_offset(page_table, idx) );
+                vm_map_global((addr_t)page_table, pf_page_table, VM_FLAGS_PAGE_TABLE);
+                
+                /* zero content of page table */
+                memset(page_table, 0, PAGE_SIZE);
+                
+                /* link page table in page directory */
+                set_pte(pde, pf_page_table, VM_FLAG_USER | VM_FLAG_READ_WRITE | VM_FLAG_PRESENT);
+                
+                /* get page table entry */
+                pte = get_pte_with_offset(page_table, page_table_offset_of(addr));
             }
-            
-            /* link page table in page directory */
-            set_pte(pde, pf_page_table, VM_FLAG_USER | VM_FLAG_READ_WRITE | VM_FLAG_PRESENT);
+            else {
+                /* address has no mapping, return NULL */
+                pte = NULL;
+            }
         }
         
-        pte = get_pte_with_offset(page_table, page_table_offset_of(vaddr));
-        set_pte(pte, paddr, flags | VM_FLAG_PRESENT);
-        
+        /* unmap page directory and free the (virtual) page allocated to it */
         vm_unmap_global((addr_t)page_directory);
-        vm_unmap_global((addr_t)page_table);
+        vm_free(global_page_allocator, (addr_t)page_directory);
+        
+        return pte;
+    }
+}
+
+/** 
+    Map a page frame (physical page) to a virtual memory page.
+    @param addr_space address space in which to map, can be NULL for global mappings (vaddr < KLIMIT)
+    @param vaddr virtual address of mapping
+    @param paddr address of page frame
+    @param flags flags used for mapping (see VM_FLAG_x constants in vm.h)
+*/
+void vm_map(addr_space_t *addr_space, addr_t vaddr, pfaddr_t paddr, int flags) {
+    /** ASSERTION: we assume vaddr is aligned on a page boundary */
+    assert( page_offset_of(vaddr) == 0 );
+    
+    pte_t *pte = vm_lookup_page_table_entry(addr_space, vaddr, true);
+    
+    set_pte(pte, paddr, flags | VM_FLAG_PRESENT);
+    
+    if(! is_fast_map_pointer(vaddr)) {
+        vm_unmap_free_page_table(pte);
     }
         
     /* invalidate TLB entry for newly mapped page */
@@ -163,157 +214,60 @@ void vm_map(addr_space_t *addr_space, addr_t vaddr, pfaddr_t paddr, int flags) {
     @param addr address of page to unmap
 */
 void vm_unmap(addr_space_t *addr_space, addr_t addr) {
-    pte_t *pte, *pde;
-    pte_t *page_table;
-    pte_t *page_directory;
-    
     /** ASSERTION: we assume addr is aligned on a page boundary */
     assert( page_offset_of(addr) == 0 );
     
-    if(is_fast_map_pointer(addr)) {
-        /* fast path for global allocations by the kernel (see vm_map())
-         *
-         * Performance optimization: vm_unmap is a no-op for kernel mappings
-         * when compiling non-debug.
-         * 
-         * When compiling in debug mode, we still do the Right Thing(TM) so
-         * that buggy code which accesses pages it shouldn't trigger a page
-         * fault, to help track such accesses. */
 #ifdef NDEBUG
+    /* Performance optimization: vm_unmap is a no-op for kernel mappings when
+     * compiling non-debug.
+     * 
+     * When compiling in debug mode, the unmap operation is actually performed
+     * to help detect use-after-unmap bugs. */
+    if(is_kernel_pointer(addr)) {
         return;
-#endif
-        
-        pte = get_pte_with_offset(global_page_tables, page_number_of(addr));
-        clear_pte(pte);
     }
-    else {
-        /** ASSERTION: addr_space cannot be NULL for non-global mappings */
-        assert(addr_space != NULL);
-        
-        /* map page directory temporarily */
-        page_directory = (pte_t *)vm_alloc(global_page_allocator);
-        vm_map_global((addr_t)page_directory, addr_space->top_level.pd, VM_FLAGS_PAGE_TABLE);
-        
-        /* lookup page directory entry */
-        pde = get_pte_with_offset(page_directory, page_directory_offset_of(addr));
-        
-        if( ! (get_pte_flags(pde) & VM_FLAG_PRESENT) ) {
-            /* nothing to do */
-            vm_unmap_global((addr_t)page_directory);
-            return;
+#endif
+
+    pte_t *pte = vm_lookup_page_table_entry(addr_space, addr, false);
+    
+    if(pte != NULL) {
+        clear_pte(pte);
+    
+        if(! is_fast_map_pointer(addr)) {
+            vm_unmap_free_page_table(pte);
         }
         
-        /* map page table */
-        page_table = (pte_t *)vm_alloc(global_page_allocator);
-        vm_map_global((addr_t)page_table, get_pte_pfaddr(pde), VM_FLAGS_PAGE_TABLE);
-                
-        /* clear page table entry */
-        pte = get_pte_with_offset(page_table, page_table_offset_of(addr));
-        clear_pte(pte);
-        
-        vm_unmap_global((addr_t)page_directory);
-        vm_unmap_global((addr_t)page_table);
+        /* invalidate TLB entry for newly mapped page */
+        invalidate_tlb(addr);
     }
-    
-    /* invalidate TLB entry for newly mapped page */
-    invalidate_tlb(addr);
 }
 
 pfaddr_t vm_lookup_pfaddr(addr_space_t *addr_space, addr_t addr) {
-    pte_t *pte, *pde;
-    pte_t *page_table;
-    pte_t *page_directory;
-    pfaddr_t pfaddr;
+    pte_t *pte = vm_lookup_page_table_entry(addr_space, addr, false);
     
-    if(is_fast_map_pointer(addr)) {
-        /* fast path for global allocations by the kernel (see vm_map()) */
-        
-        pte = get_pte_with_offset(global_page_tables, page_number_of(addr));
-        
-        /** ASSERTION: there is a page table entry marked present for this address */
-        assert( get_pte_flags(pte) & VM_FLAG_PRESENT );
-        
-        pfaddr = get_pte_pfaddr(pte);
-    }
-    else {
-        /** ASSERTION: addr_space cannot be NULL for non-global mappings */
-        assert(addr_space != NULL);
-        
-        /* map page directory temporarily */
-        page_directory = (pte_t *)vm_alloc(global_page_allocator);
-        vm_map_global((addr_t)page_directory, addr_space->top_level.pd, VM_FLAGS_PAGE_TABLE);
-        
-        /* lookup page directory entry */
-        pde = get_pte_with_offset(page_directory, page_directory_offset_of(addr));
-        
-        /** ASSERTION: there is a page directory entry marked present for this address */
-        assert( get_pte_flags(pde) & VM_FLAG_PRESENT );
-        
-        /* map page table */
-        page_table = (pte_t *)vm_alloc(global_page_allocator);
-        vm_map_global((addr_t)page_table, get_pte_pfaddr(pde), VM_FLAGS_PAGE_TABLE);
-        
-        pte = get_pte_with_offset(page_table, page_table_offset_of(addr));
-                
-        /** ASSERTION: there is a page table entry marked present for this address */
-        assert( get_pte_flags(pte) & VM_FLAG_PRESENT );
-        
-        pfaddr = get_pte_pfaddr(pte);
-        
-        vm_unmap_global((addr_t)page_directory);
-        vm_unmap_global((addr_t)page_table);
+    /** ASSERTION: there is a page table entry marked present for this address */
+    assert(pte != NULL && (get_pte_flags(pte) & VM_FLAG_PRESENT));
+    
+    pfaddr_t pfaddr = get_pte_pfaddr(pte);
+    
+    if(! is_fast_map_pointer(addr)) {
+        vm_unmap_free_page_table(pte);
     }
     
     return pfaddr;
 }
 
 void vm_change_flags(addr_space_t *addr_space, addr_t addr, int flags) {
-    pte_t *pte, *pde;
-    pte_t *page_table;
-    pte_t *page_directory;
+    pte_t *pte = vm_lookup_page_table_entry(addr_space, addr, false);
     
-    /** ASSERTION: we assume addr is aligned on a page boundary */
-    assert( page_offset_of(addr) == 0 );
+    /** ASSERTION: there is a page table entry marked present for this address */
+    assert(pte != NULL && (get_pte_flags(pte) & VM_FLAG_PRESENT));
     
-    if(is_fast_map_pointer(addr)) {
-        /* fast path for global allocations by the kernel (see vm_map()) */
-        
-        pte = get_pte_with_offset(global_page_tables, page_number_of(addr));
-        
-        /** ASSERTION: there is a page table entry marked present for this address */
-        assert( get_pte_flags(pte) & VM_FLAG_PRESENT );
-        
-        /* perform the flags change */
-        set_pte_flags(pte, flags | VM_FLAG_PRESENT);
-    }
-    else {
-        /** ASSERTION: addr_space cannot be NULL for non-global mappings */
-        assert(addr_space != NULL);
-        
-        /* map page directory temporarily */
-        page_directory = (pte_t *)vm_alloc(global_page_allocator);
-        vm_map_global((addr_t)page_directory, addr_space->top_level.pd, VM_FLAGS_PAGE_TABLE);
-        
-        /* lookup page directory entry */
-        pde = get_pte_with_offset(page_directory, page_directory_offset_of(addr));
-        
-        /** ASSERTION: there is a page directory entry marked present for this address */
-        assert( get_pte_flags(pde) & VM_FLAG_PRESENT );
-        
-        /* map page table */
-        page_table = (pte_t *)vm_alloc(global_page_allocator);
-        vm_map_global((addr_t)page_table, get_pte_pfaddr(pde), VM_FLAGS_PAGE_TABLE);
-        
-        pte = get_pte_with_offset(page_table, page_table_offset_of(addr));
-                
-        /** ASSERTION: there is a page table entry marked present for this address */
-        assert( get_pte_flags(pte) & VM_FLAG_PRESENT );
-        
-        /* perform the flags change */
-        set_pte_flags(pte, flags | VM_FLAG_PRESENT);
-        
-        vm_unmap_global((addr_t)page_directory);
-        vm_unmap_global((addr_t)page_table);
+    /* perform the flags change */
+    set_pte_flags(pte, flags | VM_FLAG_PRESENT);
+    
+    if(! is_fast_map_pointer(addr)) {
+        vm_unmap_free_page_table(pte);
     }
     
     /* invalidate TLB entry for the affected page */

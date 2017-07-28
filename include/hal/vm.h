@@ -70,12 +70,6 @@ void vm_destroy_addr_space(addr_space_t *addr_space);
 void vm_switch_addr_space(addr_space_t *addr_space);
 
 
-#define vm_map_current(vaddr, paddr, flags) \
-    vm_map(current_addr_space, vaddr, paddr, flags)
-
-#define vm_unmap_current(addr) \
-    vm_unmap(get_current_addr_space, addr)
-
 #define vm_map_global(vaddr, paddr, flags) \
     vm_map(NULL, vaddr, paddr, flags)
 
