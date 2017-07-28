@@ -44,13 +44,10 @@ start:
     shl eax, 4              ; times 16
     
     ; align to page boundary
-    mov ebx, eax
-    and ebx, 0xfff
-    jz set_image_top        ; already aligned
-    add eax, 0x1000         ; page size
-    and eax, ~0xfff
+    add eax, PAGE_SIZE - 1
+    and eax, ~PAGE_MASK
     
-set_image_top:
+    ; set pointer to top of kernel image
     add eax, BOOT_SETUP32_ADDR
     mov dword [_image_top], eax
 
@@ -81,14 +78,10 @@ set_image_top:
     add eax, [_image_top]
     
     ; align address on a page boundary
-    mov ebx, eax
-    and ebx, 0xfff
-    jz setup_stack      ; already aligned
-    add eax, 0x1000     ; page size
-    and eax, ~0xfff
+    add eax, PAGE_SIZE - 1
+    and eax, ~PAGE_MASK
     
     ; setup stack and use it
-setup_stack:
     add eax, BOOT_STACK_SIZE
     mov esp, eax
     mov dword [_boot_end], eax
