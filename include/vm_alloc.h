@@ -54,9 +54,6 @@ struct vm_alloc_t {
     
     /** list of partially free blocks */
     struct vm_block_t *partial_list;
-    
-    /** address space for this allocator */
-    addr_space_t *addr_space;
 };
 
 struct vm_block_t {
@@ -97,11 +94,11 @@ addr_t vm_alloc_low_latency(vm_alloc_t *allocator);
 
 void vm_free(vm_alloc_t *allocator, addr_t page);
 
-void vm_alloc_init(vm_alloc_t *allocator, addr_space_t *addr_space, addr_t start_addr, addr_t end_addr);
+void vm_alloc_init(vm_alloc_t *allocator, addr_t start_addr, addr_t end_addr);
 
 void vm_alloc_destroy(vm_alloc_t *allocator);
 
-void vm_alloc_init_allocator(vm_alloc_t *allocator, addr_space_t *addr_space, addr_t start_addr, addr_t end_addr);
+void vm_alloc_init_allocator(vm_alloc_t *allocator, addr_t start_addr, addr_t end_addr);
 
 void vm_alloc_add_region(vm_alloc_t *allocator, addr_t start_addr, addr_t end_addr);
 

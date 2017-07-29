@@ -6,7 +6,7 @@
 #include <hal/pfaddr.h>
 #include <hal/vga.h>
 #include <hal/vm.h>
-#include <hal/vm_macros.h>
+#include <hal/vm_private.h>
 #include <hal/x86.h>
 #include <assert.h>
 #include <pfalloc.h>
@@ -90,7 +90,7 @@ void vm_boot_init(void) {
      * up to the top of memory (i.e. 0x100000000, which cannot be represented on
      * 32 bits). In the mean time, we leave a 4MB gap. */
     global_page_allocator = &__global_page_allocator;
-    vm_alloc_init_allocator(global_page_allocator, NULL, (addr_t)KLIMIT, (addr_t)0 - 4 * MB);
+    vm_alloc_init_allocator(global_page_allocator, (addr_t)KLIMIT, (addr_t)0 - 4 * MB);
 
     vm_alloc_add_region(global_page_allocator, (addr_t)KLIMIT,          (addr_t)boot_info->image_start);
     vm_alloc_add_region(global_page_allocator, (addr_t)kernel_vm_top,   (addr_t)0 - 4 * MB);
@@ -103,7 +103,7 @@ void vm_boot_init(void) {
 */
 static void vm_unmap_free_page_table(pte_t *pte) {
     void *page_table = (void *)((uintptr_t)pte & ~PAGE_MASK);
-    vm_unmap_global(page_table);
+    vm_unmap_kernel(page_table);
     vm_free(global_page_allocator, page_table);
 }
 
@@ -148,7 +148,7 @@ static pte_t *vm_lookup_page_table_entry(addr_space_t *addr_space, void *addr, b
         
         /* map page directory temporarily */
         page_directory = (pte_t *)vm_alloc(global_page_allocator);
-        vm_map_global((addr_t)page_directory, addr_space->top_level.pd, VM_FLAGS_PAGE_TABLE);
+        vm_map_kernel((addr_t)page_directory, addr_space->top_level.pd, VM_FLAG_READ_WRITE);
         
         /* lookup page directory entry */
         pde = get_pte_with_offset(page_directory, page_directory_offset_of(addr));
@@ -157,7 +157,7 @@ static pte_t *vm_lookup_page_table_entry(addr_space_t *addr_space, void *addr, b
             /* map page table */
             page_table = (pte_t *)vm_alloc(global_page_allocator);
             
-            vm_map_global((addr_t)page_table, get_pte_pfaddr(pde), VM_FLAGS_PAGE_TABLE);
+            vm_map_kernel((addr_t)page_table, get_pte_pfaddr(pde), VM_FLAG_READ_WRITE);
             
             /* get page table entry */
             pte = get_pte_with_offset(page_table, page_table_offset_of(addr));
@@ -170,7 +170,7 @@ static pte_t *vm_lookup_page_table_entry(addr_space_t *addr_space, void *addr, b
                 page_table      = (pte_t *)vm_alloc(global_page_allocator);
                 pf_page_table   = pfalloc();
             
-                vm_map_global((addr_t)page_table, pf_page_table, VM_FLAGS_PAGE_TABLE);
+                vm_map_kernel((addr_t)page_table, pf_page_table, VM_FLAG_READ_WRITE);
                 
                 /* zero content of page table */
                 memset(page_table, 0, PAGE_SIZE);
@@ -188,7 +188,7 @@ static pte_t *vm_lookup_page_table_entry(addr_space_t *addr_space, void *addr, b
         }
         
         /* unmap page directory and free the (virtual) page allocated to it */
-        vm_unmap_global((addr_t)page_directory);
+        vm_unmap_kernel((addr_t)page_directory);
         vm_free(global_page_allocator, (addr_t)page_directory);
         
         return pte;
@@ -202,7 +202,7 @@ static pte_t *vm_lookup_page_table_entry(addr_space_t *addr_space, void *addr, b
     @param paddr address of page frame
     @param flags flags used for mapping (see VM_FLAG_x constants in vm.h)
 */
-void vm_map(addr_space_t *addr_space, addr_t vaddr, pfaddr_t paddr, int flags) {
+static void vm_map(addr_space_t *addr_space, addr_t vaddr, pfaddr_t paddr, int flags) {
     /** ASSERTION: we assume vaddr is aligned on a page boundary */
     assert( page_offset_of(vaddr) == 0 );
     
@@ -250,6 +250,22 @@ void vm_unmap(addr_space_t *addr_space, addr_t addr) {
         /* invalidate TLB entry for newly mapped page */
         invalidate_tlb(addr);
     }
+}
+
+void vm_map_kernel(addr_t vaddr, pfaddr_t paddr, int flags) {
+    vm_map(NULL, vaddr, paddr, flags | VM_FLAG_KERNEL);
+}
+
+void vm_map_user(addr_space_t *addr_space, addr_t vaddr, pfaddr_t paddr, int flags) {
+    vm_map(addr_space, vaddr, paddr, flags | VM_FLAG_USER);
+}
+
+void vm_unmap_kernel(addr_t addr) {
+    vm_unmap(NULL, addr);
+}
+
+void vm_unmap_user(addr_space_t *addr_space, addr_t addr) {
+    vm_unmap(addr_space, addr);
 }
 
 pfaddr_t vm_lookup_pfaddr(addr_space_t *addr_space, addr_t addr) {
@@ -306,12 +322,12 @@ addr_space_t *vm_create_addr_space(addr_space_t *addr_space) {
     /* allocate and map new page directory */
     page_directory = (pte_t *)vm_alloc(global_page_allocator);
     pfaddr = pfalloc();
-    vm_map_global((addr_t)page_directory, pfaddr, VM_FLAGS_PAGE_TABLE);
+    vm_map_kernel((addr_t)page_directory, pfaddr, VM_FLAG_READ_WRITE);
     
     /* use initial address space page directory as template for the
      * global allocations region (0..KLIMIT) */
     template = (pte_t *)vm_alloc(global_page_allocator);
-    vm_map_global((addr_t)template, initial_addr_space.top_level.pd, VM_FLAGS_PAGE_TABLE);
+    vm_map_kernel((addr_t)template, initial_addr_space.top_level.pd, VM_FLAG_READ_WRITE);
     
     /* clear user space page directory entries */
     unsigned int klimit_pde_index = page_directory_offset_of((addr_t)KLIMIT);
@@ -329,8 +345,8 @@ addr_space_t *vm_create_addr_space(addr_space_t *addr_space) {
         );
     }
     
-    vm_unmap_global((addr_t)page_directory);
-    vm_unmap_global((addr_t)template);
+    vm_unmap_kernel((addr_t)page_directory);
+    vm_unmap_kernel((addr_t)template);
     
     addr_space->top_level.pd = pfaddr;
     addr_space->cr3          = (uint32_t)PFADDR_TO_ADDR(pfaddr);
@@ -401,7 +417,7 @@ void vm_destroy_addr_space(addr_space_t *addr_space) {
     assert( addr_space != get_current_addr_space() );
     
     page_directory = (pte_t *)vm_alloc(global_page_allocator);
-    vm_map_global((addr_t)page_directory, addr_space->top_level.pd, VM_FLAGS_PAGE_TABLE);
+    vm_map_kernel((addr_t)page_directory, addr_space->top_level.pd, VM_FLAG_READ_WRITE);
     
     for(idx = page_directory_offset_of((addr_t)KLIMIT); idx < page_table_entries; ++idx) {
         pte = get_pte_with_offset(page_directory, idx);
@@ -411,7 +427,7 @@ void vm_destroy_addr_space(addr_space_t *addr_space) {
         }
     }
     
-    vm_unmap_global((addr_t)page_directory);
+    vm_unmap_kernel((addr_t)page_directory);
     pffree(addr_space->top_level.pd);
     slab_cache_free(addr_space);
 }

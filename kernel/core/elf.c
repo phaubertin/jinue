@@ -119,24 +119,13 @@ void elf_load(elf_info_t *info, Elf32_Ehdr *elf, addr_space_t *addr_space) {
         /* copy if we have to */
         if( (phdr[idx].p_flags & PF_W) || (phdr[idx].p_filesz != phdr[idx].p_memsz) ) {
             while(vptr < vend) {
-                /** TODO: add exec flag once PAE is enabled */
-                /* set flags */
-                flags = VM_FLAG_USER;
-                
-                if(phdr[idx].p_flags & PF_W) {
-                    flags |= VM_FLAG_READ_WRITE;
-                }
-                else  {
-                    flags |= VM_FLAG_READ_ONLY;
-                }
-                
                 /* start of this page and next page */
                 vpage = (addr_t)vptr;
                 vnext = vptr + PAGE_SIZE;
                 
                 /* allocate and map the new page */
                 page = pfalloc();
-                vm_map_global((addr_t)dest_page, page, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
+                vm_map_kernel((addr_t)dest_page, page, VM_FLAG_READ_WRITE);
                 
                 dest = dest_page;
                                 
@@ -157,20 +146,26 @@ void elf_load(elf_info_t *info, Elf32_Ehdr *elf, addr_space_t *addr_space) {
                     ++vptr;
                 }
                 
+                /* set flags */
+                /** TODO: add exec flag once PAE is enabled */
+                if(phdr[idx].p_flags & PF_W) {
+                    flags = VM_FLAG_READ_WRITE;
+                }
+                else  {
+                    flags = VM_FLAG_READ_ONLY;
+                }
+
                 /* undo temporary mapping and map page in proper address
                  * space */
-                vm_unmap_global((addr_t)dest_page);
-                vm_map(addr_space, (addr_t)vpage, page, flags);               
+                vm_unmap_kernel((addr_t)dest_page);
+                vm_map_user(addr_space, (addr_t)vpage, page, flags);
             }
         }
         else {            
             while(vptr < vend) {
-                /** TODO: add exec flag once PAE is enabled */
-                /* set flags */
-                flags = VM_FLAG_USER | VM_FLAG_READ_ONLY;
-            
                 /* perform mapping */
-                vm_map(addr_space, (addr_t)vptr, EARLY_PTR_TO_PFADDR(file_ptr), flags);
+                /** TODO: add exec flag once PAE is enabled */
+                vm_map_user(addr_space, (addr_t)vptr, EARLY_PTR_TO_PFADDR(file_ptr), VM_FLAG_READ_ONLY);
                 
                 vptr     += PAGE_SIZE;
                 file_ptr += PAGE_SIZE;
@@ -192,16 +187,16 @@ void elf_setup_stack(elf_info_t *info) {
     /** TODO: check for overlap of stack with loaded segments */
     
     /* initial stack allocation */
-    for(vpage = (addr_t)STACK_START; vpage < (addr_t)STACK_BASE; vpage += PAGE_SIZE) {        
+    for(vpage = (addr_t)STACK_START; vpage < (addr_t)STACK_BASE; vpage += PAGE_SIZE) {
         page  = pfalloc();
-        vm_map(info->addr_space, vpage, page, VM_FLAG_USER | VM_FLAG_READ_WRITE);
+        vm_map_user(info->addr_space, vpage, page, VM_FLAG_READ_WRITE);
     }
     
     /* At this point, page has the address of the stack's top-most page frame,
      * which is the one in which we are about to copy the auxiliary vectors. Map
      * it temporarily in this address space so we can write to it. */
     addr_t top_page = vm_alloc(global_page_allocator);
-    vm_map_global(top_page, page, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
+    vm_map_kernel(top_page, page, VM_FLAG_READ_WRITE);
 
     /* start at the top */
     uint32_t *sp = (uint32_t *)(top_page + PAGE_SIZE);
@@ -251,7 +246,7 @@ void elf_setup_stack(elf_info_t *info) {
     info->stack_addr = (addr_t)STACK_BASE - PAGE_SIZE + ((addr_t)sp - top_page);
 
     /* unmap and free temporary page */
-    vm_unmap_global(top_page);
+    vm_unmap_kernel(top_page);
     vm_free(global_page_allocator, top_page);
 }
 

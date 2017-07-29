@@ -21,33 +21,16 @@ extern pte_t *global_page_tables;
 
 extern addr_space_t initial_addr_space;
 
-extern size_t page_table_entries;
-
-/** page table entry offset of virtual (linear) address */
-extern unsigned int (*page_table_offset_of)(addr_t);
-
-extern unsigned int (*page_directory_offset_of)(addr_t);
-
-extern pte_t *(*get_pte_with_offset)(pte_t *, unsigned int);
-
-extern void (*set_pte)(pte_t *, pfaddr_t, int);
-
-extern void (*set_pte_flags)(pte_t *, int);
-
-extern int (*get_pte_flags)(pte_t *);
-
-extern pfaddr_t (*get_pte_pfaddr)(pte_t *);
-
-extern void (*clear_pte)(pte_t *);
-
-extern void (*copy_pte)(pte_t *, pte_t *);
-
 
 void vm_boot_init(void);
 
-void vm_map(addr_space_t *addr_space, addr_t vaddr, pfaddr_t paddr, int flags);
+void vm_map_kernel(addr_t vaddr, pfaddr_t paddr, int flags);
 
-void vm_unmap(addr_space_t *addr_space, addr_t addr);
+void vm_map_user(addr_space_t *addr_space, addr_t vaddr, pfaddr_t paddr, int flags);
+
+void vm_unmap_kernel(addr_t addr);
+
+void vm_unmap_user(addr_space_t *addr_space, addr_t addr);
 
 pfaddr_t vm_lookup_pfaddr(addr_space_t *addr_space, addr_t addr);
 
@@ -62,13 +45,6 @@ addr_space_t *vm_create_initial_addr_space(void);
 void vm_destroy_addr_space(addr_space_t *addr_space);
 
 void vm_switch_addr_space(addr_space_t *addr_space);
-
-
-#define vm_map_global(vaddr, paddr, flags) \
-    vm_map(NULL, vaddr, paddr, flags)
-
-#define vm_unmap_global(addr) \
-    vm_unmap(NULL, addr)
 
 #endif
 

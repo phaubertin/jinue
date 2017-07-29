@@ -1,6 +1,10 @@
 #ifndef _JINUE_KSTDC_STDINT_H
 #define _JINUE_KSTDC_STDINT_H
 
+#define INT64_C(x)              (x##LL)
+
+#define UINT64_C(x)             (x##ULL)
+
 typedef signed char             int8_t;
 
 typedef short int               int16_t;

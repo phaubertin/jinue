@@ -179,9 +179,9 @@ void vm_free(vm_alloc_t *allocator, addr_t page) {
     }
 }
 
-void vm_alloc_init(vm_alloc_t *allocator, addr_space_t *addr_space, addr_t start_addr, addr_t end_addr) {
-    vm_alloc_init_allocator( allocator, addr_space, start_addr, end_addr );
-    vm_alloc_add_region(     allocator,             start_addr, end_addr );
+void vm_alloc_init(vm_alloc_t *allocator, addr_t start_addr, addr_t end_addr) {
+    vm_alloc_init_allocator( allocator, start_addr, end_addr);
+    vm_alloc_add_region(     allocator, start_addr, end_addr);
 }
 
 void vm_alloc_destroy(vm_alloc_t *allocator) {
@@ -197,7 +197,7 @@ void vm_alloc_destroy(vm_alloc_t *allocator) {
     
     if(block != NULL) {
         do {
-            paddr = vm_lookup_pfaddr(allocator->addr_space, (addr_t)block->stack_addr);
+            paddr = vm_lookup_pfaddr(NULL, (addr_t)block->stack_addr);
             pffree(paddr);
             
             block = block->next;
@@ -207,7 +207,7 @@ void vm_alloc_destroy(vm_alloc_t *allocator) {
     /* de-allocate block array pages */
     addr = (addr_t)allocator->block_array;
     for(idx = 0; idx < allocator->array_pages; ++idx) {
-        paddr = vm_lookup_pfaddr(allocator->addr_space, addr);
+        paddr = vm_lookup_pfaddr(NULL, addr);
         pffree(paddr);
         
         addr += PAGE_SIZE;
@@ -220,7 +220,7 @@ void vm_alloc_destroy(vm_alloc_t *allocator) {
     @param start_addr start address of the region managed by the allocator
     @param size       size of the region managed by the allocator
 */
-void vm_alloc_init_allocator(vm_alloc_t *allocator, addr_space_t *addr_space, addr_t start_addr, addr_t end_addr) {
+void vm_alloc_init_allocator(vm_alloc_t *allocator, addr_t start_addr, addr_t end_addr) {
     addr_t        base_addr;        /* block-aligned start address */
     addr_t        aligned_end;        /* block-aligned end address */
     addr_t        adjusted_start;    /* actual start of available memory, block array skipped */
@@ -272,16 +272,15 @@ void vm_alloc_init_allocator(vm_alloc_t *allocator, addr_space_t *addr_space, ad
     allocator->array_pages  = array_page_count;
     allocator->free_list    = NULL;
     allocator->partial_list = NULL;
-    allocator->addr_space   = addr_space;
     
     /* allocate block descriptor array pages */
     addr = (addr_t)block_array;
     for(idx = 0; idx < array_page_count; ++idx) {
         /* allocate and map page */
         paddr = pfalloc();
-        vm_map(addr_space, addr, paddr, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
+        vm_map_kernel(addr, paddr, VM_FLAG_READ_WRITE);
         
-        /* calculate address of next page */        
+        /* calculate address of next page */
         addr += PAGE_SIZE;
     }
     
@@ -473,7 +472,7 @@ void vm_alloc_partial_block(vm_block_t *block) {
     /* allocate the page stack */
     stack_addr  = block->stack_addr;
     paddr       = pfalloc();
-    vm_map(block->allocator->addr_space, (addr_t)stack_addr, paddr, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
+    vm_map_kernel((addr_t)stack_addr, paddr, VM_FLAG_READ_WRITE);
     
     /** ASSERTION: block->allocator should not be NULL*/
     assert(block->allocator != NULL);
@@ -617,10 +616,10 @@ void vm_alloc_unlink_block(vm_block_t *block) {
     
     /* if block has a stack, discard it */
     if(block->stack_ptr != NULL) {
-        paddr = vm_lookup_pfaddr(block->allocator->addr_space, (addr_t)block->stack_addr );
+        paddr = vm_lookup_pfaddr(NULL, (addr_t)block->stack_addr);
         pffree(paddr);
     }
-        
+
     /* special case: block is alone in its list */
     if(block->next == block) {
         /** ASSERTION: if block is alone in its list, the previous node pointer
