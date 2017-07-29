@@ -1,11 +1,14 @@
+#include <jinue-common/vm.h>
 #include <ascii.h>
 #include <hal/io.h>
 #include <hal/vga.h>
+#include <hal/vm.h>
 
 
 static unsigned int vga_text_color;
 
-static unsigned char *video_base_addr = (void *)VGA_TEXT_VID_BASE;
+/** base address of the VGA text video buffer */
+static unsigned char *video_base_addr = (void *)EARLY_PHYS_TO_VIRT(VGA_TEXT_VID_BASE);
 
 static vga_pos_t vga_raw_putc(char c, vga_pos_t pos);
 
