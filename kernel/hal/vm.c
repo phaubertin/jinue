@@ -11,7 +11,6 @@
 #include <assert.h>
 #include <pfalloc.h>
 #include <printk.h>
-#include <slab.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -429,7 +428,6 @@ void vm_destroy_addr_space(addr_space_t *addr_space) {
     
     vm_unmap_kernel((addr_t)page_directory);
     pffree(addr_space->top_level.pd);
-    slab_cache_free(addr_space);
 }
 
 void vm_switch_addr_space(addr_space_t *addr_space) {
