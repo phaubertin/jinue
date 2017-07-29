@@ -72,7 +72,7 @@ CPPFLAGS.others      = -nostdinc
 CPPFLAGS             = $(CPPFLAGS.includes) $(CPPFLAGS.debug) $(CPPFLAGS.others) $(CPPFLAGS.extra)
 
 # C compiler flags
-CFLAGS.warnings      = -std=c99 -pedantic -Wall -Werror=implicit-function-declaration -Werror=uninitialized
+CFLAGS.warnings      = -std=c99 -pedantic -Wall -Werror=implicit -Werror=uninitialized -Werror=return-type
 CFLAGS.arch          = -m32 -march=i686
 CFLAGS.optimization  = -O3
 CFLAGS.others        = -ffreestanding -fno-common -fno-omit-frame-pointer
