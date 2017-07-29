@@ -147,6 +147,17 @@ init_page_table:
     
     ; adjust stack pointer to point in kernel alias
     add esp, KLIMIT
+
+    ; jump to kernel alias to allow the low address alias to be removed
+    jmp just_right_here + KLIMIT
+just_right_here:
+    
+    ; remove the low address alias
+    mov eax, dword [page_directory]
+    mov dword [eax + KLIMIT], 0         ; clear first page table entry
+    
+    ; reload CR3 to invalidate all TLB entries for the low address alias
+    mov cr3, eax
     
     ; null-terminate call stack (useful for debugging)
     xor eax, eax
@@ -158,6 +169,7 @@ init_page_table:
     
     ; compute kernel entry point address
     mov esi, kernel_start           ; ELF header
+    add esi, KLIMIT
     mov eax, [esi + 24]             ; e_entry member
     
     ; set address of boot information structure in esi for use by the kernel
