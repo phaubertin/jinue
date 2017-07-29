@@ -184,11 +184,6 @@ void vm_alloc_init(vm_alloc_t *allocator, addr_space_t *addr_space, addr_t start
     vm_alloc_add_region(     allocator,             start_addr, end_addr );
 }
 
-void vm_alloc_init_piecewise(vm_alloc_t *allocator, addr_space_t *addr_space, addr_t start_addr, addr_t chunk_end, addr_t region_end) {
-    vm_alloc_init_allocator( allocator, addr_space, start_addr, region_end );    
-    vm_alloc_add_region(     allocator,             start_addr, chunk_end );
-}
-
 void vm_alloc_destroy(vm_alloc_t *allocator) {
     vm_block_t   *head;
     vm_block_t   *block;

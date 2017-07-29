@@ -148,7 +148,7 @@ void hal_init(void) {
     init_pfcache(&global_pfcache, page_stack_buffer);
     
     for(idx = 0; idx < KERNEL_PAGE_STACK_INIT; ++idx) {
-        pffree( PTR_TO_PFADDR( pfalloc_early() ) );
+        pffree( EARLY_PTR_TO_PFADDR( pfalloc_early() ) );
     }
     
     /* initialize virtual memory management, enable paging

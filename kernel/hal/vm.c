@@ -58,7 +58,7 @@ void vm_boot_init(void) {
     const boot_info_t *boot_info = get_boot_info();
 
     for(addr = (addr_t)boot_info->image_start; addr < kernel_region_top; addr += PAGE_SIZE) {
-        vm_map_early((addr_t)addr, (addr_t)addr, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
+        vm_map_early((addr_t)addr, EARLY_PTR_TO_PFADDR(addr), VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
     }
     
     /* map video memory
@@ -74,32 +74,26 @@ void vm_boot_init(void) {
     printk("Remapping text video memory at 0x%x\n", kernel_vm_top);
     
     vga_set_base_addr(kernel_vm_top);
-    
+
     while(addr < (addr_t)VGA_TEXT_VID_TOP) {
-        vm_map_early(kernel_vm_top, addr, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
+        vm_map_early(kernel_vm_top, ADDR_TO_PFADDR((uintptr_t)addr), VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
         kernel_vm_top   += PAGE_SIZE;
         addr            += PAGE_SIZE;
     }
-    
+
     /* switch to new address space */
     vm_switch_addr_space(addr_space);
     
-    /* initialize global page allocator (region 0..KLIMIT)
-      
-       note: We skip the first page (i.e. actually allocate the region PAGE_SIZE..KLIMIT)
-             for two reasons:
-                - We want null pointer dereferences to generate a page fault instead of
-                  being more or less silently ignored (read) or overwriting something
-                  potentially important (write).
-                - We want to ensure nothing interesting (e.g. address space
-                  management data structures) can have NULL as its valid
-                  address.
-                  
-      This allocator manages the region from the start of the address space (exluding
-      the first page) up to KLIMIT, with two holes: the VGA video buffer and the kernel. */
+    /* initialize global page allocator (region starting at KLIMIT)
+     * 
+     * TODO Some work needs to be done in the page allocator to support allocating
+     * up to the top of memory (i.e. 0x100000000, which cannot be represented on
+     * 32 bits). In the mean time, we leave a 4MB gap. */
     global_page_allocator = &__global_page_allocator;
-    vm_alloc_init_piecewise(global_page_allocator, NULL, (addr_t)PAGE_SIZE,         (addr_t)boot_info->image_start, (addr_t)KLIMIT);
-    vm_alloc_add_region(global_page_allocator,           (addr_t)kernel_vm_top,     (addr_t)KLIMIT);
+    vm_alloc_init_allocator(global_page_allocator, NULL, (addr_t)KLIMIT, (addr_t)0 - 4 * MB);
+
+    vm_alloc_add_region(global_page_allocator, (addr_t)KLIMIT,          (addr_t)boot_info->image_start);
+    vm_alloc_add_region(global_page_allocator, (addr_t)kernel_vm_top,   (addr_t)0 - 4 * MB);
 }
 
 /** 
@@ -141,7 +135,7 @@ static pte_t *vm_lookup_page_table_entry(addr_space_t *addr_space, void *addr, b
          *  - The mappings for this region are global, so we don't care
          *    about the specified address space.  */
         
-        return get_pte_with_offset(global_page_tables, page_number_of(addr));
+        return get_pte_with_offset(global_page_tables, page_number_of((uintptr_t)addr - KLIMIT));
     }
     else {
         pte_t *page_table;
@@ -290,20 +284,17 @@ void vm_change_flags(addr_space_t *addr_space, addr_t addr, int flags) {
     invalidate_tlb(addr);
 }
 
-void vm_map_early(addr_t vaddr, addr_t paddr, int flags) {
+void vm_map_early(addr_t vaddr, pfaddr_t paddr, int flags) {
     pte_t *pte;
-    
-    /** ASSERTION: we are mapping in the 0..KLIMIT region */
+
+    /** ASSERTION: we are mapping in the kernel region */
     assert( is_fast_map_pointer(vaddr) );
     
     /** ASSERTION: we assume vaddr is aligned on a page boundary */
     assert( page_offset_of(vaddr) == 0 );
     
-    /** ASSERTION: we assume paddr is aligned on a page boundary */
-    assert( page_offset_of(paddr) == 0 );
-    
-    pte = get_pte_with_offset(global_page_tables, page_number_of(vaddr));
-    set_pte(pte, PTR_TO_PFADDR(paddr), flags | VM_FLAG_PRESENT);
+    pte = get_pte_with_offset(global_page_tables, page_number_of( EARLY_VIRT_TO_PHYS((uintptr_t)vaddr) ));
+    set_pte(pte, paddr, flags | VM_FLAG_PRESENT);
 }
 
 addr_space_t *vm_create_addr_space(addr_space_t *addr_space) {
@@ -322,26 +313,27 @@ addr_space_t *vm_create_addr_space(addr_space_t *addr_space) {
     template = (pte_t *)vm_alloc(global_page_allocator);
     vm_map_global((addr_t)template, initial_addr_space.top_level.pd, VM_FLAGS_PAGE_TABLE);
     
-    /* the page tables for the global allocations region (0..KLIMIT) are
-     * the same in all address spaces, so copy them from the template */
-    for(idx = 0; idx < page_directory_offset_of((addr_t)KLIMIT); idx++) {
+    /* clear user space page directory entries */
+    unsigned int klimit_pde_index = page_directory_offset_of((addr_t)KLIMIT);
+
+    for(idx = 0; idx < klimit_pde_index; ++idx) {
+        clear_pte( get_pte_with_offset(page_directory, idx) );
+    }
+
+    /* the page tables for the global allocations region (starting at KLIMIT)
+     * are the same in all address spaces, so copy them from the template */
+    for(idx = klimit_pde_index; idx < page_table_entries; ++idx) {
         copy_pte(
             get_pte_with_offset(page_directory, idx),
             get_pte_with_offset(template, idx)
         );
     }
     
-    /* clear remaining entries: these page tables are allocated on demand */
-    while(idx < page_table_entries) {
-        clear_pte( get_pte_with_offset(page_directory, idx) );
-        ++idx;
-    }
-    
     vm_unmap_global((addr_t)page_directory);
     vm_unmap_global((addr_t)template);
     
     addr_space->top_level.pd = pfaddr;
-    addr_space->cr3          = (uint32_t)PFADDR_TO_PTR(pfaddr);
+    addr_space->cr3          = (uint32_t)PFADDR_TO_ADDR(pfaddr);
     
     return addr_space;
 }
@@ -354,9 +346,16 @@ addr_space_t *vm_create_initial_addr_space(void) {
     /* Allocate the first page directory. Since paging is not yet
        enabled, virtual and physical addresses are the same.  */
     page_directory = (pte_t *)pfalloc_early();
+
+    /* clear user space page directory entries */
+    unsigned int klimit_pde_index = page_directory_offset_of((addr_t)KLIMIT);
+
+    for(idx = 0; idx < klimit_pde_index; ++idx) {
+        clear_pte( get_pte_with_offset(page_directory, idx) );
+    }
         
-    /* allocate page tables for kernel data/code region (0..KLIMIT) */
-    for(idx = 0; idx < page_directory_offset_of((addr_t)KLIMIT); ++idx) {
+    /* allocate page tables for kernel data/code region (above KLIMIT) */
+    for(idx = klimit_pde_index; idx < page_table_entries; ++idx) {
         /* allocate the page table
          * 
          * Note that the use of pfalloc_early() here guarantees that the
@@ -364,7 +363,7 @@ addr_space_t *vm_create_initial_addr_space(void) {
          * same address once paging is enabled. */
         page_table = (pte_t *)pfalloc_early();
         
-        if(idx == 0) {
+        if(idx == klimit_pde_index) {
             /* remember the address of the first page table for use by
              * vm_map() later */
             global_page_tables = page_table;
@@ -372,7 +371,7 @@ addr_space_t *vm_create_initial_addr_space(void) {
             
         set_pte(
             get_pte_with_offset(page_directory, idx),
-            PTR_TO_PFADDR(page_table),
+            EARLY_PTR_TO_PFADDR(page_table),
             VM_FLAG_PRESENT | VM_FLAG_KERNEL | VM_FLAG_READ_WRITE );
         
         /* clear page table */
@@ -381,14 +380,8 @@ addr_space_t *vm_create_initial_addr_space(void) {
         }
     }
     
-    /* clear remaining entries: these page tables are allocated on demand */
-    while(idx < page_table_entries) {
-        clear_pte( get_pte_with_offset(page_directory, idx) );
-        ++idx;
-    }
-    
-    initial_addr_space.top_level.pd = PTR_TO_PFADDR(page_directory);
-    initial_addr_space.cr3          = (uint32_t)page_directory;
+    initial_addr_space.top_level.pd = EARLY_PTR_TO_PFADDR(page_directory);
+    initial_addr_space.cr3          = EARLY_VIRT_TO_PHYS((uintptr_t)page_directory);
     
     return &initial_addr_space;
 }

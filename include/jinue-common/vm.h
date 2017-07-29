@@ -15,12 +15,12 @@
 
 /** Check whether a pointer points to kernel space */
 static inline bool is_kernel_pointer(const void *addr) {
-    return (uintptr_t)addr < KLIMIT;
+    return (uintptr_t)addr >= KLIMIT;
 }
 
 /** Check whether a pointer points to user space */
 static inline bool is_user_pointer(const void *addr) {
-    return (uintptr_t)addr >= KLIMIT;
+    return (uintptr_t)addr < KLIMIT;
 }
 
 /** Check whether a pointer is in the fast path range for map/unmap operations */

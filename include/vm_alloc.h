@@ -99,8 +99,6 @@ void vm_free(vm_alloc_t *allocator, addr_t page);
 
 void vm_alloc_init(vm_alloc_t *allocator, addr_space_t *addr_space, addr_t start_addr, addr_t end_addr);
 
-void vm_alloc_init_piecewise(vm_alloc_t *allocator, addr_space_t *addr_space, addr_t start_addr, addr_t chunk_end, addr_t region_end);
-
 void vm_alloc_destroy(vm_alloc_t *allocator);
 
 void vm_alloc_init_allocator(vm_alloc_t *allocator, addr_space_t *addr_space, addr_t start_addr, addr_t end_addr);

@@ -7,11 +7,8 @@
 /** convert an address in an integer to a page frame address */
 #define ADDR_TO_PFADDR(x)   ( (pfaddr_t)(  (uint64_t)(x) >> PFADDR_SHIFT ) )
 
-/** convert a pointer to a page frame address (early mappings) */
-#define PTR_TO_PFADDR(x)    ( (pfaddr_t)( (uintptr_t)(x) >> PFADDR_SHIFT ) )
-
-/** convert a page frame address to a pointer (early mappings) */
-#define PFADDR_TO_PTR(x)    ( (void *)( (x) << PFADDR_SHIFT ) )
+/** convert a page frame address to an address in an integer */
+#define PFADDR_TO_ADDR(x)   ((uint64_t)(x) << PFADDR_SHIFT)
 
 /** ensure page frame address is valid (LSBs zero) */
 #define PFADDR_CHECK(x)     ( ( (uint32_t)(x) << (32 - PAGE_BITS + PFADDR_SHIFT) ) == 0 )

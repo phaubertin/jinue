@@ -124,6 +124,9 @@ init_page_table:
     or eax, VM_FLAG_READ_WRITE | VM_FLAG_PRESENT
     mov dword [edi], eax
     
+    ; add an alias for the first 4MB of memory at the kernel base address
+    mov dword [edi + 4 * (KLIMIT >> 22)], eax
+    
     ; set page directory address in CR3
     mov cr3, edi
     
@@ -132,10 +135,26 @@ init_page_table:
     or eax, X86_CR0_PG
     mov cr0, eax
     
+    ; adjust the pointers in the boot information structure so they point in the
+    ; kernel alias
+    add dword [_kernel_start],  KLIMIT
+    add dword [_proc_start],    KLIMIT
+    add dword [_image_start],   KLIMIT
+    add dword [_image_top],     KLIMIT
+    add dword [_e820_map],      KLIMIT
+    add dword [_boot_heap],     KLIMIT
+    add dword [_boot_end],      KLIMIT
+    
+    ; adjust stack pointer to point in kernel alias
+    add esp, KLIMIT
+    
+    ; null-terminate call stack (useful for debugging)
     xor eax, eax
     push eax
-    push eax        ; null-terminate call stack (useful for debugging)
-    xor ebp, ebp    ; initialize frame pointer
+    push eax
+    
+    ; initialize frame pointer    
+    xor ebp, ebp
     
     ; compute kernel entry point address
     mov esi, kernel_start           ; ELF header
@@ -143,6 +162,7 @@ init_page_table:
     
     ; set address of boot information structure in esi for use by the kernel
     mov esi, boot_info_struct
+    add esi, KLIMIT                 ; adjust to point in kernel alias
     
     ; jump to kernel entry point
     jmp eax

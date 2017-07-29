@@ -170,7 +170,7 @@ void elf_load(elf_info_t *info, Elf32_Ehdr *elf, addr_space_t *addr_space) {
                 flags = VM_FLAG_USER | VM_FLAG_READ_ONLY;
             
                 /* perform mapping */
-                vm_map(addr_space, (addr_t)vptr, PTR_TO_PFADDR(file_ptr), flags);
+                vm_map(addr_space, (addr_t)vptr, EARLY_PTR_TO_PFADDR(file_ptr), flags);
                 
                 vptr     += PAGE_SIZE;
                 file_ptr += PAGE_SIZE;
