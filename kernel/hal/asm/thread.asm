@@ -79,4 +79,4 @@ thread_context_switch_stack:
     
     ret
 
-.end
+.end:
