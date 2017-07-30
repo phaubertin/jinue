@@ -20,7 +20,7 @@ unclean.extra    = $(proc)
 include $(common)
 
 $(libjinue)/libjinue.a $(libjinue)/libjinue-proc.a: FORCE
-	make -C $(libjinue)
+	$(MAKE) -C $(libjinue)
 
 $(proc): $(objects) $(libjinue)/libjinue.a $(libjinue)/libjinue-proc.a
 

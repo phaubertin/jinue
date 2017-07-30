@@ -21,7 +21,7 @@ include $(common)
 
 .PHONY: asm
 asm:
-	make -C asm
+	$(MAKE) -C asm
 
 $(hal.asm): asm
 

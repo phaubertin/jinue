@@ -12,6 +12,6 @@ doc:
 
 .PHONY: pdf
 pdf: doc
-	make -C latex pdf
+	$(MAKE) -C latex pdf
 	cp latex/refman.pdf pdf/kernel-source-documentation.pdf
 	

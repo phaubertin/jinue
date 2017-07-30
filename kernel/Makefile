@@ -28,7 +28,7 @@ include $(common)
 
 .PHONY: scripts
 scripts:
-	make -C $(scripts)
+	$(MAKE) -C $(scripts)
 
 $(kernel_ldscript): scripts
 
@@ -39,27 +39,27 @@ $(target): kernel
 
 .PHONY: core
 core:
-	make -C $@
+	$(MAKE) -C $@
 
 .PHONY: debug
 debug:
-	make -C $@
+	$(MAKE) -C $@
 
 .PHONY: hal
 hal:
-	make -C $@
+	$(MAKE) -C $@
 
 .PHONY: kstdc
 kstdc:
-	make -C $@
+	$(MAKE) -C $@
 
 .PHONY: mem
 mem:
-	make -C $@
+	$(MAKE) -C $@
 
 .PHONY: libjinue
 libjinue:
-	make -C $(libjinue) all-kernel
+	$(MAKE) -C $(libjinue) all-kernel
 
 # The core directory must be re-maked every build because of the auto-generated
 # information about the build date and time.

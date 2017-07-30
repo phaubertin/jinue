@@ -36,20 +36,20 @@ vbox: $(jinue_iso)
 # ----- documentation
 .PHONY: doc
 doc:
-	make -C doc
+	$(MAKE) -C doc
 
 .PHONY: clean-doc
 clean-doc:
-	make -C doc clean
+	$(MAKE) -C doc clean
 
 # ----- kernel image
 .PHONY: scripts
 scripts:
-	make -C $(scripts)
+	$(MAKE) -C $(scripts)
 
 .PHONY: kernel
 kernel:
-	make -C kernel
+	$(MAKE) -C kernel
 
 $(kernel_bin_ldscript) $(image_ldscript): scripts
 
@@ -65,12 +65,12 @@ $(kernel_img): $(kernel_bin) $(setup_boot) $(setup16) $(image_ldscript)
 # ----- process manager
 .PHONY: proc
 proc:
-	make -C proc
+	$(MAKE) -C proc
 
 # ----- setup code, boot sector, etc.
 .PHONY: boot
 boot:
-	make -C boot
+	$(MAKE) -C boot
 
 $(setup_boot) $(setup16) $(setup32): boot
 
