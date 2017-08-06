@@ -31,17 +31,16 @@ void e820_dump(void) {
     unsigned int idx;
     
     printk("Dump of the BIOS memory map:\n");
-    printk("  address  size     type\n");
 
     const boot_info_t *boot_info = get_boot_info();
 
     for(idx = 0; idx < boot_info->e820_entries; ++idx) {
         const e820_t *e820_entry = &boot_info->e820_map[idx];
 
-        printk("%c %q %q %s\n",
+        printk("%c [%q-%q] %s\n",
             e820_is_available(e820_entry)?'*':' ',
             e820_entry->addr,
-            e820_entry->size,
+            e820_entry->addr + e820_entry->size - 1,
             e820_type_description(e820_entry->type)
         );
     }
