@@ -26,7 +26,7 @@ void new_ram_map_entry(pfaddr_t addr, uint32_t count, bootmem_t **head);
 
 void apply_mem_hole(e820_addr_t hole_start, e820_addr_t hole_end, bootmem_t **head);
 
-void bootmem_init(void);
+void bootmem_init(bool use_pae);
 
 bootmem_t *bootmem_get_block(void);
 

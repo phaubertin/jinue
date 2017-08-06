@@ -19,6 +19,8 @@
 /** convert a pointer to a page frame address (early mappings) */
 #define EARLY_PTR_TO_PFADDR(x)  ( (pfaddr_t)( (EARLY_VIRT_TO_PHYS(x) >> PFADDR_SHIFT) ) )
 
+#define ADDR_4GB    UINT64_C(0x100000000)
+
 
 void vm_boot_init(void);
 

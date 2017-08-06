@@ -90,7 +90,7 @@ void apply_mem_hole(e820_addr_t hole_start, e820_addr_t hole_end, bootmem_t **he
     }
 }
 
-void bootmem_init(void) {
+void bootmem_init(bool use_pae) {
     const addr_t initial_boot_heap = boot_heap;
     
     bootmem_t *ptr;
@@ -98,6 +98,8 @@ void bootmem_init(void) {
     unsigned int idx;
     
     const boot_info_t *boot_info = get_boot_info();
+    
+    /** TODO check for available regions overlap */
 
     /* copy the available ram entries from the e820 map and insert them
      * in a linked list */
@@ -122,6 +124,21 @@ void bootmem_init(void) {
             
             if( OFFSET_OF(end, PAGE_SIZE) != 0 ) {
                 end = (end & (e820_addr_t)~PAGE_MASK);
+            }
+            
+            /* If Physical Address Extension (PAE) is disabled, memory above the
+             * 4GB mark is not usable. */
+            if(! use_pae) {
+                /* If this memory region is completely above the 4GB mark, exclude it. */
+                if(start >= ADDR_4GB) {
+                    continue;
+                }
+                
+                /* If this memory region starts below the 4GB mark but extends
+                 * beyond it, crop at 4GB. */
+                if(end > ADDR_4GB) {
+                    end = ADDR_4GB;
+                }
             }
             
             /* add entry to linked list */

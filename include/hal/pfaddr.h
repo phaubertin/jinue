@@ -13,7 +13,7 @@
 /** ensure page frame address is valid (LSBs zero) */
 #define PFADDR_CHECK(x)     ( ( (uint32_t)(x) << (32 - PAGE_BITS + PFADDR_SHIFT) ) == 0 )
 
-/** check is the page frame address is below the 4GB (32-bit) limit */
+/** check if the page frame address is below the 4GB (32-bit) limit */
 #define PFADDR_CHECK_4GB(x) ( ( (uint32_t)(x) >> (32 - PFADDR_SHIFT) ) == 0 )
 
 #endif
