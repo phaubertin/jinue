@@ -86,8 +86,8 @@ void hal_init(void) {
     
     boot_heap = ALIGN_END(boot_heap, CPU_DATA_ALIGNMENT);
     
-    cpu_data  = (cpu_data_t *)boot_heap;
-    boot_heap = (cpu_data_t *)boot_heap + 1;
+    cpu_data  = boot_heap;
+    boot_heap = cpu_data + 1;
     
     /* initialize per-CPU data */
     cpu_init_data(cpu_data, stack);
