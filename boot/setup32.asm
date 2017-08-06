@@ -25,11 +25,13 @@ _proc_start:        dd proc_start
 _proc_size:         dd proc_size
 _image_start:       dd image_start
 _image_top:         dd MUST_BE_SET_BELOW
-_e820_entries       dd MUST_BE_SET_BELOW
-_e820_map           dd MUST_BE_SET_BELOW
-_boot_heap          dd MUST_BE_SET_BELOW
-_boot_end           dd MUST_BE_SET_BELOW
-_setup_signature    dd MUST_BE_SET_BELOW
+_e820_entries:      dd MUST_BE_SET_BELOW
+_e820_map:          dd MUST_BE_SET_BELOW
+_boot_heap:         dd MUST_BE_SET_BELOW
+_boot_end:          dd MUST_BE_SET_BELOW
+_page_table:        dd MUST_BE_SET_BELOW
+_page_directory:    dd MUST_BE_SET_BELOW
+_setup_signature:   dd MUST_BE_SET_BELOW
 
 header_end:
     jmp start
@@ -89,15 +91,15 @@ start:
     mov esp, eax                        ; set stack pointer
     
     ; allocate initial page table and page directory
-    mov dword [page_table], eax
+    mov dword [_page_table], eax
     add eax, PAGE_SIZE
-    mov dword [page_directory], eax
+    mov dword [_page_directory], eax
     add eax, PAGE_SIZE
     mov dword [_boot_end], eax
     
     ; initialize initial page table for a 1:1 mapping of the first 4MB
     mov eax, 0 | VM_FLAG_READ_WRITE | VM_FLAG_PRESENT   ; start address is 0, flags
-    mov edi, dword [page_table]                         ; write address
+    mov edi, dword [_page_table]                        ; write address
     mov ecx, (PAGE_SIZE / 4)                            ; number of entries
 
 init_page_table:
@@ -112,15 +114,15 @@ init_page_table:
     loop init_page_table
 
     ; clear initial page directory
-    mov edi, dword [page_directory]     ; write address
+    mov edi, dword [_page_directory]     ; write address
     xor eax, eax                        ; write value: 0
     mov cx, PAGE_SIZE                   ; write PAGE_SIZE bytes
     
     rep stosb
     
     ; add entry for the page table that maps the first 4MB
-    mov edi, dword [page_directory]
-    mov eax, dword [page_table]
+    mov edi, dword [_page_directory]
+    mov eax, dword [_page_table]
     or eax, VM_FLAG_READ_WRITE | VM_FLAG_PRESENT
     mov dword [edi], eax
     
@@ -137,13 +139,15 @@ init_page_table:
     
     ; adjust the pointers in the boot information structure so they point in the
     ; kernel alias
-    add dword [_kernel_start],  KLIMIT
-    add dword [_proc_start],    KLIMIT
-    add dword [_image_start],   KLIMIT
-    add dword [_image_top],     KLIMIT
-    add dword [_e820_map],      KLIMIT
-    add dword [_boot_heap],     KLIMIT
-    add dword [_boot_end],      KLIMIT
+    add dword [_kernel_start],      KLIMIT
+    add dword [_proc_start],        KLIMIT
+    add dword [_image_start],       KLIMIT
+    add dword [_image_top],         KLIMIT
+    add dword [_e820_map],          KLIMIT
+    add dword [_boot_heap],         KLIMIT
+    add dword [_boot_end],          KLIMIT
+    add dword [_page_table],        KLIMIT
+    add dword [_page_directory],    KLIMIT
     
     ; adjust stack pointer to point in kernel alias
     add esp, KLIMIT
@@ -153,10 +157,11 @@ init_page_table:
 just_right_here:
     
     ; remove the low address alias
-    mov eax, dword [page_directory]
-    mov dword [eax + KLIMIT], 0         ; clear first page table entry
+    mov eax, dword [_page_directory]
+    mov dword [eax], 0              ; clear first page table entry
     
     ; reload CR3 to invalidate all TLB entries for the low address alias
+    sub eax, KLIMIT     ; we need the physical address
     mov cr3, eax
     
     ; null-terminate call stack (useful for debugging)
@@ -178,6 +183,3 @@ just_right_here:
     
     ; jump to kernel entry point
     jmp eax
-
-page_table:     dd 0
-page_directory: dd 0

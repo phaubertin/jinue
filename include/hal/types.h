@@ -11,11 +11,24 @@
 
 typedef unsigned char   *addr_t;
 
-/** incomplete struct type used for the definition of pte_t */
-struct __pte_t;
+/** incomplete structure declaration for a page table entry
+ *
+ * There are actually two different definitions of this structure: one that
+ * represents 32-bit entries for standard 32-bit paging, and one that represents
+ * 64-bit entries for Physical Address Extension (PAE) paging. The right
+ * definition to use is chosen at run time (i.e. during boot).
+ *
+ * Outside of the specific functions that are used to access information in
+ * page table entries, functions are allowed to hold and pass around pointers to
+ * page table entries, but are not allowed to dereference them. */
+struct pte_t;
 
 /** type of a page table entry */
-typedef struct __pte_t pte_t;
+typedef struct pte_t pte_t;
+
+struct pdpt_t;
+
+typedef struct pdpt_t pdpt_t;
 
 typedef struct {
     /* The assembly language thread switching code makes the assumption that
@@ -29,7 +42,7 @@ typedef struct {
     uint32_t     cr3;
     union {
         pfaddr_t     pd;    /* non-PAE: page directory */
-        pte_t       *pdpt;  /* PAE: page directory pointer table */
+        pdpt_t      *pdpt;  /* PAE: page directory pointer table */
     } top_level;
 } addr_space_t;
 
@@ -58,6 +71,8 @@ typedef struct {
     e820_t      *e820_map;
     void        *boot_heap;
     void        *boot_end;
+    pte_t       *page_table;
+    pte_t       *page_directory;
     uint32_t     setup_signature;
 } boot_info_t;
 

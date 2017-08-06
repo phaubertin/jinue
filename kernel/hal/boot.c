@@ -47,5 +47,7 @@ void boot_info_dump(void) {
     printk("    e820_map        %x  %u\n", boot_info->e820_map       , boot_info->e820_map        );
     printk("    boot_heap       %x  %u\n", boot_info->boot_heap      , boot_info->boot_heap       );
     printk("    boot_end        %x  %u\n", boot_info->boot_end       , boot_info->boot_end        );
+    printk("    page_table      %x  %u\n", boot_info->page_table     , boot_info->page_table      );
+    printk("    page_directory  %x  %u\n", boot_info->page_directory , boot_info->page_directory  );
     printk("    setup_signature %x  %u\n", boot_info->setup_signature, boot_info->setup_signature );
 }

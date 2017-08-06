@@ -1,6 +1,9 @@
 #ifndef JINUE_HAL_VM_H
 #define JINUE_HAL_VM_H
 
+/** This header file contains the public interface of the low-level page table
+ * management code located in hal/vm.c and hal/vm_pae.c. */
+
 #include <hal/asm/vm.h>
 
 #include <jinue-common/vm.h>
@@ -15,11 +18,6 @@
 
 /** convert a pointer to a page frame address (early mappings) */
 #define EARLY_PTR_TO_PFADDR(x)  ( (pfaddr_t)( (EARLY_VIRT_TO_PHYS(x) >> PFADDR_SHIFT) ) )
-
-
-extern pte_t *global_page_tables;
-
-extern addr_space_t initial_addr_space;
 
 
 void vm_boot_init(void);

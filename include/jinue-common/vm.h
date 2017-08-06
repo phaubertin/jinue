@@ -10,6 +10,9 @@
 /** byte offset in page of virtual (linear) address */
 #define page_offset_of(x)   ((uintptr_t)(x) & PAGE_MASK)
 
+/** address of the page that contains a virtual (linear) address */
+#define page_address_of(x)  ((uintptr_t)(x) & ~PAGE_MASK)
+
 /** sequential page number of virtual (linear) address */
 #define page_number_of(x)   ((uintptr_t)(x) >> PAGE_BITS)
 

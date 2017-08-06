@@ -1,4 +1,5 @@
 #include <hal/vm.h>
+#include <panic.h>
 #include <process.h>
 #include <object.h>
 #include <slab.h>
@@ -22,6 +23,10 @@ void process_boot_init(void) {
             process_ctor,
             NULL,
             SLAB_DEFAULTS );
+    
+    if(process_cache == NULL) {
+        panic("Cannot create process slab cache.");
+    }
 }
 
 process_t *process_create(void) {
