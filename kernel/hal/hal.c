@@ -6,10 +6,10 @@
 #include <hal/descriptors.h>
 #include <hal/hal.h>
 #include <hal/interrupt.h>
-#include <hal/irq.h>
 #include <hal/kernel.h>
 #include <hal/pfaddr.h>
 #include <hal/thread.h>
+#include <hal/trap.h>
 #include <hal/vga.h>
 #include <hal/vm.h>
 #include <hal/x86.h>

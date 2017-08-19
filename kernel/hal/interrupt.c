@@ -1,11 +1,8 @@
-#include <hal/frame_pointer.h>
-#include <hal/kernel.h>
 #include <hal/interrupt.h>
-#include <hal/irq.h>
-#include <hal/syscall.h>
 #include <hal/x86.h>
 #include <panic.h>
 #include <printk.h>
+#include <syscall.h>
 #include <types.h>
 
 

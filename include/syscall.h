@@ -2,7 +2,6 @@
 #define JINUE_KERNEL_SYSCALL_H
 
 #include <jinue-common/syscall.h>
-#include <hal/syscall.h>
 #include <stdint.h>
 
 static inline void syscall_args_set_return_uintptr(jinue_syscall_args_t *args, uintptr_t retval) {

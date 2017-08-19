@@ -3,6 +3,7 @@
 #include <hal/bootmem.h>
 #include <hal/cpu_data.h>
 #include <hal/thread.h>
+#include <hal/trap.h>
 #include <console.h>
 #include <ipc.h>
 #include <object.h>

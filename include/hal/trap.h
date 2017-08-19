@@ -1,7 +1,5 @@
-#ifndef JINUE_HAL_SYSCALL_H
-#define JINUE_HAL_SYSCALL_H
-
-#include <jinue-common/syscall.h>
+#ifndef JINUE_HAL_TRAP_H
+#define JINUE_HAL_TRAP_H
 
 
 extern int syscall_method;
@@ -12,6 +10,8 @@ void fast_intel_entry(void);
 /** entry point for AMD fast system call mechanism (SYSCALL/SYSRET) */
 void fast_amd_entry(void);
 
-void dispatch_syscall(jinue_syscall_args_t *args);
+/* do not call - used by new user threads to "return" to user space for the
+ * first time. See thread_page_create(). */
+void return_from_interrupt(void);
 
 #endif

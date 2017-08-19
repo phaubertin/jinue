@@ -4,9 +4,8 @@ include $(jinue_root)/header.mk
 sources.nasm	 = \
 	frame_pointer.asm \
 	io.asm \
-	irq.asm \
 	startup.asm \
-	syscall.asm \
+	trap.asm \
 	thread.asm \
 	x86.asm \
 
