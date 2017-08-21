@@ -4,6 +4,91 @@ Types of page files:
     - Shared and anonymous memory, backed by swap device
 
 -----
+=== Kernel Objects, Capabilities and Memory Allocation ===
+
+Userspace refers to kernel objects and other kernels resources through
+descriptors. Each descriptor contains a reference to a kernel resource as well
+as a set of permissions on this resource (i.e. it is a capability). Userspace
+performs operations on kernel resources through an appropriate descriptor.
+Descriptors are specified in the form of an integer, just like Unix file
+descriptors.
+
+In addition to being used to perform operations on kernel resources, descriptors
+can also be passed to other processes in an IPC message (TBD map vs grant).
+
+Kernel resources can be:
+ - Memory management:
+    - A block of physical memory (RAM).
+    - A page of kernel virtual memory.
+    - An array to manage a block of kernel virtual memory (one page).
+    - A slab for allocating kernel objects (one page virtual+physical)
+ - Capabilities
+    - A capability
+    - An array of capability slots (one page virtual+physical)
+    - An array of pointers to a capability slot array (one page virtual+physical)
+    - A small array of pointers to a capability slot array (~64 bytes on a slab)
+    - A small second-level array of pointers (~64 bytes on a slab)
+    - (TBD) Some sort of L4-style parallel page table structure for memory map
+      operations.
+ - Address space management:
+    - A page table (one page physical only)
+    - A page directory (one page physical only)
+    - A PDPT (32 bytes on a slab)
+ - An IPC endpoint.
+ - A thread control block and associated kernel stack and IPC buffer (one page
+   virtual+physical)
+ - A process control block.
+ - (TBD) A process virtual memory region
+ - (TBD) An IPC buffer for an interrupt or other microkernel-generated message
+ - (TBD) A synchronization kernel object (mutex, semaphore, monitor, etc.)
+ - (TBD) An I/O port range
+
+During initialization, the microkernel creates descriptors for all initial
+resources (memory, kernel objects, etc.) which it passes to the initial process
+(TBD how?).
+
+After initialization is complete, the microkernel never allocates resources
+on its own. All resources (e.g. kernel objects) are created by a system call,
+and userspace must provide the resources on which it depends (e.g. a memory page).
+These allocation system calls can be seen as transforming resources into other
+resources, e.g.:
+
+            1 physical memory page + 1 kernel virtual page
+                                |
+                                | system call
+                                v
+    Allocation rights for X IPC endpoints (the system call creates a slab)
+                                |
+                                | system call
+                                v
+        1 IPC endpoint + Allocation rights for X - 1 IPC endpoints
+
+As in the example above, some descriptors represent allocation right for kernel
+objects. These are "counted descriptors", meaning they contain a counter with
+the number of objects that can be allocated, and this counter is decremented on
+each object allocation. Counted descriptors can be split, and counted
+descriptors for identical resources can be merged, both through system calls.
+
+For example, an application that has an allocation right for X > 4 IPC endpoints
+can issue a system call to convert it to an allocation right for 4 IPC endpoints
+and another allocation right for X - 4 IPC endpoints. It can then pass the
+allocation right for the 4 IPC endpoints to another process through an IPC and
+keep the rest.
+
+A memory descriptor refers to a block of 2**N pages of physical memory (RAM)
+aligned on a 2**N page boundary. A descriptor for such a block of 2**N pages can
+be converted (i.e. split) into two blocks of 2**(N-1) pages through a system
+call. Similarly, the two resulting descriptors can be converted back (i.e.
+merged) into a 2**N-page block. Only the two blocks that were initially part of
+a single block (i.e. buddies) can be merged together.
+
+Just like for other resource types, the microkernel creates a list of memory
+descriptors from the available physical memory map during initialization and
+provides these descriptors to the initial process (TBD how?). No descriptor is
+created for any memory allocated to the kernel itself during initialization,
+which ensures userspace cannot access kernel memory.
+
+=== Inter-Process Communication (IPC) ===
 
 Main IPC mechanism (summary): Solaris-style doors and filesystem namespace
 managed by process manager like QNX.
@@ -78,7 +163,7 @@ put in place:
    operating system.
  - A mechanism where, when a thread calls a software interrupt and/or uses the
    syscall/syscall instructions, control is passed to a second thread in the
-   same process which is responsible for creating an sending the appropriate
+   same process which is responsible for creating and sending the appropriate
    message (i.e. "sandboxed" threads).
    
 Message format:
@@ -116,9 +201,31 @@ way interpreted by the microkernel (unless the microkernel is the recipient).
 
 Following the message data may be some padding to ensure the platform-dependent
 alignment of the start of the descriptors relative to the start of the message
-buffer is respected. Following are descriptors which are to be sent along with
-the message. The microkernel will copy the descriptors into the recipient's
-process and adjust the descriptors in the message accordingly.
+buffer is respected. Following is an array of data records that contain the
+following:
+ - A single descriptor number or the number of an empty descriptor slot; and
+ - An attribute word that contain flags and other information pertain to the
+   descriptor.
+
+For each descriptor, either the JINUE_DESC_SEND or JINUE_DESC_RECEIVE attribute
+flag must be specified:
+ - JINUE_DESC_SEND If this flag is set, the descriptor number must refer to an
+   actual descriptor. This descriptor is transferred as part of the message.
+ - JINUE_DESC_RECEIVE If this flag is set, the descriptor number must be the
+   number of an empty descriptor slot. This descriptor slot will be used to
+   receive a single descriptor.
+
+(TBD) is JINUE_DESC_SEND converted to JINUE_DESC_RECEIVE and vice versa when
+passed?
+
+Other attributes:
+ - (TBD) The type of a received descriptor.
+ - JINUE_DESC_VALID Set if a descriptor has actually been received. More
+   descriptors can be specified with the JINUE_DESC_RECEIVE flag than will
+   actually be received in the expected message or reply.
+ - JINUE_DESC_USER1...JINUE_DESC_USERN (N is TBD) Application-specific flags
+   that are passed as-is to the message/reply recipient.
+ - (TBD) Map vs grant?
 
 Send message arguments (passed in registers):
 
@@ -170,7 +277,7 @@ Receive system call arguments (passed in registers):
     31                                                               0
 
     +-----------------------+------------------------+---------------+
-    |     msgTotalSize      |           0            |       0       |  arg3
+    |     msgTotalSize      |           0            |   msgDescN    |  arg3
     +-----------------------+------------------------+---------------+
     31                    20 19                     8 7              0
     
@@ -182,6 +289,8 @@ Where:
     msgPtr          is address of the start of the buffer in which to receive
                     the message.
     msgTotalSize    is the total size of the receive buffer, in bytes.
+    msgDescN        is the number of descriptors. All descriptor must be
+                    specified with the JINUE_DESC_RECEIVE attribute flag.
     
 
 A message can also be received by calling the combined REPLY/RECEIVE system
