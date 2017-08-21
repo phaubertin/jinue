@@ -34,10 +34,10 @@ Kernel resources can be:
     - A page table (one page physical only)
     - A page directory (one page physical only)
     - A PDPT (32 bytes on a slab)
- - An IPC endpoint.
+ - An IPC endpoint (on slab).
  - A thread control block and associated kernel stack and IPC buffer (one page
    virtual+physical)
- - A process control block.
+ - A process control block (on slab + initial page tables/directory/PDPT).
  - (TBD) A process virtual memory region
  - (TBD) An IPC buffer for an interrupt or other microkernel-generated message
  - (TBD) A synchronization kernel object (mutex, semaphore, monitor, etc.)
