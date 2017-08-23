@@ -225,6 +225,9 @@ Other attributes:
    actually be received in the expected message or reply.
  - JINUE_DESC_USER1...JINUE_DESC_USERN (N is TBD) Application-specific flags
    that are passed as-is to the message/reply recipient.
+ - (TBD) JINUE_DESC_UNIQUE that, applied to a receive descriptor slot, specifies
+   that the sent descriptor bound to that receive descriptor slot cannot be
+   bound to another receive descriptor slot.
  - (TBD) Map vs grant?
 
 Send message arguments (passed in registers):
@@ -417,3 +420,433 @@ To clarify: Is the second word always the error number. The receiver may use the
 second word for something else, while the kernel may set an error of its own if
 the send fails for some reason. Should we provide a separate REPLY_ERROR (and
 REPLY_ERROR/RECEIVE) system call?
+
+Following is a description of how data and descriptors are copied from/to the
+user space and kernel message buffers of the client and server thread. It is
+illustrated with examples.
+
+RECEIVE Operation
+-----------------
+
+The server thread sets up a message with the following content:
+    - Four slots to receive descriptors: Rs1, Rs2, Rs3 and Rs4.
+
+During that time, the client thread's user space buffer is inaccessible (unless
+the client and server threads are in the same process).
+
+        Client Buffer   Client Buffer   Server Buffer   Server Buffer
+        (User Space)      (Kernel)        (Kernel)      (User Space)
+        +-----------+   +-----------+   +-----------+   +-----------+
+        |///////////|   |           |   |           |   |   Rs1     |
+        |///////////|   |           |   |           |   |   Rs2     |
+        |(unmapped)/|   |(undefined)|   |(undefined)|   |   Rs3     |
+        |///////////|   |           |   |           |   |   Rs4     |
+        |///////////|   |           |   |           |   +===========+
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        +-----------+   +-----------+   +-----------+   +-----------+
+
+When the server thread initiates a RECEIVE operation, the kernel copies the
+descriptors in the server thread's kernel buffer. Since this is a RECEIVE
+operation, the kernel would reject a message buffer that would contain a data
+string or sent descriptors.
+
+        Client Buffer   Client Buffer   Server Buffer   Server Buffer
+        (User Space)      (Kernel)        (Kernel)      (User Space)
+        +-----------+   +-----------+   +-----------+   +-----------+
+        |///////////|   |           |   |   Rs1     |   |   Rs1     |
+        |///////////|   |           |   |   Rs2     |   |   Rs2     |
+        |(unmapped)/|   |(undefined)|   |   Rs3     |   |   Rs3     |
+        |///////////|   |           |   |   Rs4     |   |   Rs4     |
+        |///////////|   |           |   +===========+   +===========+
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        +-----------+   +-----------+   +-----------+   +-----------+
+
+The server thread now blocks waiting for a sender.
+
+SEND Operation
+--------------
+
+Later (or before), the client thread sets up a message with the following
+content:
+    - The data string Dc
+    - Two descriptors to be sent: Sc1 and Sc2
+    - Three slots to receive descriptors in the reply: Rc1, Rc2 and Rc3.
+
+        Client Buffer   Client Buffer   Server Buffer   Server Buffer
+        (User Space)      (Kernel)        (Kernel)      (User Space)
+        +-----------+   +-----------+   +-----------+   +-----------+
+        |           |   |           |   |   Rs1     |   |///////////|
+        |           |   |           |   |   Rs2     |   |///////////|
+        |    Dc     |   |(undefined)|   |   Rs3     |   |(unmapped)/|
+        |           |   |           |   |   Rs4     |   |///////////|
+        |           |   |           |   +===========+   |///////////|
+        |           |   |           |   |           |   |///////////|
+        |           |   |           |   |           |   |///////////|
+        +===========+   |           |   |           |   |///////////|
+        |   Sc1     |   |           |   |           |   |///////////|
+        |   Rc1     |   |           |   |           |   |///////////|
+        |   Rc2     |   |           |   |           |   |///////////|
+        |   Sc2     |   |           |   |           |   |///////////|
+        |   Rc3     |   |           |   |           |   |///////////|
+        +===========+   |           |   |           |   |///////////|
+        |           |   |           |   |           |   |///////////|
+        +-----------+   +-----------+   +-----------+   +-----------+
+
+When the client thread initiates the SEND operation, the kernel copies the
+complete message from user space to the client thread's kernel message buffer.
+
+        Client Buffer   Client Buffer   Server Buffer   Server Buffer
+        (User Space)      (Kernel)        (Kernel)      (User Space)
+        +-----------+   +-----------+   +-----------+   +-----------+
+        |           |   |           |   |   Rs1     |   |///////////|
+        |           |   |           |   |   Rs2     |   |///////////|
+        |    Dc     |   |    Dc     |   |   Rs3     |   |(unmapped)/|
+        |           |   |           |   |   Rs4     |   |///////////|
+        |           |   |           |   +===========+   |///////////|
+        |           |   |           |   |           |   |///////////|
+        |           |   |           |   |           |   |///////////|
+        +===========+   +===========+   |           |   |///////////|
+        |   Sc1     |   |   Sc1     |   |           |   |///////////|
+        |   Rc1     |   |   Rc1     |   |           |   |///////////|
+        |   Rc2     |   |   Rc2     |   |           |   |///////////|
+        |   Sc2     |   |   Sc2     |   |           |   |///////////|
+        |   Rc3     |   |   Rc3     |   |           |   |///////////|
+        +===========+   +===========+   |           |   |///////////|
+        |           |   |           |   |           |   |///////////|
+        +-----------+   +-----------+   +-----------+   +-----------+
+
+The kernel then re-orders the descriptors in the client thread's kernel buffer,
+putting the sent descriptors first. The sent and received descriptor are kept in
+the same order amongst themselves. A pointer (*) is kept on the first received
+descriptor for future use.
+
+        Client Buffer   Client Buffer   Server Buffer   Server Buffer
+        (User Space)      (Kernel)        (Kernel)      (User Space)
+        +-----------+   +-----------+   +-----------+   +-----------+
+        |           |   |           |   |   Rs1     |   |///////////|
+        |           |   |           |   |   Rs2     |   |///////////|
+        |    Dc     |   |    Dc     |   |   Rs3     |   |(unmapped)/|
+        |           |   |           |   |   Rs4     |   |///////////|
+        |           |   |           |   +===========+   |///////////|
+        |           |   |           |   |           |   |///////////|
+        |           |   |           |   |           |   |///////////|
+        +===========+   +===========+   |           |   |///////////|
+        |   Sc1     |   |   Sc1     |   |           |   |///////////|
+        |   Rc1     |   |   Sc2     |   |           |   |///////////|
+        |   Rc2     |  *|   Rc1     |   |           |   |///////////|
+        |   Sc2     |   |   Rc2     |   |           |   |///////////|
+        |   Rc3     |   |   Rc3     |   |           |   |///////////|
+        +===========+   +===========+   |           |   |///////////|
+        |           |   |           |   |           |   |///////////|
+        +-----------+   +-----------+   +-----------+   +-----------+
+
+The client thread meets a waiting server thread. It confirms that there are
+enough received descriptor slots on the server side to receive all the sent
+descriptors from the client thread's message. Hadn't that be the case, the SEND
+operation would have failed.
+
+The kernel switches to the server thread's address space.
+
+        Client Buffer   Client Buffer   Server Buffer   Server Buffer
+        (User Space)      (Kernel)        (Kernel)      (User Space)
+        +-----------+   +-----------+   +-----------+   +-----------+
+        |///////////|   |           |   |   Rs1     |   |           |
+        |///////////|   |           |   |   Rs2     |   |           |
+        |(unmapped)/|   |    Dc     |   |   Rs3     |   |(undefined)|
+        |///////////|   |           |   |   Rs4     |   |           |
+        |///////////|   |           |   +===========+   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   +===========+   |           |   |           |
+        |///////////|   |   Sc1     |   |           |   |           |
+        |///////////|   |   Sc2     |   |           |   |           |
+        |///////////|  *|   Rc1     |   |           |   |           |
+        |///////////|   |   Rc2     |   |           |   |           |
+        |///////////|   |   Rc3     |   |           |   |           |
+        |///////////|   +===========+   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        +-----------+   +-----------+   +-----------+   +-----------+
+
+
+The kernel copies the data into the server thread's user space buffer. It also
+binds the received descriptor slots to the sent descriptors:
+    - Rs1 is bound to Sc1.
+    - Rs2 is bound to Sc2.
+
+The Rs3 and Rs4 desriptor slots are left unused.
+
+        Client Buffer   Client Buffer   Server Buffer   Server Buffer
+        (User Space)      (Kernel)        (Kernel)      (User Space)
+        +-----------+   +-----------+   +-----------+   +-----------+
+        |///////////|   |           |   |   Rs1     |   |           |
+        |///////////|   |           |   |   Rs2     |   |           |
+        |(unmapped)/|   |    Dc     |   |   Rs3     |   |    Dc     |
+        |///////////|   |           |   |   Rs4     |   |           |
+        |///////////|   |           |   +===========+   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   +===========+   |           |   +===========+
+        |///////////|   |   Sc1     |   |           |   |   Rs1     |
+        |///////////|   |   Sc2     |   |           |   |   Rs2     |
+        |///////////|  *|   Rc1     |   |           |   +===========+
+        |///////////|   |   Rc2     |   |           |   |           |
+        |///////////|   |   Rc3     |   |           |   |           |
+        |///////////|   +===========+   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        +-----------+   +-----------+   +-----------+   +-----------+
+
+REPLY Operation
+---------------
+
+Control is passed to the server thread, which services the client thread's
+request. It sets up a reply message with the following content:
+    - The data string Ds
+    - A single sent descriptor: Ss1
+
+While is was servicing the request, the client thread may have performed system
+or IPC calls, so the content of its kernel message buffer is undefined.
+
+        Client Buffer   Client Buffer   Server Buffer   Server Buffer
+        (User Space)      (Kernel)        (Kernel)      (User Space)
+        +-----------+   +-----------+   +-----------+   +-----------+
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |    Ds     |
+        |(unmapped)/|   |    Dc     |   |(undefined)|   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   +===========+   |           |   |           |
+        |///////////|   |   Sc1     |   |           |   |           |
+        |///////////|   |   Sc2     |   |           |   |           |
+        |///////////|  *|   Rc1     |   |           |   |           |
+        |///////////|   |   Rc2     |   |           |   +===========+
+        |///////////|   |   Rc3     |   |           |   |   Ss1     |
+        |///////////|   +===========+   |           |   +===========+
+        |///////////|   |           |   |           |   |           |
+        +-----------+   +-----------+   +-----------+   +-----------+
+
+When the server thread initiates the REPLY operation, the kernel copies the
+descriptors from its user space buffer to its kernel space buffer. Since this is
+a REPLY operation, the kernel would reject a message buffer that would contain
+received descriptors.
+
+        Client Buffer   Client Buffer   Server Buffer   Server Buffer
+        (User Space)      (Kernel)        (Kernel)      (User Space)
+        +-----------+   +-----------+   +-----------+   +-----------+
+        |///////////|   |           |   |   Ss1     |   |           |
+        |///////////|   |           |   +===========+   |    Ds     |
+        |(unmapped)/|   |    Dc     |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   +===========+   |           |   |           |
+        |///////////|   |   Sc1     |   |           |   |           |
+        |///////////|   |   Sc2     |   |           |   |           |
+        |///////////|  *|   Rc1     |   |           |   |           |
+        |///////////|   |   Rc2     |   |           |   +===========+
+        |///////////|   |   Rc3     |   |           |   |   Ss1     |
+        |///////////|   +===========+   |           |   +===========+
+        |///////////|   |           |   |           |   |           |
+        +-----------+   +-----------+   +-----------+   +-----------+
+
+The kernel binds received descriptor slots to sent descriptors:
+    - Ss1 is bound to Rc1.
+
+The Rc2 and Rc3 desriptor slots are left unused.
+    
+The kernel moves the received descriptor to its proper place within the client
+thread's kernel buffer, and then copies the data string from the server thread's
+user space buffer.
+
+        Client Buffer   Client Buffer   Server Buffer   Server Buffer
+        (User Space)      (Kernel)        (Kernel)      (User Space)
+        +-----------+   +-----------+   +-----------+   +-----------+
+        |///////////|   |           |   |   Ss1     |   |           |
+        |///////////|   |           |   +===========+   |           |
+        |(unmapped)/|   |    Ds     |   |           |   |    Ds     |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   +===========+   |           |   +===========+
+        |///////////|   |   Rc1     |   |           |   |   Ss1     |
+        |///////////|   +===========+   |           |   +===========+
+        |///////////|   |           |   |           |   |           |
+        +-----------+   +-----------+   +-----------+   +-----------+
+
+
+The kernel switches to the client thread's address space and copies the message
+from the client thread's kernel buffer to its user space buffer.
+
+        Client Buffer   Client Buffer   Server Buffer   Server Buffer
+        (User Space)      (Kernel)        (Kernel)      (User Space)
+        +-----------+   +-----------+   +-----------+   +-----------+
+        |           |   |           |   |   Ss1     |   |///////////|
+        |           |   |           |   +===========+   |///////////|
+        |    Ds     |   |    Ds     |   |           |   |(unmapped)/|
+        |           |   |           |   |           |   |///////////|
+        |           |   |           |   |           |   |///////////|
+        |           |   |           |   |           |   |///////////|
+        |           |   |           |   |           |   |///////////|
+        |           |   |           |   |           |   |///////////|
+        |           |   |           |   |           |   |///////////|
+        |           |   |           |   |           |   |///////////|
+        |           |   |           |   |           |   |///////////|
+        +===========+   +===========+   |           |   |///////////|
+        |   Rc1     |   |   Rc1     |   |           |   |///////////|
+        +===========+   +===========+   |           |   |///////////|
+        |           |   |           |   |           |   |///////////|
+        +-----------+   +-----------+   +-----------+   +-----------+
+
+REPLY/RECEIVE Operation
+-----------------------
+
+The server thread could also have performed a combined REPLY/RECEIVE operation.
+Here, it sets up a message with the following content:
+    - The data string Ds' (for the REPLY)
+    - A single sent descriptor: Ss1 (for the REPLY)
+    - Four slots to receive descriptors: Rs3, Rs4, Rs5 and Rs6 (for the RECEIVE)
+
+        Client Buffer   Client Buffer   Server Buffer   Server Buffer
+        (User Space)      (Kernel)        (Kernel)      (User Space)
+        +-----------+   +-----------+   +-----------+   +-----------+
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |    Ds'    |
+        |(unmapped)/|   |    Dc     |   |(undefined)|   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   +===========+   |           |   +===========+
+        |///////////|   |   Sc1     |   |           |   |   Rs3     |
+        |///////////|   |   Sc2     |   |           |   |   Rs4     |
+        |///////////|  *|   Rc1     |   |           |   |   Ss1     |
+        |///////////|   |   Rc2     |   |           |   |   Rs5     |
+        |///////////|   |   Rc3     |   |           |   |   Rs6     |
+        |///////////|   +===========+   |           |   +===========+
+        |///////////|   |           |   |           |   |           |
+        +-----------+   +-----------+   +-----------+   +-----------+
+
+When the server thread initiates the REPLY/RECEIVE operation, the kernel copies
+the descriptors from its user space buffer to its kernel space buffer.
+
+        Client Buffer   Client Buffer   Server Buffer   Server Buffer
+        (User Space)      (Kernel)        (Kernel)      (User Space)
+        +-----------+   +-----------+   +-----------+   +-----------+
+        |///////////|   |           |   |   Rs3     |   |           |
+        |///////////|   |           |   |   Rs4     |   |    Ds'    |
+        |(unmapped)/|   |    Dc     |   |   Ss1     |   |           |
+        |///////////|   |           |   |   Rs5     |   |           |
+        |///////////|   |           |   |   Rs6     |   |           |
+        |///////////|   |           |   +===========+   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   +===========+   |           |   +===========+
+        |///////////|   |   Sc1     |   |           |   |   Rs3     |
+        |///////////|   |   Sc2     |   |           |   |   Rs4     |
+        |///////////|  *|   Rc1     |   |           |   |   Ss1     |
+        |///////////|   |   Rc2     |   |           |   |   Rs5     |
+        |///////////|   |   Rc3     |   |           |   |   Rs6     |
+        |///////////|   +===========+   |           |   +===========+
+        |///////////|   |           |   |           |   |           |
+        +-----------+   +-----------+   +-----------+   +-----------+
+
+As was done for the client thread during the SEND operation, the kernel then
+re-orders the descriptors in the server thread's kernel buffer, putting the sent
+descriptors first. The sent and received descriptor are kept in the same order
+amongst themselves. A pointer (*) is kept on the first received descriptor for
+future use.
+
+        +-----------+   +-----------+   +-----------+   +-----------+
+        |///////////|   |           |   |   Ss1     |   |           |
+        |///////////|   |           |  *|   Rs3     |   |    Ds'    |
+        |(unmapped)/|   |    Dc     |   |   Rs4     |   |           |
+        |///////////|   |           |   |   Rs5     |   |           |
+        |///////////|   |           |   |   Rs6     |   |           |
+        |///////////|   |           |   +===========+   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   +===========+   |           |   +===========+
+        |///////////|   |   Sc1     |   |           |   |   Rs3     |
+        |///////////|   |   Sc2     |   |           |   |   Rs4     |
+        |///////////|  *|   Rc1     |   |           |   |   Ss1     |
+        |///////////|   |   Rc2     |   |           |   |   Rs5     |
+        |///////////|   |   Rc3     |   |           |   |   Rs6     |
+        |///////////|   +===========+   |           |   +===========+
+        |///////////|   |           |   |           |   |           |
+        +-----------+   +-----------+   +-----------+   +-----------+
+
+The kernel binds received descriptor slots to sent descriptors:
+    - Ss1 is bound to Rc1.
+
+The Rc2 and Rc3 desriptor slots are left unused.
+
+The kernel moves the received descriptor to its proper place within the client
+thread's kernel buffer, and then copies the data string from the server thread's
+user space buffer.
+
+        +-----------+   +-----------+   +-----------+   +-----------+
+        |///////////|   |           |   |   Ss1     |   |           |
+        |///////////|   |           |  *|   Rs3     |   |    Ds'    |
+        |(unmapped)/|   |    Ds'    |   |   Rs4     |   |           |
+        |///////////|   |           |   |   Rs5     |   |           |
+        |///////////|   |           |   |   Rs6     |   |           |
+        |///////////|   |           |   +===========+   |           |
+        |///////////|   |           |   |           |   |           |
+        |///////////|   +===========+   |           |   +===========+
+        |///////////|   |   Rc1     |   |           |   |   Rs3     |
+        |///////////|   +===========+   |           |   |   Rs4     |
+        |///////////|   |           |   |           |   |   Ss1     |
+        |///////////|   |           |   |           |   |   Rs5     |
+        |///////////|   |           |   |           |   |   Rs6     |
+        |///////////|   |           |   |           |   +===========+
+        |///////////|   |           |   |           |   |           |
+        +-----------+   +-----------+   +-----------+   +-----------+
+
+
+The kernel switches to the client thread's address space and copies the message
+to the client thread's kernel buffer to its user space buffer.
+
+        Client Buffer   Client Buffer   Server Buffer   Server Buffer
+        (User Space)      (Kernel)        (Kernel)      (User Space)
+        +-----------+   +-----------+   +-----------+   +-----------+
+        |           |   |           |   |   Ss1     |   |///////////|
+        |           |   |           |  *|   Rs3     |   |///////////|
+        |    Ds'    |   |    Ds'    |   |   Rs4     |   |(unmapped)/|
+        |           |   |           |   |   Rs5     |   |///////////|
+        |           |   |           |   |   Rs6     |   |///////////|
+        |           |   |           |   +===========+   |///////////|
+        |           |   |           |   |           |   |///////////|
+        +===========+   +===========+   |           |   |///////////|
+        |   Rc1     |   |   Rc1     |   |           |   |///////////|
+        +===========+   +===========+   |           |   |///////////|
+        |           |   |           |   |           |   |///////////|
+        |           |   |           |   |           |   |///////////|
+        |           |   |           |   |           |   |///////////|
+        |           |   |           |   |           |   |///////////|
+        |           |   |           |   |           |   |///////////|
+        +-----------+   +-----------+   +-----------+   +-----------+
+
+The server thread now blocks waiting for a new message.
