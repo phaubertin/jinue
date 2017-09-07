@@ -60,10 +60,10 @@ thread_context_switch_stack:
     ; esp+24  to thread context pointer (second function argument)
     ; esp+20  from thread context pointer (first function argument)
     ; esp+16  return address
-    ; esp+12  ebx
-    ; esp+ 8  esi
-    ; esp+ 4  edi
-    ; esp+ 0  ebp
+    ; esp+12  ebp
+    ; esp+ 8  ebx
+    ; esp+ 4  esi
+    ; esp+ 0  edi
     
     ; retrieve the from thread context argument
     mov edi, [esp+20]   ; from thread context (first function argument)
@@ -79,16 +79,16 @@ thread_context_switch_stack:
     mov [edi], esp
 
 .do_switch:
-    ; load the saved stack pointer from the thread context to which we are
-    ; switching
+    ; read remaining arguments from stack before switching
     mov esi, [esp+24]   ; to thread context (second function argument)
+    mov eax, [esp+28]   ; destroy_from boolean (third function argument)
     
-    ; This is where we actually switch thread by loading the stack pointer.
+    ; Load the saved stack pointer from the thread context to which we are
+    ; switching (to thread). This is where we actually switch thread.
     mov esp, [esi]      ; saved stack pointer is the first member
     
     ; Now that we switched stack, see if the caller requested the from thread
     ; context be destroyed.
-    mov eax, [esp+28]   ; destroy_from boolean (third function argument)
     or eax, eax
     jz .skip_destroy
     
