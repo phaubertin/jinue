@@ -30,6 +30,7 @@
  */
 
 #include <hal/interrupt.h>
+#include <hal/types.h>
 #include <hal/x86.h>
 #include <panic.h>
 #include <printk.h>
@@ -37,20 +38,25 @@
 #include <types.h>
 
 
-void dispatch_interrupt(unsigned int irq, uintptr_t eip, uint32_t errcode, jinue_syscall_args_t *syscall_args) {
+void dispatch_interrupt(trapframe_t *trapframe) {
+    unsigned int    ivt         = trapframe->ivt;
+    uintptr_t       eip         = trapframe->eip;
+    uint32_t        errcode     = trapframe->errcode;
+    
     /* exceptions */
-    if(irq < IDT_FIRST_IRQ) {
-        printk("EXCEPT: %u cr2=0x%x errcode=0x%x eip=0x%x\n", irq, get_cr2(), errcode, eip);
+    if(ivt < IDT_FIRST_IRQ) {
+        printk("EXCEPT: %u cr2=0x%x errcode=0x%x eip=0x%x\n", ivt, get_cr2(), errcode, eip);
         
         /* never returns */
         panic("caught exception");
     }
     
     /* slow system call method */
-    if(irq == SYSCALL_IRQ) {
+    if(ivt == SYSCALL_IRQ) {
+        jinue_syscall_args_t *syscall_args = (jinue_syscall_args_t *)&trapframe->msg_arg0;
         dispatch_syscall(syscall_args);
     }
     else {
-        printk("INTR: irq %u (vector %u)\n", irq - IDT_FIRST_IRQ, irq);
+        printk("INTR: ivt %u (vector %u)\n", ivt - IDT_FIRST_IRQ, ivt);
     }
 }

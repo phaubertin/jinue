@@ -90,6 +90,8 @@
 /** SIMD Floating-Point Exception */
 #define EXCEPTION_SIMD                  19
 
+#define HAS_ERRCODE(x)      ((x) == EXCEPTION_DOUBLE_FAULT || (x) == EXCEPTION_ALIGNMENT || ((x) >= EXCEPTION_INVALID_TSS && (x) <= EXCEPTION_PAGE_FAULT))
+
 
 #endif
 

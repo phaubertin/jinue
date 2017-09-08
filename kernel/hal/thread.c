@@ -35,10 +35,12 @@
 #include <hal/pfaddr.h>
 #include <hal/thread.h>
 #include <hal/trap.h>
+#include <hal/types.h>
 #include <hal/vm.h>
 #include <assert.h>
 #include <pfalloc.h>
 #include <stddef.h>
+#include <string.h>
 #include <vm_alloc.h>
 
 
@@ -103,43 +105,31 @@ thread_t *thread_page_create(
         thread_ctx->local_storage_addr  = NULL;
 
         /* setup stack for initial return to user space */
-        uint32_t *kernel_stack_base = (uint32_t *)get_kernel_stack_base(thread_ctx);
-        int idx = 0;
+        void *kernel_stack_base = get_kernel_stack_base(thread_ctx);
+        
+        trapframe_t *trapframe = (trapframe_t *)kernel_stack_base - 1;
+        
+        memset(trapframe, 0, sizeof(trapframe_t));
+        
+        trapframe->eip      = (uint32_t)entry;
+        trapframe->esp      = (uint32_t)user_stack;
+        trapframe->eflags   = 2;
+        trapframe->cs       = 8 * GDT_USER_CODE + 3;     /* user code segment, rpl/cpl = 3 */
+        trapframe->ss       = 8 * GDT_USER_DATA + 3;     /* user stack segment, rpl = 3 */
+        trapframe->ds       = 8 * GDT_USER_DATA + 3;     /* user data segment, rpl = 3 */
+        trapframe->es       = 8 * GDT_USER_DATA + 3;     /* user data segment, rpl = 3 */
+        trapframe->fs       = 8 * GDT_USER_DATA + 3;     /* user data segment, rpl = 3 */
+        trapframe->gs       = 8 * GDT_USER_DATA + 3;     /* user data segment, rpl = 3 */
+        
+        kernel_context_t *kernel_context = (kernel_context_t *)trapframe - 1;
+        
+        memset(kernel_context, 0, sizeof(kernel_context_t));
+        
+        /* This is the address to which thread_context_switch_stack() will return. */
+        kernel_context->eip = (uint32_t)return_from_interrupt;        
 
-        /* the following values are put on the stack for use by the iret instruction */
-        kernel_stack_base[--idx]   = 8 * GDT_USER_DATA + 3;     /* user stack segment (ss), rpl = 3 */
-        kernel_stack_base[--idx]   = (uint32_t)user_stack;      /* user stack pointer (esp) */
-        kernel_stack_base[--idx]   = 2;                         /* flags register (eflags) */
-        kernel_stack_base[--idx]   = 8 * GDT_USER_CODE + 3;     /* user code segment (cs), rpl/cpl = 3 */
-        kernel_stack_base[--idx]   = (uint32_t)entry;           /* user code entry point */
-        
-        /* the following values are popped by return_from_interrupt() */
-        kernel_stack_base[--idx]   = 0;                         /* ebp */
-        kernel_stack_base[--idx]   = 8 * GDT_USER_DATA + 3;     /* gs: user data segment, rpl = 3 */
-        kernel_stack_base[--idx]   = 8 * GDT_USER_DATA + 3;     /* fs: user data segment, rpl = 3 */
-        kernel_stack_base[--idx]   = 8 * GDT_USER_DATA + 3;     /* es: user data segment, rpl = 3 */
-        kernel_stack_base[--idx]   = 8 * GDT_USER_DATA + 3;     /* ds: user data segment, rpl = 3 */
-        kernel_stack_base[--idx]   = 0;                         /* ecx */
-        kernel_stack_base[--idx]   = 0;                         /* edx */
-        kernel_stack_base[--idx]   = 0;                         /* edi */
-        kernel_stack_base[--idx]   = 0;                         /* esi */
-        kernel_stack_base[--idx]   = 0;                         /* ebx */
-        kernel_stack_base[--idx]   = 0;                         /* eax */        
-        kernel_stack_base[--idx]   = 0;                         /* no error code */
-        kernel_stack_base[--idx]   = 0;                         /* in_kernel */
-        
-        /* this is the address thread_context_switch_stack() will return to */
-        kernel_stack_base[--idx]   = (uint32_t)return_from_interrupt;
-        
-        /* the following values are popped by address thread_context_switch_stack()
-         * as part of its cleanup before returning (saved registers). */
-        kernel_stack_base[--idx]   = 0;                         /* ebx */
-        kernel_stack_base[--idx]   = 0;                         /* esi */
-        kernel_stack_base[--idx]   = 0;                         /* edi */
-        kernel_stack_base[--idx]   = 0;                         /* ebp */
-        
         /* set thread stack pointer */
-        thread_ctx->saved_stack_pointer = (addr_t)&kernel_stack_base[idx];
+        thread_ctx->saved_stack_pointer = (addr_t)kernel_context;
     }
 
     return thread;

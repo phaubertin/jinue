@@ -30,8 +30,6 @@
 #include <hal/asm/descriptors.h>
 #include <hal/asm/irq.h>
 
-%define NO_ERROR_CODE                   0
-%define GOT_ERROR_CODE                  1
 
     bits 32
 
@@ -46,38 +44,99 @@
 ; ------------------------------------------------------------------------------
     global interrupt_entry:function (return_from_interrupt.end - interrupt_entry)
 interrupt_entry:
-    ; We use the version of the push instruction with a byte operand in the
-    ; jump table because it is the shortest form of this instruction (2 bytes).
-    ; However, the byte operand is sign extended by the instruction, which is
-    ; obviously not what we want. Here, we mask the most significant bits of
-    ; the interrupt vector to make it zero-extended instead.
-    and dword [esp], 0xff
-    
     cld
     
-    ; save thread state on stack
-    push gs   ; 36
-    push fs   ; 32
-    push es   ; 28
-    push ds   ; 24
-    push ecx  ; 20
-    push edx  ; 16
-
-    ; system call arguments (pushed in reverse order)
+    ; Once everything is saved and after some reshuffling, the stack layout
+    ; matches the trapframe_t structure definition. It looks like this:
     ;
-    ; The interrupt dispatcher is passed a pointer to these four arguments.
-    ; If this interrupt request turns out to be a system call, this pointer
-    ; gets passed to the system call dispatcher where the values pushed here
-    ; may be modified.
-    push edi  ; 12  arg3
-    push esi  ; 8   arg2
-    push ebx  ; 4   arg1
-    push eax  ; 0   arg0
+    ; esp+72  user stack segment
+    ; esp+68  user stack pointer
+    ; esp+64  user EFLAGS
+    ; esp+60  user code segment
+    ; esp+56  user return address
+    ;
+    ; esp+52  ebp (but the error code is here on entry, see below)
+    ; esp+48  interrupt vector
+    ;
+    ; esp+44  error code
+    ; esp+40  gs
+    ; esp+36  fs
+    ; esp+32  es
+    ; esp+28  ds
+    ; esp+24  ecx
+    ; esp+20  edx
+    ; esp+16  [in_kernel]
+    ; esp+12  edi (message/system call argument 3)
+    ; esp+ 8  esi (message/system call argument 2)
+    ; esp+ 4  ebx (message/system call argument 1)
+    ; esp+ 0  eax (message/system call argument 0)
+    
+    sub esp, 4  ; 44 reserve space for the error code
+
+    push gs     ; 40
+    push fs     ; 36
+    push es     ; 32
+    push ds     ; 28
+    push ecx    ; 24
+    push edx    ; 20
     
     ; set data segment
-    mov eax, GDT_KERNEL_DATA * 8
-    mov ds, ax
-    mov es, ax
+    mov ecx, GDT_KERNEL_DATA * 8
+    mov ds, cx
+    mov es, cx
+    
+    ; Indicates whether this interrupt occurred in userspace (== 0) or in the
+    ; kernel (> 0).
+    ;
+    ; We keep a copy in ecx for later use
+    mov ecx, dword [in_kernel]
+    push ecx    ; 16
+    
+    ; system call arguments (pushed in reverse order)
+    ;
+    ; The kernel modifies these to set return values.
+    push edi    ; 12 arg3
+    push esi    ; 8  arg2
+    push ebx    ; 4  arg1
+    push eax    ; 0  arg0
+    
+    ; We use the version of the push instruction with a byte operand in the
+    ; interrupt vector stubs because it is the shortest form of this instruction
+    ; (2 bytes). However, the byte operand is sign extended by the instruction,
+    ; which is obviously not what we want. Here, we mask the most significant
+    ; bits of the interrupt vector to make it zero-extended instead.
+    and dword [esp+48], 0xff
+    
+    ; If we are handling a CPU exception with an error code, the CPU pushed
+    ; that error code right after the return address. Otherwise, the interrupt
+    ; vector stub pushed a dummy value there to keep the same stack layout.
+    ;
+    ; However, we want to put ebp there because, if we are handling an interrupt
+    ; that happened in the kernel, ebp contains the frame pointer. This makes
+    ; debugging easier because it allows us to include what the kernel was 
+    ; doing when the interrupt was triggered in the backtrace.
+    mov edx, [esp+52]   ; read error code
+    mov [esp+44], edx   ; save it where we actually want it
+    mov [esp+52], ebp   ; save ebp (frame pointer) right after the return address
+    
+    ; Clear frame pointer until we know for sure we were in the kernel when
+    ; the interrupt occurred. If the CPU was executing user code at the time,
+    ; ebp is neither trustworthy nor useful.
+    mov ebp, 0
+    
+    ; Check to see if we were in the kernel before the interrupt.
+    ;
+    ; ecx contains the value of [in_kernel].
+    or ecx, ecx
+    jz .skip_fp
+    
+    ; set frame pointer
+    lea ebp, [esp+52]
+    
+.skip_fp:
+    ; (re)-entering the kernel
+    inc ecx
+    mov dword [in_kernel], ecx
     
     ; set per-cpu data segment (TSS)
     ;
@@ -87,139 +146,35 @@ interrupt_entry:
     add ax, 8           ; next entry
     mov gs, ax          ; load gs with data segment selector
     
-    ; We want to save the frame pointer for debugging purposes, to
-    ; ensure we have a complete call stack dump if we need it.
-    ;
-    ; If we were executing in-kernel before the interrupt/exception
-    ; occured, we save the frame pointer (ebp), which means we can
-    ; actually know what the kernel was doing at the time the interrupt
-    ; happened. If, on the other hand, the cpu was executing user code
-    ; at the time, ebp is neither trustworthy nor useful, so we store
-    ; nothing and set ebp to zero to terminate the chain instead.
-    ;
-    ; We need to store the frame pointer right after the return address.
-    ; So, we will be overwriting the interrupt vector, unless the
-    ; interrupt was actually an exception with an error code, in which
-    ; case, it is the error code that we will be overwriting.
-    
-    ; keep old value of ebp around to store it later
-    mov ebx, ebp
-    
-    ; default values
-    mov edx, 0              ; error code (default)
-    mov ecx, NO_ERROR_CODE  ; there is no error code (default)
-    mov ebp, 0              ; new frame pointer (default)
-    
-    ; get interrupt vector    
-    mov edi, esp
-    add edi, 40
-    mov eax, [edi]
-    
-    ; exceptions 8 (double fault) and 17 (alignment) both have an
-    ; error code
-    cmp eax, EXCEPTION_DOUBLE_FAULT
-    jz .has_error_code
-    
-    cmp eax, EXCEPTION_ALIGNMENT
-    jz .has_error_code
-    
-    ; exceptions 10 (invalid TSS) to 14 (page fault) all have an
-    ; error code
-    cmp eax, EXCEPTION_INVALID_TSS 
-    jl .no_error_code
-    
-    cmp eax, EXCEPTION_PAGE_FAULT 
-    jg .no_error_code
-
-.has_error_code:
-    ; update frame pointer address to overwrite error code instead of
-    ; the ivt
-    add edi, 4
-    
-    ; get error code
-    mov edx, [edi]
-    
-    ; remember that we have an error code
-    mov ecx, GOT_ERROR_CODE
-
-.no_error_code:
-
-    ; check if we were in kernel before the interrupt occurred
-    mov esi, [in_kernel]
-    or esi, esi
-    jz .not_in_kernel   ; not in kernel if non-zero
-
-.indeed_in_kernel:
-    
-    ; set frame pointer for this stack frame
-    mov ebp, edi
-
-.not_in_kernel:
-
-    ; store frame pointer...
-    ; ... which is the original value of ebp...
-    ; ... which we hadn't stored yet
-    mov [edi], ebx
-    
-    ; remember whether we have an error code or not
-    push ecx
-    
-    ; (re)-entering the kernel
-    push dword [in_kernel]
-    inc dword [in_kernel]
-    
-    ; set function parameters
-    mov  ecx, esp
-    add  ecx, 8
-    push ecx            ; Fourth param: system call parameters (for slow system call method)
-    push edx            ; Third param:  error code
-    push dword [edi+4]  ; Second param: return address (eip)
-    push eax            ; First param:  Interrupt vector
+    ; set dispatch_interrupt() function arguments
+    push esp            ; First argument:  trapframe
     
     ; call interrupt dispatching function
 .dispatch:
     call dispatch_interrupt
     
-    ; remove parameters from stack
-    add esp, 16
+    ; remove argument(s) from stack
+    add esp, 4
 
     ; new threads start here
     global return_from_interrupt
 return_from_interrupt:
-
-    ; restore in_kernel
-    pop dword [in_kernel]
-
-    ; error code/no error code
-    pop ebp
     
-    ; restore thread state
-    ;
-    ; These first four registers are the system call arguments (and return
-    ; values). If this interrupt request is a system call, the values we are
-    ; popping here are (likely) not the same as the ones we pushed at the
-    ; beginning of this function.
-    pop eax     ; arg0
-    pop ebx     ; arg1
-    pop esi     ; arg2
-    pop edi     ; arg3
-
-    pop edx
-    pop ecx
-    pop ds
-    pop es
-    pop fs
-    pop gs
+    pop eax                 ; 0
+    pop ebx                 ; 4
+    pop esi                 ; 8
+    pop edi                 ; 12
+    pop dword [in_kernel]   ; 16
+    pop edx                 ; 20
+    pop ecx                 ; 24
+    pop ds                  ; 28
+    pop es                  ; 32
+    pop fs                  ; 36
+    pop gs                  ; 40
     
-    ; try to remember where we left ebp
-    cmp ebp, GOT_ERROR_CODE
-    jne .no_error_code2
-    
-    add esp, 4
-    
-.no_error_code2:
-    ; restore ebp
-    pop ebp
+    add esp, 8              ; 44 skip error code
+                            ; 48 skip interrupt vector
+    pop ebp                 ; 52
     
     ; return from interrupt
     iret
@@ -409,25 +364,48 @@ fast_amd_entry:
 .end:
 
 ; ------------------------------------------------------------------------------
-; Interrupt Jump Table (irq_jtable)
+; Interrupt Stubs (irq_jtable)
 ; ------------------------------------------------------------------------------
-section .text
-align 32
+; A stub is generated for each interrupt vector that pushes the interrupt number
+; on the stack and then jumps to the interrupt entry point (interrupt_entry).
+
+    section .text
+    align 32
+    
+    %define NULL_ERRCODE    0
+    %define PER_BLOCK       15
 
     global irq_jtable
 irq_jtable:
     
     %assign ivt 0
-    %rep IDT_VECTOR_COUNT / 7 + 1
-        %assign stone_ivt ivt
-        %define stone .jump %+ stone_ivt
-stone:
-        jmp interrupt_entry
+    
+    ; Stubs are grouped in blocks with each block starting with a trampoline
+    ; jump to interrupt_entry. This allows the use of a short jump (to the
+    ; trampoline) in each stub, which decreases the total size of the stubs,
+    ; hopefully decreasing cache misses.
+    %rep IDT_VECTOR_COUNT / PER_BLOCK + 1
+        %assign trampoline_ivt ivt
+        %define trampoline .trampoline %+ trampoline_ivt
         
-        %rep 7
+        %if ivt < IDT_VECTOR_COUNT
+            ; This is a jump target
+            align 8
+            
+trampoline:
+            jmp interrupt_entry
+        %endif
+        
+        %rep PER_BLOCK
             %if ivt < IDT_VECTOR_COUNT
-                ; set irq_jtable.irqxx label
-                .irq %+ ivt:
+; set irq_jtable.irqxx label
+.irq %+ ivt:
+                ; Push a null DWORD in lieu of the error code for interrupts
+                ; that do not have one (only some CPU exceptions have an error
+                ; code). We do this to maintain a consistent stack frame layout.
+                %if ! HAS_ERRCODE(ivt)
+                    push byte NULL_ERRCODE 
+                %endif
                 
                 ; This if statement is not technically necessary, but it
                 ; prevents the assembler from warning that the operand is
@@ -435,10 +413,12 @@ stone:
                 %if ivt < 128
                     push byte ivt
                 %else
+                    ; Operand is sign-extended, so some post-processing needs to
+                    ; be done in interrupt_entry.
                     push byte ivt-256
                 %endif
                 
-                jmp short stone
+                jmp short trampoline
                 
                 %assign ivt ivt+1
             %endif
@@ -450,12 +430,12 @@ stone:
 ; Interrupt Vector Table (IDT)
 ; ------------------------------------------------------------------------------
 ; Here, we reserve enough space for the IDT in the .data section (64 bits per
-; entry/descriptor) and we store in each entry the address of the matching
-; jump table stub. The kernel initialization code will re-process this table
-; later and create actual interrupt gate descriptors.
+; entry/descriptor) and we store the address of the matching jump table stub in
+; each entry. The kernel initialization code will re-process this table later
+; and create actual interrupt gate descriptors from these addresses.
 
-section .data
-align 32
+    section .data
+    align 32
 
     global idt
 idt:
