@@ -30,7 +30,6 @@
  */
 
 #include <hal/interrupt.h>
-#include <hal/types.h>
 #include <hal/x86.h>
 #include <panic.h>
 #include <printk.h>
@@ -53,8 +52,7 @@ void dispatch_interrupt(trapframe_t *trapframe) {
     
     /* slow system call method */
     if(ivt == SYSCALL_IRQ) {
-        jinue_syscall_args_t *syscall_args = (jinue_syscall_args_t *)&trapframe->msg_arg0;
-        dispatch_syscall(syscall_args);
+        dispatch_syscall(trapframe);
     }
     else {
         printk("INTR: ivt %u (vector %u)\n", ivt - IDT_FIRST_IRQ, ivt);

@@ -166,7 +166,6 @@ return_from_interrupt:
     pop es                  ; 32
     pop fs                  ; 36
     pop gs                  ; 40
-    
     add esp, 8              ; 44 skip error code
                             ; 48 skip interrupt vector
     pop ebp                 ; 52
@@ -181,20 +180,40 @@ return_from_interrupt:
 ; ------------------------------------------------------------------------------
     global fast_intel_entry:function (fast_intel_entry.end - fast_intel_entry)
 fast_intel_entry:
-    ; save return address and user stack pointer
+    ; kernel calling convention: before executing the SYSENTER instruction, the
+    ; calling code must store:
+    ;   - The user return address in ecx
+    ;   - The user stack pointer in ebp
     ;
-    ; kernel calling convention: the calling code must store these in the ebp
-    ; and ecx registers before executing the SYSENTER instruction.
-    push ebp        ; user stack pointer
-    push ecx        ; return address
+    ; For details on the stack layout, see comments in interrupt_entry above and
+    ; the definition of the trapframe_t type.
     
-    ; dummy frame pointer
-    mov ebp, 0
+    push byte SEG_SELECTOR(GDT_USER_DATA, RPL_USER)     ; 72
+    push ebp                                            ; 68 user stack pointer
+    pushf                                               ; 64
+    push byte SEG_SELECTOR(GDT_USER_CODE, RPL_USER)     ; 60
+    push ecx                                            ; 56 user return address
     
-    ; save data segment selectors
-    push ds
-    push es
-    push gs
+    mov ebp, 0              ; setup dummy frame pointer
+    
+    push byte 0             ; 52 ebp (caller-saved by kernel calling convention)
+    push byte 0             ; 48 interrupt vector (unused)
+    push byte 0             ; 44 error code (unused)
+    push gs                 ; 40
+    push fs                 ; 36
+    push es                 ; 32
+    push ds                 ; 28
+    push byte 0             ; 24 ecx (caller-saved by System V ABI)
+    push byte 0             ; 20 edx (caller-saved by System V ABI)
+    push byte 0             ; 16 [in_kernel]
+    
+    ; system call arguments (pushed in reverse order)
+    ;
+    ; The kernel modifies these to set return values.
+    push edi                ; 12 arg3
+    push esi                ; 8  arg2
+    push ebx                ; 4  arg1
+    push eax                ; 0  arg0
     
     ; set data segment
     mov ecx, SEG_SELECTOR(GDT_KERNEL_DATA, RPL_KERNEL)
@@ -202,61 +221,40 @@ fast_intel_entry:
     mov es, cx
     
     ; set per-cpu data segment
-    ;
-    ; The entry which follows the TSS descriptor in the GDT is a data
-    ; segment which points to per-cpu data, including the TSS.
-    mov ecx, SEG_SELECTOR(GDT_PER_CPU_DATA, RPL_KERNEL)
-    mov gs, cx
-    
-    ; system call arguments (pushed in reverse order)
-    push edi        ; arg3
-    push esi        ; arg2
-    push ebx        ; arg1
-    push eax        ; arg0
-    
-    ; push a pointer to the structure above as an argument to dispatch_syscall
-    push esp
-    
-    ; At this point, the stack looks like this:
-    ;
-    ; esp+36  user stack pointer
-    ; esp+32  user return address
-    ; esp+28  ds
-    ; esp+24  es
-    ; esp+20  gs
-    ; esp+16  edi (system call arg3)
-    ; esp+12  esi (system call arg2)
-    ; esp+ 8  ebx (system call arg1)
-    ; esp+ 4  eax (system call arg0)
-    ; esp+ 0  pointer to message arguments (first dispatch_syscall argument)
+    mov eax, SEG_SELECTOR(GDT_PER_CPU_DATA, RPL_KERNEL)
+    mov gs, ax
 
     ; entering the kernel
     mov [in_kernel], dword 1
     
+    ; set dispatch_syscall() function argument
+    push esp                ; First argument:  trapframe
+    
     call dispatch_syscall
     
-    ; leaving the kernel
-    mov [in_kernel], dword 0
-    
-    ; cleanup dispatch_syscall argument
+    ; cleanup dispatch_syscall() argument
     add esp, 4
     
-    ; system call return values
-    pop eax         ; arg0
-    pop ebx         ; arg1
-    pop esi         ; arg2
-    pop edi         ; arg3
+    pop eax                 ; 0
+    pop ebx                 ; 4
+    pop esi                 ; 8
+    pop edi                 ; 12
+    pop dword [in_kernel]   ; 16
+    add esp, 8              ; 20 skip edx (used for stack pointer by SYSEXIT)
+                            ; 24 skip ecx (used for return address by SYSEXIT)
+    pop ds                  ; 28
+    pop es                  ; 32
+    pop fs                  ; 36
+    pop gs                  ; 40
     
-    ; restore data segment selectors
-    pop gs
-    pop es
-    pop ds
-    
-    ; restore return address and user stack
-    ;
-    ; The SYSEXIT instruction requires these to be in the edx and ecx registers.
-    pop edx        ; return address
-    pop ecx        ; user stack
+    add esp, 8              ; 44 skip error code
+                            ; 48 skip interrupt vector
+    pop ebp                 ; 52
+    pop edx                 ; 56 return address
+    add esp, 4              ; 60 skip user code segment
+    popf                    ; 64
+    pop ecx                 ; 68 user stack pointer
+    ; no action needed      ; 72 skip user stack segment
     
     sysexit
 
@@ -284,73 +282,71 @@ fast_amd_entry:
                                         ; Stack pointer is at offset 4 in the TSS, and
                                         ; the TSS follows the GDT (see cpu_data_t).
     
-    ; save return address and user stack
+    ; For details on the stack layout, see comments in interrupt_entry above and
+    ; the definition of the trapframe_t type.
+    
+    push byte SEG_SELECTOR(GDT_USER_DATA, RPL_USER)     ; 72
+    push ebp                                            ; 68 user stack pointer
+    pushf                                               ; 64
+    push byte SEG_SELECTOR(GDT_USER_CODE, RPL_USER)     ; 60
+    push ecx                                            ; 56 user return address
+    
+    mov ebp, 0              ; setup dummy frame pointer
+    
+    push byte 0             ; 52 ebp (caller-saved by kernel calling convention)
+    push byte 0             ; 48 interrupt vector (unused)
+    push byte 0             ; 44 error code (unused)
+    push byte 0             ; 40 gs (caller-saved by kernel calling convention)
+    push fs                 ; 36
+    push es                 ; 32
+    push ds                 ; 28
+    push byte 0             ; 24 ecx (caller-saved by System V ABI)
+    push byte 0             ; 20 edx (caller-saved by System V ABI)
+    push byte 0             ; 16 [in_kernel]
+    
+    ; system call arguments (pushed in reverse order)
     ;
-    ; The return address is moved to ecx by the SYSCALL instruction.
-    push ebp    ; user stack pointer
-    push ecx    ; return address
-    
-    ; dummy frame pointer
-    mov ebp, 0
-    
-    ; save data segment selectors
-    push ds
-    push es
+    ; The kernel modifies these to set return values.
+    push edi                ; 12 arg3
+    push esi                ; 8  arg2
+    push ebx                ; 4  arg1
+    push eax                ; 0  arg0
     
     ; set data segment
     mov ecx, SEG_SELECTOR(GDT_KERNEL_DATA, RPL_KERNEL)
     mov ds, cx
     mov es, cx
-    
-    ; system call arguments (pushed in reverse order)
-    push edi        ; arg3
-    push esi        ; arg2
-    push ebx        ; arg1
-    push eax        ; arg0
-    
-    ; push a pointer to the structure above as an argument to dispatch_syscall
-    push esp
-    
-    ; At this point, the stack looks like this:
-    ;
-    ; esp+32  user stack pointer
-    ; esp+28  user return address
-    ; esp+24  ds
-    ; esp+20  es
-    ; esp+16  edi (system call arg3)
-    ; esp+12  esi (system call arg2)
-    ; esp+ 8  ebx (system call arg1)
-    ; esp+ 4  eax (system call arg0)
-    ; esp+ 0  pointer to message arguments (dispatch_syscall first argument)
 
     ; entering the kernel
     mov [in_kernel], dword 1
     
+    ; set dispatch_syscall() function argument
+    push esp                ; First argument:  trapframe
+    
     call dispatch_syscall
     
-    ; leaving the kernel
-    mov [in_kernel], dword 0
-
-    ; cleanup dispatch_syscall argument
+    ; cleanup dispatch_syscall() argument
     add esp, 4
     
-    ; system call return values
-    pop eax         ; arg0
-    pop ebx         ; arg1
-    pop esi         ; arg2
-    pop edi         ; arg3
-    
-    ; restore data segment selectors
-    pop es
-    pop ds
-    
-    ; we don't want user space to have our per-cpu data segment selector
-    mov ecx, 0
-    mov gs, cx
-    
-    ; restore return address and user stack
-    pop ecx         ; return address
-    pop esp         ; user stack
+    pop eax                 ; 0
+    pop ebx                 ; 4
+    pop esi                 ; 8
+    pop edi                 ; 12
+    pop dword [in_kernel]   ; 16
+    pop edx                 ; 20
+    add esp, 4              ; 24 skip ecx (used for return address by SYSRET)
+    pop ds                  ; 28
+    pop es                  ; 32
+    pop fs                  ; 36
+    pop gs                  ; 40
+    add esp, 8              ; 44 skip error code
+                            ; 48 skip interrupt vector
+    pop ebp                 ; 52
+    pop ecx                 ; 56 return address
+    add esp, 4              ; 60 skip user code segment
+    popf                    ; 64
+    pop esp                 ; 68 user stack pointer
+    ; no action needed      ; 72 skip user stack segment
     
     sysret
 

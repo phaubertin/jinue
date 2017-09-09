@@ -46,7 +46,9 @@
 #include <thread.h>
 
 
-void dispatch_syscall(jinue_syscall_args_t *args) {
+void dispatch_syscall(trapframe_t *trapframe) {
+    jinue_syscall_args_t *args = (jinue_syscall_args_t *)&trapframe->msg_arg0;
+    
     /** TODO for check negative values (especially -1) */
     uintptr_t function_number = args->arg0;
     
