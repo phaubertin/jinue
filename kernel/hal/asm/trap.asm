@@ -81,7 +81,7 @@ interrupt_entry:
     push edx    ; 20
     
     ; set data segment
-    mov ecx, GDT_KERNEL_DATA * 8
+    mov ecx, SEG_SELECTOR(GDT_KERNEL_DATA, RPL_KERNEL)
     mov ds, cx
     mov es, cx
     
@@ -138,19 +138,14 @@ interrupt_entry:
     inc ecx
     mov dword [in_kernel], ecx
     
-    ; set per-cpu data segment (TSS)
-    ;
-    ; The entry which follows the TSS descriptor in the GDT is a data segment
-    ; which also points to the TSS (same base address and limit).
-    str ax              ; get selector for TSS descriptor
-    add ax, 8           ; next entry
-    mov gs, ax          ; load gs with data segment selector
+    ; set per-cpu data segment
+    mov eax, SEG_SELECTOR(GDT_PER_CPU_DATA, RPL_KERNEL)
+    mov gs, ax
     
-    ; set dispatch_interrupt() function arguments
+    ; set dispatch_interrupt() function argument
     push esp            ; First argument:  trapframe
     
     ; call interrupt dispatching function
-.dispatch:
     call dispatch_interrupt
     
     ; remove argument(s) from stack
@@ -202,7 +197,7 @@ fast_intel_entry:
     push gs
     
     ; set data segment
-    mov ecx, GDT_KERNEL_DATA * 8
+    mov ecx, SEG_SELECTOR(GDT_KERNEL_DATA, RPL_KERNEL)
     mov ds, cx
     mov es, cx
     
@@ -210,9 +205,8 @@ fast_intel_entry:
     ;
     ; The entry which follows the TSS descriptor in the GDT is a data
     ; segment which points to per-cpu data, including the TSS.
-    str cx          ; get selector for TSS descriptor
-    add cx, 8       ; next entry
-    mov gs, cx      ; load gs with data segment selector
+    mov ecx, SEG_SELECTOR(GDT_PER_CPU_DATA, RPL_KERNEL)
+    mov gs, cx
     
     ; system call arguments (pushed in reverse order)
     push edi        ; arg3
@@ -274,19 +268,18 @@ fast_intel_entry:
     global fast_amd_entry:function (fast_amd_entry.end - fast_amd_entry)
 fast_amd_entry:
     ; save user stack pointer temporarily in ebp
+    ;
+    ; Kernel calling convention: the calling code is responsible for saving ebp
+    ; before calling into the kernel with the SYSCALL instruction.
     mov ebp, esp
     
     ; set per-cpu data segment (in gs) and get kernel stack pointer from TSS
     ;
-    ; The entry which follows the TSS descriptor in the GDT is a data
-    ; segment which points to per-cpu data, including the TSS.
-    ;
     ; Kernel calling convention: the calling code is responsible for saving the
     ; gs segment selector before calling into the kernel with the SYSCALL
     ; instruction.
-    str sp                              ; get selector for TSS descriptor
-    add sp, 8                           ; next entry
-    mov gs, sp                          ; load gs with data segment selector
+    mov edx, SEG_SELECTOR(GDT_PER_CPU_DATA, RPL_KERNEL)
+    mov gs, dx                          ; load gs with per-cpu data segment selector
     mov esp, [gs:GDT_LENGTH * 8 + 4]    ; load kernel stack pointer from TSS
                                         ; Stack pointer is at offset 4 in the TSS, and
                                         ; the TSS follows the GDT (see cpu_data_t).
@@ -305,7 +298,7 @@ fast_amd_entry:
     push es
     
     ; set data segment
-    mov ecx, GDT_KERNEL_DATA * 8
+    mov ecx, SEG_SELECTOR(GDT_KERNEL_DATA, RPL_KERNEL)
     mov ds, cx
     mov es, cx
     

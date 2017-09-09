@@ -137,12 +137,12 @@ void hal_init(void) {
     
     lgdt(pseudo);
     
-    set_cs( SEG_SELECTOR(GDT_KERNEL_CODE, 0) );
-    set_ss( SEG_SELECTOR(GDT_KERNEL_DATA, 0) );
-    set_data_segments( SEG_SELECTOR(GDT_KERNEL_DATA, 0) );
-    set_gs( SEG_SELECTOR(GDT_PER_CPU_DATA, 0) );
+    set_cs( SEG_SELECTOR(GDT_KERNEL_CODE, RPL_KERNEL) );
+    set_ss( SEG_SELECTOR(GDT_KERNEL_DATA, RPL_KERNEL) );
+    set_data_segments( SEG_SELECTOR(GDT_KERNEL_DATA, RPL_KERNEL) );
+    set_gs( SEG_SELECTOR(GDT_PER_CPU_DATA, RPL_KERNEL) );
     
-    ltr( SEG_SELECTOR(GDT_TSS, 0) );
+    ltr( SEG_SELECTOR(GDT_TSS, RPL_KERNEL) );
     
     /* initialize IDT */
     for(idx = 0; idx < IDT_VECTOR_COUNT; ++idx) {
@@ -161,7 +161,7 @@ void hal_init(void) {
         
         /* create interrupt gate descriptor */
         idt[idx] = GATE_DESCRIPTOR(
-            SEG_SELECTOR(GDT_KERNEL_CODE, 0),
+            SEG_SELECTOR(GDT_KERNEL_CODE, RPL_KERNEL),
             addr,
             flags,
             NULL );
@@ -193,7 +193,7 @@ void hal_init(void) {
     if(cpu_has_feature(CPU_FEATURE_SYSENTER)) {
         syscall_method = SYSCALL_METHOD_FAST_INTEL;
         
-        wrmsr(MSR_IA32_SYSENTER_CS,  GDT_KERNEL_CODE * 8);
+        wrmsr(MSR_IA32_SYSENTER_CS,  SEG_SELECTOR(GDT_KERNEL_CODE, RPL_KERNEL));
         wrmsr(MSR_IA32_SYSENTER_EIP, (uint64_t)(uintptr_t)fast_intel_entry);
 
         /* kernel stack address is set when switching thread context */
@@ -208,8 +208,8 @@ void hal_init(void) {
         wrmsr(MSR_EFER, msrval);
         
         msrval  = (uint64_t)(uintptr_t)fast_amd_entry;
-        msrval |= (uint64_t)SEG_SELECTOR(GDT_KERNEL_CODE, 0) << 32;
-        msrval |= (uint64_t)SEG_SELECTOR(GDT_USER_CODE,   3) << 48;
+        msrval |= (uint64_t)SEG_SELECTOR(GDT_KERNEL_CODE, RPL_KERNEL)   << 32;
+        msrval |= (uint64_t)SEG_SELECTOR(GDT_USER_CODE,   RPL_USER)     << 48;
         
         wrmsr(MSR_STAR, msrval);
     }

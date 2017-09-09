@@ -28,6 +28,7 @@
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <hal/asm/boot.h>
+#include <hal/asm/descriptors.h>
 #include <hal/asm/e820.h>
 
 %define CODE_SEG        1
@@ -122,7 +123,7 @@ start:
 next:
 
     ; Jump far to set CS
-    jmp dword (SETUP_SEG * 8):code_32
+    jmp dword SEG_SELECTOR(SETUP_SEG, RPL_KERNEL):code_32
     
 code_32:
     ; Setup the stack pointer
@@ -133,7 +134,7 @@ code_32:
     add esp, eax
     
     ; Setup the segment registers
-    mov ax, (DATA_SEG * 8)
+    mov ax, SEG_SELECTOR(DATA_SEG, RPL_KERNEL)
     mov ds, ax
     mov es, ax
     mov fs, ax
@@ -143,8 +144,8 @@ code_32:
     ; Restore real mode code start address and pass to kernel in esi
     pop esi
     
-    ; Jump to the kernel entry point    
-    jmp dword (CODE_SEG * 8):BOOT_SETUP32_ADDR
+    ; Jump to the kernel entry point
+    jmp dword SEG_SELECTOR(CODE_SEG, RPL_KERNEL):BOOT_SETUP32_ADDR
     
     ; This adds only a few bytes (or none). The main reason for this line is to
     ; ensure an error is generated (TIMES value is negative) if the code above

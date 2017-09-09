@@ -32,6 +32,12 @@
 #ifndef JINUE_HAL_ASM_DESCRIPTORS_H
 #define JINUE_HAL_ASM_DESCRIPTORS_H
 
+#define SEG_SELECTOR(index, rpl) \
+    ( ((index) << 3) | ((rpl) & 0x3) )
+
+#define RPL_KERNEL               0
+
+#define RPL_USER                 3
 
 /** GDT entry for the null descriptor */
 #define GDT_NULL                 0

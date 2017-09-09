@@ -176,8 +176,8 @@ typedef struct {
 struct cpu_data_t {
     seg_descriptor_t     gdt[GDT_LENGTH];
     /* The assembly-language system call entry point for the SYSCALL instruction
-     * (fast_amd_entry in syscall.asm) makes assumptions regarding the location
-     * of the TSS within this structure. */
+     * (fast_amd_entry in trap.asm) makes assumptions regarding the location of
+     * the TSS within this structure. */
     tss_t                tss;
     struct cpu_data_t   *self;
     addr_space_t        *current_addr_space;

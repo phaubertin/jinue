@@ -57,7 +57,4 @@
     | PACK_DESCRIPTOR((offset),      0xffff,  0,   0) \
 )
 
-#define SEG_SELECTOR(index, rpl) \
-    ( ((index) << 3) | ((rpl) & 0x3) )
-
 #endif

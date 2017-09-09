@@ -114,12 +114,12 @@ thread_t *thread_page_create(
         trapframe->eip      = (uint32_t)entry;
         trapframe->esp      = (uint32_t)user_stack;
         trapframe->eflags   = 2;
-        trapframe->cs       = 8 * GDT_USER_CODE + 3;     /* user code segment, rpl/cpl = 3 */
-        trapframe->ss       = 8 * GDT_USER_DATA + 3;     /* user stack segment, rpl = 3 */
-        trapframe->ds       = 8 * GDT_USER_DATA + 3;     /* user data segment, rpl = 3 */
-        trapframe->es       = 8 * GDT_USER_DATA + 3;     /* user data segment, rpl = 3 */
-        trapframe->fs       = 8 * GDT_USER_DATA + 3;     /* user data segment, rpl = 3 */
-        trapframe->gs       = 8 * GDT_USER_DATA + 3;     /* user data segment, rpl = 3 */
+        trapframe->cs       = SEG_SELECTOR(GDT_USER_CODE, RPL_USER);
+        trapframe->ss       = SEG_SELECTOR(GDT_USER_DATA, RPL_USER);
+        trapframe->ds       = SEG_SELECTOR(GDT_USER_DATA, RPL_USER);
+        trapframe->es       = SEG_SELECTOR(GDT_USER_DATA, RPL_USER);
+        trapframe->fs       = SEG_SELECTOR(GDT_USER_DATA, RPL_USER);
+        trapframe->gs       = SEG_SELECTOR(GDT_USER_DATA, RPL_USER);
         
         kernel_context_t *kernel_context = (kernel_context_t *)trapframe - 1;
         
