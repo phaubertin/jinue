@@ -195,7 +195,6 @@ typedef struct {
     uint32_t    esi;
 #define msg_arg3 edi
     uint32_t    edi;
-    uint32_t    in_kernel;
     uint32_t    edx;
     uint32_t    ecx;
     uint32_t    ds;

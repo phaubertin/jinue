@@ -47,7 +47,7 @@
 /** The virtual address range starting at KLIMIT is reserved by the kernel. The
     region above KLIMIT has the same mapping in all address spaces.
     KLIMIT must be aligned on a 4MB boundary. */
-#define KLIMIT              0xE0000000
+#define KLIMIT              0xe0000000
 
 /** stack base address (stack top) */
 #define STACK_BASE          KLIMIT

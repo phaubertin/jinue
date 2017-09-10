@@ -35,8 +35,6 @@
 #include <hal/types.h>
 
 
-extern int in_kernel;
-
 extern addr_t kernel_region_top;
 
 #endif

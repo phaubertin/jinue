@@ -55,9 +55,6 @@
 #include <vm_alloc.h>
 
 
-/** if non_zero, we are executing in the kernel */
-int in_kernel;
-
 /** top of region of memory mapped 1:1 (kernel image plus some pages for
     data structures allocated during initialization) */
 addr_t kernel_region_top;
@@ -78,9 +75,6 @@ void hal_init(void) {
     
     /* pfalloc() should not be called yet -- use pfalloc_early() instead */
     use_pfalloc_early = true;
-    
-    /* we are in the kernel */
-    in_kernel = 1;
     
     /* We want this call and the assertions below after vga_init() so that if
      * any of them fail, we have a useful error message on screen. */

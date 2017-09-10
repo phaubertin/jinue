@@ -27,6 +27,7 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#include <jinue-common/asm/vm.h>
 #include <hal/asm/descriptors.h>
 #include <hal/asm/irq.h>
 
@@ -35,7 +36,6 @@
 
     extern dispatch_interrupt
     extern dispatch_syscall
-    extern in_kernel
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: interrupt_entry
@@ -49,48 +49,35 @@ interrupt_entry:
     ; Once everything is saved and after some reshuffling, the stack layout
     ; matches the trapframe_t structure definition. It looks like this:
     ;
-    ; esp+72  user stack segment
-    ; esp+68  user stack pointer
-    ; esp+64  user EFLAGS
-    ; esp+60  user code segment
-    ; esp+56  user return address
+    ; esp+68  user stack segment
+    ; esp+64  user stack pointer
+    ; esp+60  user EFLAGS
+    ; esp+56  user code segment
+    ; esp+52  user return address
     ;
-    ; esp+52  ebp (but the error code is here on entry, see below)
-    ; esp+48  interrupt vector
+    ; esp+48  ebp (but the error code is here on entry, see below)
+    ; esp+44  interrupt vector
     ;
-    ; esp+44  error code
-    ; esp+40  gs
-    ; esp+36  fs
-    ; esp+32  es
-    ; esp+28  ds
-    ; esp+24  ecx
-    ; esp+20  edx
-    ; esp+16  [in_kernel]
+    ; esp+40 error code
+    ; esp+36 gs
+    ; esp+32 fs
+    ; esp+28 es
+    ; esp+24 ds
+    ; esp+20 ecx
+    ; esp+16 edx
     ; esp+12  edi (message/system call argument 3)
     ; esp+ 8  esi (message/system call argument 2)
     ; esp+ 4  ebx (message/system call argument 1)
     ; esp+ 0  eax (message/system call argument 0)
     
-    sub esp, 4  ; 44 reserve space for the error code
+    sub esp, 4  ; 40 reserve space for the error code
 
-    push gs     ; 40
-    push fs     ; 36
-    push es     ; 32
-    push ds     ; 28
-    push ecx    ; 24
-    push edx    ; 20
-    
-    ; set data segment
-    mov ecx, SEG_SELECTOR(GDT_KERNEL_DATA, RPL_KERNEL)
-    mov ds, cx
-    mov es, cx
-    
-    ; Indicates whether this interrupt occurred in userspace (== 0) or in the
-    ; kernel (> 0).
-    ;
-    ; We keep a copy in ecx for later use
-    mov ecx, dword [in_kernel]
-    push ecx    ; 16
+    push gs     ; 36
+    push fs     ; 32
+    push es     ; 28
+    push ds     ; 24
+    push ecx    ; 20
+    push edx    ; 16
     
     ; system call arguments (pushed in reverse order)
     ;
@@ -105,7 +92,7 @@ interrupt_entry:
     ; (2 bytes). However, the byte operand is sign extended by the instruction,
     ; which is obviously not what we want. Here, we mask the most significant
     ; bits of the interrupt vector to make it zero-extended instead.
-    and dword [esp+48], 0xff
+    and dword [esp+44], 0xff
     
     ; If we are handling a CPU exception with an error code, the CPU pushed
     ; that error code right after the return address. Otherwise, the interrupt
@@ -115,28 +102,28 @@ interrupt_entry:
     ; that happened in the kernel, ebp contains the frame pointer. This makes
     ; debugging easier because it allows us to include what the kernel was 
     ; doing when the interrupt was triggered in the backtrace.
-    mov edx, [esp+52]   ; read error code
-    mov [esp+44], edx   ; save it where we actually want it
-    mov [esp+52], ebp   ; save ebp (frame pointer) right after the return address
+    mov edx, [esp+48]   ; read error code
+    mov [esp+40], edx   ; save it where we actually want it
+    mov [esp+48], ebp   ; save ebp (frame pointer) right after the return address
     
     ; Clear frame pointer until we know for sure we were in the kernel when
     ; the interrupt occurred. If the CPU was executing user code at the time,
     ; ebp is neither trustworthy nor useful.
     mov ebp, 0
     
-    ; Check to see if we were in the kernel before the interrupt.
-    ;
-    ; ecx contains the value of [in_kernel].
-    or ecx, ecx
-    jz .skip_fp
+    ; Check to see if we were in the kernel before the interrupt by looking at
+    ; the return address
+    cmp dword [esp+52], KLIMIT
+    jb .skip_fp
     
     ; set frame pointer
-    lea ebp, [esp+52]
+    lea ebp, [esp+48]
     
 .skip_fp:
-    ; (re)-entering the kernel
-    inc ecx
-    mov dword [in_kernel], ecx
+    ; set data segment
+    mov ecx, SEG_SELECTOR(GDT_KERNEL_DATA, RPL_KERNEL)
+    mov ds, cx
+    mov es, cx
     
     ; set per-cpu data segment
     mov eax, SEG_SELECTOR(GDT_PER_CPU_DATA, RPL_KERNEL)
@@ -159,16 +146,15 @@ return_from_interrupt:
     pop ebx                 ; 4
     pop esi                 ; 8
     pop edi                 ; 12
-    pop dword [in_kernel]   ; 16
-    pop edx                 ; 20
-    pop ecx                 ; 24
-    pop ds                  ; 28
-    pop es                  ; 32
-    pop fs                  ; 36
-    pop gs                  ; 40
-    add esp, 8              ; 44 skip error code
-                            ; 48 skip interrupt vector
-    pop ebp                 ; 52
+    pop edx                 ; 16
+    pop ecx                 ; 20
+    pop ds                  ; 24
+    pop es                  ; 28
+    pop fs                  ; 32
+    pop gs                  ; 36
+    add esp, 8              ; 40 skip error code
+                            ; 44 skip interrupt vector
+    pop ebp                 ; 48
     
     ; return from interrupt
     iret
@@ -188,24 +174,23 @@ fast_intel_entry:
     ; For details on the stack layout, see comments in interrupt_entry above and
     ; the definition of the trapframe_t type.
     
-    push byte SEG_SELECTOR(GDT_USER_DATA, RPL_USER)     ; 72
-    push ebp                                            ; 68 user stack pointer
-    pushf                                               ; 64
-    push byte SEG_SELECTOR(GDT_USER_CODE, RPL_USER)     ; 60
-    push ecx                                            ; 56 user return address
+    push byte SEG_SELECTOR(GDT_USER_DATA, RPL_USER)     ; 68
+    push ebp                                            ; 64 user stack pointer
+    pushf                                               ; 60
+    push byte SEG_SELECTOR(GDT_USER_CODE, RPL_USER)     ; 56
+    push ecx                                            ; 52 user return address
     
     mov ebp, 0              ; setup dummy frame pointer
     
-    push byte 0             ; 52 ebp (caller-saved by kernel calling convention)
-    push byte 0             ; 48 interrupt vector (unused)
-    push byte 0             ; 44 error code (unused)
-    push gs                 ; 40
-    push fs                 ; 36
-    push es                 ; 32
-    push ds                 ; 28
-    push byte 0             ; 24 ecx (caller-saved by System V ABI)
-    push byte 0             ; 20 edx (caller-saved by System V ABI)
-    push byte 0             ; 16 [in_kernel]
+    push byte 0             ; 48 ebp (caller-saved by kernel calling convention)
+    push byte 0             ; 44 interrupt vector (unused)
+    push byte 0             ; 40 error code (unused)
+    push gs                 ; 36
+    push fs                 ; 32
+    push es                 ; 28
+    push ds                 ; 24
+    push byte 0             ; 20 ecx (caller-saved by System V ABI)
+    push byte 0             ; 16 edx (caller-saved by System V ABI)
     
     ; system call arguments (pushed in reverse order)
     ;
@@ -223,9 +208,6 @@ fast_intel_entry:
     ; set per-cpu data segment
     mov eax, SEG_SELECTOR(GDT_PER_CPU_DATA, RPL_KERNEL)
     mov gs, ax
-
-    ; entering the kernel
-    mov [in_kernel], dword 1
     
     ; set dispatch_syscall() function argument
     push esp                ; First argument:  trapframe
@@ -239,22 +221,20 @@ fast_intel_entry:
     pop ebx                 ; 4
     pop esi                 ; 8
     pop edi                 ; 12
-    pop dword [in_kernel]   ; 16
-    add esp, 8              ; 20 skip edx (used for stack pointer by SYSEXIT)
-                            ; 24 skip ecx (used for return address by SYSEXIT)
-    pop ds                  ; 28
-    pop es                  ; 32
-    pop fs                  ; 36
-    pop gs                  ; 40
-    
-    add esp, 8              ; 44 skip error code
-                            ; 48 skip interrupt vector
-    pop ebp                 ; 52
-    pop edx                 ; 56 return address
-    add esp, 4              ; 60 skip user code segment
-    popf                    ; 64
-    pop ecx                 ; 68 user stack pointer
-    ; no action needed      ; 72 skip user stack segment
+    add esp, 8              ; 16 skip edx (used for stack pointer by SYSEXIT)
+                            ; 20 skip ecx (used for return address by SYSEXIT)
+    pop ds                  ; 24
+    pop es                  ; 28
+    pop fs                  ; 32
+    pop gs                  ; 36
+    add esp, 8              ; 40 skip error code
+                            ; 44 skip interrupt vector
+    pop ebp                 ; 48
+    pop edx                 ; 52 return address
+    add esp, 4              ; 56 skip user code segment
+    popf                    ; 60
+    pop ecx                 ; 64 user stack pointer
+    ; no action needed      ; 68 skip user stack segment
     
     sysexit
 
@@ -285,24 +265,23 @@ fast_amd_entry:
     ; For details on the stack layout, see comments in interrupt_entry above and
     ; the definition of the trapframe_t type.
     
-    push byte SEG_SELECTOR(GDT_USER_DATA, RPL_USER)     ; 72
-    push ebp                                            ; 68 user stack pointer
-    pushf                                               ; 64
-    push byte SEG_SELECTOR(GDT_USER_CODE, RPL_USER)     ; 60
-    push ecx                                            ; 56 user return address
+    push byte SEG_SELECTOR(GDT_USER_DATA, RPL_USER)     ; 68
+    push ebp                                            ; 64 user stack pointer
+    pushf                                               ; 60
+    push byte SEG_SELECTOR(GDT_USER_CODE, RPL_USER)     ; 56
+    push ecx                                            ; 52 user return address
     
     mov ebp, 0              ; setup dummy frame pointer
     
-    push byte 0             ; 52 ebp (caller-saved by kernel calling convention)
-    push byte 0             ; 48 interrupt vector (unused)
-    push byte 0             ; 44 error code (unused)
-    push byte 0             ; 40 gs (caller-saved by kernel calling convention)
-    push fs                 ; 36
-    push es                 ; 32
-    push ds                 ; 28
-    push byte 0             ; 24 ecx (caller-saved by System V ABI)
-    push byte 0             ; 20 edx (caller-saved by System V ABI)
-    push byte 0             ; 16 [in_kernel]
+    push byte 0             ; 48 ebp (caller-saved by kernel calling convention)
+    push byte 0             ; 44 interrupt vector (unused)
+    push byte 0             ; 40 error code (unused)
+    push byte 0             ; 36 gs (caller-saved by kernel calling convention)
+    push fs                 ; 32
+    push es                 ; 28
+    push ds                 ; 24
+    push byte 0             ; 20 ecx (caller-saved by System V ABI)
+    push byte 0             ; 16 edx (caller-saved by System V ABI)
     
     ; system call arguments (pushed in reverse order)
     ;
@@ -316,9 +295,6 @@ fast_amd_entry:
     mov ecx, SEG_SELECTOR(GDT_KERNEL_DATA, RPL_KERNEL)
     mov ds, cx
     mov es, cx
-
-    ; entering the kernel
-    mov [in_kernel], dword 1
     
     ; set dispatch_syscall() function argument
     push esp                ; First argument:  trapframe
@@ -332,21 +308,20 @@ fast_amd_entry:
     pop ebx                 ; 4
     pop esi                 ; 8
     pop edi                 ; 12
-    pop dword [in_kernel]   ; 16
-    pop edx                 ; 20
-    add esp, 4              ; 24 skip ecx (used for return address by SYSRET)
-    pop ds                  ; 28
-    pop es                  ; 32
-    pop fs                  ; 36
-    pop gs                  ; 40
-    add esp, 8              ; 44 skip error code
-                            ; 48 skip interrupt vector
-    pop ebp                 ; 52
-    pop ecx                 ; 56 return address
-    add esp, 4              ; 60 skip user code segment
-    popf                    ; 64
-    pop esp                 ; 68 user stack pointer
-    ; no action needed      ; 72 skip user stack segment
+    pop edx                 ; 16
+    add esp, 4              ; 20 skip ecx (used for return address by SYSRET)
+    pop ds                  ; 24
+    pop es                  ; 28
+    pop fs                  ; 32
+    pop gs                  ; 36
+    add esp, 8              ; 40 skip error code
+                            ; 44 skip interrupt vector
+    pop ebp                 ; 48
+    pop ecx                 ; 52 return address
+    add esp, 4              ; 56 skip user code segment
+    popf                    ; 60
+    pop esp                 ; 64 user stack pointer
+    ; no action needed      ; 68 skip user stack segment
     
     sysret
 
