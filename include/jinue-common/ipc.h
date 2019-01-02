@@ -49,15 +49,15 @@ typedef int jinue_ipc_descriptor_t;
 
 
 static inline uintptr_t jinue_args_pack_buffer_size(size_t buffer_size) {
-    return (uintptr_t)buffer_size << JINUE_SEND_BUFFER_SIZE_OFFSET;
+    return JINUE_ARGS_PACK_BUFFER_SIZE((uintptr_t)buffer_size);
 }
 
 static inline uintptr_t jinue_args_pack_data_size(size_t data_size) {
-    return (uintptr_t)data_size << JINUE_SEND_DATA_SIZE_OFFSET;
+    return JINUE_ARGS_PACK_DATA_SIZE((uintptr_t)data_size);
 }
 
 static inline uintptr_t jinue_args_pack_n_desc(unsigned int n_desc) {
-    return (uintptr_t)n_desc << JINUE_SEND_N_DESC_OFFSET;
+    return JINUE_ARGS_PACK_N_DESC((uintptr_t)n_desc);
 }
 
 static inline char *jinue_args_get_buffer_ptr(const jinue_syscall_args_t *args) {

@@ -64,4 +64,11 @@
 /** offset of number of descriptors within arg3 */
 #define JINUE_SEND_N_DESC_OFFSET        0
 
+
+#define JINUE_ARGS_PACK_BUFFER_SIZE(s)  ((s) << JINUE_SEND_BUFFER_SIZE_OFFSET)
+
+#define JINUE_ARGS_PACK_DATA_SIZE(s)    ((s) << JINUE_SEND_DATA_SIZE_OFFSET)
+
+#define JINUE_ARGS_PACK_N_DESC(n)       ((n) << JINUE_SEND_N_DESC_OFFSET)
+
 #endif
