@@ -431,8 +431,8 @@ RECEIVE Operation
 The server thread sets up a message with the following content:
     - Four slots to receive descriptors: Rs1, Rs2, Rs3 and Rs4.
 
-During that time, the client thread's user space buffer is inaccessible (unless
-the client and server threads are in the same process).
+During that time, the client thread's user space buffer is inaccessible to the
+kernel (unless the client and server threads are in the same process).
 
         Client Buffer   Client Buffer   Server Buffer   Server Buffer
         (User Space)      (Kernel)        (Kernel)      (User Space)
@@ -456,7 +456,7 @@ the client and server threads are in the same process).
 
 When the server thread initiates a RECEIVE operation, the kernel copies the
 descriptors in the server thread's kernel buffer. Since this is a RECEIVE
-operation, the kernel would reject a message buffer that would contain a data
+operation, the kernel would reject a message buffer that contained a data
 string or sent descriptors.
 
         Client Buffer   Client Buffer   Server Buffer   Server Buffer
@@ -534,9 +534,10 @@ complete message from user space to the client thread's kernel message buffer.
         +-----------+   +-----------+   +-----------+   +-----------+
 
 The kernel then re-orders the descriptors in the client thread's kernel buffer,
-putting the sent descriptors first. The sent and received descriptor are kept in
-the same order amongst themselves. A pointer (*) is kept on the first received
-descriptor for future use.
+putting the sent descriptors first. (TBD the kernel could instead require the
+descriptors to be provided in this order.) The sent and received descriptor are
+kept in the same order amongst themselves. A pointer (*) is kept on the first
+received descriptor for future use.
 
         Client Buffer   Client Buffer   Server Buffer   Server Buffer
         (User Space)      (Kernel)        (Kernel)      (User Space)
@@ -621,8 +622,10 @@ request. It sets up a reply message with the following content:
     - The data string Ds
     - A single sent descriptor: Ss1
 
-While is was servicing the request, the client thread may have performed system
-or IPC calls, so the content of its kernel message buffer is undefined.
+While is was servicing the request, the server thread may have performed system
+or IPC calls, so the content of its kernel message buffer is undefined. The
+same thing cannot have happened with the client thread because it was blocked
+during that time.
 
         Client Buffer   Client Buffer   Server Buffer   Server Buffer
         (User Space)      (Kernel)        (Kernel)      (User Space)
@@ -646,7 +649,7 @@ or IPC calls, so the content of its kernel message buffer is undefined.
 
 When the server thread initiates the REPLY operation, the kernel copies the
 descriptors from its user space buffer to its kernel space buffer. Since this is
-a REPLY operation, the kernel would reject a message buffer that would contain
+a REPLY operation, the kernel would reject a message buffer that contained
 received descriptors.
 
         Client Buffer   Client Buffer   Server Buffer   Server Buffer
@@ -776,9 +779,10 @@ the descriptors from its user space buffer to its kernel space buffer.
 
 As was done for the client thread during the SEND operation, the kernel then
 re-orders the descriptors in the server thread's kernel buffer, putting the sent
-descriptors first. The sent and received descriptor are kept in the same order
-amongst themselves. A pointer (*) is kept on the first received descriptor for
-future use.
+descriptors first. (TBD the kernel could instead require the descriptors to be
+provided in this order.) The sent and received descriptor are kept in the same
+order amongst themselves. A pointer (*) is kept on the first received descriptor
+for future use.
 
         +-----------+   +-----------+   +-----------+   +-----------+
         |///////////|   |           |   |   Ss1     |   |           |
