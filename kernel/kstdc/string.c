@@ -53,3 +53,14 @@ void *memcpy(void *dest, const void *src, size_t n) {
 
     return dest;
 }
+
+size_t strlen(const char *s) {
+    size_t count = 0;
+
+    while(*s != 0) {
+        ++s;
+        ++count;
+    }
+    
+    return count;
+}

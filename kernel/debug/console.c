@@ -31,7 +31,7 @@
 
 #include <hal/vga.h>
 #include <console.h>
-#include <stddef.h>
+#include <string.h>
 
 
 void console_init(void) {
@@ -47,13 +47,5 @@ void console_putc(char c) {
 }
 
 void console_print(const char *message) {
-    size_t count;
-
-    count = 0;
-
-    while(message[count] != 0) {
-        ++count;
-    }
-
-    console_printn(message, count);
+    console_printn(message, strlen(message));
 }
