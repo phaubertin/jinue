@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright (C) 2017 Philippe Aubertin.
+# Copyright (C) 2019 Philippe Aubertin.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
