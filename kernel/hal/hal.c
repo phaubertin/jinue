@@ -41,7 +41,6 @@
 #include <hal/pfaddr.h>
 #include <hal/thread.h>
 #include <hal/trap.h>
-#include <hal/vga.h>
 #include <hal/vm.h>
 #include <hal/x86.h>
 #include <panic.h>
@@ -76,8 +75,6 @@ void hal_init(void) {
     /* pfalloc() should not be called yet -- use pfalloc_early() instead */
     use_pfalloc_early = true;
     
-    /* We want this call and the assertions below after vga_init() so that if
-     * any of them fail, we have a useful error message on screen. */
     (void)boot_info_check(true);
     
     const boot_info_t *boot_info = get_boot_info();
