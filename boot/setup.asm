@@ -293,7 +293,7 @@ bios_e820:
     
     int 0x15
     
-    jc .exit                ; Carry flag set indicates error or end
+    jc .exit                ; Carry flag set indicates error or end of map
 
     cmp eax, E820_SMAP      ; EAX should contain signature
     jne .exit
@@ -301,10 +301,15 @@ bios_e820:
     cmp ecx, 20             ; 20 bytes should have been returned
     jne .exit
     
-    or ebx, ebx             ; EBX (maybe) set to 0 on end of map
-    jz .exit
-    
     add di, 20              ; Go to next entry in memory map
+    
+    or ebx, ebx             ; EBX (continuation) may be set to 0 if this is the
+    jz .exit                ; last entry of the map. Alternatively, the carry
+                            ; flag my be set on the next call instead.
+                            ; 
+                            ; BUG FIX: EBX = 0 marks the last valid entry of the
+                            ; map. This check must be done *after* updating di
+                            ; to ensure a correct entry count. 
     
     mov ax, di              ; Check that we can still fit one more entry
     add ax, 20
