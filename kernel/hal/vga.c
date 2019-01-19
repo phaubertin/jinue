@@ -35,19 +35,13 @@
 #include <hal/vga.h>
 #include <hal/vm.h>
 
-
-static unsigned int vga_text_color;
-
 /** base address of the VGA text video buffer */
 static unsigned char *video_base_addr = (void *)EARLY_PHYS_TO_VIRT(VGA_TEXT_VID_BASE);
 
-static vga_pos_t vga_raw_putc(char c, vga_pos_t pos);
+static vga_pos_t vga_raw_putc(char c, vga_pos_t pos, int colour);
 
 void vga_init(void) {
     unsigned char data;
-
-    /* set text color to default */
-    vga_text_color = VGA_COLOR_DEFAULT;
     
     /* Set address select bit in a known state: CRTC regs at 0x3dx */
     data = inb(VGA_MISC_OUT_RD);
@@ -92,14 +86,6 @@ void vga_scroll(void) {
     }
 }
 
-unsigned int vga_get_color(void) {
-    return vga_text_color;
-}
-
-void vga_set_color(unsigned int color)  {
-    vga_text_color = color;
-}
-
 vga_pos_t vga_get_cursor_pos(void) {
     unsigned char h, l;
     
@@ -122,39 +108,39 @@ void vga_set_cursor_pos(vga_pos_t pos) {
 }
 
 
-void vga_print(const char *message) {
+void vga_print(const char *message, int colour) {
     unsigned short int pos = vga_get_cursor_pos();
     char c;
     
     while( (c = *(message++)) ) {
-        pos = vga_raw_putc(c, pos);
+        pos = vga_raw_putc(c, pos, colour);
     }
     
     vga_set_cursor_pos(pos);
 }
 
-void vga_printn(const char *message, unsigned int n) {
+void vga_printn(const char *message, unsigned int n, int colour) {
     vga_pos_t pos = vga_get_cursor_pos();
     char c;
     
     while(n) {
         c = *(message++);
-        pos = vga_raw_putc(c, pos);
+        pos = vga_raw_putc(c, pos, colour);
         --n;
     }
     
     vga_set_cursor_pos(pos);
 }
 
-void vga_putc(char c) {
+void vga_putc(char c, int colour) {
     vga_pos_t pos = vga_get_cursor_pos();
 
-    pos = vga_raw_putc(c, pos);
+    pos = vga_raw_putc(c, pos, colour);
     
     vga_set_cursor_pos(pos);
 }
 
-static vga_pos_t vga_raw_putc(char c, vga_pos_t pos) {
+static vga_pos_t vga_raw_putc(char c, vga_pos_t pos, int colour) {
     const vga_pos_t limit = VGA_WIDTH * VGA_LINES;
     
     switch(c) {
@@ -184,7 +170,7 @@ static vga_pos_t vga_raw_putc(char c, vga_pos_t pos) {
     default:
         if(c >= 0x20) {
             video_base_addr[2 * pos]     = (unsigned char)c;
-            video_base_addr[2 * pos + 1] = vga_text_color;
+            video_base_addr[2 * pos + 1] = colour;
             ++pos;
         }
     }

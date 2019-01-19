@@ -38,14 +38,14 @@ void console_init(void) {
     vga_init();
 }
 
-void console_printn(const char *message, unsigned int n) {
-    vga_printn(message, n);
+void console_printn(const char *message, unsigned int n, int colour) {
+    vga_printn(message, n, colour);
 }
 
-void console_putc(char c) {
-    vga_putc(c);
+void console_putc(char c, int colour) {
+    vga_putc(c, colour);
 }
 
-void console_print(const char *message) {
-    console_printn(message, strlen(message));
+void console_print(const char *message, int colour) {
+    console_printn(message, strlen(message), colour);
 }

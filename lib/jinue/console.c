@@ -33,7 +33,7 @@
 #include <jinue/syscall.h>
 #include <stddef.h>
 
-void console_printn(const char *message, unsigned int n) {
+void console_printn(const char *message, unsigned int n, int colour) {
 	const char *ptr = message;
 
     while(n > 0) {
@@ -57,7 +57,7 @@ void console_printn(const char *message, unsigned int n) {
     }
 }
 
-void console_putc(char c) {
+void console_putc(char c, int colour) {
 	jinue_syscall_args_t args;
 
 	args.arg0 = SYSCALL_FUNCT_CONSOLE_PUTC;
@@ -68,7 +68,7 @@ void console_putc(char c) {
 	(void)jinue_call(&args, NULL);
 }
 
-void console_print(const char *message) {
+void console_print(const char *message, int colour) {
     size_t count;
 
     count = 0;
@@ -77,5 +77,5 @@ void console_print(const char *message) {
         ++count;
     }
 
-    console_printn(message, count);
+    console_printn(message, count, colour);
 }

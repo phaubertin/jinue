@@ -32,10 +32,12 @@
 #ifndef _JINUE_COMMON_CONSOLE_H
 #define _JINUE_COMMON_CONSOLE_H
 
-void console_printn(const char *message, unsigned int n);
+#define CONSOLE_DEFAULT_COLOR		0x0a /* VGA_COLOR_BRIGHTGREEN */
 
-void console_putc(char c);
+void console_printn(const char *message, unsigned int n, int colour);
 
-void console_print(const char *message);
+void console_putc(char c, int colour);
+
+void console_print(const char *message, int colour);
 
 #endif

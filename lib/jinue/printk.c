@@ -38,24 +38,23 @@
 /** @cond PRINTK */
 void printk(const char *format, ...) {
     va_list ap;
-    const char *idx, *anchor;
-    ptrdiff_t size;
     
     va_start(ap, format);
     
-    idx = format;
+    int colour = CONSOLE_DEFAULT_COLOR;
+    const char *idx = format;
     
     while(1) {
-        anchor = idx;
+    	const char *anchor = idx;
         
         while( *idx != 0 && *idx != '%' ) {
             ++idx;
         }
         
-        size = idx - anchor;
+        ptrdiff_t size = idx - anchor;
         
         if(size > 0) {
-            console_printn(anchor, size);
+            console_printn(anchor, size, colour);
         }
         
         if(*idx == 0 || *(idx+1) == 0) {
@@ -66,35 +65,39 @@ void printk(const char *format, ...) {
         
         switch( *idx ) {
         case '%':
-            console_putc('%');
+            console_putc('%', colour);
             break;
         
         case 'c':
-            console_putc( (char)va_arg(ap, int) );
+            console_putc((char)va_arg(ap, int), colour);
             break;
         
+        case 'k':
+            colour = va_arg(ap, int);
+            break;
+
         case 'q':
-            print_hex_q( va_arg(ap, unsigned long long) );
+            print_hex_q(va_arg(ap, unsigned long long), colour);
             break;
         
         case 's':
-            console_print( va_arg(ap, const char *) );
+            console_print(va_arg(ap, const char *), colour);
             break;
         
         case 'u':
-            print_unsigned_int( va_arg(ap, unsigned int) );
+            print_unsigned_int(va_arg(ap, unsigned int), colour);
             break;
         
         case 'b':
-            print_hex_b( (unsigned char)va_arg(ap, unsigned long) );
+            print_hex_b((unsigned char)va_arg(ap, unsigned long), colour);
             break;
         
         case 'w':
-            print_hex_w( (unsigned short)va_arg(ap, unsigned long) );
+            print_hex_w((unsigned short)va_arg(ap, unsigned long), colour);
             break;
         
         case 'x':
-            print_hex_l( va_arg(ap, unsigned long) );
+            print_hex_l(va_arg(ap, unsigned long), colour);
             break;
         
         default:
@@ -109,14 +112,14 @@ void printk(const char *format, ...) {
 }
 /** @endcond PRINTK */
 
-void print_unsigned_int(unsigned int n) {
+void print_unsigned_int(unsigned int n, int colour) {
     unsigned int flag = 0;
     unsigned int pwr;
     unsigned int digit;
     char c;
     
     if(n == 0) {
-        console_putc('0');
+        console_putc('0', colour);
         return;
     }
     
@@ -125,7 +128,7 @@ void print_unsigned_int(unsigned int n) {
         
         if(digit != 0 || flag) {
             c = (char)digit + '0';
-            console_putc(c);
+            console_putc(c, colour);
             
             flag = 1;
             n -= digit * pwr;
@@ -133,7 +136,7 @@ void print_unsigned_int(unsigned int n) {
     }    
 }
 
-void print_hex_nibble(unsigned char byte) {
+void print_hex_nibble(unsigned char byte, int colour) {
     char c;
     
     c = byte & 0xf;
@@ -144,34 +147,34 @@ void print_hex_nibble(unsigned char byte) {
         c += ('a' - 10);
     }
     
-    console_putc(c);
+    console_putc(c, colour);
 }
 
-void print_hex_b(unsigned char byte) {
-    print_hex_nibble( (char)byte );
-    print_hex_nibble( (char)(byte>>4) );    
+void print_hex_b(unsigned char byte, int colour) {
+    print_hex_nibble((char)byte, colour);
+    print_hex_nibble((char)(byte>>4), colour);
 }
 
-void print_hex_w(unsigned short word) {
+void print_hex_w(unsigned short word, int colour) {
     int off;
     
     for(off=16-4; off>=0; off-=4) {
-        print_hex_nibble( (char)(word>>off) );
+        print_hex_nibble((char)(word>>off), colour);
     }
 }
 
-void print_hex_l(unsigned long dword) {
+void print_hex_l(unsigned long dword, int colour) {
     int off;
     
     for(off=32-4; off>=0; off-=4) {
-        print_hex_nibble( (char)(dword>>off) );
+        print_hex_nibble((char)(dword>>off), colour);
     }
 }
 
-void print_hex_q(unsigned long long qword) {
+void print_hex_q(unsigned long long qword, int colour) {
     int off;
     
     for(off=64-4; off>=0; off-=4) {
-        print_hex_nibble( (char)(qword>>off) );
+        print_hex_nibble((char)(qword>>off), colour);
     }
 }

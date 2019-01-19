@@ -34,12 +34,16 @@
 
 void printk(const char *format, ...);
 
-void print_unsigned_int(unsigned int n);
+void print_unsigned_int(unsigned int n, int colour);
 
-void print_hex_nibble(unsigned char byte);
-void print_hex_b(unsigned char byte);
-void print_hex_w(unsigned short word);
-void print_hex_l(unsigned long dword);
-void print_hex_q(unsigned long long qword);
+void print_hex_nibble(unsigned char byte, int colour);
+
+void print_hex_b(unsigned char byte, int colour);
+
+void print_hex_w(unsigned short word, int colour);
+
+void print_hex_l(unsigned long dword, int colour);
+
+void print_hex_q(unsigned long long qword, int colour);
 
 #endif

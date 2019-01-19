@@ -33,6 +33,7 @@
 #define JINUE_KERNEL_CONSOLE_H
 
 #include <jinue-common/console.h>
+#include <hal/vga.h>
 
 #define CONSOLE_SERIAL_IOPORT       SERIAL_COM1_IOPORT
 

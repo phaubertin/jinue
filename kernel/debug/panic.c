@@ -37,14 +37,7 @@
 
 
 void panic(const char *message) {    
-    unsigned int color;
-    
-    color = vga_get_color();
-    vga_set_color(VGA_COLOR_RED);
-    
-    printk("KERNEL PANIC: %s\n", message);
-    
-    vga_set_color(color);
+    printk("%kKERNEL PANIC: %s\n", VGA_COLOR_RED, message);
 
     if( boot_info_check(false) ) {
         dump_call_stack();
