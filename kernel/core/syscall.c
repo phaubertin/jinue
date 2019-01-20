@@ -31,7 +31,7 @@
 
 #include <jinue-common/errno.h>
 #include <jinue-common/pfalloc.h>
-#include <hal/bootmem.h>
+#include <hal/boot.h>
 #include <hal/cpu_data.h>
 #include <hal/thread.h>
 #include <hal/trap.h>
@@ -117,42 +117,29 @@ void dispatch_syscall(trapframe_t *trapframe) {
                             &get_current_thread()->thread_ctx));
             break;
         
-        case SYSCALL_FUNCT_GET_FREE_MEMORY:
+        case SYSCALL_FUNCT_GET_PHYS_MEMORY:
         {
-            bootmem_t      *block;
-            memory_block_t *block_dest;
-            unsigned int count, count_max;
+            unsigned int idx;
 
             /** TODO: check user pointer */
-            size_t buffer_size  = jinue_args_get_buffer_size(args);
-            block_dest          = (memory_block_t *)jinue_args_get_buffer_ptr(args);
-            
-            count_max = buffer_size / sizeof(memory_block_t);
+            size_t buffer_size = jinue_args_get_buffer_size(args);
+            jinue_mem_map_t *map = (jinue_mem_map_t *)jinue_args_get_buffer_ptr(args);
+            const boot_info_t *boot_info = get_boot_info();
 
-            for(count = 0; count < count_max; ++count) {
-                block = bootmem_get_block();
-                
-                if(block == NULL) {
-                    break;
-                }
-                
-                block_dest->addr  = block->addr;
-                block_dest->count = block->count;
-                
-                ++block_dest;
-            }
-            
-            args->arg0 = (uintptr_t)count;
-
-            if(count == count_max && bootmem_root != NULL) {
-                args->arg1  = JINUE_EMORE;
+            if(buffer_size < sizeof(jinue_mem_map_t) + boot_info->e820_entries * sizeof(jinue_mem_entry_t) ) {
+            	syscall_args_set_error(args, JINUE_EINVAL);
             }
             else {
-                args->arg1  = 0;
-            }
+            	map->num_entries = boot_info->e820_entries;
 
-            args->arg2 = 0;
-            args->arg3 = 0;
+            	for(idx = 0; idx < map->num_entries; ++idx) {
+            		map->entry[idx].addr = boot_info->e820_map[idx].addr;
+            		map->entry[idx].size = boot_info->e820_map[idx].size;
+            		map->entry[idx].type = boot_info->e820_map[idx].type;
+            	}
+
+            	syscall_args_set_return(args, 0);
+            }
         }
             break;
             

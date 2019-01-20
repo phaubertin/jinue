@@ -57,7 +57,7 @@
 #define SYSCALL_FUNCT_GET_THREAD_LOCAL_ADDR      7
 
 /** get free memory block list for management by process manager */
-#define SYSCALL_FUNCT_GET_FREE_MEMORY            8
+#define SYSCALL_FUNCT_GET_PHYS_MEMORY            8
 
 /** create an IPC object to receive messages */
 #define SYSCALL_FUNCT_CREATE_IPC                 9

@@ -121,17 +121,6 @@ void *jinue_get_thread_local_storage(void) {
 	return (void *)jinue_get_return_uintptr(&args);
 }
 
-int jinue_get_free_memory(memory_block_t *buffer, size_t buffer_size, int *perrno) {
-	return jinue_send(
-	        SYSCALL_FUNCT_GET_FREE_MEMORY,
-	        -1,                 /* target */
-	        (char *)buffer,     /* buffer */
-	        buffer_size,        /* buffer size */
-	        0,                  /* data size */
-	        0,                  /* number of descriptors */
-	        perrno);            /* perrno */
-}
-
 int jinue_thread_create(void (*entry)(), void *stack, int *perrno) {
     jinue_syscall_args_t args;
 

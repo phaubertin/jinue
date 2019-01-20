@@ -5,18 +5,18 @@
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,31 +29,34 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_SYSCALL_H
-#define _JINUE_SYSCALL_H
+#include <jinue/memory.h>
+#include <jinue/ipc.h>
+#include <jinue/syscall.h>
 
-#include <jinue-common/pfalloc.h>
-#include <jinue-common/syscall.h>
-#include <stddef.h>
+const char *jinue_pys_mem_type_description(uint32_t type) {
+    switch(type) {
 
+    case E820_RAM:
+        return "Available";
 
-void jinue_call_raw(jinue_syscall_args_t *args);
+    case E820_RESERVED:
+        return "Unavailable/Reserved";
 
-int jinue_call(jinue_syscall_args_t *args, int *perrno);
+    case E820_ACPI:
+        return "Unavailable/ACPI";
 
-void jinue_get_syscall_implementation(void);
+    default:
+        return "Unavailable/Other";
+    }
+}
 
-const char *jinue_get_syscall_implementation_name(void);
-
-void jinue_set_thread_local_storage(void *addr, size_t size);
-
-void *jinue_get_thread_local_storage(void);
-
-int jinue_thread_create(void (*entry)(), void *stack, int *perrno);
-
-int jinue_yield(void);
-
-void jinue_thread_exit(void);
-
-
-#endif
+int jinue_get_phys_memory(jinue_mem_map_t *buffer, size_t buffer_size, int *perrno) {
+	return jinue_send(
+	        SYSCALL_FUNCT_GET_PHYS_MEMORY,
+	        -1,                 /* target */
+	        (char *)buffer,     /* buffer */
+	        buffer_size,        /* buffer size */
+	        0,                  /* data size */
+	        0,                  /* number of descriptors */
+	        perrno);            /* perrno */
+}

@@ -32,18 +32,19 @@
 #include <jinue/elf.h>
 #include <jinue/errno.h>
 #include <jinue/ipc.h>
+#include <jinue/memory.h>
 #include <jinue/pfalloc.h>
 #include <jinue/syscall.h>
 #include <jinue/types.h>
 #include <jinue/vm.h>
 #include <printk.h>
-#include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 
-
-#define MEMORY_BLOCK_MAX    32
 
 #define THREAD_STACK_SIZE   4096
+
+#define CALL_BUFFER_SIZE	512
 
 int errno;
 
@@ -88,11 +89,27 @@ void thread_a(void) {
     jinue_thread_exit();
 }
 
-int main(int argc, char *argv[], char *envp[]) {
-    memory_block_t blocks[MEMORY_BLOCK_MAX];
-    int count;
-    uint32_t total_memory;
+static void dump_phys_memory_map(const jinue_mem_map_t *map) {
     unsigned int idx;
+
+    printk("Dump of the BIOS memory map:\n");
+
+    for(idx = 0; idx < map->num_entries; ++idx) {
+        const jinue_mem_entry_t *entry = &map->entry[idx];
+
+        printk(
+        		"%c [%q-%q] %s\n",
+        		(entry->type==E820_RAM)?'*':' ',
+        		entry->addr,
+				entry->addr + entry->size - 1,
+				jinue_pys_mem_type_description(entry->type)
+        );
+    }
+}
+
+int main(int argc, char *argv[], char *envp[]) {
+    char call_buffer[CALL_BUFFER_SIZE];
+    int status;
     
     /* say hello */
     printk("Process manager (%s) started.\n", argv[0]);
@@ -105,24 +122,15 @@ int main(int argc, char *argv[], char *envp[]) {
     
     /* get free memory blocks from microkernel */
     errno = 0;
-    count = jinue_get_free_memory(blocks, sizeof(blocks), &errno);
+    status = jinue_get_phys_memory((jinue_mem_map_t *)&call_buffer, sizeof(call_buffer), &errno);
 
-    if(errno == JINUE_EMORE) {
-        printk("warning: could not get all memory blocks because buffer is too small.\n");
-    }
-    
-    /* count memory */
-    total_memory = 0;
-    
-    for(idx = 0; idx < count; ++idx) {
-        total_memory += blocks[idx].count;
-    }
-    
-    (void)jinue_yield();
+    if(status != 0) {
+        printk("error: could not get physical memory map from microkernel.\n");
 
-    printk("%u kilobytes (%u pages) of memory available to process manager.\n",
-        (unsigned long)(total_memory * PAGE_SIZE / KB),
-        (unsigned long)(total_memory) );
+        return EXIT_FAILURE;
+    }
+
+    dump_phys_memory_map((jinue_mem_map_t *)&call_buffer);
 
     printk("Creating IPC object descriptor.\n");
 
@@ -175,5 +183,5 @@ int main(int argc, char *argv[], char *envp[]) {
         (void)jinue_yield();
     }
     
-    return 0;
+    return EXIT_SUCCESS;
 }
