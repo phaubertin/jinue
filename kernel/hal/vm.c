@@ -385,7 +385,7 @@ static void vm_map(addr_space_t *addr_space, addr_t vaddr, pfaddr_t paddr, int f
     @param addr_space address space from which to unmap, can be NULL for global mappings (addr >= KLIMIT)
     @param addr address of page to unmap
 */
-void vm_unmap(addr_space_t *addr_space, addr_t addr) {
+static void vm_unmap(addr_space_t *addr_space, addr_t addr) {
     /** ASSERTION: we assume addr is aligned on a page boundary */
     assert( page_offset_of(addr) == 0 );
     
