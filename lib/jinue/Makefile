@@ -30,7 +30,7 @@
 jinue_root = ../..
 include $(jinue_root)/header.mk
 
-sources.c        = ipc.c printk.c syscall.c console.c
+sources.c        = ipc.c memory.c printk.c syscall.c console.c
 sources.nasm     = crt.asm stubs.asm
 
 target.user      = libjinue.a
