@@ -30,8 +30,6 @@
 jinue_root = ../..
 include $(jinue_root)/header.mk
 
-subdirs = asm
-
 sources.c    = \
 	boot.c \
 	bootmem.c \
@@ -44,17 +42,19 @@ sources.c    = \
 	vga.c \
 	vm.c \
 	vm_pae.c
+sources.nasm	 = \
+	frame_pointer.asm \
+	io.asm \
+	startup.asm \
+	trap.asm \
+	thread_switch.asm \
+	x86.asm \
 
-hal.asm     = asm/kern-hal-asm.o
 target      = kern-hal.o
 
 include $(common)
 
-.PHONY: asm
-asm:
-	$(MAKE) -C asm
-
 $(hal.asm): asm
 
-$(target): $(objects) $(hal.asm)
+$(target): $(objects)
 	$(LINK.o) -r $^ $(LOADLIBES) $(LDLIBS) -o $@

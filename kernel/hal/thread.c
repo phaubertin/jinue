@@ -44,7 +44,7 @@
 #include <vm_alloc.h>
 
 
-/* defined in thread.asm */
+/* defined in thread_switch.asm */
 void thread_context_switch_stack(
         thread_context_t *from_ctx,
         thread_context_t *to_ctx,

@@ -30,76 +30,56 @@
 jinue_root = ..
 include $(jinue_root)/header.mk
 
-subdirs			 = core debug hal kstdc mem
+subdirs			 = hal
 
 kernel_ldscript	 = $(scripts)/kernel.ld
+build_info_h     = build-info.gen.h
 
 LDFLAGS         += -T $(kernel_ldscript)
 
-kernel.core   	 = core/kern-core.o
-kernel.debug  	 = debug/kern-debug.o
 kernel.hal    	 = hal/kern-hal.o
 kernel.lib    	 = ../lib/jinue/libjinue-kernel.a
-kernel.mem    	 = mem/kern-mem.o
-kernel.stdc   	 = kstdc/kern-stdc.o
 
 target	 		 = kernel-stripped
-unclean.extra    = kernel
-objects.kernel	 = \
-	$(kernel.core) \
-	$(kernel.debug) \
-	$(kernel.hal) \
-    $(kernel.lib) \
-    $(kernel.mem) \
-    $(kernel.stdc) \
+unclean.extra    = kernel $(build_info_h)
+sources.c		 = \
+	c-assert.c \
+	c-string.c \
+	console.c \
+	core.c \
+	debug.c \
+	elf.c \
+	ipc.c \
+	kbd.c \
+	panic.c \
+	pfalloc.c \
+	process.c \
+	slab.c \
+	syscall.c \
+	thread.c \
+	vm_alloc.c
+objects.extra	 = $(kernel.hal) $(kernel.lib)
 
 include $(common)
 
-.PHONY: scripts
-scripts:
-	$(MAKE) -C $(scripts)
+$(build_info_h): FORCE
+	$(scripts)/gen_build_info_h.sh > $@
+	
+core.o: core.c $(build_info_h)
 
-$(kernel_ldscript): scripts
-
-kernel: $(objects.kernel) $(kernel_ldscript)
-	$(LINK.o) $(objects.kernel) $(LOADLIBES) $(LDLIBS) -o $@
+kernel: $(objects) $(kernel_ldscript)
+	$(LINK.o) $(objects) $(LOADLIBES) $(LDLIBS) -o $@
 
 $(target): kernel
 
-.PHONY: core
-core:
-	$(MAKE) -C $@
-
-.PHONY: debug
-debug:
-	$(MAKE) -C $@
-
 .PHONY: hal
 hal:
-	$(MAKE) -C $@
-
-.PHONY: kstdc
-kstdc:
-	$(MAKE) -C $@
-
-.PHONY: mem
-mem:
 	$(MAKE) -C $@
 
 .PHONY: libjinue
 libjinue:
 	$(MAKE) -C $(libjinue) all-kernel
 
-# The core directory must be re-maked every build because of the auto-generated
-# information about the build date and time.
-$(kernel.core): core
-
-$(kernel.debug): debug
-
 $(kernel.hal): hal
 
 $(kernel.lib): libjinue
-
-$(kernel.mem): mem
-
-$(kernel.stdc): kstdc

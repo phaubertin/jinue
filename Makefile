@@ -72,15 +72,9 @@ clean-doc:
 	$(MAKE) -C doc clean
 
 # ----- kernel image
-.PHONY: scripts
-scripts:
-	$(MAKE) -C $(scripts)
-
 .PHONY: kernel
 kernel:
 	$(MAKE) -C kernel
-
-$(kernel_bin_ldscript) $(image_ldscript): scripts
 
 $(kernel): kernel
 	true
