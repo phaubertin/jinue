@@ -31,13 +31,13 @@
 
 OUTPUT_FORMAT("binary")
 TARGET("elf32-i386")
-INPUT("boot/setup.o")
+INPUT("boot/setup16.o")
 TARGET("binary")
 INPUT("bin/kernel-bin")
 
 SECTIONS {
     setup : {
-        boot/setup.o
+        boot/setup16.o
     }
     
     kernel : {

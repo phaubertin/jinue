@@ -30,8 +30,8 @@
 jinue_root = ..
 include $(jinue_root)/header.mk
 
-sources.nasm = setup.asm setup32.asm
+sources.nasm = setup16.asm setup32.asm
 
-targets = setup.o setup32.o
+targets = setup16.o setup32.o
 
 include $(common)
