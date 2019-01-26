@@ -37,6 +37,27 @@
 %define SETUP_SEG       3
 
     bits 16
+
+    ; defined by linker - see image.lds linker script
+    extern setup_size_div512
+    extern kernel_size_div16
+
+bootsect_start:
+
+    times BOOT_E820_ENTRIES -($-$$) db 0
+
+e820_entries:       db 0
+
+    times BOOT_SETUP_SECTS -($-$$) db 0
+
+setup_sects:        db setup_size_div512
+root_flags:         dw 1
+sysize:             dd kernel_size_div16
+ram_size:           dw 0
+vid_mode:           dw 0xffff
+root_dev:           dw 0
+signature:          dw BOOT_MAGIC
+
     jmp short start
 
 header:             db "HdrS"
@@ -59,28 +80,25 @@ ramdisk_max:        dd PHYS_END_ADDR - 1
 
 start:
     ; Setup the segment registers
-    mov ax, cs
-    mov ds, ax
-    mov es, ax
+    mov ax, ds
     mov fs, ax
     mov gs, ax
-    mov ss, ax
     
-    ; Adjust the stack pointer to point to the same address as before in the new
-    ; segment
-    sub sp, 0x200
-    
+    ; Use a far return to set cs to the same value as ds
+    push ds
+    push just_here
+    retf
+
+just_here:
     ; Compute the setup code start address
     movzx eax, ax
     shl eax, 4
     
     ; Push the real mode code start address (setup code start address - 0x200)
     ; on the stack for later
-    mov ebx, eax
-    sub ebx, 0x200    
-    push ebx
+    push eax
     
-    ; Determine the address of the GDT    
+    ; Determine the address of the GDT
     mov ebx, eax
     add ebx, gdt
     mov [gdt_info.addr], ebx
@@ -151,7 +169,7 @@ code_32:
     ; This adds only a few bytes (or none). The main reason for this line is to
     ; ensure an error is generated (TIMES value is negative) if the code above
     ; crosses into the e820 memory map.
-    times BOOT_SETUP_ADDR(BOOT_E820_MAP) -($-$$) db 0
+    times BOOT_E820_MAP -($-$$) db 0
 
 ;------------------------------------------------------------------------
 ; E820 Memory map
@@ -261,7 +279,7 @@ enable_a20:
     ret
     
     ; Skip to end of e820 memory map
-    times BOOT_SETUP_ADDR(BOOT_E820_MAP_END)-($-$$) db 0
+    times BOOT_E820_MAP_END-($-$$) db 0
 
 ;------------------------------------------------------------------------
 ; End of E820 Memory map
@@ -325,19 +343,8 @@ bios_e820:
     mov bx, 20              ; Divide by 20
     div bx
     
-    ; The e820_entries field is not in our current segment. Change segment to
-    ; the the previous 512-byte sector (see boot.asm).
-    push es
-    
-    mov bx, es
-    sub bx, 0x20
-    mov es, bx
-    
     ; Set number of entries
-    mov byte [es:BOOT_E820_ENTRIES], al
-    
-    ; Restore ES
-    pop es
+    mov byte [BOOT_E820_ENTRIES], al
         
     ret
 

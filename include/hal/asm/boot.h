@@ -67,8 +67,6 @@
 
 #define BOOT_SETUP32_SIZE       PAGE_SIZE
 
-#define BOOT_SETUP_ADDR(x)      ((x) - BOOT_SETUP)
-
 #define BOOT_DATA_STRUCT        BOOT_E820_ENTRIES
 
 #define BOOT_STACK_HEAP_SIZE    (4 * PAGE_SIZE)

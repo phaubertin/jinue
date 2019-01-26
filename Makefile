@@ -33,8 +33,7 @@ subdirs              = boot doc kernel proc $(libjinue) $(scripts)
 
 kernel               = kernel/kernel
 kernel_bin           = bin/kernel-bin
-setup_boot           = boot/boot.o
-setup16              = boot/setup.bin
+setup16              = boot/setup.o
 setup32				 = boot/setup32.o
 vbox_initrd			 = boot/vbox-initrd.gz
 kernel_img           = bin/jinue
@@ -83,7 +82,7 @@ $(kernel): kernel
 $(kernel_bin): $(setup32) $(kernel) proc $(kernel_bin_ldscript)
 	$(LINK.o) -Wl,-T,$(kernel_bin_ldscript) $(LOADLIBES) $(LDLIBS) -o $@
 
-$(kernel_img): $(kernel_bin) $(setup_boot) $(setup16) $(image_ldscript)
+$(kernel_img): $(kernel_bin) $(setup16) $(image_ldscript)
 	$(LINK.o) -Wl,-T,$(image_ldscript) $(LOADLIBES) $(LDLIBS) -o $@
 
 # ----- process manager
@@ -96,7 +95,7 @@ proc:
 boot:
 	$(MAKE) -C boot
 
-$(setup_boot) $(setup16) $(setup32): boot
+$(setup16) $(setup32): boot
 
 # ----- bootable ISO image for virtual machine
 $(temp_iso_fs): $(kernel_img) $(grub_config) $(vbox_initrd) FORCE

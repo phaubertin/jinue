@@ -31,23 +31,20 @@
 
 OUTPUT_FORMAT("binary")
 TARGET("elf32-i386")
-INPUT("boot/boot.o")
+INPUT("boot/setup.o")
 TARGET("binary")
-INPUT("boot/setup.bin" "bin/kernel-bin")
+INPUT("bin/kernel-bin")
 
 SECTIONS {
-    boot : {
-        boot/boot.o
-    }
-    
     setup : {
-        boot/setup.bin
+        boot/setup.o
     }
     
     kernel : {
         bin/kernel-bin
     }
     
-    setup_size_div512   = SIZEOF(setup)  / 512;
+    /* The boot sector mustbe excluded from setup_size_div512. */
+    setup_size_div512   = SIZEOF(setup)  / 512 - 1;
     kernel_size_div16   = SIZEOF(kernel) / 16;
 }
