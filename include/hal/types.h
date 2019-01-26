@@ -98,8 +98,11 @@ typedef struct {
     uint32_t     proc_size;
     void        *image_start;
     void        *image_top;
+    uint32_t	 ramdisk_start;
+    uint32_t	 ramdisk_size;
     uint32_t     e820_entries;
     e820_t      *e820_map;
+    void 		*cmdline;
     void        *boot_heap;
     void        *boot_end;
     pte_t       *page_table;

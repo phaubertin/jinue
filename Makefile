@@ -36,6 +36,7 @@ kernel_bin           = bin/kernel-bin
 setup_boot           = boot/boot.o
 setup16              = boot/setup.bin
 setup32				 = boot/setup32.o
+vbox_initrd			 = boot/vbox-initrd.gz
 kernel_img           = bin/jinue
 jinue_iso            = bin/jinue.iso
 
@@ -48,7 +49,7 @@ grub_image_rel       = boot/grub/i386-pc/jinue.img
 grub_image           = $(temp_iso_fs)/$(grub_image_rel)
 
 target               = $(kernel_img)
-unclean.extra        = $(kernel_bin) $(jinue_iso)
+unclean.extra        = $(kernel_bin) $(jinue_iso) $(vbox_initrd)
 unclean_recursive    = $(temp_iso_fs)
 
 
@@ -60,7 +61,7 @@ install: $(kernel_img)
 	install -m644 $< /boot
 
 .PHONY: vbox
-vbox: $(jinue_iso)
+vbox: $(jinue_iso) $(vbox_initrd)
 
 # ----- documentation
 .PHONY: doc
@@ -98,11 +99,12 @@ boot:
 $(setup_boot) $(setup16) $(setup32): boot
 
 # ----- bootable ISO image for virtual machine
-$(temp_iso_fs): $(kernel_img) $(grub_config) FORCE
+$(temp_iso_fs): $(kernel_img) $(grub_config) $(vbox_initrd) FORCE
 	mkdir -p $(temp_iso_fs)/boot/grub/i386-pc
 	cp $(grub_modules)/* $(temp_iso_fs)/boot/grub/i386-pc/
 	cp $(kernel_img) $(temp_iso_fs)/boot/
 	cp $(grub_config) $(temp_iso_fs)/boot/grub/
+	cp $(vbox_initrd) $(temp_iso_fs)/boot/
 	touch $(temp_iso_fs)
 
 $(grub_image): $(temp_iso_fs)
@@ -110,3 +112,7 @@ $(grub_image): $(temp_iso_fs)
 
 $(jinue_iso): $(grub_image)
 	xorriso -as mkisofs -graft-points -b $(grub_image_rel) -no-emul-boot -boot-load-size 4 -boot-info-table --grub2-boot-info --grub2-mbr $(grub_modules)/boot_hybrid.img --protective-msdos-label -o $(jinue_iso) -r $(temp_iso_fs) --sort-weight 0 / --sort-weight 1 /boot
+	
+# Fake initrd file for virtual machine
+$(vbox_initrd):
+	head -c 1m < /dev/urandom | gzip > $(vbox_initrd)

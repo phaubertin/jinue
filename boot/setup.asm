@@ -28,6 +28,7 @@
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <jinue-common/asm/e820.h>
+#include <jinue-common/asm/vm.h>
 #include <hal/asm/boot.h>
 #include <hal/asm/descriptors.h>
 
@@ -54,7 +55,7 @@ heap_end_ptr:       dw 0
 pad1:               dw 0
 cmd_line_ptr:       dd 0
 initrd_addr_max:
-ramdisk_max:        dd 0
+ramdisk_max:        dd PHYS_END_ADDR - 1
 
 start:
     ; Setup the segment registers

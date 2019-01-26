@@ -54,13 +54,20 @@ _proc_start:        dd proc_start
 _proc_size:         dd proc_size
 _image_start:       dd image_start
 _image_top:         dd MUST_BE_SET_BELOW
+_ramdisk_start:     dd MUST_BE_SET_BELOW
+_ramdisk_size:      dd MUST_BE_SET_BELOW
 _e820_entries:      dd MUST_BE_SET_BELOW
 _e820_map:          dd MUST_BE_SET_BELOW
+_cmdline:           dd MUST_BE_SET_BELOW
 _boot_heap:         dd MUST_BE_SET_BELOW
 _boot_end:          dd MUST_BE_SET_BELOW
 _page_table:        dd MUST_BE_SET_BELOW
 _page_directory:    dd MUST_BE_SET_BELOW
 _setup_signature:   dd MUST_BE_SET_BELOW
+
+    ; Empty string used to represent an empty kernel command line.
+empty_string:
+    db 0
 
 header_end:
     jmp start
@@ -74,6 +81,12 @@ start:
     ; Copy signature so it can be checked by the kernel
     mov eax, dword [esi + BOOT_SETUP_HEADER]
     mov dword [_setup_signature], eax
+
+    ; Copy initial RAM disk address and size
+    mov eax, dword [esi + BOOT_RAMDISK_IMAGE]
+    mov dword [_ramdisk_start], eax
+    mov eax, dword [esi + BOOT_RAMDISK_SIZE]
+    mov dword [_ramdisk_size], eax
 
     ; figure out the size of the kernel image
     mov eax, dword [esi + BOOT_SYSIZE]
@@ -101,22 +114,37 @@ start:
     
     mov edi, eax
     mov dword [_e820_map], edi
+    mov ebx, esi                    ; remember current esi in ebx
     add esi, BOOT_E820_MAP
     
     rep movsb
 
-    ; setup heap: size is four times the size of the bios memory map
+    ; copy command line
+    mov dword [_cmdline], empty_string
+
+    mov esi, dword [ebx + BOOT_CMD_LINE_PTR]
+    or esi, esi                     ; if command line pointer is NULL...
+    jz skip_cmdline_copy            ; ... skip copy and keep empty string
+
+    ; Following the e820 memory map copy above, edi is already where we
+    ; want it to be.
+    mov dword [_cmdline], edi
+cmdline_copy:
+    lodsb                           ; load next character
+    stosb                           ; store character in destination
+    or al, al                       ; if character is not terminating NUL...
+    jnz cmdline_copy                ; ... continue with next character
+
+skip_cmdline_copy:
+    ; setup boot stack and heap, then use new stack
     mov eax, edi
-    mov [_boot_heap], eax
+    add eax, 7                          ; align address up...
+    and eax, ~7                         ; ... to an eight-byte boundary
+    mov [_boot_heap], eax               ; store heap start address
     
-    sub eax, [_image_top]
-    shl eax, 2          ; size of heap * 4
-    add eax, [_image_top]
-    
-    ; setup stack and use it
-    add eax, BOOT_STACK_SIZE            ; add stack size
-    add eax, PAGE_SIZE - 1              ; align address...
-    and eax, ~PAGE_MASK                 ; ... on a page boundary
+    add eax, BOOT_STACK_HEAP_SIZE       ; add stack and heap size
+    add eax, PAGE_SIZE - 1              ; align address up...
+    and eax, ~PAGE_MASK                 ; ... to a page boundary
     mov esp, eax                        ; set stack pointer
     
     ; allocate initial page table and page directory
@@ -143,7 +171,7 @@ init_page_table:
     loop init_page_table
 
     ; clear initial page directory
-    mov edi, dword [_page_directory]     ; write address
+    mov edi, dword [_page_directory]    ; write address
     xor eax, eax                        ; write value: 0
     mov cx, PAGE_SIZE                   ; write PAGE_SIZE bytes
     
@@ -173,6 +201,7 @@ init_page_table:
     add dword [_image_start],       KLIMIT
     add dword [_image_top],         KLIMIT
     add dword [_e820_map],          KLIMIT
+    add dword [_cmdline],           KLIMIT
     add dword [_boot_heap],         KLIMIT
     add dword [_boot_end],          KLIMIT
     add dword [_page_table],        KLIMIT

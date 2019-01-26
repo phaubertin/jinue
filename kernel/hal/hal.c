@@ -41,6 +41,7 @@
 #include <hal/pfaddr.h>
 #include <hal/thread.h>
 #include <hal/trap.h>
+#include <hal/vga.h>
 #include <hal/vm.h>
 #include <hal/x86.h>
 #include <panic.h>
@@ -87,6 +88,16 @@ void hal_init(void) {
 
     printk("Kernel size is %u bytes.\n", boot_info->kernel_size);
     
+    if(boot_info->ramdisk_start == 0 || boot_info->ramdisk_size == 0) {
+    	printk("%kWarning: no initial RAM disk.\n", VGA_COLOR_YELLOW);
+    }
+    else {
+    	printk("RAM disk with size %u bytes loaded at address %x.\n", boot_info->ramdisk_size, boot_info->ramdisk_start);
+    }
+
+    printk("Kernel command line:\n", boot_info->kernel_size);
+    printk("    %s\n", boot_info->cmdline);
+
     /* This must be done before any boot heap allocation. */
     boot_heap = boot_info->boot_heap;
 

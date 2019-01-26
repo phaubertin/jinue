@@ -51,6 +51,12 @@
 
 #define BOOT_SETUP_MAGIC        0x53726448  /* "HdrS", reversed */
 
+#define BOOT_RAMDISK_IMAGE      0x218
+
+#define BOOT_RAMDISK_SIZE      	0x21C
+
+#define BOOT_CMD_LINE_PTR     	0x228
+
 #define BOOT_E820_MAP           0x2d0
 
 #define BOOT_E820_MAP_END       0xd00
@@ -65,6 +71,6 @@
 
 #define BOOT_DATA_STRUCT        BOOT_E820_ENTRIES
 
-#define BOOT_STACK_SIZE         (2 * PAGE_SIZE)
+#define BOOT_STACK_HEAP_SIZE    (4 * PAGE_SIZE)
 
 #endif
