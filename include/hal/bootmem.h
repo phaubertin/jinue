@@ -43,22 +43,10 @@ struct bootmem_t {
 
 typedef struct bootmem_t bootmem_t;
 
-/** kernel memory map */
-extern bootmem_t *ram_map;
-
-/** available memory map (allocator) */
-extern bootmem_t *bootmem_root;
-
 /** current top of boot heap */
 extern void *boot_heap;
 
 
-void new_ram_map_entry(pfaddr_t addr, uint32_t count, bootmem_t **head);
-
-void apply_mem_hole(e820_addr_t hole_start, e820_addr_t hole_end, bootmem_t **head);
-
 void bootmem_init(bool use_pae);
-
-bootmem_t *bootmem_get_block(void);
 
 #endif

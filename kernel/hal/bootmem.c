@@ -240,15 +240,3 @@ void bootmem_init(bool use_pae) {
     /* head pointer for bootmem_get_block() */
     bootmem_root = ram_map;
 }
-
-bootmem_t *bootmem_get_block(void) {
-    bootmem_t *block;
-    
-    block = bootmem_root;
-    
-    if(block != NULL) {
-        bootmem_root = block->next;
-    }
-    
-    return block;
-}
