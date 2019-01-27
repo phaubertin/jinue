@@ -109,7 +109,7 @@ static inline bool cpu_has_feature(uint32_t mask) {
     return (cpu_info.features & mask) == mask;
 }
 
-void cpu_init_data(cpu_data_t *data, addr_t kernel_stack);
+void cpu_init_data(cpu_data_t *data);
 
 void cpu_detect_features(void);
 

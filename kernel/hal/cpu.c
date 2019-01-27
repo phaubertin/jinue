@@ -39,7 +39,7 @@
 cpu_info_t cpu_info;
 
 
-void cpu_init_data(cpu_data_t *data, addr_t kernel_stack) {
+void cpu_init_data(cpu_data_t *data) {
     tss_t *tss;
     
     tss = &data->tss;

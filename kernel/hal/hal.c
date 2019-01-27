@@ -66,7 +66,6 @@ int syscall_method;
 
 void hal_init(void) {
     addr_t addr;
-    addr_t               stack;
     cpu_data_t          *cpu_data;
     pseudo_descriptor_t *pseudo;
     unsigned int         idx;
@@ -109,10 +108,6 @@ void hal_init(void) {
     /* get cpu info */
     cpu_detect_features();
     
-    /* allocate new kernel stack */
-    stack = pfalloc_early();
-    stack += PAGE_SIZE;
-    
     /* allocate per-CPU data
      * 
      * We need to ensure that the Task State Segment (TSS) contained in this
@@ -125,7 +120,7 @@ void hal_init(void) {
     boot_heap = cpu_data + 1;
     
     /* initialize per-CPU data */
-    cpu_init_data(cpu_data, stack);
+    cpu_init_data(cpu_data);
     
     /* allocate pseudo-descriptor for GDT and IDT (temporary allocation) */
     boot_heap_old = boot_heap;

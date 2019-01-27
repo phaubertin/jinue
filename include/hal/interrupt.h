@@ -37,6 +37,7 @@
 #include <stdint.h>
 
 
+/* defined in trap.asm */
 extern seg_descriptor_t idt[];
 
 
