@@ -122,6 +122,20 @@ void hal_init(void) {
     /* initialize per-CPU data */
     cpu_init_data(cpu_data);
     
+    /* initialize the page frame allocator */
+    page_stack_buffer = (pfaddr_t *)pfalloc_early();
+    init_pfcache(&global_pfcache, page_stack_buffer);
+
+    for(idx = 0; idx < KERNEL_PAGE_STACK_INIT; ++idx) {
+        pffree( EARLY_PTR_TO_PFADDR( pfalloc_early() ) );
+    }
+
+    /* initialize virtual memory management, enable paging
+     *
+     * below this point, it is no longer safe to call pfalloc_early() */
+    bool use_pae = cpu_has_feature(CPU_FEATURE_PAE);
+    vm_boot_init(boot_info, use_pae, cpu_data);
+
     /* allocate pseudo-descriptor for GDT and IDT (temporary allocation) */
     boot_heap_old = boot_heap;
     
@@ -172,19 +186,9 @@ void hal_init(void) {
     
     /* de-allocate pseudo-descriptor */
     boot_heap = boot_heap_old;
-    
-    /* initialize the page frame allocator */
-    page_stack_buffer = (pfaddr_t *)pfalloc_early();
-    init_pfcache(&global_pfcache, page_stack_buffer);
-    
-    for(idx = 0; idx < KERNEL_PAGE_STACK_INIT; ++idx) {
-        pffree( EARLY_PTR_TO_PFADDR( pfalloc_early() ) );
-    }
-    
-    /* initialize virtual memory management, enable paging
-     * 
-     * below this point, it is no longer safe to call pfalloc_early() */
-    vm_boot_init();
+
+    /* Initialize virtual memory allocator and VM management caches. */
+    vm_boot_postinit(boot_info, use_pae);
     
     /* choose system call method */
     syscall_method = SYSCALL_METHOD_INTR;

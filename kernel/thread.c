@@ -30,6 +30,7 @@
  */
 
 #include <jinue-common/list.h>
+#include <hal/cpu_data.h>
 #include <hal/thread.h>
 #include <hal/vm.h>
 #include <object.h>
@@ -93,7 +94,10 @@ void thread_switch(
         }
 
         if(from_process != to_thread->process) {
-            vm_switch_addr_space(&to_thread->process->addr_space);
+            vm_switch_addr_space(
+            		&to_thread->process->addr_space,
+            		get_cpu_local_data()
+            );
         }
 
         thread_context_switch(

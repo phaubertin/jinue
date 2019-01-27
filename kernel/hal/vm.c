@@ -30,7 +30,6 @@
  */
 
 #include <hal/boot.h>
-#include <hal/cpu.h>
 #include <hal/cpu_data.h>
 #include <hal/kernel.h>
 #include <hal/pfaddr.h>
@@ -83,19 +82,13 @@ vm_alloc_t *global_page_allocator;
  * hal/vm_pae.c.
  * */
 
-void vm_boot_init(void) {
-    bool             use_pae;
+void vm_boot_init(const boot_info_t *boot_info, bool use_pae, cpu_data_t *cpu_data) {
     addr_t           addr;
     addr_space_t    *addr_space;
     
-    if(cpu_has_feature(CPU_FEATURE_PAE)) {
+    if(use_pae) {
         printk("Enabling Physical Address Extension (PAE).\n");
         vm_pae_boot_init();
-        
-        use_pae = true;
-    }
-    else {
-        use_pae = false;
     }
     
     /* create initial address space */
@@ -104,12 +97,7 @@ void vm_boot_init(void) {
     /** below this point, it is no longer safe to call pfalloc_early() */
     use_pfalloc_early = false;
     
-    /* perform 1:1 mapping of kernel image and data
-    
-       note: page tables for memory region (0..KLIMIT) are contiguous in
-       physical memory */
-    const boot_info_t *boot_info = get_boot_info();
-
+    /* perform 1:1 mapping of kernel image and data */
     for(addr = (addr_t)boot_info->image_start; addr < kernel_region_top; addr += PAGE_SIZE) {
         vm_map_early((addr_t)addr, EARLY_PTR_TO_PFADDR(addr), VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
     }
@@ -170,8 +158,10 @@ void vm_boot_init(void) {
     }
 
     /* switch to new address space */
-    vm_switch_addr_space(addr_space);
-    
+    vm_switch_addr_space(addr_space, cpu_data);
+}
+
+void vm_boot_postinit(const boot_info_t *boot_info, bool use_pae) {
     /* initialize global page allocator (region starting at KLIMIT)
      * 
      * TODO Some work needs to be done in the page allocator to support allocating
@@ -181,7 +171,7 @@ void vm_boot_init(void) {
     vm_alloc_init_allocator(global_page_allocator, (addr_t)KLIMIT, (addr_t)0 - 4 * MB);
 
     vm_alloc_add_region(global_page_allocator, (addr_t)KLIMIT,          (addr_t)boot_info->image_start);
-    vm_alloc_add_region(global_page_allocator, (addr_t)kernel_vm_top,   (addr_t)0 - 4 * MB);
+    vm_alloc_add_region(global_page_allocator, (addr_t)KLIMIT + 4 * MB, (addr_t)0 - 4 * MB);
     
     /* create slab cache to allocate PDPTs
      * 
@@ -607,10 +597,10 @@ void vm_destroy_addr_space(addr_space_t *addr_space) {
     destroy_addr_space(addr_space);
 }
 
-void vm_switch_addr_space(addr_space_t *addr_space) {
+void vm_switch_addr_space(addr_space_t *addr_space, cpu_data_t *cpu_data) {
     set_cr3(addr_space->cr3);
 
-    get_cpu_local_data()->current_addr_space = addr_space;
+    cpu_data->current_addr_space = addr_space;
 }
 
 /* Above this point, functions can pass around pointers to page table entries
