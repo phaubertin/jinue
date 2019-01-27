@@ -64,15 +64,114 @@ void *boot_heap;
 /** Specifies the entry point to use for system calls */
 int syscall_method;
 
-void hal_init(void) {
-    addr_t addr;
-    cpu_data_t          *cpu_data;
+static void hal_select_syscall_method(void) {
+    if(cpu_has_feature(CPU_FEATURE_SYSCALL)) {
+        uint64_t msrval;
+
+        syscall_method = SYSCALL_METHOD_FAST_AMD;
+
+        msrval  = rdmsr(MSR_EFER);
+        msrval |= MSR_FLAG_STAR_SCE;
+        wrmsr(MSR_EFER, msrval);
+
+        msrval  = (uint64_t)(uintptr_t)fast_amd_entry;
+        msrval |= (uint64_t)SEG_SELECTOR(GDT_KERNEL_CODE, RPL_KERNEL)   << 32;
+        msrval |= (uint64_t)SEG_SELECTOR(GDT_USER_CODE,   RPL_USER)     << 48;
+
+        wrmsr(MSR_STAR, msrval);
+    }
+    else if(cpu_has_feature(CPU_FEATURE_SYSENTER)) {
+        syscall_method = SYSCALL_METHOD_FAST_INTEL;
+
+        wrmsr(MSR_IA32_SYSENTER_CS,  SEG_SELECTOR(GDT_KERNEL_CODE, RPL_KERNEL));
+        wrmsr(MSR_IA32_SYSENTER_EIP, (uint64_t)(uintptr_t)fast_intel_entry);
+
+        /* kernel stack address is set when switching thread context */
+        wrmsr(MSR_IA32_SYSENTER_ESP, (uint64_t)(uintptr_t)NULL);
+    }
+    else {
+        syscall_method = SYSCALL_METHOD_INTR;
+    }
+}
+
+static pseudo_descriptor_t *hal_allocate_pseudo_descriptor(void) {
     pseudo_descriptor_t *pseudo;
+
+    boot_heap = ALIGN_END(boot_heap, sizeof(pseudo_descriptor_t));
+
+    pseudo    = (pseudo_descriptor_t *)boot_heap;
+    boot_heap = (pseudo_descriptor_t *)boot_heap + 1;
+
+    return pseudo;
+}
+
+static void hal_init_segments(cpu_data_t *cpu_data) {
+    /* Pseudo-descriptor allocation is temporary for the duration of this
+     * function only. Remember heap pointer on entry so we can free the
+     * pseudo-allocator when we are done. */
+    addr_t boot_heap_on_entry = boot_heap;
+
+    pseudo_descriptor_t *pseudo = hal_allocate_pseudo_descriptor();
+
+    /* load new GDT and TSS */
+    pseudo->addr    = (addr_t)&cpu_data->gdt;
+    pseudo->limit   = GDT_LENGTH * 8 - 1;
+
+    lgdt(pseudo);
+
+    set_cs( SEG_SELECTOR(GDT_KERNEL_CODE, RPL_KERNEL) );
+    set_ss( SEG_SELECTOR(GDT_KERNEL_DATA, RPL_KERNEL) );
+    set_data_segments( SEG_SELECTOR(GDT_KERNEL_DATA, RPL_KERNEL) );
+    set_gs( SEG_SELECTOR(GDT_PER_CPU_DATA, RPL_KERNEL) );
+
+    ltr( SEG_SELECTOR(GDT_TSS, RPL_KERNEL) );
+
+    /* Free pseudo-descriptor. */
+    boot_heap = boot_heap_on_entry;
+}
+
+static void hal_init_idt(void) {
+    unsigned int idx;
+
+    addr_t boot_heap_on_entry = boot_heap;
+
+    pseudo_descriptor_t *pseudo = hal_allocate_pseudo_descriptor();
+
+    /* initialize IDT */
+    for(idx = 0; idx < IDT_VECTOR_COUNT; ++idx) {
+        /* get address, which is already stored in the IDT entry */
+        addr_t addr = (addr_t)(uintptr_t)idt[idx];
+
+        /* set interrupt gate flags */
+        unsigned int flags = SEG_TYPE_INTERRUPT_GATE | SEG_FLAG_NORMAL_GATE;
+
+        if(idx == SYSCALL_IRQ) {
+            flags |= SEG_FLAG_USER;
+        }
+        else {
+            flags |= SEG_FLAG_KERNEL;
+        }
+
+        /* create interrupt gate descriptor */
+        idt[idx] = GATE_DESCRIPTOR(
+            SEG_SELECTOR(GDT_KERNEL_CODE, RPL_KERNEL),
+            addr,
+            flags,
+            NULL );
+    }
+
+    pseudo->addr  = (addr_t)idt;
+    pseudo->limit = IDT_VECTOR_COUNT * sizeof(seg_descriptor_t) - 1;
+    lidt(pseudo);
+
+    /* Free pseudo-descriptor. */
+    boot_heap = boot_heap_on_entry;
+}
+
+void hal_init(void) {
+    cpu_data_t          *cpu_data;
     unsigned int         idx;
-    unsigned int         flags;
-    uint64_t             msrval;
     pfaddr_t            *page_stack_buffer;
-    addr_t               boot_heap_old;
     
     /* pfalloc() should not be called yet -- use pfalloc_early() instead */
     use_pfalloc_early = true;
@@ -135,85 +234,16 @@ void hal_init(void) {
      * below this point, it is no longer safe to call pfalloc_early() */
     bool use_pae = cpu_has_feature(CPU_FEATURE_PAE);
     vm_boot_init(boot_info, use_pae, cpu_data);
+    
+    /* Initialize GDT and TSS */
+    hal_init_segments(cpu_data);
 
-    /* allocate pseudo-descriptor for GDT and IDT (temporary allocation) */
-    boot_heap_old = boot_heap;
-    
-    boot_heap = ALIGN_END(boot_heap, sizeof(pseudo_descriptor_t));
-    
-    pseudo    = (pseudo_descriptor_t *)boot_heap;
-    boot_heap = (pseudo_descriptor_t *)boot_heap + 1;
-    
-    /* load new GDT and TSS */
-    pseudo->addr    = (addr_t)&cpu_data->gdt;
-    pseudo->limit   = GDT_LENGTH * 8 - 1;
-    
-    lgdt(pseudo);
-    
-    set_cs( SEG_SELECTOR(GDT_KERNEL_CODE, RPL_KERNEL) );
-    set_ss( SEG_SELECTOR(GDT_KERNEL_DATA, RPL_KERNEL) );
-    set_data_segments( SEG_SELECTOR(GDT_KERNEL_DATA, RPL_KERNEL) );
-    set_gs( SEG_SELECTOR(GDT_PER_CPU_DATA, RPL_KERNEL) );
-    
-    ltr( SEG_SELECTOR(GDT_TSS, RPL_KERNEL) );
-    
-    /* initialize IDT */
-    for(idx = 0; idx < IDT_VECTOR_COUNT; ++idx) {
-        /* get address, which is already stored in the IDT entry */
-        addr  = (addr_t)(uintptr_t)idt[idx];
-        
-        /* set interrupt gate flags */
-        flags = SEG_TYPE_INTERRUPT_GATE | SEG_FLAG_NORMAL_GATE;
-        
-        if(idx == SYSCALL_IRQ) {
-            flags |= SEG_FLAG_USER;
-        }
-        else {
-            flags |= SEG_FLAG_KERNEL;
-        }
-        
-        /* create interrupt gate descriptor */
-        idt[idx] = GATE_DESCRIPTOR(
-            SEG_SELECTOR(GDT_KERNEL_CODE, RPL_KERNEL),
-            addr,
-            flags,
-            NULL );
-    }
-    
-    pseudo->addr  = (addr_t)idt;
-    pseudo->limit = IDT_VECTOR_COUNT * sizeof(seg_descriptor_t) - 1;
-    lidt(pseudo);
-    
-    /* de-allocate pseudo-descriptor */
-    boot_heap = boot_heap_old;
+    /* initialize interrupt descriptor table (IDT) */
+    hal_init_idt();
 
     /* Initialize virtual memory allocator and VM management caches. */
     vm_boot_postinit(boot_info, use_pae);
     
     /* choose system call method */
-    syscall_method = SYSCALL_METHOD_INTR;
-    
-    if(cpu_has_feature(CPU_FEATURE_SYSENTER)) {
-        syscall_method = SYSCALL_METHOD_FAST_INTEL;
-        
-        wrmsr(MSR_IA32_SYSENTER_CS,  SEG_SELECTOR(GDT_KERNEL_CODE, RPL_KERNEL));
-        wrmsr(MSR_IA32_SYSENTER_EIP, (uint64_t)(uintptr_t)fast_intel_entry);
-
-        /* kernel stack address is set when switching thread context */
-        wrmsr(MSR_IA32_SYSENTER_ESP, (uint64_t)(uintptr_t)NULL);
-    }
-    
-    if(cpu_has_feature(CPU_FEATURE_SYSCALL)) {
-        syscall_method = SYSCALL_METHOD_FAST_AMD;
-        
-        msrval  = rdmsr(MSR_EFER);
-        msrval |= MSR_FLAG_STAR_SCE;
-        wrmsr(MSR_EFER, msrval);
-        
-        msrval  = (uint64_t)(uintptr_t)fast_amd_entry;
-        msrval |= (uint64_t)SEG_SELECTOR(GDT_KERNEL_CODE, RPL_KERNEL)   << 32;
-        msrval |= (uint64_t)SEG_SELECTOR(GDT_USER_CODE,   RPL_USER)     << 48;
-        
-        wrmsr(MSR_STAR, msrval);
-    }
+    hal_select_syscall_method();
 }
