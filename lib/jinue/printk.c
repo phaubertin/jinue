@@ -45,7 +45,7 @@ void printk(const char *format, ...) {
     const char *idx = format;
     
     while(1) {
-    	const char *anchor = idx;
+        const char *anchor = idx;
         
         while( *idx != 0 && *idx != '%' ) {
             ++idx;

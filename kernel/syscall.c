@@ -63,17 +63,17 @@ void dispatch_syscall(trapframe_t *trapframe) {
         case SYSCALL_FUNCT_CONSOLE_PUTC:
             /** TODO: permission check */
             console_putc(
-            		(char)args->arg1,
-					CONSOLE_DEFAULT_COLOR);
+                    (char)args->arg1,
+                    CONSOLE_DEFAULT_COLOR);
             syscall_args_set_return(args, 0);
             break;
         
         case SYSCALL_FUNCT_CONSOLE_PUTS:
             /** TODO: permission check, sanity check (data size vs buffer size) */
             console_printn(
-            		(char *)args->arg2,
-					jinue_args_get_data_size(args),
-					CONSOLE_DEFAULT_COLOR);
+                    (char *)args->arg2,
+                    jinue_args_get_data_size(args),
+                    CONSOLE_DEFAULT_COLOR);
             syscall_args_set_return(args, 0);
             break;
         
@@ -127,18 +127,18 @@ void dispatch_syscall(trapframe_t *trapframe) {
             const boot_info_t *boot_info = get_boot_info();
 
             if(buffer_size < sizeof(jinue_mem_map_t) + boot_info->e820_entries * sizeof(jinue_mem_entry_t) ) {
-            	syscall_args_set_error(args, JINUE_EINVAL);
+                syscall_args_set_error(args, JINUE_EINVAL);
             }
             else {
-            	map->num_entries = boot_info->e820_entries;
+                map->num_entries = boot_info->e820_entries;
 
-            	for(idx = 0; idx < map->num_entries; ++idx) {
-            		map->entry[idx].addr = boot_info->e820_map[idx].addr;
-            		map->entry[idx].size = boot_info->e820_map[idx].size;
-            		map->entry[idx].type = boot_info->e820_map[idx].type;
-            	}
+                for(idx = 0; idx < map->num_entries; ++idx) {
+                    map->entry[idx].addr = boot_info->e820_map[idx].addr;
+                    map->entry[idx].size = boot_info->e820_map[idx].size;
+                    map->entry[idx].type = boot_info->e820_map[idx].type;
+                }
 
-            	syscall_args_set_return(args, 0);
+                syscall_args_set_return(args, 0);
             }
         }
             break;

@@ -64,19 +64,19 @@ static syscall_stub_t syscall_stub_ptr  = syscall_intr;
 
 
 void jinue_call_raw(jinue_syscall_args_t *args) {
-	syscall_stub_ptr(args);
+    syscall_stub_ptr(args);
 }
 
 int jinue_call(jinue_syscall_args_t *args, int *perrno) {
-	jinue_call_raw(args);
+    jinue_call_raw(args);
 
-	if(perrno != NULL) {
-		if(args->arg1 != 0) {
-			*perrno = args->arg1;
-		}
-	}
+    if(perrno != NULL) {
+        if(args->arg1 != 0) {
+            *perrno = args->arg1;
+        }
+    }
 
-	return (int)(args->arg0);
+    return (int)(args->arg0);
 }
 
 void jinue_get_syscall_implementation(void) {
@@ -98,27 +98,27 @@ const char *jinue_get_syscall_implementation_name(void) {
 }
 
 void jinue_set_thread_local_storage(void *addr, size_t size) {
-	jinue_syscall_args_t args;
+    jinue_syscall_args_t args;
 
-	args.arg0 = SYSCALL_FUNCT_SET_THREAD_LOCAL_ADDR;
-	args.arg1 = (uintptr_t)addr;
-	args.arg2 = (uintptr_t)size;
-	args.arg3 = 0;
+    args.arg0 = SYSCALL_FUNCT_SET_THREAD_LOCAL_ADDR;
+    args.arg1 = (uintptr_t)addr;
+    args.arg2 = (uintptr_t)size;
+    args.arg3 = 0;
 
-	(void)jinue_call(&args, NULL);
+    (void)jinue_call(&args, NULL);
 }
 
 void *jinue_get_thread_local_storage(void) {
-	jinue_syscall_args_t args;
+    jinue_syscall_args_t args;
 
-	args.arg0 = SYSCALL_FUNCT_GET_THREAD_LOCAL_ADDR;
-	args.arg1 = 0;
-	args.arg2 = 0;
-	args.arg3 = 0;
+    args.arg0 = SYSCALL_FUNCT_GET_THREAD_LOCAL_ADDR;
+    args.arg1 = 0;
+    args.arg2 = 0;
+    args.arg3 = 0;
 
-	(void)jinue_call(&args, NULL);
+    (void)jinue_call(&args, NULL);
 
-	return (void *)jinue_get_return_uintptr(&args);
+    return (void *)jinue_get_return_uintptr(&args);
 }
 
 int jinue_thread_create(void (*entry)(), void *stack, int *perrno) {

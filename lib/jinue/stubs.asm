@@ -54,12 +54,12 @@ syscall_fast_intel:
     ; first function argument: pointer to system call arguments structure
     mov edi, [esp+20]
 
-	; kernel calling convention: load system call arguments in registers eax,
-	; ebx, esi and edi
+    ; kernel calling convention: load system call arguments in registers eax,
+    ; ebx, esi and edi
     mov eax, [edi+ 0]   ; arg0 (function/system call number)
     mov ebx, [edi+ 4]   ; arg1 (target descriptor)
     mov esi, [edi+ 8]   ; arg2 (message pointer)
-    mov edi, [edi+12]  	; arg3 (message size)
+    mov edi, [edi+12]   ; arg3 (message size)
 
     ; kernel calling convention: save return address and stack pointer in ecx
     ; and ebp
@@ -78,7 +78,7 @@ syscall_fast_intel:
     mov [ebp+ 0], eax   ; arg0 (system call-specific/return value)
     mov [ebp+ 4], ebx   ; arg1 (system call-specific/error number)
     mov [ebp+ 8], esi   ; arg2 (system call-specific/reserved)
-    mov [ebp+12], edi  	; arg3 (system call-specific/reserved)
+    mov [ebp+12], edi   ; arg3 (system call-specific/reserved)
     
     pop ebp
     pop edi
@@ -104,7 +104,7 @@ syscall_fast_amd:
     ; This only applies when entering the kernel through the SYSCALL instruction.
     push gs
     
-	; At this point, the stack looks like this:
+    ; At this point, the stack looks like this:
     ;
     ; esp+24  args pointer (first function argument)
     ; esp+20  return address
@@ -122,7 +122,7 @@ syscall_fast_amd:
     mov eax, [edi+ 0]   ; arg0 (function/system call number)
     mov ebx, [edi+ 4]   ; arg1 (target descriptor)
     mov esi, [edi+ 8]   ; arg2 (message pointer)
-    mov edi, [edi+12]  	; arg3 (message size)
+    mov edi, [edi+12]   ; arg3 (message size)
     
     syscall
     
@@ -133,7 +133,7 @@ syscall_fast_amd:
     mov [ebp+ 0], eax   ; arg0 (system call-specific/return value)
     mov [ebp+ 4], ebx   ; arg1 (system call-specific/error number)
     mov [ebp+ 8], esi   ; arg2 (system call-specific/reserved)
-    mov [ebp+12], edi  	; arg3 (system call-specific/reserved)
+    mov [ebp+12], edi   ; arg3 (system call-specific/reserved)
 
     pop gs
     pop ebp
@@ -172,7 +172,7 @@ syscall_intr:
     mov eax, [edi+ 0]   ; arg0 (function/system call number)
     mov ebx, [edi+ 4]   ; arg1 (target descriptor)
     mov esi, [edi+ 8]   ; arg2 (message pointer)
-    mov edi, [edi+12]  	; arg3 (message size)
+    mov edi, [edi+12]   ; arg3 (message size)
 
     int 0x80
     
@@ -183,7 +183,7 @@ syscall_intr:
     mov [ebp+ 0], eax   ; arg0 (system call-specific/return value)
     mov [ebp+ 4], ebx   ; arg1 (system call-specific/error number)
     mov [ebp+ 8], esi   ; arg2 (system call-specific/reserved)
-    mov [ebp+12], edi  	; arg3 (system call-specific/reserved)
+    mov [ebp+12], edi   ; arg3 (system call-specific/reserved)
 
     pop ebp
     pop edi

@@ -41,10 +41,10 @@
 
 void elf_check(Elf32_Ehdr *elf) {
     /* check: valid ELF binary magic number */
-    if(		elf->e_ident[EI_MAG0] != ELF_MAGIC0 ||
-    		elf->e_ident[EI_MAG1] != ELF_MAGIC1 ||
-			elf->e_ident[EI_MAG2] != ELF_MAGIC2 ||
-			elf->e_ident[EI_MAG3] != ELF_MAGIC3 ) {
+    if(     elf->e_ident[EI_MAG0] != ELF_MAGIC0 ||
+            elf->e_ident[EI_MAG1] != ELF_MAGIC1 ||
+            elf->e_ident[EI_MAG2] != ELF_MAGIC2 ||
+            elf->e_ident[EI_MAG3] != ELF_MAGIC3 ) {
         panic("Not an ELF binary");
     }
     

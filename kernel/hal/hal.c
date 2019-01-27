@@ -90,10 +90,10 @@ void hal_init(void) {
     printk("Kernel size is %u bytes.\n", boot_info->kernel_size);
     
     if(boot_info->ramdisk_start == 0 || boot_info->ramdisk_size == 0) {
-    	printk("%kWarning: no initial RAM disk.\n", VGA_COLOR_YELLOW);
+        printk("%kWarning: no initial RAM disk.\n", VGA_COLOR_YELLOW);
     }
     else {
-    	printk("RAM disk with size %u bytes loaded at address %x.\n", boot_info->ramdisk_size, boot_info->ramdisk_start);
+        printk("RAM disk with size %u bytes loaded at address %x.\n", boot_info->ramdisk_size, boot_info->ramdisk_start);
     }
 
     printk("Kernel command line:\n", boot_info->kernel_size);
