@@ -31,7 +31,6 @@
 
 #include <assert.h>
 #include <hal/boot.h>
-#include <hal/bootmem.h>
 #include <hal/cpu.h>
 #include <hal/cpu_data.h>
 #include <hal/descriptors.h>
@@ -58,6 +57,9 @@
 /** top of region of memory mapped 1:1 (kernel image plus some pages for
     data structures allocated during initialization) */
 addr_t kernel_region_top;
+
+/** current top of boot heap */
+void *boot_heap;
 
 /** Specifies the entry point to use for system calls */
 int syscall_method;

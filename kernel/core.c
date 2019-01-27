@@ -30,7 +30,6 @@
  */
 
 #include <hal/boot.h>
-#include <hal/bootmem.h>
 #include <hal/hal.h>
 #include <hal/vm.h>
 #include <core.h>

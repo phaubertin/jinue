@@ -31,7 +31,7 @@
 
 #include <hal/vm_private.h>
 #include <hal/boot.h>
-#include <hal/bootmem.h>
+#include <hal/hal.h>
 #include <hal/x86.h>
 #include <assert.h>
 #include <panic.h>

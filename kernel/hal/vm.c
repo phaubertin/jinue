@@ -30,7 +30,6 @@
  */
 
 #include <hal/boot.h>
-#include <hal/bootmem.h>
 #include <hal/cpu.h>
 #include <hal/cpu_data.h>
 #include <hal/kernel.h>
@@ -104,17 +103,6 @@ void vm_boot_init(void) {
     
     /** below this point, it is no longer safe to call pfalloc_early() */
     use_pfalloc_early = false;
-    
-    /* create system usable physical memory (RAM) map
-     * 
-     * Among other things, this function marks the memory used by the kernel
-     * (i.e. image_start..kernel_region_top) as in use. This must be done after
-     * all early page frame allocations with fpalloc_early() have been done.
-     * 
-     * This function needs to know whether Physical Address Extension (PAE) is
-     * enabled (use_pae) because, if it isn't, all memory above the 4GB mark is
-     * excluded from the usable memory map. */
-    bootmem_init(use_pae);
     
     /* perform 1:1 mapping of kernel image and data
     

@@ -32,6 +32,9 @@
 #ifndef JINUE_HAL_H
 #define JINUE_HAL_H
 
+/** current top of boot heap */
+extern void *boot_heap;
+
 void hal_init(void);
 
 #endif
