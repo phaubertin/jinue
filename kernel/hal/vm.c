@@ -92,7 +92,7 @@ void vm_boot_init(const boot_info_t *boot_info, bool use_pae, cpu_data_t *cpu_da
     }
     
     /* create initial address space */
-    addr_space = vm_create_initial_addr_space();
+    addr_space = vm_create_initial_addr_space(use_pae);
     
     /** below this point, it is no longer safe to call pfalloc_early() */
     use_pfalloc_early = false;
@@ -552,8 +552,13 @@ addr_space_t *vm_x86_create_initial_addr_space(void) {
     return &initial_addr_space;
 }
 
-addr_space_t *vm_create_initial_addr_space(void) {
-    return create_initial_addr_space();
+addr_space_t *vm_create_initial_addr_space(bool use_pae) {
+    if(use_pae) {
+        return vm_pae_create_initial_addr_space();
+    }
+    else {
+        return vm_x86_create_initial_addr_space();
+    }
 }
 
 void vm_destroy_page_directory(pfaddr_t pdpfaddr, unsigned int from_index, unsigned int to_index) {
@@ -656,8 +661,6 @@ static void vm_x86_copy_pte(pte_t *dest, pte_t *src) {
 size_t page_table_entries                                       = (size_t)PAGE_TABLE_ENTRIES;
 
 addr_space_t *(*create_addr_space)(addr_space_t *)              = vm_x86_create_addr_space;
-
-addr_space_t *(*create_initial_addr_space)(void)                = vm_x86_create_initial_addr_space;
 
 void (*destroy_addr_space)(addr_space_t *)                      = vm_x86_destroy_addr_space;
 

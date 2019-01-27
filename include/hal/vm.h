@@ -73,7 +73,7 @@ void vm_map_early(addr_t vaddr, pfaddr_t paddr, int flags);
 
 addr_space_t *vm_create_addr_space(addr_space_t *addr_space);
 
-addr_space_t *vm_create_initial_addr_space(void);
+addr_space_t *vm_create_initial_addr_space(bool use_pae);
 
 void vm_destroy_addr_space(addr_space_t *addr_space);
 

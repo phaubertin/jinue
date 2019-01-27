@@ -63,8 +63,6 @@ extern size_t page_table_entries;
 
 extern addr_space_t *(*create_addr_space)(addr_space_t *);
 
-extern addr_space_t *(*create_initial_addr_space)(void);
-
 extern void (*destroy_addr_space)(addr_space_t *);
 
 /** page table entry offset of virtual (linear) address */

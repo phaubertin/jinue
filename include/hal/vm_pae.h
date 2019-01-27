@@ -32,12 +32,16 @@
 #ifndef JINUE_HAL_VM_PAE_H
 #define JINUE_HAL_VM_PAE_H
 
+#include <hal/types.h>
+
 /** This header file contains declarations for the PAE functions defined in
  * hal/vm_pae.c. It is intended to be included by hal/vm.c and hal/vm_pae.c.
  * There should be no reason to include it anywhere else. */
 
 
 void vm_pae_enable(void);
+
+addr_space_t *vm_pae_create_initial_addr_space(void);
 
 void vm_pae_boot_init(void);
 

@@ -234,7 +234,7 @@ static addr_space_t *vm_pae_create_addr_space(addr_space_t *addr_space) {
     return addr_space;
 }
 
-static addr_space_t *vm_pae_create_initial_addr_space(void) {
+addr_space_t *vm_pae_create_initial_addr_space(void) {
     unsigned int idx;
     pte_t *pdpte;
     
@@ -358,7 +358,6 @@ static void vm_pae_destroy_addr_space(addr_space_t *addr_space) {
 void vm_pae_boot_init(void) {
     page_table_entries          = (size_t)PAGE_TABLE_ENTRIES;
     create_addr_space           = vm_pae_create_addr_space;
-    create_initial_addr_space   = vm_pae_create_initial_addr_space;
     destroy_addr_space          = vm_pae_destroy_addr_space;
     page_table_offset_of        = vm_pae_page_table_offset_of;
     page_directory_offset_of    = vm_pae_page_directory_offset_of;
