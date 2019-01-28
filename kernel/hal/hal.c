@@ -105,7 +105,7 @@ static pseudo_descriptor_t *hal_allocate_pseudo_descriptor(void) {
     return pseudo;
 }
 
-static void hal_init_segments(cpu_data_t *cpu_data) {
+static void hal_init_descriptors(cpu_data_t *cpu_data) {
     /* Pseudo-descriptor allocation is temporary for the duration of this
      * function only. Remember heap pointer on entry so we can free the
      * pseudo-allocator when we are done. */
@@ -113,17 +113,24 @@ static void hal_init_segments(cpu_data_t *cpu_data) {
 
     pseudo_descriptor_t *pseudo = hal_allocate_pseudo_descriptor();
 
+    /* load interrupt descriptor table */
+    pseudo->addr  = (addr_t)idt;
+    pseudo->limit = IDT_VECTOR_COUNT * sizeof(seg_descriptor_t) - 1;
+    lidt(pseudo);
+
     /* load new GDT and TSS */
     pseudo->addr    = (addr_t)&cpu_data->gdt;
     pseudo->limit   = GDT_LENGTH * 8 - 1;
 
     lgdt(pseudo);
 
+    /* load new segment descriptors */
     set_cs( SEG_SELECTOR(GDT_KERNEL_CODE, RPL_KERNEL) );
     set_ss( SEG_SELECTOR(GDT_KERNEL_DATA, RPL_KERNEL) );
     set_data_segments( SEG_SELECTOR(GDT_KERNEL_DATA, RPL_KERNEL) );
     set_gs( SEG_SELECTOR(GDT_PER_CPU_DATA, RPL_KERNEL) );
 
+    /* load TSS segment into task register */
     ltr( SEG_SELECTOR(GDT_TSS, RPL_KERNEL) );
 
     /* Free pseudo-descriptor. */
@@ -132,10 +139,6 @@ static void hal_init_segments(cpu_data_t *cpu_data) {
 
 static void hal_init_idt(void) {
     unsigned int idx;
-
-    addr_t boot_heap_on_entry = boot_heap;
-
-    pseudo_descriptor_t *pseudo = hal_allocate_pseudo_descriptor();
 
     /* initialize IDT */
     for(idx = 0; idx < IDT_VECTOR_COUNT; ++idx) {
@@ -159,13 +162,6 @@ static void hal_init_idt(void) {
             flags,
             NULL );
     }
-
-    pseudo->addr  = (addr_t)idt;
-    pseudo->limit = IDT_VECTOR_COUNT * sizeof(seg_descriptor_t) - 1;
-    lidt(pseudo);
-
-    /* Free pseudo-descriptor. */
-    boot_heap = boot_heap_on_entry;
 }
 
 void hal_init(void) {
@@ -221,6 +217,13 @@ void hal_init(void) {
     /* initialize per-CPU data */
     cpu_init_data(cpu_data);
     
+    /* Initialize interrupt descriptor table (IDT)
+     *
+     * This function modifies the IDT in-place (see trap.asm). This must be
+     * done before vm_boot_init() because the page protection bits set up by
+     * vm_boot_init() prevent this. */
+    hal_init_idt();
+
     /* initialize the page frame allocator */
     page_stack_buffer = (pfaddr_t *)pfalloc_early();
     init_pfcache(&global_pfcache, page_stack_buffer);
@@ -236,10 +239,7 @@ void hal_init(void) {
     vm_boot_init(boot_info, use_pae, cpu_data);
     
     /* Initialize GDT and TSS */
-    hal_init_segments(cpu_data);
-
-    /* initialize interrupt descriptor table (IDT) */
-    hal_init_idt();
+    hal_init_descriptors(cpu_data);
 
     /* Initialize virtual memory allocator and VM management caches. */
     vm_boot_postinit(boot_info, use_pae);
