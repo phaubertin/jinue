@@ -234,7 +234,7 @@ static addr_space_t *vm_pae_create_addr_space(addr_space_t *addr_space) {
     return addr_space;
 }
 
-addr_space_t *vm_pae_create_initial_addr_space(void) {
+addr_space_t *vm_pae_create_initial_addr_space(void *boot_heap) {
     unsigned int idx;
     pte_t *pdpte;
     

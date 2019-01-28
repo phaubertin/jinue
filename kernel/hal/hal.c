@@ -58,9 +58,6 @@
     data structures allocated during initialization) */
 addr_t kernel_region_top;
 
-/** current top of boot heap */
-void *boot_heap;
-
 /** Specifies the entry point to use for system calls */
 int syscall_method;
 
@@ -94,7 +91,7 @@ static void hal_select_syscall_method(void) {
     }
 }
 
-static pseudo_descriptor_t *hal_allocate_pseudo_descriptor(void) {
+static pseudo_descriptor_t *hal_allocate_pseudo_descriptor(void *boot_heap) {
     pseudo_descriptor_t *pseudo;
 
     boot_heap = ALIGN_END(boot_heap, sizeof(pseudo_descriptor_t));
@@ -105,13 +102,13 @@ static pseudo_descriptor_t *hal_allocate_pseudo_descriptor(void) {
     return pseudo;
 }
 
-static void hal_init_descriptors(cpu_data_t *cpu_data) {
+static void hal_init_descriptors(cpu_data_t *cpu_data, void *boot_heap) {
     /* Pseudo-descriptor allocation is temporary for the duration of this
      * function only. Remember heap pointer on entry so we can free the
      * pseudo-allocator when we are done. */
     addr_t boot_heap_on_entry = boot_heap;
 
-    pseudo_descriptor_t *pseudo = hal_allocate_pseudo_descriptor();
+    pseudo_descriptor_t *pseudo = hal_allocate_pseudo_descriptor(boot_heap);
 
     /* load interrupt descriptor table */
     pseudo->addr  = (addr_t)idt;
@@ -195,7 +192,7 @@ void hal_init(void) {
     printk("    %s\n", boot_info->cmdline);
 
     /* This must be done before any boot heap allocation. */
-    boot_heap = boot_info->boot_heap;
+    void *boot_heap = boot_info->boot_heap;
 
     /* This must be done before any call to pfalloc_early(). */
     kernel_region_top = boot_info->boot_end;
@@ -236,10 +233,10 @@ void hal_init(void) {
      *
      * below this point, it is no longer safe to call pfalloc_early() */
     bool use_pae = cpu_has_feature(CPU_FEATURE_PAE);
-    vm_boot_init(boot_info, use_pae, cpu_data);
+    vm_boot_init(boot_info, use_pae, cpu_data, boot_heap);
     
     /* Initialize GDT and TSS */
-    hal_init_descriptors(cpu_data);
+    hal_init_descriptors(cpu_data, boot_heap);
 
     /* Initialize virtual memory allocator and VM management caches. */
     vm_boot_postinit(boot_info, use_pae);

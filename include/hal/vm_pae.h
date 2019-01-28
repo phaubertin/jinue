@@ -41,7 +41,7 @@
 
 void vm_pae_enable(void);
 
-addr_space_t *vm_pae_create_initial_addr_space(void);
+addr_space_t *vm_pae_create_initial_addr_space(void *boot_heap);
 
 void vm_pae_boot_init(void);
 

@@ -82,7 +82,7 @@ vm_alloc_t *global_page_allocator;
  * hal/vm_pae.c.
  * */
 
-void vm_boot_init(const boot_info_t *boot_info, bool use_pae, cpu_data_t *cpu_data) {
+void vm_boot_init(const boot_info_t *boot_info, bool use_pae, cpu_data_t *cpu_data, void *boot_heap) {
     addr_t           addr;
     addr_space_t    *addr_space;
     
@@ -92,7 +92,7 @@ void vm_boot_init(const boot_info_t *boot_info, bool use_pae, cpu_data_t *cpu_da
     }
     
     /* create initial address space */
-    addr_space = vm_create_initial_addr_space(use_pae);
+    addr_space = vm_create_initial_addr_space(use_pae, boot_heap);
     
     /** below this point, it is no longer safe to call pfalloc_early() */
     use_pfalloc_early = false;
@@ -552,9 +552,9 @@ addr_space_t *vm_x86_create_initial_addr_space(void) {
     return &initial_addr_space;
 }
 
-addr_space_t *vm_create_initial_addr_space(bool use_pae) {
+addr_space_t *vm_create_initial_addr_space(bool use_pae, void *boot_heap) {
     if(use_pae) {
-        return vm_pae_create_initial_addr_space();
+        return vm_pae_create_initial_addr_space(boot_heap);
     }
     else {
         return vm_x86_create_initial_addr_space();
