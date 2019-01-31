@@ -32,14 +32,12 @@ include header.mk
 subdirs              = boot doc kernel proc $(libjinue) $(scripts)
 
 kernel               = kernel/kernel
-kernel_bin           = bin/kernel-bin
 setup16              = boot/setup16.o
 setup32				 = boot/setup32.o
 vbox_initrd			 = boot/vbox-initrd.gz
 kernel_img           = bin/jinue
 jinue_iso            = bin/jinue.iso
 
-kernel_bin_ldscript	 = $(scripts)/kernel-bin.ld
 image_ldscript	 	 = $(scripts)/image.ld
 
 temp_iso_fs          = bin/iso-tmp
@@ -48,7 +46,7 @@ grub_image_rel       = boot/grub/i386-pc/jinue.img
 grub_image           = $(temp_iso_fs)/$(grub_image_rel)
 
 target               = $(kernel_img)
-unclean.extra        = $(kernel_bin) $(jinue_iso) $(vbox_initrd)
+unclean.extra        = $(jinue_iso) $(vbox_initrd)
 unclean_recursive    = $(temp_iso_fs)
 
 
@@ -79,10 +77,7 @@ kernel:
 $(kernel): kernel
 	true
 
-$(kernel_bin): $(setup32) $(kernel) proc $(kernel_bin_ldscript)
-	$(LINK.o) -Wl,-T,$(kernel_bin_ldscript) $(LOADLIBES) $(LDLIBS) -o $@
-
-$(kernel_img): $(kernel_bin) $(setup16) $(image_ldscript)
+$(kernel_img): $(setup16) $(setup32) $(kernel) proc $(image_ldscript)
 	$(LINK.o) -Wl,-T,$(image_ldscript) $(LOADLIBES) $(LDLIBS) -o $@
 
 # ----- process manager

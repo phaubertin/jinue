@@ -69,6 +69,8 @@ SECTIONS {
         . = ALIGN(16);
     }
     
+    /* We must specifically not throw out the symbol table as the kernel uses
+     * it to display a useful call stack dump if it panics. */
     .eh_frame           : { *(.eh_frame) }
     .shstrtab           : { *(.shstrtab) }
     .symtab             : { *(.symtab) }
