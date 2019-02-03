@@ -32,10 +32,10 @@
 #include <hal/boot.h>
 #include <hal/hal.h>
 #include <hal/vm.h>
-#include <core.h>
 #include <console.h>
 #include <elf.h>
 #include <ipc.h>
+#include <kmain.h>
 #include <panic.h>
 #include <printk.h>
 #include <process.h>

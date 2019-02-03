@@ -46,11 +46,11 @@ sources.c		 = \
 	c-assert.c \
 	c-string.c \
 	console.c \
-	core.c \
 	debug.c \
 	elf.c \
 	ipc.c \
 	kbd.c \
+	kmain.c \
 	panic.c \
 	pfalloc.c \
 	process.c \
@@ -65,7 +65,7 @@ include $(common)
 $(build_info_h): FORCE
 	$(scripts)/gen_build_info_h.sh > $@
 	
-core.o: core.c $(build_info_h)
+kmain.o: kmain.c $(build_info_h)
 
 kernel: $(objects) $(kernel_ldscript)
 	$(LINK.o) $(objects) $(LOADLIBES) $(LDLIBS) -o $@
