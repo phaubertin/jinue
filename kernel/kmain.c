@@ -80,6 +80,10 @@ void kmain(void) {
     /* create process for process manager */
     process_t *process = process_create();
 
+    if(process == NULL) {
+        panic("Could not create initial process.");
+    }
+
     /* load process manager binary */
     Elf32_Ehdr *elf = find_process_manager();
     elf_load(&elf_info, elf, &process->addr_space);

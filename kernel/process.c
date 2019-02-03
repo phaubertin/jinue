@@ -61,7 +61,17 @@ process_t *process_create(void) {
     process_t *process = slab_cache_alloc(&process_cache);
 
     if(process != NULL) {
-        vm_create_addr_space(&process->addr_space);
+        addr_space_t *addr_space = vm_create_addr_space(&process->addr_space);
+
+        /* The address space object is located inside the process object but the
+         * call to vm_create_addr_space() above can still fail if we cannot
+         * allocate the initial page directory/tables or, when PAE is enabled,
+         * if we cannot allocate a PDPT. */
+        if(addr_space == NULL) {
+            /* TODO we must free the process object here. */
+            return NULL;
+        }
+
         memset(&process->descriptors, 0, sizeof(process->descriptors));
     }
 

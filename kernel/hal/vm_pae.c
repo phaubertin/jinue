@@ -182,13 +182,17 @@ static addr_space_t *vm_pae_create_addr_space(addr_space_t *addr_space) {
     unsigned int idx;
     pte_t *pdpte;
     
+    /* Create a PDPT for the new address space */
+    pdpt_t *pdpt = slab_cache_alloc(&pdpt_cache);
+
+    if(pdpt == NULL) {
+        return NULL;
+    }
+
     /* Use the initial address space as a template for the kernel address range
      * (address KLIMIT and above). The page tables for that range are shared by
      * all address spaces. */
     pdpt_t *template_pdpt = initial_addr_space.top_level.pdpt;
-    
-    /* Create a PDPT for the new address space */
-    pdpt_t *pdpt = slab_cache_alloc(&pdpt_cache);
     
     for(idx = 0; idx < PDPT_ENTRIES; ++idx) {
         pdpte = &pdpt->pd[idx];
