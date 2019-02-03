@@ -59,7 +59,7 @@ struct pdpt_t {
 };
 
 /** slab cache that allocates Page Directory Pointer Tables (PDPTs) */
-static slab_cache_t *pdpt_cache;
+static slab_cache_t pdpt_cache;
 
 pdpt_t *initial_pdpt;
 
@@ -157,17 +157,14 @@ void vm_pae_enable(void) {
 }
 
 void vm_pae_create_pdpt_cache(void) {
-    pdpt_cache = slab_cache_create(
+    slab_cache_init(
+            &pdpt_cache,
             "vm_pae_pdpt_cache",
             sizeof(pdpt_t),
             sizeof(pdpt_t),
             NULL,
             NULL,
             SLAB_DEFAULTS);
-            
-    if(pdpt_cache == NULL) {
-        panic("Cannot create Page Directory Pointer Table (PDPT) slab cache.");
-    }
 }
 
 /** Return whether the page directory at the specified PDPT index is split between
@@ -191,7 +188,7 @@ static addr_space_t *vm_pae_create_addr_space(addr_space_t *addr_space) {
     pdpt_t *template_pdpt = initial_addr_space.top_level.pdpt;
     
     /* Create a PDPT for the new address space */
-    pdpt_t *pdpt = slab_cache_alloc(pdpt_cache);
+    pdpt_t *pdpt = slab_cache_alloc(&pdpt_cache);
     
     for(idx = 0; idx < PDPT_ENTRIES; ++idx) {
         pdpte = &pdpt->pd[idx];

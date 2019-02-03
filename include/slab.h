@@ -105,15 +105,14 @@ typedef struct slab_t slab_t;
 extern slab_cache_t *slab_cache_list;
 
 
-slab_cache_t *slab_cache_create(
-    char            *name,
-    size_t           size,
-    size_t           alignment,
-    slab_ctor_t      ctor,
-    slab_ctor_t      dtor,
-    int              flags );
-
-void slab_cache_destroy(slab_cache_t *cache);
+void slab_cache_init(
+        slab_cache_t    *cache,
+        char            *name,
+        size_t           size,
+        size_t           alignment,
+        slab_ctor_t      ctor,
+        slab_ctor_t      dtor,
+        int              flags);
 
 void *slab_cache_alloc(slab_cache_t *cache);
 

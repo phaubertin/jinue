@@ -36,34 +36,13 @@
 #include <pfalloc.h>
 #include <printk.h>
 #include <slab.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <types.h>
 #include <util.h>
 #include <vm_alloc.h>
 
-
-static slab_cache_t slab_cache_cache = {
-    NULL,                                           /* slabs_empty */
-    NULL,                                           /* slabs_partial */
-    NULL,                                           /* slabs_full */
-    0,                                              /* empty_count */
-    sizeof(slab_cache_t),                           /* obj_size */
-    sizeof(slab_cache_t),                           /* alloc_size */
-    sizeof(uint32_t),                               /* alignment */
-    sizeof(slab_cache_t) - sizeof(slab_bufctl_t),   /* bufctl_offset */
-    0,                                              /* next_colour */
-    0,                                              /* max_colour */
-    SLAB_DEFAULT_WORKING_SET,                       /* working_set */
-    NULL,                                           /* ctor */
-    NULL,                                           /* dtor */
-    "slab_cache",                                   /* name */
-    NULL,                                           /* prev */
-    NULL,                                           /* next */
-    SLAB_DEFAULTS,                                  /* flags */
-};
-
-slab_cache_t *slab_cache_list = &slab_cache_cache;
-
+slab_cache_t *slab_cache_list = NULL;
 
 static void destroy_slab(slab_cache_t *cache, slab_t *slab) {
     addr_t           start_addr;
@@ -86,15 +65,15 @@ static void destroy_slab(slab_cache_t *cache, slab_t *slab) {
     pffree(paddr);
 }
 
-slab_cache_t *slab_cache_create(
-    char            *name,
-    size_t           size,
-    size_t           alignment,
-    slab_ctor_t      ctor,
-    slab_ctor_t      dtor,
-    int              flags ) {
+void slab_cache_init(
+        slab_cache_t    *cache,
+        char            *name,
+        size_t           size,
+        size_t           alignment,
+        slab_ctor_t      ctor,
+        slab_ctor_t      dtor,
+        int              flags) {
     
-    slab_cache_t    *cache;
     size_t           avail_space;
     size_t           wasted_space;
     unsigned int     buffers_per_slab;
@@ -104,8 +83,6 @@ slab_cache_t *slab_cache_create(
     
     /** ASSERTION: name is not NULL string */
     assert(name != NULL);
-    
-    cache = slab_cache_alloc(&slab_cache_cache);
     
     cache->name             = name;
     cache->ctor             = ctor;
@@ -181,48 +158,6 @@ slab_cache_t *slab_cache_create(
     cache->max_colour = (wasted_space / cache->alignment) * cache->alignment;
     
     cache->bufctl_offset = cache->alloc_size - sizeof(slab_bufctl_t);
-    
-    return cache;
-}
-
-void slab_cache_destroy(slab_cache_t *cache) {
-    slab_t       *slab;
-    slab_t       *next;
-    unsigned int  empty_count;
-    
-    /** ASSERTION: all memory has been returned to the cache */
-    assert(cache->slabs_full == NULL && cache->slabs_partial == NULL);
-    
-    /* remove from cache list */
-    if(slab_cache_list == cache) {
-        slab_cache_list = cache->next;
-    }
-    else {
-        cache->prev->next = cache->next;
-    }
-    
-    if(cache->next != NULL) {
-        cache->next->prev = cache->prev;
-    }
-    
-    /* release all slabs */
-    slab        = cache->slabs_empty;
-    empty_count = 0;
-    
-    while(slab != NULL) {
-        next = slab->next;
-        
-        destroy_slab(cache, slab);
-        
-        slab = next;
-        ++empty_count;
-    }
-    
-    /** ASSERTION: empty slabs count is accurate */
-    assert(cache->empty_count == empty_count);
-
-    /* free cache structure */
-    slab_cache_free(cache);
 }
 
 void *slab_cache_alloc(slab_cache_t *cache) {

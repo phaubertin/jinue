@@ -43,7 +43,7 @@
 #include <thread.h>
 
 
-static slab_cache_t *ipc_object_cache;
+static slab_cache_t ipc_object_cache;
 
 static ipc_t *proc_ipc = NULL;
 
@@ -56,7 +56,8 @@ static void ipc_object_ctor(void *buffer, size_t ignore) {
 }
 
 void ipc_boot_init(void) {
-    ipc_object_cache = slab_cache_create(
+    slab_cache_init(
+            &ipc_object_cache,
             "ipc_object_cache",
             sizeof(ipc_t),
             0,
@@ -64,7 +65,7 @@ void ipc_boot_init(void) {
             NULL,
             SLAB_DEFAULTS );
 
-    proc_ipc = slab_cache_alloc(ipc_object_cache);
+    proc_ipc = slab_cache_alloc(&ipc_object_cache);
 
     if(proc_ipc == NULL) {
         panic("Cannot create process manager IPC object.");
@@ -72,7 +73,7 @@ void ipc_boot_init(void) {
 }
 
 ipc_t *ipc_object_create(int flags) {
-    ipc_t *ipc = slab_cache_alloc(ipc_object_cache);
+    ipc_t *ipc = slab_cache_alloc(&ipc_object_cache);
     
     if(ipc != NULL) {
         ipc->header.flags = flags;

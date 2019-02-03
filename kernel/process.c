@@ -38,7 +38,7 @@
 #include <string.h>
 
 
-static slab_cache_t *process_cache;
+static slab_cache_t process_cache;
 
 static void process_ctor(void *buffer, size_t ignore) {
     process_t *process = buffer;
@@ -47,21 +47,18 @@ static void process_ctor(void *buffer, size_t ignore) {
 }
 
 void process_boot_init(void) {
-    process_cache = slab_cache_create(
+    slab_cache_init(
+            &process_cache,
             "process_cache",
             sizeof(process_t),
             0,
             process_ctor,
             NULL,
-            SLAB_DEFAULTS );
-    
-    if(process_cache == NULL) {
-        panic("Cannot create process slab cache.");
-    }
+            SLAB_DEFAULTS);
 }
 
 process_t *process_create(void) {
-    process_t *process = slab_cache_alloc(process_cache);
+    process_t *process = slab_cache_alloc(&process_cache);
 
     if(process != NULL) {
         vm_create_addr_space(&process->addr_space);
