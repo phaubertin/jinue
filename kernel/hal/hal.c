@@ -37,6 +37,7 @@
 #include <hal/hal.h>
 #include <hal/interrupt.h>
 #include <hal/kernel.h>
+#include <hal/mem.h>
 #include <hal/pfaddr.h>
 #include <hal/thread.h>
 #include <hal/trap.h>
@@ -182,7 +183,7 @@ void hal_init(void) {
     printk("Kernel size is %u bytes.\n", boot_info->kernel_size);
     
     if(boot_info->ramdisk_start == 0 || boot_info->ramdisk_size == 0) {
-        printk("%kWarning: no initial RAM disk.\n", VGA_COLOR_YELLOW);
+        panic("No initial RAM disk loaded.\n");
     }
     else {
         printk("RAM disk with size %u bytes loaded at address %x.\n", boot_info->ramdisk_size, boot_info->ramdisk_start);
@@ -196,7 +197,7 @@ void hal_init(void) {
 
     /* This must be done before any call to pfalloc_early(). */
     kernel_region_top = boot_info->boot_end;
-    
+
     /* get cpu info */
     cpu_detect_features();
     
@@ -220,6 +221,9 @@ void hal_init(void) {
      * done before vm_boot_init() because the page protection bits set up by
      * vm_boot_init() prevent this. */
     hal_init_idt();
+
+    /* Check that we have enough memory to work. */
+    mem_check_memory(boot_info);
 
     /* initialize the page frame allocator */
     page_stack_buffer = (pfaddr_t *)pfalloc_early();

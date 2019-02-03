@@ -49,11 +49,6 @@
     KLIMIT must be aligned on a 4MB boundary. */
 #define KLIMIT              0xe0000000
 
-/** The physical address where the memory that can be mapped and managed by the
- *  microkernel ends. Any memory starting from this address is exclusively used
- *  by user space. */
-#define PHYS_END_ADDR       (3 * GB)
-
 /** stack base address (stack top) */
 #define STACK_BASE          KLIMIT
 

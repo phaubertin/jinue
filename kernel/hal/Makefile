@@ -33,9 +33,9 @@ include $(jinue_root)/header.mk
 sources.c    = \
 	boot.c \
 	cpu.c \
-	e820.c \
 	hal.c \
 	interrupt.c \
+	mem.c \
 	serial.c \
 	thread.c \
 	vga.c \

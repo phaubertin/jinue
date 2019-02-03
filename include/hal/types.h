@@ -77,37 +77,31 @@ typedef struct {
     } top_level;
 } addr_space_t;
 
-typedef uint32_t e820_type_t;
-
-typedef uint64_t e820_size_t;
-
-typedef uint64_t e820_addr_t;
-
 typedef struct {
-    e820_addr_t addr;
-    e820_size_t size;
-    e820_type_t type;
+    uint64_t addr;
+    uint64_t size;
+    uint32_t type;
 } e820_t;
 
 /* The declaration below must match the structure defined at the start of the
  * 32-bit setup code. See boot_info_struct in boot/setup32.asm. */
 typedef struct {
-    Elf32_Ehdr  *kernel_start;
-    uint32_t     kernel_size;
-    Elf32_Ehdr  *proc_start;
-    uint32_t     proc_size;
-    void        *image_start;
-    void        *image_top;
-    uint32_t	 ramdisk_start;
-    uint32_t	 ramdisk_size;
-    uint32_t     e820_entries;
-    e820_t      *e820_map;
-    void 		*cmdline;
-    void        *boot_heap;
-    void        *boot_end;
-    pte_t       *page_table;
-    pte_t       *page_directory;
-    uint32_t     setup_signature;
+    Elf32_Ehdr      *kernel_start;
+    uint32_t         kernel_size;
+    Elf32_Ehdr      *proc_start;
+    uint32_t         proc_size;
+    void            *image_start;
+    void            *image_top;
+    uint32_t	     ramdisk_start;
+    uint32_t	     ramdisk_size;
+    uint32_t         e820_entries;
+    const e820_t    *e820_map;
+    void            *cmdline;
+    void            *boot_heap;
+    void            *boot_end;
+    pte_t           *page_table;
+    pte_t           *page_directory;
+    uint32_t         setup_signature;
 } boot_info_t;
 
 typedef uint64_t seg_descriptor_t;

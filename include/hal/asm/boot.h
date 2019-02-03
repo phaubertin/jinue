@@ -33,6 +33,7 @@
 #define JINUE_HAL_ASM_BOOT_H
 
 #include <jinue-common/asm/vm.h>
+#include <hal/asm/mem.h>
 
 
 #define BOOT_E820_ENTRIES       0x1e8
@@ -63,7 +64,7 @@
 
 #define BOOT_E820_MAP_SIZE      (BOOT_E820_MAP_END - BOOT_E820_MAP)
 
-#define BOOT_SETUP32_ADDR       0x100000
+#define BOOT_SETUP32_ADDR       MEM_ZONE_DMA16_START
 
 #define BOOT_SETUP32_SIZE       PAGE_SIZE
 
