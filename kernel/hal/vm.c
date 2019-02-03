@@ -55,6 +55,21 @@ static vm_alloc_t __global_page_allocator;
 /** global page allocator (region 0..KLIMIT) */
 vm_alloc_t *global_page_allocator;
 
+size_t page_table_entries;
+
+addr_space_t *(*create_addr_space)(addr_space_t *);
+void (*destroy_addr_space)(addr_space_t *);
+unsigned int (*page_table_offset_of)(addr_t);
+unsigned int (*page_directory_offset_of)(addr_t);
+pte_t *(*lookup_page_directory)(addr_space_t *, void *, bool);
+pte_t *(*get_pte_with_offset)(pte_t *, unsigned int);
+void (*set_pte)(pte_t *, pfaddr_t, int);
+void (*set_pte_flags)(pte_t *, int);
+int (*get_pte_flags)(pte_t *);
+pfaddr_t (*get_pte_pfaddr)(pte_t *);
+void (*clear_pte)(pte_t *);
+void (*copy_pte)(pte_t *, pte_t *);
+
 /* Note on naming conventions:
  * 
  * Each function that starts with a vm_x86_ prefix (e.g. vm_x86_some_func()) is
@@ -89,6 +104,9 @@ void vm_boot_init(const boot_info_t *boot_info, bool use_pae, cpu_data_t *cpu_da
     if(use_pae) {
         printk("Enabling Physical Address Extension (PAE).\n");
         vm_pae_boot_init();
+    }
+    else {
+        vm_x86_boot_init();
     }
     
     /* create initial address space */
@@ -183,27 +201,6 @@ void vm_boot_postinit(const boot_info_t *boot_info, bool use_pae) {
     if(use_pae) {
         vm_pae_create_pdpt_cache();
     }
-}
-
-/** 
-    Lookup and map the page directory for a specified address and address space.
-    
-    This is the implementation for standard 32-bit (i.e. non-PAE) paging. This
-    means that there is only one preallocated page directory, so the addr and
-    create_as_needed arguments are both irrelevant.
-    
-    Important note: it is the caller's responsibility to unmap and free the returned
-    page directory when it is done with it.
-    
-    @param addr_space address space in which the address is looked up.
-    @param addr address to look up
-    @param create_as_need Whether a page table is allocated if it does not exist
-*/
-static pte_t *vm_x86_lookup_page_directory(addr_space_t *addr_space, void *addr, bool create_as_needed) {
-    pte_t *page_directory = (pte_t *)vm_alloc(global_page_allocator);
-    vm_map_kernel((addr_t)page_directory, addr_space->top_level.pd, VM_FLAG_READ_WRITE);
-        
-    return page_directory;
 }
 
 /** 
@@ -481,20 +478,6 @@ pfaddr_t vm_clone_page_directory(pfaddr_t template_pfaddr, unsigned int start_in
     return pfaddr;
 }
 
-static addr_space_t *vm_x86_create_addr_space(addr_space_t *addr_space) {
-    /* Create a new page directory where entries for the address range starting
-     * at KLIMIT are copied from the initial address space. The mappings starting
-     * at KLIMIT belong to the kernel and are identical in all address spaces. */
-    pfaddr_t pfaddr = vm_clone_page_directory(
-            initial_addr_space.top_level.pd,
-            page_directory_offset_of((addr_t)KLIMIT));
-    
-    addr_space->top_level.pd = pfaddr;
-    addr_space->cr3          = (uint32_t)PFADDR_TO_ADDR(pfaddr);
-    
-    return addr_space;
-}
-
 addr_space_t *vm_create_addr_space(addr_space_t *addr_space) {
     return create_addr_space(addr_space);
 }
@@ -541,17 +524,6 @@ pte_t *vm_allocate_page_directory(unsigned int start_index, bool first_pd) {
     return page_directory;
 }
 
-addr_space_t *vm_x86_create_initial_addr_space(void) {
-    unsigned int klimit_pd_index = page_directory_offset_of((addr_t)KLIMIT);
-    
-    pte_t *page_directory = vm_allocate_page_directory(klimit_pd_index, true);
-    
-    initial_addr_space.top_level.pd = EARLY_PTR_TO_PFADDR(page_directory);
-    initial_addr_space.cr3          = EARLY_VIRT_TO_PHYS((uintptr_t)page_directory);
-    
-    return &initial_addr_space;
-}
-
 addr_space_t *vm_create_initial_addr_space(bool use_pae, void *boot_heap) {
     if(use_pae) {
         return vm_pae_create_initial_addr_space(boot_heap);
@@ -580,15 +552,6 @@ void vm_destroy_page_directory(pfaddr_t pdpfaddr, unsigned int from_index, unsig
     pffree(pdpfaddr);
 }
 
-static void vm_x86_destroy_addr_space(addr_space_t *addr_space) {
-    vm_destroy_page_directory(
-            addr_space->top_level.pd,
-            /* Free page tables for addresses 0..KLIMIT, be careful not to free
-             * the kernel page tables starting at KLIMIT. */
-            0,
-            page_directory_offset_of((addr_t)KLIMIT));
-}
-
 void vm_destroy_addr_space(addr_space_t *addr_space) {
     /** ASSERTION: address space must not be NULL */
     assert(addr_space != NULL);
@@ -607,80 +570,3 @@ void vm_switch_addr_space(addr_space_t *addr_space, cpu_data_t *cpu_data) {
 
     cpu_data->current_addr_space = addr_space;
 }
-
-/* Above this point, functions can pass around pointers to page table entries
- * (pte_t) but must never dereference them. This is because, depending on
- * whether Physical Address Extension (PAE) is enabled or not, these pointers
- * can refer to objects that match either the struct definition just below
- * (32-bit entries) or the PAE definition (64-bit entries).
- * 
- * This structure is declared late in the file on purpose to help detect
- * inappropriate pointer dereferences. */
-struct pte_t {
-    uint32_t entry;
-};
-
-
-static unsigned int vm_x86_page_table_offset_of(addr_t addr) {
-    return PAGE_TABLE_OFFSET_OF(addr);
-}
-
-static unsigned int vm_x86_page_directory_offset_of(addr_t addr) {
-    return PAGE_DIRECTORY_OFFSET_OF(addr);
-}
-
-static pte_t *vm_x86_get_pte_with_offset(pte_t *pte, unsigned int offset) {
-    return &pte[offset];
-}
-
-static void vm_x86_set_pte(pte_t *pte, pfaddr_t paddr, int flags) {
-    /** TODO: check paddr for 4GB limit */
-    pte->entry = ((uint32_t)paddr << PFADDR_SHIFT) | flags;
-}
-
-static void vm_x86_set_pte_flags(pte_t *pte, int flags) {
-    pte->entry = (pte->entry & ~PAGE_MASK) | flags;
-}
-
-static int vm_x86_get_pte_flags(pte_t *pte) {
-    return pte->entry & PAGE_MASK;
-}
-
-static pfaddr_t vm_x86_get_pte_pfaddr(pte_t *pte) {
-    return (pte->entry & ~PAGE_MASK) >> PFADDR_SHIFT;
-}
-
-static void vm_x86_clear_pte(pte_t *pte) {
-    pte->entry = 0;
-}
-
-static void vm_x86_copy_pte(pte_t *dest, pte_t *src) {
-    dest->entry = src->entry;
-}
-
-size_t page_table_entries                                       = (size_t)PAGE_TABLE_ENTRIES;
-
-addr_space_t *(*create_addr_space)(addr_space_t *)              = vm_x86_create_addr_space;
-
-void (*destroy_addr_space)(addr_space_t *)                      = vm_x86_destroy_addr_space;
-
-/** page table entry offset of virtual (linear) address */
-unsigned int (*page_table_offset_of)(addr_t)                    = vm_x86_page_table_offset_of;
-
-unsigned int (*page_directory_offset_of)(addr_t)                = vm_x86_page_directory_offset_of;
-
-pte_t *(*lookup_page_directory)(addr_space_t *, void *, bool)   = vm_x86_lookup_page_directory;
-
-pte_t *(*get_pte_with_offset)(pte_t *, unsigned int)            = vm_x86_get_pte_with_offset;
-
-void (*set_pte)(pte_t *, pfaddr_t, int)                         = vm_x86_set_pte;
-
-void (*set_pte_flags)(pte_t *, int)                             = vm_x86_set_pte_flags;
-
-int (*get_pte_flags)(pte_t *)                                   = vm_x86_get_pte_flags;
-
-pfaddr_t (*get_pte_pfaddr)(pte_t *)                             = vm_x86_get_pte_pfaddr;
-
-void (*clear_pte)(pte_t *)                                      = vm_x86_clear_pte;
-
-void (*copy_pte)(pte_t *, pte_t *)                              = vm_x86_copy_pte;

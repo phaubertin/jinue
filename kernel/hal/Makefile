@@ -40,7 +40,8 @@ sources.c    = \
 	thread.c \
 	vga.c \
 	vm.c \
-	vm_pae.c
+	vm_pae.c \
+	vm_x86.c
 sources.nasm	 = \
 	frame_pointer.asm \
 	io.asm \

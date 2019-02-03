@@ -38,6 +38,7 @@
 #include <jinue-common/vm.h>
 #include <hal/vm.h>
 #include <hal/vm_pae.h>
+#include <hal/vm_x86.h>
 #include <stdbool.h>
 #include <stdint.h>
 
