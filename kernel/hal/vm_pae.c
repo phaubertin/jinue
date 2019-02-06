@@ -67,6 +67,15 @@ static inline unsigned int pdpt_offset_of(void *addr) {
     return (uintptr_t)addr >> (32 - PDPT_BITS);
 }
 
+void vm_pae_boot_init(void) {
+    page_table_entries = (size_t)PAGE_TABLE_ENTRIES;
+}
+
+void vm_pae_enable(void) {
+    uint32_t temp = get_cr4();
+    set_cr4(temp | X86_CR4_PAE);
+}
+
 /** 
     Lookup and map the page directory for a specified address and address space.
     
@@ -77,14 +86,14 @@ static inline unsigned int pdpt_offset_of(void *addr) {
     @param addr address to look up
     @param create_as_need Whether a page table is allocated if it does not exist
 */
-static pte_t *vm_pae_lookup_page_directory(addr_space_t *addr_space, void *addr, bool create_as_needed) {
+pte_t *vm_pae_lookup_page_directory(addr_space_t *addr_space, void *addr, bool create_as_needed) {
     pdpt_t *pdpt    = addr_space->top_level.pdpt;
     pte_t  *pdpte   = &pdpt->pd[pdpt_offset_of(addr)];
     
-    if(get_pte_flags(pdpte) & VM_FLAG_PRESENT) {
+    if(vm_pae_get_pte_flags(pdpte) & VM_FLAG_PRESENT) {
         /* map page directory */
         pte_t *page_directory   = (pte_t *)vm_alloc(global_page_allocator);
-        vm_map_kernel((addr_t)page_directory, get_pte_pfaddr(pdpte), VM_FLAG_READ_WRITE);
+        vm_map_kernel((addr_t)page_directory, vm_pae_get_pte_pfaddr(pdpte), VM_FLAG_READ_WRITE);
         
         return page_directory;
     }
@@ -100,7 +109,7 @@ static pte_t *vm_pae_lookup_page_directory(addr_space_t *addr_space, void *addr,
             memset(page_directory, 0, PAGE_SIZE);
             
             /* link page directory in PDPT */
-            set_pte(pdpte, pf_pd, VM_FLAG_PRESENT);
+            vm_pae_set_pte(pdpte, pf_pd, VM_FLAG_PRESENT);
             
             return page_directory;
         }
@@ -110,47 +119,42 @@ static pte_t *vm_pae_lookup_page_directory(addr_space_t *addr_space, void *addr,
     }
 }
 
-static unsigned int vm_pae_page_table_offset_of(addr_t addr) {
+unsigned int vm_pae_page_table_offset_of(addr_t addr) {
     return PAGE_TABLE_OFFSET_OF(addr);
 }
 
-static unsigned int vm_pae_page_directory_offset_of(addr_t addr) {
+unsigned int vm_pae_page_directory_offset_of(addr_t addr) {
     return PAGE_DIRECTORY_OFFSET_OF(addr);
 }
 
-static pte_t *vm_pae_get_pte_with_offset(pte_t *pte, unsigned int offset) {
+pte_t *vm_pae_get_pte_with_offset(pte_t *pte, unsigned int offset) {
     return &pte[offset];
 }
 
 /** TODO handle flag bit position > 31 for NX bit support */
-static void vm_pae_set_pte(pte_t *pte, pfaddr_t paddr, int flags) {
+void vm_pae_set_pte(pte_t *pte, pfaddr_t paddr, int flags) {
     pte->entry = ((uint64_t)paddr << PFADDR_SHIFT) | flags;
 }
 
 /** TODO handle flag bit position > 31 for NX bit support */
-static void vm_pae_set_pte_flags(pte_t *pte, int flags) {
+void vm_pae_set_pte_flags(pte_t *pte, int flags) {
     pte->entry = (pte->entry & ~(uint64_t)PAGE_MASK) | flags;
 }
 
-static int vm_pae_get_pte_flags(pte_t *pte) {
+int vm_pae_get_pte_flags(const pte_t *pte) {
     return pte->entry & PAGE_MASK;
 }
 
-static pfaddr_t vm_pae_get_pte_pfaddr(pte_t *pte) {
+pfaddr_t vm_pae_get_pte_pfaddr(const pte_t *pte) {
     return (pte->entry & ~(uint64_t)PAGE_MASK) >> PFADDR_SHIFT;
 }
 
-static void vm_pae_clear_pte(pte_t *pte) {
+void vm_pae_clear_pte(pte_t *pte) {
     pte->entry = 0;
 }
 
-static void vm_pae_copy_pte(pte_t *dest, pte_t *src) {
+void vm_pae_copy_pte(pte_t *dest, const pte_t *src) {
     dest->entry = src->entry;
-}
-
-void vm_pae_enable(void) {
-    uint32_t temp = get_cr4();
-    set_cr4(temp | X86_CR4_PAE);
 }
 
 void vm_pae_create_pdpt_cache(void) {
@@ -172,10 +176,10 @@ static inline bool is_split_page_directory(unsigned int pdpt_index) {
     return pdpt_index == pdpt_offset_of((addr_t)KLIMIT)
             /* If KLIMIT is the first entry of this page directory, then the page
              * directory describes only kernel space. */
-            && page_directory_offset_of((addr_t)KLIMIT) > 0;
+            && vm_pae_page_directory_offset_of((addr_t)KLIMIT) > 0;
 }
 
-static addr_space_t *vm_pae_create_addr_space(addr_space_t *addr_space) {
+addr_space_t *vm_pae_create_addr_space(addr_space_t *addr_space) {
     unsigned int idx;
     pte_t *pdpte;
     
@@ -198,22 +202,22 @@ static addr_space_t *vm_pae_create_addr_space(addr_space_t *addr_space) {
             /* This PDPT entry describes an address range entirely under KLIMIT
              * so it is all user space: do not create a page directory at this
              * time. */
-             clear_pte(pdpte);
+             vm_pae_clear_pte(pdpte);
         }
         else if(is_split_page_directory(idx)) {
             /* KLIMIT splits the address range described by this PDPT entry
              * between user space and kernel space: create a page directory and
              * clone entries for KLIMIT and above from the template. */
             pfaddr_t pfaddr = vm_clone_page_directory(
-                    get_pte_pfaddr(&template_pdpt->pd[idx]),
-                    page_directory_offset_of((addr_t)KLIMIT));
+                    vm_pae_get_pte_pfaddr(&template_pdpt->pd[idx]),
+                    vm_pae_page_directory_offset_of((addr_t)KLIMIT));
             
-            set_pte(pdpte, pfaddr, VM_FLAG_PRESENT);
+            vm_pae_set_pte(pdpte, pfaddr, VM_FLAG_PRESENT);
         }
         else {
             /* This page directory describes an address range entirely above
              * KLIMIT: share the template's page directory. */
-            copy_pte(pdpte, &template_pdpt->pd[idx]);
+            vm_pae_copy_pte(pdpte, &template_pdpt->pd[idx]);
         }
     }
     
@@ -277,22 +281,22 @@ addr_space_t *vm_pae_create_initial_addr_space(void *boot_heap) {
             /* This PDPT entry describes an address range entirely under KLIMIT
              * so it is all user space: do not create a page directory at this
              * time. */
-             clear_pte(pdpte);
+            vm_pae_clear_pte(pdpte);
         }
         else if(idx == pdpt_offset_of((addr_t)KLIMIT)) {
             /* Allocate the first page directory and allocate page tables starting
              * at KLIMIT. Specify that this is the first page directory. */
             pte_t *page_directory = vm_allocate_page_directory(
-                    page_directory_offset_of((addr_t)KLIMIT), true);
+                    vm_pae_page_directory_offset_of((addr_t)KLIMIT), true);
             
-            set_pte(pdpte, EARLY_PTR_TO_PFADDR(page_directory), VM_FLAG_PRESENT);
+            vm_pae_set_pte(pdpte, EARLY_PTR_TO_PFADDR(page_directory), VM_FLAG_PRESENT);
         }
         else {
             /* allocate page directory and allocate all its page tables */
             pte_t *page_directory = vm_allocate_page_directory(
                     page_table_entries, false);
             
-            set_pte(pdpte, EARLY_PTR_TO_PFADDR(page_directory), VM_FLAG_PRESENT);
+            vm_pae_set_pte(pdpte, EARLY_PTR_TO_PFADDR(page_directory), VM_FLAG_PRESENT);
         }
         
         /* copy entry to old page directory */
@@ -305,7 +309,7 @@ addr_space_t *vm_pae_create_initial_addr_space(void *boot_heap) {
     return &initial_addr_space;
 }
 
-static void vm_pae_destroy_addr_space(addr_space_t *addr_space) {
+void vm_pae_destroy_addr_space(addr_space_t *addr_space) {
     unsigned int idx;
     pte_t pdpte;
     
@@ -320,7 +324,7 @@ static void vm_pae_destroy_addr_space(addr_space_t *addr_space) {
              * page directory as well as the page directory itself. */
             if(pdpte.entry & VM_FLAG_PRESENT) {
                 vm_destroy_page_directory(
-                        get_pte_pfaddr(&pdpte),
+                        vm_pae_get_pte_pfaddr(&pdpte),
                         0,
                         page_table_entries);
             }
@@ -336,9 +340,9 @@ static void vm_pae_destroy_addr_space(addr_space_t *addr_space) {
              * address spaces. */
             if(pdpte.entry & VM_FLAG_PRESENT) {
                 vm_destroy_page_directory(
-                        get_pte_pfaddr(&pdpte),
+                        vm_pae_get_pte_pfaddr(&pdpte),
                         0,
-                        page_directory_offset_of((addr_t)KLIMIT));
+                        vm_pae_page_directory_offset_of((addr_t)KLIMIT));
             }
         }
         else {
@@ -351,20 +355,4 @@ static void vm_pae_destroy_addr_space(addr_space_t *addr_space) {
     }
     
     slab_cache_free(pdpt);
-}
-
-void vm_pae_boot_init(void) {
-    page_table_entries          = (size_t)PAGE_TABLE_ENTRIES;
-    create_addr_space           = vm_pae_create_addr_space;
-    destroy_addr_space          = vm_pae_destroy_addr_space;
-    page_table_offset_of        = vm_pae_page_table_offset_of;
-    page_directory_offset_of    = vm_pae_page_directory_offset_of;
-    lookup_page_directory       = vm_pae_lookup_page_directory;
-    get_pte_with_offset         = vm_pae_get_pte_with_offset;
-    set_pte                     = vm_pae_set_pte;
-    set_pte_flags               = vm_pae_set_pte_flags;
-    get_pte_flags               = vm_pae_get_pte_flags;
-    get_pte_pfaddr              = vm_pae_get_pte_pfaddr;
-    clear_pte                   = vm_pae_clear_pte;
-    copy_pte                    = vm_pae_copy_pte;
 }

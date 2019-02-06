@@ -36,13 +36,17 @@ struct pte_t {
     uint32_t entry;
 };
 
-static addr_space_t *vm_x86_create_addr_space(addr_space_t *addr_space) {
+void vm_x86_boot_init(void) {
+    page_table_entries = (size_t)PAGE_TABLE_ENTRIES;
+}
+
+addr_space_t *vm_x86_create_addr_space(addr_space_t *addr_space) {
     /* Create a new page directory where entries for the address range starting
      * at KLIMIT are copied from the initial address space. The mappings starting
      * at KLIMIT belong to the kernel and are identical in all address spaces. */
     pfaddr_t pfaddr = vm_clone_page_directory(
             initial_addr_space.top_level.pd,
-            page_directory_offset_of((addr_t)KLIMIT));
+            vm_x86_page_directory_offset_of((addr_t)KLIMIT));
 
     addr_space->top_level.pd = pfaddr;
     addr_space->cr3          = (uint32_t)PFADDR_TO_ADDR(pfaddr);
@@ -51,7 +55,7 @@ static addr_space_t *vm_x86_create_addr_space(addr_space_t *addr_space) {
 }
 
 addr_space_t *vm_x86_create_initial_addr_space(void) {
-    unsigned int klimit_pd_index = page_directory_offset_of((addr_t)KLIMIT);
+    unsigned int klimit_pd_index = vm_x86_page_directory_offset_of((addr_t)KLIMIT);
 
     pte_t *page_directory = vm_allocate_page_directory(klimit_pd_index, true);
 
@@ -61,20 +65,20 @@ addr_space_t *vm_x86_create_initial_addr_space(void) {
     return &initial_addr_space;
 }
 
-static void vm_x86_destroy_addr_space(addr_space_t *addr_space) {
+void vm_x86_destroy_addr_space(addr_space_t *addr_space) {
     vm_destroy_page_directory(
             addr_space->top_level.pd,
             /* Free page tables for addresses 0..KLIMIT, be careful not to free
              * the kernel page tables starting at KLIMIT. */
             0,
-            page_directory_offset_of((addr_t)KLIMIT));
+            vm_x86_page_directory_offset_of((addr_t)KLIMIT));
 }
 
-static unsigned int vm_x86_page_table_offset_of(addr_t addr) {
+unsigned int vm_x86_page_table_offset_of(addr_t addr) {
     return PAGE_TABLE_OFFSET_OF(addr);
 }
 
-static unsigned int vm_x86_page_directory_offset_of(addr_t addr) {
+unsigned int vm_x86_page_directory_offset_of(addr_t addr) {
     return PAGE_DIRECTORY_OFFSET_OF(addr);
 }
 
@@ -92,54 +96,38 @@ static unsigned int vm_x86_page_directory_offset_of(addr_t addr) {
     @param addr address to look up
     @param create_as_need Whether a page table is allocated if it does not exist
 */
-static pte_t *vm_x86_lookup_page_directory(addr_space_t *addr_space, void *addr, bool create_as_needed) {
+pte_t *vm_x86_lookup_page_directory(addr_space_t *addr_space, void *addr, bool create_as_needed) {
     pte_t *page_directory = (pte_t *)vm_alloc(global_page_allocator);
     vm_map_kernel((addr_t)page_directory, addr_space->top_level.pd, VM_FLAG_READ_WRITE);
 
     return page_directory;
 }
 
-static pte_t *vm_x86_get_pte_with_offset(pte_t *pte, unsigned int offset) {
+pte_t *vm_x86_get_pte_with_offset(pte_t *pte, unsigned int offset) {
     return &pte[offset];
 }
 
-static void vm_x86_set_pte(pte_t *pte, pfaddr_t paddr, int flags) {
+void vm_x86_set_pte(pte_t *pte, pfaddr_t paddr, int flags) {
     /** TODO: check paddr for 4GB limit */
     pte->entry = ((uint32_t)paddr << PFADDR_SHIFT) | flags;
 }
 
-static void vm_x86_set_pte_flags(pte_t *pte, int flags) {
+void vm_x86_set_pte_flags(pte_t *pte, int flags) {
     pte->entry = (pte->entry & ~PAGE_MASK) | flags;
 }
 
-static int vm_x86_get_pte_flags(pte_t *pte) {
+int vm_x86_get_pte_flags(const pte_t *pte) {
     return pte->entry & PAGE_MASK;
 }
 
-static pfaddr_t vm_x86_get_pte_pfaddr(pte_t *pte) {
+pfaddr_t vm_x86_get_pte_pfaddr(const pte_t *pte) {
     return (pte->entry & ~PAGE_MASK) >> PFADDR_SHIFT;
 }
 
-static void vm_x86_clear_pte(pte_t *pte) {
+void vm_x86_clear_pte(pte_t *pte) {
     pte->entry = 0;
 }
 
-static void vm_x86_copy_pte(pte_t *dest, pte_t *src) {
+void vm_x86_copy_pte(pte_t *dest, const pte_t *src) {
     dest->entry = src->entry;
-}
-
-void vm_x86_boot_init(void) {
-    page_table_entries          = (size_t)PAGE_TABLE_ENTRIES;
-    create_addr_space           = vm_x86_create_addr_space;
-    destroy_addr_space          = vm_x86_destroy_addr_space;
-    page_table_offset_of        = vm_x86_page_table_offset_of;
-    page_directory_offset_of    = vm_x86_page_directory_offset_of;
-    lookup_page_directory       = vm_x86_lookup_page_directory;
-    get_pte_with_offset         = vm_x86_get_pte_with_offset;
-    set_pte                     = vm_x86_set_pte;
-    set_pte_flags               = vm_x86_set_pte_flags;
-    get_pte_flags               = vm_x86_get_pte_flags;
-    get_pte_pfaddr              = vm_x86_get_pte_pfaddr;
-    clear_pte                   = vm_x86_clear_pte;
-    copy_pte                    = vm_x86_copy_pte;
 }

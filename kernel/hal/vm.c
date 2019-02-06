@@ -57,45 +57,7 @@ vm_alloc_t *global_page_allocator;
 
 size_t page_table_entries;
 
-addr_space_t *(*create_addr_space)(addr_space_t *);
-void (*destroy_addr_space)(addr_space_t *);
-unsigned int (*page_table_offset_of)(addr_t);
-unsigned int (*page_directory_offset_of)(addr_t);
-pte_t *(*lookup_page_directory)(addr_space_t *, void *, bool);
-pte_t *(*get_pte_with_offset)(pte_t *, unsigned int);
-void (*set_pte)(pte_t *, pfaddr_t, int);
-void (*set_pte_flags)(pte_t *, int);
-int (*get_pte_flags)(pte_t *);
-pfaddr_t (*get_pte_pfaddr)(pte_t *);
-void (*clear_pte)(pte_t *);
-void (*copy_pte)(pte_t *, pte_t *);
-
-/* Note on naming conventions:
- * 
- * Each function that starts with a vm_x86_ prefix (e.g. vm_x86_some_func()) is
- * a function that is specific to the 32-bit paging (i.e. non-PAE) code. Each such
- * function has a alternative PAE implementation in vm_pae.c that starts with the
- * vm_pae_ prefix (e.g. vm_pae_some_func()) and is accessed through a function
- * pointer that allows the implementation to be selected during boot intialization.
- * Function pointers for this purpose do not have a vm_... prefix (e.g. some_func).
- * 
- * vm_x86_... functions must be called directly only by other vm_x86_... functions.
- * Otherwise, they must be called through the function pointer. (Obviously, the
- * same holds for vm_pae_xxx functions.)
- * 
- * Functions whose name start with the vm_ prefix, but not vm_x86_ or vm_pae_,
- * are "normal" functions that can be called directly.
- * 
- * Note on header files:
- * 
- * The vm.h header file provides the public interface for this file.
- * 
- * The vm_private.h header file provides private definitions that are shared by
- * this file and hal/vm_pae.c
- * 
- * The vm_pae.h header file provides declarations for the functions defined in
- * hal/vm_pae.c.
- * */
+static bool pgtable_format_pae;
 
 void vm_boot_init(const boot_info_t *boot_info, bool use_pae, cpu_data_t *cpu_data, void *boot_heap) {
     addr_t           addr;
@@ -109,6 +71,8 @@ void vm_boot_init(const boot_info_t *boot_info, bool use_pae, cpu_data_t *cpu_da
         vm_x86_boot_init();
     }
     
+    pgtable_format_pae = use_pae;
+
     /* create initial address space */
     addr_space = vm_create_initial_addr_space(use_pae, boot_heap);
     
@@ -200,6 +164,96 @@ void vm_boot_postinit(const boot_info_t *boot_info, bool use_pae) {
      * This must be done before the first time vm_create_addr_space() is called. */
     if(use_pae) {
         vm_pae_create_pdpt_cache();
+    }
+}
+
+static pte_t *get_pte_with_offset(pte_t *pte, unsigned int offset) {
+    if(pgtable_format_pae) {
+        return vm_pae_get_pte_with_offset(pte, offset);
+    }
+    else {
+        return vm_x86_get_pte_with_offset(pte, offset);
+    }
+}
+
+static unsigned int page_table_offset_of(addr_t addr) {
+    if(pgtable_format_pae) {
+        return vm_pae_page_table_offset_of(addr);
+    }
+    else {
+        return vm_x86_page_table_offset_of(addr);
+    }
+}
+
+static unsigned int page_directory_offset_of(addr_t addr) {
+    if(pgtable_format_pae) {
+        return vm_pae_page_directory_offset_of(addr);
+    }
+    else {
+        return vm_x86_page_directory_offset_of(addr);
+    }
+}
+
+static pte_t *lookup_page_directory(addr_space_t *addr_space, void *addr, bool create_as_needed) {
+    if(pgtable_format_pae) {
+        return vm_pae_lookup_page_directory(addr_space, addr, create_as_needed);
+    }
+    else {
+        return vm_x86_lookup_page_directory(addr_space, addr, create_as_needed);
+    }
+}
+
+static void set_pte_flags(pte_t *pte, int flags) {
+    if(pgtable_format_pae) {
+        vm_pae_set_pte_flags(pte, flags);
+    }
+    else {
+        vm_x86_set_pte_flags(pte, flags);
+    }
+}
+
+static int get_pte_flags(const pte_t *pte) {
+    if(pgtable_format_pae) {
+        return vm_pae_get_pte_flags(pte);
+    }
+    else {
+        return vm_x86_get_pte_flags(pte);
+    }
+}
+
+static void copy_pte(pte_t *dest, const pte_t *src) {
+    if(pgtable_format_pae) {
+        vm_pae_copy_pte(dest, src);
+    }
+    else {
+        vm_x86_copy_pte(dest, src);
+    }
+}
+
+static void set_pte(pte_t *pte, pfaddr_t paddr, int flags) {
+    if(pgtable_format_pae) {
+        vm_pae_set_pte(pte, paddr, flags);
+    }
+    else {
+        vm_x86_set_pte(pte, paddr, flags);
+    }
+}
+
+static void clear_pte(pte_t *pte) {
+    if(pgtable_format_pae) {
+        vm_pae_clear_pte(pte);
+    }
+    else {
+        vm_x86_clear_pte(pte);
+    }
+}
+
+static pfaddr_t get_pte_pfaddr(const pte_t *pte) {
+    if(pgtable_format_pae) {
+        return vm_pae_get_pte_pfaddr(pte);
+    }
+    else {
+        return vm_x86_get_pte_pfaddr(pte);
     }
 }
 
@@ -479,7 +533,12 @@ pfaddr_t vm_clone_page_directory(pfaddr_t template_pfaddr, unsigned int start_in
 }
 
 addr_space_t *vm_create_addr_space(addr_space_t *addr_space) {
-    return create_addr_space(addr_space);
+    if(pgtable_format_pae) {
+        return vm_pae_create_addr_space(addr_space);
+    }
+    else {
+        return vm_x86_create_addr_space(addr_space);
+    }
 }
 
 pte_t *vm_allocate_page_directory(unsigned int start_index, bool first_pd) {
@@ -562,7 +621,12 @@ void vm_destroy_addr_space(addr_space_t *addr_space) {
     /** ASSERTION: the current address space should not be destroyed */
     assert( addr_space != get_current_addr_space() );
     
-    destroy_addr_space(addr_space);
+    if(pgtable_format_pae) {
+        vm_pae_destroy_addr_space(addr_space);
+    }
+    else {
+        vm_x86_destroy_addr_space(addr_space);
+    }
 }
 
 void vm_switch_addr_space(addr_space_t *addr_space, cpu_data_t *cpu_data) {

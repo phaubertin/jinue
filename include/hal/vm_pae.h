@@ -32,18 +32,42 @@
 #ifndef JINUE_HAL_VM_PAE_H
 #define JINUE_HAL_VM_PAE_H
 
-#include <hal/types.h>
-
 /** This header file contains declarations for the PAE functions defined in
  * hal/vm_pae.c. It is intended to be included by hal/vm.c and hal/vm_pae.c.
  * There should be no reason to include it anywhere else. */
 
+#include <jinue-common/pfaddr.h>
+#include <hal/types.h>
+
+void vm_pae_boot_init(void);
 
 void vm_pae_enable(void);
 
+pte_t *vm_pae_lookup_page_directory(addr_space_t *addr_space, void *addr, bool create_as_needed);
+
+unsigned int vm_pae_page_table_offset_of(addr_t addr);
+
+unsigned int vm_pae_page_directory_offset_of(addr_t addr);
+
+pte_t *vm_pae_get_pte_with_offset(pte_t *pte, unsigned int offset);
+
+void vm_pae_set_pte(pte_t *pte, pfaddr_t paddr, int flags);
+
+void vm_pae_set_pte_flags(pte_t *pte, int flags);
+
+int vm_pae_get_pte_flags(const pte_t *pte);
+
+pfaddr_t vm_pae_get_pte_pfaddr(const pte_t *pte);
+
+void vm_pae_clear_pte(pte_t *pte);
+
+void vm_pae_copy_pte(pte_t *dest, const pte_t *src);
+
+addr_space_t *vm_pae_create_addr_space(addr_space_t *addr_space);
+
 addr_space_t *vm_pae_create_initial_addr_space(void *boot_heap);
 
-void vm_pae_boot_init(void);
+void vm_pae_destroy_addr_space(addr_space_t *addr_space);
 
 void vm_pae_create_pdpt_cache(void);
 

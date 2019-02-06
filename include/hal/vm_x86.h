@@ -32,8 +32,39 @@
 #ifndef JINUE_HAL_VM_X86_H
 #define JINUE_HAL_VM_X86_H
 
-addr_space_t *vm_x86_create_initial_addr_space(void);
+/** This header file contains declarations for the non-PAE functions defined in
+ * hal/vm_x86.c. It is intended to be included by hal/vm.c and hal/vm_x86.c.
+ * There should be no reason to include it anywhere else. */
+
+#include <jinue-common/pfaddr.h>
+#include <hal/types.h>
 
 void vm_x86_boot_init(void);
+
+addr_space_t *vm_x86_create_addr_space(addr_space_t *addr_space);
+
+addr_space_t *vm_x86_create_initial_addr_space(void);
+
+void vm_x86_destroy_addr_space(addr_space_t *addr_space);
+
+unsigned int vm_x86_page_table_offset_of(addr_t addr);
+
+unsigned int vm_x86_page_directory_offset_of(addr_t addr);
+
+pte_t *vm_x86_lookup_page_directory(addr_space_t *addr_space, void *addr, bool create_as_needed);
+
+pte_t *vm_x86_get_pte_with_offset(pte_t *pte, unsigned int offset);
+
+void vm_x86_set_pte(pte_t *pte, pfaddr_t paddr, int flags);
+
+void vm_x86_set_pte_flags(pte_t *pte, int flags);
+
+int vm_x86_get_pte_flags(const pte_t *pte);
+
+pfaddr_t vm_x86_get_pte_pfaddr(const pte_t *pte);
+
+void vm_x86_clear_pte(pte_t *pte);
+
+void vm_x86_copy_pte(pte_t *dest, const pte_t *src);
 
 #endif
