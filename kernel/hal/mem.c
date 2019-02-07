@@ -102,15 +102,15 @@ void mem_check_memory(const boot_info_t *boot_info) {
          * entry. */
         if(entry->addr <= MEM_ZONE_DMA16_START && entry_end > MEM_ZONE_DMA16_START) {
             /* This condition covers the initial case where zone_dma16_top is zero. */
-            if(entry->addr > zone_dma16_top) {
-                zone_dma16_top = entry->addr;
+            if(entry_end > zone_dma16_top) {
+                zone_dma16_top = entry_end;
             }
         }
 
         /* Do the same for the MEM32 zone. */
         if(entry->addr <= MEM_ZONE_MEM32_START && entry_end > MEM_ZONE_MEM32_START) {
-            if(entry->addr > zone_mem32_top) {
-                zone_mem32_top = entry->addr;
+            if(entry_end > zone_mem32_top) {
+                zone_mem32_top = entry_end;
             }
         }
 
@@ -177,7 +177,7 @@ void mem_check_memory(const boot_info_t *boot_info) {
         panic("Initial RAM disk was loaded in reserved memory.");
     }
 
-    if(zone_dma16_top < EARLY_PTR_TO_PFADDR(kernel_region_top)) {
+    if(zone_dma16_top < EARLY_VIRT_TO_PHYS(kernel_region_top)) {
         panic("Kernel image was loaded in reserved memory.");
     }
 
