@@ -51,8 +51,6 @@ void vmfree(vmalloc_t *allocator, addr_t page);
 
 void vmalloc_init(vmalloc_t *allocator, addr_t start_addr, addr_t end_addr);
 
-void vmalloc_destroy(vmalloc_t *allocator);
-
 void vmalloc_init_allocator(vmalloc_t *allocator, addr_t start_addr, addr_t end_addr);
 
 void vmalloc_add_region(vmalloc_t *allocator, addr_t start_addr, addr_t end_addr);

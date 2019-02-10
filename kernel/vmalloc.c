@@ -257,36 +257,6 @@ void vmalloc_init(vmalloc_t *allocator, addr_t start_addr, addr_t end_addr) {
     vmalloc_add_region(     allocator, start_addr, end_addr);
 }
 
-void vmalloc_destroy(vmalloc_t *allocator) {
-    vmalloc_block_t   *head;
-    vmalloc_block_t   *block;
-    kern_paddr_t  paddr;
-    addr_t        addr;
-    unsigned int  idx;
-    
-    /* de-allocate page stacks */
-    head  = allocator->partial_list;
-    block = head;
-    
-    if(block != NULL) {
-        do {
-            paddr = vm_lookup_kernel_paddr((addr_t)block->stack_addr);
-            pffree(paddr);
-            
-            block = block->next;
-        } while(block != head);
-    }
-    
-    /* de-allocate block array pages */
-    addr = (addr_t)allocator->block_array;
-    for(idx = 0; idx < allocator->array_pages; ++idx) {
-        paddr = vm_lookup_kernel_paddr(addr);
-        pffree(paddr);
-        
-        addr += PAGE_SIZE;
-    }    
-}
-
 /**
     Basic initialization of virtual memory allocator
     @param allocator  vm_alloc_t structure for a virtual memory allocator
