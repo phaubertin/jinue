@@ -57,7 +57,7 @@ sources.c		 = \
 	slab.c \
 	syscall.c \
 	thread.c \
-	vm_alloc.c
+	vmalloc.c
 objects.extra	 = $(kernel.hal) $(kernel.lib)
 
 include $(common)

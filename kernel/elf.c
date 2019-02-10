@@ -35,7 +35,7 @@
 #include <panic.h>
 #include <pfalloc.h>
 #include <printk.h>
-#include <vm_alloc.h>
+#include <vmalloc.h>
 
 
 void elf_check(Elf32_Ehdr *elf) {
@@ -117,7 +117,7 @@ void elf_load(elf_info_t *info, Elf32_Ehdr *elf, addr_space_t *addr_space) {
     info->entry         = (addr_t)elf->e_entry;
     
     /* temporary page for copies */
-    dest_page = (char *)vm_alloc(global_page_allocator);
+    dest_page = (char *)vmalloc(global_page_allocator);
 
     for(idx = 0; idx < elf->e_phnum; ++idx) {
         if(phdr[idx].p_type != PT_LOAD) {
@@ -202,7 +202,7 @@ void elf_load(elf_info_t *info, Elf32_Ehdr *elf, addr_space_t *addr_space) {
         }
     }
     
-    vm_free(global_page_allocator, (addr_t)dest_page);
+    vmfree(global_page_allocator, (addr_t)dest_page);
     
     elf_setup_stack(info);
     
@@ -224,7 +224,7 @@ void elf_setup_stack(elf_info_t *info) {
     /* At this point, page has the address of the stack's top-most page frame,
      * which is the one in which we are about to copy the auxiliary vectors. Map
      * it temporarily in this address space so we can write to it. */
-    addr_t top_page = vm_alloc(global_page_allocator);
+    addr_t top_page = vmalloc(global_page_allocator);
     vm_map_kernel(top_page, page, VM_FLAG_READ_WRITE);
 
     /* start at the top */
@@ -276,7 +276,7 @@ void elf_setup_stack(elf_info_t *info) {
 
     /* unmap and free temporary page */
     vm_unmap_kernel(top_page);
-    vm_free(global_page_allocator, top_page);
+    vmfree(global_page_allocator, top_page);
 }
 
 int elf_lookup_symbol(

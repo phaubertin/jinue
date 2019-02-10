@@ -39,7 +39,7 @@
 #include <stdint.h>
 #include <types.h>
 #include <util.h>
-#include <vm_alloc.h>
+#include <vmalloc.h>
 
 slab_cache_t *slab_cache_list = NULL;
 
@@ -59,7 +59,7 @@ static void destroy_slab(slab_cache_t *cache, slab_t *slab) {
     /* return the memory */
     kern_paddr_t paddr = vm_lookup_kernel_paddr(start_addr);
     vm_unmap_kernel(start_addr);
-    vm_free(global_page_allocator, start_addr);
+    vmfree(global_page_allocator, start_addr);
     pffree(paddr);
 }
 
@@ -389,7 +389,7 @@ void slab_cache_grow(slab_cache_t *cache) {
     uint32_t        *ptr;
     
     /* allocate new slab */
-    slab_addr = vm_alloc( global_page_allocator );
+    slab_addr = vmalloc( global_page_allocator );
     
     /** ASSERTION: slab address is not NULL */
     assert(slab_addr != NULL);

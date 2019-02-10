@@ -42,17 +42,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
-#include <vm_alloc.h>
+#include <vmalloc.h>
 
 
 pte_t *global_page_tables;
 
 addr_space_t initial_addr_space;
-
-static vm_alloc_t __global_page_allocator;
-
-/** global page allocator (region 0..KLIMIT) */
-vm_alloc_t *global_page_allocator;
 
 size_t page_table_entries;
 
@@ -148,11 +143,10 @@ void vm_boot_postinit(const boot_info_t *boot_info, bool use_pae) {
      * TODO Some work needs to be done in the page allocator to support allocating
      * up to the top of memory (i.e. 0x100000000, which cannot be represented on
      * 32 bits). In the mean time, we leave a 4MB gap. */
-    global_page_allocator = &__global_page_allocator;
-    vm_alloc_init_allocator(global_page_allocator, (addr_t)KLIMIT, (addr_t)0 - 4 * MB);
+    vmalloc_init_allocator(global_page_allocator, (addr_t)KLIMIT, (addr_t)0 - 4 * MB);
 
-    vm_alloc_add_region(global_page_allocator, (addr_t)KLIMIT,          (addr_t)boot_info->image_start);
-    vm_alloc_add_region(global_page_allocator, (addr_t)KLIMIT + 4 * MB, (addr_t)0 - 4 * MB);
+    vmalloc_add_region(global_page_allocator, (addr_t)KLIMIT,          (addr_t)boot_info->image_start);
+    vmalloc_add_region(global_page_allocator, (addr_t)KLIMIT + 4 * MB, (addr_t)0 - 4 * MB);
     
     /* create slab cache to allocate PDPTs
      * 
@@ -308,7 +302,7 @@ static pte_t *vm_lookup_page_table_entry(addr_space_t *addr_space, void *addr, b
 
         if(get_pte_flags(pde) & VM_FLAG_PRESENT) {
             /* map page table */
-            page_table = (pte_t *)vm_alloc(global_page_allocator);
+            page_table = (pte_t *)vmalloc(global_page_allocator);
             
             vm_map_kernel((addr_t)page_table, get_pte_paddr(pde), VM_FLAG_READ_WRITE);
             
@@ -320,7 +314,7 @@ static pte_t *vm_lookup_page_table_entry(addr_space_t *addr_space, void *addr, b
                 kern_paddr_t pgtable_paddr;
                 
                 /* allocate a new page table and map it */
-                page_table      = (pte_t *)vm_alloc(global_page_allocator);
+                page_table      = (pte_t *)vmalloc(global_page_allocator);
                 pgtable_paddr   = pfalloc();
             
                 vm_map_kernel((addr_t)page_table, pgtable_paddr, VM_FLAG_READ_WRITE);
@@ -353,7 +347,7 @@ static pte_t *vm_lookup_page_table_entry(addr_space_t *addr_space, void *addr, b
         
         /* unmap page directory and free the (virtual) page allocated to it */
         vm_unmap_kernel((addr_t)page_directory);
-        vm_free(global_page_allocator, (addr_t)page_directory);
+        vmfree(global_page_allocator, (addr_t)page_directory);
         
         return pte;
     }
@@ -377,7 +371,7 @@ static void vm_free_page_table_entry(void *addr, pte_t *pte) {
     if(! is_fast_map_pointer(addr)) {
         void *page_table = (void *)((uintptr_t)pte & ~PAGE_MASK);
         vm_unmap_kernel(page_table);
-        vm_free(global_page_allocator, page_table);
+        vmfree(global_page_allocator, page_table);
     }
 }
 
@@ -501,12 +495,12 @@ kern_paddr_t vm_clone_page_directory(kern_paddr_t template_paddr, unsigned int s
     pte_t           *template;
     
     /* allocate and map new page directory */
-    page_directory = (pte_t *)vm_alloc(global_page_allocator);
+    page_directory = (pte_t *)vmalloc(global_page_allocator);
     paddr = pfalloc();
     vm_map_kernel((addr_t)page_directory, paddr, VM_FLAG_READ_WRITE);
     
     /* map page directory template */
-    template = (pte_t *)vm_alloc(global_page_allocator);
+    template = (pte_t *)vmalloc(global_page_allocator);
     vm_map_kernel((addr_t)template, template_paddr, VM_FLAG_READ_WRITE);
 
     /* clear all entries below index start_index */
@@ -591,7 +585,7 @@ addr_space_t *vm_create_initial_addr_space(bool use_pae, void *boot_heap) {
 void vm_destroy_page_directory(kern_paddr_t pgdir_paddr, unsigned int from_index, unsigned int to_index) {
     unsigned int idx;
    
-    pte_t *page_directory = (pte_t *)vm_alloc(global_page_allocator);
+    pte_t *page_directory = (pte_t *)vmalloc(global_page_allocator);
     vm_map_kernel((addr_t)page_directory, pgdir_paddr, VM_FLAG_READ_WRITE);
     
     /* be careful not to free the kernel page tables */

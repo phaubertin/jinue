@@ -51,7 +51,6 @@
 #include <syscall.h>
 #include <types.h>
 #include <util.h>
-#include <vm_alloc.h>
 
 
 /** top of region of memory mapped 1:1 (kernel image plus some pages for

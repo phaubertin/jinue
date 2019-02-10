@@ -40,7 +40,7 @@
 #include <pfalloc.h>
 #include <stddef.h>
 #include <string.h>
-#include <vm_alloc.h>
+#include <vmalloc.h>
 
 
 /* defined in thread_switch.asm */
@@ -86,13 +86,13 @@ thread_t *thread_page_create(
         addr_t           user_stack) {
 
     /* allocate thread context */
-    thread_t *thread = (thread_t *)vm_alloc( global_page_allocator );
+    thread_t *thread = (thread_t *)vmalloc( global_page_allocator );
 
     if(thread != NULL) {
         kern_paddr_t paddr = pfalloc();
 
         if(paddr == PFNULL) {
-            vm_free(global_page_allocator, (addr_t)thread);
+            vmfree(global_page_allocator, (addr_t)thread);
             return NULL;
         }
 
@@ -137,7 +137,7 @@ thread_t *thread_page_create(
 void thread_page_destroy(thread_t *thread) {
     kern_paddr_t paddr = vm_lookup_kernel_paddr((addr_t)thread);
     vm_unmap_kernel((addr_t)thread);
-    vm_free(global_page_allocator, (addr_t)thread);
+    vmfree(global_page_allocator, (addr_t)thread);
     pffree(paddr);
 }
 

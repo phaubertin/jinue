@@ -30,7 +30,7 @@
  */
 
 #include <hal/vm_private.h>
-#include <vm_alloc.h>
+#include <vmalloc.h>
 
 struct pte_t {
     uint32_t entry;
@@ -97,7 +97,7 @@ unsigned int vm_x86_page_directory_offset_of(addr_t addr) {
     @param create_as_need Whether a page table is allocated if it does not exist
 */
 pte_t *vm_x86_lookup_page_directory(addr_space_t *addr_space) {
-    pte_t *page_directory = (pte_t *)vm_alloc(global_page_allocator);
+    pte_t *page_directory = (pte_t *)vmalloc(global_page_allocator);
     vm_map_kernel((addr_t)page_directory, addr_space->top_level.pd, VM_FLAG_READ_WRITE);
 
     return page_directory;

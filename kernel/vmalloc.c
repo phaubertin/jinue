@@ -36,7 +36,92 @@
 #include <stddef.h>
 #include <types.h>
 #include <util.h>
-#include <vm_alloc.h>
+#include <vmalloc.h>
+
+#define VMALLOC_STACK_ENTRIES   1024
+
+#define VMALLOC_BLOCK_SIZE      (VMALLOC_STACK_ENTRIES * PAGE_SIZE)
+
+#define VMALLOC_BLOCK_MASK      (VMALLOC_BLOCK_SIZE - 1)
+
+
+#define VMALLOC_IS_FREE(b)      ((b)->next != NULL && (b)->stack_ptr == NULL)
+
+#define VMALLOC_IS_PARTIAL(b)   ((b)->next != NULL && (b)->stack_ptr != NULL)
+
+#define VMALLOC_IS_USED(b)      ((b)->next == NULL)
+
+
+#define VMALLOC_EMPTY_STACK(b)  ((b)->stack_ptr >= (b)->stack_addr + VMALLOC_STACK_ENTRIES)
+
+#define VMALLOC_FULL_STACK(b)   ((b)->stack_ptr <= (b)->stack_addr + 1)
+
+#define VMALLOC_CANNOT_GROW(b)  ((b)->stack_next >= (b)->base_addr + VMALLOC_BLOCK_SIZE)
+
+
+struct vmalloc_t {
+    /** base address of memory managed by allocator */
+    addr_t base_addr;
+
+    /** start address of memory actually available to the allocator */
+    addr_t start_addr;
+
+    /** end address of memory actually available to the allocator */
+    addr_t end_addr;
+
+    /** number of memory blocks managed by this allocator */
+    unsigned int block_count;
+
+    /** array of memory block descriptors */
+    struct vmalloc_block_t *block_array;
+
+    /** number of pages allocated for block array */
+    unsigned int array_pages;
+
+    /** list of completely free blocks */
+    struct vmalloc_block_t *free_list;
+
+    /** list of partially free blocks */
+    struct vmalloc_block_t *partial_list;
+};
+
+struct vmalloc_block_t {
+    /** base address of memory block */
+    addr_t base_addr;
+
+    /** allocator to which this block belongs */
+    struct vmalloc_t *allocator;
+
+    /** stack pointer for stack of free pages in partially allocated blocks */
+    addr_t *stack_ptr;
+
+    /** base address of free page stack */
+    addr_t *stack_addr;
+
+    /** next page address to add to stack, used for deferred stack initialization */
+    addr_t stack_next;
+
+    /** link previous block in free list */
+    struct vmalloc_block_t *prev;
+
+    /** link next block in free list */
+    struct vmalloc_block_t *next;
+};
+
+static vmalloc_t __global_page_allocator;
+
+/** global page allocator (region 0..KLIMIT) */
+vmalloc_t *const global_page_allocator = &__global_page_allocator;
+
+static void vmalloc_free_block(vmalloc_block_t *block);
+
+static void vmalloc_partial_block(vmalloc_block_t *block);
+
+static void vmalloc_custom_block(vmalloc_block_t *block, addr_t start_addr, addr_t end_addr);
+
+static void vmalloc_unlink_block(vmalloc_block_t *block);
+
+static void vmalloc_grow_stack(vmalloc_block_t *block);
 
 /**
   @file
@@ -82,8 +167,8 @@
     Allocate a page of virtual address space.
     @param allocator allocator which manages the memory region from which we wish to obtain a page
 */
-addr_t vm_alloc(vm_alloc_t *allocator) {
-    vm_block_t *block;
+addr_t vmalloc(vmalloc_t *allocator) {
+    vmalloc_block_t *block;
     addr_t      page;
     
     /** ASSERTION: allocator is not null */
@@ -95,69 +180,28 @@ addr_t vm_alloc(vm_alloc_t *allocator) {
         block = allocator->free_list;
         
         if(block == NULL) {
-            return (addr_t)NULL;
+            return NULL;
         }
         
-        vm_alloc_partial_block(block);
+        vmalloc_partial_block(block);
     }
     
     /** ASSERTION: since block is expected to be partial, its stack pointer should not be null */
     assert(block->stack_ptr != NULL);
     
     /* if the page stack is empty, perform deferred page stack initialization */
-    if( VM_ALLOC_EMPTY_STACK(block) ) {
-        vm_alloc_grow_stack(block);
+    if( VMALLOC_EMPTY_STACK(block) ) {
+        vmalloc_grow_stack(block);
     }
     
     /** ASSERTION: at this point, the page stack should not be empty (stack underflow check) */
-    assert( ! VM_ALLOC_EMPTY_STACK(block) );
+    assert( ! VMALLOC_EMPTY_STACK(block) );
     
     page = *(block->stack_ptr++);
     
     /* if we just emptied the stack, mark the block as used */
-    if( VM_ALLOC_EMPTY_STACK(block) ) {
-        vm_alloc_unlink_block(block);
-    }
-
-    return page;
-}
-
-/**
-    Allocate a page of virtual address space for time critical code path.
-    
-    Same as vm_alloc(), but some time consuming housekeeping steps are deferred.
-    @param allocator allocator which manages the memory region from which we wish to obtain a page
-*/
-addr_t vm_alloc_low_latency(vm_alloc_t *allocator) {
-    vm_block_t *block;
-    addr_t      page;
-    
-    /** ASSERTION: allocator is not null */
-    assert(allocator != NULL);
-    
-    block = allocator->partial_list;
-    
-    if(block == NULL) {
-        block = allocator->free_list;
-        
-        if(block == NULL) {
-            return (addr_t)NULL;
-        }
-        
-        vm_alloc_partial_block(block);
-    }
-    
-    /* if the page stack is empty, allocate sequentially from the start of the
-     * block and continue to defer page stack initialization */
-    if( VM_ALLOC_EMPTY_STACK(block) ) {
-        return vm_alloc_grow_single(block);
-    }
-    
-    page = *(block->stack_ptr++);
-    
-    if( VM_ALLOC_EMPTY_STACK(block) ) {
-        /* block is now used up, remove it from the partial blocks list */
-        vm_alloc_unlink_block(block);
+    if( VMALLOC_EMPTY_STACK(block) ) {
+        vmalloc_unlink_block(block);
     }
 
     return page;
@@ -167,8 +211,8 @@ addr_t vm_alloc_low_latency(vm_alloc_t *allocator) {
     Free a page of virtual address space.
     @param allocator allocator which manages the memory region to which the page is freed
 */
-void vm_free(vm_alloc_t *allocator, addr_t page) {
-    vm_block_t   *block;
+void vmfree(vmalloc_t *allocator, addr_t page) {
+    vmalloc_block_t   *block;
     unsigned int  idx;
     
     /** ASSERTION: allocator is not null */
@@ -181,41 +225,41 @@ void vm_free(vm_alloc_t *allocator, addr_t page) {
     assert(page_offset_of(page) == 0);
     
     /* find the block to which the free page belong */
-    idx = ( (unsigned int)page - (unsigned int)allocator->base_addr ) / VM_ALLOC_BLOCK_SIZE;
+    idx = ( (unsigned int)page - (unsigned int)allocator->base_addr ) / VMALLOC_BLOCK_SIZE;
     block = &allocator->block_array[idx];
     
     /* if the block was a used block, make it a partial block */
-    if( VM_ALLOC_IS_USED(block) ) {
+    if( VMALLOC_IS_USED(block) ) {
         if(block->stack_addr == NULL) {
             block->stack_addr = (addr_t *)page;
             return;
         }
         
-        vm_alloc_partial_block(block);
+        vmalloc_partial_block(block);
     }
     
     /** ASSERTION: block should now be partial */
-    assert( VM_ALLOC_IS_PARTIAL(block) );
+    assert( VMALLOC_IS_PARTIAL(block) );
     
     /** ASSERTION: stack overflow check */
-    assert( ! VM_ALLOC_FULL_STACK(block) );
+    assert( ! VMALLOC_FULL_STACK(block) );
     
     *(--block->stack_ptr) = page;
     
     /* check if we just freed the whole block */
-    if( VM_ALLOC_FULL_STACK(block) ) {
-        vm_alloc_free_block(block);
+    if( VMALLOC_FULL_STACK(block) ) {
+        vmalloc_free_block(block);
     }
 }
 
-void vm_alloc_init(vm_alloc_t *allocator, addr_t start_addr, addr_t end_addr) {
-    vm_alloc_init_allocator( allocator, start_addr, end_addr);
-    vm_alloc_add_region(     allocator, start_addr, end_addr);
+void vmalloc_init(vmalloc_t *allocator, addr_t start_addr, addr_t end_addr) {
+    vmalloc_init_allocator( allocator, start_addr, end_addr);
+    vmalloc_add_region(     allocator, start_addr, end_addr);
 }
 
-void vm_alloc_destroy(vm_alloc_t *allocator) {
-    vm_block_t   *head;
-    vm_block_t   *block;
+void vmalloc_destroy(vmalloc_t *allocator) {
+    vmalloc_block_t   *head;
+    vmalloc_block_t   *block;
     kern_paddr_t  paddr;
     addr_t        addr;
     unsigned int  idx;
@@ -249,12 +293,12 @@ void vm_alloc_destroy(vm_alloc_t *allocator) {
     @param start_addr start address of the region managed by the allocator
     @param size       size of the region managed by the allocator
 */
-void vm_alloc_init_allocator(vm_alloc_t *allocator, addr_t start_addr, addr_t end_addr) {
+void vmalloc_init_allocator(vmalloc_t *allocator, addr_t start_addr, addr_t end_addr) {
     addr_t           base_addr;         /* block-aligned start address */
     addr_t           aligned_end;       /* block-aligned end address */
     addr_t           adjusted_start;    /* actual start of available memory, block array skipped */
     
-    vm_block_t      *block_array;       /* start of array */
+    vmalloc_block_t      *block_array;       /* start of array */
     unsigned int     block_count;       /* array size, in blocks (entries) */
     size_t           array_size;        /* array size, in bytes */
     unsigned int     array_page_count;  /* array size, in pages */
@@ -272,22 +316,22 @@ void vm_alloc_init_allocator(vm_alloc_t *allocator, addr_t start_addr, addr_t en
     
     
     /* align base and end addresses to block size */
-    base_addr   = (addr_t)ALIGN_START(start_addr, VM_ALLOC_BLOCK_SIZE);
-    aligned_end = (addr_t)ALIGN_END(end_addr, VM_ALLOC_BLOCK_SIZE);
+    base_addr   = (addr_t)ALIGN_START(start_addr, VMALLOC_BLOCK_SIZE);
+    aligned_end = (addr_t)ALIGN_END(end_addr, VMALLOC_BLOCK_SIZE);
 
     /* calculate number of memory blocks managed by this allocator */
-    block_count = ( (char *)aligned_end - (char *)base_addr ) / VM_ALLOC_BLOCK_SIZE;
+    block_count = ( (char *)aligned_end - (char *)base_addr ) / VMALLOC_BLOCK_SIZE;
     
     /* calculate the number of pages required to store the memory block
      * descriptor array */
-    array_size = block_count * sizeof(vm_block_t);
+    array_size = block_count * sizeof(vmalloc_block_t);
     array_page_count = array_size / PAGE_SIZE;
     if(array_size % PAGE_SIZE != 0) {
         ++array_page_count;
     }
     
     /* address of the block array */
-    block_array = (vm_block_t *)start_addr;
+    block_array = (vmalloc_block_t *)start_addr;
     
     /* adjust base address to skip block descriptor array */
     adjusted_start = start_addr + array_page_count * PAGE_SIZE;
@@ -329,7 +373,7 @@ void vm_alloc_init_allocator(vm_alloc_t *allocator, addr_t start_addr, addr_t en
         block_array[idx].stack_addr = NULL;
         
         /* calculate address of next block */
-        addr += VM_ALLOC_BLOCK_SIZE;
+        addr += VMALLOC_BLOCK_SIZE;
     }
 }
 
@@ -339,7 +383,7 @@ void vm_alloc_init_allocator(vm_alloc_t *allocator, addr_t start_addr, addr_t en
     @param start_addr start address of the region
     @param end_addr   end address of the region (first unavailable page)
 */
-void vm_alloc_add_region(vm_alloc_t *allocator, addr_t start_addr, addr_t end_addr) {
+void vmalloc_add_region(vmalloc_t *allocator, addr_t start_addr, addr_t end_addr) {
     addr_t       start_addr_adjusted;
     unsigned int start;
     unsigned int end;
@@ -356,12 +400,12 @@ void vm_alloc_add_region(vm_alloc_t *allocator, addr_t start_addr, addr_t end_ad
     } 
     
     /* start and end block indices */
-    start = ((unsigned int)start_addr_adjusted - (unsigned int)allocator->base_addr) / VM_ALLOC_BLOCK_SIZE;    
-    end   = ((unsigned int)end_addr            - (unsigned int)allocator->base_addr) / VM_ALLOC_BLOCK_SIZE;
+    start = ((unsigned int)start_addr_adjusted - (unsigned int)allocator->base_addr) / VMALLOC_BLOCK_SIZE;    
+    end   = ((unsigned int)end_addr            - (unsigned int)allocator->base_addr) / VMALLOC_BLOCK_SIZE;
     
     /* check and remember whether last block is partial (last_full < end) or
      * completely free (last_full == end) */
-    if( OFFSET_OF(end_addr, VM_ALLOC_BLOCK_SIZE) == 0) {
+    if( OFFSET_OF(end_addr, VMALLOC_BLOCK_SIZE) == 0) {
         end_full = end;
     }
     else {
@@ -371,26 +415,26 @@ void vm_alloc_add_region(vm_alloc_t *allocator, addr_t start_addr, addr_t end_ad
     /* array initialization -- first block (if partial) */
     idx = start;
     
-    if( OFFSET_OF(start_addr_adjusted, VM_ALLOC_BLOCK_SIZE) != 0 ) {
-        limit = ALIGN_END(start_addr_adjusted, VM_ALLOC_BLOCK_SIZE);
+    if( OFFSET_OF(start_addr_adjusted, VMALLOC_BLOCK_SIZE) != 0 ) {
+        limit = ALIGN_END(start_addr_adjusted, VMALLOC_BLOCK_SIZE);
         
         if(end_addr < limit) {
             limit = end_addr;
         }
         
-        vm_alloc_custom_block(&allocator->block_array[idx], start_addr_adjusted, limit);
+        vmalloc_custom_block(&allocator->block_array[idx], start_addr_adjusted, limit);
         
         ++idx;
     }
     
     /* array initialization -- free blocks */
     for(; idx < end; ++idx) {
-        vm_alloc_free_block(&allocator->block_array[idx]);
+        vmalloc_free_block(&allocator->block_array[idx]);
     }
     
     /* array initialization -- last block (if partial) */
     if(idx < end_full) {
-        vm_alloc_custom_block(&allocator->block_array[idx], allocator->block_array[idx].base_addr, end_addr);
+        vmalloc_custom_block(&allocator->block_array[idx], allocator->block_array[idx].base_addr, end_addr);
     }
 }
 
@@ -402,15 +446,15 @@ void vm_alloc_add_region(vm_alloc_t *allocator, addr_t start_addr, addr_t end_ad
     has just been returned to it.
     @param block block to insert in the free list
 */
-void vm_alloc_free_block(vm_block_t *block) {
-    vm_block_t      *prev;
-    vm_block_t      *next;
+static void vmalloc_free_block(vmalloc_block_t *block) {
+    vmalloc_block_t      *prev;
+    vmalloc_block_t      *next;
     
     /** ASSERTION: block is not null */
     assert(block != NULL);
     
     /* unlink from partial list if necessary */
-    vm_alloc_unlink_block(block);
+    vmalloc_unlink_block(block);
     
     /** ASSERTION: block->allocator should not be NULL */
     assert(block->allocator != NULL);
@@ -449,9 +493,9 @@ void vm_alloc_free_block(vm_block_t *block) {
     initialization mechanism is enabled if the block is free on function entry.
     @param block block to insert in the partial list
 */
-void vm_alloc_partial_block(vm_block_t *block) {
-    vm_block_t      *prev;
-    vm_block_t      *next;
+static void vmalloc_partial_block(vmalloc_block_t *block) {
+    vmalloc_block_t      *prev;
+    vmalloc_block_t      *next;
     addr_t          *stack_addr;
     kern_paddr_t     paddr;
     bool             was_free;
@@ -492,7 +536,7 @@ void vm_alloc_partial_block(vm_block_t *block) {
         was_free = true;
         
         /* unlink from free list */
-        vm_alloc_unlink_block(block);
+        vmalloc_unlink_block(block);
         
         /* use first page of block for the stack */
         block->stack_addr = (addr_t *)block->base_addr;
@@ -552,11 +596,11 @@ void vm_alloc_partial_block(vm_block_t *block) {
     }
     else {
         /* used block: sequential allocation no longer possible */
-        block->stack_next = block->base_addr + VM_ALLOC_BLOCK_SIZE;
+        block->stack_next = block->base_addr + VMALLOC_BLOCK_SIZE;
     }
 }
 
-void vm_alloc_custom_block(vm_block_t *block, addr_t start_addr, addr_t end_addr) {
+static void vmalloc_custom_block(vmalloc_block_t *block, addr_t start_addr, addr_t end_addr) {
 #ifndef NDEBUG
     addr_t      limit;
 #endif
@@ -570,18 +614,18 @@ void vm_alloc_custom_block(vm_block_t *block, addr_t start_addr, addr_t end_addr
     assert(page_offset_of(start_addr) == 0 && page_offset_of(end_addr) == 0);
 
 #ifndef NDEBUG
-    limit = block->base_addr + VM_ALLOC_BLOCK_SIZE;
+    limit = block->base_addr + VMALLOC_BLOCK_SIZE;
 #endif
 
     /** ASSERTION: start and end addr are inside block, address range is non-empty */
     assert(start_addr >= block->base_addr && end_addr <= limit && start_addr < end_addr );
     
     /** ASSERTION: block is not free */
-    assert( ! VM_ALLOC_IS_FREE(block) );
+    assert( ! VMALLOC_IS_FREE(block) );
     
     adjusted_start = start_addr;
     
-    if( VM_ALLOC_IS_USED(block) ) {
+    if( VMALLOC_IS_USED(block) ) {
         /* if no stack address is specified at this point, use the first page
          * of the address range for this purpose */
         if( block->stack_addr == NULL ) {
@@ -595,17 +639,17 @@ void vm_alloc_custom_block(vm_block_t *block, addr_t start_addr, addr_t end_addr
             }
         }
         
-        vm_alloc_partial_block(block);
+        vmalloc_partial_block(block);
     }
     
     /** ASSERTION: block is partial at this point */
-    assert( VM_ALLOC_IS_PARTIAL(block) );
+    assert( VMALLOC_IS_PARTIAL(block) );
     
     /* initialize stack */
     page = adjusted_start;
     while(page < end_addr) {
         /** ASSERTION: page stack overflow check */
-        assert( ! VM_ALLOC_FULL_STACK(block) );
+        assert( ! VMALLOC_FULL_STACK(block) );
         
         *(--block->stack_ptr) = page;
         page += PAGE_SIZE;
@@ -618,8 +662,8 @@ void vm_alloc_custom_block(vm_block_t *block, addr_t start_addr, addr_t end_addr
     in the used state.
     @param block block to unlink from list
 */
-void vm_alloc_unlink_block(vm_block_t *block) {
-    vm_alloc_t      *allocator;
+static void vmalloc_unlink_block(vmalloc_block_t *block) {
+    vmalloc_t      *allocator;
     kern_paddr_t     paddr;
     
     /** ASSERTION: block is not null */
@@ -686,11 +730,11 @@ void vm_alloc_unlink_block(vm_block_t *block) {
 }
 
 /**
-    Initialize the stack of a partial block with all remaining pages which have
+    Initialize the stack of a partial block with all remaining pages that have
     not yet been allocated.
     @param block block which will have its stack initialized
 */
-void vm_alloc_grow_stack(vm_block_t *block) {
+static void vmalloc_grow_stack(vmalloc_block_t *block) {
     addr_t  limit;
     addr_t  page;
     addr_t *stack_ptr;
@@ -706,11 +750,11 @@ void vm_alloc_grow_stack(vm_block_t *block) {
     
     stack_ptr = block->stack_ptr;
     page      = block->stack_next;
-    limit     = block->base_addr + VM_ALLOC_BLOCK_SIZE;
+    limit     = block->base_addr + VMALLOC_BLOCK_SIZE;
         
     while(page < limit) {
         /** ASSERTION: stack underflow check */
-        assert( ! VM_ALLOC_FULL_STACK(block) );
+        assert( ! VMALLOC_FULL_STACK(block) );
         
         *(--stack_ptr) = page;
         
@@ -719,38 +763,4 @@ void vm_alloc_grow_stack(vm_block_t *block) {
     
     block->stack_ptr  = stack_ptr;
     block->stack_next = limit;
-}
-
-/**
-    Obtain a free page from a partial block, but defer page stack initialization
-    for the block. This function must only be called on a partial block, and
-    only after checking first that the page stack is empty. This function takes
-    care of unlinking the block from the partial list if the last page is
-    allocated.
-    @param block block from which to allocate the page
-*/
-addr_t vm_alloc_grow_single(vm_block_t *block) {
-    addr_t page;
-    
-    /** ASSERTION: block is not null */
-    assert(block != NULL);
-    
-    /** ASSERTION: block is linked (it should be in the partial list) */
-    assert(block->next != NULL && block->prev != NULL);
-    
-    /** ASSERTION: block actually has a stack */
-    assert(block->stack_ptr != NULL);
-    
-    /** ASSERTION: region can still grow */
-    assert( ! VM_ALLOC_CANNOT_GROW(block) );
-    
-    page              = block->stack_next;
-    block->stack_next = page + PAGE_SIZE;
-    
-    if( VM_ALLOC_CANNOT_GROW(block) ) {
-        /* block is now used up, remove it from the partial list */
-        vm_alloc_unlink_block(block);
-    }
-    
-    return page;
 }
