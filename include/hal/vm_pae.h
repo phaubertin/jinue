@@ -36,7 +36,6 @@
  * hal/vm_pae.c. It is intended to be included by hal/vm.c and hal/vm_pae.c.
  * There should be no reason to include it anywhere else. */
 
-#include <jinue-common/pfaddr.h>
 #include <hal/types.h>
 
 void vm_pae_boot_init(void);
@@ -51,13 +50,13 @@ unsigned int vm_pae_page_directory_offset_of(addr_t addr);
 
 pte_t *vm_pae_get_pte_with_offset(pte_t *pte, unsigned int offset);
 
-void vm_pae_set_pte(pte_t *pte, pfaddr_t paddr, int flags);
+void vm_pae_set_pte(pte_t *pte, uint64_t paddr, int flags);
 
 void vm_pae_set_pte_flags(pte_t *pte, int flags);
 
 int vm_pae_get_pte_flags(const pte_t *pte);
 
-pfaddr_t vm_pae_get_pte_pfaddr(const pte_t *pte);
+uint64_t vm_pae_get_pte_paddr(const pte_t *pte);
 
 void vm_pae_clear_pte(pte_t *pte);
 

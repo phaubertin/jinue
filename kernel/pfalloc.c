@@ -30,7 +30,6 @@
  */
 
 #include <hal/kernel.h>
-#include <hal/pfaddr.h>
 #include <hal/vm.h>
 #include <assert.h>
 #include <panic.h>
@@ -55,9 +54,9 @@ addr_t pfalloc_early(void) {
     return page;
 }
 
-void init_pfcache(pfcache_t *pfcache, pfaddr_t *stack_page) {
-    pfaddr_t *ptr;
-    unsigned int idx;
+void init_pfcache(pfcache_t *pfcache, kern_paddr_t *stack_page) {
+    kern_paddr_t    *ptr;
+    unsigned int     idx;
     
     ptr = stack_page;
     
@@ -69,7 +68,7 @@ void init_pfcache(pfcache_t *pfcache, pfaddr_t *stack_page) {
     pfcache->count = 0;
 }
 
-pfaddr_t pfalloc_from(pfcache_t *pfcache) {
+kern_paddr_t pfalloc_from(pfcache_t *pfcache) {
     /** ASSERTION:  pfalloc_early must be used early */
     assert( ! use_pfalloc_early );
     
@@ -82,7 +81,7 @@ pfaddr_t pfalloc_from(pfcache_t *pfcache) {
     return *(--pfcache->ptr);
 }
 
-void pffree_to(pfcache_t *pfcache, pfaddr_t pf) {
+void pffree_to(pfcache_t *pfcache, kern_paddr_t paddr) {
     if(pfcache->count >= KERNEL_PAGE_STACK_SIZE) {
         /** We are leaking memory here. Should we panic instead? */
         return;
@@ -90,5 +89,5 @@ void pffree_to(pfcache_t *pfcache, pfaddr_t pf) {
     
     ++pfcache->count;
     
-    (pfcache->ptr++)[0] = pf;
+    (pfcache->ptr++)[0] = paddr;
 }

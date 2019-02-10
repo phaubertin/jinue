@@ -33,14 +33,22 @@
 #define JINUE_HAL_TYPES_H
 
 #include <jinue-common/elf.h>
-#include <jinue-common/pfaddr.h>
 #include <hal/asm/descriptors.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-
+/** Virtual memory address (pointer) with pointer arithmetic allowed */
 typedef unsigned char   *addr_t;
+
+/** Physical memory address for use by the kernel */
+typedef uint32_t kern_paddr_t;
+
+/** Physical memory address for use by user space */
+typedef uint64_t user_paddr_t;
+
+/** an invalid page frame address used as null value */
+#define PFNULL ((kern_paddr_t)-1)
 
 /** incomplete structure declaration for a page table entry
  *
@@ -72,8 +80,8 @@ typedef struct {
 typedef struct {
     uint32_t     cr3;
     union {
-        pfaddr_t     pd;    /* non-PAE: page directory */
-        pdpt_t      *pdpt;  /* PAE: page directory pointer table */
+        kern_paddr_t     pd;    /* non-PAE: page directory */
+        pdpt_t          *pdpt;  /* PAE: page directory pointer table */
     } top_level;
 } addr_space_t;
 

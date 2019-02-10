@@ -44,12 +44,12 @@ addr_space_t *vm_x86_create_addr_space(addr_space_t *addr_space) {
     /* Create a new page directory where entries for the address range starting
      * at KLIMIT are copied from the initial address space. The mappings starting
      * at KLIMIT belong to the kernel and are identical in all address spaces. */
-    pfaddr_t pfaddr = vm_clone_page_directory(
+    kern_paddr_t paddr = vm_clone_page_directory(
             initial_addr_space.top_level.pd,
             vm_x86_page_directory_offset_of((addr_t)KLIMIT));
 
-    addr_space->top_level.pd = pfaddr;
-    addr_space->cr3          = (uint32_t)PFADDR_TO_ADDR(pfaddr);
+    addr_space->top_level.pd = paddr;
+    addr_space->cr3          = paddr;
 
     return addr_space;
 }
@@ -59,7 +59,7 @@ addr_space_t *vm_x86_create_initial_addr_space(void) {
 
     pte_t *page_directory = vm_allocate_page_directory(klimit_pd_index, true);
 
-    initial_addr_space.top_level.pd = EARLY_PTR_TO_PFADDR(page_directory);
+    initial_addr_space.top_level.pd = EARLY_PTR_TO_PHYS_ADDR(page_directory);
     initial_addr_space.cr3          = EARLY_VIRT_TO_PHYS((uintptr_t)page_directory);
 
     return &initial_addr_space;
@@ -96,7 +96,7 @@ unsigned int vm_x86_page_directory_offset_of(addr_t addr) {
     @param addr address to look up
     @param create_as_need Whether a page table is allocated if it does not exist
 */
-pte_t *vm_x86_lookup_page_directory(addr_space_t *addr_space, void *addr, bool create_as_needed) {
+pte_t *vm_x86_lookup_page_directory(addr_space_t *addr_space) {
     pte_t *page_directory = (pte_t *)vm_alloc(global_page_allocator);
     vm_map_kernel((addr_t)page_directory, addr_space->top_level.pd, VM_FLAG_READ_WRITE);
 
@@ -107,9 +107,8 @@ pte_t *vm_x86_get_pte_with_offset(pte_t *pte, unsigned int offset) {
     return &pte[offset];
 }
 
-void vm_x86_set_pte(pte_t *pte, pfaddr_t paddr, int flags) {
-    /** TODO: check paddr for 4GB limit */
-    pte->entry = ((uint32_t)paddr << PFADDR_SHIFT) | flags;
+void vm_x86_set_pte(pte_t *pte, uint32_t paddr, int flags) {
+    pte->entry = paddr | flags;
 }
 
 void vm_x86_set_pte_flags(pte_t *pte, int flags) {
@@ -120,8 +119,8 @@ int vm_x86_get_pte_flags(const pte_t *pte) {
     return pte->entry & PAGE_MASK;
 }
 
-pfaddr_t vm_x86_get_pte_pfaddr(const pte_t *pte) {
-    return (pte->entry & ~PAGE_MASK) >> PFADDR_SHIFT;
+uint32_t vm_x86_get_pte_paddr(const pte_t *pte) {
+    return pte->entry & ~PAGE_MASK;
 }
 
 void vm_x86_clear_pte(pte_t *pte) {

@@ -29,7 +29,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <hal/pfaddr.h>
 #include <hal/vm.h>
 #include <assert.h>
 #include <pfalloc.h>
@@ -38,7 +37,6 @@
 #include <types.h>
 #include <util.h>
 #include <vm_alloc.h>
-
 
 /**
   @file
@@ -218,7 +216,7 @@ void vm_alloc_init(vm_alloc_t *allocator, addr_t start_addr, addr_t end_addr) {
 void vm_alloc_destroy(vm_alloc_t *allocator) {
     vm_block_t   *head;
     vm_block_t   *block;
-    pfaddr_t      paddr;
+    kern_paddr_t  paddr;
     addr_t        addr;
     unsigned int  idx;
     
@@ -228,7 +226,7 @@ void vm_alloc_destroy(vm_alloc_t *allocator) {
     
     if(block != NULL) {
         do {
-            paddr = vm_lookup_pfaddr(NULL, (addr_t)block->stack_addr);
+            paddr = vm_lookup_kernel_paddr((addr_t)block->stack_addr);
             pffree(paddr);
             
             block = block->next;
@@ -238,7 +236,7 @@ void vm_alloc_destroy(vm_alloc_t *allocator) {
     /* de-allocate block array pages */
     addr = (addr_t)allocator->block_array;
     for(idx = 0; idx < allocator->array_pages; ++idx) {
-        paddr = vm_lookup_pfaddr(NULL, addr);
+        paddr = vm_lookup_kernel_paddr(addr);
         pffree(paddr);
         
         addr += PAGE_SIZE;
@@ -252,18 +250,18 @@ void vm_alloc_destroy(vm_alloc_t *allocator) {
     @param size       size of the region managed by the allocator
 */
 void vm_alloc_init_allocator(vm_alloc_t *allocator, addr_t start_addr, addr_t end_addr) {
-    addr_t        base_addr;        /* block-aligned start address */
-    addr_t        aligned_end;        /* block-aligned end address */
-    addr_t        adjusted_start;    /* actual start of available memory, block array skipped */
+    addr_t           base_addr;         /* block-aligned start address */
+    addr_t           aligned_end;       /* block-aligned end address */
+    addr_t           adjusted_start;    /* actual start of available memory, block array skipped */
     
-    vm_block_t   *block_array;        /* start of array */
-    unsigned int  block_count;        /* array size, in blocks (entries) */
-    size_t        array_size;        /* array size, in bytes */
-    unsigned int  array_page_count;    /* array size, in pages */
+    vm_block_t      *block_array;       /* start of array */
+    unsigned int     block_count;       /* array size, in blocks (entries) */
+    size_t           array_size;        /* array size, in bytes */
+    unsigned int     array_page_count;  /* array size, in pages */
     
-    addr_t        addr;                /* some virtual address */
-    pfaddr_t      paddr;            /* some page frame address */
-    unsigned int  idx;                /* an array index */
+    addr_t           addr;              /* some virtual address */
+    kern_paddr_t     paddr;             /* some page frame address */
+    unsigned int     idx;               /* an array index */
         
     
     /** ASSERTION: allocator structure pointer must not be null */
@@ -455,7 +453,7 @@ void vm_alloc_partial_block(vm_block_t *block) {
     vm_block_t      *prev;
     vm_block_t      *next;
     addr_t          *stack_addr;
-    pfaddr_t         paddr;
+    kern_paddr_t     paddr;
     bool             was_free;
     
     
@@ -621,8 +619,8 @@ void vm_alloc_custom_block(vm_block_t *block, addr_t start_addr, addr_t end_addr
     @param block block to unlink from list
 */
 void vm_alloc_unlink_block(vm_block_t *block) {
-    vm_alloc_t *allocator;
-    pfaddr_t    paddr;
+    vm_alloc_t      *allocator;
+    kern_paddr_t     paddr;
     
     /** ASSERTION: block is not null */
     assert(block != NULL);
@@ -647,7 +645,7 @@ void vm_alloc_unlink_block(vm_block_t *block) {
     
     /* if block has a stack, discard it */
     if(block->stack_ptr != NULL) {
-        paddr = vm_lookup_pfaddr(NULL, (addr_t)block->stack_addr);
+        paddr = vm_lookup_kernel_paddr((addr_t)block->stack_addr);
         pffree(paddr);
     }
 

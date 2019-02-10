@@ -30,7 +30,6 @@
  */
 
 #include <hal/cpu.h>
-#include <hal/pfaddr.h>
 #include <hal/vm.h>
 #include <assert.h>
 #include <pfalloc.h>
@@ -47,7 +46,6 @@ slab_cache_t *slab_cache_list = NULL;
 static void destroy_slab(slab_cache_t *cache, slab_t *slab) {
     addr_t           start_addr;
     addr_t           buffer;
-    pfaddr_t         paddr;
 
     /* call destructor */
     start_addr = ALIGN_START(slab, SLAB_SIZE);
@@ -59,7 +57,7 @@ static void destroy_slab(slab_cache_t *cache, slab_t *slab) {
     }
     
     /* return the memory */
-    paddr = vm_lookup_pfaddr(NULL, start_addr);
+    kern_paddr_t paddr = vm_lookup_kernel_paddr(start_addr);
     vm_unmap_kernel(start_addr);
     vm_free(global_page_allocator, start_addr);
     pffree(paddr);

@@ -30,7 +30,6 @@
  */
 
 #include <jinue-common/errno.h>
-#include <jinue-common/pfalloc.h>
 #include <hal/boot.h>
 #include <hal/cpu_data.h>
 #include <hal/thread.h>

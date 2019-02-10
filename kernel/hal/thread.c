@@ -32,7 +32,6 @@
 #include <hal/cpu.h>
 #include <hal/cpu_data.h>
 #include <hal/descriptors.h>
-#include <hal/pfaddr.h>
 #include <hal/thread.h>
 #include <hal/trap.h>
 #include <hal/types.h>
@@ -90,14 +89,14 @@ thread_t *thread_page_create(
     thread_t *thread = (thread_t *)vm_alloc( global_page_allocator );
 
     if(thread != NULL) {
-        pfaddr_t pf = pfalloc();
+        kern_paddr_t paddr = pfalloc();
 
-        if(pf == PFNULL) {
+        if(paddr == PFNULL) {
             vm_free(global_page_allocator, (addr_t)thread);
             return NULL;
         }
 
-        vm_map_kernel((addr_t)thread, pf, VM_FLAG_READ_WRITE);
+        vm_map_kernel((addr_t)thread, paddr, VM_FLAG_READ_WRITE);
 
         /* initialize fields */
         thread_context_t *thread_ctx = &thread->thread_ctx;
@@ -136,10 +135,10 @@ thread_t *thread_page_create(
 }
 
 void thread_page_destroy(thread_t *thread) {
-    pfaddr_t pfaddr = vm_lookup_pfaddr(NULL, (addr_t)thread);
+    kern_paddr_t paddr = vm_lookup_kernel_paddr((addr_t)thread);
     vm_unmap_kernel((addr_t)thread);
     vm_free(global_page_allocator, (addr_t)thread);
-    pffree(pfaddr);
+    pffree(paddr);
 }
 
 void thread_context_switch(

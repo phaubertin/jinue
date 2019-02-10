@@ -38,7 +38,6 @@
 #include <hal/interrupt.h>
 #include <hal/kernel.h>
 #include <hal/mem.h>
-#include <hal/pfaddr.h>
 #include <hal/thread.h>
 #include <hal/trap.h>
 #include <hal/vga.h>
@@ -165,7 +164,7 @@ static void hal_init_idt(void) {
 void hal_init(void) {
     cpu_data_t          *cpu_data;
     unsigned int         idx;
-    pfaddr_t            *page_stack_buffer;
+    kern_paddr_t        *page_stack_buffer;
     
     /* pfalloc() should not be called yet -- use pfalloc_early() instead */
     use_pfalloc_early = true;
@@ -226,11 +225,11 @@ void hal_init(void) {
     mem_check_memory(boot_info);
 
     /* initialize the page frame allocator */
-    page_stack_buffer = (pfaddr_t *)pfalloc_early();
+    page_stack_buffer = (kern_paddr_t *)pfalloc_early();
     init_pfcache(&global_pfcache, page_stack_buffer);
 
     for(idx = 0; idx < KERNEL_PAGE_STACK_INIT; ++idx) {
-        pffree( EARLY_PTR_TO_PFADDR( pfalloc_early() ) );
+        pffree( EARLY_PTR_TO_PHYS_ADDR( pfalloc_early() ) );
     }
 
     /* initialize virtual memory management, enable paging

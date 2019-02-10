@@ -62,10 +62,10 @@ extern addr_space_t initial_addr_space;
 extern size_t page_table_entries;
 
 
-pfaddr_t vm_clone_page_directory(pfaddr_t template_pfaddr, unsigned int start_index);
+kern_paddr_t vm_clone_page_directory(kern_paddr_t template_paddr, unsigned int start_index);
 
 pte_t *vm_allocate_page_directory(unsigned int start_index, bool first_pd);
 
-void vm_destroy_page_directory(pfaddr_t pdpfaddr, unsigned int from_index, unsigned int to_index);
+void vm_destroy_page_directory(kern_paddr_t pgdir_paddr, unsigned int from_index, unsigned int to_index);
 
 #endif

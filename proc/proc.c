@@ -33,7 +33,6 @@
 #include <jinue/errno.h>
 #include <jinue/ipc.h>
 #include <jinue/memory.h>
-#include <jinue/pfalloc.h>
 #include <jinue/syscall.h>
 #include <jinue/types.h>
 #include <jinue/vm.h>

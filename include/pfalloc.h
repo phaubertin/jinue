@@ -32,13 +32,16 @@
 #ifndef JINUE_KERNEL_ALLOC_H
 #define JINUE_KERNEL_ALLOC_H
 
-#include <jinue-common/pfalloc.h>
 #include <types.h>
+
+#define KERNEL_PAGE_STACK_SIZE    1024
+
+#define KERNEL_PAGE_STACK_INIT    128
 
 
 typedef struct {
-    pfaddr_t  *ptr;
-    uint32_t   count;
+    kern_paddr_t    *ptr;
+    uint32_t         count;
 } pfcache_t;
 
 
@@ -54,10 +57,10 @@ extern pfcache_t global_pfcache;
 
 addr_t pfalloc_early(void);
 
-void init_pfcache(pfcache_t *pfcache, pfaddr_t *stack_page);
+void init_pfcache(pfcache_t *pfcache, kern_paddr_t *stack_page);
 
-pfaddr_t pfalloc_from(pfcache_t *pfcache);
+kern_paddr_t pfalloc_from(pfcache_t *pfcache);
 
-void pffree_to(pfcache_t *pfcache, pfaddr_t pf);
+void pffree_to(pfcache_t *pfcache, kern_paddr_t paddr);
 
 #endif

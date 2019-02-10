@@ -29,7 +29,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <hal/pfaddr.h>
 #include <hal/vm.h>
 #include <assert.h>
 #include <elf.h>
@@ -96,7 +95,7 @@ void elf_check(Elf32_Ehdr *elf) {
 
 void elf_load(elf_info_t *info, Elf32_Ehdr *elf, addr_space_t *addr_space) {
     Elf32_Phdr *phdr;
-    pfaddr_t page;
+    kern_paddr_t page;
     addr_t vpage;
     char *vptr, *vend, *vfend, *vnext;
     char *file_ptr;    
@@ -104,7 +103,6 @@ void elf_load(elf_info_t *info, Elf32_Ehdr *elf, addr_space_t *addr_space) {
     char *dest, *dest_page;
     unsigned int idx;
     unsigned long flags;
-    
     
     /* check that ELF binary is valid */
     elf_check(elf);
@@ -196,7 +194,7 @@ void elf_load(elf_info_t *info, Elf32_Ehdr *elf, addr_space_t *addr_space) {
             while(vptr < vend) {
                 /* perform mapping */
                 /** TODO: add exec flag once PAE is enabled */
-                vm_map_user(addr_space, (addr_t)vptr, EARLY_PTR_TO_PFADDR(file_ptr), VM_FLAG_READ_ONLY);
+                vm_map_user(addr_space, (addr_t)vptr, EARLY_PTR_TO_PHYS_ADDR(file_ptr), VM_FLAG_READ_ONLY);
                 
                 vptr     += PAGE_SIZE;
                 file_ptr += PAGE_SIZE;
@@ -212,7 +210,7 @@ void elf_load(elf_info_t *info, Elf32_Ehdr *elf, addr_space_t *addr_space) {
 }
 
 void elf_setup_stack(elf_info_t *info) {
-    pfaddr_t page;
+    kern_paddr_t page;
     addr_t vpage;
     
     /** TODO: check for overlap of stack with loaded segments */

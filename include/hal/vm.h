@@ -38,7 +38,6 @@
 #include <hal/asm/vm.h>
 
 #include <jinue-common/vm.h>
-#include <hal/pfaddr.h>
 #include <hal/types.h>
 
 /** convert a physical address to a virtual address before the switch to the first address space */
@@ -48,7 +47,7 @@
 #define EARLY_VIRT_TO_PHYS(x)   (((uintptr_t)(x)) - KLIMIT)
 
 /** convert a pointer to a page frame address (early mappings) */
-#define EARLY_PTR_TO_PFADDR(x)  ( (pfaddr_t)( (EARLY_VIRT_TO_PHYS(x) >> PFADDR_SHIFT) ) )
+#define EARLY_PTR_TO_PHYS_ADDR(x)  ((kern_paddr_t)EARLY_VIRT_TO_PHYS(x))
 
 #define ADDR_4GB    UINT64_C(0x100000000)
 
@@ -57,19 +56,19 @@ void vm_boot_init(const boot_info_t *boot_info, bool use_pae, cpu_data_t *cpu_da
 
 void vm_boot_postinit(const boot_info_t *boot_info, bool use_pae);
 
-void vm_map_kernel(addr_t vaddr, pfaddr_t paddr, int flags);
+void vm_map_kernel(addr_t vaddr, kern_paddr_t paddr, int flags);
 
-void vm_map_user(addr_space_t *addr_space, addr_t vaddr, pfaddr_t paddr, int flags);
+void vm_map_user(addr_space_t *addr_space, addr_t vaddr, user_paddr_t paddr, int flags);
 
 void vm_unmap_kernel(addr_t addr);
 
 void vm_unmap_user(addr_space_t *addr_space, addr_t addr);
 
-pfaddr_t vm_lookup_pfaddr(addr_space_t *addr_space, addr_t addr);
+kern_paddr_t vm_lookup_kernel_paddr(addr_t addr);
 
 void vm_change_flags(addr_space_t *addr_space, addr_t addr, int flags);
 
-void vm_map_early(addr_t vaddr, pfaddr_t paddr, int flags);
+void vm_map_early(addr_t vaddr, kern_paddr_t paddr, int flags);
 
 addr_space_t *vm_create_addr_space(addr_space_t *addr_space);
 

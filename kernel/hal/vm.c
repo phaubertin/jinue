@@ -32,7 +32,6 @@
 #include <hal/boot.h>
 #include <hal/cpu_data.h>
 #include <hal/kernel.h>
-#include <hal/pfaddr.h>
 #include <hal/vga.h>
 #include <hal/vm.h>
 #include <hal/vm_private.h>
@@ -81,7 +80,7 @@ void vm_boot_init(const boot_info_t *boot_info, bool use_pae, cpu_data_t *cpu_da
     
     /* perform 1:1 mapping of kernel image and data */
     for(addr = (addr_t)boot_info->image_start; addr < kernel_region_top; addr += PAGE_SIZE) {
-        vm_map_early((addr_t)addr, EARLY_PTR_TO_PFADDR(addr), VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
+        vm_map_early(addr, EARLY_PTR_TO_PHYS_ADDR(addr), VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
     }
     
     /* map VGA text buffer in the new address space
@@ -99,14 +98,14 @@ void vm_boot_init(const boot_info_t *boot_info, bool use_pae, cpu_data_t *cpu_da
      *    which represents the end of the virtual memory region that is used by the
      *    kernel. */
     addr_t kernel_vm_top = kernel_region_top;
-    addr = (addr_t)VGA_TEXT_VID_BASE;
+    kern_paddr_t paddr = VGA_TEXT_VID_BASE;
     
     addr_t vga_text_base = kernel_vm_top;
 
-    while(addr < (addr_t)VGA_TEXT_VID_TOP) {
-        vm_map_early(kernel_vm_top, ADDR_TO_PFADDR((uintptr_t)addr), VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
+    while(paddr < VGA_TEXT_VID_TOP) {
+        vm_map_early(kernel_vm_top, paddr, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
         kernel_vm_top   += PAGE_SIZE;
-        addr            += PAGE_SIZE;
+        paddr           += PAGE_SIZE;
     }
 
     /* remap VGA text buffer
@@ -194,15 +193,6 @@ static unsigned int page_directory_offset_of(addr_t addr) {
     }
 }
 
-static pte_t *lookup_page_directory(addr_space_t *addr_space, void *addr, bool create_as_needed) {
-    if(pgtable_format_pae) {
-        return vm_pae_lookup_page_directory(addr_space, addr, create_as_needed);
-    }
-    else {
-        return vm_x86_lookup_page_directory(addr_space, addr, create_as_needed);
-    }
-}
-
 static void set_pte_flags(pte_t *pte, int flags) {
     if(pgtable_format_pae) {
         vm_pae_set_pte_flags(pte, flags);
@@ -230,12 +220,12 @@ static void copy_pte(pte_t *dest, const pte_t *src) {
     }
 }
 
-static void set_pte(pte_t *pte, pfaddr_t paddr, int flags) {
+static void set_pte(pte_t *pte, user_paddr_t paddr, int flags) {
     if(pgtable_format_pae) {
         vm_pae_set_pte(pte, paddr, flags);
     }
     else {
-        vm_x86_set_pte(pte, paddr, flags);
+        vm_x86_set_pte(pte, (uint32_t)paddr, flags);
     }
 }
 
@@ -248,12 +238,12 @@ static void clear_pte(pte_t *pte) {
     }
 }
 
-static pfaddr_t get_pte_pfaddr(const pte_t *pte) {
+static user_paddr_t get_pte_paddr(const pte_t *pte) {
     if(pgtable_format_pae) {
-        return vm_pae_get_pte_pfaddr(pte);
+        return vm_pae_get_pte_paddr(pte);
     }
     else {
-        return vm_x86_get_pte_pfaddr(pte);
+        return vm_x86_get_pte_paddr(pte);
     }
 }
 
@@ -293,6 +283,7 @@ static pte_t *vm_lookup_page_table_entry(addr_space_t *addr_space, void *addr, b
         return get_pte_with_offset(global_page_tables, page_number_of((uintptr_t)addr - KLIMIT));
     }
     else {
+        pte_t *page_directory;
         pte_t *page_table;
         pte_t *pte;
     
@@ -300,7 +291,12 @@ static pte_t *vm_lookup_page_table_entry(addr_space_t *addr_space, void *addr, b
         assert(addr_space != NULL);
         
         /* map page directory temporarily */
-        pte_t *page_directory = lookup_page_directory(addr_space, addr, create_as_needed);
+        if(pgtable_format_pae) {
+            page_directory = vm_pae_lookup_page_directory(addr_space, addr, create_as_needed);
+        }
+        else {
+            page_directory = vm_x86_lookup_page_directory(addr_space);
+        }
         
         if(page_directory == NULL) {
             /* no page directory */
@@ -310,24 +306,24 @@ static pte_t *vm_lookup_page_table_entry(addr_space_t *addr_space, void *addr, b
         /* lookup page directory entry */
         pte_t *pde = get_pte_with_offset(page_directory, page_directory_offset_of(addr));
 
-        if( get_pte_flags(pde) & VM_FLAG_PRESENT ) {
+        if(get_pte_flags(pde) & VM_FLAG_PRESENT) {
             /* map page table */
             page_table = (pte_t *)vm_alloc(global_page_allocator);
             
-            vm_map_kernel((addr_t)page_table, get_pte_pfaddr(pde), VM_FLAG_READ_WRITE);
+            vm_map_kernel((addr_t)page_table, get_pte_paddr(pde), VM_FLAG_READ_WRITE);
             
             /* get page table entry */
             pte = get_pte_with_offset(page_table, page_table_offset_of(addr));
         }
         else {
             if(create_as_needed) {
-                pfaddr_t pf_page_table;
+                kern_paddr_t pgtable_paddr;
                 
                 /* allocate a new page table and map it */
                 page_table      = (pte_t *)vm_alloc(global_page_allocator);
-                pf_page_table   = pfalloc();
+                pgtable_paddr   = pfalloc();
             
-                vm_map_kernel((addr_t)page_table, pf_page_table, VM_FLAG_READ_WRITE);
+                vm_map_kernel((addr_t)page_table, pgtable_paddr, VM_FLAG_READ_WRITE);
                 
                 /* zero content of page table */
                 memset(page_table, 0, PAGE_SIZE);
@@ -344,7 +340,7 @@ static pte_t *vm_lookup_page_table_entry(addr_space_t *addr_space, void *addr, b
                     access_flags = 0;
                 }
                 
-                set_pte(pde, pf_page_table, access_flags | VM_FLAG_READ_WRITE | VM_FLAG_PRESENT);
+                set_pte(pde, pgtable_paddr, access_flags | VM_FLAG_READ_WRITE | VM_FLAG_PRESENT);
                 
                 /* get page table entry */
                 pte = get_pte_with_offset(page_table, page_table_offset_of(addr));
@@ -392,7 +388,7 @@ static void vm_free_page_table_entry(void *addr, pte_t *pte) {
     @param paddr address of page frame
     @param flags flags used for mapping (see VM_FLAG_x constants in vm.h)
 */
-static void vm_map(addr_space_t *addr_space, addr_t vaddr, pfaddr_t paddr, int flags) {
+static void vm_map(addr_space_t *addr_space, addr_t vaddr, user_paddr_t paddr, int flags) {
     /** ASSERTION: we assume vaddr is aligned on a page boundary */
     assert( page_offset_of(vaddr) == 0 );
     
@@ -441,11 +437,11 @@ static void vm_unmap(addr_space_t *addr_space, addr_t addr) {
     }
 }
 
-void vm_map_kernel(addr_t vaddr, pfaddr_t paddr, int flags) {
+void vm_map_kernel(addr_t vaddr, kern_paddr_t paddr, int flags) {
     vm_map(NULL, vaddr, paddr, flags | VM_FLAG_KERNEL);
 }
 
-void vm_map_user(addr_space_t *addr_space, addr_t vaddr, pfaddr_t paddr, int flags) {
+void vm_map_user(addr_space_t *addr_space, addr_t vaddr, user_paddr_t paddr, int flags) {
     vm_map(addr_space, vaddr, paddr, flags | VM_FLAG_USER);
 }
 
@@ -457,17 +453,17 @@ void vm_unmap_user(addr_space_t *addr_space, addr_t addr) {
     vm_unmap(addr_space, addr);
 }
 
-pfaddr_t vm_lookup_pfaddr(addr_space_t *addr_space, addr_t addr) {
-    pte_t *pte = vm_lookup_page_table_entry(addr_space, addr, false);
+kern_paddr_t vm_lookup_kernel_paddr(addr_t addr) {
+    pte_t *pte = vm_lookup_page_table_entry(NULL, addr, false);
     
     /** ASSERTION: there is a page table entry marked present for this address */
     assert(pte != NULL && (get_pte_flags(pte) & VM_FLAG_PRESENT));
     
-    pfaddr_t pfaddr = get_pte_pfaddr(pte);
+    kern_paddr_t paddr = (kern_paddr_t)get_pte_paddr(pte);
     
     vm_free_page_table_entry(addr, pte);
     
-    return pfaddr;
+    return paddr;
 }
 
 void vm_change_flags(addr_space_t *addr_space, addr_t addr, int flags) {
@@ -485,7 +481,7 @@ void vm_change_flags(addr_space_t *addr_space, addr_t addr, int flags) {
     invalidate_tlb(addr);
 }
 
-void vm_map_early(addr_t vaddr, pfaddr_t paddr, int flags) {
+void vm_map_early(addr_t vaddr, kern_paddr_t paddr, int flags) {
     pte_t *pte;
 
     /** ASSERTION: we are mapping in the kernel region */
@@ -498,20 +494,20 @@ void vm_map_early(addr_t vaddr, pfaddr_t paddr, int flags) {
     set_pte(pte, paddr, flags | VM_FLAG_PRESENT);
 }
 
-pfaddr_t vm_clone_page_directory(pfaddr_t template_pfaddr, unsigned int start_index) {
-    unsigned int idx;
-    pfaddr_t pfaddr;
-    pte_t *page_directory;
-    pte_t *template;
+kern_paddr_t vm_clone_page_directory(kern_paddr_t template_paddr, unsigned int start_index) {
+    unsigned int     idx;
+    kern_paddr_t     paddr;
+    pte_t           *page_directory;
+    pte_t           *template;
     
     /* allocate and map new page directory */
     page_directory = (pte_t *)vm_alloc(global_page_allocator);
-    pfaddr = pfalloc();
-    vm_map_kernel((addr_t)page_directory, pfaddr, VM_FLAG_READ_WRITE);
+    paddr = pfalloc();
+    vm_map_kernel((addr_t)page_directory, paddr, VM_FLAG_READ_WRITE);
     
     /* map page directory template */
     template = (pte_t *)vm_alloc(global_page_allocator);
-    vm_map_kernel((addr_t)template, template_pfaddr, VM_FLAG_READ_WRITE);
+    vm_map_kernel((addr_t)template, template_paddr, VM_FLAG_READ_WRITE);
 
     /* clear all entries below index start_index */
     for(idx = 0; idx < start_index; ++idx) {
@@ -529,7 +525,7 @@ pfaddr_t vm_clone_page_directory(pfaddr_t template_pfaddr, unsigned int start_in
     vm_unmap_kernel((addr_t)page_directory);
     vm_unmap_kernel((addr_t)template);
     
-    return pfaddr;
+    return paddr;
 }
 
 addr_space_t *vm_create_addr_space(addr_space_t *addr_space) {
@@ -571,7 +567,7 @@ pte_t *vm_allocate_page_directory(unsigned int start_index, bool first_pd) {
             
         set_pte(
             get_pte_with_offset(page_directory, idx),
-            EARLY_PTR_TO_PFADDR(page_table),
+            EARLY_PTR_TO_PHYS_ADDR(page_table),
             VM_FLAG_PRESENT | VM_FLAG_READ_WRITE );
         
         /* clear page table */
@@ -592,23 +588,23 @@ addr_space_t *vm_create_initial_addr_space(bool use_pae, void *boot_heap) {
     }
 }
 
-void vm_destroy_page_directory(pfaddr_t pdpfaddr, unsigned int from_index, unsigned int to_index) {
+void vm_destroy_page_directory(kern_paddr_t pgdir_paddr, unsigned int from_index, unsigned int to_index) {
     unsigned int idx;
    
     pte_t *page_directory = (pte_t *)vm_alloc(global_page_allocator);
-    vm_map_kernel((addr_t)page_directory, pdpfaddr, VM_FLAG_READ_WRITE);
+    vm_map_kernel((addr_t)page_directory, pgdir_paddr, VM_FLAG_READ_WRITE);
     
     /* be careful not to free the kernel page tables */
     for(idx = from_index; idx < to_index; ++idx) {
         pte_t *pte = get_pte_with_offset(page_directory, idx);
         
         if(get_pte_flags(pte) & VM_FLAG_PRESENT) {
-            pffree( get_pte_pfaddr(pte) );
+            pffree( get_pte_paddr(pte) );
         }
     }
     
     vm_unmap_kernel((addr_t)page_directory);
-    pffree(pdpfaddr);
+    pffree(pgdir_paddr);
 }
 
 void vm_destroy_addr_space(addr_space_t *addr_space) {

@@ -32,7 +32,6 @@
 #ifndef _JINUE_SYSCALL_H
 #define _JINUE_SYSCALL_H
 
-#include <jinue-common/pfalloc.h>
 #include <jinue-common/syscall.h>
 #include <stddef.h>
 
