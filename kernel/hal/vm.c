@@ -408,17 +408,6 @@ static void vm_unmap(addr_space_t *addr_space, addr_t addr) {
     /** ASSERTION: we assume addr is aligned on a page boundary */
     assert( page_offset_of(addr) == 0 );
     
-#ifdef NDEBUG
-    /* Performance optimization: vm_unmap is a no-op for kernel mappings when
-     * compiling non-debug.
-     * 
-     * When compiling in debug mode, the unmap operation is actually performed
-     * to help detect use-after-unmap bugs. */
-    if(is_kernel_pointer(addr)) {
-        return;
-    }
-#endif
-
     pte_t *pte = vm_lookup_page_table_entry(addr_space, addr, false);
     
     if(pte != NULL) {
