@@ -351,10 +351,19 @@ wrmsr:
     ret
 ; ------------------------------------------------------------------------------
 ; FUNCTION: get_gs_ptr
-; C PROTOTYPE: uint32_t get_gs_ptr(uint32_t *ptr);
+; C PROTOTYPE: uint32_t get_gs_ptr(uint32_t *ptr)
 ; ------------------------------------------------------------------------------
     global get_gs_ptr
 get_gs_ptr:
     mov ecx, [esp+ 4]   ; First param:  ptr
     mov eax, [gs:ecx]
+    ret
+
+; ------------------------------------------------------------------------------
+; FUNCTION: rdtsc
+; C PROTOTYPE: uint64_t rdtsc(void)
+; ------------------------------------------------------------------------------
+    global rdtsc
+rdtsc:
+    rdtsc
     ret

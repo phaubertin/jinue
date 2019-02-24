@@ -106,5 +106,7 @@ void wrmsr(msr_addr_t addr, uint64_t val);
 
 uint32_t get_gs_ptr(uint32_t *ptr);
 
+uint64_t rdtsc(void);
+
 #endif
 
