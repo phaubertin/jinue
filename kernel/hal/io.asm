@@ -100,3 +100,11 @@ outl:
     out dx, eax
     ret
 
+;------------------------------------------------------------------------
+; FUNCTION:    iodelay
+; C PROTOTYPE: void iodelay(void)
+;------------------------------------------------------------------------
+    global iodelay
+iodelay:
+    out 0x80, al
+    ret

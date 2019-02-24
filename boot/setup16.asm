@@ -30,8 +30,9 @@
 #include <jinue-common/asm/e820.h>
 #include <jinue-common/asm/vm.h>
 #include <hal/asm/boot.h>
-#include <hal/asm/mem.h>
 #include <hal/asm/descriptors.h>
+#include <hal/asm/mem.h>
+#include <hal/asm/pic8259.h>
 
 %define CODE_SEG        1
 %define DATA_SEG        2
@@ -123,11 +124,11 @@ just_here:
     
     ; Mask all external interrupts
     mov al, 0xff
-    out 0xa1, al
+    out PIC8259_SLAVE_BASE + 1, al
     call iodelay
     
-    mov al, 0xfb
-    out 0x21, al
+    mov al, 0xff & ~(1<<PIC8259_CASCADE_INPUT)
+    out PIC8259_MASTER_BASE + 1, al
     call iodelay
 
     ; Disable interrupts

@@ -38,6 +38,7 @@
 #include <hal/interrupt.h>
 #include <hal/kernel.h>
 #include <hal/mem.h>
+#include <hal/pic8259.h>
 #include <hal/thread.h>
 #include <hal/trap.h>
 #include <hal/vga.h>
@@ -219,6 +220,9 @@ void hal_init(void) {
      * done before vm_boot_init() because the page protection bits set up by
      * vm_boot_init() prevent this. */
     hal_init_idt();
+
+    /* Initialize programmable interrupt_controller. */
+    pic8259_init(IDT_PIC8259_BASE);
 
     /* Check that we have enough memory to work. */
     mem_check_memory(boot_info);

@@ -5,18 +5,18 @@
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,20 +29,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_HAL_IO_H
-#define JINUE_HAL_IO_H
+#ifndef JINUE_HAL_PIC8259_H
+#define JINUE_HAL_PIC8259_H
 
-#include <stdint.h>
+#include <hal/asm/pic8259.h>
 
-uint8_t  inb(uint16_t port);
-uint16_t inw(uint16_t port);
-uint32_t inl(uint16_t port);
+void pic8259_init(int intrvect_base);
 
-void outb(uint16_t port, uint8_t  value);
-void outw(uint16_t port, uint16_t value);
-void outl(uint16_t port, uint32_t value);
+void pic8259_mask_irq(int irq);
 
-void iodelay(void);
+void pic8259_unmask_irq(int irq);
+
+void pic8259_eoi(int irq);
 
 #endif
-

@@ -5,18 +5,18 @@
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,20 +29,40 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_HAL_IO_H
-#define JINUE_HAL_IO_H
+#ifndef JINUE_HAL_ASM_PIC8259_H
+#define JINUE_HAL_ASM_PIC8259_H
 
-#include <stdint.h>
+/** Base I/O port for the master interrupt controller */
+#define PIC8259_MASTER_BASE		0x20
 
-uint8_t  inb(uint16_t port);
-uint16_t inw(uint16_t port);
-uint32_t inl(uint16_t port);
+/** Base I/O port for the slave interrupt controller */
+#define PIC8259_SLAVE_BASE		0xa0
 
-void outb(uint16_t port, uint8_t  value);
-void outw(uint16_t port, uint16_t value);
-void outl(uint16_t port, uint32_t value);
+/** ICW1 bit 0: ICW4 needed */
+#define PIC8259_ICW1_IC4		(1<<0)
 
-void iodelay(void);
+/** ICW1 bit 1: single (1) or cascade (0) mode */
+#define PIC8259_ICW1_SNGL		(1<<1)
+
+/** ICW1 bit 3: level-triggered (1) or edge-triggered (0) interrupts  */
+#define PIC8259_ICW1_LTIM		(1<<3)
+
+/** ICW1 bit 4: a control word with this bit set indicates this is ICW1 */
+#define PIC8259_ICW1_1			(1<<4)
+
+/** ICW4 bit 0: 8086/8088 mode (1) or MCS-80/85 mode (0) */
+#define PIC8259_ICW4_UPM		(1<<0)
+
+/** ICW4 bit 1: Auto EOI*/
+#define PIC8259_ICW4_AEOI		(1<<1)
+
+/** OCW2: non-specific EOI command */
+#define PIC8259_EOI				0x20
+
+/** Slave PIC is connected to input 2 of the master. */
+#define PIC8259_CASCADE_INPUT	2
+
+/** Number of IRQs handled by both cascaded PIC8259s together */
+#define PIC8259_IRQ_COUNT		16
 
 #endif
-

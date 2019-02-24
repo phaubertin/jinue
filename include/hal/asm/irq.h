@@ -34,10 +34,9 @@
 
 #define IDT_VECTOR_COUNT        256
 
-#define IDT_FIRST_IRQ           32
+#define IDT_LAST_EXCEPTION      31
 
-#define IDT_IRQ_COUNT           (IDT_VECTOR_COUNT - IDT_FIRST_IRQ)
-
+#define IDT_PIC8259_BASE     	(IDT_LAST_EXCEPTION + 1)
 
 /** Divide Error */
 #define EXCEPTION_DIV_ZERO               0

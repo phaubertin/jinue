@@ -36,6 +36,7 @@ sources.c    = \
 	hal.c \
 	interrupt.c \
 	mem.c \
+	pic8259.c \
 	serial.c \
 	thread.c \
 	vga.c \
