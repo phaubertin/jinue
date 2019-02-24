@@ -182,7 +182,7 @@ void hal_init(void) {
     printk("Kernel size is %u bytes.\n", boot_info->kernel_size);
     
     if(boot_info->ramdisk_start == 0 || boot_info->ramdisk_size == 0) {
-        panic("No initial RAM disk loaded.\n");
+        printk("%kWarning: no initial RAM disk loaded.\n", VGA_COLOR_YELLOW);
     }
     else {
         printk("RAM disk with size %u bytes loaded at address %x.\n", boot_info->ramdisk_size, boot_info->ramdisk_start);

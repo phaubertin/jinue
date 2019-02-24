@@ -58,11 +58,13 @@ static bool ranges_overlap(uint32_t range1_start, uint32_t range1_end, uint32_t 
 void mem_check_memory(const boot_info_t *boot_info) {
     int idx;
 
+#if 0
     if((uint64_t)boot_info->ramdisk_start + boot_info->ramdisk_size > MEM_ZONE_MEM32_END) {
-        panic("Initial RAM disk loaded to high in memory.");
+        panic("Initial RAM disk loaded too high in memory.");
     }
 
     uint32_t ramdisk_end = boot_info->ramdisk_start + boot_info->ramdisk_size;
+#endif
 
     /* -------------------------------------------------------------------------
      * We consult the memory map provided by the BIOS to figure out how much
@@ -75,7 +77,9 @@ void mem_check_memory(const boot_info_t *boot_info) {
      * ---------------------------------------------------------------------- */
     uint32_t zone_dma16_top = 0;
     uint32_t zone_mem32_top = 0;
+#if 0
     bool ramdisk_ok         = false;
+#endif
 
     /** ASSERTION: Any unsigned value less than MEM_ZONE_MEM32_END can be stored in 32 bits. */
     assert(MEM_ZONE_MEM32_END < (uint64_t)4 * GB);
@@ -118,9 +122,11 @@ void mem_check_memory(const boot_info_t *boot_info) {
          * favor of it being in available RAM (one more check below). Unlike the
          * above, the entry must cover the initial RAM disk image completely,
          * not just the start. */
+#if 0
         if(entry->addr <= boot_info->ramdisk_start && entry_end >= ramdisk_end) {
             ramdisk_ok = true;
         }
+#endif
     }
 
     /* -------------------------------------------------------------------------
@@ -165,17 +171,21 @@ void mem_check_memory(const boot_info_t *boot_info) {
         }
 
         /* Check for overlap with the initial RAM disk. */
+#if 0
         if(ranges_overlap(boot_info->ramdisk_start, ramdisk_end, entry->addr, entry_end)) {
             ramdisk_ok = false;
         }
+#endif
     }
 
     /* -------------------------------------------------------------------------
      * Now that we are done, let's look at the results.
      * ---------------------------------------------------------------------- */
+#if 0
     if(! ramdisk_ok) {
         panic("Initial RAM disk was loaded in reserved memory.");
     }
+#endif
 
     if(zone_dma16_top < EARLY_VIRT_TO_PHYS(kernel_region_top)) {
         panic("Kernel image was loaded in reserved memory.");
