@@ -33,6 +33,7 @@
 #include <hal/boot.h>
 #include <hal/x86.h>
 #include <assert.h>
+#include <panic.h>
 #include <pfalloc.h>
 #include <slab.h>
 #include <string.h>
@@ -281,20 +282,40 @@ addr_space_t *vm_pae_create_initial_addr_space(void *boot_heap) {
              * time. */
             vm_pae_clear_pte(pdpte);
         }
-        else if(idx == pdpt_offset_of((addr_t)KLIMIT)) {
-            /* Allocate the first page directory and allocate page tables starting
-             * at KLIMIT. Specify that this is the first page directory. */
-            pte_t *page_directory = vm_allocate_page_directory(
-                    vm_pae_page_directory_offset_of((addr_t)KLIMIT), true);
-            
-            vm_pae_set_pte(pdpte, EARLY_PTR_TO_PHYS_ADDR(page_directory), VM_FLAG_PRESENT);
-        }
         else {
-            /* allocate page directory and allocate all its page tables */
-            pte_t *page_directory = vm_allocate_page_directory(
-                    page_table_entries, false);
+            unsigned int end_index;
+
+            if(idx == pdpt_offset_of((addr_t)KERNEL_PREALLOC_LIMIT)) {
+                end_index = vm_pae_page_directory_offset_of((addr_t)KERNEL_PREALLOC_LIMIT);
+            }
+            else {
+                end_index = page_table_entries;
+            }
             
-            vm_pae_set_pte(pdpte, EARLY_PTR_TO_PHYS_ADDR(page_directory), VM_FLAG_PRESENT);
+            if(idx == pdpt_offset_of((addr_t)KLIMIT)) {
+                /* Allocate the first page directory and allocate page tables starting
+                 * at KLIMIT. Specify that this is the first page directory. */
+                pte_t *page_directory = vm_allocate_page_directory(
+                        vm_pae_page_directory_offset_of((addr_t)KLIMIT), end_index, true);
+
+                vm_pae_set_pte(pdpte, EARLY_PTR_TO_PHYS_ADDR(page_directory), VM_FLAG_PRESENT);
+            }
+            else {
+                /* TODO This (currently unused) branch is incorrect.
+                 *
+                 * Rework is needed if this implementation is kept (it probably won't):
+                 *  1) The page directory should only be allocated if the address space
+                 *     region it describes starts before KERNEL_PREALLOC_LIMIT.
+                 *  2) The page directory is allocated after the page tables from the
+                 *     preceding page directory, which breaks the assumption that
+                 *     pre-allocated page tables are contiguous. */
+                panic("Incorrect implementation in vm_pae_create_initial_addr_space().");
+#if 0
+                pte_t *page_directory = vm_allocate_page_directory(0, end_index, false);
+
+                vm_pae_set_pte(pdpte, EARLY_PTR_TO_PHYS_ADDR(page_directory), VM_FLAG_PRESENT);
+#endif
+            }
         }
         
         /* copy entry to old page directory */

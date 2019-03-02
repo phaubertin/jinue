@@ -36,26 +36,32 @@
 
 
 /** number of bits in virtual address for offset inside page */
-#define PAGE_BITS           12
+#define PAGE_BITS               12
 
 /** size of page */
-#define PAGE_SIZE           (1<<PAGE_BITS) /* 4096 */
+#define PAGE_SIZE               (1<<PAGE_BITS) /* 4096 */
 
 /** bit mask for offset in page */
-#define PAGE_MASK           (PAGE_SIZE - 1)
+#define PAGE_MASK               (PAGE_SIZE - 1)
 
 /** The virtual address range starting at KLIMIT is reserved by the kernel. The
     region above KLIMIT has the same mapping in all address spaces.
     KLIMIT must be aligned on a 4MB boundary. */
-#define KLIMIT              0xe0000000
+#define KLIMIT                  0xe0000000
+
+/** limit of the kernel image region */
+#define KERNEL_IMAGE_END        (KLIMIT + 16 * MB)
+
+/** limit up to which page tables are preallocated during kernel initialization */
+#define KERNEL_PREALLOC_LIMIT   (KLIMIT + 32 * MB)
 
 /** stack base address (stack top) */
-#define STACK_BASE          KLIMIT
+#define STACK_BASE              KLIMIT
 
 /** initial stack size */
-#define STACK_SIZE          (8 * PAGE_SIZE)
+#define STACK_SIZE              (8 * PAGE_SIZE)
 
 /** initial stack lower address */
-#define STACK_START         (STACK_BASE - STACK_SIZE)
+#define STACK_START             (STACK_BASE - STACK_SIZE)
 
 #endif

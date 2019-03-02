@@ -55,9 +55,10 @@ addr_space_t *vm_x86_create_addr_space(addr_space_t *addr_space) {
 }
 
 addr_space_t *vm_x86_create_initial_addr_space(void) {
-    unsigned int klimit_pd_index = vm_x86_page_directory_offset_of((addr_t)KLIMIT);
-
-    pte_t *page_directory = vm_allocate_page_directory(klimit_pd_index, true);
+    pte_t *page_directory = vm_allocate_page_directory(
+            vm_x86_page_directory_offset_of((addr_t)KLIMIT),
+            vm_x86_page_directory_offset_of((addr_t)KERNEL_PREALLOC_LIMIT),
+            true);
 
     initial_addr_space.top_level.pd = EARLY_PTR_TO_PHYS_ADDR(page_directory);
     initial_addr_space.cr3          = EARLY_VIRT_TO_PHYS((uintptr_t)page_directory);
