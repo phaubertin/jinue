@@ -45,9 +45,9 @@
 #define PAGE_MASK               (PAGE_SIZE - 1)
 
 /** The virtual address range starting at KLIMIT is reserved by the kernel. The
-    region above KLIMIT has the same mapping in all address spaces.
-    KLIMIT must be aligned on a 4MB boundary. */
-#define KLIMIT                  0xe0000000
+    region above KLIMIT has the same mapping in all address spaces. KLIMIT must
+    be aligned on a page directory boundary in PAE mode. */
+#define KLIMIT                  0xc0000000
 
 /** limit of the kernel image region */
 #define KERNEL_IMAGE_END        (KLIMIT + 16 * MB)

@@ -59,7 +59,7 @@ static inline bool is_user_pointer(const void *addr) {
 
 /** Check whether a pointer is in the fast path range for map/unmap operations */
 static inline bool is_fast_map_pointer(const void *addr) {
-    return is_kernel_pointer(addr);
+    return is_kernel_pointer(addr) && (uintptr_t)addr < KERNEL_PREALLOC_LIMIT;
 }
 
 /** Maximum size of user buffer starting at specified address */

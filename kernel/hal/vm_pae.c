@@ -72,11 +72,6 @@ void vm_pae_boot_init(void) {
     page_table_entries = (size_t)PAGE_TABLE_ENTRIES;
 }
 
-void vm_pae_enable(void) {
-    uint32_t temp = get_cr4();
-    set_cr4(temp | X86_CR4_PAE);
-}
-
 /** 
     Lookup and map the page directory for a specified address and address space.
     
@@ -170,17 +165,6 @@ void vm_pae_create_pdpt_cache(void) {
             SLAB_DEFAULTS);
 }
 
-/** Return whether the page directory at the specified PDPT index is split between
- *  user space and kernel space
- * 
- * @param pdpt_index Page Directory Pointer Table (PDPT) index of page directory */
-static inline bool is_split_page_directory(unsigned int pdpt_index) {
-    return pdpt_index == pdpt_offset_of((addr_t)KLIMIT)
-            /* If KLIMIT is the first entry of this page directory, then the page
-             * directory describes only kernel space. */
-            && vm_pae_page_directory_offset_of((addr_t)KLIMIT) > 0;
-}
-
 addr_space_t *vm_pae_create_addr_space(addr_space_t *addr_space) {
     unsigned int idx;
     pte_t *pdpte;
@@ -206,16 +190,6 @@ addr_space_t *vm_pae_create_addr_space(addr_space_t *addr_space) {
              * time. */
              vm_pae_clear_pte(pdpte);
         }
-        else if(is_split_page_directory(idx)) {
-            /* KLIMIT splits the address range described by this PDPT entry
-             * between user space and kernel space: create a page directory and
-             * clone entries for KLIMIT and above from the template. */
-            kern_paddr_t paddr = vm_clone_page_directory(
-                    vm_pae_get_pte_paddr(&template_pdpt->pd[idx]),
-                    vm_pae_page_directory_offset_of((addr_t)KLIMIT));
-            
-            vm_pae_set_pte(pdpte, paddr, VM_FLAG_PRESENT);
-        }
         else {
             /* This page directory describes an address range entirely above
              * KLIMIT: share the template's page directory. */
@@ -237,46 +211,47 @@ addr_space_t *vm_pae_create_addr_space(addr_space_t *addr_space) {
 
 addr_space_t *vm_pae_create_initial_addr_space(void *boot_heap) {
     unsigned int idx;
-    pte_t *pdpte;
     
-    /* The 32-bit setup code (see boot/setup32.asm) enables paging before
-     * passing control to the kernel. This is done to allow the kernel to run
-     * at an address that is different from the one at which it is loaded, but
-     * it creates bootstrapping issues when enabling PAE.
-     * 
-     * The problem we are trying to get around is the following: if we enable
-     * PAE before setting the address of the PAE paging structures in CR3, the
-     * CPU will try to load the PDPT registers from old address in CR3, which is
-     * the address of the page directory set up by the 32-bit setup code. If,
-     * on the other hand, we load the address of the PAE paging structures in
-     * CR3 before enabling PAE, the CPU will try to use the PDPT as a page
-     * directory for standard 32-bit (i.e. non-PAE) address translation.
-     * 
-     * The solution that is implemented here is to copy the initial PDPT at the
-     * start of the page directory set up by the 32-bit setup code. By doing
-     * this, the address of that page directory becomes valid both as a non-PAE
-     * page directory and as a PDPT, which allows us to enable PAE before loading
-     * a new address in CR3. Of course, for this to work, the kernel must not
-     * access memory under 0x2000000 (8 page directory entries * 4MB/pde = 32MB).
-     * 
-     * We copy the intial PDPT to the page directory set up by the 32-bit setup
-     * code instead of simply allocating it there permanently because we want to
-     * be able to reclaim that page after CR3 has been reloaded. */
-    
-    /* Allocate intial PDPT
-     * 
-     * PDPT must be 32-byte aligned */
+    /* Allocate initial PDPT. PDPT must be 32-byte aligned. */
     initial_pdpt    = (pdpt_t *)ALIGN_END(boot_heap, 32);
     boot_heap       = initial_pdpt + 1;
     
-    /* The copy is at the start of the 32-bit setup code-allocated page directory */
-    const boot_info_t *boot_info = get_boot_info();
-    pdpt_t *pdpt_copy = (pdpt_t *)boot_info->page_directory;
-    
     for(idx = 0; idx < PDPT_ENTRIES; ++idx) {
-        pdpte = &initial_pdpt->pd[idx];
+        pte_t *pdpte = &initial_pdpt->pd[idx];
         
-        if(idx < pdpt_offset_of((addr_t)KLIMIT)) {
+        if(idx == 0) {
+            int idy;
+
+            /* The 32-bit setup code sets up paging so the first four MB of
+             * physical memory is mapped aliased at addresses 0 and KLIMIT.
+             * Addresses in the low alias are the same whether paging is
+             * enabled or not.
+             *
+             * The low alias is needed because we need to disable paging while
+             * we enable PAE. For this reason, we need to also set up a low
+             * alias in the initial address space. We will get rid of this low
+             * alias at a later step of initialization once PAE is enabled (see
+             * vm_pae_unmap_low_alias()).
+             *
+             * We only map the first 2MB of physical memory, which is all that
+             * a page table gives us in PAE. This is OK because the kernel fits
+             * well within this limit. */
+            pte_t *page_table       = (pte_t *)pfalloc_early();
+            pte_t *page_directory   = (pte_t *)pfalloc_early();
+
+            for(idy = 0; idy < page_table_entries; ++idy) {
+                vm_pae_clear_pte(vm_pae_get_pte_with_offset(page_directory, idy));
+
+                vm_pae_set_pte(
+                        vm_pae_get_pte_with_offset(page_table, idy),
+                        idy * PAGE_SIZE,
+                        VM_FLAG_PRESENT);
+            }
+
+            vm_pae_set_pte(page_directory, EARLY_PTR_TO_PHYS_ADDR(page_table), VM_FLAG_PRESENT);
+            vm_pae_set_pte(pdpte, EARLY_PTR_TO_PHYS_ADDR(page_directory), VM_FLAG_PRESENT);
+        }
+        else if(idx < pdpt_offset_of((addr_t)KLIMIT)) {
             /* This PDPT entry describes an address range entirely under KLIMIT
              * so it is all user space: do not create a page directory at this
              * time. */
@@ -317,9 +292,6 @@ addr_space_t *vm_pae_create_initial_addr_space(void *boot_heap) {
 #endif
             }
         }
-        
-        /* copy entry to old page directory */
-        vm_pae_copy_pte(&pdpt_copy->pd[idx], pdpte);
     }
     
     initial_addr_space.top_level.pdpt   = initial_pdpt;
@@ -348,22 +320,6 @@ void vm_pae_destroy_addr_space(addr_space_t *addr_space) {
                         page_table_entries);
             }
         }
-        else if(is_split_page_directory(idx)) {
-            /* KLIMIT splits the address range described by this PDPT entry
-             * between user space and kernel space: free only the user space page
-             * tables (i.e. for the address range up to KLIMIT), then free the
-             * page directory.
-             * 
-             * The page tables for KLIMIT and above must not be freed because
-             * they describe the kernel address range and are shared by all
-             * address spaces. */
-            if(pdpte.entry & VM_FLAG_PRESENT) {
-                vm_destroy_page_directory(
-                        vm_pae_get_pte_paddr(&pdpte),
-                        0,
-                        vm_pae_page_directory_offset_of((addr_t)KLIMIT));
-            }
-        }
         else {
             /* This page directory describes an address range entirely above
              * KLIMIT: do nothing.
@@ -374,4 +330,14 @@ void vm_pae_destroy_addr_space(addr_space_t *addr_space) {
     }
     
     slab_cache_free(pdpt);
+}
+
+void vm_pae_unmap_low_alias(addr_space_t *addr_space) {
+    /* Enabling PAE requires disabling paging temporarily, which in turn requires
+     * an alias of the kernel image region at address 0 to match its physical
+     * address. This function gets rid of this alias once PAE is enabled.
+     *
+     * There is no need for TLB invalidation because the caller reloads CR3 just
+     * after calling this function. */
+    vm_pae_clear_pte(&addr_space->top_level.pdpt->pd[0]);
 }

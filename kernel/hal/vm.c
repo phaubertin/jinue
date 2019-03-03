@@ -115,22 +115,20 @@ void vm_boot_init(const boot_info_t *boot_info, bool use_pae, cpu_data_t *cpu_da
     if(use_pae) {
         /* If we are enabling PAE, this is where the switch to the new page
          * tables actually happens instead of at the call to vm_switch_addr_space()
-         * as would be expected.
-         * 
-         * From Intel 64 and IA-32 Architectures Software Developer's Manual
-         * Volume 3: System Programming Guide, section 4.4.1 "PDPTE Registers":
-         * 
-         *  " The logical processor loads [the PDPTE] registers from the PDPTEs
-         *    in memory as part of certain operations:
-         *      * If PAE paging would be in use following an execution of MOV to
-         *        CR0 or MOV to CR4 (see Section 4.1.1) and the instruction is
-         *        modifying any of (...) CR4.PAE, (...); then the PDPTEs are
-         *        loaded from the address in CR3. "
-         * 
-         * There are bootstrapping issues when enabling PAE while paging is enabled.
-         * See the comment at the top of the vm_pae_create_initial_addr_space()
-         * function in vm_pae.c for more detail. */
-        vm_pae_enable();
+         * as would be expected. */
+        enable_pae(addr_space->cr3);
+
+        /* Now that PAE has been enabled, there is no need to ever disable paging
+         * again, so the low alias for the first 2MB of RAM can be unmapped. This
+         * is only relevant for PAE because, for the non-PAE case, this low alias
+         * is just never set up in the initial address space in the first place,
+         * which means there is no longer a low alias once vm_switch_addr_space()
+         * is called below.
+         *
+         * This call to vm_pae_unmap_low_alias() does not do any TLB invalidation
+         * but this is fine because the call to vm_switch_addr_space() below
+         * reloads CR3.*/
+        vm_pae_unmap_low_alias(addr_space);
     }
 
     /* switch to new address space */

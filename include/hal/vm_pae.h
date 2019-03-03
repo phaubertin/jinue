@@ -40,8 +40,6 @@
 
 void vm_pae_boot_init(void);
 
-void vm_pae_enable(void);
-
 pte_t *vm_pae_lookup_page_directory(addr_space_t *addr_space, void *addr, bool create_as_needed);
 
 unsigned int vm_pae_page_table_offset_of(addr_t addr);
@@ -69,6 +67,8 @@ addr_space_t *vm_pae_create_initial_addr_space(void *boot_heap);
 void vm_pae_destroy_addr_space(addr_space_t *addr_space);
 
 void vm_pae_create_pdpt_cache(void);
+
+void vm_pae_unmap_low_alias(addr_space_t *addr_space);
 
 #endif
 

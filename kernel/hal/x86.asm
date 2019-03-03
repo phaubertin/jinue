@@ -27,6 +27,9 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#include <jinue-common/asm/vm.h>
+#include <hal/asm/x86.h>
+
     bits 32
 
 ; ------------------------------------------------------------------------------
@@ -324,4 +327,37 @@ get_gs_ptr:
     global rdtsc
 rdtsc:
     rdtsc
+    ret
+
+; ------------------------------------------------------------------------------
+; FUNCTION: enable_pae
+; C PROTOTYPE: void enable_pae(uint32_t cr3_value)
+; ------------------------------------------------------------------------------
+    global enable_pae
+enable_pae:
+    mov eax, [esp+ 4]   ; First argument: pdpt
+
+    ; Jump to low-address alias
+    jmp just_here - KLIMIT
+just_here:
+
+    ; Disable paging.
+    mov ecx, cr0
+    and ecx, ~X86_CR0_PG
+    mov cr0, ecx
+
+    ; Load CR3 with address of PDPT.
+    mov cr3, eax
+
+    ; Enable PAE.
+    mov eax, cr4
+    or eax, X86_CR4_PAE
+    mov cr4, eax
+
+    ; Re-enabled paging.
+    or ecx, X86_CR0_PG
+    mov cr0, ecx
+
+    ; No need to jump back to high alias. The ret instruction will take care
+    ; of it because this is where the return address is.
     ret

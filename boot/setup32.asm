@@ -154,10 +154,10 @@ skip_cmdline_copy:
     add eax, PAGE_SIZE
     mov dword [_boot_end], eax
     
-    ; initialize initial page table for a 1:1 mapping of the first 4MB
+    ; Initialize initial page table for a 1:1 mapping of the first 2MB.
     mov eax, 0 | VM_FLAG_READ_WRITE | VM_FLAG_PRESENT   ; start address is 0, flags
     mov edi, dword [_page_table]                        ; write address
-    mov ecx, (PAGE_SIZE / 4)                            ; number of entries
+    mov ecx, 512                                        ; number of entries
 
 init_page_table:
     ; store eax in current page table entry pointed to by edi, then add 4 to edi
@@ -170,12 +170,17 @@ init_page_table:
     ; decrement ecx, we are done when it reaches 0, otherwise loop
     loop init_page_table
 
+    ; Clear remaining entries.
+    xor eax, eax                        ; write value: 0
+    mov ecx, 512                        ; write 512 entries (remaining half)
+
+    rep stosd
+
     ; clear initial page directory
     mov edi, dword [_page_directory]    ; write address
-    xor eax, eax                        ; write value: 0
-    mov cx, PAGE_SIZE                   ; write PAGE_SIZE bytes
+    mov ecx, 1024                       ; write 1024 entries (full table)
     
-    rep stosb
+    rep stosd
     
     ; add entry for the page table that maps the first 4MB
     mov edi, dword [_page_directory]
@@ -210,18 +215,10 @@ init_page_table:
     ; adjust stack pointer to point in kernel alias
     add esp, KLIMIT
 
-    ; jump to kernel alias to allow the low address alias to be removed
+    ; jump to kernel alias
     jmp just_right_here + KLIMIT
 just_right_here:
-    
-    ; remove the low address alias
-    mov eax, dword [_page_directory]
-    mov dword [eax], 0              ; clear first page table entry
-    
-    ; reload CR3 to invalidate all TLB entries for the low address alias
-    sub eax, KLIMIT     ; we need the physical address
-    mov cr3, eax
-    
+
     ; null-terminate call stack (useful for debugging)
     xor eax, eax
     push eax

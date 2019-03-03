@@ -33,7 +33,6 @@
 #define JINUE_HAL_X86_H
 
 #include <hal/asm/x86.h>
-
 #include <hal/types.h>
 
 typedef struct {
@@ -99,6 +98,8 @@ void wrmsr(msr_addr_t addr, uint64_t val);
 uint32_t get_gs_ptr(uint32_t *ptr);
 
 uint64_t rdtsc(void);
+
+void enable_pae(uint32_t cr3_value);
 
 #endif
 
