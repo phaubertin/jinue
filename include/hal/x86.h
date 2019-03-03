@@ -64,8 +64,6 @@ uint32_t get_esp(void);
 
 uint32_t get_cr0(void);
 
-uint32_t get_cr1(void);
-
 uint32_t get_cr2(void);
 
 uint32_t get_cr3(void);
@@ -73,10 +71,6 @@ uint32_t get_cr3(void);
 uint32_t get_cr4(void);
 
 void set_cr0(uint32_t val);
-
-void set_cr1(uint32_t val);
-
-void set_cr2(uint32_t val);
 
 void set_cr3(uint32_t val);
 
@@ -97,8 +91,6 @@ void set_fs(uint32_t val);
 void set_gs(uint32_t val);
 
 void set_ss(uint32_t val);
-
-void set_data_segments(uint32_t val);
 
 uint64_t rdmsr(msr_addr_t addr);
 

@@ -122,10 +122,16 @@ static void hal_init_descriptors(cpu_data_t *cpu_data, void *boot_heap) {
     lgdt(pseudo);
 
     /* load new segment descriptors */
-    set_cs( SEG_SELECTOR(GDT_KERNEL_CODE, RPL_KERNEL) );
-    set_ss( SEG_SELECTOR(GDT_KERNEL_DATA, RPL_KERNEL) );
-    set_data_segments( SEG_SELECTOR(GDT_KERNEL_DATA, RPL_KERNEL) );
-    set_gs( SEG_SELECTOR(GDT_PER_CPU_DATA, RPL_KERNEL) );
+    uint32_t code_selector      = SEG_SELECTOR(GDT_KERNEL_CODE,  RPL_KERNEL);
+    uint32_t data_selector      = SEG_SELECTOR(GDT_KERNEL_DATA,  RPL_KERNEL);
+    uint32_t per_cpu_selector   = SEG_SELECTOR(GDT_PER_CPU_DATA, RPL_KERNEL);
+
+    set_cs(code_selector);
+    set_ss(data_selector);
+    set_ds(data_selector);
+    set_es(data_selector);
+    set_fs(data_selector);
+    set_gs(per_cpu_selector);
 
     /* load TSS segment into task register */
     ltr( SEG_SELECTOR(GDT_TSS, RPL_KERNEL) );

@@ -142,15 +142,6 @@ get_cr0:
     ret
 
 ; ------------------------------------------------------------------------------
-; FUNCTION: get_cr1
-; C PROTOTYPE: uint32_t get_cr1(void)
-; ------------------------------------------------------------------------------
-    global get_cr1
-get_cr1:
-    mov eax, cr1
-    ret
-
-; ------------------------------------------------------------------------------
 ; FUNCTION: get_cr2
 ; C PROTOTYPE: uint32_t get_cr2(void)
 ; ------------------------------------------------------------------------------
@@ -188,26 +179,6 @@ set_cr0:
     
     jmp .do_ret         ; jump to flush the instruction queue
 .do_ret:
-    ret
-
-; ------------------------------------------------------------------------------
-; FUNCTION: set_cr1
-; C PROTOTYPE: void set_cr1(uint32_t val)
-; ------------------------------------------------------------------------------
-    global set_cr1
-set_cr1:
-    mov eax, [esp+4]    ; First param: val
-    mov cr1, eax
-    ret
-
-; ------------------------------------------------------------------------------
-; FUNCTION: set_cr2
-; C PROTOTYPE: void set_cr2(uint32_t val)
-; ------------------------------------------------------------------------------
-    global set_cr2
-set_cr2:
-    mov eax, [esp+4]    ; First param: val
-    mov cr2, eax
     ret
 
 ; ------------------------------------------------------------------------------
@@ -311,19 +282,6 @@ set_gs:
 set_ss:
     mov eax, [esp+4]    ; First param: val
     mov ss, eax
-    ret
-
-; ------------------------------------------------------------------------------
-; FUNCTION: set_data_segments
-; C PROTOTYPE: void set_data_segments(uint32_t val)
-; ------------------------------------------------------------------------------
-    global set_data_segments
-set_data_segments:
-    mov eax, [esp+4]    ; First param: val
-    mov ds, eax
-    mov es, eax
-    mov fs, eax
-    mov gs, eax
     ret
 
 ; ------------------------------------------------------------------------------
