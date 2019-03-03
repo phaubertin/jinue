@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_HAL_FPOINTER_H
-#define JINUE_HAL_FPOINTER_H
+#ifndef JINUE_HAL_ABI_H
+#define JINUE_HAL_ABI_H
 
 #include <hal/types.h>
 

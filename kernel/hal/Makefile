@@ -44,7 +44,7 @@ sources.c    = \
 	vm_pae.c \
 	vm_x86.c
 sources.nasm	 = \
-	frame_pointer.asm \
+	abi.asm \
 	io.asm \
 	startup.asm \
 	trap.asm \

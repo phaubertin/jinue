@@ -30,8 +30,8 @@
  */
 
 #include <jinue-common/types.h>
+#include <hal/abi.h>
 #include <hal/boot.h>
-#include <hal/frame_pointer.h>
 #include <hal/kernel.h>
 #include <elf.h>
 #include <stddef.h>
