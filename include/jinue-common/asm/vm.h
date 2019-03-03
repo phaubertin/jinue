@@ -49,6 +49,9 @@
     be aligned on a page directory boundary in PAE mode. */
 #define KLIMIT                  0xc0000000
 
+/** limit of initial mapping performed by the 32-bit setup code */
+#define KERNEL_EARLY_LIMIT      (KLIMIT + 2 * MB)
+
 /** limit of the kernel image region */
 #define KERNEL_IMAGE_END        (KLIMIT + 16 * MB)
 

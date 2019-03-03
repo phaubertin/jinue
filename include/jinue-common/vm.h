@@ -62,6 +62,11 @@ static inline bool is_fast_map_pointer(const void *addr) {
     return is_kernel_pointer(addr) && (uintptr_t)addr < KERNEL_PREALLOC_LIMIT;
 }
 
+/** Check whether a pointer is within the range mapped by the 32-bit setup code */
+static inline bool is_early_pointer(const void *addr) {
+    return is_kernel_pointer(addr) && (uintptr_t)addr < KERNEL_EARLY_LIMIT;
+}
+
 /** Maximum size of user buffer starting at specified address */
 static inline uintptr_t user_pointer_max_size(const void *addr) {
     return (uintptr_t)0 - (uintptr_t)addr;

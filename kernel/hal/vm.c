@@ -464,8 +464,8 @@ void vm_change_flags(addr_space_t *addr_space, addr_t addr, int flags) {
 void vm_map_early(addr_t vaddr, kern_paddr_t paddr, int flags) {
     pte_t *pte;
 
-    /** ASSERTION: we are mapping in the kernel region */
-    assert( is_fast_map_pointer(vaddr) );
+    /** ASSERTION: we are within the mapping set up by the 32-bit setup code */
+    assert( is_early_pointer(vaddr) );
     
     /** ASSERTION: we assume vaddr is aligned on a page boundary */
     assert( page_offset_of(vaddr) == 0 );
