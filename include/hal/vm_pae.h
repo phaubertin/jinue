@@ -62,7 +62,7 @@ void vm_pae_copy_pte(pte_t *dest, const pte_t *src);
 
 addr_space_t *vm_pae_create_addr_space(addr_space_t *addr_space);
 
-addr_space_t *vm_pae_create_initial_addr_space(void *boot_heap);
+addr_space_t *vm_pae_create_initial_addr_space(boot_heap_t *boot_heap);
 
 void vm_pae_destroy_addr_space(addr_space_t *addr_space);
 

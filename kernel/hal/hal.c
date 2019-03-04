@@ -91,24 +91,14 @@ static void hal_select_syscall_method(void) {
     }
 }
 
-static pseudo_descriptor_t *hal_allocate_pseudo_descriptor(void *boot_heap) {
-    pseudo_descriptor_t *pseudo;
-
-    boot_heap = ALIGN_END(boot_heap, sizeof(pseudo_descriptor_t));
-
-    pseudo    = (pseudo_descriptor_t *)boot_heap;
-    boot_heap = (pseudo_descriptor_t *)boot_heap + 1;
-
-    return pseudo;
-}
-
-static void hal_init_descriptors(cpu_data_t *cpu_data, void *boot_heap) {
+static void hal_init_descriptors(cpu_data_t *cpu_data, boot_heap_t *boot_heap) {
     /* Pseudo-descriptor allocation is temporary for the duration of this
      * function only. Remember heap pointer on entry so we can free the
      * pseudo-allocator when we are done. */
-    addr_t boot_heap_on_entry = boot_heap;
+    boot_heap_push(boot_heap);
 
-    pseudo_descriptor_t *pseudo = hal_allocate_pseudo_descriptor(boot_heap);
+    pseudo_descriptor_t *pseudo =
+            boot_heap_alloc(boot_heap, pseudo_descriptor_t, sizeof(pseudo_descriptor_t));
 
     /* load interrupt descriptor table */
     pseudo->addr  = (addr_t)idt;
@@ -137,7 +127,7 @@ static void hal_init_descriptors(cpu_data_t *cpu_data, void *boot_heap) {
     ltr( SEG_SELECTOR(GDT_TSS, RPL_KERNEL) );
 
     /* Free pseudo-descriptor. */
-    boot_heap = boot_heap_on_entry;
+    boot_heap_pop(boot_heap);
 }
 
 static void hal_init_idt(void) {
@@ -198,7 +188,8 @@ void hal_init(void) {
     printk("    %s\n", boot_info->cmdline);
 
     /* This must be done before any boot heap allocation. */
-    void *boot_heap = boot_info->boot_heap;
+    boot_heap_t boot_heap;
+    boot_heap_init(&boot_heap, boot_info->boot_heap);
 
     /* This must be done before any call to pfalloc_early(). */
     kernel_region_top = boot_info->boot_end;
@@ -212,10 +203,7 @@ void hal_init(void) {
      * memory block does not cross a page boundary. */
     assert(sizeof(cpu_data_t) < CPU_DATA_ALIGNMENT);
     
-    boot_heap = ALIGN_END(boot_heap, CPU_DATA_ALIGNMENT);
-    
-    cpu_data  = boot_heap;
-    boot_heap = cpu_data + 1;
+    cpu_data = boot_heap_alloc(&boot_heap, cpu_data_t, CPU_DATA_ALIGNMENT);
     
     /* initialize per-CPU data */
     cpu_init_data(cpu_data);
@@ -245,10 +233,10 @@ void hal_init(void) {
      *
      * below this point, it is no longer safe to call pfalloc_early() */
     bool use_pae = cpu_has_feature(CPU_FEATURE_PAE);
-    vm_boot_init(boot_info, use_pae, cpu_data, boot_heap);
+    vm_boot_init(boot_info, use_pae, cpu_data, &boot_heap);
     
     /* Initialize GDT and TSS */
-    hal_init_descriptors(cpu_data, boot_heap);
+    hal_init_descriptors(cpu_data, &boot_heap);
 
     /* Initialize virtual memory allocator and VM management caches. */
     vm_boot_postinit(boot_info, use_pae);

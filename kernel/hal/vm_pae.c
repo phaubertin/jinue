@@ -209,12 +209,11 @@ addr_space_t *vm_pae_create_addr_space(addr_space_t *addr_space) {
     return addr_space;
 }
 
-addr_space_t *vm_pae_create_initial_addr_space(void *boot_heap) {
+addr_space_t *vm_pae_create_initial_addr_space(boot_heap_t *boot_heap) {
     unsigned int idx;
     
     /* Allocate initial PDPT. PDPT must be 32-byte aligned. */
-    initial_pdpt    = (pdpt_t *)ALIGN_END(boot_heap, 32);
-    boot_heap       = initial_pdpt + 1;
+    initial_pdpt = boot_heap_alloc(boot_heap, pdpt_t, 32);
     
     for(idx = 0; idx < PDPT_ENTRIES; ++idx) {
         pte_t *pdpte = &initial_pdpt->pd[idx];

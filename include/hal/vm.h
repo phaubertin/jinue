@@ -52,7 +52,7 @@
 #define ADDR_4GB    UINT64_C(0x100000000)
 
 
-void vm_boot_init(const boot_info_t *boot_info, bool use_pae, cpu_data_t *cpu_data, void *boot_heap);
+void vm_boot_init(const boot_info_t *boot_info, bool use_pae, cpu_data_t *cpu_data, boot_heap_t *boot_heap);
 
 void vm_boot_postinit(const boot_info_t *boot_info, bool use_pae);
 
@@ -72,7 +72,7 @@ void vm_map_early(addr_t vaddr, kern_paddr_t paddr, int flags);
 
 addr_space_t *vm_create_addr_space(addr_space_t *addr_space);
 
-addr_space_t *vm_create_initial_addr_space(bool use_pae, void *boot_heap);
+addr_space_t *vm_create_initial_addr_space(bool use_pae, boot_heap_t *boot_heap);
 
 void vm_destroy_addr_space(addr_space_t *addr_space);
 

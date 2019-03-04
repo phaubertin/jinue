@@ -53,7 +53,7 @@ size_t page_table_entries;
 
 static bool pgtable_format_pae;
 
-void vm_boot_init(const boot_info_t *boot_info, bool use_pae, cpu_data_t *cpu_data, void *boot_heap) {
+void vm_boot_init(const boot_info_t *boot_info, bool use_pae, cpu_data_t *cpu_data, boot_heap_t *boot_heap) {
     addr_t           addr;
     addr_space_t    *addr_space;
     
@@ -559,7 +559,7 @@ pte_t *vm_allocate_page_directory(unsigned int start_index, unsigned int end_ind
     return page_directory;
 }
 
-addr_space_t *vm_create_initial_addr_space(bool use_pae, void *boot_heap) {
+addr_space_t *vm_create_initial_addr_space(bool use_pae, boot_heap_t *boot_heap) {
     if(use_pae) {
         return vm_pae_create_initial_addr_space(boot_heap);
     }
