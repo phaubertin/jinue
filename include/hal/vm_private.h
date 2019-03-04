@@ -64,7 +64,11 @@ extern size_t page_table_entries;
 
 kern_paddr_t vm_clone_page_directory(kern_paddr_t template_paddr, unsigned int start_index);
 
-pte_t *vm_allocate_page_directory(unsigned int start_index, unsigned int end_index, bool first_pd);
+void vm_init_page_directory(
+        pte_t           *page_directory,
+        unsigned int     start_index,
+        unsigned int     end_index,
+        bool             first_directory);
 
 void vm_destroy_page_directory(kern_paddr_t pgdir_paddr, unsigned int from_index, unsigned int to_index);
 

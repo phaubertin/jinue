@@ -30,6 +30,7 @@
  */
 
 #include <hal/vm_private.h>
+#include <pfalloc.h>
 #include <vmalloc.h>
 
 struct pte_t {
@@ -55,7 +56,10 @@ addr_space_t *vm_x86_create_addr_space(addr_space_t *addr_space) {
 }
 
 addr_space_t *vm_x86_create_initial_addr_space(void) {
-    pte_t *page_directory = vm_allocate_page_directory(
+    pte_t *page_directory = (pte_t *)pfalloc_early();
+
+    vm_init_page_directory(
+            page_directory,
             vm_x86_page_directory_offset_of((addr_t)KLIMIT),
             vm_x86_page_directory_offset_of((addr_t)KERNEL_PREALLOC_LIMIT),
             true);

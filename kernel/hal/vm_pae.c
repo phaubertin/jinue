@@ -209,88 +209,100 @@ addr_space_t *vm_pae_create_addr_space(addr_space_t *addr_space) {
     return addr_space;
 }
 
+static void vm_pae_init_low_alias(pdpt_t *pdpt) {
+    unsigned int idx;
+
+    /* The 32-bit setup code sets up paging so the first two MB of
+     * physical memory is mapped aliased at addresses 0 and KLIMIT.
+     * Addresses in the low alias are the same whether paging is
+     * enabled or not.
+     *
+     * The low alias is needed because we need to disable paging while
+     * we enable PAE. For this reason, we need to also set up a low
+     * alias in the initial address space. We will get rid of this low
+     * alias at a later step of initialization once PAE is enabled (see
+     * vm_pae_unmap_low_alias()).
+     *
+     * We only map the first 2MB of physical memory, which is all that
+     * a page table gives us in PAE. This is OK because the kernel and
+     * early page allocations fit well within this limit and this is all
+     * that is needed for early initialization. */
+    pte_t *const page_directory = (pte_t *)pfalloc_early();
+    pte_t *const page_table     = (pte_t *)pfalloc_early();
+    pte_t *const pdpte          = &pdpt->pd[0];
+
+    for(idx = 0; idx < page_table_entries; ++idx) {
+        vm_pae_clear_pte(vm_pae_get_pte_with_offset(page_directory, idx));
+
+        vm_pae_set_pte(
+                vm_pae_get_pte_with_offset(page_table, idx),
+                idx * PAGE_SIZE,
+                VM_FLAG_PRESENT);
+    }
+
+    vm_pae_set_pte(
+            page_directory,
+            EARLY_PTR_TO_PHYS_ADDR(page_table),
+            VM_FLAG_PRESENT);
+    vm_pae_set_pte(
+            pdpte,
+            EARLY_PTR_TO_PHYS_ADDR(page_directory),
+            VM_FLAG_PRESENT);
+}
+
 addr_space_t *vm_pae_create_initial_addr_space(boot_heap_t *boot_heap) {
     unsigned int idx;
     
     /* Allocate initial PDPT. PDPT must be 32-byte aligned. */
     initial_pdpt = boot_heap_alloc(boot_heap, pdpt_t, 32);
     
+    /* We want the pre-allocated kernel page tables to be contiguous. For this
+     * reason, we allocate the page directories first, and then the page tables.
+     *
+     * This function allocates pages in this order:
+     *      +----------------+-------...--------+-------...------+
+     *      |    Low alias   |  pre-allocated   |  pre-allocated |
+     *      | page directory |      kernel      |     kernel     |
+     *      | and page table | page directories |  page tables   |
+     *      +----------------+-------...--------+-------...------+
+     * */
+
     for(idx = 0; idx < PDPT_ENTRIES; ++idx) {
-        pte_t *pdpte = &initial_pdpt->pd[idx];
-        
-        if(idx == 0) {
-            int idy;
+        vm_pae_clear_pte(&initial_pdpt->pd[idx]);
+    }
 
-            /* The 32-bit setup code sets up paging so the first four MB of
-             * physical memory is mapped aliased at addresses 0 and KLIMIT.
-             * Addresses in the low alias are the same whether paging is
-             * enabled or not.
-             *
-             * The low alias is needed because we need to disable paging while
-             * we enable PAE. For this reason, we need to also set up a low
-             * alias in the initial address space. We will get rid of this low
-             * alias at a later step of initialization once PAE is enabled (see
-             * vm_pae_unmap_low_alias()).
-             *
-             * We only map the first 2MB of physical memory, which is all that
-             * a page table gives us in PAE. This is OK because the kernel fits
-             * well within this limit. */
-            pte_t *page_table       = (pte_t *)pfalloc_early();
-            pte_t *page_directory   = (pte_t *)pfalloc_early();
+    vm_pae_init_low_alias(initial_pdpt);
 
-            for(idy = 0; idy < page_table_entries; ++idy) {
-                vm_pae_clear_pte(vm_pae_get_pte_with_offset(page_directory, idy));
+    const unsigned int last_idx = pdpt_offset_of((addr_t)KERNEL_PREALLOC_LIMIT - 1);
 
-                vm_pae_set_pte(
-                        vm_pae_get_pte_with_offset(page_table, idy),
-                        idy * PAGE_SIZE,
-                        VM_FLAG_PRESENT);
-            }
+    for(idx = pdpt_offset_of((addr_t)KLIMIT); idx <= last_idx; ++idx) {
+        pte_t *const pdpte      = &initial_pdpt->pd[idx];
+        pte_t *page_directory   = (pte_t *)pfalloc_early();
 
-            vm_pae_set_pte(page_directory, EARLY_PTR_TO_PHYS_ADDR(page_table), VM_FLAG_PRESENT);
-            vm_pae_set_pte(pdpte, EARLY_PTR_TO_PHYS_ADDR(page_directory), VM_FLAG_PRESENT);
-        }
-        else if(idx < pdpt_offset_of((addr_t)KLIMIT)) {
-            /* This PDPT entry describes an address range entirely under KLIMIT
-             * so it is all user space: do not create a page directory at this
-             * time. */
-            vm_pae_clear_pte(pdpte);
+        vm_pae_set_pte(
+                pdpte,
+                EARLY_PTR_TO_PHYS_ADDR(page_directory),
+                VM_FLAG_PRESENT);
+    }
+
+    for(idx = pdpt_offset_of((addr_t)KLIMIT); idx <= last_idx; ++idx) {
+        unsigned int end_index;
+
+        pte_t *const pdpte = &initial_pdpt->pd[idx];
+        pte_t *const page_directory = (pte_t *)EARLY_PHYS_TO_VIRT(vm_pae_get_pte_paddr(pdpte));
+
+        if(idx < pdpt_offset_of((addr_t)KERNEL_PREALLOC_LIMIT)) {
+            end_index = page_table_entries;
         }
         else {
-            unsigned int end_index;
-
-            if(idx == pdpt_offset_of((addr_t)KERNEL_PREALLOC_LIMIT)) {
-                end_index = vm_pae_page_directory_offset_of((addr_t)KERNEL_PREALLOC_LIMIT);
-            }
-            else {
-                end_index = page_table_entries;
-            }
-            
-            if(idx == pdpt_offset_of((addr_t)KLIMIT)) {
-                /* Allocate the first page directory and allocate page tables starting
-                 * at KLIMIT. Specify that this is the first page directory. */
-                pte_t *page_directory = vm_allocate_page_directory(
-                        vm_pae_page_directory_offset_of((addr_t)KLIMIT), end_index, true);
-
-                vm_pae_set_pte(pdpte, EARLY_PTR_TO_PHYS_ADDR(page_directory), VM_FLAG_PRESENT);
-            }
-            else {
-                /* TODO This (currently unused) branch is incorrect.
-                 *
-                 * Rework is needed if this implementation is kept (it probably won't):
-                 *  1) The page directory should only be allocated if the address space
-                 *     region it describes starts before KERNEL_PREALLOC_LIMIT.
-                 *  2) The page directory is allocated after the page tables from the
-                 *     preceding page directory, which breaks the assumption that
-                 *     pre-allocated page tables are contiguous. */
-                panic("Incorrect implementation in vm_pae_create_initial_addr_space().");
-#if 0
-                pte_t *page_directory = vm_allocate_page_directory(0, end_index, false);
-
-                vm_pae_set_pte(pdpte, EARLY_PTR_TO_PHYS_ADDR(page_directory), VM_FLAG_PRESENT);
-#endif
-            }
+            end_index = vm_pae_page_directory_offset_of((addr_t)KERNEL_PREALLOC_LIMIT);
         }
+
+        vm_init_page_directory(
+                page_directory,
+                0,
+                end_index,
+                idx == pdpt_offset_of((addr_t)KLIMIT));
     }
     
     initial_addr_space.top_level.pdpt   = initial_pdpt;

@@ -517,11 +517,13 @@ addr_space_t *vm_create_addr_space(addr_space_t *addr_space) {
     }
 }
 
-pte_t *vm_allocate_page_directory(unsigned int start_index, unsigned int end_index, bool first_pd) {
+void vm_init_page_directory(
+        pte_t           *page_directory,
+        unsigned int     start_index,
+        unsigned int     end_index,
+        bool             first_directory) {
+
     unsigned int idx, idy;
-    
-    /* Allocate page directory. */
-    pte_t * page_directory = (pte_t *)pfalloc_early();
 
     /* Allocate page tables and initialize page directory entries. */
     for(idx = 0; idx < page_table_entries; ++idx) {
@@ -534,11 +536,11 @@ pte_t *vm_allocate_page_directory(unsigned int start_index, unsigned int end_ind
             /* Allocate page tables for kernel data/code region.
              *
              * Note that the use of pfalloc_early() here guarantees that the
-             * page table are allocated contiguously, and that they keep the
+             * page tables are allocated contiguously, and that they keep the
              * same address once paging is enabled. */
             pte_t *page_table = (pte_t *)pfalloc_early();
 
-            if(first_pd && idx == start_index) {
+            if(first_directory && idx == start_index) {
                 /* remember the address of the first page table for use by
                  * vm_map() later */
                 global_page_tables = page_table;
@@ -547,7 +549,7 @@ pte_t *vm_allocate_page_directory(unsigned int start_index, unsigned int end_ind
             set_pte(
                 get_pte_with_offset(page_directory, idx),
                 EARLY_PTR_TO_PHYS_ADDR(page_table),
-                VM_FLAG_PRESENT | VM_FLAG_READ_WRITE );
+                VM_FLAG_PRESENT | VM_FLAG_READ_WRITE);
 
             /* clear page table */
             for(idy = 0; idy < page_table_entries; ++idy) {
@@ -555,8 +557,6 @@ pte_t *vm_allocate_page_directory(unsigned int start_index, unsigned int end_ind
             }
         }
     }
-    
-    return page_directory;
 }
 
 addr_space_t *vm_create_initial_addr_space(bool use_pae, boot_heap_t *boot_heap) {
