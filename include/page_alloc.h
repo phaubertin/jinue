@@ -5,18 +5,18 @@
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,32 +29,21 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_VMALLOC_H
-#define JINUE_KERNEL_VMALLOC_H
+#ifndef JINUE_KERNEL_PAGE_ALLOC_H
+#define JINUE_KERNEL_PAGE_ALLOC_H
 
 #include <types.h>
 
+void *page_alloc(void);
 
-typedef struct vmalloc_t vmalloc_t;
+void page_free(void *page);
 
-typedef struct vmalloc_block_t vmalloc_block_t;
+bool page_alloc_is_empty(void);
 
+bool add_page_frame(kern_paddr_t paddr);
 
-extern vmalloc_t *const global_page_allocator;
+kern_paddr_t remove_page_frame(void);
 
-
-addr_t vmalloc(vmalloc_t *allocator);
-
-addr_t vmalloc_low_latency(vmalloc_t *allocator);
-
-void vmfree(vmalloc_t *allocator, addr_t page);
-
-void vmalloc_init(vmalloc_t *allocator, addr_t start_addr, addr_t end_addr);
-
-void vmalloc_init_allocator(vmalloc_t *allocator, addr_t start_addr, addr_t end_addr);
-
-void vmalloc_add_region(vmalloc_t *allocator, addr_t start_addr, addr_t end_addr);
-
-bool vmalloc_is_in_range(vmalloc_t *allocator, addr_t page);
+void clear_page(void *page);
 
 #endif

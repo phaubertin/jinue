@@ -180,11 +180,11 @@ void hal_init(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
     pic8259_init(IDT_PIC8259_BASE);
 
     /* initialize the page frame allocator */
-    kern_paddr_t *page_stack_buffer = (kern_paddr_t *)boot_pgalloc_early(boot_alloc);
+    kern_paddr_t *page_stack_buffer = (kern_paddr_t *)boot_page_alloc_early(boot_alloc);
     init_pfalloc_cache(&global_pfalloc_cache, page_stack_buffer);
 
     for(idx = 0; idx < KERNEL_PAGE_STACK_INIT; ++idx) {
-        pffree( EARLY_PTR_TO_PHYS_ADDR( boot_pgalloc_early(boot_alloc) ) );
+        pffree( EARLY_PTR_TO_PHYS_ADDR( boot_page_alloc_early(boot_alloc) ) );
     }
 
     /* initialize virtual memory management, enable paging

@@ -545,7 +545,7 @@ void vm_init_initial_page_directory(
              * Note that the use of pfalloc_early() here guarantees that the
              * page tables are allocated contiguously, and that they keep the
              * same address once paging is enabled. */
-            pte_t *page_table = (pte_t *)boot_pgalloc_early(boot_alloc);
+            pte_t *page_table = (pte_t *)boot_page_alloc_early(boot_alloc);
 
             if(first_directory && idx == start_index) {
                 /* remember the address of the first page table for use by

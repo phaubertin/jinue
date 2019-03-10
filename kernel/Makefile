@@ -52,6 +52,7 @@ sources.c		 = \
 	ipc.c \
 	kbd.c \
 	kmain.c \
+	page_alloc.c \
 	panic.c \
 	pfalloc.c \
 	process.c \

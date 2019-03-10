@@ -82,7 +82,7 @@ thread_t *thread_create_boot(
         boot_alloc_t    *boot_alloc) {
 
     /* The kernel panics if this allocation fails. */
-    void *thread_page   = boot_pgalloc(boot_alloc);
+    void *thread_page   = boot_page_alloc(boot_alloc);
     thread_t *thread    = thread_page_init(thread_page, entry, user_stack);
     thread_init(thread, process);
 

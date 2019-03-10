@@ -146,7 +146,7 @@ void boot_heap_pop(boot_alloc_t *boot_alloc) {
  * @return address of allocated page
  *
  * */
-addr_t boot_pgalloc_early(boot_alloc_t *boot_alloc) {
+addr_t boot_page_alloc_early(boot_alloc_t *boot_alloc) {
     /* Preconditions */
     if(! boot_alloc->its_early) {
         panic("boot_pgalloc_early() called too late");
@@ -274,7 +274,7 @@ addr_t boot_vmalloc(boot_alloc_t *boot_alloc) {
  * @return address of allocated page
  *
  * */
-addr_t boot_pgalloc(boot_alloc_t *boot_alloc) {
+addr_t boot_page_alloc(boot_alloc_t *boot_alloc) {
     kern_paddr_t paddr  = boot_page_frame_alloc(boot_alloc);
     addr_t vaddr        = vmalloc(global_page_allocator);
 
@@ -298,7 +298,7 @@ addr_t boot_pgalloc(boot_alloc_t *boot_alloc) {
  * @return address of allocated page
  *
  * */
-addr_t boot_pgalloc_image(boot_alloc_t *boot_alloc) {
+addr_t boot_page_alloc_image(boot_alloc_t *boot_alloc) {
     kern_paddr_t paddr  = boot_page_frame_alloc(boot_alloc);
     addr_t vaddr        = boot_vmalloc(boot_alloc);
 

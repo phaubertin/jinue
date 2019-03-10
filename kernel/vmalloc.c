@@ -212,21 +212,18 @@ addr_t vmalloc(vmalloc_t *allocator) {
     @param allocator allocator which manages the memory region to which the page is freed
 */
 void vmfree(vmalloc_t *allocator, addr_t page) {
-    vmalloc_block_t   *block;
-    unsigned int  idx;
-    
     /** ASSERTION: allocator is not null */
     assert(allocator != NULL);
     
     /** ASSERTION: ensure we are freeing to the proper allocator/region */
-    assert(page >= allocator->start_addr && page < allocator->end_addr);
+    assert(vmalloc_is_in_range(allocator, page));
     
     /** ASSERTION: ensure address is page aligned */
     assert(page_offset_of(page) == 0);
     
     /* find the block to which the free page belong */
-    idx = ( (unsigned int)page - (unsigned int)allocator->base_addr ) / VMALLOC_BLOCK_SIZE;
-    block = &allocator->block_array[idx];
+    unsigned int idx = ( (unsigned int)page - (unsigned int)allocator->base_addr ) / VMALLOC_BLOCK_SIZE;
+    vmalloc_block_t *block = &allocator->block_array[idx];
     
     /* if the block was a used block, make it a partial block */
     if( VMALLOC_IS_USED(block) ) {
@@ -408,6 +405,9 @@ void vmalloc_add_region(vmalloc_t *allocator, addr_t start_addr, addr_t end_addr
     }
 }
 
+bool vmalloc_is_in_range(vmalloc_t *allocator, addr_t page) {
+    return page >= allocator->start_addr && page < allocator->end_addr;
+}
 
 /**
     Insert block in the free list.

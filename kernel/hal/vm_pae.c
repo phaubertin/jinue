@@ -231,8 +231,8 @@ static void vm_pae_init_low_alias(
      * a page table gives us in PAE. This is OK because the kernel and
      * early page allocations fit well within this limit and this is all
      * that is needed for early initialization. */
-    pte_t *const page_directory = (pte_t *)boot_pgalloc_early(boot_alloc);
-    pte_t *const page_table     = (pte_t *)boot_pgalloc_early(boot_alloc);
+    pte_t *const page_directory = (pte_t *)boot_page_alloc_early(boot_alloc);
+    pte_t *const page_table     = (pte_t *)boot_page_alloc_early(boot_alloc);
     pte_t *const pdpte          = &pdpt->pd[0];
 
     for(idx = 0; idx < page_table_entries; ++idx) {
@@ -282,7 +282,7 @@ addr_space_t *vm_pae_create_initial_addr_space(boot_alloc_t *boot_alloc) {
 
     for(idx = pdpt_offset_of((addr_t)KLIMIT); idx <= last_idx; ++idx) {
         pte_t *const pdpte      = &initial_pdpt->pd[idx];
-        pte_t *page_directory   = (pte_t *)boot_pgalloc_early(boot_alloc);
+        pte_t *page_directory   = (pte_t *)boot_page_alloc_early(boot_alloc);
 
         vm_pae_set_pte(
                 pdpte,

@@ -57,7 +57,7 @@ addr_space_t *vm_x86_create_addr_space(addr_space_t *addr_space) {
 }
 
 addr_space_t *vm_x86_create_initial_addr_space(boot_alloc_t *boot_alloc) {
-    pte_t *page_directory = (pte_t *)boot_pgalloc_early(boot_alloc);
+    pte_t *page_directory = (pte_t *)boot_page_alloc_early(boot_alloc);
 
     vm_init_initial_page_directory(
             page_directory,

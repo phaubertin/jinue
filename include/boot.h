@@ -56,14 +56,14 @@ void boot_heap_push(boot_alloc_t *boot_alloc);
 
 void boot_heap_pop(boot_alloc_t *boot_alloc);
 
-addr_t boot_pgalloc_early(boot_alloc_t *boot_alloc);
+addr_t boot_page_alloc_early(boot_alloc_t *boot_alloc);
 
 kern_paddr_t boot_page_frame_alloc(boot_alloc_t *boot_alloc);
 
 addr_t boot_vmalloc(boot_alloc_t *boot_alloc);
 
-addr_t boot_pgalloc(boot_alloc_t *boot_alloc);
+addr_t boot_page_alloc(boot_alloc_t *boot_alloc);
 
-addr_t boot_pgalloc_image(boot_alloc_t *boot_alloc);
+addr_t boot_page_alloc_image(boot_alloc_t *boot_alloc);
 
 #endif
