@@ -32,7 +32,6 @@
 #include <jinue-common/types.h>
 #include <hal/abi.h>
 #include <hal/boot.h>
-#include <hal/kernel.h>
 #include <elf.h>
 #include <stddef.h>
 #include <debug.h>

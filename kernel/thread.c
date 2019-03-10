@@ -33,31 +33,59 @@
 #include <hal/cpu_data.h>
 #include <hal/thread.h>
 #include <hal/vm.h>
+#include <boot.h>
 #include <object.h>
 #include <panic.h>
+#include <pfalloc.h>
 #include <thread.h>
+#include <vmalloc.h>
 
 
 static jinue_list_t ready_list = JINUE_LIST_STATIC;
+
+static void thread_init(thread_t *thread, process_t *process) {
+    object_header_init(&thread->header, OBJECT_TYPE_THREAD);
+
+    jinue_node_init(&thread->thread_list);
+
+    thread->process     = process;
+    thread->sender      = NULL;
+
+    thread_ready(thread);
+}
 
 thread_t *thread_create(
         process_t       *process,
         addr_t           entry,
         addr_t           user_stack) {
             
-    thread_t *thread = thread_page_create(entry, user_stack);
-    
-    if(thread != NULL) {
-        object_header_init(&thread->header, OBJECT_TYPE_THREAD);
+    /* TODO use pgalloc() here when that is implemented. */
+    kern_paddr_t thread_page_paddr = pfalloc();
+    void *thread_page = vmalloc(global_page_allocator);
+    vm_map_kernel(thread_page, thread_page_paddr, VM_FLAG_READ_WRITE);
 
-        jinue_node_init(&thread->thread_list);
-        
-        thread->process     = process;
-        thread->sender      = NULL;
 
-        thread_ready(thread);
+    if(thread_page == NULL) {
+        return NULL;
     }
+
+    thread_t *thread = thread_page_init(thread_page, entry, user_stack);
+    thread_init(thread, process);
     
+    return thread;
+}
+
+thread_t *thread_create_boot(
+        process_t       *process,
+        addr_t           entry,
+        addr_t           user_stack,
+        boot_alloc_t    *boot_alloc) {
+
+    /* The kernel panics if this allocation fails. */
+    void *thread_page   = boot_pgalloc(boot_alloc);
+    thread_t *thread    = thread_page_init(thread_page, entry, user_stack);
+    thread_init(thread, process);
+
     return thread;
 }
 

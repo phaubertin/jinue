@@ -81,59 +81,48 @@ void thread_context_switch_stack(
  * in the thread context (sub-)structure (thread_context_t).
  */
 
-thread_t *thread_page_create(
+thread_t *thread_page_init(
+        addr_t           thread_page,
         addr_t           entry,
         addr_t           user_stack) {
 
-    /* allocate thread context */
-    thread_t *thread = (thread_t *)vmalloc( global_page_allocator );
+    /* initialize fields */
+    thread_t *thread                = (thread_t *)thread_page;
+    thread_context_t *thread_ctx    = &thread->thread_ctx;
 
-    if(thread != NULL) {
-        kern_paddr_t paddr = pfalloc();
+    thread_ctx->local_storage_addr  = NULL;
 
-        if(paddr == PFNULL) {
-            vmfree(global_page_allocator, (addr_t)thread);
-            return NULL;
-        }
+    /* setup stack for initial return to user space */
+    void *kernel_stack_base = get_kernel_stack_base(thread_ctx);
 
-        vm_map_kernel((addr_t)thread, paddr, VM_FLAG_READ_WRITE);
+    trapframe_t *trapframe = (trapframe_t *)kernel_stack_base - 1;
 
-        /* initialize fields */
-        thread_context_t *thread_ctx = &thread->thread_ctx;
-        
-        thread_ctx->local_storage_addr  = NULL;
+    memset(trapframe, 0, sizeof(trapframe_t));
 
-        /* setup stack for initial return to user space */
-        void *kernel_stack_base = get_kernel_stack_base(thread_ctx);
-        
-        trapframe_t *trapframe = (trapframe_t *)kernel_stack_base - 1;
-        
-        memset(trapframe, 0, sizeof(trapframe_t));
-        
-        trapframe->eip      = (uint32_t)entry;
-        trapframe->esp      = (uint32_t)user_stack;
-        trapframe->eflags   = 2;
-        trapframe->cs       = SEG_SELECTOR(GDT_USER_CODE, RPL_USER);
-        trapframe->ss       = SEG_SELECTOR(GDT_USER_DATA, RPL_USER);
-        trapframe->ds       = SEG_SELECTOR(GDT_USER_DATA, RPL_USER);
-        trapframe->es       = SEG_SELECTOR(GDT_USER_DATA, RPL_USER);
-        trapframe->fs       = SEG_SELECTOR(GDT_USER_DATA, RPL_USER);
-        trapframe->gs       = SEG_SELECTOR(GDT_USER_DATA, RPL_USER);
-        
-        kernel_context_t *kernel_context = (kernel_context_t *)trapframe - 1;
-        
-        memset(kernel_context, 0, sizeof(kernel_context_t));
-        
-        /* This is the address to which thread_context_switch_stack() will return. */
-        kernel_context->eip = (uint32_t)return_from_interrupt;        
+    trapframe->eip      = (uint32_t)entry;
+    trapframe->esp      = (uint32_t)user_stack;
+    trapframe->eflags   = 2;
+    trapframe->cs       = SEG_SELECTOR(GDT_USER_CODE, RPL_USER);
+    trapframe->ss       = SEG_SELECTOR(GDT_USER_DATA, RPL_USER);
+    trapframe->ds       = SEG_SELECTOR(GDT_USER_DATA, RPL_USER);
+    trapframe->es       = SEG_SELECTOR(GDT_USER_DATA, RPL_USER);
+    trapframe->fs       = SEG_SELECTOR(GDT_USER_DATA, RPL_USER);
+    trapframe->gs       = SEG_SELECTOR(GDT_USER_DATA, RPL_USER);
 
-        /* set thread stack pointer */
-        thread_ctx->saved_stack_pointer = (addr_t)kernel_context;
-    }
+    kernel_context_t *kernel_context = (kernel_context_t *)trapframe - 1;
+
+    memset(kernel_context, 0, sizeof(kernel_context_t));
+
+    /* This is the address to which thread_context_switch_stack() will return. */
+    kernel_context->eip = (uint32_t)return_from_interrupt;
+
+    /* set thread stack pointer */
+    thread_ctx->saved_stack_pointer = (addr_t)kernel_context;
 
     return thread;
 }
 
+/* This function is called by assembly code. See thread_context_switch_stack(). */
 void thread_page_destroy(thread_t *thread) {
     kern_paddr_t paddr = vm_lookup_kernel_paddr((addr_t)thread);
     vm_unmap_kernel((addr_t)thread);

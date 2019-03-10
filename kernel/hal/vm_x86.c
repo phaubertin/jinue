@@ -30,6 +30,7 @@
  */
 
 #include <hal/vm_private.h>
+#include <boot.h>
 #include <pfalloc.h>
 #include <vmalloc.h>
 
@@ -55,11 +56,12 @@ addr_space_t *vm_x86_create_addr_space(addr_space_t *addr_space) {
     return addr_space;
 }
 
-addr_space_t *vm_x86_create_initial_addr_space(void) {
-    pte_t *page_directory = (pte_t *)pfalloc_early();
+addr_space_t *vm_x86_create_initial_addr_space(boot_alloc_t *boot_alloc) {
+    pte_t *page_directory = (pte_t *)boot_pgalloc_early(boot_alloc);
 
-    vm_init_page_directory(
+    vm_init_initial_page_directory(
             page_directory,
+            boot_alloc,
             vm_x86_page_directory_offset_of((addr_t)KLIMIT),
             vm_x86_page_directory_offset_of((addr_t)KERNEL_PREALLOC_LIMIT),
             true);

@@ -31,7 +31,9 @@
 
 #include <hal/boot.h>
 #include <hal/hal.h>
+#include <hal/mem.h>
 #include <hal/vm.h>
+#include <boot.h>
 #include <console.h>
 #include <elf.h>
 #include <ipc.h>
@@ -68,17 +70,38 @@ void kmain(void) {
     /* initialize console and say hello */
     console_init();
     
+    /* Say hello. */
     printk("Kernel revision " GIT_REVISION " built " BUILD_TIME " on " BUILD_HOST "\n");
     
+    const boot_info_t *boot_info = get_boot_info();
+    (void)boot_info_check(true);
+
+    printk("Kernel size is %u bytes.\n", boot_info->kernel_size);
+
+    if(boot_info->ramdisk_start == 0 || boot_info->ramdisk_size == 0) {
+        printk("%kWarning: no initial RAM disk loaded.\n", VGA_COLOR_YELLOW);
+    }
+    else {
+        printk("RAM disk with size %u bytes loaded at address %x.\n", boot_info->ramdisk_size, boot_info->ramdisk_start);
+    }
+
+    printk("Kernel command line:\n", boot_info->kernel_size);
+    printk("    %s\n", boot_info->cmdline);
+
+    /* Initialize the boot allocator. */
+    boot_alloc_t boot_alloc;
+    boot_alloc_init(&boot_alloc, boot_info->boot_heap);
+    mem_check_memory(&boot_alloc, boot_info);
+
     /* initialize hardware abstraction layer */
-    hal_init();
+    hal_init(&boot_alloc, boot_info);
 
     /* initialize caches */
     ipc_boot_init();
     process_boot_init();
 
     /* create process for process manager */
-    process_t *process = process_create();
+    process_t *process = process_create_initial();
 
     if(process == NULL) {
         panic("Could not create initial process.");
@@ -89,10 +112,11 @@ void kmain(void) {
     elf_load(&elf_info, elf, &process->addr_space);
 
     /* create initial thread */
-    thread_t *thread = thread_create(
+    thread_t *thread = thread_create_boot(
             process,
             elf_info.entry,
-            elf_info.stack_addr);
+            elf_info.stack_addr,
+            &boot_alloc);
     
     if(thread == NULL) {
         panic("Could not create initial thread.");

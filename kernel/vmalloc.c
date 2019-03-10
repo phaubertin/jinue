@@ -268,7 +268,7 @@ void vmalloc_init_allocator(vmalloc_t *allocator, addr_t start_addr, addr_t end_
     addr_t           aligned_end;       /* block-aligned end address */
     addr_t           adjusted_start;    /* actual start of available memory, block array skipped */
     
-    vmalloc_block_t      *block_array;       /* start of array */
+    vmalloc_block_t *block_array;       /* start of array */
     unsigned int     block_count;       /* array size, in blocks (entries) */
     size_t           array_size;        /* array size, in bytes */
     unsigned int     array_page_count;  /* array size, in pages */

@@ -34,7 +34,6 @@
 
 #include <hal/asm/boot.h>
 #include <hal/types.h>
-#include <stddef.h>
 
 
 bool boot_info_check(bool panic_on_failure);
@@ -42,15 +41,5 @@ bool boot_info_check(bool panic_on_failure);
 const boot_info_t *get_boot_info(void);
 
 void boot_info_dump(void);
-
-void boot_heap_init(boot_heap_t *boot_heap, void *ptr);
-
-#define boot_heap_alloc(boot_heap, t, align) ((t *)boot_heap_alloc_size(boot_heap, sizeof(t), align))
-
-void *boot_heap_alloc_size(boot_heap_t *boot_heap, size_t size, size_t align);
-
-void boot_heap_push(boot_heap_t *boot_heap);
-
-void boot_heap_pop(boot_heap_t *boot_heap);
 
 #endif

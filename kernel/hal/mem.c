@@ -29,15 +29,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <jinue-common/asm/e820.h>
+#include <hal/mem.h>
+#include <hal/vm.h>
 #include <assert.h>
+#include <panic.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <jinue-common/asm/e820.h>
-#include <hal/kernel.h>
-#include <hal/mem.h>
-#include <hal/vm.h>
-#include <panic.h>
 
 
 static uint32_t clip_e820_entry_end(const e820_t *entry) {
@@ -55,7 +54,7 @@ static bool ranges_overlap(uint32_t range1_start, uint32_t range1_end, uint32_t 
     return range2_start < range1_end && range1_start < range2_end;
 }
 
-void mem_check_memory(const boot_info_t *boot_info) {
+void mem_check_memory(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
     int idx;
 
 #if 0
@@ -187,7 +186,16 @@ void mem_check_memory(const boot_info_t *boot_info) {
     }
 #endif
 
-    if(zone_dma16_top < EARLY_VIRT_TO_PHYS(kernel_region_top)) {
+    /* It is early during the boot process and the page table set up by the
+     * setup code is still being used. This (single) page table maps the first
+     * two megabytes of RAM linearly starting at KLIMIT in the virtual address
+     * space. */
+    boot_alloc->kernel_vm_top      = boot_info->boot_end;
+    boot_alloc->kernel_vm_limit    = (addr_t)KERNEL_EARLY_LIMIT;
+    boot_alloc->kernel_paddr_top   = EARLY_VIRT_TO_PHYS(boot_alloc->kernel_vm_top);
+    boot_alloc->kernel_paddr_limit = zone_dma16_top;
+
+    if(boot_alloc->kernel_paddr_top > boot_alloc->kernel_paddr_limit) {
         panic("Kernel image was loaded in reserved memory.");
     }
 

@@ -29,32 +29,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <hal/kernel.h>
 #include <hal/vm.h>
 #include <assert.h>
 #include <panic.h>
 #include <pfalloc.h>
 #include <stddef.h>
 
+pfalloc_cache_t global_pfalloc_cache;
 
-bool use_pfalloc_early;
-
-pfcache_t global_pfcache;
-
-
-addr_t pfalloc_early(void) {
-    addr_t page;
-    
-    /** ASSERTION:  pfalloc_early is used early only */
-    assert(use_pfalloc_early);
-    
-    page = kernel_region_top;
-    kernel_region_top += PAGE_SIZE;
-    
-    return page;
-}
-
-void init_pfcache(pfcache_t *pfcache, kern_paddr_t *stack_page) {
+void init_pfalloc_cache(pfalloc_cache_t *pfcache, kern_paddr_t *stack_page) {
     kern_paddr_t    *ptr;
     unsigned int     idx;
     
@@ -68,10 +51,7 @@ void init_pfcache(pfcache_t *pfcache, kern_paddr_t *stack_page) {
     pfcache->count = 0;
 }
 
-kern_paddr_t pfalloc_from(pfcache_t *pfcache) {
-    /** ASSERTION:  pfalloc_early must be used early */
-    assert( ! use_pfalloc_early );
-    
+kern_paddr_t pfalloc_from(pfalloc_cache_t *pfcache) {
     if(pfcache->count == 0) {
         panic("pfalloc_from(): no more pages to allocate");
     }    
@@ -81,7 +61,7 @@ kern_paddr_t pfalloc_from(pfcache_t *pfcache) {
     return *(--pfcache->ptr);
 }
 
-void pffree_to(pfcache_t *pfcache, kern_paddr_t paddr) {
+void pffree_to(pfalloc_cache_t *pfcache, kern_paddr_t paddr) {
     if(pfcache->count >= KERNEL_PAGE_STACK_SIZE) {
         /** We are leaking memory here. Should we panic instead? */
         return;

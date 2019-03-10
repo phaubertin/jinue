@@ -41,6 +41,7 @@
 #include <hal/vm_x86.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <types.h>
 
 /** number of entries in page table or page directory */
 #define PAGE_TABLE_ENTRIES  (PAGE_SIZE / sizeof(pte_t))
@@ -57,19 +58,23 @@
 
 extern pte_t *global_page_tables;
 
-extern addr_space_t initial_addr_space;
-
 extern size_t page_table_entries;
 
 
-kern_paddr_t vm_clone_page_directory(kern_paddr_t template_paddr, unsigned int start_index);
+kern_paddr_t vm_clone_page_directory(
+        kern_paddr_t         template_paddr,
+        unsigned int         start_index);
 
-void vm_init_page_directory(
+void vm_init_initial_page_directory(
         pte_t           *page_directory,
+        boot_alloc_t    *boot_alloc,
         unsigned int     start_index,
         unsigned int     end_index,
         bool             first_directory);
 
-void vm_destroy_page_directory(kern_paddr_t pgdir_paddr, unsigned int from_index, unsigned int to_index);
+void vm_destroy_page_directory(
+        kern_paddr_t         pgdir_paddr,
+        unsigned int         from_index,
+        unsigned int         to_index);
 
 #endif

@@ -57,6 +57,10 @@ void process_boot_init(void) {
             SLAB_DEFAULTS);
 }
 
+static void process_init(process_t *process) {
+    memset(&process->descriptors, 0, sizeof(process->descriptors));
+}
+
 process_t *process_create(void) {
     process_t *process = slab_cache_alloc(&process_cache);
 
@@ -68,11 +72,22 @@ process_t *process_create(void) {
          * allocate the initial page directory/tables or, when PAE is enabled,
          * if we cannot allocate a PDPT. */
         if(addr_space == NULL) {
-            /* TODO we must free the process object here. */
+            slab_cache_free(process);
             return NULL;
         }
 
-        memset(&process->descriptors, 0, sizeof(process->descriptors));
+        process_init(process);
+    }
+
+    return process;
+}
+
+process_t *process_create_initial(void) {
+    process_t *process = slab_cache_alloc(&process_cache);
+
+    if(process != NULL) {
+        memcpy(&process->addr_space, &initial_addr_space, sizeof(addr_space_t));
+        process_init(process);
     }
 
     return process;

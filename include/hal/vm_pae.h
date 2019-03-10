@@ -36,7 +36,7 @@
  * hal/vm_pae.c. It is intended to be included by hal/vm.c and hal/vm_pae.c.
  * There should be no reason to include it anywhere else. */
 
-#include <hal/types.h>
+#include <types.h>
 
 void vm_pae_boot_init(void);
 
@@ -62,7 +62,7 @@ void vm_pae_copy_pte(pte_t *dest, const pte_t *src);
 
 addr_space_t *vm_pae_create_addr_space(addr_space_t *addr_space);
 
-addr_space_t *vm_pae_create_initial_addr_space(boot_heap_t *boot_heap);
+addr_space_t *vm_pae_create_initial_addr_space(boot_alloc_t *boot_alloc);
 
 void vm_pae_destroy_addr_space(addr_space_t *addr_space);
 

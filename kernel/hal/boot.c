@@ -30,37 +30,43 @@
  */
 
 #include <hal/boot.h>
-#include <hal/kernel.h>
+#include <hal/vm.h>
 #include <panic.h>
 #include <printk.h>
 #include <stddef.h>
-#include <util.h>
 
-
+/* There is no extern declaration of this global variable in any header file but
+ * it is set in startup.asm.  */
 const boot_info_t *boot_info;
 
 bool boot_info_check(bool panic_on_failure) {
+    const char *error_description = NULL;
+
     /* This data structure is accessed early during the boot process, before
      * paging is enabled. What this means is that, if boot_info is NULL and we
      * dereference it, it does *not* cause a page fault or any other CPU
      * exception. */
     if(boot_info == NULL) {
-        if(panic_on_failure) {
-            panic("Boot information structure pointer is NULL.");
-        }
-        
-        return false;
+        error_description = "Boot information structure pointer is NULL.";
     }
-    
-    if(boot_info->setup_signature != BOOT_SETUP_MAGIC) {
-        if(panic_on_failure) {
-            panic("Bad setup header signature.");
-        }
-        
-        return false;
+    else if(boot_info->setup_signature != BOOT_SETUP_MAGIC) {
+        error_description = "Bad setup header signature.";
     }
-    
-    return true;
+    else if(page_offset_of(boot_info->image_start) != 0) {
+        error_description = "Bad image alignment.";
+    }
+    else if(page_offset_of(boot_info->kernel_start) != 0) {
+        error_description = "Bad kernel alignment.";
+    }
+    else {
+        return true;
+    }
+
+    if(panic_on_failure) {
+        panic(error_description);
+    }
+
+    return false;
 }
 
 const boot_info_t *get_boot_info(void) {
@@ -82,37 +88,4 @@ void boot_info_dump(void) {
     printk("    page_table      %x  %u\n", boot_info->page_table     , boot_info->page_table      );
     printk("    page_directory  %x  %u\n", boot_info->page_directory , boot_info->page_directory  );
     printk("    setup_signature %x  %u\n", boot_info->setup_signature, boot_info->setup_signature );
-}
-
-void boot_heap_init(boot_heap_t *boot_heap, void *ptr) {
-    boot_heap->ptr          = ptr;
-    boot_heap->pushed_state = NULL;
-}
-
-void *boot_heap_alloc_size(boot_heap_t *boot_heap, size_t size, size_t align) {
-    if(align != 0) {
-        boot_heap->ptr = ALIGN_END(boot_heap->ptr, align);
-    }
-
-    void *ptr       = boot_heap->ptr;
-    boot_heap->ptr  = (char *)boot_heap->ptr + size;
-
-    return ptr;
-}
-
-void boot_heap_push(boot_heap_t *boot_heap) {
-    struct boot_heap_pushed_state *pushed_state =
-            boot_heap_alloc(boot_heap, struct boot_heap_pushed_state, 0);
-
-    pushed_state->next      = boot_heap->pushed_state;
-    boot_heap->pushed_state = pushed_state;
-}
-
-void boot_heap_pop(boot_heap_t *boot_heap) {
-    if(boot_heap->pushed_state == NULL) {
-        panic("No more boot heap pushed state to pop.");
-    }
-
-    boot_heap->ptr          = boot_heap->pushed_state;
-    boot_heap->pushed_state = boot_heap->pushed_state->next;
 }

@@ -224,13 +224,4 @@ typedef struct {
     uint32_t    eip;
 } kernel_context_t;
 
-struct boot_heap_pushed_state {
-    struct boot_heap_pushed_state   *next;
-};
-
-typedef struct {
-    void                            *ptr;
-    struct boot_heap_pushed_state   *pushed_state;
-} boot_heap_t;
-
 #endif

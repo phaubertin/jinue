@@ -33,8 +33,8 @@
 #define JINUE_HAL_MEM_H
 
 #include <hal/asm/mem.h>
-#include <hal/types.h>
+#include <types.h>
 
-void mem_check_memory(const boot_info_t *boot_info);
+void mem_check_memory(boot_alloc_t *boot_alloc, const boot_info_t *boot_info);
 
 #endif

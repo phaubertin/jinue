@@ -36,7 +36,6 @@
 #include <hal/descriptors.h>
 #include <hal/hal.h>
 #include <hal/interrupt.h>
-#include <hal/kernel.h>
 #include <hal/mem.h>
 #include <hal/pic8259.h>
 #include <hal/thread.h>
@@ -44,19 +43,15 @@
 #include <hal/vga.h>
 #include <hal/vm.h>
 #include <hal/x86.h>
+#include <boot.h>
 #include <panic.h>
 #include <pfalloc.h>
 #include <printk.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <syscall.h>
-#include <types.h>
 #include <util.h>
 
-
-/** top of region of memory mapped 1:1 (kernel image plus some pages for
-    data structures allocated during initialization) */
-addr_t kernel_region_top;
 
 /** Specifies the entry point to use for system calls */
 int syscall_method;
@@ -91,14 +86,14 @@ static void hal_select_syscall_method(void) {
     }
 }
 
-static void hal_init_descriptors(cpu_data_t *cpu_data, boot_heap_t *boot_heap) {
+static void hal_init_descriptors(cpu_data_t *cpu_data, boot_alloc_t *boot_alloc) {
     /* Pseudo-descriptor allocation is temporary for the duration of this
      * function only. Remember heap pointer on entry so we can free the
      * pseudo-allocator when we are done. */
-    boot_heap_push(boot_heap);
+    boot_heap_push(boot_alloc);
 
     pseudo_descriptor_t *pseudo =
-            boot_heap_alloc(boot_heap, pseudo_descriptor_t, sizeof(pseudo_descriptor_t));
+            boot_heap_alloc(boot_alloc, pseudo_descriptor_t, sizeof(pseudo_descriptor_t));
 
     /* load interrupt descriptor table */
     pseudo->addr  = (addr_t)idt;
@@ -127,7 +122,7 @@ static void hal_init_descriptors(cpu_data_t *cpu_data, boot_heap_t *boot_heap) {
     ltr( SEG_SELECTOR(GDT_TSS, RPL_KERNEL) );
 
     /* Free pseudo-descriptor. */
-    boot_heap_pop(boot_heap);
+    boot_heap_pop(boot_alloc);
 }
 
 static void hal_init_idt(void) {
@@ -157,42 +152,8 @@ static void hal_init_idt(void) {
     }
 }
 
-void hal_init(void) {
-    cpu_data_t          *cpu_data;
-    unsigned int         idx;
-    kern_paddr_t        *page_stack_buffer;
-    
-    /* pfalloc() should not be called yet -- use pfalloc_early() instead */
-    use_pfalloc_early = true;
-    
-    (void)boot_info_check(true);
-    
-    const boot_info_t *boot_info = get_boot_info();
-
-    /** ASSERTION: we assume the image starts on a page boundary */
-    assert(page_offset_of(boot_info->image_start) == 0);
-
-    /** ASSERTION: we assume the kernel starts on a page boundary */
-    assert(page_offset_of(boot_info->kernel_start) == 0);
-
-    printk("Kernel size is %u bytes.\n", boot_info->kernel_size);
-    
-    if(boot_info->ramdisk_start == 0 || boot_info->ramdisk_size == 0) {
-        printk("%kWarning: no initial RAM disk loaded.\n", VGA_COLOR_YELLOW);
-    }
-    else {
-        printk("RAM disk with size %u bytes loaded at address %x.\n", boot_info->ramdisk_size, boot_info->ramdisk_start);
-    }
-
-    printk("Kernel command line:\n", boot_info->kernel_size);
-    printk("    %s\n", boot_info->cmdline);
-
-    /* This must be done before any boot heap allocation. */
-    boot_heap_t boot_heap;
-    boot_heap_init(&boot_heap, boot_info->boot_heap);
-
-    /* This must be done before any call to pfalloc_early(). */
-    kernel_region_top = boot_info->boot_end;
+void hal_init(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
+    int idx;
 
     /* get cpu info */
     cpu_detect_features();
@@ -203,7 +164,7 @@ void hal_init(void) {
      * memory block does not cross a page boundary. */
     assert(sizeof(cpu_data_t) < CPU_DATA_ALIGNMENT);
     
-    cpu_data = boot_heap_alloc(&boot_heap, cpu_data_t, CPU_DATA_ALIGNMENT);
+    cpu_data_t *cpu_data = boot_heap_alloc(boot_alloc, cpu_data_t, CPU_DATA_ALIGNMENT);
     
     /* initialize per-CPU data */
     cpu_init_data(cpu_data);
@@ -218,25 +179,22 @@ void hal_init(void) {
     /* Initialize programmable interrupt_controller. */
     pic8259_init(IDT_PIC8259_BASE);
 
-    /* Check that we have enough memory to work. */
-    mem_check_memory(boot_info);
-
     /* initialize the page frame allocator */
-    page_stack_buffer = (kern_paddr_t *)pfalloc_early();
-    init_pfcache(&global_pfcache, page_stack_buffer);
+    kern_paddr_t *page_stack_buffer = (kern_paddr_t *)boot_pgalloc_early(boot_alloc);
+    init_pfalloc_cache(&global_pfalloc_cache, page_stack_buffer);
 
     for(idx = 0; idx < KERNEL_PAGE_STACK_INIT; ++idx) {
-        pffree( EARLY_PTR_TO_PHYS_ADDR( pfalloc_early() ) );
+        pffree( EARLY_PTR_TO_PHYS_ADDR( boot_pgalloc_early(boot_alloc) ) );
     }
 
     /* initialize virtual memory management, enable paging
      *
      * below this point, it is no longer safe to call pfalloc_early() */
     bool use_pae = cpu_has_feature(CPU_FEATURE_PAE);
-    vm_boot_init(boot_info, use_pae, cpu_data, &boot_heap);
+    vm_boot_init(boot_info, use_pae, cpu_data, boot_alloc);
     
     /* Initialize GDT and TSS */
-    hal_init_descriptors(cpu_data, &boot_heap);
+    hal_init_descriptors(cpu_data, boot_alloc);
 
     /* Initialize virtual memory allocator and VM management caches. */
     vm_boot_postinit(boot_info, use_pae);

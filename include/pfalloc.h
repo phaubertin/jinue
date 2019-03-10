@@ -42,25 +42,20 @@
 typedef struct {
     kern_paddr_t    *ptr;
     uint32_t         count;
-} pfcache_t;
+} pfalloc_cache_t;
+
+extern pfalloc_cache_t global_pfalloc_cache;
 
 
-extern bool use_pfalloc_early;
+#define pfalloc() pfalloc_from(&global_pfalloc_cache)
 
-extern pfcache_t global_pfcache;
-
-
-#define pfalloc() pfalloc_from(&global_pfcache)
-
-#define pffree(p) pffree_to(&global_pfcache, (p))
+#define pffree(p) pffree_to(&global_pfalloc_cache, (p))
 
 
-addr_t pfalloc_early(void);
+void init_pfalloc_cache(pfalloc_cache_t *pfcache, kern_paddr_t *stack_page);
 
-void init_pfcache(pfcache_t *pfcache, kern_paddr_t *stack_page);
+kern_paddr_t pfalloc_from(pfalloc_cache_t *pfcache);
 
-kern_paddr_t pfalloc_from(pfcache_t *pfcache);
-
-void pffree_to(pfcache_t *pfcache, kern_paddr_t paddr);
+void pffree_to(pfalloc_cache_t *pfcache, kern_paddr_t paddr);
 
 #endif

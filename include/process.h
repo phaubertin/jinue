@@ -39,6 +39,8 @@ void process_boot_init(void);
 
 process_t *process_create(void);
 
+process_t *process_create_initial(void);
+
 object_ref_t *process_get_descriptor(process_t *process, int fd);
 
 int process_unused_descriptor(process_t *process);

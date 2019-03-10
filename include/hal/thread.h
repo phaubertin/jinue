@@ -61,11 +61,12 @@ static inline addr_t get_kernel_stack_base(thread_context_t *thread_ctx) {
     return (addr_t)thread + THREAD_CONTEXT_SIZE;
 }
 
-thread_t *thread_page_create(
+thread_t *thread_page_init(
+        addr_t           thread_page,
         addr_t           entry,
         addr_t           user_stack);
 
-void thread_page_destroy(thread_t *thread) ;
+void thread_page_destroy(thread_t *thread);
 
 void thread_context_switch(
         thread_context_t    *from_ctx,

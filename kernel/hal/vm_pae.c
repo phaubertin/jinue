@@ -33,6 +33,7 @@
 #include <hal/boot.h>
 #include <hal/x86.h>
 #include <assert.h>
+#include <boot.h>
 #include <panic.h>
 #include <pfalloc.h>
 #include <slab.h>
@@ -209,7 +210,10 @@ addr_space_t *vm_pae_create_addr_space(addr_space_t *addr_space) {
     return addr_space;
 }
 
-static void vm_pae_init_low_alias(pdpt_t *pdpt) {
+static void vm_pae_init_low_alias(
+        pdpt_t          *pdpt,
+        boot_alloc_t    *boot_alloc) {
+
     unsigned int idx;
 
     /* The 32-bit setup code sets up paging so the first two MB of
@@ -227,8 +231,8 @@ static void vm_pae_init_low_alias(pdpt_t *pdpt) {
      * a page table gives us in PAE. This is OK because the kernel and
      * early page allocations fit well within this limit and this is all
      * that is needed for early initialization. */
-    pte_t *const page_directory = (pte_t *)pfalloc_early();
-    pte_t *const page_table     = (pte_t *)pfalloc_early();
+    pte_t *const page_directory = (pte_t *)boot_pgalloc_early(boot_alloc);
+    pte_t *const page_table     = (pte_t *)boot_pgalloc_early(boot_alloc);
     pte_t *const pdpte          = &pdpt->pd[0];
 
     for(idx = 0; idx < page_table_entries; ++idx) {
@@ -250,11 +254,12 @@ static void vm_pae_init_low_alias(pdpt_t *pdpt) {
             VM_FLAG_PRESENT);
 }
 
-addr_space_t *vm_pae_create_initial_addr_space(boot_heap_t *boot_heap) {
+addr_space_t *vm_pae_create_initial_addr_space(boot_alloc_t *boot_alloc) {
+
     unsigned int idx;
     
     /* Allocate initial PDPT. PDPT must be 32-byte aligned. */
-    initial_pdpt = boot_heap_alloc(boot_heap, pdpt_t, 32);
+    initial_pdpt = boot_heap_alloc(boot_alloc, pdpt_t, 32);
     
     /* We want the pre-allocated kernel page tables to be contiguous. For this
      * reason, we allocate the page directories first, and then the page tables.
@@ -271,13 +276,13 @@ addr_space_t *vm_pae_create_initial_addr_space(boot_heap_t *boot_heap) {
         vm_pae_clear_pte(&initial_pdpt->pd[idx]);
     }
 
-    vm_pae_init_low_alias(initial_pdpt);
+    vm_pae_init_low_alias(initial_pdpt, boot_alloc);
 
     const unsigned int last_idx = pdpt_offset_of((addr_t)KERNEL_PREALLOC_LIMIT - 1);
 
     for(idx = pdpt_offset_of((addr_t)KLIMIT); idx <= last_idx; ++idx) {
         pte_t *const pdpte      = &initial_pdpt->pd[idx];
-        pte_t *page_directory   = (pte_t *)pfalloc_early();
+        pte_t *page_directory   = (pte_t *)boot_pgalloc_early(boot_alloc);
 
         vm_pae_set_pte(
                 pdpte,
@@ -298,8 +303,9 @@ addr_space_t *vm_pae_create_initial_addr_space(boot_heap_t *boot_heap) {
             end_index = vm_pae_page_directory_offset_of((addr_t)KERNEL_PREALLOC_LIMIT);
         }
 
-        vm_init_page_directory(
+        vm_init_initial_page_directory(
                 page_directory,
+                boot_alloc,
                 0,
                 end_index,
                 idx == pdpt_offset_of((addr_t)KLIMIT));
