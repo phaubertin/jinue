@@ -65,17 +65,17 @@ thread_context_switch_stack:
     ; esp+ 0  edi
     
     ; retrieve the from thread context argument
-    mov edi, [esp+20]   ; from thread context (first function argument)
+    mov ecx, [esp+20]   ; from thread context (first function argument)
 
     ; On the first thread context switch after boot, the kernel is using a
     ; temporary stack and the from/current thread context is NULL. Skip saving
     ; the current stack pointer in that case.
-    or edi, edi
+    or ecx, ecx
     jz .do_switch
 
     ; store the current stack pointer in the first member of the thread context
     ; structure
-    mov [edi], esp
+    mov [ecx], esp
 
 .do_switch:
     ; read remaining arguments from stack before switching
@@ -86,25 +86,32 @@ thread_context_switch_stack:
     ; switching (to thread). This is where we actually switch thread.
     mov esp, [esi]      ; saved stack pointer is the first member
     
+    ; Restore the saved registers.
+    ;
+    ; We do this before calling thread_page_destroy(). Otherwise, the frame
+    ; pointer still refers to the thread stack for the previous thread, i.e. the
+    ; one we are potentially about to destroy, when thread_page_destroy() is
+    ; called. This is a problem is e.g. we try to dump the call stack from
+    ; thread_page_destroy() of one of its callee.
+    pop edi
+    pop esi
+    pop ebx
+    pop ebp
+
     ; Now that we switched stack, see if the caller requested the from thread
     ; context be destroyed.
     or eax, eax
     jz .skip_destroy
     
     ; destroy from thread context
-    and edi, THREAD_CONTEXT_MASK
-    push edi
+    and ecx, THREAD_CONTEXT_MASK
+    push ecx
     call thread_page_destroy
     
     ; cleanup thread_page_destroy() arguments from stack
     add esp, 4
 
 .skip_destroy:
-    pop edi
-    pop esi
-    pop ebx
-    pop ebp
-    
     ret
 
 .end:
