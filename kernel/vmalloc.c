@@ -31,6 +31,7 @@
 
 #include <hal/vm.h>
 #include <assert.h>
+#include <boot.h>
 #include <pfalloc.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -249,29 +250,25 @@ void vmfree(vmalloc_t *allocator, addr_t page) {
     }
 }
 
-void vmalloc_init(vmalloc_t *allocator, addr_t start_addr, addr_t end_addr) {
-    vmalloc_init_allocator( allocator, start_addr, end_addr);
-    vmalloc_add_region(     allocator, start_addr, end_addr);
-}
-
 /**
     Basic initialization of virtual memory allocator
     @param allocator  vm_alloc_t structure for a virtual memory allocator
     @param start_addr start address of the region managed by the allocator
     @param size       size of the region managed by the allocator
 */
-void vmalloc_init_allocator(vmalloc_t *allocator, addr_t start_addr, addr_t end_addr) {
+void vmalloc_init_allocator(
+        vmalloc_t       *allocator,
+        addr_t           start_addr,
+        addr_t           end_addr,
+        boot_alloc_t    *boot_alloc) {
+
     addr_t           base_addr;         /* block-aligned start address */
     addr_t           aligned_end;       /* block-aligned end address */
     addr_t           adjusted_start;    /* actual start of available memory, block array skipped */
     
-    vmalloc_block_t *block_array;       /* start of array */
     unsigned int     block_count;       /* array size, in blocks (entries) */
     size_t           array_size;        /* array size, in bytes */
     unsigned int     array_page_count;  /* array size, in pages */
-    
-    addr_t           addr;              /* some virtual address */
-    kern_paddr_t     paddr;             /* some page frame address */
     unsigned int     idx;               /* an array index */
         
     
@@ -297,9 +294,6 @@ void vmalloc_init_allocator(vmalloc_t *allocator, addr_t start_addr, addr_t end_
         ++array_page_count;
     }
     
-    /* address of the block array */
-    block_array = (vmalloc_block_t *)start_addr;
-    
     /* adjust base address to skip block descriptor array */
     adjusted_start = start_addr + array_page_count * PAGE_SIZE;
     
@@ -308,36 +302,31 @@ void vmalloc_init_allocator(vmalloc_t *allocator, addr_t start_addr, addr_t end_
     allocator->end_addr     = end_addr;
     allocator->base_addr    = base_addr;
     allocator->block_count  = block_count;
-    allocator->block_array  = block_array;
     allocator->array_pages  = array_page_count;
     allocator->free_list    = NULL;
     allocator->partial_list = NULL;
     
     /* allocate block descriptor array pages */
-    addr = (addr_t)block_array;
+    addr_t addr = NULL;
     for(idx = 0; idx < array_page_count; ++idx) {
-        /* allocate and map page */
-        paddr = pfalloc();
-        vm_map_kernel(addr, paddr, VM_FLAG_READ_WRITE);
-        
-        /* calculate address of next page */
-        addr += PAGE_SIZE;
+        addr = boot_page_alloc_image(boot_alloc);
+
+        if(idx == 0) {
+            allocator->block_array = (struct vmalloc_block_t *)addr;
+        }
     }
-    
-    /** ASSERTION: once all the array pages are allocated, we should have reached the allocatable pages region */
-    assert(addr == adjusted_start);
     
     /* basic initialization of array (all blocks unlinked/used) */
     addr = base_addr;
     for(idx = 0; idx < block_count; ++idx) {
-        block_array[idx].base_addr  = addr;
-        block_array[idx].allocator  = allocator;
+        allocator->block_array[idx].base_addr   = addr;
+        allocator->block_array[idx].allocator   = allocator;
         
         /* mark block as unlinked for now */
-        block_array[idx].next       = NULL;
+        allocator->block_array[idx].next        = NULL;
         
         /* a null stack base indicates the block is uninitialized */
-        block_array[idx].stack_addr = NULL;
+        allocator->block_array[idx].stack_addr  = NULL;
         
         /* calculate address of next block */
         addr += VMALLOC_BLOCK_SIZE;

@@ -45,6 +45,7 @@
 #include <hal/x86.h>
 #include <boot.h>
 #include <panic.h>
+#include <page_alloc.h>
 #include <pfalloc.h>
 #include <printk.h>
 #include <stdbool.h>
@@ -179,14 +180,6 @@ void hal_init(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
     /* Initialize programmable interrupt_controller. */
     pic8259_init(IDT_PIC8259_BASE);
 
-    /* initialize the page frame allocator */
-    kern_paddr_t *page_stack_buffer = (kern_paddr_t *)boot_page_alloc_early(boot_alloc);
-    init_pfalloc_cache(&global_pfalloc_cache, page_stack_buffer);
-
-    for(idx = 0; idx < KERNEL_PAGE_STACK_INIT; ++idx) {
-        pffree( EARLY_PTR_TO_PHYS_ADDR( boot_page_alloc_early(boot_alloc) ) );
-    }
-
     /* initialize virtual memory management, enable paging
      *
      * below this point, it is no longer safe to call pfalloc_early() */
@@ -196,9 +189,20 @@ void hal_init(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
     /* Initialize GDT and TSS */
     hal_init_descriptors(cpu_data, boot_alloc);
 
+    /* initialize the page frame allocator */
+    kern_paddr_t *page_stack_buffer = (kern_paddr_t *)boot_page_alloc_image(boot_alloc);
+    init_pfalloc_cache(&global_pfalloc_cache, page_stack_buffer);
+
+    for(idx = 0; idx < KERNEL_PAGE_STACK_INIT; ++idx) {
+        pffree(
+                vm_lookup_kernel_paddr(
+                        boot_page_alloc_image(boot_alloc)));
+        page_free(boot_page_alloc_image(boot_alloc));
+    }
+
     /* Initialize virtual memory allocator and VM management caches. */
-    vm_boot_postinit(boot_info, use_pae);
-    
+    vm_boot_postinit(boot_info, boot_alloc, use_pae);
+
     /* choose system call method */
     hal_select_syscall_method();
 }

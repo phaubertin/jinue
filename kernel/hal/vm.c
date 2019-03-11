@@ -37,6 +37,7 @@
 #include <hal/x86.h>
 #include <assert.h>
 #include <boot.h>
+#include <page_alloc.h>
 #include <pfalloc.h>
 #include <printk.h>
 #include <stdbool.h>
@@ -145,13 +146,17 @@ void vm_boot_init(
     vm_switch_addr_space(addr_space, cpu_data);
 }
 
-void vm_boot_postinit(const boot_info_t *boot_info, bool use_pae) {
+void vm_boot_postinit(const boot_info_t *boot_info, boot_alloc_t *boot_alloc, bool use_pae) {
     /* initialize global page allocator (region starting at KLIMIT)
      * 
      * TODO Some work needs to be done in the page allocator to support allocating
      * up to the top of memory (i.e. 0x100000000, which cannot be represented on
      * 32 bits). In the mean time, we leave a 4MB gap. */
-    vmalloc_init_allocator(global_page_allocator, (addr_t)KERNEL_IMAGE_END, (addr_t)0 - 4 * MB);
+    vmalloc_init_allocator(
+            global_page_allocator,
+            (addr_t)KERNEL_IMAGE_END,
+            (addr_t)0 - 4 * MB,
+            boot_alloc);
     
     vmalloc_add_region(global_page_allocator, (addr_t)KERNEL_IMAGE_END, (addr_t)KERNEL_PREALLOC_LIMIT);
 
@@ -486,11 +491,11 @@ void vm_map_early(addr_t vaddr, kern_paddr_t paddr, int flags) {
 kern_paddr_t vm_clone_page_directory(kern_paddr_t template_paddr, unsigned int start_index) {
     unsigned int     idx;
     
-    /* allocate and map new page directory */
-    pte_t *page_directory = (pte_t *)vmalloc(global_page_allocator);
-    kern_paddr_t paddr = pfalloc();
-    vm_map_kernel((addr_t)page_directory, paddr, VM_FLAG_READ_WRITE);
-    
+    /* Allocate new page directory.
+     *
+     * TODO handle allocation failure */
+    pte_t *page_directory = (pte_t *)page_alloc();
+
     /* map page directory template */
     pte_t *template = (pte_t *)vmalloc(global_page_allocator);
     vm_map_kernel((addr_t)template, template_paddr, VM_FLAG_READ_WRITE);
@@ -511,7 +516,7 @@ kern_paddr_t vm_clone_page_directory(kern_paddr_t template_paddr, unsigned int s
     vm_unmap_kernel((addr_t)page_directory);
     vm_unmap_kernel((addr_t)template);
     
-    return paddr;
+    return vm_lookup_kernel_paddr((addr_t)page_directory);
 }
 
 addr_space_t *vm_create_addr_space(addr_space_t *addr_space) {

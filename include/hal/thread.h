@@ -66,8 +66,6 @@ thread_t *thread_page_init(
         addr_t           entry,
         addr_t           user_stack);
 
-void thread_page_destroy(thread_t *thread);
-
 void thread_context_switch(
         thread_context_t    *from_ctx,
         thread_context_t    *to_ctx,

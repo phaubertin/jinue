@@ -32,14 +32,13 @@
 #include <hal/cpu.h>
 #include <hal/vm.h>
 #include <assert.h>
-#include <pfalloc.h>
+#include <page_alloc.h>
 #include <printk.h>
 #include <slab.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <types.h>
 #include <util.h>
-#include <vmalloc.h>
 
 slab_cache_t *slab_cache_list = NULL;
 
@@ -57,10 +56,7 @@ static void destroy_slab(slab_cache_t *cache, slab_t *slab) {
     }
     
     /* return the memory */
-    kern_paddr_t paddr = vm_lookup_kernel_paddr(start_addr);
-    vm_unmap_kernel(start_addr);
-    vmfree(global_page_allocator, start_addr);
-    pffree(paddr);
+    page_free(start_addr);
 }
 
 void slab_cache_init(
@@ -380,24 +376,19 @@ void slab_cache_free(void *buffer) {
 }
 
 void slab_cache_grow(slab_cache_t *cache) {
-    void            *slab_addr;
-    slab_t          *slab;
     slab_bufctl_t   *bufctl;
     slab_bufctl_t   *next;
     addr_t           buffer;
     uint32_t        *buffer_end;
     uint32_t        *ptr;
     
-    /* allocate new slab */
-    slab_addr = vmalloc( global_page_allocator );
+    char *slab_addr = page_alloc();
     
     /** ASSERTION: slab address is not NULL */
     assert(slab_addr != NULL);
     
-    vm_map_kernel(slab_addr, pfalloc(), VM_FLAG_READ_WRITE);
-    
-    slab = (slab_t *)( (char *)slab_addr + SLAB_SIZE - sizeof(slab_t) );
-    
+    slab_t *slab = (slab_t *)(slab_addr + SLAB_SIZE - sizeof(slab_t));
+
     slab->cache = cache;
     
     /* slab is initially empty */
@@ -423,7 +414,7 @@ void slab_cache_grow(slab_cache_t *cache) {
     }
     
     /* compute address of first bufctl */
-    bufctl          = (slab_bufctl_t *)( (char *)slab_addr + slab->colour + cache->bufctl_offset );
+    bufctl          = (slab_bufctl_t *)(slab_addr + slab->colour + cache->bufctl_offset);
     slab->free_list = bufctl;
     
     while(1) {        

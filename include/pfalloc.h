@@ -36,7 +36,7 @@
 
 #define KERNEL_PAGE_STACK_SIZE    1024
 
-#define KERNEL_PAGE_STACK_INIT    128
+#define KERNEL_PAGE_STACK_INIT    32
 
 
 typedef struct {

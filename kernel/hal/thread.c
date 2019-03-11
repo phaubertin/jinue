@@ -35,12 +35,9 @@
 #include <hal/thread.h>
 #include <hal/trap.h>
 #include <hal/types.h>
-#include <hal/vm.h>
 #include <assert.h>
-#include <pfalloc.h>
 #include <stddef.h>
 #include <string.h>
-#include <vmalloc.h>
 
 
 /* defined in thread_switch.asm */
@@ -120,14 +117,6 @@ thread_t *thread_page_init(
     thread_ctx->saved_stack_pointer = (addr_t)kernel_context;
 
     return thread;
-}
-
-/* This function is called by assembly code. See thread_context_switch_stack(). */
-void thread_page_destroy(thread_t *thread) {
-    kern_paddr_t paddr = vm_lookup_kernel_paddr((addr_t)thread);
-    vm_unmap_kernel((addr_t)thread);
-    vmfree(global_page_allocator, (addr_t)thread);
-    pffree(paddr);
 }
 
 void thread_context_switch(

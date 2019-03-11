@@ -65,9 +65,13 @@ static inline const Elf32_Shdr *elf_get_section_header(const Elf32_Ehdr *elf_hea
 
 void elf_check(Elf32_Ehdr *elf);
 
-void elf_load(elf_info_t *info, Elf32_Ehdr *elf, addr_space_t *addr_space);
+void elf_load(
+        elf_info_t      *info,
+        Elf32_Ehdr      *elf,
+        addr_space_t    *addr_space,
+        boot_alloc_t    *boot_alloc);
 
-void elf_setup_stack(elf_info_t *info);
+void elf_setup_stack(elf_info_t *info, boot_alloc_t *boot_alloc);
 
 int elf_lookup_symbol(
         const Elf32_Ehdr    *elf_header,

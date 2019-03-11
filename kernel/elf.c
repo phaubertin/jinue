@@ -31,9 +31,9 @@
 
 #include <hal/vm.h>
 #include <assert.h>
+#include <boot.h>
 #include <elf.h>
 #include <panic.h>
-#include <pfalloc.h>
 #include <printk.h>
 #include <vmalloc.h>
 
@@ -93,7 +93,12 @@ void elf_check(Elf32_Ehdr *elf) {
     }
 }
 
-void elf_load(elf_info_t *info, Elf32_Ehdr *elf, addr_space_t *addr_space) {
+void elf_load(
+        elf_info_t      *info,
+        Elf32_Ehdr      *elf,
+        addr_space_t    *addr_space,
+        boot_alloc_t    *boot_alloc) {
+
     Elf32_Phdr *phdr;
     kern_paddr_t page;
     addr_t vpage;
@@ -153,7 +158,7 @@ void elf_load(elf_info_t *info, Elf32_Ehdr *elf, addr_space_t *addr_space) {
                 vnext = vptr + PAGE_SIZE;
                 
                 /* allocate and map the new page */
-                page = pfalloc();
+                page = boot_page_frame_alloc(boot_alloc);
                 vm_map_kernel((addr_t)dest_page, page, VM_FLAG_READ_WRITE);
                 
                 dest = dest_page;
@@ -204,12 +209,12 @@ void elf_load(elf_info_t *info, Elf32_Ehdr *elf, addr_space_t *addr_space) {
     
     vmfree(global_page_allocator, (addr_t)dest_page);
     
-    elf_setup_stack(info);
+    elf_setup_stack(info, boot_alloc);
     
     printk("ELF binary loaded.\n");
 }
 
-void elf_setup_stack(elf_info_t *info) {
+void elf_setup_stack(elf_info_t *info, boot_alloc_t *boot_alloc) {
     kern_paddr_t page;
     addr_t vpage;
     
@@ -217,7 +222,7 @@ void elf_setup_stack(elf_info_t *info) {
     
     /* initial stack allocation */
     for(vpage = (addr_t)STACK_START; vpage < (addr_t)STACK_BASE; vpage += PAGE_SIZE) {
-        page  = pfalloc();
+        page  = boot_page_frame_alloc(boot_alloc);
         vm_map_user(info->addr_space, vpage, page, VM_FLAG_READ_WRITE);
     }
     

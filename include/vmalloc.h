@@ -49,9 +49,11 @@ addr_t vmalloc_low_latency(vmalloc_t *allocator);
 
 void vmfree(vmalloc_t *allocator, addr_t page);
 
-void vmalloc_init(vmalloc_t *allocator, addr_t start_addr, addr_t end_addr);
-
-void vmalloc_init_allocator(vmalloc_t *allocator, addr_t start_addr, addr_t end_addr);
+void vmalloc_init_allocator(
+        vmalloc_t       *allocator,
+        addr_t           start_addr,
+        addr_t           end_addr,
+        boot_alloc_t    *boot_alloc);
 
 void vmalloc_add_region(vmalloc_t *allocator, addr_t start_addr, addr_t end_addr);
 

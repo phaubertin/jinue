@@ -35,10 +35,9 @@
 #include <hal/vm.h>
 #include <boot.h>
 #include <object.h>
+#include <page_alloc.h>
 #include <panic.h>
-#include <pfalloc.h>
 #include <thread.h>
-#include <vmalloc.h>
 
 
 static jinue_list_t ready_list = JINUE_LIST_STATIC;
@@ -58,12 +57,8 @@ thread_t *thread_create(
         process_t       *process,
         addr_t           entry,
         addr_t           user_stack) {
-            
-    /* TODO use pgalloc() here when that is implemented. */
-    kern_paddr_t thread_page_paddr = pfalloc();
-    void *thread_page = vmalloc(global_page_allocator);
-    vm_map_kernel(thread_page, thread_page_paddr, VM_FLAG_READ_WRITE);
 
+    void *thread_page = page_alloc();
 
     if(thread_page == NULL) {
         return NULL;
@@ -87,6 +82,12 @@ thread_t *thread_create_boot(
     thread_init(thread, process);
 
     return thread;
+}
+
+/* This function is called by assembled code. See thread_context_switch_stack(). */
+void thread_destroy(thread_t *thread) {
+    void * thread_page = (void *)((uintptr_t)thread & ~PAGE_MASK);
+    page_free(thread_page);
 }
 
 void thread_ready(thread_t *thread) {

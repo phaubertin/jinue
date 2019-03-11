@@ -32,7 +32,7 @@
 
     bits 32
     
-    extern thread_page_destroy
+    extern thread_destroy
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: thread_context_switch_stack
@@ -88,11 +88,11 @@ thread_context_switch_stack:
     
     ; Restore the saved registers.
     ;
-    ; We do this before calling thread_page_destroy(). Otherwise, the frame
-    ; pointer still refers to the thread stack for the previous thread, i.e. the
-    ; one we are potentially about to destroy, when thread_page_destroy() is
-    ; called. This is a problem is e.g. we try to dump the call stack from
-    ; thread_page_destroy() of one of its callee.
+    ; We do this before calling thread_destroy(). Otherwise, the frame pointer
+    ; still refers to the thread stack for the previous thread, i.e. the one
+    ; we are potentially about to destroy, when thread_destroy() is called.
+    ; This is a problem is e.g. we try to dump the call stack from thread_destroy()
+    ; or one of its callees.
     pop edi
     pop esi
     pop ebx
@@ -106,9 +106,9 @@ thread_context_switch_stack:
     ; destroy from thread context
     and ecx, THREAD_CONTEXT_MASK
     push ecx
-    call thread_page_destroy
+    call thread_destroy
     
-    ; cleanup thread_page_destroy() arguments from stack
+    ; cleanup thread_destroy() arguments from stack
     add esp, 4
 
 .skip_destroy:

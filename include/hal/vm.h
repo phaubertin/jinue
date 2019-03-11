@@ -58,7 +58,7 @@ void vm_boot_init(
         cpu_data_t          *cpu_data,
         boot_alloc_t        *boot_alloc);
 
-void vm_boot_postinit(const boot_info_t *boot_info, bool use_pae);
+void vm_boot_postinit(const boot_info_t *boot_info, boot_alloc_t *boot_alloc, bool use_pae);
 
 void vm_map_kernel(addr_t vaddr, kern_paddr_t paddr, int flags);
 

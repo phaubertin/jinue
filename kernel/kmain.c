@@ -109,7 +109,7 @@ void kmain(void) {
 
     /* load process manager binary */
     Elf32_Ehdr *elf = find_process_manager();
-    elf_load(&elf_info, elf, &process->addr_space);
+    elf_load(&elf_info, elf, &process->addr_space, &boot_alloc);
 
     /* create initial thread */
     thread_t *thread = thread_create_boot(
