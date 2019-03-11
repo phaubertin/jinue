@@ -34,16 +34,44 @@
 #include <hal/vga.h>
 #include <debug.h>
 #include <printk.h>
+#include <stdbool.h>
 
 
-void panic(const char *message) {    
-    printk("%kKERNEL PANIC: %s\n", VGA_COLOR_RED, message);
+void panic(const char *message) {
+    static int enter_count = 0;
 
-    if( boot_info_check(false) ) {
-        dump_call_stack();
-    }
-    else {
-        printk("Cannot dump call stack because boot information structure is invalid.\n");
+    ++enter_count;
+
+    /* When things go seriously wrong, things that panic does itself can create
+     * a further panic, for example by triggering a hardware exception. The
+     * enter_count static variable keeps count of the number of times panic()
+     * is entered. */
+    switch(enter_count) {
+    case 1:
+    case 2:
+        /* The first two times panic() is entered, a panic message is displayed
+         * along with a full call sack dump. */
+        printk( "%kKERNEL PANIC%s: %s\n",
+                VGA_COLOR_RED,
+                enter_count==1?"":" (recursive)",
+                message);
+
+        if( boot_info_check(false) ) {
+            dump_call_stack();
+        }
+        else {
+            printk("Cannot dump call stack because boot information structure is invalid.\n");
+        }
+        break;
+    case 3:
+        /* The third time, a "recursive count exceeded" message is displayed. We
+         * try to limit the number of actions we take to limit the chances of a
+         * further panic. */
+        printk("%kKERNEL PANIC (recursive count exceeded)\n", VGA_COLOR_RED);
+        break;
+    default:
+        /* The fourth time, we do nothing but halt the CPU. */
+        break;
     }
     
     halt();
