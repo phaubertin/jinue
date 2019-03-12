@@ -37,6 +37,7 @@
 #include <panic.h>
 #include <printk.h>
 #include <vmalloc.h>
+#include <util.h>
 
 
 void elf_check(Elf32_Ehdr *elf) {
@@ -100,21 +101,13 @@ void elf_load(
         addr_space_t    *addr_space,
         boot_alloc_t    *boot_alloc) {
 
-    Elf32_Phdr *phdr;
-    kern_paddr_t page;
-    addr_t vpage;
-    char *vptr, *vend, *vfend, *vnext;
-    char *file_ptr;    
-    char *stop;
-    char *dest, *dest_page;
     unsigned int idx;
-    unsigned long flags;
     
     /* check that ELF binary is valid */
     elf_check(elf);
     
     /* get the program header table */
-    phdr = (Elf32_Phdr *)((char *)elf + elf->e_phoff);
+    Elf32_Phdr * phdr   = (Elf32_Phdr *)((char *)elf + elf->e_phoff);
     
     info->at_phdr       = (addr_t)phdr;
     info->at_phnum      = elf->e_phnum;
@@ -123,7 +116,7 @@ void elf_load(
     info->entry         = (addr_t)elf->e_entry;
     
     /* temporary page for copies */
-    dest_page = (char *)vmalloc(global_page_allocator);
+    char *dest_page = (char *)vmalloc(global_page_allocator);
 
     for(idx = 0; idx < elf->e_phnum; ++idx) {
         if(phdr[idx].p_type != PT_LOAD) {
@@ -136,38 +129,39 @@ void elf_load(
         }
         
         /* set start and end addresses for mapping and copying */
-        file_ptr = (char *)elf + phdr[idx].p_offset;
-        vptr     = (char *)phdr[idx].p_vaddr;
-        vend     = vptr  + phdr[idx].p_memsz;  /* limit for padding */
-        vfend    = vptr  + phdr[idx].p_filesz; /* limit for copy */
+        char *file_ptr  = (char *)elf + phdr[idx].p_offset;
+        char *vptr      = (char *)phdr[idx].p_vaddr;
+        char *vend      = vptr  + phdr[idx].p_memsz;  /* limit for padding */
+        char *vfend     = vptr  + phdr[idx].p_filesz; /* limit for copy */
                 
         /* align on page boundaries, be inclusive, 
            note that vfend is not aligned        */
-        file_ptr = (char *) ( (uintptr_t)file_ptr & ~PAGE_MASK );
-        vptr     = (char *) ( (uintptr_t)vptr  & ~PAGE_MASK );
-        
-        if(page_offset_of(vend) != 0) {
-            vend  = (char *) ( (uintptr_t)vend  & ~PAGE_MASK );
-            vend +=  PAGE_SIZE;
-        }        
+        file_ptr        = (char *)ALIGN_START(file_ptr, PAGE_SIZE);
+        vptr            = (char *)ALIGN_START(vptr,     PAGE_SIZE);
+        vend            = (char *)ALIGN_END(vend,       PAGE_SIZE);
     
         /* copy if we have to */
         if( (phdr[idx].p_flags & PF_W) || (phdr[idx].p_filesz != phdr[idx].p_memsz) ) {
             while(vptr < vend) {
+                unsigned long    flags;
+                char            *stop;
+
                 /* start of this page and next page */
-                vpage = (addr_t)vptr;
-                vnext = vptr + PAGE_SIZE;
+                addr_t vpage    = (addr_t)vptr;
+                char *vnext     = vptr + PAGE_SIZE;
                 
                 /* allocate and map the new page */
-                page = boot_page_frame_alloc(boot_alloc);
+                kern_paddr_t page = boot_page_frame_alloc(boot_alloc);
                 vm_map_kernel((addr_t)dest_page, page, VM_FLAG_READ_WRITE);
                 
-                dest = dest_page;
+                char *dest = dest_page;
                                 
                 /* copy */
-                stop     = vnext;
-                if(stop > vfend) {
+                if(vnext > vfend) {
                     stop = vfend;
+                }
+                else {
+                    stop     = vnext;
                 }
                 
                 while(vptr < stop) {

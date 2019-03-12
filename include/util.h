@@ -36,11 +36,11 @@
 #include <types.h>
 
 
-#define OFFSET_OF(x, s)     ( (uint32_t)(x) & ((s)-1) )
+#define OFFSET_OF(x, s)     ( (uintptr_t)(x) & ((s)-1) )
 
-#define ALIGN_START(x, s)   ((addr_t)( (uint32_t)(x) & ~((s)-1) ))
+#define ALIGN_START(x, s)   ((addr_t)( (uintptr_t)(x) & ~((s)-1) ))
 
-#define ALIGN_END(x, s)     ( OFFSET_OF(x, s) == 0 ? (addr_t)(x) : ALIGN_START(x, s) + s  )
+#define ALIGN_END(x, s)     (ALIGN_START((uintptr_t)(x) + s - 1, (s)))
 
 static inline void *alloc_forward_func(size_t size, void **alloc_ptr) {
 	char *ret = *alloc_ptr;

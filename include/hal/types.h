@@ -39,7 +39,7 @@
 #include <stdint.h>
 
 /** Virtual memory address (pointer) with pointer arithmetic allowed */
-typedef unsigned char   *addr_t;
+typedef unsigned char *addr_t;
 
 /** Physical memory address for use by the kernel */
 typedef uint32_t kern_paddr_t;
