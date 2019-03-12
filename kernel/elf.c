@@ -114,9 +114,6 @@ void elf_load(
     info->at_phent      = elf->e_phentsize;
     info->addr_space    = addr_space;
     info->entry         = (addr_t)elf->e_entry;
-    
-    /* temporary page for copies */
-    char *dest_page = (char *)vmalloc(global_page_allocator);
 
     for(idx = 0; idx < elf->e_phnum; ++idx) {
         if(phdr[idx].p_type != PT_LOAD) {
@@ -147,33 +144,7 @@ void elf_load(
                 char            *stop;
 
                 /* start of this page and next page */
-                addr_t vpage    = (addr_t)vptr;
                 char *vnext     = vptr + PAGE_SIZE;
-                
-                /* allocate and map the new page */
-                kern_paddr_t page = boot_page_frame_alloc(boot_alloc);
-                vm_map_kernel((addr_t)dest_page, page, VM_FLAG_READ_WRITE);
-                
-                char *dest = dest_page;
-                                
-                /* copy */
-                if(vnext > vfend) {
-                    stop = vfend;
-                }
-                else {
-                    stop     = vnext;
-                }
-                
-                while(vptr < stop) {
-                    *(dest++) = *(file_ptr++);
-                    ++vptr;
-                }
-                
-                /* pad */
-                while(vptr < vnext) {
-                    *(dest++) = 0;
-                    ++vptr;
-                }
                 
                 /* set flags */
                 /** TODO: add exec flag once PAE is enabled */
@@ -184,16 +155,33 @@ void elf_load(
                     flags = VM_FLAG_READ_ONLY;
                 }
 
-                /* undo temporary mapping and map page in proper address
-                 * space */
-                vm_unmap_kernel((addr_t)dest_page);
-                vm_map_user(addr_space, (addr_t)vpage, page, flags);
+                /* allocate and map the new page */
+                kern_paddr_t page = boot_page_frame_alloc(boot_alloc);
+                vm_map_user(addr_space, (addr_t)vptr, page, flags);
+                                
+                /* copy */
+                if(vnext > vfend) {
+                    stop = vfend;
+                }
+                else {
+                    stop = vnext;
+                }
+                
+                while(vptr < stop) {
+                    *(vptr++) = *(file_ptr++);
+                }
+                
+                /* pad */
+                while(vptr < vnext) {
+                    *(vptr++) = 0;
+                }
             }
         }
         else {            
             while(vptr < vend) {
                 /* perform mapping */
-                /** TODO: add exec flag once PAE is enabled */
+                /** TODO add exec flag once PAE is enabled
+                 *  TODO lookup actual address of page frame */
                 vm_map_user(addr_space, (addr_t)vptr, EARLY_PTR_TO_PHYS_ADDR(file_ptr), VM_FLAG_READ_ONLY);
                 
                 vptr     += PAGE_SIZE;
@@ -201,8 +189,6 @@ void elf_load(
             }            
         }
     }
-    
-    vmfree(global_page_allocator, (addr_t)dest_page);
     
     elf_setup_stack(info, boot_alloc);
     
