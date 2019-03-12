@@ -76,9 +76,6 @@ struct vmalloc_t {
     /** array of memory block descriptors */
     struct vmalloc_block_t *block_array;
 
-    /** number of pages allocated for block array */
-    unsigned int array_pages;
-
     /** list of completely free blocks */
     struct vmalloc_block_t *free_list;
 
@@ -276,7 +273,6 @@ void vmalloc_init_allocator(
     /** ASSERTION: start and end addresses must be multiples of page size (page-aligned memory region) */
     assert( page_offset_of(start_addr) == 0 && page_offset_of(end_addr) == 0 );
     
-    
     /* align base and end addresses to block size */
     base_addr   = (addr_t)ALIGN_START(start_addr, VMALLOC_BLOCK_SIZE);
     aligned_end = (addr_t)ALIGN_END(end_addr, VMALLOC_BLOCK_SIZE);
@@ -297,7 +293,6 @@ void vmalloc_init_allocator(
     allocator->end_addr     = end_addr;
     allocator->base_addr    = base_addr;
     allocator->block_count  = block_count;
-    allocator->array_pages  = array_page_count;
     allocator->free_list    = NULL;
     allocator->partial_list = NULL;
     
