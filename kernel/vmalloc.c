@@ -264,8 +264,6 @@ void vmalloc_init_allocator(
 
     addr_t           base_addr;         /* block-aligned start address */
     addr_t           aligned_end;       /* block-aligned end address */
-    addr_t           adjusted_start;    /* actual start of available memory, block array skipped */
-    
     unsigned int     block_count;       /* array size, in blocks (entries) */
     size_t           array_size;        /* array size, in bytes */
     unsigned int     array_page_count;  /* array size, in pages */
@@ -294,11 +292,8 @@ void vmalloc_init_allocator(
         ++array_page_count;
     }
     
-    /* adjust base address to skip block descriptor array */
-    adjusted_start = start_addr + array_page_count * PAGE_SIZE;
-    
     /* initialize allocator struct */
-    allocator->start_addr   = adjusted_start;
+    allocator->start_addr   = start_addr;
     allocator->end_addr     = end_addr;
     allocator->base_addr    = base_addr;
     allocator->block_count  = block_count;
