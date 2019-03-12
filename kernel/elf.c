@@ -33,6 +33,7 @@
 #include <assert.h>
 #include <boot.h>
 #include <elf.h>
+#include <page_alloc.h>
 #include <panic.h>
 #include <printk.h>
 #include <vmalloc.h>
@@ -224,6 +225,10 @@ void elf_setup_stack(elf_info_t *info, boot_alloc_t *boot_alloc) {
     for(vpage = (addr_t)STACK_START; vpage < (addr_t)STACK_BASE; vpage += PAGE_SIZE) {
         page  = boot_page_frame_alloc(boot_alloc);
         vm_map_user(info->addr_space, vpage, page, VM_FLAG_READ_WRITE);
+
+        /* This newly allocated page may have data left from a previous boot which
+         * may contain sensitive information. Let's clear it. */
+        clear_page(vpage);
     }
     
     /* At this point, page has the address of the stack's top-most page frame,

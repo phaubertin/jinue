@@ -31,6 +31,7 @@
 
 #include <hal/vm.h>
 #include <boot.h>
+#include <page_alloc.h>
 #include <panic.h>
 #include <stdbool.h>
 #include <string.h>
@@ -184,6 +185,10 @@ addr_t boot_page_alloc_early(boot_alloc_t *boot_alloc) {
         panic("vmalloc_early(): available memory exhausted");
     }
 
+    /* This newly allocated page may have data left from a previous boot which
+     * may contain sensitive information. Let's clear it. */
+    clear_page(allocated_page);
+
     /* Post-condition */
     if(boot_alloc->kernel_paddr_top != EARLY_PTR_TO_PHYS_ADDR(boot_alloc->kernel_vm_top)) {
         panic("boot_pgalloc_early(): inconsistent allocator state on return");
@@ -280,6 +285,10 @@ addr_t boot_page_alloc(boot_alloc_t *boot_alloc) {
 
     vm_map_kernel(vaddr, paddr, VM_FLAG_READ_WRITE);
 
+    /* This newly allocated page may have data left from a previous boot which
+     * may contain sensitive information. Let's clear it. */
+    clear_page(vaddr);
+
     return vaddr;
 }
 
@@ -303,6 +312,10 @@ addr_t boot_page_alloc_image(boot_alloc_t *boot_alloc) {
     addr_t vaddr        = boot_vmalloc(boot_alloc);
 
     vm_map_kernel(vaddr, paddr, VM_FLAG_READ_WRITE);
+
+    /* This newly allocated page may have data left from a previous boot which
+     * may contain sensitive information. Let's clear it. */
+    clear_page(vaddr);
 
     return vaddr;
 }
