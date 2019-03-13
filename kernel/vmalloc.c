@@ -331,8 +331,6 @@ void vmalloc_init_allocator(
 */
 void vmalloc_add_region(vmalloc_t *allocator, addr_t start_addr, addr_t end_addr) {
     addr_t       start_addr_adjusted;
-    unsigned int start;
-    unsigned int end;
     unsigned int end_full;
     unsigned int idx;
     addr_t       limit;
@@ -346,8 +344,8 @@ void vmalloc_add_region(vmalloc_t *allocator, addr_t start_addr, addr_t end_addr
     } 
     
     /* start and end block indices */
-    start = ((unsigned int)start_addr_adjusted - (unsigned int)allocator->base_addr) / VMALLOC_BLOCK_SIZE;    
-    end   = ((unsigned int)end_addr            - (unsigned int)allocator->base_addr) / VMALLOC_BLOCK_SIZE;
+    uintptr_t start = ((uintptr_t)start_addr_adjusted - (uintptr_t)allocator->base_addr) / VMALLOC_BLOCK_SIZE;
+    uintptr_t end   = ((uintptr_t)end_addr            - (uintptr_t)allocator->base_addr) / VMALLOC_BLOCK_SIZE;
     
     /* check and remember whether last block is partial (last_full < end) or
      * completely free (last_full == end) */
