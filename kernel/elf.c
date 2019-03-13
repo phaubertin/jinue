@@ -133,9 +133,9 @@ void elf_load(
                 
         /* align on page boundaries, be inclusive, 
            note that vfend is not aligned        */
-        file_ptr        = (char *)ALIGN_START(file_ptr, PAGE_SIZE);
-        vptr            = (char *)ALIGN_START(vptr,     PAGE_SIZE);
-        vend            = (char *)ALIGN_END(vend,       PAGE_SIZE);
+        file_ptr        = ALIGN_START_PTR(file_ptr, PAGE_SIZE);
+        vptr            = ALIGN_START_PTR(vptr,     PAGE_SIZE);
+        vend            = ALIGN_END_PTR(vend,       PAGE_SIZE);
     
         /* copy if we have to */
         if( (phdr[idx].p_flags & PF_W) || (phdr[idx].p_filesz != phdr[idx].p_memsz) ) {

@@ -72,7 +72,7 @@ void boot_alloc_init(boot_alloc_t *boot_alloc, void *heap_ptr) {
  * */
 void *boot_heap_alloc_size(boot_alloc_t *boot_alloc, size_t size, size_t align) {
     if(align != 0) {
-        boot_alloc->heap_ptr = ALIGN_END(boot_alloc->heap_ptr, align);
+        boot_alloc->heap_ptr = ALIGN_END_PTR(boot_alloc->heap_ptr, align);
     }
 
     void *object            = boot_alloc->heap_ptr;

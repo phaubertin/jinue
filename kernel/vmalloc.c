@@ -274,8 +274,8 @@ void vmalloc_init_allocator(
     assert( page_offset_of(start_addr) == 0 && page_offset_of(end_addr) == 0 );
     
     /* align base and end addresses to block size */
-    base_addr   = (addr_t)ALIGN_START(start_addr, VMALLOC_BLOCK_SIZE);
-    aligned_end = (addr_t)ALIGN_END(end_addr, VMALLOC_BLOCK_SIZE);
+    base_addr   = ALIGN_START_PTR(start_addr, VMALLOC_BLOCK_SIZE);
+    aligned_end = ALIGN_END_PTR(end_addr, VMALLOC_BLOCK_SIZE);
 
     /* calculate number of memory blocks managed by this allocator */
     block_count = ( (char *)aligned_end - (char *)base_addr ) / VMALLOC_BLOCK_SIZE;
@@ -351,7 +351,7 @@ void vmalloc_add_region(vmalloc_t *allocator, addr_t start_addr, addr_t end_addr
     
     /* check and remember whether last block is partial (last_full < end) or
      * completely free (last_full == end) */
-    if( OFFSET_OF(end_addr, VMALLOC_BLOCK_SIZE) == 0) {
+    if( OFFSET_OF_PTR(end_addr, VMALLOC_BLOCK_SIZE) == 0) {
         end_full = end;
     }
     else {
@@ -361,8 +361,8 @@ void vmalloc_add_region(vmalloc_t *allocator, addr_t start_addr, addr_t end_addr
     /* array initialization -- first block (if partial) */
     idx = start;
     
-    if( OFFSET_OF(start_addr_adjusted, VMALLOC_BLOCK_SIZE) != 0 ) {
-        limit = ALIGN_END(start_addr_adjusted, VMALLOC_BLOCK_SIZE);
+    if( OFFSET_OF_PTR(start_addr_adjusted, VMALLOC_BLOCK_SIZE) != 0 ) {
+        limit = ALIGN_END_PTR(start_addr_adjusted, VMALLOC_BLOCK_SIZE);
         
         if(end_addr < limit) {
             limit = end_addr;
@@ -467,7 +467,6 @@ static void vmalloc_partial_block(vmalloc_block_t *block) {
      * if the block is in the used state on function entry, we leave the stack
      * at its previous location since the first page of the block might not be
      * available. */
-    
     if(block->next == NULL) {
         /** ASSERTION: block stack address is not null  */
         assert(block->stack_addr != NULL);

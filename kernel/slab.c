@@ -47,7 +47,7 @@ static void destroy_slab(slab_cache_t *cache, slab_t *slab) {
     addr_t           buffer;
 
     /* call destructor */
-    start_addr = ALIGN_START(slab, SLAB_SIZE);
+    start_addr = ALIGN_START_PTR(slab, SLAB_SIZE);
     
     for(buffer = start_addr + slab->colour; buffer < (addr_t)slab; buffer += cache->alloc_size) {
         if(cache->dtor != NULL && ! (cache->flags & SLAB_POISON)) {
@@ -286,7 +286,7 @@ void slab_cache_free(void *buffer) {
     unsigned int     idx;
     
     /* compute address of slab data structure */
-    slab_start = ALIGN_START(buffer, SLAB_SIZE);
+    slab_start = ALIGN_START_PTR(buffer, SLAB_SIZE);
     slab = (slab_t *)(slab_start + SLAB_SIZE - sizeof(slab_t) );
     
     /* obtain address of cache and bufctl */
