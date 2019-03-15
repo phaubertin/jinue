@@ -151,14 +151,13 @@ void vm_boot_postinit(const boot_info_t *boot_info, boot_alloc_t *boot_alloc, bo
      * 
      * TODO Some work needs to be done in the page allocator to support allocating
      * up to the top of memory (i.e. 0x100000000, which cannot be represented on
-     * 32 bits). In the mean time, we leave a 4MB gap. */
-    vmalloc_init_allocator(
+     * 32 bits). In the mean time, we leave a 4MB (one block) gap. */
+    vmalloc_init(
             global_page_allocator,
             (addr_t)KERNEL_IMAGE_END,
             (addr_t)0 - 4 * MB,
+            (addr_t)KERNEL_PREALLOC_LIMIT,
             boot_alloc);
-    
-    vmalloc_add_region(global_page_allocator, (addr_t)KERNEL_IMAGE_END, (addr_t)KERNEL_PREALLOC_LIMIT);
 
     /* create slab cache to allocate PDPTs
      * 

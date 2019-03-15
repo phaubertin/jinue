@@ -45,17 +45,14 @@ extern vmalloc_t *const global_page_allocator;
 
 addr_t vmalloc(vmalloc_t *allocator);
 
-addr_t vmalloc_low_latency(vmalloc_t *allocator);
-
 void vmfree(vmalloc_t *allocator, addr_t page);
 
-void vmalloc_init_allocator(
+void vmalloc_init(
         vmalloc_t       *allocator,
         addr_t           start_addr,
         addr_t           end_addr,
+        addr_t           preinit_limit,
         boot_alloc_t    *boot_alloc);
-
-void vmalloc_add_region(vmalloc_t *allocator, addr_t start_addr, addr_t end_addr);
 
 bool vmalloc_is_in_range(vmalloc_t *allocator, addr_t page);
 
