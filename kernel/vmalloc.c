@@ -40,13 +40,38 @@
 #include <util.h>
 #include <vmalloc.h>
 
+/**
+  @file
+
+  Virtual address space allocator
+
+  Functions in this file are used to manage the virtual address space. Each
+  allocatable region of the address space is represented by a vmalloc_t
+  structure.
+
+  Pages are allocated one at a time. There is no way to allocate multiple
+  contiguous pages after kernel initialization. A different allocator is used
+  during initialization - see boot.c.
+
+  The allocator manages its address space region in fixed-size blocks of a few
+  megabytes aligned on their size. Each block is represented by a vmalloc_block_t
+  structure and has a stack to record available pages. The size of this stack is
+  exactly one page, which is what determines the block size.
+
+  vm_block_t structures for an allocator are in an array that ensures the right
+  vm_block_t structure can be found quickly during de-allocation. Non-depleted
+  blocks are linked to a free list (a circular, doubly-linked list) that allows
+  the allocator to quickly find a block with free pages during allocations.
+
+  Warning: the prev member (back pointer) of vmalloc_block_t is only meaningful
+           while the block is linked to the free list. If there is a need to
+           check whether the block is linked or not and vmalloc_stack_is_empty()
+           isn't appropriate, check if the next member (not prev) is NULL.
+*/
+
 #define VMALLOC_STACK_ENTRIES   (PAGE_SIZE / sizeof(addr_t))
 
 #define VMALLOC_BLOCK_SIZE      (VMALLOC_STACK_ENTRIES * PAGE_SIZE)
-
-#define VMALLOC_IS_FULL(b)      ((b)->next == NULL)
-
-#define VMALLOC_EMPTY_STACK(b)  ((b)->stack_ptr >= (b)->stack_base + VMALLOC_STACK_ENTRIES)
 
 
 struct vmalloc_t {
@@ -95,35 +120,19 @@ static void vmalloc_unlink_block(vmalloc_t *allocator, vmalloc_block_t *block);
 
 static void vmalloc_initialize_block(vmalloc_t *allocator, unsigned int block_index, void *stack_page);
 
-
 /**
-  @file
-  
-  Virtual address space allocator
-  
-  Functions in this file are used to manage the virtual address space. Each
-  allocatable region of the address space is represented by a vmalloc_t
-  structure.
-
-  Pages are allocated one at a time. There is no way to allocate multiple
-  contiguous pages after kernel initialization. A different allocator is used
-  during initialization - see boot.c.
-  
-  The allocator manages its address space region in fixed-size blocks of a few
-  megabytes aligned on their size. Each block is represented by a vmalloc_block_t
-  structure and has a stack to record available pages. The size of this stack is
-  exactly one page, which is what determines the block size.
-
-  vm_block_t structures for an allocator are in an array that ensures the right
-  vm_block_t structure can be found quickly during de-allocation. Non-depleted
-  blocks are linked to a free list (a circular, doubly-linked list) that allows
-  the allocator to quickly find a block with free pages during allocations.
-  
-  Warning: the prev member (back pointer) of vmalloc_block_t is only meaningful
-           while the block is linked to the free list. To check whether the
-           block is linked or not, check if the next member (not prev) is NULL.
-           VMALLOC_IS_FULL() does this.
-*/
+ * Check if a block's page stack is empty.
+ *
+ * When a block's page stack is empty, the block is depleted (i.e. full) and
+ * more pages cannot be allocated from it.
+ *
+ * @param block the block
+ * @return true if the stack is empty, false if pages can still be allocated
+ *
+ * */
+static inline bool vmalloc_stack_is_empty(const vmalloc_block_t *block) {
+    return block->stack_ptr >= block->stack_base + VMALLOC_STACK_ENTRIES;
+}
 
 /**
  * Push a page on a block's page stack.
@@ -167,38 +176,38 @@ static inline addr_t vmalloc_pop_page(vmalloc_block_t *block) {
  * @return the computed address
  *
  * */
-static inline addr_t vmalloc_compute_block_base_addr(vmalloc_t *allocator, unsigned int block_index) {
+static inline addr_t vmalloc_compute_block_base_addr(
+        const vmalloc_t     *allocator,
+        unsigned int         block_index) {
+
     return allocator->base_addr + block_index * VMALLOC_BLOCK_SIZE;
 }
 
 /**
     Allocate a page of virtual address space.
-    @param allocator allocator which manages the memory region from which we wish to obtain a page
+    @param allocator the allocator which manages the memory region from which we wish to obtain a page
 */
 addr_t vmalloc(vmalloc_t *allocator) {
-    vmalloc_block_t *block;
-    addr_t           page;
-    
     /** ASSERTION: allocator is not null. */
     assert(allocator != NULL);
     
-    block = allocator->free_list;
+    vmalloc_block_t *block = allocator->free_list;
     
     if(block == NULL) {
         /* No more page available. */
         return NULL;
     }
 
-    /** ASSERTION: stack pointer of block is not NULL, which implied that the block has been initialized. */
+    /** ASSERTION: Stack pointer of block is not NULL, which implied that the block has been initialized. */
     assert(block->stack_ptr != NULL);
     
-    /** ASSERTION: since this block was on the free list, the page stack should not be empty. */
-    assert( ! VMALLOC_EMPTY_STACK(block) );
+    /** ASSERTION: Since this block is on the free list, the page stack should not be empty. */
+    assert(! vmalloc_stack_is_empty(block));
     
-    page = vmalloc_pop_page(block);
+    addr_t page = vmalloc_pop_page(block);
     
     /* If we just emptied the stack, unlink the block from the free list. */
-    if( VMALLOC_EMPTY_STACK(block) ) {
+    if(vmalloc_stack_is_empty(block)) {
         vmalloc_unlink_block(allocator, block);
     }
 
@@ -224,8 +233,8 @@ void vmfree(vmalloc_t *allocator, addr_t page) {
     unsigned int idx = ( (unsigned int)page - (unsigned int)allocator->base_addr ) / VMALLOC_BLOCK_SIZE;
     vmalloc_block_t *block = &allocator->block_array[idx];
     
-    /* If the block was a used block, link it back to the free list. */
-    if(VMALLOC_IS_FULL(block)) {
+    /* If the block was depleted, link it back to the free list. */
+    if(vmalloc_stack_is_empty(block)) {
         vmalloc_link_block(allocator, block);
     }
     
