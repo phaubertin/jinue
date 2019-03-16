@@ -376,11 +376,8 @@ static void init_allocator(
     
     /* calculate the number of pages required to store the memory block
      * descriptor array */
-    array_size = block_count * sizeof(vmalloc_block_t);
-    array_page_count = array_size / PAGE_SIZE;
-    if(array_size % PAGE_SIZE != 0) {
-        ++array_page_count;
-    }
+    array_size              = block_count * sizeof(vmalloc_block_t);
+    array_page_count        = ALIGN_END(array_size, PAGE_SIZE) / PAGE_SIZE;
     
     /* initialize allocator struct */
     allocator->start_addr   = start_addr;
