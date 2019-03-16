@@ -94,6 +94,9 @@ typedef struct {
     /** end address of the address space region managed by the allocator */
     addr_t end_addr;
 
+    /** address up to which blocks have been initialized */
+    addr_t init_limit;
+
     /** number of memory blocks managed by this allocator */
     unsigned int block_count;
 
@@ -136,8 +139,7 @@ static void init_allocator(
         addr_t           preinit_limit,
         boot_alloc_t    *boot_alloc);
 
-static bool addr_is_in_allocator_range(const vmalloc_t *allocator, addr_t page);
-
+static bool addr_is_in_initialized_range(const vmalloc_t *allocator, addr_t page);
 
 /**
  * Allocate a page of virtual address space.
@@ -195,7 +197,7 @@ void vmalloc_init(
  *
  * */
 bool vmalloc_is_in_range(addr_t page) {
-    return addr_is_in_allocator_range(&kernel_vmallocator, page);
+    return addr_is_in_initialized_range(&kernel_vmallocator, page);
 }
 
 
@@ -314,7 +316,7 @@ static void vmfree_to(vmalloc_t *allocator, addr_t page) {
     assert(allocator != NULL);
     
     /** ASSERTION: We are freeing to the proper allocator/region. */
-    assert(addr_is_in_allocator_range(allocator, page));
+    assert(addr_is_in_initialized_range(allocator, page));
     
     /** ASSERTION: Page address is page aligned */
     assert(page_offset_of(page) == 0);
@@ -418,6 +420,19 @@ static void init_allocator(
                  * use boot_page_alloc() instead of boot_page_alloc_image(). */
                 boot_page_alloc(boot_alloc));
     }
+
+    /* Caution: we use the value of idx set by the for-loop above.
+     *
+     * This is the start address of the first block that has not been initialized
+     * by the for-loop. */
+    addr_t init_block_limit = vmalloc_compute_block_base_addr(allocator, idx);
+
+    if(init_block_limit > allocator->end_addr) {
+        allocator->init_limit = allocator->end_addr;
+    }
+    else {
+        allocator->init_limit = init_block_limit;
+    }
 }
 
 /**
@@ -428,8 +443,8 @@ static void init_allocator(
  * @return true if it is in the region, false otherwise
  *
  * */
-static bool addr_is_in_allocator_range(const vmalloc_t *allocator, addr_t page) {
-    return page >= allocator->start_addr && page < allocator->end_addr;
+static bool addr_is_in_initialized_range(const vmalloc_t *allocator, addr_t page) {
+    return page >= allocator->start_addr && page < allocator->init_limit;
 }
 
 /**
