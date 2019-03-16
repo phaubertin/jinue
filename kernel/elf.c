@@ -214,7 +214,7 @@ void elf_setup_stack(elf_info_t *info, boot_alloc_t *boot_alloc) {
     /* At this point, page has the address of the stack's top-most page frame,
      * which is the one in which we are about to copy the auxiliary vectors. Map
      * it temporarily in this address space so we can write to it. */
-    addr_t top_page = vmalloc(global_page_allocator);
+    addr_t top_page = vmalloc();
     vm_map_kernel(top_page, page, VM_FLAG_READ_WRITE);
 
     /* start at the top */
@@ -266,7 +266,7 @@ void elf_setup_stack(elf_info_t *info, boot_alloc_t *boot_alloc) {
 
     /* unmap and free temporary page */
     vm_unmap_kernel(top_page);
-    vmfree(global_page_allocator, top_page);
+    vmfree(top_page);
 }
 
 int elf_lookup_symbol(

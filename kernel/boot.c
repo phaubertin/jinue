@@ -281,7 +281,7 @@ addr_t boot_vmalloc(boot_alloc_t *boot_alloc) {
  * */
 addr_t boot_page_alloc(boot_alloc_t *boot_alloc) {
     kern_paddr_t paddr  = boot_page_frame_alloc(boot_alloc);
-    addr_t vaddr        = vmalloc(global_page_allocator);
+    addr_t vaddr        = vmalloc();
 
     vm_map_kernel(vaddr, paddr, VM_FLAG_READ_WRITE);
 

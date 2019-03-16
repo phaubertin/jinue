@@ -34,26 +34,16 @@
 
 #include <types.h>
 
+addr_t vmalloc(void);
 
-typedef struct vmalloc_t vmalloc_t;
-
-typedef struct vmalloc_block_t vmalloc_block_t;
-
-
-extern vmalloc_t *const global_page_allocator;
-
-
-addr_t vmalloc(vmalloc_t *allocator);
-
-void vmfree(vmalloc_t *allocator, addr_t page);
+void vmfree(addr_t page);
 
 void vmalloc_init(
-        vmalloc_t       *allocator,
         addr_t           start_addr,
         addr_t           end_addr,
         addr_t           preinit_limit,
         boot_alloc_t    *boot_alloc);
 
-bool vmalloc_is_in_range(vmalloc_t *allocator, addr_t page);
+bool vmalloc_is_in_range(addr_t page);
 
 #endif

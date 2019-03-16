@@ -109,7 +109,7 @@ bool page_alloc_is_empty(void) {
  *
  * */
 bool add_page_frame(kern_paddr_t paddr) {
-    void *page = vmalloc(global_page_allocator);
+    void *page = vmalloc();
 
     if(page == NULL) {
         return false;
@@ -157,8 +157,8 @@ kern_paddr_t remove_page_frame(void) {
 
     /* The page may be in the image region instead of the allocations region if
      * it was allocated during kernel initialization. */
-    if(vmalloc_is_in_range(global_page_allocator, page)) {
-        vmfree(global_page_allocator, page);
+    if(vmalloc_is_in_range(page)) {
+        vmfree(page);
     }
 
     return paddr;

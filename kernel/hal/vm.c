@@ -153,7 +153,6 @@ void vm_boot_postinit(const boot_info_t *boot_info, boot_alloc_t *boot_alloc, bo
      * up to the top of memory (i.e. 0x100000000, which cannot be represented on
      * 32 bits). In the mean time, we leave a 4MB (one block) gap. */
     vmalloc_init(
-            global_page_allocator,
             (addr_t)KERNEL_IMAGE_END,
             (addr_t)0 - 4 * MB,
             (addr_t)KERNEL_PREALLOC_LIMIT,
@@ -313,7 +312,7 @@ static pte_t *vm_lookup_page_table_entry(addr_space_t *addr_space, void *addr, b
 
         if(get_pte_flags(pde) & VM_FLAG_PRESENT) {
             /* map page table */
-            page_table = (pte_t *)vmalloc(global_page_allocator);
+            page_table = (pte_t *)vmalloc();
             
             vm_map_kernel((addr_t)page_table, get_pte_paddr(pde), VM_FLAG_READ_WRITE);
             
@@ -326,7 +325,7 @@ static pte_t *vm_lookup_page_table_entry(addr_space_t *addr_space, void *addr, b
                 
                 /* allocate a new page table and map it */
                 /* TODO both these allocations can fail. */
-                page_table      = (pte_t *)vmalloc(global_page_allocator);
+                page_table      = (pte_t *)vmalloc();
                 pgtable_paddr   = pfalloc();
             
                 vm_map_kernel((addr_t)page_table, pgtable_paddr, VM_FLAG_READ_WRITE);
@@ -359,7 +358,7 @@ static pte_t *vm_lookup_page_table_entry(addr_space_t *addr_space, void *addr, b
         
         /* unmap page directory and free the (virtual) page allocated to it */
         vm_unmap_kernel((addr_t)page_directory);
-        vmfree(global_page_allocator, (addr_t)page_directory);
+        vmfree((addr_t)page_directory);
         
         return pte;
     }
@@ -383,7 +382,7 @@ static void vm_free_page_table_entry(void *addr, pte_t *pte) {
     if(! is_fast_map_pointer(addr)) {
         void *page_table = (void *)((uintptr_t)pte & ~PAGE_MASK);
         vm_unmap_kernel(page_table);
-        vmfree(global_page_allocator, page_table);
+        vmfree(page_table);
     }
 }
 
@@ -496,7 +495,7 @@ kern_paddr_t vm_clone_page_directory(kern_paddr_t template_paddr, unsigned int s
     pte_t *page_directory = (pte_t *)page_alloc();
 
     /* map page directory template */
-    pte_t *template = (pte_t *)vmalloc(global_page_allocator);
+    pte_t *template = (pte_t *)vmalloc();
     vm_map_kernel((addr_t)template, template_paddr, VM_FLAG_READ_WRITE);
 
     /* clear all entries below index start_index */
@@ -585,7 +584,7 @@ addr_space_t *vm_create_initial_addr_space(
 void vm_destroy_page_directory(kern_paddr_t pgdir_paddr, unsigned int from_index, unsigned int to_index) {
     unsigned int idx;
    
-    pte_t *page_directory = (pte_t *)vmalloc(global_page_allocator);
+    pte_t *page_directory = (pte_t *)vmalloc();
     vm_map_kernel((addr_t)page_directory, pgdir_paddr, VM_FLAG_READ_WRITE);
     
     /* be careful not to free the kernel page tables */

@@ -89,7 +89,7 @@ pte_t *vm_pae_lookup_page_directory(addr_space_t *addr_space, void *addr, bool c
     
     if(vm_pae_get_pte_flags(pdpte) & VM_FLAG_PRESENT) {
         /* map page directory */
-        pte_t *page_directory   = (pte_t *)vmalloc(global_page_allocator);
+        pte_t *page_directory   = (pte_t *)vmalloc();
         vm_map_kernel((addr_t)page_directory, vm_pae_get_pte_paddr(pdpte), VM_FLAG_READ_WRITE);
         
         return page_directory;
@@ -97,7 +97,7 @@ pte_t *vm_pae_lookup_page_directory(addr_space_t *addr_space, void *addr, bool c
     else {
         if(create_as_needed) {
             /* allocate a new page directory and map it */
-            pte_t *page_directory       = (pte_t *)vmalloc(global_page_allocator);
+            pte_t *page_directory       = (pte_t *)vmalloc();
             kern_paddr_t pgdir_paddr    = pfalloc();
         
             vm_map_kernel((addr_t)page_directory, pgdir_paddr, VM_FLAG_READ_WRITE);

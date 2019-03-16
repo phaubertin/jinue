@@ -40,41 +40,51 @@
 #include <util.h>
 #include <vmalloc.h>
 
+
 /**
-  @file
-
-  Virtual address space allocator
-
-  Functions in this file are used to manage the virtual address space. Each
-  allocatable region of the address space is represented by a vmalloc_t
-  structure.
-
-  Pages are allocated one at a time. There is no way to allocate multiple
-  contiguous pages after kernel initialization. A different allocator is used
-  during initialization - see boot.c.
-
-  The allocator manages its address space region in fixed-size blocks of a few
-  megabytes aligned on their size. Each block is represented by a vmalloc_block_t
-  structure and has a stack to record available pages. The size of this stack is
-  exactly one page, which is what determines the block size.
-
-  vm_block_t structures for an allocator are in an array that ensures the right
-  vm_block_t structure can be found quickly during de-allocation. Non-depleted
-  blocks are linked to a free list (a circular, doubly-linked list) that allows
-  the allocator to quickly find a block with free pages during allocations.
-
-  Warning: the prev member (back pointer) of vmalloc_block_t is only meaningful
-           while the block is linked to the free list. If there is a need to
-           check whether the block is linked or not and vmalloc_stack_is_empty()
-           isn't appropriate, check if the next member (not prev) is NULL.
-*/
+ * @file
+ *
+ * Virtual address space allocator
+ *
+ * Functions in this file are used to manage the allocation of pages in a
+ * virtual address space region.
+ *
+ * The kernel address space has only one region where allocations are managed by
+ * this allocator, the so-called allocations region. A different allocator is
+ * used during initialization - see boot.c. That other allocator manages a
+ * different, smaller region of the address space, the so-called image region.
+ *
+ * While this allocation manages a single region of the address space, it is
+ * structured in such a way that it can easily be used to manage multiple
+ * address space regions independently, with each region being represented by a
+ * vmalloc_t structure.
+ *
+ * This allocator allocates pages one at a time. There is no way to allocate
+ * multiple contiguous pages after kernel initialization. (However, this is
+ * something the initialization-time allocator can do.
+ *
+ * The allocator manages its address space region in identically-sized blocks of
+ * a few megabytes aligned on their size. Each block is represented by a
+ * vmalloc_block_t structure and has a stack to record available pages. The size
+ * of this stack is exactly one page, which is what determines the block size.
+ *
+ * vm_block_t structures for an allocator are in an array that ensures the right
+ * vm_block_t structure can be found quickly during de-allocation. Non-depleted
+ * blocks are linked to a free list (a circular, doubly-linked list) that allows
+ * the allocator to quickly find a block with free pages during allocations.
+ *
+ * Warning: the prev member (back pointer) of vmalloc_block_t is only meaningful
+ *         while the block is linked to the free list. If there is a need to
+ *         check whether the block is linked or not and vmalloc_stack_is_empty()
+ *         isn't appropriate, check if the next member (not prev) is NULL.
+ * */
 
 #define VMALLOC_STACK_ENTRIES   (PAGE_SIZE / sizeof(addr_t))
 
 #define VMALLOC_BLOCK_SIZE      (VMALLOC_STACK_ENTRIES * PAGE_SIZE)
 
 
-struct vmalloc_t {
+typedef struct {
     /** start address of the first block managed by the allocator */
     addr_t base_addr;
 
@@ -92,7 +102,7 @@ struct vmalloc_t {
 
     /** list of completely or partially free blocks */
     struct vmalloc_block_t *free_list;
-};
+} vmalloc_t;
 
 struct vmalloc_block_t {
     /** stack pointer for stack of free pages in partially allocated blocks */
@@ -108,10 +118,85 @@ struct vmalloc_block_t {
     struct vmalloc_block_t *next;
 };
 
-static vmalloc_t __global_page_allocator;
+typedef struct vmalloc_block_t vmalloc_block_t;
 
-/** global page allocator (region 0..KLIMIT) */
-vmalloc_t *const global_page_allocator = &__global_page_allocator;
+
+/** Allocator for the allocations region of the kernel address space. */
+static vmalloc_t kernel_vmallocator;
+
+
+static addr_t vmalloc_from(vmalloc_t *allocator);
+
+static void vmfree_to(vmalloc_t *allocator, addr_t page);
+
+static void init_allocator(
+        vmalloc_t       *allocator,
+        addr_t           start_addr,
+        addr_t           end_addr,
+        addr_t           preinit_limit,
+        boot_alloc_t    *boot_alloc);
+
+static bool addr_is_in_allocator_range(const vmalloc_t *allocator, addr_t page);
+
+
+/**
+ * Allocate a page of virtual address space.
+ *
+ * @return address of allocated page or NULL if allocation failed
+ *
+ * */
+addr_t vmalloc(void) {
+    return vmalloc_from(&kernel_vmallocator);
+}
+
+/**
+ * Free a page of virtual address space.
+ *
+ * @param page the address of the page to free
+ *
+ * */
+void vmfree(addr_t page) {
+    vmfree_to(&kernel_vmallocator, page);
+}
+
+/**
+ * Basic initialization of the virtual memory allocator.
+ *
+ * This function initializes the allocator structure, and then initializes the
+ * first few blocks up to the limit set by the preinit_limit argument (more
+ * precisely, up to and including the block that contains preinit_limit - 1).
+ * TODO mention how to initialize the rest once this is implemented.
+ *
+ * @param start_addr the start address of the region managed by the allocator
+ * @param end_addr the end address of the region managed by the allocator
+ * @param preinit_limit the limit address for preinitialized blocks
+ * @param boot_alloc the initialization-time page allocator structure
+ *
+ * */
+void vmalloc_init(
+        addr_t           start_addr,
+        addr_t           end_addr,
+        addr_t           preinit_limit,
+        boot_alloc_t    *boot_alloc) {
+
+    init_allocator(
+            &kernel_vmallocator,
+            start_addr,
+            end_addr,
+            preinit_limit,
+            boot_alloc);
+}
+
+/**
+ * Check whether the specified page is in the region managed by the allocator.
+ *
+ * @param page the address of the page
+ * @return true if it is in the region, false otherwise
+ *
+ * */
+bool vmalloc_is_in_range(addr_t page) {
+    return addr_is_in_allocator_range(&kernel_vmallocator, page);
+}
 
 
 static void vmalloc_link_block(vmalloc_t *allocator, vmalloc_block_t *block);
@@ -184,10 +269,13 @@ static inline addr_t vmalloc_compute_block_base_addr(
 }
 
 /**
-    Allocate a page of virtual address space.
-    @param allocator the allocator which manages the memory region from which we wish to obtain a page
-*/
-addr_t vmalloc(vmalloc_t *allocator) {
+ * Implementation for vmalloc().
+ *
+ * @param allocator the allocator from which the page is allocated
+ * @return address of allocated page or NULL if allocation failed
+ *
+ * */
+static addr_t vmalloc_from(vmalloc_t *allocator) {
     /** ASSERTION: allocator is not null. */
     assert(allocator != NULL);
     
@@ -215,16 +303,18 @@ addr_t vmalloc(vmalloc_t *allocator) {
 }
 
 /**
-    Free a page of virtual address space.
-    @param allocator allocator to which to free the page
-    @param page the page to free
-*/
-void vmfree(vmalloc_t *allocator, addr_t page) {
+ * Implementation for vmfree().
+ *
+ * @param allocator the allocator to which the page if returned
+ * @param page the address of the page to free
+ *
+ * */
+static void vmfree_to(vmalloc_t *allocator, addr_t page) {
     /** ASSERTION: allocator is not null. */
     assert(allocator != NULL);
     
     /** ASSERTION: We are freeing to the proper allocator/region. */
-    assert(vmalloc_is_in_range(allocator, page));
+    assert(addr_is_in_allocator_range(allocator, page));
     
     /** ASSERTION: Page address is page aligned */
     assert(page_offset_of(page) == 0);
@@ -242,12 +332,16 @@ void vmfree(vmalloc_t *allocator, addr_t page) {
 }
 
 /**
-    Basic initialization of virtual memory allocator
-    @param allocator  vm_alloc_t structure for a virtual memory allocator
-    @param start_addr start address of the region managed by the allocator
-    @param size       size of the region managed by the allocator
-*/
-void vmalloc_init(
+ * Implementation for vmalloc_init().
+ *
+ * @param allocator the initialized allocator.
+ * @param start_addr the start address of the region managed by the allocator
+ * @param end_addr the end address of the region managed by the allocator
+ * @param preinit_limit the limit address for preinitialized blocks
+ * @param boot_alloc the initialization-time page allocator structure
+ *
+ * */
+static void init_allocator(
         vmalloc_t       *allocator,
         addr_t           start_addr,
         addr_t           end_addr,
@@ -329,7 +423,15 @@ void vmalloc_init(
     }
 }
 
-bool vmalloc_is_in_range(vmalloc_t *allocator, addr_t page) {
+/**
+ * Implementation for vmalloc_is_in_range().
+ *
+ * @param allocator the allocator.
+ * @param page the address of the page
+ * @return true if it is in the region, false otherwise
+ *
+ * */
+static bool addr_is_in_allocator_range(const vmalloc_t *allocator, addr_t page) {
     return page >= allocator->start_addr && page < allocator->end_addr;
 }
 
