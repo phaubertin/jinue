@@ -76,8 +76,6 @@ struct slab_cache_t {
     slab_ctor_t          ctor;
     slab_ctor_t          dtor;
     char                *name;
-    struct slab_cache_t *prev;
-    struct slab_cache_t *next;
     int                  flags;
 };
 
