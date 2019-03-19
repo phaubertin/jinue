@@ -155,7 +155,7 @@ void vm_pae_copy_pte(pte_t *dest, const pte_t *src) {
     dest->entry = src->entry;
 }
 
-void vm_pae_create_pdpt_cache(void) {
+void vm_pae_create_pdpt_cache(boot_alloc_t *boot_alloc) {
     slab_cache_init(
             &pdpt_cache,
             "vm_pae_pdpt_cache",
@@ -163,7 +163,8 @@ void vm_pae_create_pdpt_cache(void) {
             sizeof(pdpt_t),
             NULL,
             NULL,
-            SLAB_DEFAULTS);
+            SLAB_DEFAULTS,
+            boot_alloc);
 }
 
 addr_space_t *vm_pae_create_addr_space(addr_space_t *addr_space) {

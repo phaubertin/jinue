@@ -66,7 +66,7 @@ addr_space_t *vm_pae_create_initial_addr_space(boot_alloc_t *boot_alloc);
 
 void vm_pae_destroy_addr_space(addr_space_t *addr_space);
 
-void vm_pae_create_pdpt_cache(void);
+void vm_pae_create_pdpt_cache(boot_alloc_t *boot_alloc);
 
 void vm_pae_unmap_low_alias(addr_space_t *addr_space);
 

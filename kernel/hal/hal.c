@@ -193,15 +193,20 @@ void hal_init(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
     kern_paddr_t *page_stack_buffer = (kern_paddr_t *)boot_page_alloc_image(boot_alloc);
     init_pfalloc_cache(&global_pfalloc_cache, page_stack_buffer);
 
+    /* TODO Remove this once vm.c rework is done. */
     for(idx = 0; idx < KERNEL_PAGE_STACK_INIT; ++idx) {
         pffree(
                 vm_lookup_kernel_paddr(
                         boot_page_alloc_image(boot_alloc)));
-        page_free(boot_page_alloc_image(boot_alloc));
     }
 
     /* Initialize virtual memory allocator and VM management caches. */
     vm_boot_postinit(boot_info, boot_alloc, use_pae);
+
+    /* TODO Remove this once add page frame system call is implemented.
+     *
+     * The test user space program needs one page to create a new thread. */
+    page_free(boot_page_alloc(boot_alloc));
 
     /* choose system call method */
     hal_select_syscall_method();

@@ -97,8 +97,8 @@ void kmain(void) {
     hal_init(&boot_alloc, boot_info);
 
     /* initialize caches */
-    ipc_boot_init();
-    process_boot_init();
+    ipc_boot_init(&boot_alloc);
+    process_boot_init(&boot_alloc);
 
     /* create process for process manager */
     process_t *process = process_create_initial();

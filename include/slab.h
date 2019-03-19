@@ -110,13 +110,12 @@ void slab_cache_init(
         size_t           alignment,
         slab_ctor_t      ctor,
         slab_ctor_t      dtor,
-        int              flags);
+        int              flags,
+        boot_alloc_t    *boot_alloc);
 
 void *slab_cache_alloc(slab_cache_t *cache);
 
 void slab_cache_free(void *buffer);
-
-void slab_cache_grow(slab_cache_t *cache);
 
 void slab_cache_reap(slab_cache_t *cache);
 

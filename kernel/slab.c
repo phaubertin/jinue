@@ -32,6 +32,7 @@
 #include <hal/cpu.h>
 #include <hal/vm.h>
 #include <assert.h>
+#include <boot.h>
 #include <page_alloc.h>
 #include <printk.h>
 #include <slab.h>
@@ -39,6 +40,9 @@
 #include <stdint.h>
 #include <types.h>
 #include <util.h>
+
+
+static void init_and_add_slab(slab_cache_t *cache, void *slab_addr);
 
 
 static void destroy_slab(slab_cache_t *cache, slab_t *slab) {
@@ -65,7 +69,8 @@ void slab_cache_init(
         size_t           alignment,
         slab_ctor_t      ctor,
         slab_ctor_t      dtor,
-        int              flags) {
+        int              flags,
+        boot_alloc_t    *boot_alloc) {
 
     /** ASSERTION: ensure buffer size is at least the size of a pointer */
     assert( size >= sizeof(void *) );
@@ -132,6 +137,12 @@ void slab_cache_init(
     cache->max_colour = (wasted_space / cache->alignment) * cache->alignment;
     
     cache->bufctl_offset = cache->alloc_size - sizeof(slab_bufctl_t);
+
+    /* Allocate first slab.
+     *
+     * This is needed to allow a few objects to be allocated during kernel
+     * initialization. */
+    init_and_add_slab(cache, boot_page_alloc(boot_alloc));
 }
 
 void *slab_cache_alloc(slab_cache_t *cache) {
@@ -142,7 +153,13 @@ void *slab_cache_alloc(slab_cache_t *cache) {
     }
     else {
         if(cache->slabs_empty == NULL) {
-            slab_cache_grow(cache);
+            void *slab_addr = page_alloc();
+
+            if(slab_addr == NULL) {
+                return NULL;
+            }
+
+            init_and_add_slab(cache, slab_addr);
         }
         
         slab = cache->slabs_empty;
@@ -346,13 +363,11 @@ void slab_cache_free(void *buffer) {
     }     
 }
 
-void slab_cache_grow(slab_cache_t *cache) {
-    char *slab_addr = page_alloc();
-    
+static void init_and_add_slab(slab_cache_t *cache, void *slab_addr) {
     /** ASSERTION: slab address is not NULL */
     assert(slab_addr != NULL);
     
-    slab_t *slab = (slab_t *)(slab_addr + SLAB_SIZE - sizeof(slab_t));
+    slab_t *slab = (slab_t *)((char *)slab_addr + SLAB_SIZE - sizeof(slab_t));
 
     slab->cache = cache;
     
@@ -379,7 +394,7 @@ void slab_cache_grow(slab_cache_t *cache) {
     }
     
     /* compute address of first bufctl */
-    slab_bufctl_t *bufctl   = (slab_bufctl_t *)(slab_addr + slab->colour + cache->bufctl_offset);
+    slab_bufctl_t *bufctl   = (slab_bufctl_t *)((char *)slab_addr + slab->colour + cache->bufctl_offset);
     slab->free_list         = bufctl;
     
     while(1) {        

@@ -46,7 +46,7 @@ static void process_ctor(void *buffer, size_t ignore) {
     object_header_init(&process->header, OBJECT_TYPE_PROCESS);
 }
 
-void process_boot_init(void) {
+void process_boot_init(boot_alloc_t *boot_alloc) {
     slab_cache_init(
             &process_cache,
             "process_cache",
@@ -54,7 +54,8 @@ void process_boot_init(void) {
             0,
             process_ctor,
             NULL,
-            SLAB_DEFAULTS);
+            SLAB_DEFAULTS,
+            boot_alloc);
 }
 
 static void process_init(process_t *process) {

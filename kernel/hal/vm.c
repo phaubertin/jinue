@@ -166,7 +166,7 @@ void vm_boot_postinit(const boot_info_t *boot_info, boot_alloc_t *boot_alloc, bo
      * 
      * This must be done before the first time vm_create_addr_space() is called. */
     if(use_pae) {
-        vm_pae_create_pdpt_cache();
+        vm_pae_create_pdpt_cache(boot_alloc);
     }
 }
 
