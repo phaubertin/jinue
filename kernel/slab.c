@@ -36,24 +36,62 @@
 #include <page_alloc.h>
 #include <printk.h>
 #include <slab.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <types.h>
 #include <util.h>
 
 
+/**
+ * @file
+ *
+ * Kernel object allocator
+ *
+ * This file implements a slab allocator as described in Jeff Bonwick's paper
+ * "The Slab Allocator: An Object-Caching Kernel Memory Allocator":
+ *
+ *  https://www.usenix.org/publications/library/proceedings/bos94/full_papers/bonwick.ps
+ *
+ * This is the main object allocator for the kernel. (Some early allocations
+ * performed during kernel initialization use the boot heap instead - see boot.c.)
+ *
+ * */
+
 static void init_and_add_slab(slab_cache_t *cache, void *slab_addr);
 
-
+/**
+ * Destroy a slab that is no longer needed.
+ *
+ * The slab must be free of allocated objects before this function is called. It
+ * must also have been unlinked from the free list.
+ *
+ * This function calls the cache's destructor function, if any, on each free
+ * object and then returns the memory to the page allocator.
+ *
+ * @param cache the cache to which the slab belongs
+ * @param slab the slab to destroy.
+ *
+ * */
 static void destroy_slab(slab_cache_t *cache, slab_t *slab) {
-    addr_t           start_addr;
     addr_t           buffer;
 
-    /* call destructor */
-    start_addr = ALIGN_START_PTR(slab, SLAB_SIZE);
-    
-    for(buffer = start_addr + slab->colour; buffer < (addr_t)slab; buffer += cache->alloc_size) {
-        if(cache->dtor != NULL && ! (cache->flags & SLAB_POISON)) {
+    /** ASSERTION: no object is allocated on slab. */
+    assert(slab->obj_count == 0);
+
+    addr_t start_addr = ALIGN_START_PTR(slab, SLAB_SIZE);
+
+    /* Call destructor.
+     *
+     * If the SLAB_POISON flag has been specified when initializing the cache,
+     * uninitialized and free objects are filled with recognizable patterns to
+     * help detect uninitialized members and writes to freed objects. Obviously,
+     * this destroys the constructed state. So, with this debugging feature
+     * enabled, the constructor/destructor functions are called when each object
+     * is allocated/deallocated instead of when initializing/destroying a slab,
+     * i.e. not here. */
+    if(cache->dtor != NULL && ! (cache->flags & SLAB_POISON)) {
+        for(buffer = start_addr + slab->colour; buffer < (addr_t)slab; buffer += cache->alloc_size) {
             cache->dtor((void *)buffer, cache->obj_size);
         }
     }
@@ -62,6 +100,40 @@ static void destroy_slab(slab_cache_t *cache, slab_t *slab) {
     page_free(start_addr);
 }
 
+/**
+ * Initialize an object cache.
+ *
+ * The following flags are supported:
+ *
+ *  - SLAB_HWCACHE_ALIGN Align objects on at least the line size of the CPU's
+ *    data cache.
+ *  - SLAB_COMPACT the bufctl can safely be put inside the object without
+ *    destroying the constructed state. If not set, additional space is reserved
+ *    specifically for the bufctl to prevent corruption of the constructed state.
+ *  - SLAB_RED_ZONE (redzone checking - debugging) Add a guard word at the end
+ *    of each object and use this to detect writes past the end of the object.
+ *  - SLAB_POISON (debugging) Fill uninitialized objects with a recognizable
+ *    pattern before calling the constructor function to help identify members
+ *    that do not get initialized. Do the same when freeing objects and use this
+ *    to detect writes to freed objects.
+ *
+ * This function uses the kernel's boot-time page allocator to allocate an
+ * initial slab. This helps with bootstrapping because it allows a few objects
+ * (up to s slab's worth) to be allocated before the main page allocator has
+ * been initialized and then replenished by user space. It also means this
+ * function can only be called during kernel initialization (it would not make
+ * sense to call it later).
+ *
+ * @param cache the cache to initialize
+ * @param name a human-readable name for the cache, used in debugging messages
+ * @param size the size of objects allocated on this cache
+ * @param alignment the minimum object alignment, or zero for no constraint
+ * @param ctor the object constructor function
+ * @param dtor the object destructor function
+ * @param flags see description
+ * @param boot_alloc the kernel boot-time page allocator structure
+ *
+ * */
 void slab_cache_init(
         slab_cache_t    *cache,
         char            *name,
@@ -72,8 +144,8 @@ void slab_cache_init(
         int              flags,
         boot_alloc_t    *boot_alloc) {
 
-    /** ASSERTION: ensure buffer size is at least the size of a pointer */
-    assert( size >= sizeof(void *) );
+    /** ASSERTION: buffer size is at least the size of a pointer */
+    assert(size >= sizeof(void *));
     
     /** ASSERTION: name is not NULL string */
     assert(name != NULL);
@@ -145,6 +217,18 @@ void slab_cache_init(
     init_and_add_slab(cache, boot_page_alloc(boot_alloc));
 }
 
+/**
+ * Allocate an object from the specified cache.
+ *
+ * The cache must have been initialized with slab_cache_init(). If no more space
+ * is available on existing slabs, this function tries to allocate a new slab
+ * using the kernel's page allocator (i.e. page_alloc()). It page allocation
+ * fails, this function fails by returning NULL.
+ *
+ * @param cache the cache from which to allocate an object
+ * @return the address of the allocated object, or NULL if allocation failed
+ *
+ * */
 void *slab_cache_alloc(slab_cache_t *cache) {
     slab_t          *slab;
     
@@ -270,6 +354,12 @@ void *slab_cache_alloc(slab_cache_t *cache) {
     return (void *)buffer;
 }
 
+/**
+ * Free an object.
+ *
+ * @param buffer the object to free
+ *
+ * */
 void slab_cache_free(void *buffer) {
     /* compute address of slab data structure */
     addr_t slab_start       = ALIGN_START_PTR(buffer, SLAB_SIZE);
@@ -363,6 +453,18 @@ void slab_cache_free(void *buffer) {
     }     
 }
 
+/**
+ * Initialize a new empty slab and add it to a cache's free list.
+ *
+ * This function will not fail because the page of memory to be used for the
+ * slab is allocated by the caller and a pointer to it is passed as an argument.
+ * This page can be allocated from either the kernel's main page allocator or
+ * from the boot-time page allocator.
+ *
+ * @param cache the cache to which a slab is added
+ * @param slab_addr an appropriately allocated page for use as new slab
+ *
+ * */
 static void init_and_add_slab(slab_cache_t *cache, void *slab_addr) {
     /** ASSERTION: slab address is not NULL */
     assert(slab_addr != NULL);
@@ -397,7 +499,7 @@ static void init_and_add_slab(slab_cache_t *cache, void *slab_addr) {
     slab_bufctl_t *bufctl   = (slab_bufctl_t *)((char *)slab_addr + slab->colour + cache->bufctl_offset);
     slab->free_list         = bufctl;
     
-    while(1) {        
+    while(true) {
         addr_t buffer = (addr_t)bufctl - cache->bufctl_offset;
         
         if(cache->flags & SLAB_POISON) {
@@ -431,6 +533,14 @@ static void init_and_add_slab(slab_cache_t *cache, void *slab_addr) {
     }
 }
 
+/**
+ * Return memory to the page allocator.
+ *
+ * Free slabs in excess to the cache's working set are finalized and freed.
+ *
+ * @param cache the cache from which to reclaim memory
+ *
+ * */
 void slab_cache_reap(slab_cache_t *cache) {
     while(cache->empty_count > cache->working_set) {
         /* select the first empty slab */
@@ -445,6 +555,19 @@ void slab_cache_reap(slab_cache_t *cache) {
     }
 }
 
+/**
+ * Set a cache's working set.
+ *
+ * The working set is defined as the number of free slabs the cache keeps for
+ * itself when pages are reclaimed from it. (This is terminology used in the
+ * Bonwick paper.) This provides some hysteresis to prevent slabs from being
+ * continuously created and destroyed, which requires calling the constructor
+ * and destructor functions on individual objects on the slabs.
+ *
+ * @param cache the cache for which to set the working set
+ * @param n the size of the working set (number of pages)
+ *
+ * */
 void slab_cache_set_working_set(slab_cache_t *cache, unsigned int n) {
     cache->working_set = n;
 }
