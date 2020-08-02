@@ -65,7 +65,7 @@ sudo make install
 ```
 The copied kernel image file is `/boot/jinue`.
 
-Once this is done, you need to configure your boot loder/manager to load this
+Once this is done, you need to configure your boot loader/manager to load this
 kernel. Jinue uses the 16-bit Linux boot protocol, so you can configure your
 boot manager as if you were loading a Linux image with the 16-bit boot protocol
 (linux16 command if using GRUB).
