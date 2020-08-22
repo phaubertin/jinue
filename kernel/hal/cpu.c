@@ -82,6 +82,14 @@ void cpu_init_data(cpu_data_t *data) {
     tss->esp0 = NULL;
     tss->esp1 = NULL;
     tss->esp2 = NULL;
+    
+    /* From Intel 64 and IA-32 Architectures Software Developer's Manual Volume
+     * 3 System Programming Guide chapter 16.5:
+     * 
+     * " If the I/O bit map base address is greater than or equal to the TSS
+     *   segment limit, there is no I/O permission map, and all I/O instructions
+     *   generate exceptions when the CPL is greater than the current IOPL. " */
+    tss->iomap = TSS_LIMIT;
 }    
 
 void cpu_detect_features(void) {
