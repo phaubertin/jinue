@@ -6,7 +6,7 @@ This is a design document. None of this is already implemented yet.
 
 This section describes how physical memory is shared between the microkernel and
 user space. It applies to all hardware architectures, altough details such as
-page size, big page size and whether big pages are supported at all are of
+page size, large page size and whether large pages are supported at all are of
 course hardware-dependent.
 
 Each page frame (i.e. page of physical memory) is owned by either the
