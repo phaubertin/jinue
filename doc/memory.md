@@ -51,6 +51,6 @@ read only by user space.
 On some hardware architectures, it might be that only a subset of page frames
 can be owned and used by the microkernel.
 
-### Big Page Support
+### Large Page Support
 
 TODO
