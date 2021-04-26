@@ -262,13 +262,13 @@ static user_paddr_t get_pte_paddr(const pte_t *pte) {
     vm_free_page_table_entry() when they are done with it.
     
     Important note: This function temporarily maps the page table that contains
-    the returned page table entry and allocates a page of virtual memory for that
-    purpose. The caller must call the vm_free_page_table_entry() function to free
-    that mapping when it is done with the page table entry.
+    the returned page table entry and allocates a page of virtual memory for
+    that purpose. The caller must call the vm_free_page_table_entry() function
+    to free that mapping when it is done with the page table entry.
     
     @param addr_space address space in which the address is looked up.
     @param addr address to look up
-    @param create_as_need Whether a page table is allocated if it does not exist
+    @param create_as_need whether a page table is allocated if it does not exist
 */
 static pte_t *vm_lookup_page_table_entry(addr_space_t *addr_space, void *addr, bool create_as_needed) {
     /** ASSERTION: we assume addr is aligned on a page boundary */
@@ -276,9 +276,9 @@ static pte_t *vm_lookup_page_table_entry(addr_space_t *addr_space, void *addr, b
     
     if(is_fast_map_pointer(addr)) {
         /* Fast path for global allocations by the kernel:
-         *  - The page tables for the region above KLIMIT are pre-allocated
-         *    during the creation of the address space, so there no need to
-         *    check or to allocate them;
+         *  - The page tables for the region just above KLIMIT are pre-allocated
+         *    during the creation of the address space, so there is no need to
+         *    check if they are allocated or to allocate them;
          *  - The page tables are mapped contiguously at a known location
          *    during initialization, so no need to find and map them, and they
          *    can be indexed as a single big page table;
@@ -324,7 +324,7 @@ static pte_t *vm_lookup_page_table_entry(addr_space_t *addr_space, void *addr, b
                 kern_paddr_t pgtable_paddr;
                 
                 /* allocate a new page table and map it */
-                /* TODO both these allocations can fail. */
+                /* TODO both of these allocations can fail. */
                 page_table      = (pte_t *)vmalloc();
                 pgtable_paddr   = pfalloc();
             

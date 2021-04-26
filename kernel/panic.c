@@ -50,7 +50,7 @@ void panic(const char *message) {
     case 1:
     case 2:
         /* The first two times panic() is entered, a panic message is displayed
-         * along with a full call sack dump. */
+         * along with a full call stack dump. */
         printk( "%kKERNEL PANIC%s: %s\n",
                 VGA_COLOR_RED,
                 enter_count==1?"":" (recursive)",

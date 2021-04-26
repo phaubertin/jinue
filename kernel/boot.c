@@ -295,13 +295,13 @@ addr_t boot_page_alloc(boot_alloc_t *boot_alloc) {
 /**
  * Allocate a page in the image region of the kernel address space.
  *
- * Since the size of the image region is limited, use boot_pgalloc() instead of
- * this function whenever possible.
+ * Since the size of the image region is limited, use boot_page_alloc() instead
+ * of this function whenever possible.
  *
- * The difference between this function and boot_pgalloc() is that the address
- * space page is allocated by this function using boot_vmalloc() instead of
- * vmalloc(). Pages allocated by subsequent calls to this function are allocated
- * sequentially.
+ * The difference between this function and boot_page_alloc() is that the
+ * address space page is allocated by this function using boot_vmalloc() instead
+ * of vmalloc(). Pages allocated by consecutive calls to this function are
+ * allocated sequentially.
  *
  * @param boot_alloc the boot allocator state
  * @return address of allocated page
