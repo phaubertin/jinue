@@ -72,4 +72,6 @@
 
 #define BOOT_STACK_HEAP_SIZE    (4 * PAGE_SIZE)
 
+#define BOOT_KERNEL_OFFSET      (KLIMIT - BOOT_SETUP32_ADDR)
+
 #endif

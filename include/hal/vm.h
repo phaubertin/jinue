@@ -36,14 +36,15 @@
  * management code located in hal/vm.c and hal/vm_pae.c. */
 
 #include <jinue-common/vm.h>
+#include <hal/asm/boot.h>
 #include <hal/asm/vm.h>
 #include <types.h>
 
 /** convert a physical address to a virtual address before the switch to the first address space */
-#define EARLY_PHYS_TO_VIRT(x)   (((uintptr_t)(x)) + KLIMIT_OFFSET)
+#define EARLY_PHYS_TO_VIRT(x)   (((uintptr_t)(x)) + BOOT_KERNEL_OFFSET)
 
 /** convert a virtual address to a physical address before the switch to the first address space */
-#define EARLY_VIRT_TO_PHYS(x)   (((uintptr_t)(x)) - KLIMIT_OFFSET)
+#define EARLY_VIRT_TO_PHYS(x)   (((uintptr_t)(x)) - BOOT_KERNEL_OFFSET)
 
 /** convert a pointer to a page frame address (early mappings) */
 #define EARLY_PTR_TO_PHYS_ADDR(x)  ((kern_paddr_t)EARLY_VIRT_TO_PHYS(x))

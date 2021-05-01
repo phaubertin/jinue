@@ -192,22 +192,22 @@ skip_cmdline_copy:
 
     ; adjust the pointers in the boot information structure so they point in the
     ; kernel alias
-    add dword [_kernel_start],      KLIMIT_OFFSET
-    add dword [_proc_start],        KLIMIT_OFFSET
-    add dword [_image_start],       KLIMIT_OFFSET
-    add dword [_image_top],         KLIMIT_OFFSET
-    add dword [_e820_map],          KLIMIT_OFFSET
-    add dword [_cmdline],           KLIMIT_OFFSET
-    add dword [_boot_heap],         KLIMIT_OFFSET
-    add dword [_boot_end],          KLIMIT_OFFSET
-    add dword [_page_table],        KLIMIT_OFFSET
-    add dword [_page_directory],    KLIMIT_OFFSET
+    add dword [_kernel_start],      BOOT_KERNEL_OFFSET
+    add dword [_proc_start],        BOOT_KERNEL_OFFSET
+    add dword [_image_start],       BOOT_KERNEL_OFFSET
+    add dword [_image_top],         BOOT_KERNEL_OFFSET
+    add dword [_e820_map],          BOOT_KERNEL_OFFSET
+    add dword [_cmdline],           BOOT_KERNEL_OFFSET
+    add dword [_boot_heap],         BOOT_KERNEL_OFFSET
+    add dword [_boot_end],          BOOT_KERNEL_OFFSET
+    add dword [_page_table],        BOOT_KERNEL_OFFSET
+    add dword [_page_directory],    BOOT_KERNEL_OFFSET
     
     ; adjust stack pointer to point in kernel alias
-    add esp, KLIMIT_OFFSET
+    add esp, BOOT_KERNEL_OFFSET
 
     ; jump to kernel alias
-    jmp just_right_here + KLIMIT_OFFSET
+    jmp just_right_here + BOOT_KERNEL_OFFSET
 just_right_here:
 
     ; null-terminate call stack (useful for debugging)
@@ -220,12 +220,12 @@ just_right_here:
     
     ; compute kernel entry point address
     mov esi, kernel_start           ; ELF header
-    add esi, KLIMIT_OFFSET
+    add esi, BOOT_KERNEL_OFFSET
     mov eax, [esi + 24]             ; e_entry member
     
     ; set address of boot information structure in esi for use by the kernel
     mov esi, boot_info_struct
-    add esi, KLIMIT_OFFSET          ; adjust to point in kernel alias
+    add esi, BOOT_KERNEL_OFFSET     ; adjust to point in kernel alias
     
     ; jump to kernel entry point
     jmp eax

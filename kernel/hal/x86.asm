@@ -28,6 +28,7 @@
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <jinue-common/asm/vm.h>
+#include <hal/asm/boot.h>
 #include <hal/asm/x86.h>
 
     bits 32
@@ -338,7 +339,7 @@ enable_pae:
     mov eax, [esp+ 4]   ; First argument: pdpt
 
     ; Jump to low-address alias
-    jmp just_here - KLIMIT_OFFSET
+    jmp just_here - BOOT_KERNEL_OFFSET
 just_here:
 
     ; Disable paging.
