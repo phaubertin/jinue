@@ -33,7 +33,7 @@
 #define _JINUE_ASM_VM_H
 
 #include <jinue-common/asm/types.h>
-
+#include <hal/asm/boot.h>
 
 /** number of bits in virtual address for offset inside page */
 #define PAGE_BITS               12
@@ -48,6 +48,11 @@
     region above KLIMIT has the same mapping in all address spaces. KLIMIT must
     be aligned on a page directory boundary in PAE mode. */
 #define KLIMIT                  0xc0000000
+
+/** Offset between the kernel image's initial physical and virtual addresses
+ *
+ * The kernel image is loaded at BOOT_SETUP32_ADDR and is mapped at KLIMIT. */
+#define KLIMIT_OFFSET (KLIMIT - BOOT_SETUP32_ADDR)
 
 /** limit of initial mapping performed by the 32-bit setup code */
 #define KERNEL_EARLY_LIMIT      (KLIMIT + 2 * MB)

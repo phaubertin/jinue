@@ -36,7 +36,7 @@
 #include <hal/vm.h>
 
 /** base address of the VGA text video buffer */
-static unsigned char *video_base_addr = (void *)EARLY_PHYS_TO_VIRT(VGA_TEXT_VID_BASE);
+static unsigned char *video_base_addr = (void *)VGA_TEXT_VID_BASE;
 
 static vga_pos_t vga_raw_putc(char c, vga_pos_t pos, int colour);
 

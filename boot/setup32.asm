@@ -147,41 +147,31 @@ skip_cmdline_copy:
     and eax, ~PAGE_MASK                 ; ... to a page boundary
     mov esp, eax                        ; set stack pointer
     
-    ; allocate initial page table and page directory
+    ; allocate initial page tables and page directory
     mov dword [_page_table], eax
-    add eax, PAGE_SIZE
+    add eax, 2 * PAGE_SIZE
     mov dword [_page_directory], eax
     add eax, PAGE_SIZE
     mov dword [_boot_end], eax
     
     ; Initialize initial page table for a 1:1 mapping of the first 2MB.
-    mov eax, 0 | VM_FLAG_READ_WRITE | VM_FLAG_PRESENT   ; start address is 0, flags
-    mov edi, dword [_page_table]                        ; write address
-    mov ecx, 512                                        ; number of entries
+    mov eax, 0                          ; start address is 0
+    mov edi, dword [_page_table]        ; write address
+    call map_2_megabytes
 
-init_page_table:
-    ; store eax in current page table entry pointed to by edi, then add 4 to edi
-    ; to point to the next entry
-    stosd
-    
-    ; update physical address
-    add eax, PAGE_SIZE
-    
-    ; decrement ecx, we are done when it reaches 0, otherwise loop
-    loop init_page_table
-
-    ; Clear remaining entries.
-    xor eax, eax                        ; write value: 0
-    mov ecx, 512                        ; write 512 entries (remaining half)
-
-    rep stosd
+    ; Initialize second page table to map 2MB starting with the start of the
+    ; kernel image at KLIMIT.
+    ;
+    ; Write address (edi) already has the correct value.
+    mov eax, BOOT_SETUP32_ADDR          ; start address
+    call map_2_megabytes
 
     ; clear initial page directory
     mov edi, dword [_page_directory]    ; write address
     mov ecx, 1024                       ; write 1024 entries (full table)
-    
+
     rep stosd
-    
+
     ; add entry for the page table that maps the first 4MB
     mov edi, dword [_page_directory]
     mov eax, dword [_page_table]
@@ -189,6 +179,7 @@ init_page_table:
     mov dword [edi], eax
     
     ; add an alias for the first 4MB of memory at the kernel base address
+    add eax, PAGE_SIZE
     mov dword [edi + 4 * (KLIMIT >> 22)], eax
     
     ; set page directory address in CR3
@@ -198,25 +189,25 @@ init_page_table:
     mov eax, cr0
     or eax, X86_CR0_PG
     mov cr0, eax
-    
+
     ; adjust the pointers in the boot information structure so they point in the
     ; kernel alias
-    add dword [_kernel_start],      KLIMIT
-    add dword [_proc_start],        KLIMIT
-    add dword [_image_start],       KLIMIT
-    add dword [_image_top],         KLIMIT
-    add dword [_e820_map],          KLIMIT
-    add dword [_cmdline],           KLIMIT
-    add dword [_boot_heap],         KLIMIT
-    add dword [_boot_end],          KLIMIT
-    add dword [_page_table],        KLIMIT
-    add dword [_page_directory],    KLIMIT
+    add dword [_kernel_start],      KLIMIT_OFFSET
+    add dword [_proc_start],        KLIMIT_OFFSET
+    add dword [_image_start],       KLIMIT_OFFSET
+    add dword [_image_top],         KLIMIT_OFFSET
+    add dword [_e820_map],          KLIMIT_OFFSET
+    add dword [_cmdline],           KLIMIT_OFFSET
+    add dword [_boot_heap],         KLIMIT_OFFSET
+    add dword [_boot_end],          KLIMIT_OFFSET
+    add dword [_page_table],        KLIMIT_OFFSET
+    add dword [_page_directory],    KLIMIT_OFFSET
     
     ; adjust stack pointer to point in kernel alias
-    add esp, KLIMIT
+    add esp, KLIMIT_OFFSET
 
     ; jump to kernel alias
-    jmp just_right_here + KLIMIT
+    jmp just_right_here + KLIMIT_OFFSET
 just_right_here:
 
     ; null-terminate call stack (useful for debugging)
@@ -229,12 +220,50 @@ just_right_here:
     
     ; compute kernel entry point address
     mov esi, kernel_start           ; ELF header
-    add esi, KLIMIT
+    add esi, KLIMIT_OFFSET
     mov eax, [esi + 24]             ; e_entry member
     
     ; set address of boot information structure in esi for use by the kernel
     mov esi, boot_info_struct
-    add esi, KLIMIT                 ; adjust to point in kernel alias
+    add esi, KLIMIT_OFFSET          ; adjust to point in kernel alias
     
     ; jump to kernel entry point
     jmp eax
+
+    ; -------------------------------------------------
+    ; The End
+    ; -------------------------------------------------
+
+    ; --------------------------------------------------------------------------
+    ; Function: map_2_megabytes
+    ; --------------------------------------------------------------------------
+    ; Initialize a page table to map 2 MB of memory.
+    ;
+    ; Arguments:
+    ;       eax start physical address
+    ;       edi start of page table
+    ;
+    ; Returns:
+    ;       edi start of page following page table
+    ;       eax, ecx are caller saved
+map_2_megabytes:
+    or eax, VM_FLAG_READ_WRITE | VM_FLAG_PRESENT        ; page table entry
+    mov ecx, 512                                        ; number of entries
+
+.loop:
+    ; store eax in page table entry pointed to by edi, then add 4 to edi to
+    ; point to the next entry
+    stosd
+
+    ; update physical address
+    add eax, PAGE_SIZE
+
+    ; decrement ecx, we are done when it reaches 0, otherwise loop
+    loop .loop
+
+    ; Clear remaining entries.
+    xor eax, eax                        ; write value: 0
+    mov ecx, 512                        ; write 512 entries (remaining half)
+
+    rep stosd
+    ret

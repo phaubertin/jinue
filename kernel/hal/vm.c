@@ -482,7 +482,7 @@ void vm_map_early(addr_t vaddr, kern_paddr_t paddr, int flags) {
     /** ASSERTION: we assume vaddr is aligned on a page boundary */
     assert( page_offset_of(vaddr) == 0 );
     
-    pte_t *pte = get_pte_with_offset(global_page_tables, page_number_of( EARLY_VIRT_TO_PHYS((uintptr_t)vaddr) ));
+    pte_t *pte = get_pte_with_offset(global_page_tables, page_number_of(vaddr - KLIMIT));
     set_pte(pte, paddr, flags | VM_FLAG_PRESENT);
 }
 

@@ -338,7 +338,7 @@ enable_pae:
     mov eax, [esp+ 4]   ; First argument: pdpt
 
     ; Jump to low-address alias
-    jmp just_here - KLIMIT
+    jmp just_here - KLIMIT_OFFSET
 just_here:
 
     ; Disable paging.

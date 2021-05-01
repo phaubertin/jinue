@@ -217,10 +217,10 @@ static void vm_pae_init_low_alias(
 
     unsigned int idx;
 
-    /* The 32-bit setup code sets up paging so the first two MB of
-     * physical memory is mapped aliased at addresses 0 and KLIMIT.
-     * Addresses in the low alias are the same whether paging is
-     * enabled or not.
+    /* The 32-bit setup code sets up paging so the second MB of physical
+     * memory (where the kernel image is loaded) is mapped aliased at
+     * addresses 0x100000 and KLIMIT. Addresses in the low alias are the
+     * same whether paging is enabled or not.
      *
      * The low alias is needed because we need to disable paging while
      * we enable PAE. For this reason, we need to also set up a low

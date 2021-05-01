@@ -87,17 +87,16 @@ SECTIONS {
      * this 32-bit setup code is used irrespective of whether the 16-bit or
      * 32-bit boot protocol is used.
      *
-     * This setup code does mainly three things. First, it maps the first four
-     * megabytes of memory, which contain the complete kernel image, at KLIMIT
-     * and enables paging. This means the whole 32-bit kernel runs above KLIMIT,
-     * except for the early parts of this setup code, until it is done setting up
-     * the mapping. Second, it copies the BIOS memory map and kernel command line
-     * for later use by the kernel. Finally, it gathers information about the
-     * location in memory of various parts of the kernel and creates a structure
-     * with this information for the kernel.
+     * This setup code does mainly three things. First, it maps the kernel image
+     * at KLIMIT and enables paging. This means the whole 32-bit kernel runs
+     * above KLIMIT, except for the early parts of this setup code needed to set
+     * up the mapping. Second, it copies the BIOS memory map and kernel command
+     * line for later use by the kernel. Finally, it gathers information about
+     * the location in memory of various parts of the kernel and creates a
+     * structure with this information for the kernel.
      *
      * Load address of this section:    0x100000 (BOOT_SETUP32_ADDR)
-     * Run address:                     KLIMIT + 0x100000
+     * Run address:                     KLIMIT
      * Needed symbols:                  kernel_start
      *                                  kernel_size
      *                                  proc_start
