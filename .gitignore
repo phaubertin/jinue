@@ -63,8 +63,5 @@ RemoteSystemsTempFiles/
 # directory for storing local temporary/debugging files
 wrk/
 
-# Directory for build artifacts
-bin/
-
 # Fake initial RAM disk image
 boot/vbox-initrd.gz
