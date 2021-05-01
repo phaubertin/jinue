@@ -29,8 +29,7 @@
 
 ; ------------------------------------------------------------------------------
 ; Among other things, this setup code sets up the initial page tables and then
-; enables paging. Physical Address Extension (PAE) is enabled if supported.
-; Whether PAE is enabled or not, the mappings are set as follow, all read/write:
+; enables paging. The mappings are set as follow, all read/write:
 ;   - The first two megabytes of physical memory are identity mapped. This is
 ;     where the kernel image is loaded by the boot loader. This mapping also
 ;     contains other data set up by the boot loader as well as the VGA text
@@ -161,59 +160,9 @@ skip_cmdline_copy:
     and eax, ~PAGE_MASK                 ; ... to a page boundary
     mov esp, eax                        ; set stack pointer
     
-    ; Allocate initial page tables and page directory.
-    ;
-    ; Three page need to be allocated:
-    ;   - First for first 2MB of memory
-    ;   - Second for mapping at 0x1000000 (16M)
-    ;   - Third for kernel image mapping at KLIMIT
-    mov dword [_page_table], eax
-    add eax, 3 * PAGE_SIZE
-    mov dword [_page_directory], eax
-    add eax, PAGE_SIZE
-    mov dword [_boot_end], eax
-    
-    ; Initialize first page table for a 1:1 mapping of the first 2MB.
-    mov eax, 0                          ; start address is 0
-    mov edi, dword [_page_table]        ; write address
-    call map_2_megabytes_nopae
-
-    ; Initialize second page table to map 4MB starting at 0x1000000 (16M)
-    ;
-    ; Write address (edi) already has the correct value.
-    mov eax, MEM_ZONE_MEM32_START       ; start address
-    mov ecx, 1024
-    call map_linear_nopae
-
-    ; Initialize third page table to map 2MB starting with the start of the
-    ; kernel image at KLIMIT.
-    ;
-    ; Write address (edi) already has the correct value.
-    mov eax, BOOT_SETUP32_ADDR          ; start address
-    call map_2_megabytes_nopae
-
-    ; clear initial page directory
-    mov edi, dword [_page_directory]    ; write address
-    mov ecx, 1024                       ; write 1024 entries (full table)
-
-    rep stosd
-
-    ; add entry for the first page table
-    mov edi, dword [_page_directory]
-    mov eax, dword [_page_table]
-    or eax, VM_FLAG_READ_WRITE | VM_FLAG_PRESENT
-    mov dword [edi], eax
-    
-    ; add entry for the second page table
-    add eax, PAGE_SIZE
-    mov dword [edi + 4 * (MEM_ZONE_MEM32_START >> 22)], eax
-
-    ; add entry for the third page table
-    add eax, PAGE_SIZE
-    mov dword [edi + 4 * (KLIMIT >> 22)], eax
-    
-    ; set page directory address in CR3
-    mov cr3, edi
+    ; Allocate and initialize initial page tables and page directory, then set
+    ; CR3.
+    call initialize_page_tables
     
     ; enable paging
     mov eax, cr0
@@ -265,7 +214,74 @@ just_right_here:
     ; -------------------------------------------------
 
     ; --------------------------------------------------------------------------
-    ; Function: map_linear_nopae
+    ; Function: initialize_page_tables
+    ; --------------------------------------------------------------------------
+    ; Allocate and initialize initial non-PAE page tables and page directory,
+    ; then set CR3.
+    ;
+    ; Arguments:
+    ;       (none)
+    ;
+    ; Returns:
+    ;       sets _page_table, _page_directory and _boot_end
+    ;       eax, ebx, ecx, edx, esi, edi are caller saved
+initialize_page_tables:
+    ; Three page tables need to be allocated:
+    ;   - First for first 2MB of memory
+    ;   - Second for mapping at 0x1000000 (16M)
+    ;   - Third for kernel image mapping at KLIMIT
+    mov dword [_page_table], eax
+    add eax, 3 * PAGE_SIZE
+    mov dword [_page_directory], eax
+    add eax, PAGE_SIZE
+    mov dword [_boot_end], eax
+
+    ; Initialize first page table for a 1:1 mapping of the first 2MB.
+    mov eax, 0                          ; start address is 0
+    mov edi, dword [_page_table]        ; write address
+    call map_2_megabytes
+
+    ; Initialize second page table to map 4MB starting at 0x1000000 (16M)
+    ;
+    ; Write address (edi) already has the correct value.
+    mov eax, MEM_ZONE_MEM32_START       ; start address
+    mov ecx, 1024
+    call map_linear
+
+    ; Initialize third page table to map 2MB starting with the start of the
+    ; kernel image at KLIMIT.
+    ;
+    ; Write address (edi) already has the correct value.
+    mov eax, BOOT_SETUP32_ADDR          ; start address
+    call map_2_megabytes
+
+    ; clear initial page directory
+    mov edi, dword [_page_directory]    ; write address
+    mov ecx, 1024                       ; write 1024 entries (full table)
+
+    rep stosd
+
+    ; add entry for the first page table
+    mov edi, dword [_page_directory]
+    mov eax, dword [_page_table]
+    or eax, VM_FLAG_READ_WRITE | VM_FLAG_PRESENT
+    mov dword [edi], eax
+
+    ; add entry for the second page table
+    add eax, PAGE_SIZE
+    mov dword [edi + 4 * (MEM_ZONE_MEM32_START >> 22)], eax
+
+    ; add entry for the third page table
+    add eax, PAGE_SIZE
+    mov dword [edi + 4 * (KLIMIT >> 22)], eax
+
+    ; set page directory address in CR3
+    mov cr3, edi
+
+    ret
+
+    ; --------------------------------------------------------------------------
+    ; Function: map_linear
     ; --------------------------------------------------------------------------
     ; Initialize consecutive non-PAE page table entries to map consecutive
     ; pages of physical memory (i.e. page frames).
@@ -278,7 +294,7 @@ just_right_here:
     ; Returns:
     ;       edi updated write address
     ;       eax, ecx are caller saved
-map_linear_nopae:
+map_linear:
     ; page table entry flags
     or eax, VM_FLAG_READ_WRITE | VM_FLAG_PRESENT
 
@@ -296,7 +312,7 @@ map_linear_nopae:
     ret
 
     ; --------------------------------------------------------------------------
-    ; Function: map_2_megabytes_nopae
+    ; Function: map_2_megabytes
     ; --------------------------------------------------------------------------
     ; Initialize a non-PAE page table to map 2MB of memory. With PAE disabled,
     ; 2MB fills only half a page table. This function fills the remaining half
@@ -309,9 +325,9 @@ map_linear_nopae:
     ; Returns:
     ;       edi start of page following page table
     ;       eax, ecx are caller saved
-map_2_megabytes_nopae:
+map_2_megabytes:
     mov ecx, 512                        ; number of entries
-    call map_linear_nopae
+    call map_linear
 
     ; Clear remaining entries.
     xor eax, eax                        ; write value: 0
