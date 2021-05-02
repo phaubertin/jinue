@@ -63,7 +63,6 @@ void vm_boot_init(
     addr_t addr;
 
     if(use_pae) {
-        printk("Enabling Physical Address Extension (PAE).\n");
         vm_pae_boot_init();
     }
     else {
@@ -122,25 +121,6 @@ void vm_boot_init(
     printk("Remapping text video memory at 0x%x\n", vga_text_base);
     
     vga_set_base_addr(vga_text_base);
-    
-    if(use_pae) {
-        /* If we are enabling PAE, this is where the switch to the new page
-         * tables actually happens instead of at the call to vm_switch_addr_space()
-         * as would be expected. */
-        enable_pae(addr_space->cr3);
-
-        /* Now that PAE has been enabled, there is no need to ever disable paging
-         * again, so the low alias for the first 2MB of RAM can be unmapped. This
-         * is only relevant for PAE because, for the non-PAE case, this low alias
-         * is just never set up in the initial address space in the first place,
-         * which means there is no longer a low alias once vm_switch_addr_space()
-         * is called below.
-         *
-         * This call to vm_pae_unmap_low_alias() does not do any TLB invalidation
-         * but this is fine because the call to vm_switch_addr_space() below
-         * reloads CR3.*/
-        vm_pae_unmap_low_alias(addr_space);
-    }
 
     /* switch to new address space */
     vm_switch_addr_space(addr_space, cpu_data);

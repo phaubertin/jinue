@@ -42,6 +42,7 @@
 #include <hal/trap.h>
 #include <hal/vga.h>
 #include <hal/vm.h>
+#include <hal/vm_pae.h>
 #include <hal/x86.h>
 #include <boot.h>
 #include <panic.h>
@@ -153,12 +154,26 @@ static void hal_init_idt(void) {
     }
 }
 
+static bool check_and_enable_pae(boot_alloc_t *boot_alloc) {
+    bool use_pae = cpu_has_feature(CPU_FEATURE_PAE);
+
+    if(use_pae) {
+        printk("Enabling Physical Address Extension (PAE).\n");
+        vm_pae_enable(boot_alloc);
+    }
+
+    return use_pae;
+}
+
 void hal_init(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
     int idx;
 
     /* get cpu info */
     cpu_detect_features();
     
+    /* Enable Physical Address Extension (PAE) is supported */
+    bool use_pae = check_and_enable_pae(boot_alloc);
+
     /* allocate per-CPU data
      * 
      * We need to ensure that the Task State Segment (TSS) contained in this
@@ -183,7 +198,6 @@ void hal_init(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
     /* initialize virtual memory management, enable paging
      *
      * below this point, it is no longer safe to call pfalloc_early() */
-    bool use_pae = cpu_has_feature(CPU_FEATURE_PAE);
     vm_boot_init(boot_info, use_pae, cpu_data, boot_alloc);
     
     /* Initialize GDT and TSS */

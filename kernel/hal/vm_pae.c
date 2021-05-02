@@ -34,6 +34,7 @@
 #include <hal/x86.h>
 #include <assert.h>
 #include <boot.h>
+#include <page_alloc.h>
 #include <panic.h>
 #include <pfalloc.h>
 #include <slab.h>
@@ -71,6 +72,129 @@ static inline unsigned int pdpt_offset_of(void *addr) {
 
 void vm_pae_boot_init(void) {
     page_table_entries = (size_t)PAGE_TABLE_ENTRIES;
+}
+
+/**
+ * Initialize consecutive page table entries to map consecutive page frames
+ *
+ * @param page_table first page table entry
+ * @param start_paddr start physical address
+ * @param flags page table entry flags
+ * @param num_entries number of entries to initialize
+ *
+ * */
+static void initialize_page_table_linear(
+        pte_t       *page_table,
+        uint64_t     start_paddr,
+        int          flags,
+        int          num_entries) {
+
+    pte_t *pte      = page_table;
+    uint64_t paddr  = start_paddr;
+
+    for(int idx = 0; idx < num_entries; ++idx) {
+        vm_pae_set_pte(pte, paddr, flags | VM_FLAG_PRESENT);
+
+        paddr += PAGE_SIZE;
+        ++pte;
+    }
+}
+
+/**
+ * Enable Physical Address Extension (PAE)
+ *
+ * The 32-bit setup code has set up intial page tables with the following three
+ * mappings:
+ * 1) First two megabytes of memory are identity mapped.
+ * 2) Four megabytes of memory at 0x1000000 (16M) are identity mapped.
+ * 3) Two megabytes of memory starting with kernel image mapped at KLIMIT.
+ *
+ * This function creates new paging structures with the exact same mappings but
+ * with PAE format, then enables PAE.
+ *
+ * Mappings 1) and 3) are both 2MB, which required one page table each. Mapping
+ * 2 is 4MB, so it requires two page tables, for a total of four.
+ *
+ * Mappings 1) and 2) are in the first page directory while mapping 3) is not,
+ * so we need two page directories.
+ *
+ * @param boot_alloc the initialization-time page allocator structure
+ *
+ * */
+void vm_pae_enable(boot_alloc_t *boot_alloc) {
+    /* First mapping */
+    pte_t *page_table1 = (pte_t *)boot_page_alloc_early(boot_alloc);
+    initialize_page_table_linear(page_table1, 0, VM_FLAG_READ_WRITE, 512);
+
+    /* Second mapping (two page tables) */
+    pte_t *page_table2 = (pte_t *)boot_page_alloc_early(boot_alloc);
+    (void)boot_page_alloc_early(boot_alloc);
+    initialize_page_table_linear(
+            page_table2,
+            MEM_ZONE_MEM32_START,
+            VM_FLAG_READ_WRITE,
+            1024);
+
+    /* Third mapping */
+    pte_t *page_table3 = (pte_t *)boot_page_alloc_early(boot_alloc);
+    initialize_page_table_linear(
+            page_table3,
+            BOOT_SETUP32_ADDR,
+            VM_FLAG_READ_WRITE,
+            512);
+
+    /* Page directory for first two mappings */
+    pte_t *page_directory12 = (pte_t *)boot_page_alloc_early(boot_alloc);
+    clear_page(page_directory12);
+
+    vm_pae_set_pte(
+            page_directory12,
+            EARLY_PTR_TO_PHYS_ADDR(page_table1),
+            VM_FLAG_READ_WRITE | VM_FLAG_PRESENT);
+
+    vm_pae_set_pte(
+            vm_pae_get_pte_with_offset(
+                    page_directory12,
+                    vm_pae_page_directory_offset_of((addr_t)MEM_ZONE_MEM32_START)),
+            EARLY_PTR_TO_PHYS_ADDR(page_table2),
+            VM_FLAG_READ_WRITE | VM_FLAG_PRESENT);
+
+    vm_pae_set_pte(
+            vm_pae_get_pte_with_offset(
+                    page_directory12,
+                    vm_pae_page_directory_offset_of((addr_t)MEM_ZONE_MEM32_START + PAGE_SIZE)),
+            EARLY_PTR_TO_PHYS_ADDR(page_table2) + PAGE_SIZE,
+            VM_FLAG_READ_WRITE | VM_FLAG_PRESENT);
+
+    /* Page directory for third mapping */
+    pte_t *page_directory3 = (pte_t *)boot_page_alloc_early(boot_alloc);
+    clear_page(page_directory3);
+
+    vm_pae_set_pte(
+            vm_pae_get_pte_with_offset(
+                    page_directory3,
+                    vm_pae_page_directory_offset_of((addr_t)KLIMIT)),
+            EARLY_PTR_TO_PHYS_ADDR(page_table3),
+            VM_FLAG_READ_WRITE | VM_FLAG_PRESENT);
+
+    /* Initialize PDPT */
+    pdpt_t *pdpt = boot_heap_alloc(boot_alloc, pdpt_t, sizeof(pdpt_t));
+
+    for(int idx = 0; idx < PDPT_ENTRIES; ++idx) {
+        vm_pae_clear_pte(&pdpt->pd[idx]);
+    }
+
+    vm_pae_set_pte(
+            &pdpt->pd[0],
+            EARLY_PTR_TO_PHYS_ADDR(page_directory12),
+            VM_FLAG_PRESENT);
+
+    vm_pae_set_pte(
+            &pdpt->pd[pdpt_offset_of((addr_t)KLIMIT)],
+            EARLY_PTR_TO_PHYS_ADDR(page_directory3),
+            VM_FLAG_PRESENT);
+
+    enable_pae(EARLY_PTR_TO_PHYS_ADDR(pdpt));
 }
 
 /** 
@@ -211,50 +335,6 @@ addr_space_t *vm_pae_create_addr_space(addr_space_t *addr_space) {
     return addr_space;
 }
 
-static void vm_pae_init_low_alias(
-        pdpt_t          *pdpt,
-        boot_alloc_t    *boot_alloc) {
-
-    unsigned int idx;
-
-    /* The 32-bit setup code sets up paging so the second MB of physical
-     * memory (where the kernel image is loaded) is mapped aliased at
-     * addresses 0x100000 and KLIMIT. Addresses in the low alias are the
-     * same whether paging is enabled or not.
-     *
-     * The low alias is needed because we need to disable paging while
-     * we enable PAE. For this reason, we need to also set up a low
-     * alias in the initial address space. We will get rid of this low
-     * alias at a later step of initialization once PAE is enabled (see
-     * vm_pae_unmap_low_alias()).
-     *
-     * We only map the first 2MB of physical memory, which is all that
-     * a page table gives us in PAE. This is OK because the kernel and
-     * early page allocations fit well within this limit and this is all
-     * that is needed for early initialization. */
-    pte_t *const page_directory = (pte_t *)boot_page_alloc_early(boot_alloc);
-    pte_t *const page_table     = (pte_t *)boot_page_alloc_early(boot_alloc);
-    pte_t *const pdpte          = &pdpt->pd[0];
-
-    for(idx = 0; idx < page_table_entries; ++idx) {
-        vm_pae_clear_pte(vm_pae_get_pte_with_offset(page_directory, idx));
-
-        vm_pae_set_pte(
-                vm_pae_get_pte_with_offset(page_table, idx),
-                idx * PAGE_SIZE,
-                VM_FLAG_PRESENT);
-    }
-
-    vm_pae_set_pte(
-            page_directory,
-            EARLY_PTR_TO_PHYS_ADDR(page_table),
-            VM_FLAG_PRESENT);
-    vm_pae_set_pte(
-            pdpte,
-            EARLY_PTR_TO_PHYS_ADDR(page_directory),
-            VM_FLAG_PRESENT);
-}
-
 addr_space_t *vm_pae_create_initial_addr_space(boot_alloc_t *boot_alloc) {
 
     unsigned int idx;
@@ -266,18 +346,16 @@ addr_space_t *vm_pae_create_initial_addr_space(boot_alloc_t *boot_alloc) {
      * reason, we allocate the page directories first, and then the page tables.
      *
      * This function allocates pages in this order:
-     *      +----------------+-------...--------+-------...------+
-     *      |    Low alias   |  pre-allocated   |  pre-allocated |
-     *      | page directory |      kernel      |     kernel     |
-     *      | and page table | page directories |  page tables   |
-     *      +----------------+-------...--------+-------...------+
+     *      +-------...--------+-------...------+
+     *      |  pre-allocated   |  pre-allocated |
+     *      |      kernel      |     kernel     |
+     *      | page directories |  page tables   |
+     *      +-------...--------+-------...------+
      * */
 
     for(idx = 0; idx < PDPT_ENTRIES; ++idx) {
         vm_pae_clear_pte(&initial_pdpt->pd[idx]);
     }
-
-    vm_pae_init_low_alias(initial_pdpt, boot_alloc);
 
     const unsigned int last_idx = pdpt_offset_of((addr_t)KERNEL_PREALLOC_LIMIT - 1);
 
@@ -348,14 +426,4 @@ void vm_pae_destroy_addr_space(addr_space_t *addr_space) {
     }
     
     slab_cache_free(pdpt);
-}
-
-void vm_pae_unmap_low_alias(addr_space_t *addr_space) {
-    /* Enabling PAE requires disabling paging temporarily, which in turn requires
-     * an alias of the kernel image region at address 0 to match its physical
-     * address. This function gets rid of this alias once PAE is enabled.
-     *
-     * There is no need for TLB invalidation because the caller reloads CR3 just
-     * after calling this function. */
-    vm_pae_clear_pte(&addr_space->top_level.pdpt->pd[0]);
 }
