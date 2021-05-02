@@ -148,6 +148,40 @@ void boot_heap_pop(boot_alloc_t *boot_alloc) {
  *
  * */
 addr_t boot_page_alloc_early(boot_alloc_t *boot_alloc) {
+    return boot_page_alloc_n_early(boot_alloc, 1);
+}
+
+/**
+ * Early allocation of multiple consecutive pages.
+ *
+ * When the kernel is first entered, the setup code has set up temporary page
+ * tables that map a contiguous region of physical memory (RAM) that contains
+ * the kernel image at KLIMIT. The setup code itself allocates a few pages,
+ * notably for the temporary page tables and for the boot stack and heap. These
+ * pages are allocated sequentially just after the kernel image.
+ *
+ * This function allocates pages sequentially following the kernel image and the
+ * setup code allocations. It is meant to be called early in the initialization
+ * process, while the temporary page tables set up by the setup code are still
+ * being used, which means before the kernel switches to the initial address
+ * space it sets up.
+ *
+ * Because the page tables set up by the setup code are being used, there is a
+ * fixed relation between the virtual address of the pages allocated by this
+ * function and the physical address of the underlying page frames. This relation
+ * is expressed by the EARLY_PTR_TO_PHYS_ADDR() macro.
+ *
+ * This function must not be called once the kernel has switched away from the
+ * page tables set up by the setup code to the initial address space it has set
+ * up itself. This function checks for this and triggers a kernel panic if it
+ * happens.
+ *
+ * @param boot_alloc the boot allocator state
+ * @param num_pages number of pages to allocate
+ * @return address of allocated page
+ *
+ * */
+addr_t boot_page_alloc_n_early(boot_alloc_t *boot_alloc, int num_pages) {
     /* Preconditions */
     if(! boot_alloc->its_early) {
         panic("boot_pgalloc_early() called too late");
@@ -166,15 +200,15 @@ addr_t boot_page_alloc_early(boot_alloc_t *boot_alloc) {
     }
 
     /* address of allocated page */
-    addr_t allocated_page = boot_alloc->kernel_vm_top;
+    addr_t allocation_start = boot_alloc->kernel_vm_top;
 
     /* Update allocator state.
      *
      * In this early allocator function that is called while the temporary page
      * tables set up by the setup code are still being used, there is a fixed
      * relationship between virtual and physical addresses. */
-    boot_alloc->kernel_vm_top      = allocated_page + PAGE_SIZE;
-    boot_alloc->kernel_paddr_top   = boot_alloc->kernel_paddr_top + PAGE_SIZE;
+    boot_alloc->kernel_vm_top      = allocation_start + num_pages * PAGE_SIZE;
+    boot_alloc->kernel_paddr_top   = boot_alloc->kernel_paddr_top + num_pages * PAGE_SIZE;
 
     /* Check updated state against allocation limits. */
     if(boot_alloc->kernel_vm_top > boot_alloc->kernel_vm_limit) {
@@ -185,16 +219,16 @@ addr_t boot_page_alloc_early(boot_alloc_t *boot_alloc) {
         panic("vmalloc_early(): available memory exhausted");
     }
 
-    /* This newly allocated page may have data left from a previous boot which
-     * may contain sensitive information. Let's clear it. */
-    clear_page(allocated_page);
+    /* These newly allocated pages may have data left from a previous boot which
+     * may contain sensitive information. Let's clear them. */
+    clear_pages(allocation_start, num_pages);
 
     /* Post-condition */
     if(boot_alloc->kernel_paddr_top != EARLY_PTR_TO_PHYS_ADDR(boot_alloc->kernel_vm_top)) {
         panic("boot_pgalloc_early(): inconsistent allocator state on return");
     }
 
-    return allocated_page;
+    return allocation_start;
 }
 
 /**

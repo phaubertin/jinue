@@ -167,9 +167,24 @@ kern_paddr_t remove_page_frame(void) {
 /**
  * Clear a page by writing all bytes to zero.
  *
+ * TODO this should not be in this file
+ *
  * @param page the page to clear
  *
  * */
 void clear_page(void *page) {
-    memset(page, 0, PAGE_SIZE);
+    clear_pages(page, 1);
+}
+
+/**
+ * Clear consecutive pages by writing all bytes to zero.
+ *
+ * TODO this should not be in this file
+ *
+ * @param first_page address of first page
+ * @param num_pages number of pages to clear
+ *
+ * */
+void clear_pages(void *first_page, int num_pages) {
+    memset(first_page, 0, num_pages * PAGE_SIZE);
 }

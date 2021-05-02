@@ -100,6 +100,12 @@ static void initialize_page_table_linear(
     }
 }
 
+static void clear_pdpt(pdpt_t *pdpt) {
+    for(int idx = 0; idx < PDPT_ENTRIES; ++idx) {
+        vm_pae_clear_pte(&pdpt->pd[idx]);
+    }
+}
+
 /**
  * Enable Physical Address Extension (PAE)
  *
@@ -127,8 +133,7 @@ void vm_pae_enable(boot_alloc_t *boot_alloc) {
     initialize_page_table_linear(page_table1, 0, VM_FLAG_READ_WRITE, 512);
 
     /* Second mapping (two page tables) */
-    pte_t *page_table2 = (pte_t *)boot_page_alloc_early(boot_alloc);
-    (void)boot_page_alloc_early(boot_alloc);
+    pte_t *page_table2 = (pte_t *)boot_page_alloc_n_early(boot_alloc, 2);
     initialize_page_table_linear(
             page_table2,
             MEM_ZONE_MEM32_START,
@@ -179,10 +184,7 @@ void vm_pae_enable(boot_alloc_t *boot_alloc) {
 
     /* Initialize PDPT */
     pdpt_t *pdpt = boot_heap_alloc(boot_alloc, pdpt_t, sizeof(pdpt_t));
-
-    for(int idx = 0; idx < PDPT_ENTRIES; ++idx) {
-        vm_pae_clear_pte(&pdpt->pd[idx]);
-    }
+    clear_pdpt(pdpt);
 
     vm_pae_set_pte(
             &pdpt->pd[0],
@@ -353,9 +355,7 @@ addr_space_t *vm_pae_create_initial_addr_space(boot_alloc_t *boot_alloc) {
      *      +-------...--------+-------...------+
      * */
 
-    for(idx = 0; idx < PDPT_ENTRIES; ++idx) {
-        vm_pae_clear_pte(&initial_pdpt->pd[idx]);
-    }
+    clear_pdpt(initial_pdpt);
 
     const unsigned int last_idx = pdpt_offset_of((addr_t)KERNEL_PREALLOC_LIMIT - 1);
 

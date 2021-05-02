@@ -46,4 +46,6 @@ kern_paddr_t remove_page_frame(void);
 
 void clear_page(void *page);
 
+void clear_pages(void *first_page, int num_pages);
+
 #endif

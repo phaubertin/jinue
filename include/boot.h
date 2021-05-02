@@ -58,6 +58,8 @@ void boot_heap_pop(boot_alloc_t *boot_alloc);
 
 addr_t boot_page_alloc_early(boot_alloc_t *boot_alloc);
 
+addr_t boot_page_alloc_n_early(boot_alloc_t *boot_alloc, int num_pages);
+
 kern_paddr_t boot_page_frame_alloc(boot_alloc_t *boot_alloc);
 
 addr_t boot_vmalloc(boot_alloc_t *boot_alloc);
