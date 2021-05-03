@@ -161,10 +161,23 @@ skip_cmdline_copy:
     and eax, ~PAGE_MASK                 ; ... to a page boundary
     mov esp, eax                        ; set stack pointer
     
-    ; Allocate and initialize initial page tables and page directory, then set
-    ; CR3.
+    ; Page tables need to be allocated:
+    ;   - One for first 2MB of memory
+    ;   - BOOT_PTES_AT_16MB / VM_X86_PAGE_TABLE_PTES for mapping at 0x1000000 (16M)
+    ;   - One for kernel image mapping at KLIMIT
+    mov dword [_page_table], eax
+    add eax, (2 + BOOT_PTES_AT_16MB / VM_X86_PAGE_TABLE_PTES) * PAGE_SIZE
+    mov dword [_page_directory], eax
+    add eax, PAGE_SIZE
+    mov dword [_boot_end], eax
+
+    ; Allocate and initialize initial page tables and page directory.
     call initialize_page_tables
     
+    ; set page directory address in CR3
+    mov eax, [_page_directory]
+    mov cr3, eax
+
     ; enable paging
     mov eax, cr0
     or eax, X86_CR0_PG
@@ -217,26 +230,14 @@ just_right_here:
     ; --------------------------------------------------------------------------
     ; Function: initialize_page_tables
     ; --------------------------------------------------------------------------
-    ; Allocate and initialize initial non-PAE page tables and page directory,
-    ; then set CR3.
+    ; Allocate and initialize initial non-PAE page tables and page directory.
     ;
     ; Arguments:
     ;       (none)
     ;
     ; Returns:
-    ;       sets _page_table, _page_directory and _boot_end
     ;       eax, ebx, ecx, edx, esi, edi are caller saved
 initialize_page_tables:
-    ; Page tables need to be allocated:
-    ;   - One for first 2MB of memory
-    ;   - BOOT_PTES_AT_16MB / VM_X86_PAGE_TABLE_PTES for mapping at 0x1000000 (16M)
-    ;   - One for kernel image mapping at KLIMIT
-    mov dword [_page_table], eax
-    add eax, (2 + BOOT_PTES_AT_16MB / VM_X86_PAGE_TABLE_PTES) * PAGE_SIZE
-    mov dword [_page_directory], eax
-    add eax, PAGE_SIZE
-    mov dword [_boot_end], eax
-
     ; Initialize first page table for a 1:1 mapping of the first 2MB.
     mov eax, 0                          ; start address is 0
     mov edi, dword [_page_table]        ; write address
@@ -281,9 +282,6 @@ initialize_page_tables:
     sub eax, PAGE_SIZE
     or eax, VM_FLAG_READ_WRITE | VM_FLAG_PRESENT
     mov dword [edi + 4 * (KLIMIT >> 22)], eax
-
-    ; set page directory address in CR3
-    mov cr3, edi
 
     ret
 
