@@ -35,24 +35,30 @@
 #include <hal/asm/x86.h>
 
 /** page is present in memory */
-#define VM_FLAG_PRESENT       X86_PTE_PRESENT
+#define VM_FLAG_PRESENT         X86_PTE_PRESENT
 
 /** page is read only */
-#define VM_FLAG_READ_ONLY     0
+#define VM_FLAG_READ_ONLY       0
 
 /** page is read/write accessible */
-#define VM_FLAG_READ_WRITE    X86_PTE_READ_WRITE
+#define VM_FLAG_READ_WRITE      X86_PTE_READ_WRITE
 
 /** kernel mode page */
-#define VM_FLAG_KERNEL        X86_PTE_GLOBAL
+#define VM_FLAG_KERNEL          X86_PTE_GLOBAL
 
 /** user mode page */
-#define VM_FLAG_USER          X86_PTE_USER
+#define VM_FLAG_USER            X86_PTE_USER
 
 /** page was accessed (read) */
-#define VM_FLAG_ACCESSED      X86_PTE_ACCESSED
+#define VM_FLAG_ACCESSED        X86_PTE_ACCESSED
 
 /** page was written to */
-#define VM_FLAG_DIRTY         X86_PTE_DIRTY
+#define VM_FLAG_DIRTY           X86_PTE_DIRTY
+
+/** Number of entries per page table/directory, PAE disabled */
+#define VM_X86_PAGE_TABLE_PTES  1024
+
+/** Number of entries per page table/directory, PAE enabled */
+#define VM_PAE_PAGE_TABLE_PTES  512
 
 #endif

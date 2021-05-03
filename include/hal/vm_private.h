@@ -43,9 +43,6 @@
 #include <stdint.h>
 #include <types.h>
 
-/** number of entries in page table or page directory */
-#define PAGE_TABLE_ENTRIES  (PAGE_SIZE / sizeof(pte_t))
-
 /** bit mask for page table or page directory offset */
 #define PAGE_TABLE_MASK (PAGE_TABLE_ENTRIES - 1)
 

@@ -34,6 +34,9 @@
 #include <pfalloc.h>
 #include <vmalloc.h>
 
+/** number of entries in a page directory or page table */
+#define PAGE_TABLE_ENTRIES      VM_PAE_PAGE_TABLE_PTES
+
 struct pte_t {
     uint32_t entry;
 };

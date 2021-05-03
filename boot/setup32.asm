@@ -60,6 +60,7 @@ image_start:
 
     ; The structure below (i.e. the boot information structure) must match the
     ; boot_info_t struct declaration in include/hal/boot.h.
+    align 4
 boot_info_struct:
 _kernel_start:      dd kernel_start
 _kernel_size:       dd kernel_size
@@ -226,12 +227,12 @@ just_right_here:
     ;       sets _page_table, _page_directory and _boot_end
     ;       eax, ebx, ecx, edx, esi, edi are caller saved
 initialize_page_tables:
-    ; Three page tables need to be allocated:
-    ;   - First for first 2MB of memory
-    ;   - Second for mapping at 0x1000000 (16M)
-    ;   - Third for kernel image mapping at KLIMIT
+    ; Page tables need to be allocated:
+    ;   - One for first 2MB of memory
+    ;   - BOOT_PTES_AT_16MB / VM_X86_PAGE_TABLE_PTES for mapping at 0x1000000 (16M)
+    ;   - One for kernel image mapping at KLIMIT
     mov dword [_page_table], eax
-    add eax, 3 * PAGE_SIZE
+    add eax, (2 + BOOT_PTES_AT_16MB / VM_X86_PAGE_TABLE_PTES) * PAGE_SIZE
     mov dword [_page_directory], eax
     add eax, PAGE_SIZE
     mov dword [_boot_end], eax
@@ -241,14 +242,14 @@ initialize_page_tables:
     mov edi, dword [_page_table]        ; write address
     call map_2_megabytes
 
-    ; Initialize second page table to map 4MB starting at 0x1000000 (16M)
+    ; Initialize pages table to map BOOT_SIZE_AT_16MB starting at 0x1000000 (16M)
     ;
     ; Write address (edi) already has the correct value.
     mov eax, MEM_ZONE_MEM32_START       ; start address
-    mov ecx, 1024
+    mov ecx, BOOT_PTES_AT_16MB
     call map_linear
 
-    ; Initialize third page table to map 2MB starting with the start of the
+    ; Initialize last page table to map 2MB starting with the start of the
     ; kernel image at KLIMIT.
     ;
     ; Write address (edi) already has the correct value.
@@ -267,12 +268,18 @@ initialize_page_tables:
     or eax, VM_FLAG_READ_WRITE | VM_FLAG_PRESENT
     mov dword [edi], eax
 
-    ; add entry for the second page table
+    ; add entries for page tables for memory at 16MB
+    mov eax, dword [_page_table]
     add eax, PAGE_SIZE
-    mov dword [edi + 4 * (MEM_ZONE_MEM32_START >> 22)], eax
+    lea edi, [edi + 4 * (MEM_ZONE_MEM32_START >> 22)]
+    mov ecx, BOOT_PTES_AT_16MB / VM_X86_PAGE_TABLE_PTES
+    call map_linear
 
-    ; add entry for the third page table
-    add eax, PAGE_SIZE
+    ; add entry for the last page table
+    mov edi, dword [_page_directory]
+    mov eax, edi
+    sub eax, PAGE_SIZE
+    or eax, VM_FLAG_READ_WRITE | VM_FLAG_PRESENT
     mov dword [edi + 4 * (KLIMIT >> 22)], eax
 
     ; set page directory address in CR3

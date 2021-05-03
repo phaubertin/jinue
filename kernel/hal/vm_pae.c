@@ -49,6 +49,9 @@
 /** number of entries in a Page Directory Pointer Table (PDPT) */
 #define PDPT_ENTRIES            (1 << PDPT_BITS)
 
+/** number of entries in a page directory or page table */
+#define PAGE_TABLE_ENTRIES      VM_PAE_PAGE_TABLE_PTES
+
 
 struct pte_t {
     uint64_t entry;
@@ -130,15 +133,21 @@ static void clear_pdpt(pdpt_t *pdpt) {
 void vm_pae_enable(boot_alloc_t *boot_alloc) {
     /* First mapping */
     pte_t *page_table1 = (pte_t *)boot_page_alloc_early(boot_alloc);
-    initialize_page_table_linear(page_table1, 0, VM_FLAG_READ_WRITE, 512);
+    initialize_page_table_linear(
+            page_table1,
+            0,
+            VM_FLAG_READ_WRITE,
+            PAGE_TABLE_ENTRIES);
 
     /* Second mapping (two page tables) */
-    pte_t *page_table2 = (pte_t *)boot_page_alloc_n_early(boot_alloc, 2);
+    pte_t *page_table2 = (pte_t *)boot_page_alloc_n_early(
+            boot_alloc,
+            BOOT_PTES_AT_16MB / PAGE_TABLE_ENTRIES);
     initialize_page_table_linear(
             page_table2,
             MEM_ZONE_MEM32_START,
             VM_FLAG_READ_WRITE,
-            1024);
+            BOOT_PTES_AT_16MB);
 
     /* Third mapping */
     pte_t *page_table3 = (pte_t *)boot_page_alloc_early(boot_alloc);
@@ -146,7 +155,7 @@ void vm_pae_enable(boot_alloc_t *boot_alloc) {
             page_table3,
             BOOT_SETUP32_ADDR,
             VM_FLAG_READ_WRITE,
-            512);
+            PAGE_TABLE_ENTRIES);
 
     /* Page directory for first two mappings */
     pte_t *page_directory12 = (pte_t *)boot_page_alloc_early(boot_alloc);
@@ -157,19 +166,15 @@ void vm_pae_enable(boot_alloc_t *boot_alloc) {
             EARLY_PTR_TO_PHYS_ADDR(page_table1),
             VM_FLAG_READ_WRITE | VM_FLAG_PRESENT);
 
-    vm_pae_set_pte(
-            vm_pae_get_pte_with_offset(
-                    page_directory12,
-                    vm_pae_page_directory_offset_of((addr_t)MEM_ZONE_MEM32_START)),
-            EARLY_PTR_TO_PHYS_ADDR(page_table2),
-            VM_FLAG_READ_WRITE | VM_FLAG_PRESENT);
-
-    vm_pae_set_pte(
-            vm_pae_get_pte_with_offset(
-                    page_directory12,
-                    vm_pae_page_directory_offset_of((addr_t)MEM_ZONE_MEM32_START + PAGE_SIZE)),
-            EARLY_PTR_TO_PHYS_ADDR(page_table2) + PAGE_SIZE,
-            VM_FLAG_READ_WRITE | VM_FLAG_PRESENT);
+    for(int idx = 0; idx < BOOT_PTES_AT_16MB / PAGE_TABLE_ENTRIES; ++idx) {
+        const int offset = idx * PAGE_SIZE;
+        vm_pae_set_pte(
+                vm_pae_get_pte_with_offset(
+                        page_directory12,
+                        vm_pae_page_directory_offset_of((addr_t)MEM_ZONE_MEM32_START + offset)),
+                EARLY_PTR_TO_PHYS_ADDR(page_table2) + offset,
+                VM_FLAG_READ_WRITE | VM_FLAG_PRESENT);
+    }
 
     /* Page directory for third mapping */
     pte_t *page_directory3 = (pte_t *)boot_page_alloc_early(boot_alloc);

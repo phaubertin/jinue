@@ -32,6 +32,7 @@
 #ifndef JINUE_HAL_ASM_BOOT_H
 #define JINUE_HAL_ASM_BOOT_H
 
+#include <jinue-common/asm/types.h>
 #include <jinue-common/asm/vm.h>
 #include <hal/asm/mem.h>
 
@@ -73,5 +74,9 @@
 #define BOOT_STACK_HEAP_SIZE    (4 * PAGE_SIZE)
 
 #define BOOT_KERNEL_OFFSET      (KLIMIT - BOOT_SETUP32_ADDR)
+
+#define BOOT_SIZE_AT_16MB       (12 * MB)
+
+#define BOOT_PTES_AT_16MB       (BOOT_SIZE_AT_16MB / PAGE_SIZE)
 
 #endif
