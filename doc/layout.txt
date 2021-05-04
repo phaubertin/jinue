@@ -29,20 +29,26 @@ is a data structure located at the beginning of the 32-bit setup code.
   |             (maps 0xb8000)            |
   +=======================================+ kernel_region_top
   |                                       |
-  |        initial page allocations       |
-  |      (1:1 virtual memory mapping)     |
-  +=======================================+ boot_info.boot_end  -+-
-  |          kernel stack (boot)          |                      |
-  +-----v---------------------------v-----+ (stack pointer)      |
-  |                                       |                      |
-  |                . . .                  |                      |
-  |                                       |                      | kernel boot
-  +-----^---------------------------^-----+ boot_heap            | stack/heap
-  |     kernel heap allocations (boot)    |                      |
-  |      kernel physical memory map       |                      |
-  +---------------------------------------+ boot_info.boot_heap  |
-  |       BIOS physical memory map        |                      |
-  +=======================================+ boot_info.image_top -+-
+  |   initial page allocations by kernel  |
+  |      (1:1 virtual memory mapping)     | vvv end of allocations by setup code
+  +=======================================+ boot_info.boot_end
+  |        initial page directory         | 
+  +---------------------------------------+ boot_info.page_directory
+  |         initial page tables           |
+  |           (PAE disabled)              |
+  +---------------------------------------+ boot_info.page_table  -+-
+  |          kernel stack (boot)          |                        |
+  +-----v---------------------------v-----+ (stack pointer)        |
+  |                                       |                        |
+  |                . . .                  |                        |
+  |                                       |                        | kernel boot
+  +-----^---------------------------^-----+ boot_heap              | stack/heap
+  |     kernel heap allocations (boot)    |                        |
+  |      kernel physical memory map       |                        |
+  +---------------------------------------+ boot_info.boot_heap   -+-
+  |         kernel command line           |
+  |       BIOS physical memory map        |
+  +=======================================+ boot_info.image_top
   |                                       | = boot_info.e820_map
   |         process manager (ELF)         |
   |                                       |
@@ -57,7 +63,47 @@ is a data structure located at the beginning of the 32-bit setup code.
 The boot kernel stack is used only during initialization. Once the first thread
 context is created, per-thread kernel stacks are used instead.
 
-The whole process address space looks like this:
+Early in the boot process, the 32-bit setup code sets up temporary page tables
+with three mappings:
+- The first two megabytes of physical memory are identity mapped.
+- A few megabytes of memory (BOOT_SIZE_AT_16MB) starting at 0x1000000 (16MB) are
+  also identity mapped.
+- The second and third megabytes of memory are mapped at 0xc0000000 (KLIMIT).
+  This region of physical memory starts with the kernel image as loaded by the
+  boot loader. This mapping at KLIMIT is where the kernel expects to run.
+
+  +=======================================+ 0x100000000 (4GB)
+  |                                       |
+  |                                       |
+  |               unmapped                |
+  |                                       |
+  |                                       |
+  +=======================================+ 0xc0200000 (KLIMIT + 2MB)
+  |                                       |
+  |   kernel image + initial allocations  |
+  +=======================================+ 0xc0000000 (KLIMIT)
+  |                                       |
+  |                                       |
+  |               unmapped                |
+  |                                       |
+  |                                       |
+  +=======================================+ 0x1c00000 (16MB + BOOT_SIZE_AT_16MB)
+  |                                       |
+  | physical memory starting at 0x1000000 |
+  |                                       |
+  +=======================================+ 0x1000000 (16MB)
+  |                                       |
+  |               unmapped                |
+  |                                       |
+  +=======================================+ 0x200000 (2MB)
+  |   kernel image + initial allocations  |
+  +---------------------------------------+ 0x100000 (1MB)
+  |  text video memory, boot loader data  |
+  +---------------------------------------+ 0
+
+The initial page tables set up by the setup code are replaced during the kernel
+initialization process. Ultimately, the whole process address space looks like
+this:
 
   +---------------------------------------+ 0x100000000 = 4GB
   |                                       |
@@ -66,25 +112,14 @@ The whole process address space looks like this:
   +---------------------------------------+ kernel_vm_top
   |    microkernel, process manager,etc.  |
   |              (see above)              |  
-  +---------------------------------------+ kernel_start (KLIMIT + 0x100000)
-  |                                       |
-  |     available for global mappings     |
-  |                                       |
-  +=======================================+ KLIMIT (0xe0000000 = 4GB - 512MB)
+  +=======================================+ KLIMIT (0xc0000000 = 3GB)
   |                                       |
   |                                       |
   |          User memory space            |
   |                                       |
   |                                       |
   |                                       |
-  +---------------------------------------+ 0x0
+  +---------------------------------------+ 0
 
 All memory mappings from 0 to KLIMIT are user mappings which belong to the
 currently running process. Mappings above KLIMIT are global kernel mappings.
-
-When the 32-bit setup code runs during boot, it enables paging and maps the
-first 4MB of physical address space at KLIMIT before passing control to the
-kernel. This region of memory includes the loaded kernel image as well as the
-VGA text video memory. The kernel initialization code then performs further
-intialization, including creating the page tables for the initial process with
-the layout indicated above.
