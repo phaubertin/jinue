@@ -60,7 +60,7 @@ void boot_alloc_init(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
     boot_alloc->kernel_vm_top      = boot_info->boot_end;
     boot_alloc->kernel_vm_limit    = (addr_t)KERNEL_EARLY_LIMIT;
     boot_alloc->kernel_paddr_top   = EARLY_VIRT_TO_PHYS(boot_alloc->kernel_vm_top);
-    boot_alloc->kernel_paddr_limit = MEM_ADDR_1MB + 1 * MB;
+    boot_alloc->kernel_paddr_limit = MEMORY_ADDR_1MB + 1 * MB;
 }
 
 /**

@@ -34,7 +34,7 @@
 
 #include <jinue-common/asm/types.h>
 #include <jinue-common/asm/vm.h>
-#include <hal/asm/mem.h>
+#include "memory.h"
 
 
 #define BOOT_E820_ENTRIES       0x1e8
@@ -65,7 +65,7 @@
 
 #define BOOT_E820_MAP_SIZE      (BOOT_E820_MAP_END - BOOT_E820_MAP)
 
-#define BOOT_SETUP32_ADDR       MEM_ADDR_1MB
+#define BOOT_SETUP32_ADDR       MEMORY_ADDR_1MB
 
 #define BOOT_SETUP32_SIZE       PAGE_SIZE
 

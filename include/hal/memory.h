@@ -29,10 +29,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_HAL_MEM_H
-#define JINUE_HAL_MEM_H
+#ifndef JINUE_HAL_MEMORY_H
+#define JINUE_HAL_MEMORY_H
 
-#include <hal/asm/mem.h>
+#include "asm/memory.h"
+
 #include <types.h>
 
 void check_memory(const boot_info_t *boot_info);

@@ -35,7 +35,7 @@ sources.c    = \
 	cpu.c \
 	hal.c \
 	interrupt.c \
-	mem.c \
+	memory.c \
 	pic8259.c \
 	serial.c \
 	thread.c \

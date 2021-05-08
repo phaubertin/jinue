@@ -29,13 +29,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_HAL_ASM_MEM_H
-#define JINUE_HAL_ASM_MEM_H
+#ifndef JINUE_HAL_ASM_MEMORY_H
+#define JINUE_HAL_ASM_MEMORY_H
 
 #include <jinue-common/asm/types.h>
 
-#define MEM_ADDR_1MB            (1 * MB)
+#define MEMORY_ADDR_1MB         (1 * MB)
 
-#define MEM_ADDR_16MB           (16 * MB)
+#define MEMORY_ADDR_16MB        (16 * MB)
 
 #endif

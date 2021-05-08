@@ -29,8 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "../../include/hal/memory.h"
+
 #include <jinue-common/asm/e820.h>
-#include <hal/mem.h>
 #include <hal/vm.h>
 #include <assert.h>
 #include <panic.h>
@@ -117,12 +118,12 @@ static bool range_is_in_available_memory(
  * */
 void check_memory(const boot_info_t *boot_info) {
     memory_range_t range_at_1mb = {
-            .start  = MEM_ADDR_1MB,
-            .end    = MEM_ADDR_1MB + 1 * MB
+            .start  = MEMORY_ADDR_1MB,
+            .end    = MEMORY_ADDR_1MB + 1 * MB
     };
     memory_range_t range_at_16mb = {
-            .start  = MEM_ADDR_16MB,
-            .end    = MEM_ADDR_16MB + BOOT_SIZE_AT_16MB
+            .start  = MEMORY_ADDR_16MB,
+            .end    = MEMORY_ADDR_16MB + BOOT_SIZE_AT_16MB
     };
 
     if(! range_is_in_available_memory(&range_at_16mb, boot_info)) {

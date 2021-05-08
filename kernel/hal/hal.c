@@ -36,7 +36,6 @@
 #include <hal/descriptors.h>
 #include <hal/hal.h>
 #include <hal/interrupt.h>
-#include <hal/mem.h>
 #include <hal/pic8259.h>
 #include <hal/thread.h>
 #include <hal/trap.h>
@@ -45,6 +44,7 @@
 #include <hal/vm_pae.h>
 #include <hal/x86.h>
 #include <boot.h>
+#include <hal/memory.h>
 #include <panic.h>
 #include <page_alloc.h>
 #include <pfalloc.h>

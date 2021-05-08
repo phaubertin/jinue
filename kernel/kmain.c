@@ -31,11 +31,11 @@
 
 #include <hal/boot.h>
 #include <hal/hal.h>
-#include <hal/mem.h>
 #include <hal/vm.h>
 #include <boot.h>
 #include <console.h>
 #include <elf.h>
+#include <hal/memory.h>
 #include <ipc.h>
 #include <kmain.h>
 #include <panic.h>

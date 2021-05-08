@@ -145,7 +145,7 @@ void vm_pae_enable(boot_alloc_t *boot_alloc) {
             BOOT_PTES_AT_16MB / PAGE_TABLE_ENTRIES);
     initialize_page_table_linear(
             page_table2,
-            MEM_ADDR_16MB,
+            MEMORY_ADDR_16MB,
             VM_FLAG_READ_WRITE,
             BOOT_PTES_AT_16MB);
 
@@ -171,7 +171,7 @@ void vm_pae_enable(boot_alloc_t *boot_alloc) {
         vm_pae_set_pte(
                 vm_pae_get_pte_with_offset(
                         page_directory12,
-                        vm_pae_page_directory_offset_of((addr_t)MEM_ADDR_16MB + offset)),
+                        vm_pae_page_directory_offset_of((addr_t)MEMORY_ADDR_16MB + offset)),
                 EARLY_PTR_TO_PHYS_ADDR(page_table2) + offset,
                 VM_FLAG_READ_WRITE | VM_FLAG_PRESENT);
     }
