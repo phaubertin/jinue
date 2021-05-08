@@ -34,7 +34,7 @@
 
 #include <types.h>
 
-void boot_alloc_init(boot_alloc_t *boot_alloc, void *heap_ptr);
+void boot_alloc_init(boot_alloc_t *boot_alloc, const boot_info_t *boot_info);
 
 /**
  * Allocate an object on the boot heap.

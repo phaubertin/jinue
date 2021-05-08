@@ -49,12 +49,15 @@
 #define KLIMIT                  0xc0000000
 
 /** limit of initial mapping performed by the 32-bit setup code */
+/* TODO delete this definition (maybe) */
 #define KERNEL_EARLY_LIMIT      (KLIMIT + 2 * MB)
 
 /** limit of the kernel image region */
+/* TODO delete this definition */
 #define KERNEL_IMAGE_END        (KLIMIT + 16 * MB)
 
 /** limit up to which page tables are preallocated during kernel initialization */
+/* TODO delete this definition */
 #define KERNEL_PREALLOC_LIMIT   (KLIMIT + 32 * MB)
 
 /** stack base address (stack top) */

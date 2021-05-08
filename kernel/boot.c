@@ -48,14 +48,19 @@
  * can be used.
  *
  * @param boot_alloc the allocator state initialized by this function
- * @param heap_ptr the current top of the boot heap
+ * @param boot_info boot information structure
  *
  * */
-void boot_alloc_init(boot_alloc_t *boot_alloc, void *heap_ptr) {
+void boot_alloc_init(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
     memset(boot_alloc, 0, sizeof(boot_alloc_t));
-    boot_alloc->heap_ptr    = heap_ptr;
+    boot_alloc->heap_ptr    = boot_info->boot_heap;
     boot_alloc->its_early   = true;
     /* TODO handle heap limit. */
+
+    boot_alloc->kernel_vm_top      = boot_info->boot_end;
+    boot_alloc->kernel_vm_limit    = (addr_t)KERNEL_EARLY_LIMIT;
+    boot_alloc->kernel_paddr_top   = EARLY_VIRT_TO_PHYS(boot_alloc->kernel_vm_top);
+    boot_alloc->kernel_paddr_limit = MEM_ADDR_1MB + 1 * MB;
 }
 
 /**
@@ -235,7 +240,7 @@ addr_t boot_page_alloc_n_early(boot_alloc_t *boot_alloc, int num_pages) {
  * Allocate a page frame, that is, a page of physical memory.
  *
  * The allocated page frame is not mapped anywhere. For a mapped page, call
- * boot_pgalloc() or boot_pgalloc_image() instead;
+ * boot_page_alloc() or boot_page_alloc_image() instead;
  *
  * @param boot_alloc the boot allocator state
  * @return physical address of allocated page frame

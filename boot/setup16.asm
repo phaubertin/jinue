@@ -31,7 +31,6 @@
 #include <jinue-common/asm/vm.h>
 #include <hal/asm/boot.h>
 #include <hal/asm/descriptors.h>
-#include <hal/asm/mem.h>
 #include <hal/asm/pic8259.h>
 
 %define CODE_SEG        1
@@ -78,7 +77,7 @@ heap_end_ptr:       dw 0
 pad1:               dw 0
 cmd_line_ptr:       dd 0
 initrd_addr_max:
-ramdisk_max:        dd MEM_ZONE_MEM32_END - 1
+ramdisk_max:        dd BOOT_RAMDISK_LIMIT - 1
 
 start:
     ; Setup the segment registers

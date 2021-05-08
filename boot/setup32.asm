@@ -246,7 +246,7 @@ initialize_page_tables:
     ; Initialize pages table to map BOOT_SIZE_AT_16MB starting at 0x1000000 (16M)
     ;
     ; Write address (edi) already has the correct value.
-    mov eax, MEM_ZONE_MEM32_START       ; start address
+    mov eax, MEM_ADDR_16MB              ; start address
     mov ecx, BOOT_PTES_AT_16MB
     call map_linear
 
@@ -272,7 +272,7 @@ initialize_page_tables:
     ; add entries for page tables for memory at 16MB
     mov eax, dword [_page_table]
     add eax, PAGE_SIZE
-    lea edi, [edi + 4 * (MEM_ZONE_MEM32_START >> 22)]
+    lea edi, [edi + 4 * (MEM_ADDR_16MB >> 22)]
     mov ecx, BOOT_PTES_AT_16MB / VM_X86_PAGE_TABLE_PTES
     call map_linear
 

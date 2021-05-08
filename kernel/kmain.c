@@ -88,10 +88,11 @@ void kmain(void) {
     printk("Kernel command line:\n", boot_info->kernel_size);
     printk("    %s\n", boot_info->cmdline);
 
+    check_memory(boot_info);
+
     /* Initialize the boot allocator. */
     boot_alloc_t boot_alloc;
-    boot_alloc_init(&boot_alloc, boot_info->boot_heap);
-    mem_check_memory(&boot_alloc, boot_info);
+    boot_alloc_init(&boot_alloc, boot_info);
 
     /* initialize hardware abstraction layer */
     hal_init(&boot_alloc, boot_info);

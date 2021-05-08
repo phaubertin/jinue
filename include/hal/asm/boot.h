@@ -65,7 +65,7 @@
 
 #define BOOT_E820_MAP_SIZE      (BOOT_E820_MAP_END - BOOT_E820_MAP)
 
-#define BOOT_SETUP32_ADDR       MEM_ZONE_DMA16_START
+#define BOOT_SETUP32_ADDR       MEM_ADDR_1MB
 
 #define BOOT_SETUP32_SIZE       PAGE_SIZE
 
@@ -78,5 +78,7 @@
 #define BOOT_SIZE_AT_16MB       (12 * MB)
 
 #define BOOT_PTES_AT_16MB       (BOOT_SIZE_AT_16MB / PAGE_SIZE)
+
+#define BOOT_RAMDISK_LIMIT      0xc0000000
 
 #endif

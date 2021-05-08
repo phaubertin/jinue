@@ -34,12 +34,8 @@
 
 #include <jinue-common/asm/types.h>
 
-#define MEM_ZONE_DMA16_START    (1 * MB)
+#define MEM_ADDR_1MB            (1 * MB)
 
-#define MEM_ZONE_DMA16_END      (15 * MB)
-
-#define MEM_ZONE_MEM32_START    (16 * MB)
-
-#define MEM_ZONE_MEM32_END      0xc0000000
+#define MEM_ADDR_16MB           (16 * MB)
 
 #endif

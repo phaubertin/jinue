@@ -38,167 +38,108 @@
 #include <stddef.h>
 #include <stdint.h>
 
+typedef struct {
+    uint64_t    start;
+    uint64_t    end;
+} memory_range_t;
 
-static uint32_t clip_e820_entry_end(const e820_t *entry) {
-    /* Clip end address to MEM_ZONE_MEM32_END as the kernel cannot use anything
-     * past that. */
-    if(entry->addr + entry->size > MEM_ZONE_MEM32_END) {
-        return MEM_ZONE_MEM32_END;
-    }
-    else {
-        return entry->addr + entry->size;
-    }
+static bool memory_range_is_within(
+        const memory_range_t *enclosed,
+        const memory_range_t *enclosing) {
+
+    return enclosed->start >= enclosing->start && enclosed->end <= enclosed->end;
 }
 
-static bool ranges_overlap(uint32_t range1_start, uint32_t range1_end, uint32_t range2_start, uint32_t range2_end) {
-    return range2_start < range1_end && range1_start < range2_end;
+static bool memory_ranges_overlap(
+        const memory_range_t *range1,
+        const memory_range_t *range2) {
+
+    return !(range1->end <= range2->start || range1->start >= range2->end);
 }
 
-void mem_check_memory(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
-    int idx;
+static bool range_is_in_available_memory(
+        const memory_range_t    *range,
+        const boot_info_t       *boot_info) {
 
-#if 0
-    if((uint64_t)boot_info->ramdisk_start + boot_info->ramdisk_size > MEM_ZONE_MEM32_END) {
-        panic("Initial RAM disk loaded too high in memory.");
-    }
+    bool retval = false;
 
-    uint32_t ramdisk_end = boot_info->ramdisk_start + boot_info->ramdisk_size;
-#endif
+    for(int idx = 0; idx < boot_info->e820_entries; ++idx) {
+        memory_range_t entry_range;
 
-    /* -------------------------------------------------------------------------
-     * We consult the memory map provided by the BIOS to figure out how much
-     * memory is available in both zones usable by the kernel. We also want to
-     * make sure the initial RAM disk image is in available RAM.
-     *
-     * The first step in accomplishing this is to iterate over all entries that
-     * are reported as available RAM and confirm at least one of them covers
-     * each of both zones (at least the start) and the initial RAM disk.
-     * ---------------------------------------------------------------------- */
-    uint32_t zone_dma16_top = 0;
-    uint32_t zone_mem32_top = 0;
-#if 0
-    bool ramdisk_ok         = false;
-#endif
-
-    /** ASSERTION: Any unsigned value less than MEM_ZONE_MEM32_END can be stored in 32 bits. */
-    assert(MEM_ZONE_MEM32_END < (uint64_t)4 * GB);
-
-    for(idx = 0; idx < boot_info->e820_entries; ++idx) {
         const e820_t *entry = &boot_info->e820_map[idx];
+        entry_range.start   = entry->addr;
+        entry_range.end     = entry->addr + entry->size;
 
-        /* Consider only usable RAM entries. */
-        if(entry->type != E820_RAM) {
-            continue;
-        }
-
-        /* Ignore entries that start past MEM_ZONE_MEM32_END since the kernel
-         * cannot use them. Past this check, entry->addr is assumed to be
-         * representable in 32 bits.  */
-        if(entry->addr >= MEM_ZONE_MEM32_END) {
-            continue;
-        }
-
-        uint32_t entry_end = clip_e820_entry_end(entry);
-
-        /* If this entry covers the start the DMA16 zone, adjust the top pointer
-         * accordingly. Overlapping entries are resolved in favor of the largest
-         * entry. */
-        if(entry->addr <= MEM_ZONE_DMA16_START && entry_end > MEM_ZONE_DMA16_START) {
-            /* This condition covers the initial case where zone_dma16_top is zero. */
-            if(entry_end > zone_dma16_top) {
-                zone_dma16_top = entry_end;
-            }
-        }
-
-        /* Do the same for the MEM32 zone. */
-        if(entry->addr <= MEM_ZONE_MEM32_START && entry_end > MEM_ZONE_MEM32_START) {
-            if(entry_end > zone_mem32_top) {
-                zone_mem32_top = entry_end;
-            }
-        }
-
-        /* If this entry covers the initial RAM disk, this is good argument in
-         * favor of it being in available RAM (one more check below). Unlike the
-         * above, the entry must cover the initial RAM disk image completely,
-         * not just the start. */
-#if 0
-        if(entry->addr <= boot_info->ramdisk_start && entry_end >= ramdisk_end) {
-            ramdisk_ok = true;
-        }
-#endif
-    }
-
-    /* -------------------------------------------------------------------------
-     * Next, iterate over non-available RAM entries of the map to ensure nothing
-     * is relevant there.
-     * ---------------------------------------------------------------------- */
-    for(idx = 0; idx < boot_info->e820_entries; ++idx) {
-        const e820_t *entry = &boot_info->e820_map[idx];
-
-        /* Consider only non-usable RAM entries. */
         if(entry->type == E820_RAM) {
-            continue;
-        }
-
-        if(entry->addr >= MEM_ZONE_MEM32_END) {
-            continue;
-        }
-
-        uint32_t entry_end = clip_e820_entry_end(entry);
-
-        if(ranges_overlap(MEM_ZONE_DMA16_START, MEM_ZONE_DMA16_END, entry->addr, entry_end)) {
-            if(entry->addr > MEM_ZONE_DMA16_START) {
-                if(entry->addr < zone_dma16_top) {
-                    zone_dma16_top = entry->addr;
-                }
-            }
-            else {
-                /* This reserved entry covers the start of the zone. */
-                zone_dma16_top = 0;
+            if(memory_range_is_within(range, &entry_range)) {
+                retval = true;
             }
         }
-
-        if(ranges_overlap(MEM_ZONE_MEM32_START, MEM_ZONE_MEM32_END, entry->addr, entry_end)) {
-            if(entry->addr > MEM_ZONE_MEM32_START) {
-                if(entry->addr < zone_mem32_top) {
-                    zone_mem32_top = entry->addr;
-                }
-            }
-            else {
-                zone_mem32_top = 0;
+        else {
+            if(memory_ranges_overlap(range, &entry_range)) {
+                return false;
             }
         }
-
-        /* Check for overlap with the initial RAM disk. */
-#if 0
-        if(ranges_overlap(boot_info->ramdisk_start, ramdisk_end, entry->addr, entry_end)) {
-            ramdisk_ok = false;
-        }
-#endif
     }
 
-    /* -------------------------------------------------------------------------
-     * Now that we are done, let's look at the results.
-     * ---------------------------------------------------------------------- */
-#if 0
-    if(! ramdisk_ok) {
-        panic("Initial RAM disk was loaded in reserved memory.");
+    return retval;
+}
+
+/**
+ * Check the system has sufficient memory to complete kernel initialization.
+ *
+ * We need:
+ * - One MB at 0x100000 (i.e. at address 1MB). This is where the kernel image
+ *   is initially loaded by the boot loader and some of that memory is used
+ *   during early boot as well, for the initial boot stack and heap and initial
+ *   page tables among other things. All memory in this range is freed at the
+ *   end of kernel initialization.
+ * - BOOT_SIZE_AT_16MB at 0x1000000 (i.e. at address 16MB). The kernel image is
+ *   moved there during kernel initializations and all permanent page
+ *   allocations during kernel initialization come from this range. At the end
+ *   of the kernel initialization, remaining memory in this range is used to
+ *   initialize the kernel's page allocator.
+ *
+ * TODO remove the next paragraph once the kernel is moved at 16MB
+ *
+ * Moving the kernel at 0x1000000 (i.e. at 16MB) is not yet implemented. For
+ * now, only the first range is in use and allocations made there are permanent.
+ *
+ * This function checks the BIOS memory map to ensure these two memory regions
+ * are completely within available memory and do not intersect any reserved
+ * range. It also does the same check on the initial RAM disk loaded by the
+ * boot loader.
+ *
+ * If any of these fails, it results in a kernel panic.
+ *
+ * @param boot_info boot information structure
+ *
+ * */
+void check_memory(const boot_info_t *boot_info) {
+    memory_range_t range_at_1mb = {
+            .start  = MEM_ADDR_1MB,
+            .end    = MEM_ADDR_1MB + 1 * MB
+    };
+    memory_range_t range_at_16mb = {
+            .start  = MEM_ADDR_16MB,
+            .end    = MEM_ADDR_16MB + BOOT_SIZE_AT_16MB
+    };
+
+    if(! range_is_in_available_memory(&range_at_16mb, boot_info)) {
+        panic("Insufficient or no memory at 0x1000000 (i.e. at 16MB)");
     }
-#endif
 
-    /* It is early during the boot process and the page table set up by the
-     * setup code is still being used. This (single) page table maps the first
-     * two megabytes of RAM linearly starting at KLIMIT in the virtual address
-     * space. */
-    boot_alloc->kernel_vm_top      = boot_info->boot_end;
-    boot_alloc->kernel_vm_limit    = (addr_t)KERNEL_EARLY_LIMIT;
-    boot_alloc->kernel_paddr_top   = EARLY_VIRT_TO_PHYS(boot_alloc->kernel_vm_top);
-    boot_alloc->kernel_paddr_limit = zone_dma16_top;
-
-    if(boot_alloc->kernel_paddr_top > boot_alloc->kernel_paddr_limit) {
-        panic("Kernel image was loaded in reserved memory.");
+    if(! range_is_in_available_memory(&range_at_1mb, boot_info)) {
+        panic("Insufficient or no memory at 0x100000 (i.e. at 1MB)");
     }
 
-    /* TODO Compute sequential allocation limit taking initrd into account */
-    /* TODO Report zone limits */
+    if(boot_info->ramdisk_start) {
+        memory_range_t ramdisk_range;
+        ramdisk_range.start = boot_info->ramdisk_start;
+        ramdisk_range.end   = boot_info->ramdisk_start + boot_info->ramdisk_size;
+
+        if(! range_is_in_available_memory(&ramdisk_range, boot_info)) {
+            panic("Initial RAM disk was loaded in unavailable or reserved memory");
+        }
+    }
 }
