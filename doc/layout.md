@@ -1,6 +1,9 @@
+# Memory Layout
+
 The kernel image file has the following format. It conforms to the Linux boot
 protocol version 2.4.
 
+```
   +---------------------------------------+ (file start)-+-
   |              boot sector              |              |
   |            (boot/boot.asm)            |              |
@@ -19,11 +22,13 @@ protocol version 2.4.
   |         process manager (ELF)         |              |
   |                                       |              |
   +---------------------------------------+ (file end)  -+-
+```
 
 Once it is loaded in memory by the boot loader and all the setup, startup and
 initialization code has run, the layout in memory is as shown below. boot_info
 is a data structure located at the beginning of the 32-bit setup code.
 
+```
   +---------------------------------------+ kernel_vm_top = kernel_region_top + VGA_TEXT_VID_SIZE
   |          VGA text video buffer        |
   |             (maps 0xb8000)            |
@@ -59,6 +64,7 @@ is a data structure located at the beginning of the 32-bit setup code.
   +---------------------------------------+ boot_info.kernel_start
   |           32-bit setup code           |
   +---------------------------------------+ boot_info.image_start (KLIMIT + 0x100000)
+```
   
 The boot kernel stack is used only during initialization. Once the first thread
 context is created, per-thread kernel stacks are used instead.
@@ -72,6 +78,7 @@ with three mappings:
   This region of physical memory starts with the kernel image as loaded by the
   boot loader. This mapping at KLIMIT is where the kernel expects to run.
 
+```
   +=======================================+ 0x100000000 (4GB)
   |                                       |
   |                                       |
@@ -100,11 +107,13 @@ with three mappings:
   +---------------------------------------+ 0x100000 (1MB)
   |  text video memory, boot loader data  |
   +---------------------------------------+ 0
+```
 
 The initial page tables set up by the setup code are replaced during the kernel
 initialization process. Ultimately, the whole process address space looks like
 this:
 
+```
   +---------------------------------------+ 0x100000000 = 4GB
   |                                       |
   |     available for global mappings     |
@@ -120,6 +129,7 @@ this:
   |                                       |
   |                                       |
   +---------------------------------------+ 0
+```
 
 All memory mappings from 0 to KLIMIT are user mappings which belong to the
 currently running process. Mappings above KLIMIT are global kernel mappings.
