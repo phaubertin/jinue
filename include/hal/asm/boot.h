@@ -77,7 +77,7 @@
 
 #define BOOT_OFFSET_FROM_16MB   (KLIMIT - MEMORY_ADDR_16MB)
 
-#define BOOT_SIZE_AT_16MB       (12 * MB)
+#define BOOT_SIZE_AT_16MB       (8 * MB)
 
 #define BOOT_PTES_AT_16MB       (BOOT_SIZE_AT_16MB / PAGE_SIZE)
 
