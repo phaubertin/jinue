@@ -452,49 +452,6 @@ addr_space_t *vm_create_addr_space(addr_space_t *addr_space) {
     }
 }
 
-void vm_init_initial_page_directory(
-        pte_t           *page_directory,
-        boot_alloc_t    *boot_alloc,
-        unsigned int     start_index,
-        unsigned int     end_index,
-        bool             first_directory) {
-
-    unsigned int idx, idy;
-
-    /* Allocate page tables and initialize page directory entries. */
-    for(idx = 0; idx < page_table_entries; ++idx) {
-        if(idx < start_index || idx >= end_index) {
-            /* Clear page directory entries for user space and non-preallocated
-             * kernel page tables. */
-            clear_pte( get_pte_with_offset(page_directory, idx) );
-        }
-        else {
-            /* Allocate page tables for kernel data/code region.
-             *
-             * Note that the use of pfalloc_early() here guarantees that the
-             * page tables are allocated contiguously, and that they keep the
-             * same address once paging is enabled. */
-            pte_t *page_table = boot_page_alloc(boot_alloc);
-
-            if(first_directory && idx == start_index) {
-                /* remember the address of the first page table for use by
-                 * vm_map() later */
-                global_page_tables = page_table;
-            }
-
-            set_pte(
-                get_pte_with_offset(page_directory, idx),
-                PTR_TO_PHYS_ADDR_AT_1MB(page_table),
-                VM_FLAG_PRESENT | VM_FLAG_READ_WRITE);
-
-            /* clear page table */
-            for(idy = 0; idy < page_table_entries; ++idy) {
-                clear_pte( get_pte_with_offset(page_table, idy) );
-            }
-        }
-    }
-}
-
 addr_space_t *vm_create_initial_addr_space(boot_alloc_t *boot_alloc) {
     /* Pre-allocate all the kernel page tables. */
     int num_pages       = (ADDR_4GB - KLIMIT) / PAGE_SIZE;
