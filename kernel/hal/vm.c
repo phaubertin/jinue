@@ -496,16 +496,19 @@ void vm_init_initial_page_directory(
 }
 
 addr_space_t *vm_create_initial_addr_space(boot_alloc_t *boot_alloc) {
-    int num_ptes        = (ADDR_4GB - KLIMIT) / PAGE_SIZE;
-    int num_page_tables = num_ptes / page_table_entries;
+    /* Pre-allocate all the kernel page tables. */
+    int num_pages       = (ADDR_4GB - KLIMIT) / PAGE_SIZE;
+    int num_page_tables = num_pages / page_table_entries;
     pte_t *page_tables  = boot_page_alloc_n(boot_alloc, num_page_tables);
     global_page_tables  = (pte_t *)PHYS_TO_VIRT_AT_16MB(page_tables);
 
+    /* Initialize the first few page tables to map BOOT_SIZE_AT_16MB starting
+     * at 0x1000000 (i.e. at 16MB). */
     vm_initialize_page_table_linear(
             page_tables,
             MEMORY_ADDR_16MB,
             VM_FLAG_READ_WRITE,
-            num_ptes);
+            BOOT_SIZE_AT_16MB / PAGE_SIZE);
 
     int offset = page_directory_offset_of((void *)KLIMIT);
     pte_t *page_directory = boot_page_alloc(boot_alloc);
