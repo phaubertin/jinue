@@ -87,6 +87,7 @@ void kmain(void) {
 
     printk("Kernel command line:\n", boot_info->kernel_size);
     printk("    %s\n", boot_info->cmdline);
+    printk("---\n");
 
     /* Initialize the boot allocator. */
     boot_alloc_t boot_alloc;
@@ -105,6 +106,10 @@ void kmain(void) {
     if(process == NULL) {
         panic("Could not create initial process.");
     }
+
+    /* TODO remove this */
+    printk("Still alive!\n");
+    while(1) {}
 
     /* load process manager binary */
     Elf32_Ehdr *elf = find_process_manager();

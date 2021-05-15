@@ -137,9 +137,8 @@ void print_unsigned_int(unsigned int n, int colour) {
 }
 
 void print_hex_nibble(unsigned char byte, int colour) {
-    char c;
-    
-    c = byte & 0xf;
+    char c = byte & 0xf;
+
     if(c < 10) {
         c += '0';
     }
@@ -156,25 +155,19 @@ void print_hex_b(unsigned char byte, int colour) {
 }
 
 void print_hex_w(unsigned short word, int colour) {
-    int off;
-    
-    for(off=16-4; off>=0; off-=4) {
-        print_hex_nibble((char)(word>>off), colour);
+    for(int offset = 16 - 4; offset >= 0; offset -= 4) {
+        print_hex_nibble((char)(word>>offset), colour);
     }
 }
 
 void print_hex_l(unsigned long dword, int colour) {
-    int off;
-    
-    for(off=32-4; off>=0; off-=4) {
-        print_hex_nibble((char)(dword>>off), colour);
+    for(int offset = 32 - 4; offset >= 0; offset -= 4) {
+        print_hex_nibble((char)(dword>>offset), colour);
     }
 }
 
 void print_hex_q(unsigned long long qword, int colour) {
-    int off;
-    
-    for(off=64-4; off>=0; off-=4) {
-        print_hex_nibble((char)(qword>>off), colour);
+    for(int offset = 64 - 4; offset >= 0; offset -= 4) {
+        print_hex_nibble((char)(qword>>offset), colour);
     }
 }

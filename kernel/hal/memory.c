@@ -33,15 +33,20 @@
 #include <hal/memory.h>
 #include <hal/vm.h>
 #include <assert.h>
+#include <boot.h>
 #include <panic.h>
+#include <printk.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <util.h>
 
 typedef struct {
     uint64_t    start;
     uint64_t    end;
 } memory_range_t;
+
+static uintptr_t *memory_array;
 
 static bool memory_range_is_within(
         const memory_range_t *enclosed,
@@ -145,5 +150,62 @@ void check_memory(const boot_info_t *boot_info) {
         if(boot_info->ramdisk_start < range_at_16mb.end) {
             panic("Initial RAM disk was loaded in memory reserved for the kernel");
         }
+    }
+}
+
+static uint64_t memory_find_top(const boot_info_t *boot_info) {
+    uint64_t memory_top = 0;
+
+    for(int idx = 0; idx < boot_info->e820_entries; ++idx) {
+        const e820_t *entry = &boot_info->e820_map[idx];
+
+        /* Only consider available memory entries. */
+        if(entry->type != E820_RAM) {
+            continue;
+        }
+
+        /* The kernel can only use the first 4GB of memory. This is because the
+         * architecture requires PDPTs to be in the first 4GB (CR3 is only 32
+         * bits) and we don't want to have to deal with the complexity of having
+         * to allocate in the first 4GB only for specific allocations. */
+        if(entry->addr >= ADDR_4GB) {
+            continue;
+        }
+
+        uint64_t entry_top = ALIGN_START(entry->addr + entry->size, (uint64_t)PAGE_SIZE);
+
+        if(entry_top >= ADDR_4GB) {
+            /* ADDR_4GB is correctly aligned. */
+            entry_top = ADDR_4GB;
+        }
+
+        if(entry_top > memory_top) {
+            memory_top = entry_top;
+        }
+    }
+
+    printk("Top memory address for kernel is 0x%q\n", memory_top);
+
+    return memory_top;
+}
+
+void memory_initialize_array(
+        boot_alloc_t        *boot_alloc,
+        const boot_info_t   *boot_info) {
+
+    const size_t entries_per_page   = PAGE_SIZE / sizeof(uintptr_t);
+
+    const uint64_t memory_top   = memory_find_top(boot_info);
+    const size_t num_pages      = memory_top / PAGE_SIZE;
+    const size_t array_entries  = ALIGN_END(num_pages, entries_per_page);
+    const size_t array_pages    = array_entries / entries_per_page;
+
+    memory_array = boot_page_alloc_n(boot_alloc, array_pages);
+
+    for(    uint32_t addr = MEMORY_ADDR_16MB;
+            addr < MEMORY_ADDR_16MB + BOOT_SIZE_AT_16MB;
+            addr += PAGE_SIZE) {
+
+        memory_array[addr / PAGE_SIZE] = PHYS_TO_VIRT_AT_16MB(addr);
     }
 }

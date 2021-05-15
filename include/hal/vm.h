@@ -76,8 +76,6 @@ kern_paddr_t vm_lookup_kernel_paddr(addr_t addr);
 
 void vm_change_flags(addr_space_t *addr_space, addr_t addr, int flags);
 
-void vm_map_early(addr_t vaddr, kern_paddr_t paddr, int flags);
-
 void vm_boot_map(void *addr, uint32_t paddr, int num_entries);
 
 addr_space_t *vm_create_addr_space(addr_space_t *addr_space);

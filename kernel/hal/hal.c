@@ -244,7 +244,7 @@ void hal_init(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
 
     addr_space_t *addr_space = vm_create_initial_addr_space(boot_alloc);
 
-    /* TODO allocate page frame array */
+    memory_initialize_array(boot_alloc, boot_info);
 
     /* After this, VGA output is not possible until we switch to the
      * new address space (see the call to vm_switch_addr_space() below). Calling
@@ -259,6 +259,7 @@ void hal_init(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
      * don't need to allocate any more pages from the boot allocator. Transfer
      * the remaining pages to the run-time page allocator. */
     boot_reinit_at_klimit(boot_alloc);
+
     initialize_page_allocator(boot_alloc);
 
     /* Initialize GDT and TSS */
@@ -277,8 +278,4 @@ void hal_init(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
 
     /* choose system call method */
     select_syscall_method();
-
-    /* TODO remove this */
-    printk("Still alive!\n");
-    while(1) {}
 }

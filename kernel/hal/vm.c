@@ -363,17 +363,6 @@ void vm_change_flags(addr_space_t *addr_space, addr_t addr, int flags) {
     invalidate_tlb(addr);
 }
 
-void vm_map_early(addr_t vaddr, kern_paddr_t paddr, int flags) {
-    /** ASSERTION: we are within the mapping set up by the setup code */
-    assert( is_early_pointer(vaddr) );
-    
-    /** ASSERTION: we assume vaddr is aligned on a page boundary */
-    assert( page_offset_of(vaddr) == 0 );
-    
-    pte_t *pte = get_pte_with_offset(global_page_tables, page_number_of(vaddr - KLIMIT));
-    set_pte(pte, paddr, flags | VM_FLAG_PRESENT);
-}
-
 void vm_boot_map(void *addr, uint32_t paddr, int num_entries) {
     int offset = (uintptr_t)((char *)addr - KLIMIT) / PAGE_SIZE;
 
