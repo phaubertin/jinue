@@ -69,8 +69,7 @@ process_t *process_create(void) {
 
         /* The address space object is located inside the process object but the
          * call to vm_create_addr_space() above can still fail if we cannot
-         * allocate the initial page directory/tables or, when PAE is enabled,
-         * if we cannot allocate a PDPT. */
+         * allocate the paging translation tables. */
         if(addr_space == NULL) {
             slab_cache_free(process);
             return NULL;
