@@ -129,6 +129,10 @@ static void initialize_page_allocator(boot_alloc_t *boot_alloc) {
     while(! boot_page_alloc_is_empty(boot_alloc)) {
         page_free(boot_page_alloc(boot_alloc));
     }
+
+    printk(
+            "%u kilobytes available for allocation by the kernel\n",
+            get_page_count() * PAGE_SIZE / (1 * KB));
 }
 
 static void init_descriptors(cpu_data_t *cpu_data, boot_alloc_t *boot_alloc) {
