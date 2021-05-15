@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_ASM_VM_H
-#define _JINUE_ASM_VM_H
+#ifndef _JINUE_COMMON_ASM_VM_H
+#define _JINUE_COMMON_ASM_VM_H
 
 #include <jinue-common/asm/types.h>
 

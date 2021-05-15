@@ -339,7 +339,7 @@ enable_pae:
     mov eax, [esp+ 4]   ; First argument: pdpt
 
     ; Jump to low-address alias
-    jmp just_here - BOOT_KERNEL_OFFSET
+    jmp just_here - BOOT_OFFSET_FROM_16MB
 just_here:
 
     ; Disable paging.

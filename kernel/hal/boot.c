@@ -75,17 +75,19 @@ const boot_info_t *get_boot_info(void) {
 
 void boot_info_dump(void) {
     printk("Boot information structure:\n");
-    printk("    kernel_start    %x  %u\n", boot_info->kernel_start   , boot_info->kernel_start    );
-    printk("    kernel_size     %x  %u\n", boot_info->kernel_size    , boot_info->kernel_size     );
-    printk("    proc_start      %x  %u\n", boot_info->proc_start     , boot_info->proc_start      );
-    printk("    proc_size       %x  %u\n", boot_info->proc_size      , boot_info->proc_size       );
-    printk("    image_start     %x  %u\n", boot_info->image_start    , boot_info->image_start     );
-    printk("    image_top       %x  %u\n", boot_info->image_top      , boot_info->image_top       );
-    printk("    e820_entries    %x  %u\n", boot_info->e820_entries   , boot_info->e820_entries    );
-    printk("    e820_map        %x  %u\n", boot_info->e820_map       , boot_info->e820_map        );
-    printk("    boot_heap       %x  %u\n", boot_info->boot_heap      , boot_info->boot_heap       );
-    printk("    boot_end        %x  %u\n", boot_info->boot_end       , boot_info->boot_end        );
-    printk("    page_table      %x  %u\n", boot_info->page_table     , boot_info->page_table      );
-    printk("    page_directory  %x  %u\n", boot_info->page_directory , boot_info->page_directory  );
-    printk("    setup_signature %x  %u\n", boot_info->setup_signature, boot_info->setup_signature );
+    printk("    kernel_start        %x  %u\n", boot_info->kernel_start,         boot_info->kernel_start);
+    printk("    kernel_size         %x  %u\n", boot_info->kernel_size,          boot_info->kernel_size);
+    printk("    proc_start          %x  %u\n", boot_info->proc_start,           boot_info->proc_start);
+    printk("    proc_size           %x  %u\n", boot_info->proc_size,            boot_info->proc_size);
+    printk("    image_start         %x  %u\n", boot_info->image_start,          boot_info->image_start);
+    printk("    image_top           %x  %u\n", boot_info->image_top,            boot_info->image_top);
+    printk("    e820_entries        %x  %u\n", boot_info->e820_entries,         boot_info->e820_entries);
+    printk("    e820_map            %x  %u\n", boot_info->e820_map,             boot_info->e820_map);
+    printk("    boot_heap           %x  %u\n", boot_info->boot_heap,            boot_info->boot_heap);
+    printk("    boot_end            %x  %u\n", boot_info->boot_end,             boot_info->boot_end);
+    printk("    page_table_1mb      %x  %u\n", boot_info->page_table_1mb ,      boot_info->page_table_1mb);
+    printk("    page_table_16mb     %x  %u\n", boot_info->page_table_16mb,      boot_info->page_table_16mb);
+    printk("    page_table_klimit   %x  %u\n", boot_info->page_table_klimit,    boot_info->page_table_klimit);
+    printk("    page_directory      %x  %u\n", boot_info->page_directory,       boot_info->page_directory);
+    printk("    setup_signature     %x  %u\n", boot_info->setup_signature,      boot_info->setup_signature);
 }

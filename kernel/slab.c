@@ -131,7 +131,6 @@ static void destroy_slab(slab_cache_t *cache, slab_t *slab) {
  * @param ctor the object constructor function
  * @param dtor the object destructor function
  * @param flags see description
- * @param boot_alloc the kernel boot-time page allocator structure
  *
  * */
 void slab_cache_init(
@@ -141,8 +140,7 @@ void slab_cache_init(
         size_t           alignment,
         slab_ctor_t      ctor,
         slab_ctor_t      dtor,
-        int              flags,
-        boot_alloc_t    *boot_alloc) {
+        int              flags) {
 
     /** ASSERTION: buffer size is at least the size of a pointer */
     assert(size >= sizeof(void *));
@@ -214,7 +212,7 @@ void slab_cache_init(
      *
      * This is needed to allow a few objects to be allocated during kernel
      * initialization. */
-    init_and_add_slab(cache, boot_page_alloc(boot_alloc));
+    init_and_add_slab(cache, page_alloc());
 }
 
 /**

@@ -35,7 +35,7 @@
 #include <types.h>
 
 
-void process_boot_init(boot_alloc_t *boot_alloc);
+void process_boot_init(void);
 
 process_t *process_create(void);
 

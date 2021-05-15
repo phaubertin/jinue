@@ -88,8 +88,6 @@ void kmain(void) {
     printk("Kernel command line:\n", boot_info->kernel_size);
     printk("    %s\n", boot_info->cmdline);
 
-    check_memory(boot_info);
-
     /* Initialize the boot allocator. */
     boot_alloc_t boot_alloc;
     boot_alloc_init(&boot_alloc, boot_info);
@@ -98,8 +96,8 @@ void kmain(void) {
     hal_init(&boot_alloc, boot_info);
 
     /* initialize caches */
-    ipc_boot_init(&boot_alloc);
-    process_boot_init(&boot_alloc);
+    ipc_boot_init();
+    process_boot_init();
 
     /* create process for process manager */
     process_t *process = process_create_initial();
@@ -113,11 +111,10 @@ void kmain(void) {
     elf_load(&elf_info, elf, &process->addr_space, &boot_alloc);
 
     /* create initial thread */
-    thread_t *thread = thread_create_boot(
+    thread_t *thread = thread_create(
             process,
             elf_info.entry,
-            elf_info.stack_addr,
-            &boot_alloc);
+            elf_info.stack_addr);
     
     if(thread == NULL) {
         panic("Could not create initial thread.");

@@ -55,7 +55,7 @@ static void ipc_object_ctor(void *buffer, size_t ignore) {
     jinue_list_init(&ipc_object->recv_list);
 }
 
-void ipc_boot_init(boot_alloc_t *boot_alloc) {
+void ipc_boot_init(void) {
     slab_cache_init(
             &ipc_object_cache,
             "ipc_object_cache",
@@ -63,8 +63,7 @@ void ipc_boot_init(boot_alloc_t *boot_alloc) {
             0,
             ipc_object_ctor,
             NULL,
-            SLAB_DEFAULTS,
-            boot_alloc);
+            SLAB_DEFAULTS);
 
     proc_ipc = slab_cache_alloc(&ipc_object_cache);
 

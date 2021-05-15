@@ -39,7 +39,6 @@
 #include <boot.h>
 #include <page_alloc.h>
 #include <pfalloc.h>
-#include <printk.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -52,102 +51,11 @@ addr_space_t initial_addr_space;
 
 size_t page_table_entries;
 
-static bool pgtable_format_pae;
+bool pgtable_format_pae;
 
-void vm_boot_init(
-        const boot_info_t   *boot_info,
-        bool                 use_pae,
-        cpu_data_t          *cpu_data,
-        boot_alloc_t        *boot_alloc) {
-    
-    addr_t addr;
-
-    if(use_pae) {
-        vm_pae_boot_init();
-    }
-    else {
-        vm_x86_boot_init();
-    }
-    
-    pgtable_format_pae = use_pae;
-
-    /* create initial address space */
-    addr_space_t *addr_space = vm_create_initial_addr_space(use_pae, boot_alloc);
-    
-    /** below this point, it is no longer safe to call pfalloc_early() */
-    boot_alloc->its_early = false;
-    
-    /* perform 1:1 mapping of kernel image and data */
-    for(addr = (addr_t)boot_info->image_start; addr < boot_alloc->kernel_vm_top; addr += PAGE_SIZE) {
-        vm_map_early(addr, EARLY_PTR_TO_PHYS_ADDR(addr), VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
-    }
-    
-    /* map VGA text buffer in the new address space
-     * 
-     * This is a good place to do this because:
-     * 
-     * 1) It is our last chance to allocate a continuous region of virtual memory.
-     *    Once the page allocator is initialized (see call to vm_alloc_init_allocator()
-     *    below) and we start using vm_alloc() to allocate memory, pages can only
-     *    be allocated one at a time.
-     * 
-     * 2) Doing this last makes things simpler because this is the only place where
-     *    we have to allocate a continuous region of virtual memory but no physical
-     *    memory to back it. To allocate it, we just have to increase kernel_vm_top,
-     *    which represents the end of the virtual memory region that is used by the
-     *    kernel. */
-    addr_t vga_text_base;
-    kern_paddr_t paddr = VGA_TEXT_VID_BASE;
-
-    while(paddr < VGA_TEXT_VID_TOP) {
-        /* Pages allocated by successive calls to vmalloc_boot() are guaranteed
-         * to be contiguous. */
-        addr = boot_vmalloc(boot_alloc);
-
-        if(paddr == VGA_TEXT_VID_BASE) {
-            /* First iteration */
-            vga_text_base = addr;
-        }
-
-        vm_map_early(addr, paddr, VM_FLAG_KERNEL | VM_FLAG_READ_WRITE);
-        paddr           += PAGE_SIZE;
-    }
-
-    /* remap VGA text buffer
-     * 
-     * Note: after the call to vga_set_base_addr() below until we switch to the
-     * new address space, VGA output is not possible. Calling printk() will cause
-     * a kernel panic due to a page fault (and the panic handler calls printk()). */
-    printk("Remapping text video memory at 0x%x\n", vga_text_base);
-    
-    vga_set_base_addr(vga_text_base);
-
-    /* switch to new address space */
-    vm_switch_addr_space(addr_space, cpu_data);
-}
-
-void vm_boot_postinit(const boot_info_t *boot_info, boot_alloc_t *boot_alloc, bool use_pae) {
-    /* initialize global page allocator (region starting at KLIMIT)
-     * 
-     * TODO Some work needs to be done in the page allocator to support allocating
-     * up to the top of memory (i.e. 0x100000000, which cannot be represented on
-     * 32 bits). In the mean time, we leave a 4MB (one block) gap. */
-    vmalloc_init(
-            (addr_t)KERNEL_IMAGE_END,
-            (addr_t)0 - 4 * MB,
-            (addr_t)KERNEL_PREALLOC_LIMIT,
-            boot_alloc);
-
-    /* create slab cache to allocate PDPTs
-     * 
-     * This must be done after the global page allocator has been initialized
-     * because the slab allocator needs to allocate a slab to allocate the new
-     * slab cache on the slab cache cache.
-     * 
-     * This must be done before the first time vm_create_addr_space() is called. */
-    if(use_pae) {
-        vm_pae_create_pdpt_cache(boot_alloc);
-    }
+void vm_set_no_pae(void) {
+    pgtable_format_pae = false;
+    page_table_entries = VM_X86_PAGE_TABLE_PTES;
 }
 
 static pte_t *get_pte_with_offset(pte_t *pte, unsigned int offset) {
@@ -159,7 +67,7 @@ static pte_t *get_pte_with_offset(pte_t *pte, unsigned int offset) {
     }
 }
 
-static unsigned int page_table_offset_of(addr_t addr) {
+static unsigned int page_table_offset_of(void *addr) {
     if(pgtable_format_pae) {
         return vm_pae_page_table_offset_of(addr);
     }
@@ -168,7 +76,7 @@ static unsigned int page_table_offset_of(addr_t addr) {
     }
 }
 
-static unsigned int page_directory_offset_of(addr_t addr) {
+static unsigned int page_directory_offset_of(void *addr) {
     if(pgtable_format_pae) {
         return vm_pae_page_directory_offset_of(addr);
     }
@@ -466,6 +374,44 @@ void vm_map_early(addr_t vaddr, kern_paddr_t paddr, int flags) {
     set_pte(pte, paddr, flags | VM_FLAG_PRESENT);
 }
 
+void vm_boot_map(void *addr, uint32_t paddr, int num_entries) {
+    int offset = (uintptr_t)((char *)addr - KLIMIT) / PAGE_SIZE;
+
+    vm_initialize_page_table_linear(
+            get_pte_with_offset(
+                    (pte_t *)PTR_TO_PHYS_ADDR_AT_16MB(global_page_tables),
+                    offset),
+            paddr,
+            VM_FLAG_READ_WRITE,
+            num_entries);
+}
+
+/**
+ * Initialize consecutive page table entries to map consecutive page frames
+ *
+ * @param page_table first page table entry
+ * @param start_paddr start physical address
+ * @param flags page table entry flags
+ * @param num_entries number of entries to initialize
+ *
+ * */
+void vm_initialize_page_table_linear(
+        pte_t       *page_table,
+        uint64_t     start_paddr,
+        int          flags,
+        int          num_entries) {
+
+    pte_t *pte      = page_table;
+    uint64_t paddr  = start_paddr;
+
+    for(int idx = 0; idx < num_entries; ++idx) {
+        set_pte(pte, paddr, flags | VM_FLAG_PRESENT);
+
+        paddr += PAGE_SIZE;
+        pte = get_pte_with_offset(pte, 1);
+    }
+}
+
 kern_paddr_t vm_clone_page_directory(kern_paddr_t template_paddr, unsigned int start_index) {
     unsigned int     idx;
     
@@ -528,7 +474,7 @@ void vm_init_initial_page_directory(
              * Note that the use of pfalloc_early() here guarantees that the
              * page tables are allocated contiguously, and that they keep the
              * same address once paging is enabled. */
-            pte_t *page_table = (pte_t *)boot_page_alloc_early(boot_alloc);
+            pte_t *page_table = boot_page_alloc(boot_alloc);
 
             if(first_directory && idx == start_index) {
                 /* remember the address of the first page table for use by
@@ -538,7 +484,7 @@ void vm_init_initial_page_directory(
 
             set_pte(
                 get_pte_with_offset(page_directory, idx),
-                EARLY_PTR_TO_PHYS_ADDR(page_table),
+                PTR_TO_PHYS_ADDR_AT_1MB(page_table),
                 VM_FLAG_PRESENT | VM_FLAG_READ_WRITE);
 
             /* clear page table */
@@ -549,15 +495,32 @@ void vm_init_initial_page_directory(
     }
 }
 
-addr_space_t *vm_create_initial_addr_space(
-        bool             use_pae,
-        boot_alloc_t    *boot_alloc) {
+addr_space_t *vm_create_initial_addr_space(boot_alloc_t *boot_alloc) {
+    int num_ptes        = (ADDR_4GB - KLIMIT) / PAGE_SIZE;
+    int num_page_tables = num_ptes / page_table_entries;
+    pte_t *page_tables  = boot_page_alloc_n(boot_alloc, num_page_tables);
+    global_page_tables  = (pte_t *)PHYS_TO_VIRT_AT_16MB(page_tables);
 
-    if(use_pae) {
-        return vm_pae_create_initial_addr_space(boot_alloc);
+    vm_initialize_page_table_linear(
+            page_tables,
+            MEMORY_ADDR_16MB,
+            VM_FLAG_READ_WRITE,
+            num_ptes);
+
+    int offset = page_directory_offset_of((void *)KLIMIT);
+    pte_t *page_directory = boot_page_alloc(boot_alloc);
+
+    vm_initialize_page_table_linear(
+            get_pte_with_offset(page_directory, offset),
+            (uintptr_t)page_tables,
+            VM_FLAG_READ_WRITE,
+            page_table_entries - offset);
+
+    if(pgtable_format_pae) {
+        return vm_pae_create_initial_addr_space(page_directory, boot_alloc);
     }
     else {
-        return vm_x86_create_initial_addr_space(boot_alloc);
+        return vm_x86_create_initial_addr_space(page_directory);
     }
 }
 

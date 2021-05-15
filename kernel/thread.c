@@ -70,20 +70,6 @@ thread_t *thread_create(
     return thread;
 }
 
-thread_t *thread_create_boot(
-        process_t       *process,
-        addr_t           entry,
-        addr_t           user_stack,
-        boot_alloc_t    *boot_alloc) {
-
-    /* The kernel panics if this allocation fails. */
-    void *thread_page   = boot_page_alloc(boot_alloc);
-    thread_t *thread    = thread_page_init(thread_page, entry, user_stack);
-    thread_init(thread, process);
-
-    return thread;
-}
-
 /* This function is called by assembled code. See thread_context_switch_stack(). */
 void thread_destroy(thread_t *thread) {
     void * thread_page = (void *)((uintptr_t)thread & ~PAGE_MASK);

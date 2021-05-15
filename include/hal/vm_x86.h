@@ -38,17 +38,15 @@
 
 #include <hal/types.h>
 
-void vm_x86_boot_init(void);
-
 addr_space_t *vm_x86_create_addr_space(addr_space_t *addr_space);
 
-addr_space_t *vm_x86_create_initial_addr_space(boot_alloc_t *boot_alloc);
+addr_space_t *vm_x86_create_initial_addr_space(pte_t *page_directory);
 
 void vm_x86_destroy_addr_space(addr_space_t *addr_space);
 
-unsigned int vm_x86_page_table_offset_of(addr_t addr);
+unsigned int vm_x86_page_table_offset_of(void *addr);
 
-unsigned int vm_x86_page_directory_offset_of(addr_t addr);
+unsigned int vm_x86_page_directory_offset_of(void *addr);
 
 pte_t *vm_x86_lookup_page_directory(addr_space_t *addr_space);
 

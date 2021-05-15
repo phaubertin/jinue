@@ -73,36 +73,6 @@ static inline unsigned int pdpt_offset_of(void *addr) {
     return (uintptr_t)addr >> (32 - PDPT_BITS);
 }
 
-void vm_pae_boot_init(void) {
-    page_table_entries = (size_t)PAGE_TABLE_ENTRIES;
-}
-
-/**
- * Initialize consecutive page table entries to map consecutive page frames
- *
- * @param page_table first page table entry
- * @param start_paddr start physical address
- * @param flags page table entry flags
- * @param num_entries number of entries to initialize
- *
- * */
-static void initialize_page_table_linear(
-        pte_t       *page_table,
-        uint64_t     start_paddr,
-        int          flags,
-        int          num_entries) {
-
-    pte_t *pte      = page_table;
-    uint64_t paddr  = start_paddr;
-
-    for(int idx = 0; idx < num_entries; ++idx) {
-        vm_pae_set_pte(pte, paddr, flags | VM_FLAG_PRESENT);
-
-        paddr += PAGE_SIZE;
-        ++pte;
-    }
-}
-
 static void clear_pdpt(pdpt_t *pdpt) {
     for(int idx = 0; idx < PDPT_ENTRIES; ++idx) {
         vm_pae_clear_pte(&pdpt->pd[idx]);
@@ -112,7 +82,7 @@ static void clear_pdpt(pdpt_t *pdpt) {
 /**
  * Enable Physical Address Extension (PAE)
  *
- * The 32-bit setup code has set up intial page tables with the following three
+ * The 32-bit setup code has set up initial page tables with the following three
  * mappings:
  * 1) First two megabytes of memory are identity mapped.
  * 2) Four megabytes of memory at 0x1000000 (16M) are identity mapped.
@@ -130,61 +100,73 @@ static void clear_pdpt(pdpt_t *pdpt) {
  * @param boot_alloc the initialization-time page allocator structure
  *
  * */
-void vm_pae_enable(boot_alloc_t *boot_alloc) {
+void vm_pae_enable(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
+    pgtable_format_pae = true;
+    page_table_entries = VM_PAE_PAGE_TABLE_PTES;
+
     /* First mapping */
-    pte_t *page_table1 = (pte_t *)boot_page_alloc_early(boot_alloc);
-    initialize_page_table_linear(
-            page_table1,
+    pte_t *page_table_1mb = boot_page_alloc(boot_alloc);
+
+    vm_initialize_page_table_linear(
+            page_table_1mb,
             0,
             VM_FLAG_READ_WRITE,
             PAGE_TABLE_ENTRIES);
 
     /* Second mapping (two page tables) */
-    pte_t *page_table2 = (pte_t *)boot_page_alloc_n_early(
+    pte_t *page_table_16mb = boot_page_alloc_n(
             boot_alloc,
             BOOT_PTES_AT_16MB / PAGE_TABLE_ENTRIES);
-    initialize_page_table_linear(
-            page_table2,
+
+    vm_initialize_page_table_linear(
+            page_table_16mb,
             MEMORY_ADDR_16MB,
             VM_FLAG_READ_WRITE,
             BOOT_PTES_AT_16MB);
 
     /* Third mapping */
-    pte_t *page_table3 = (pte_t *)boot_page_alloc_early(boot_alloc);
-    initialize_page_table_linear(
-            page_table3,
-            BOOT_SETUP32_ADDR,
+    pte_t *page_table_klimit = boot_page_alloc(boot_alloc);
+    uint32_t size_at_16mb = (uint32_t)boot_info->page_table_1mb - MEMORY_ADDR_1MB;
+    uint32_t num_entries_at_16mb = size_at_16mb / PAGE_SIZE;
+
+    vm_initialize_page_table_linear(
+            page_table_klimit,
+            MEMORY_ADDR_16MB,
             VM_FLAG_READ_WRITE,
-            PAGE_TABLE_ENTRIES);
+            num_entries_at_16mb);
+
+    vm_initialize_page_table_linear(
+            vm_pae_get_pte_with_offset(page_table_klimit, num_entries_at_16mb),
+            MEMORY_ADDR_1MB + size_at_16mb,
+            VM_FLAG_READ_WRITE,
+            PAGE_TABLE_ENTRIES - num_entries_at_16mb);
 
     /* Page directory for first two mappings */
-    pte_t *page_directory12 = (pte_t *)boot_page_alloc_early(boot_alloc);
-    clear_page(page_directory12);
+    pte_t *low_page_directory = boot_page_alloc(boot_alloc);
+    clear_page(low_page_directory);
 
     vm_pae_set_pte(
-            page_directory12,
-            EARLY_PTR_TO_PHYS_ADDR(page_table1),
+            low_page_directory,
+            (uintptr_t)page_table_1mb,
             VM_FLAG_READ_WRITE | VM_FLAG_PRESENT);
 
-    for(int idx = 0; idx < BOOT_PTES_AT_16MB / PAGE_TABLE_ENTRIES; ++idx) {
-        const int offset = idx * PAGE_SIZE;
-        vm_pae_set_pte(
-                vm_pae_get_pte_with_offset(
-                        page_directory12,
-                        vm_pae_page_directory_offset_of((addr_t)MEMORY_ADDR_16MB + offset)),
-                EARLY_PTR_TO_PHYS_ADDR(page_table2) + offset,
-                VM_FLAG_READ_WRITE | VM_FLAG_PRESENT);
-    }
+    vm_initialize_page_table_linear(
+            vm_pae_get_pte_with_offset(
+                    low_page_directory,
+                    vm_pae_page_directory_offset_of((addr_t)MEMORY_ADDR_16MB)),
+            (uintptr_t)page_table_16mb,
+            VM_FLAG_READ_WRITE,
+            BOOT_PTES_AT_16MB / PAGE_TABLE_ENTRIES);
 
     /* Page directory for third mapping */
-    pte_t *page_directory3 = (pte_t *)boot_page_alloc_early(boot_alloc);
-    clear_page(page_directory3);
+    pte_t *page_directory_klimit = boot_page_alloc(boot_alloc);
+    clear_page(page_directory_klimit);
 
     vm_pae_set_pte(
             vm_pae_get_pte_with_offset(
-                    page_directory3,
+                    page_directory_klimit,
                     vm_pae_page_directory_offset_of((addr_t)KLIMIT)),
-            EARLY_PTR_TO_PHYS_ADDR(page_table3),
+            (uintptr_t)page_table_klimit,
             VM_FLAG_READ_WRITE | VM_FLAG_PRESENT);
 
     /* Initialize PDPT */
@@ -193,15 +175,15 @@ void vm_pae_enable(boot_alloc_t *boot_alloc) {
 
     vm_pae_set_pte(
             &pdpt->pd[0],
-            EARLY_PTR_TO_PHYS_ADDR(page_directory12),
+            (uintptr_t)low_page_directory,
             VM_FLAG_PRESENT);
 
     vm_pae_set_pte(
             &pdpt->pd[pdpt_offset_of((addr_t)KLIMIT)],
-            EARLY_PTR_TO_PHYS_ADDR(page_directory3),
+            (uintptr_t)page_directory_klimit,
             VM_FLAG_PRESENT);
 
-    enable_pae(EARLY_PTR_TO_PHYS_ADDR(pdpt));
+    enable_pae(PTR_TO_PHYS_ADDR_AT_16MB(pdpt));
 }
 
 /** 
@@ -247,11 +229,11 @@ pte_t *vm_pae_lookup_page_directory(addr_space_t *addr_space, void *addr, bool c
     }
 }
 
-unsigned int vm_pae_page_table_offset_of(addr_t addr) {
+unsigned int vm_pae_page_table_offset_of(void *addr) {
     return PAGE_TABLE_OFFSET_OF(addr);
 }
 
-unsigned int vm_pae_page_directory_offset_of(addr_t addr) {
+unsigned int vm_pae_page_directory_offset_of(void *addr) {
     return PAGE_DIRECTORY_OFFSET_OF(addr);
 }
 
@@ -286,7 +268,7 @@ void vm_pae_copy_pte(pte_t *dest, const pte_t *src) {
     dest->entry = src->entry;
 }
 
-void vm_pae_create_pdpt_cache(boot_alloc_t *boot_alloc) {
+void vm_pae_create_pdpt_cache(void) {
     slab_cache_init(
             &pdpt_cache,
             "vm_pae_pdpt_cache",
@@ -294,8 +276,7 @@ void vm_pae_create_pdpt_cache(boot_alloc_t *boot_alloc) {
             sizeof(pdpt_t),
             NULL,
             NULL,
-            SLAB_DEFAULTS,
-            boot_alloc);
+            SLAB_DEFAULTS);
 }
 
 addr_space_t *vm_pae_create_addr_space(addr_space_t *addr_space) {
@@ -342,62 +323,22 @@ addr_space_t *vm_pae_create_addr_space(addr_space_t *addr_space) {
     return addr_space;
 }
 
-addr_space_t *vm_pae_create_initial_addr_space(boot_alloc_t *boot_alloc) {
+addr_space_t *vm_pae_create_initial_addr_space(
+        pte_t           *page_directory,
+        boot_alloc_t    *boot_alloc) {
 
-    unsigned int idx;
-    
     /* Allocate initial PDPT. PDPT must be 32-byte aligned. */
     initial_pdpt = boot_heap_alloc(boot_alloc, pdpt_t, 32);
-    
-    /* We want the pre-allocated kernel page tables to be contiguous. For this
-     * reason, we allocate the page directories first, and then the page tables.
-     *
-     * This function allocates pages in this order:
-     *      +-------...--------+-------...------+
-     *      |  pre-allocated   |  pre-allocated |
-     *      |      kernel      |     kernel     |
-     *      | page directories |  page tables   |
-     *      +-------...--------+-------...------+
-     * */
-
     clear_pdpt(initial_pdpt);
 
-    const unsigned int last_idx = pdpt_offset_of((addr_t)KERNEL_PREALLOC_LIMIT - 1);
-
-    for(idx = pdpt_offset_of((addr_t)KLIMIT); idx <= last_idx; ++idx) {
-        pte_t *const pdpte      = &initial_pdpt->pd[idx];
-        pte_t *page_directory   = (pte_t *)boot_page_alloc_early(boot_alloc);
-
-        vm_pae_set_pte(
-                pdpte,
-                EARLY_PTR_TO_PHYS_ADDR(page_directory),
-                VM_FLAG_PRESENT);
-    }
-
-    for(idx = pdpt_offset_of((addr_t)KLIMIT); idx <= last_idx; ++idx) {
-        unsigned int end_index;
-
-        pte_t *const pdpte = &initial_pdpt->pd[idx];
-        pte_t *const page_directory = (pte_t *)EARLY_PHYS_TO_VIRT(vm_pae_get_pte_paddr(pdpte));
-
-        if(idx < pdpt_offset_of((addr_t)KERNEL_PREALLOC_LIMIT)) {
-            end_index = page_table_entries;
-        }
-        else {
-            end_index = vm_pae_page_directory_offset_of((addr_t)KERNEL_PREALLOC_LIMIT);
-        }
-
-        vm_init_initial_page_directory(
-                page_directory,
-                boot_alloc,
-                0,
-                end_index,
-                idx == pdpt_offset_of((addr_t)KLIMIT));
-    }
+    vm_pae_set_pte(
+            &initial_pdpt->pd[pdpt_offset_of((addr_t)KLIMIT)],
+            (uintptr_t)page_directory,
+            VM_FLAG_PRESENT);
     
     initial_addr_space.top_level.pdpt   = initial_pdpt;
-    initial_addr_space.cr3              = EARLY_VIRT_TO_PHYS(initial_pdpt);
-    
+    initial_addr_space.cr3              = VIRT_TO_PHYS_AT_16MB(initial_pdpt);
+
     return &initial_addr_space;
 }
 

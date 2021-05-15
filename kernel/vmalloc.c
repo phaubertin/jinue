@@ -205,7 +205,7 @@ static void vmalloc_link_block(vmalloc_t *allocator, vmalloc_block_t *block);
 
 static void vmalloc_unlink_block(vmalloc_t *allocator, vmalloc_block_t *block);
 
-static void vmalloc_initialize_block(vmalloc_t *allocator, unsigned int block_index, void *stack_page);
+//static void vmalloc_initialize_block(vmalloc_t *allocator, unsigned int block_index, void *stack_page);
 
 /**
  * Check if a block's page stack is empty.
@@ -396,22 +396,26 @@ static void init_allocator(
          * The page has to be allocated in the image region because the kernel
          * address space allocator has not yet been initialized. (As I trust you
          * understand, this is what we are doing right now.) */
-        addr_t addr = boot_page_alloc_image(boot_alloc);
+        /* TODO delete this whole file */
+        //addr_t addr = boot_page_alloc_image(boot_alloc);
 
-        if(idx == 0) {
+        /*if(idx == 0) {
             allocator->block_array = (struct vmalloc_block_t *)addr;
         }
 
-        clear_page(addr);
+        clear_page(addr);*/
     }
 
     /* Initialize pre-initialized blocks */
-    vmalloc_initialize_block(
+    /* TODO delete this whole file
+     * vmalloc_initialize_block(
             allocator,
             0,
-            boot_page_alloc_image(boot_alloc));
+            boot_page_alloc_image(boot_alloc));*/
 
     for(idx = 1; vmalloc_compute_block_base_addr(allocator, idx) < preinit_limit; ++idx) {
+        /* TODO delete this whole file */
+#if 0
         vmalloc_initialize_block(
                 allocator,
                 idx,
@@ -419,6 +423,7 @@ static void init_allocator(
                  * functioning implementation of vmalloc(), which allows us to
                  * use boot_page_alloc() instead of boot_page_alloc_image(). */
                 boot_page_alloc(boot_alloc));
+#endif
     }
 
     /* Caution: we use the value of idx set by the for-loop above.
@@ -541,6 +546,7 @@ static void vmalloc_unlink_block(vmalloc_t *allocator, vmalloc_block_t *block) {
  * @param end_address the end address of the block
  *
  * */
+#if 0
 static void vmalloc_stack_init(
         vmalloc_block_t     *block,
         void                *stack_page,
@@ -559,6 +565,7 @@ static void vmalloc_stack_init(
         vmalloc_push_page(block, addr);
     }
 }
+#endif
 
 /**
  * Initialize a block so it can be used to allocate address space pages.
@@ -568,6 +575,7 @@ static void vmalloc_stack_init(
  * @param stack_page the page allocated to be the block's page stack
  *
  * */
+#if 0
 static void vmalloc_initialize_block(vmalloc_t *allocator, unsigned int block_index, void *stack_page) {
     vmalloc_block_t *block = &allocator->block_array[block_index];
 
@@ -596,3 +604,4 @@ static void vmalloc_initialize_block(vmalloc_t *allocator, unsigned int block_in
     vmalloc_stack_init(block, stack_page, start_address, end_address);
     vmalloc_link_block(allocator, block);
 }
+#endif

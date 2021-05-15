@@ -36,6 +36,10 @@
 
 void boot_alloc_init(boot_alloc_t *boot_alloc, const boot_info_t *boot_info);
 
+void boot_reinit_at_16mb(boot_alloc_t *boot_alloc);
+
+void boot_reinit_at_klimit(boot_alloc_t *boot_alloc);
+
 /**
  * Allocate an object on the boot heap.
  *
@@ -56,16 +60,10 @@ void boot_heap_push(boot_alloc_t *boot_alloc);
 
 void boot_heap_pop(boot_alloc_t *boot_alloc);
 
-addr_t boot_page_alloc_early(boot_alloc_t *boot_alloc);
+void *boot_page_alloc(boot_alloc_t *boot_alloc);
 
-addr_t boot_page_alloc_n_early(boot_alloc_t *boot_alloc, int num_pages);
+void *boot_page_alloc_n(boot_alloc_t *boot_alloc, int num_pages);
 
-kern_paddr_t boot_page_frame_alloc(boot_alloc_t *boot_alloc);
-
-addr_t boot_vmalloc(boot_alloc_t *boot_alloc);
-
-addr_t boot_page_alloc(boot_alloc_t *boot_alloc);
-
-addr_t boot_page_alloc_image(boot_alloc_t *boot_alloc);
+bool boot_page_alloc_is_empty(boot_alloc_t *boot_alloc);
 
 #endif

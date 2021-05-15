@@ -156,7 +156,9 @@ void elf_load(
                 }
 
                 /* allocate and map the new page */
-                kern_paddr_t page = boot_page_frame_alloc(boot_alloc);
+                /* TODO rework this (ELF loading) */
+                kern_paddr_t page = 0;
+                //kern_paddr_t page = boot_page_frame_alloc(boot_alloc);
                 vm_map_user(addr_space, (addr_t)vptr, page, flags);
                                 
                 /* copy */
@@ -182,7 +184,7 @@ void elf_load(
                 /* perform mapping */
                 /** TODO add exec flag once PAE is enabled
                  *  TODO lookup actual address of page frame */
-                vm_map_user(addr_space, (addr_t)vptr, EARLY_PTR_TO_PHYS_ADDR(file_ptr), VM_FLAG_READ_ONLY);
+                vm_map_user(addr_space, (addr_t)vptr, PTR_TO_PHYS_ADDR_AT_1MB(file_ptr), VM_FLAG_READ_ONLY);
                 
                 vptr     += PAGE_SIZE;
                 file_ptr += PAGE_SIZE;
@@ -203,7 +205,9 @@ void elf_setup_stack(elf_info_t *info, boot_alloc_t *boot_alloc) {
     
     /* initial stack allocation */
     for(vpage = (addr_t)STACK_START; vpage < (addr_t)STACK_BASE; vpage += PAGE_SIZE) {
-        page  = boot_page_frame_alloc(boot_alloc);
+        /* TODO rework this (ELF loading) */
+        page = 0;
+        //page  = boot_page_frame_alloc(boot_alloc);
         vm_map_user(info->addr_space, vpage, page, VM_FLAG_READ_WRITE);
 
         /* This newly allocated page may have data left from a previous boot which

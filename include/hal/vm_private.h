@@ -57,6 +57,13 @@ extern pte_t *global_page_tables;
 
 extern size_t page_table_entries;
 
+extern bool pgtable_format_pae;
+
+void vm_initialize_page_table_linear(
+        pte_t       *page_table,
+        uint64_t     start_paddr,
+        int          flags,
+        int          num_entries);
 
 kern_paddr_t vm_clone_page_directory(
         kern_paddr_t         template_paddr,

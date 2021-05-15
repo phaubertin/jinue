@@ -80,8 +80,8 @@ typedef struct {
 typedef struct {
     uint32_t     cr3;
     union {
-        kern_paddr_t     pd;    /* non-PAE: page directory */
-        pdpt_t          *pdpt;  /* PAE: page directory pointer table */
+        pte_t   *pd;   /* non-PAE: page directory */
+        pdpt_t  *pdpt; /* PAE: page directory pointer table */
     } top_level;
 } addr_space_t;
 
@@ -107,7 +107,9 @@ typedef struct {
     void            *cmdline;
     void            *boot_heap;
     void            *boot_end;
-    pte_t           *page_table;
+    pte_t           *page_table_1mb;
+    pte_t           *page_table_16mb;
+    pte_t           *page_table_klimit;
     pte_t           *page_directory;
     uint32_t         setup_signature;
 } boot_info_t;

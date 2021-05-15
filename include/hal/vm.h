@@ -40,26 +40,29 @@
 #include <hal/asm/vm.h>
 #include <types.h>
 
-/** convert a physical address to a virtual address before the switch to the first address space */
-#define EARLY_PHYS_TO_VIRT(x)   (((uintptr_t)(x)) + BOOT_KERNEL_OFFSET)
+/** convert physical to virtual address for kernel loaded at 0x100000 (1MB) */
+#define PHYS_TO_VIRT_AT_1MB(x)      (((uintptr_t)(x)) + BOOT_OFFSET_FROM_1MB)
 
-/** convert a virtual address to a physical address before the switch to the first address space */
-#define EARLY_VIRT_TO_PHYS(x)   (((uintptr_t)(x)) - BOOT_KERNEL_OFFSET)
+/** convert virtual to physical address for kernel loaded at 0x100000 (1MB) */
+#define VIRT_TO_PHYS_AT_1MB(x)      (((uintptr_t)(x)) - BOOT_OFFSET_FROM_1MB)
 
-/** convert a pointer to a page frame address (early mappings) */
-#define EARLY_PTR_TO_PHYS_ADDR(x)  ((kern_paddr_t)EARLY_VIRT_TO_PHYS(x))
+/** convert pointer to physical address for kernel loaded at 0x100000 (1MB) */
+#define PTR_TO_PHYS_ADDR_AT_1MB(x)  ((kern_paddr_t)VIRT_TO_PHYS_AT_1MB(x))
+
+/** convert physical to virtual address for kernel loaded at 0x1000000 (16MB) */
+#define PHYS_TO_VIRT_AT_16MB(x)      (((uintptr_t)(x)) + BOOT_OFFSET_FROM_16MB)
+
+/** convert virtual to physical address for kernel loaded at 0x1000000 (16MB) */
+#define VIRT_TO_PHYS_AT_16MB(x)      (((uintptr_t)(x)) - BOOT_OFFSET_FROM_16MB)
+
+/** convert pointer to physical address for kernel loaded at 0x1000000 (16MB) */
+#define PTR_TO_PHYS_ADDR_AT_16MB(x)  ((kern_paddr_t)VIRT_TO_PHYS_AT_16MB(x))
 
 #define ADDR_4GB    UINT64_C(0x100000000)
 
 extern addr_space_t initial_addr_space;
 
-void vm_boot_init(
-        const boot_info_t   *boot_info,
-        bool                 use_pae,
-        cpu_data_t          *cpu_data,
-        boot_alloc_t        *boot_alloc);
-
-void vm_boot_postinit(const boot_info_t *boot_info, boot_alloc_t *boot_alloc, bool use_pae);
+void vm_set_no_pae(void);
 
 void vm_map_kernel(addr_t vaddr, kern_paddr_t paddr, int flags);
 
@@ -75,11 +78,11 @@ void vm_change_flags(addr_space_t *addr_space, addr_t addr, int flags);
 
 void vm_map_early(addr_t vaddr, kern_paddr_t paddr, int flags);
 
+void vm_boot_map(void *addr, uint32_t paddr, int num_entries);
+
 addr_space_t *vm_create_addr_space(addr_space_t *addr_space);
 
-addr_space_t *vm_create_initial_addr_space(
-        bool             use_pae,
-        boot_alloc_t    *boot_alloc);
+addr_space_t *vm_create_initial_addr_space(boot_alloc_t *boot_alloc);
 
 void vm_destroy_addr_space(addr_space_t *addr_space);
 

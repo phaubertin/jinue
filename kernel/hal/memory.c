@@ -29,9 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "../../include/hal/memory.h"
-
 #include <jinue-common/asm/e820.h>
+#include <hal/memory.h>
 #include <hal/vm.h>
 #include <assert.h>
 #include <panic.h>
@@ -141,6 +140,10 @@ void check_memory(const boot_info_t *boot_info) {
 
         if(! range_is_in_available_memory(&ramdisk_range, boot_info)) {
             panic("Initial RAM disk was loaded in unavailable or reserved memory");
+        }
+
+        if(boot_info->ramdisk_start < range_at_16mb.end) {
+            panic("Initial RAM disk was loaded in memory reserved for the kernel");
         }
     }
 }

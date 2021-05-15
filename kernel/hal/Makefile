@@ -46,6 +46,7 @@ sources.c    = \
 sources.nasm	 = \
 	abi.asm \
 	io.asm \
+	remap.asm \
 	startup.asm \
 	trap.asm \
 	thread_switch.asm \

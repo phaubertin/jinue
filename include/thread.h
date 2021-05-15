@@ -39,12 +39,6 @@ thread_t *thread_create(
         addr_t           entry,
         addr_t           user_stack);
 
-thread_t *thread_create_boot(
-        process_t       *process,
-        addr_t           entry,
-        addr_t           user_stack,
-        boot_alloc_t    *boot_alloc);
-
 void thread_destroy(thread_t *thread);
         
 void thread_ready(thread_t *thread);

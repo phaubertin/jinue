@@ -48,11 +48,9 @@ struct boot_heap_pushed_state {
 typedef struct {
     void                            *heap_ptr;
     struct boot_heap_pushed_state   *heap_pushed_state;
-    addr_t                           kernel_vm_top;
-    addr_t                           kernel_vm_limit;
-    kern_paddr_t                     kernel_paddr_top;
-    kern_paddr_t                     kernel_paddr_limit;
-    bool                             its_early;
+    void                            *current_page;
+    void                            *page_limit;
+    void                            *first_page_at_16mb;
 } boot_alloc_t;
 
 typedef struct {
