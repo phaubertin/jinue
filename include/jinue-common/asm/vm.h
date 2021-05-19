@@ -56,10 +56,6 @@
 /* TODO delete this definition */
 #define KERNEL_IMAGE_END        (KLIMIT + 16 * MB)
 
-/** limit up to which page tables are preallocated during kernel initialization */
-/* TODO delete this definition */
-#define KERNEL_PREALLOC_LIMIT   (KLIMIT + 32 * MB)
-
 /** stack base address (stack top) */
 #define STACK_BASE              KLIMIT
 

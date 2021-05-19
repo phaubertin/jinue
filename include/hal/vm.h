@@ -64,27 +64,31 @@ extern addr_space_t initial_addr_space;
 
 void vm_set_no_pae(void);
 
+addr_space_t *vm_create_initial_addr_space(boot_alloc_t *boot_alloc);
+
+addr_space_t *vm_create_addr_space(addr_space_t *addr_space);
+
+void vm_destroy_addr_space(addr_space_t *addr_space);
+
+void vm_switch_addr_space(addr_space_t *addr_space, cpu_data_t *cpu_data);
+
+void vm_boot_map(void *addr, uint32_t paddr, int num_entries);
+
 void vm_map_kernel(addr_t vaddr, kern_paddr_t paddr, int flags);
 
-void vm_map_user(addr_space_t *addr_space, addr_t vaddr, user_paddr_t paddr, int flags);
+void vm_map_user(
+        addr_space_t    *addr_space,
+        addr_t           vaddr,
+        user_paddr_t     paddr,
+        int flags);
 
 void vm_unmap_kernel(addr_t addr);
 
 void vm_unmap_user(addr_space_t *addr_space, addr_t addr);
 
-kern_paddr_t vm_lookup_kernel_paddr(addr_t addr);
+kern_paddr_t vm_lookup_kernel_paddr(void *addr);
 
 void vm_change_flags(addr_space_t *addr_space, addr_t addr, int flags);
-
-void vm_boot_map(void *addr, uint32_t paddr, int num_entries);
-
-addr_space_t *vm_create_addr_space(addr_space_t *addr_space);
-
-addr_space_t *vm_create_initial_addr_space(boot_alloc_t *boot_alloc);
-
-void vm_destroy_addr_space(addr_space_t *addr_space);
-
-void vm_switch_addr_space(addr_space_t *addr_space, cpu_data_t *cpu_data);
 
 #endif
 

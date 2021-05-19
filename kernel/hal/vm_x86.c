@@ -41,25 +41,25 @@ struct pte_t {
     uint32_t entry;
 };
 
+addr_space_t *vm_x86_create_initial_addr_space(pte_t *page_directory) {
+    initial_addr_space.top_level.pd = (pte_t *)PHYS_TO_VIRT_AT_16MB(page_directory);
+    initial_addr_space.cr3          = (uintptr_t)page_directory;
+
+    return &initial_addr_space;
+}
+
 addr_space_t *vm_x86_create_addr_space(addr_space_t *addr_space) {
     /* Create a new page directory where entries for the address range starting
      * at KLIMIT are copied from the initial address space. The mappings starting
      * at KLIMIT belong to the kernel and are identical in all address spaces. */
     kern_paddr_t paddr = vm_clone_page_directory(
             initial_addr_space.top_level.pd,
-            vm_x86_page_directory_offset_of((addr_t)KLIMIT));
+            vm_x86_page_directory_offset_of((void *)KLIMIT));
 
     addr_space->top_level.pd = paddr;
     addr_space->cr3          = paddr;
 
     return addr_space;
-}
-
-addr_space_t *vm_x86_create_initial_addr_space(pte_t *page_directory) {
-    initial_addr_space.top_level.pd = (pte_t *)PHYS_TO_VIRT_AT_16MB(page_directory);
-    initial_addr_space.cr3          = (uintptr_t)page_directory;
-
-    return &initial_addr_space;
 }
 
 void vm_x86_destroy_addr_space(addr_space_t *addr_space) {
@@ -80,24 +80,16 @@ unsigned int vm_x86_page_directory_offset_of(void *addr) {
 }
 
 /**
-    Lookup and map the page directory for a specified address and address space.
-
-    This is the implementation for standard 32-bit (i.e. non-PAE) paging. This
-    means that there is only one preallocated page directory, so the addr and
-    create_as_needed arguments are both irrelevant.
-
-    Important note: it is the caller's responsibility to unmap and free the returned
-    page directory when it is done with it.
-
-    @param addr_space address space in which the address is looked up.
-    @param addr address to look up
-    @param create_as_need Whether a page table is allocated if it does not exist
-*/
+ * Lookup the page directory for a specified address and address space.
+ *
+ * This is the implementation for standard 32-bit (i.e. non-PAE) paging. This
+ * means that there is only one preallocated page directory for the address
+ * space.
+ *
+ * @param addr_space address space in which the address is looked up.
+ */
 pte_t *vm_x86_lookup_page_directory(addr_space_t *addr_space) {
-    pte_t *page_directory = (pte_t *)vmalloc();
-    vm_map_kernel((addr_t)page_directory, addr_space->top_level.pd, VM_FLAG_READ_WRITE);
-
-    return page_directory;
+    return addr_space->top_level.pd;
 }
 
 pte_t *vm_x86_get_pte_with_offset(pte_t *pte, unsigned int offset) {

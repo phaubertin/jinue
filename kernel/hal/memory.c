@@ -48,6 +48,8 @@ typedef struct {
 
 static uintptr_t *memory_array;
 
+static size_t memory_array_entries;
+
 static bool memory_range_is_within(
         const memory_range_t *enclosed,
         const memory_range_t *enclosing) {
@@ -193,19 +195,32 @@ void memory_initialize_array(
         boot_alloc_t        *boot_alloc,
         const boot_info_t   *boot_info) {
 
-    const size_t entries_per_page   = PAGE_SIZE / sizeof(uintptr_t);
+    const size_t entries_per_page = PAGE_SIZE / sizeof(uintptr_t);
 
     const uint64_t memory_top   = memory_find_top(boot_info);
     const size_t num_pages      = memory_top / PAGE_SIZE;
     const size_t array_entries  = ALIGN_END(num_pages, entries_per_page);
     const size_t array_pages    = array_entries / entries_per_page;
 
-    memory_array = boot_page_alloc_n(boot_alloc, array_pages);
+    uintptr_t *array = boot_page_alloc_n(boot_alloc, array_pages);
 
     for(    uint32_t addr = MEMORY_ADDR_16MB;
             addr < MEMORY_ADDR_16MB + BOOT_SIZE_AT_16MB;
             addr += PAGE_SIZE) {
 
-        memory_array[addr / PAGE_SIZE] = PHYS_TO_VIRT_AT_16MB(addr);
+        array[addr / PAGE_SIZE] = PHYS_TO_VIRT_AT_16MB(addr);
     }
+
+    memory_array            = (uintptr_t *)PHYS_TO_VIRT_AT_16MB(array);
+    memory_array_entries    = array_entries;
+}
+
+void *memory_lookup_page(uint64_t paddr) {
+    uint64_t entry_index = paddr / PAGE_SIZE;
+
+    if(entry_index >= memory_array_entries) {
+        return NULL;
+    }
+
+    return (void *)memory_array[entry_index];
 }

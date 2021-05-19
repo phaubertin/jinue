@@ -31,17 +31,18 @@
 
 #include <hal/vm_private.h>
 #include <hal/boot.h>
+#include <hal/memory.h>
 #include <hal/x86.h>
 #include <assert.h>
 #include <boot.h>
 #include <page_alloc.h>
 #include <panic.h>
+#include <printk.h>
 #include <pfalloc.h>
 #include <slab.h>
 #include <string.h>
 #include <util.h>
 #include <vmalloc.h>
-
 
 /** number of address bits that encode the PDPT offset */
 #define PDPT_BITS               2
@@ -186,47 +187,135 @@ void vm_pae_enable(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
     enable_pae(PTR_TO_PHYS_ADDR_AT_16MB(pdpt));
 }
 
+addr_space_t *vm_pae_create_initial_addr_space(
+        pte_t           *page_directories,
+        boot_alloc_t    *boot_alloc) {
+
+    /* Allocate initial PDPT. PDPT must be 32-byte aligned. */
+    initial_pdpt = boot_heap_alloc(boot_alloc, pdpt_t, 32);
+    clear_pdpt(initial_pdpt);
+
+    int offset = pdpt_offset_of((void *)KLIMIT);
+    vm_initialize_page_table_linear(
+            &initial_pdpt->pd[offset],
+            (uintptr_t)page_directories,
+            VM_FLAG_PRESENT,
+            PDPT_ENTRIES - offset);
+
+    initial_addr_space.top_level.pdpt   = initial_pdpt;
+    initial_addr_space.cr3              = VIRT_TO_PHYS_AT_16MB(initial_pdpt);
+
+    return &initial_addr_space;
+}
+
+addr_space_t *vm_pae_create_addr_space(addr_space_t *addr_space) {
+    /* Create a PDPT for the new address space */
+    pdpt_t *pdpt = slab_cache_alloc(&pdpt_cache);
+
+    if(pdpt == NULL) {
+        return NULL;
+    }
+
+    /* Use the initial address space as a template for the kernel address range
+     * (address KLIMIT and above). The page tables for that range are shared by
+     * all address spaces. */
+    pdpt_t *template_pdpt = initial_addr_space.top_level.pdpt;
+
+    for(int idx = 0; idx < PDPT_ENTRIES; ++idx) {
+        pte_t *pdpte = &pdpt->pd[idx];
+
+        if(idx < pdpt_offset_of((addr_t)KLIMIT)) {
+            /* This PDPT entry describes an address range entirely under KLIMIT
+             * so it is all user space: do not create a page directory at this
+             * time. */
+             vm_pae_clear_pte(pdpte);
+        }
+        else {
+            /* This page directory describes an address range entirely above
+             * KLIMIT: share the template's page directory. */
+            vm_pae_copy_pte(pdpte, &template_pdpt->pd[idx]);
+        }
+    }
+
+    /* Lookup the physical address of the page where the PDPT resides. */
+    kern_paddr_t pdpt_page_paddr = vm_lookup_kernel_paddr((addr_t)page_address_of(pdpt));
+
+    /* physical address of PDPT */
+    kern_paddr_t pdpt_paddr = pdpt_page_paddr | page_offset_of(pdpt);
+
+    addr_space->top_level.pdpt  = pdpt;
+    addr_space->cr3             = pdpt_paddr;
+
+    return addr_space;
+}
+
+void vm_pae_destroy_addr_space(addr_space_t *addr_space) {
+    unsigned int idx;
+    pte_t pdpte;
+
+    pdpt_t *pdpt = addr_space->top_level.pdpt;
+
+    for(idx = 0; idx < PDPT_ENTRIES; ++idx) {
+        pdpte.entry = pdpt->pd[idx].entry;
+
+        if(idx < pdpt_offset_of((addr_t)KLIMIT)) {
+            /* This page directory describes an address range entirely under
+             * KLIMIT so it is all user space: free all page tables in this
+             * page directory as well as the page directory itself. */
+            if(pdpte.entry & VM_FLAG_PRESENT) {
+                vm_destroy_page_directory(
+                        vm_pae_get_pte_paddr(&pdpte),
+                        0,
+                        page_table_entries);
+            }
+        }
+        else {
+            /* This page directory describes an address range entirely above
+             * KLIMIT: do nothing.
+             *
+             * The page directory must not be freed because it is shared by all
+             * address spaces. */
+        }
+    }
+
+    slab_cache_free(pdpt);
+}
+
 /** 
-    Lookup and map the page directory for a specified address and address space.
-    
-    Important note: it is the caller's responsibility to unmap and free the returned
-    page directory when it is done with it.
-    
-    @param addr_space address space in which the address is looked up.
-    @param addr address to look up
-    @param create_as_need Whether a page table is allocated if it does not exist
-*/
-pte_t *vm_pae_lookup_page_directory(addr_space_t *addr_space, void *addr, bool create_as_needed) {
+ * Lookup the page directory for a specified address and address space.
+ *
+ * @param addr_space address space in which the address is looked up.
+ * @param addr address to look up
+ * @param create_as_need Whether a page table is allocated if it does not exist
+ */
+pte_t *vm_pae_lookup_page_directory(
+        addr_space_t    *addr_space,
+        void            *addr,
+        bool             create_as_needed) {
+
     pdpt_t *pdpt    = addr_space->top_level.pdpt;
     pte_t  *pdpte   = &pdpt->pd[pdpt_offset_of(addr)];
     
     if(vm_pae_get_pte_flags(pdpte) & VM_FLAG_PRESENT) {
-        /* map page directory */
-        pte_t *page_directory   = (pte_t *)vmalloc();
-        vm_map_kernel((addr_t)page_directory, vm_pae_get_pte_paddr(pdpte), VM_FLAG_READ_WRITE);
-        
-        return page_directory;
+        return memory_lookup_page(vm_pae_get_pte_paddr(pdpte));
     }
-    else {
-        if(create_as_needed) {
-            /* allocate a new page directory and map it */
-            pte_t *page_directory       = (pte_t *)vmalloc();
-            kern_paddr_t pgdir_paddr    = pfalloc();
-        
-            vm_map_kernel((addr_t)page_directory, pgdir_paddr, VM_FLAG_READ_WRITE);
-            
-            /* zero content of page directory */
-            memset(page_directory, 0, PAGE_SIZE);
-            
-            /* link page directory in PDPT */
-            vm_pae_set_pte(pdpte, pgdir_paddr, VM_FLAG_PRESENT);
-            
-            return page_directory;
-        }
-        else {
-            return NULL;
-        }
+
+    if(!create_as_needed) {
+        return NULL;
     }
+
+    pte_t *page_directory = page_alloc();
+
+    if(page_directory != NULL) {
+        clear_page(page_directory);
+
+        vm_pae_set_pte(
+                pdpte,
+                vm_lookup_kernel_paddr(page_directory),
+                VM_FLAG_PRESENT);
+    }
+
+    return page_directory;
 }
 
 unsigned int vm_pae_page_table_offset_of(void *addr) {
@@ -277,99 +366,4 @@ void vm_pae_create_pdpt_cache(void) {
             NULL,
             NULL,
             SLAB_DEFAULTS);
-}
-
-addr_space_t *vm_pae_create_addr_space(addr_space_t *addr_space) {
-    unsigned int idx;
-    pte_t *pdpte;
-    
-    /* Create a PDPT for the new address space */
-    pdpt_t *pdpt = slab_cache_alloc(&pdpt_cache);
-
-    if(pdpt == NULL) {
-        return NULL;
-    }
-
-    /* Use the initial address space as a template for the kernel address range
-     * (address KLIMIT and above). The page tables for that range are shared by
-     * all address spaces. */
-    pdpt_t *template_pdpt = initial_addr_space.top_level.pdpt;
-    
-    for(idx = 0; idx < PDPT_ENTRIES; ++idx) {
-        pdpte = &pdpt->pd[idx];
-        
-        if(idx < pdpt_offset_of((addr_t)KLIMIT)) {
-            /* This PDPT entry describes an address range entirely under KLIMIT
-             * so it is all user space: do not create a page directory at this
-             * time. */
-             vm_pae_clear_pte(pdpte);
-        }
-        else {
-            /* This page directory describes an address range entirely above
-             * KLIMIT: share the template's page directory. */
-            vm_pae_copy_pte(pdpte, &template_pdpt->pd[idx]);
-        }
-    }
-    
-    /* Lookup the physical address of the page where the PDPT resides. */
-    kern_paddr_t pdpt_page_paddr = vm_lookup_kernel_paddr((addr_t)page_address_of(pdpt));
-    
-    /* physical address of PDPT */
-    kern_paddr_t pdpt_paddr = pdpt_page_paddr | page_offset_of(pdpt);
-    
-    addr_space->top_level.pdpt  = pdpt;
-    addr_space->cr3             = pdpt_paddr;
-    
-    return addr_space;
-}
-
-addr_space_t *vm_pae_create_initial_addr_space(
-        pte_t           *page_directory,
-        boot_alloc_t    *boot_alloc) {
-
-    /* Allocate initial PDPT. PDPT must be 32-byte aligned. */
-    initial_pdpt = boot_heap_alloc(boot_alloc, pdpt_t, 32);
-    clear_pdpt(initial_pdpt);
-
-    vm_pae_set_pte(
-            &initial_pdpt->pd[pdpt_offset_of((addr_t)KLIMIT)],
-            (uintptr_t)page_directory,
-            VM_FLAG_PRESENT);
-    
-    initial_addr_space.top_level.pdpt   = initial_pdpt;
-    initial_addr_space.cr3              = VIRT_TO_PHYS_AT_16MB(initial_pdpt);
-
-    return &initial_addr_space;
-}
-
-void vm_pae_destroy_addr_space(addr_space_t *addr_space) {
-    unsigned int idx;
-    pte_t pdpte;
-    
-    pdpt_t *pdpt = addr_space->top_level.pdpt;
-    
-    for(idx = 0; idx < PDPT_ENTRIES; ++idx) {
-        pdpte.entry = pdpt->pd[idx].entry;
-        
-        if(idx < pdpt_offset_of((addr_t)KLIMIT)) {
-            /* This page directory describes an address range entirely under
-             * KLIMIT so it is all user space: free all page tables in this
-             * page directory as well as the page directory itself. */
-            if(pdpte.entry & VM_FLAG_PRESENT) {
-                vm_destroy_page_directory(
-                        vm_pae_get_pte_paddr(&pdpte),
-                        0,
-                        page_table_entries);
-            }
-        }
-        else {
-            /* This page directory describes an address range entirely above
-             * KLIMIT: do nothing.
-             * 
-             * The page directory must not be freed because it is shared by all
-             * address spaces. */
-        }
-    }
-    
-    slab_cache_free(pdpt);
 }
