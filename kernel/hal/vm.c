@@ -47,9 +47,9 @@
 #include <vmalloc.h>
 
 
-pte_t *global_page_tables;
+pte_t *kernel_page_tables;
 
-pte_t *global_page_directories;
+pte_t *kernel_page_directories;
 
 addr_space_t initial_addr_space;
 
@@ -174,14 +174,14 @@ addr_space_t *vm_create_initial_addr_space(boot_alloc_t *boot_alloc) {
     int num_pages       = (ADDR_4GB - KLIMIT) / PAGE_SIZE;
     int num_page_tables = num_pages / page_table_entries;
     pte_t *page_tables  = boot_page_alloc_n(boot_alloc, num_page_tables);
-    global_page_tables  = (pte_t *)PHYS_TO_VIRT_AT_16MB(page_tables);
+    kernel_page_tables  = (pte_t *)PHYS_TO_VIRT_AT_16MB(page_tables);
 
     /* Initialize the first few page tables to map BOOT_SIZE_AT_16MB starting
      * at 0x1000000 (i.e. at 16MB). */
     vm_initialize_page_table_linear(
             page_tables,
             MEMORY_ADDR_16MB,
-            VM_FLAG_READ_WRITE,
+            VM_FLAG_READ_WRITE | VM_FLAG_KERNEL,
             BOOT_SIZE_AT_16MB / PAGE_SIZE);
 
     /* The number of entries in a pages table (page_table_entries) is also the
@@ -189,7 +189,7 @@ addr_space_t *vm_create_initial_addr_space(boot_alloc_t *boot_alloc) {
     int num_page_dirs       = ALIGN_END(num_page_tables, page_table_entries) / page_table_entries;
     int offset              = page_directory_offset_of((void *)KLIMIT);
     pte_t *page_directories = boot_page_alloc_n(boot_alloc, num_page_dirs);
-    global_page_directories = (pte_t *)PHYS_TO_VIRT_AT_16MB(page_directories);
+    kernel_page_directories = (pte_t *)PHYS_TO_VIRT_AT_16MB(page_directories);
 
     vm_initialize_page_table_linear(
             get_pte_with_offset(page_directories, offset),
@@ -291,7 +291,7 @@ void vm_boot_map(void *addr, uint32_t paddr, int num_entries) {
 
     vm_initialize_page_table_linear(
             get_pte_with_offset(
-                    (pte_t *)PTR_TO_PHYS_ADDR_AT_16MB(global_page_tables),
+                    (pte_t *)PTR_TO_PHYS_ADDR_AT_16MB(kernel_page_tables),
                     offset),
             paddr,
             VM_FLAG_READ_WRITE,
@@ -308,7 +308,6 @@ static pte_t *vm_lookup_page_table(
     /** ASSERTION: addr_space cannot be NULL for non-global mappings */
     assert(addr_space != NULL);
 
-    /* map page directory temporarily */
     if(pgtable_format_pae) {
         page_directory = vm_pae_lookup_page_directory(addr_space, addr, create_as_needed);
     }
@@ -386,7 +385,7 @@ static pte_t *vm_lookup_page_table_entry(
          *  - The mappings for this region are global, so we don't care
          *    about the specified address space.  */
         return get_pte_with_offset(
-                global_page_tables,
+                kernel_page_tables,
                 page_number_of((uintptr_t)addr - KLIMIT));
     }
 

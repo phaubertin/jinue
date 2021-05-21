@@ -53,7 +53,7 @@
 #define PAGE_DIRECTORY_OFFSET_OF(x) ( ((uint32_t)(x) / (PAGE_SIZE * PAGE_TABLE_ENTRIES)) & PAGE_TABLE_MASK )
 
 
-extern pte_t *global_page_tables;
+extern pte_t *kernel_page_tables;
 
 extern size_t page_table_entries;
 
