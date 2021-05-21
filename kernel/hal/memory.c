@@ -104,20 +104,15 @@ static bool range_is_in_available_memory(
  * - BOOT_SIZE_AT_16MB at 0x1000000 (i.e. at address 16MB). The kernel image is
  *   moved there during kernel initializations and all permanent page
  *   allocations during kernel initialization come from this range. At the end
- *   of the kernel initialization, remaining memory in this range is used to
+ *   of kernel initialization, remaining memory in this range is used to
  *   initialize the kernel's page allocator.
- *
- * TODO remove the next paragraph once the kernel is moved at 16MB
- *
- * Moving the kernel at 0x1000000 (i.e. at 16MB) is not yet implemented. For
- * now, only the first range is in use and allocations made there are permanent.
  *
  * This function checks the BIOS memory map to ensure these two memory regions
  * are completely within available memory and do not intersect any reserved
  * range. It also does the same check on the initial RAM disk loaded by the
  * boot loader.
  *
- * If any of these fails, it results in a kernel panic.
+ * If any of these checks fail, the result is a kernel panic.
  *
  * @param boot_info boot information structure
  *
@@ -155,6 +150,21 @@ void check_memory(const boot_info_t *boot_info) {
     }
 }
 
+/**
+ * Find the top of memory usable by the kernel
+ *
+ * Checks the BIOS memory map for the top of the highest range of available
+ * memory under the 4GB mark (i.e. address 0x100000000).
+ *
+ * The kernel can only use the first 4GB of memory on 32-bit x86, even with PAE
+ * enabled. This is because the architecture requires PDPTs to be in the first
+ * 4GB (CR3 is only 32 bits) and we don't want to have to deal with the
+ * complexity of having to allocate in the first 4GB only for specific
+ * allocations.
+ *
+ * @param boot_info boot information structure
+ * @return top of memory usable by kernel
+ * */
 static uint64_t memory_find_top(const boot_info_t *boot_info) {
     uint64_t memory_top = 0;
 
@@ -166,10 +176,7 @@ static uint64_t memory_find_top(const boot_info_t *boot_info) {
             continue;
         }
 
-        /* The kernel can only use the first 4GB of memory. This is because the
-         * architecture requires PDPTs to be in the first 4GB (CR3 is only 32
-         * bits) and we don't want to have to deal with the complexity of having
-         * to allocate in the first 4GB only for specific allocations. */
+        /* The kernel can only use the first 4GB of memory. */
         if(entry->addr >= ADDR_4GB) {
             continue;
         }
@@ -191,6 +198,13 @@ static uint64_t memory_find_top(const boot_info_t *boot_info) {
     return memory_top;
 }
 
+/**
+ * Initialize the array used by memory_lookup_page()
+ *
+ * @param boot_info boot information structure
+ * @param boot_alloc the boot allocator state
+ *
+ * */
 void memory_initialize_array(
         boot_alloc_t        *boot_alloc,
         const boot_info_t   *boot_info) {
@@ -215,6 +229,14 @@ void memory_initialize_array(
     memory_array_entries    = array_entries;
 }
 
+/**
+ * Lookup the virtual address of a page frame mapped by the kernel
+ *
+ * Must only be used for memory owned by the kernel, not for userspace-owned
+ * memory. Every page frame owned by the kernel is mapped at exactly one
+ * address in the kernel's address space (i.e. somewhere above KLIMIT).
+ *
+ * */
 void *memory_lookup_page(uint64_t paddr) {
     uint64_t entry_index = paddr / PAGE_SIZE;
 
