@@ -49,7 +49,7 @@ void cli(void);
 
 void sti(void);
 
-void invalidate_tlb(addr_t vaddr);
+void invalidate_tlb(void *vaddr);
 
 void lgdt(pseudo_descriptor_t *gdt_info);
 

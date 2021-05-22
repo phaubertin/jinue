@@ -214,7 +214,7 @@ kern_paddr_t vm_clone_page_directory(kern_paddr_t template_paddr, unsigned int s
     /* map page directory template */
     /* TODO rework this */
     pte_t *template = (pte_t *)vmalloc();
-    vm_map_kernel((addr_t)template, template_paddr, VM_FLAG_READ_WRITE);
+    vm_map_kernel(template, template_paddr, VM_FLAG_READ_WRITE);
 
     /* clear all entries below index start_index */
     for(int idx = 0; idx < start_index; ++idx) {
@@ -229,8 +229,8 @@ kern_paddr_t vm_clone_page_directory(kern_paddr_t template_paddr, unsigned int s
         );
     }
 
-    vm_unmap_kernel((addr_t)page_directory);
-    vm_unmap_kernel((addr_t)template);
+    vm_unmap_kernel(page_directory);
+    vm_unmap_kernel(template);
 
     return vm_lookup_kernel_paddr((addr_t)page_directory);
 }
@@ -244,14 +244,16 @@ addr_space_t *vm_create_addr_space(addr_space_t *addr_space) {
     }
 }
 
-void vm_destroy_page_directory(kern_paddr_t pgdir_paddr, unsigned int from_index, unsigned int to_index) {
-    unsigned int idx;
+void vm_destroy_page_directory(
+        kern_paddr_t         pgdir_paddr,
+        unsigned int         from_index,
+        unsigned int         to_index) {
 
     pte_t *page_directory = (pte_t *)vmalloc();
-    vm_map_kernel((addr_t)page_directory, pgdir_paddr, VM_FLAG_READ_WRITE);
+    vm_map_kernel(page_directory, pgdir_paddr, VM_FLAG_READ_WRITE);
 
     /* be careful not to free the kernel page tables */
-    for(idx = from_index; idx < to_index; ++idx) {
+    for(unsigned int idx = from_index; idx < to_index; ++idx) {
         pte_t *pte = get_pte_with_offset(page_directory, idx);
 
         if(get_pte_flags(pte) & VM_FLAG_PRESENT) {
@@ -259,7 +261,7 @@ void vm_destroy_page_directory(kern_paddr_t pgdir_paddr, unsigned int from_index
         }
     }
 
-    vm_unmap_kernel((addr_t)page_directory);
+    vm_unmap_kernel(page_directory);
     pffree(pgdir_paddr);
 }
 
@@ -350,7 +352,7 @@ static pte_t *vm_lookup_page_table(
         set_pte(
                 pde,
                 vm_lookup_kernel_paddr(page_table),
-                access_flags | VM_FLAG_PRESENT);
+                access_flags | VM_FLAG_READ_WRITE | VM_FLAG_PRESENT);
     }
 
     return page_table;
@@ -405,7 +407,12 @@ static pte_t *vm_lookup_page_table_entry(
     @param paddr address of page frame
     @param flags flags used for mapping (see VM_FLAG_x constants in vm.h)
 */
-static void vm_map(addr_space_t *addr_space, addr_t vaddr, user_paddr_t paddr, int flags) {
+static void vm_map(
+        addr_space_t    *addr_space,
+        void            *vaddr,
+        user_paddr_t     paddr,
+        int              flags) {
+
     /** ASSERTION: we assume vaddr is aligned on a page boundary */
     assert( page_offset_of(vaddr) == 0 );
     
@@ -426,7 +433,7 @@ static void vm_map(addr_space_t *addr_space, addr_t vaddr, user_paddr_t paddr, i
     @param addr_space address space from which to unmap, can be NULL for global mappings (addr >= KLIMIT)
     @param addr address of page to unmap
 */
-static void vm_unmap(addr_space_t *addr_space, addr_t addr) {
+static void vm_unmap(addr_space_t *addr_space, void *addr) {
     /** ASSERTION: addr is aligned on a page boundary */
     assert( page_offset_of(addr) == 0 );
     
@@ -440,23 +447,24 @@ static void vm_unmap(addr_space_t *addr_space, addr_t addr) {
     }
 }
 
-void vm_map_kernel(addr_t vaddr, kern_paddr_t paddr, int flags) {
+void vm_map_kernel(void *vaddr, kern_paddr_t paddr, int flags) {
     vm_map(NULL, vaddr, paddr, flags | VM_FLAG_KERNEL);
 }
 
 void vm_map_user(
         addr_space_t    *addr_space,
-        addr_t           vaddr,
+        void            *vaddr,
         user_paddr_t     paddr,
-        int flags) {
+        int              flags) {
+
     vm_map(addr_space, vaddr, paddr, flags | VM_FLAG_USER);
 }
 
-void vm_unmap_kernel(addr_t addr) {
+void vm_unmap_kernel(void *addr) {
     vm_unmap(NULL, addr);
 }
 
-void vm_unmap_user(addr_space_t *addr_space, addr_t addr) {
+void vm_unmap_user(addr_space_t *addr_space, void *addr) {
     vm_unmap(addr_space, addr);
 }
 

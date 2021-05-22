@@ -47,9 +47,7 @@
 #include "build-info.gen.h"
 
 
-static Elf32_Ehdr *find_process_manager(void) {
-    const boot_info_t *boot_info = get_boot_info();
-
+static Elf32_Ehdr *find_process_manager(const boot_info_t *boot_info) {
     if(boot_info->proc_start == NULL) {
         panic("Malformed boot image");
     }
@@ -107,12 +105,9 @@ void kmain(void) {
         panic("Could not create initial process.");
     }
 
-    /* TODO remove this */
-    printk("Still alive!\n");
-    while(1) {}
-
     /* load process manager binary */
-    Elf32_Ehdr *elf = find_process_manager();
+    Elf32_Ehdr *elf = find_process_manager(boot_info);
+
     elf_load(&elf_info, elf, &process->addr_space, &boot_alloc);
 
     /* create initial thread */
@@ -124,7 +119,7 @@ void kmain(void) {
     if(thread == NULL) {
         panic("Could not create initial thread.");
     }
-    
+
     /* start process manager
      *
      * We switch from NULL since this is the first thread. */

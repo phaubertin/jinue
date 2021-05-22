@@ -55,8 +55,8 @@ static void thread_init(thread_t *thread, process_t *process) {
 
 thread_t *thread_create(
         process_t       *process,
-        addr_t           entry,
-        addr_t           user_stack) {
+        void            *entry,
+        void            *user_stack) {
 
     void *thread_page = page_alloc();
 

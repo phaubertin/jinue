@@ -74,17 +74,17 @@ void vm_switch_addr_space(addr_space_t *addr_space, cpu_data_t *cpu_data);
 
 void vm_boot_map(void *addr, uint32_t paddr, int num_entries);
 
-void vm_map_kernel(addr_t vaddr, kern_paddr_t paddr, int flags);
+void vm_map_kernel(void *vaddr, kern_paddr_t paddr, int flags);
 
 void vm_map_user(
         addr_space_t    *addr_space,
-        addr_t           vaddr,
+        void            *vaddr,
         user_paddr_t     paddr,
-        int flags);
+        int              flags);
 
-void vm_unmap_kernel(addr_t addr);
+void vm_unmap_kernel(void *addr);
 
-void vm_unmap_user(addr_space_t *addr_space, addr_t addr);
+void vm_unmap_user(addr_space_t *addr_space, void *addr);
 
 kern_paddr_t vm_lookup_kernel_paddr(void *addr);
 

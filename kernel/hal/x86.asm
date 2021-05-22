@@ -53,7 +53,7 @@ sti:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: invalidate_tlb
-; C PROTOTYPE: void invalidate_tlb(addr_t vaddr)
+; C PROTOTYPE: void invalidate_tlb(void *vaddr)
 ; ------------------------------------------------------------------------------
     global invalidate_tlb
 invalidate_tlb:

@@ -79,12 +79,12 @@ void thread_context_switch_stack(
  */
 
 thread_t *thread_page_init(
-        addr_t           thread_page,
-        addr_t           entry,
-        addr_t           user_stack) {
+        void            *thread_page,
+        void            *entry,
+        void            *user_stack) {
 
     /* initialize fields */
-    thread_t *thread                = (thread_t *)thread_page;
+    thread_t *thread                = thread_page;
     thread_context_t *thread_ctx    = &thread->thread_ctx;
 
     thread_ctx->local_storage_addr  = NULL;

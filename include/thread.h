@@ -36,8 +36,8 @@
 
 thread_t *thread_create(
         process_t       *process,
-        addr_t           entry,
-        addr_t           user_stack);
+        void            *entry,
+        void            *user_stack);
 
 void thread_destroy(thread_t *thread);
         
