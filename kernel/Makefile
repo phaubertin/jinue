@@ -54,7 +54,6 @@ sources.c		 = \
 	kmain.c \
 	page_alloc.c \
 	panic.c \
-	pfalloc.c \
 	process.c \
 	slab.c \
 	syscall.c \

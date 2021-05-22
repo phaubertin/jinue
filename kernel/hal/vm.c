@@ -39,7 +39,6 @@
 #include <assert.h>
 #include <boot.h>
 #include <page_alloc.h>
-#include <pfalloc.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -212,7 +211,7 @@ kern_paddr_t vm_clone_page_directory(kern_paddr_t template_paddr, unsigned int s
     pte_t *page_directory = page_alloc();
 
     /* map page directory template */
-    /* TODO rework this */
+    /* TODO rework/fix this */
     pte_t *template = (pte_t *)vmalloc();
     vm_map_kernel(template, template_paddr, VM_FLAG_READ_WRITE);
 
@@ -257,12 +256,14 @@ void vm_destroy_page_directory(
         pte_t *pte = get_pte_with_offset(page_directory, idx);
 
         if(get_pte_flags(pte) & VM_FLAG_PRESENT) {
-            pffree( get_pte_paddr(pte) );
+            /* TODO fix this */
+            //pffree( get_pte_paddr(pte) );
         }
     }
 
+    /* TODO fix this */
     vm_unmap_kernel(page_directory);
-    pffree(pgdir_paddr);
+    //pffree(pgdir_paddr);
 }
 
 void vm_destroy_addr_space(addr_space_t *addr_space) {

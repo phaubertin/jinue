@@ -37,7 +37,6 @@
 #include <boot.h>
 #include <page_alloc.h>
 #include <panic.h>
-#include <pfalloc.h>
 #include <slab.h>
 #include <string.h>
 #include <util.h>

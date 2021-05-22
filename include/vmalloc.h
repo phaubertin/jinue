@@ -38,12 +38,6 @@ addr_t vmalloc(void);
 
 void vmfree(addr_t page);
 
-void vmalloc_init(
-        addr_t           start_addr,
-        addr_t           end_addr,
-        addr_t           preinit_limit,
-        boot_alloc_t    *boot_alloc);
-
 bool vmalloc_is_in_range(addr_t page);
 
 #endif

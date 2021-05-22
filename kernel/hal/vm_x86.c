@@ -31,7 +31,6 @@
 
 #include <hal/vm_private.h>
 #include <boot.h>
-#include <pfalloc.h>
 #include <vmalloc.h>
 
 /** number of entries in a page directory or page table */

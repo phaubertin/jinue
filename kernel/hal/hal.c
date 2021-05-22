@@ -48,7 +48,6 @@
 #include <boot.h>
 #include <panic.h>
 #include <page_alloc.h>
-#include <pfalloc.h>
 #include <printk.h>
 #include <stdbool.h>
 #include <stdint.h>
