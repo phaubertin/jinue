@@ -327,7 +327,7 @@ static pte_t *vm_lookup_page_table(
     pte_t *pde = get_pte_with_offset(page_directory, page_directory_offset_of(addr));
 
     if(get_pte_flags(pde) & VM_FLAG_PRESENT) {
-        return memory_lookup_page(vm_pae_get_pte_paddr(pde));
+        return memory_lookup_page(get_pte_paddr(pde));
     }
 
     if(! create_as_needed) {
