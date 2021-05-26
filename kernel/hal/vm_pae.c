@@ -311,6 +311,11 @@ pte_t *vm_pae_lookup_page_directory(
                 pdpte,
                 vm_lookup_kernel_paddr(page_directory),
                 VM_FLAG_PRESENT);
+
+        /* In 32-bit PAE mode, the CPU stores the four entries of the PDPT in
+         * registers. Whenever we modify an entry in the PDPT, we must reload
+         * CR3. */
+        set_cr3(get_cr3());
     }
 
     return page_directory;
