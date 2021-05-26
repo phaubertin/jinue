@@ -425,8 +425,11 @@ static void vm_map(
     
     set_pte(pte, paddr, flags | VM_FLAG_PRESENT);
         
-    /* invalidate TLB entry for newly mapped page */
-    invalidate_tlb(vaddr);
+    /* invalidate TLB entry for newly mapped page if the mapping is visible to
+     * the current CPU. */
+    if(addr_space == NULL || addr_space->cr3 == get_cr3()) {
+        invalidate_tlb(vaddr);
+    }
 }
 
 /**

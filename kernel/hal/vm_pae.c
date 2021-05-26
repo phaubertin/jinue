@@ -291,6 +291,9 @@ pte_t *vm_pae_lookup_page_directory(
         void            *addr,
         bool             create_as_needed) {
 
+    /** ASSERTION: addr_space must not be NULL */
+    assert(addr_space != NULL);
+
     pdpt_t *pdpt    = addr_space->top_level.pdpt;
     pte_t  *pdpte   = &pdpt->pd[pdpt_offset_of(addr)];
     
@@ -312,10 +315,14 @@ pte_t *vm_pae_lookup_page_directory(
                 vm_lookup_kernel_paddr(page_directory),
                 VM_FLAG_PRESENT);
 
-        /* In 32-bit PAE mode, the CPU stores the four entries of the PDPT in
-         * registers. Whenever we modify an entry in the PDPT, we must reload
-         * CR3. */
-        set_cr3(get_cr3());
+        uint32_t cr3 = get_cr3();
+
+        if(cr3 == addr_space->cr3) {
+            /* In 32-bit PAE mode, the CPU stores the four entries of the PDPT
+             * in registers. Whenever we modify an entry in the PDPT, we must
+             * reload CR3. */
+            set_cr3(cr3);
+        }
     }
 
     return page_directory;
