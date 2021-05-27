@@ -73,6 +73,7 @@ const boot_info_t *get_boot_info(void) {
     return boot_info;
 }
 
+/** TODO get rid of this */
 void boot_info_dump(void) {
     printk("Boot information structure:\n");
     printk("    kernel_start        %x  %u\n", boot_info->kernel_start,         boot_info->kernel_start);
