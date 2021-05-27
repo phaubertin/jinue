@@ -44,7 +44,9 @@ addr_space_t *vm_pae_create_initial_addr_space(
         pte_t           *page_directories,
         boot_alloc_t    *boot_alloc);
 
-addr_space_t *vm_pae_create_addr_space(addr_space_t *addr_space);
+addr_space_t *vm_pae_create_addr_space(
+        addr_space_t    *addr_space,
+        pte_t           *first_page_directory);
 
 void vm_pae_destroy_addr_space(addr_space_t *addr_space);
 

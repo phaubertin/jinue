@@ -206,7 +206,10 @@ addr_space_t *vm_pae_create_initial_addr_space(
     return &initial_addr_space;
 }
 
-addr_space_t *vm_pae_create_addr_space(addr_space_t *addr_space) {
+addr_space_t *vm_pae_create_addr_space(
+        addr_space_t    *addr_space,
+        pte_t           *first_page_directory) {
+
     /* Create a PDPT for the new address space */
     pdpt_t *pdpt = slab_cache_alloc(&pdpt_cache);
 
@@ -214,25 +217,18 @@ addr_space_t *vm_pae_create_addr_space(addr_space_t *addr_space) {
         return NULL;
     }
 
-    /* Use the initial address space as a template for the kernel address range
-     * (address KLIMIT and above). The page tables for that range are shared by
-     * all address spaces. */
-    pdpt_t *template_pdpt = initial_addr_space.top_level.pdpt;
+    clear_pdpt(pdpt);
 
-    for(int idx = 0; idx < PDPT_ENTRIES; ++idx) {
-        pte_t *pdpte = &pdpt->pd[idx];
+    pdpt_t *template_pdpt       = initial_addr_space.top_level.pdpt;
+    unsigned int klimit_offset  = pdpt_offset_of((void *)KLIMIT);
 
-        if(idx < pdpt_offset_of((addr_t)KLIMIT)) {
-            /* This PDPT entry describes an address range entirely under KLIMIT
-             * so it is all user space: do not create a page directory at this
-             * time. */
-             vm_pae_clear_pte(pdpte);
-        }
-        else {
-            /* This page directory describes an address range entirely above
-             * KLIMIT: share the template's page directory. */
-            vm_pae_copy_pte(pdpte, &template_pdpt->pd[idx]);
-        }
+    vm_pae_set_pte(
+            &pdpt->pd[klimit_offset],
+            vm_lookup_kernel_paddr(first_page_directory),
+            VM_FLAG_PRESENT);
+
+    for(int idx = klimit_offset + 1; idx < PDPT_ENTRIES; ++idx) {
+        vm_pae_copy_pte(&pdpt->pd[idx], &template_pdpt->pd[idx]);
     }
 
     /* Lookup the physical address of the page where the PDPT resides. */

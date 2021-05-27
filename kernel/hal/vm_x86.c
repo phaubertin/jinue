@@ -47,16 +47,12 @@ addr_space_t *vm_x86_create_initial_addr_space(pte_t *page_directory) {
     return &initial_addr_space;
 }
 
-addr_space_t *vm_x86_create_addr_space(addr_space_t *addr_space) {
-    /* Create a new page directory where entries for the address range starting
-     * at KLIMIT are copied from the initial address space. The mappings starting
-     * at KLIMIT belong to the kernel and are identical in all address spaces. */
-    kern_paddr_t paddr = vm_clone_page_directory(
-            initial_addr_space.top_level.pd,
-            vm_x86_page_directory_offset_of((void *)KLIMIT));
+addr_space_t *vm_x86_create_addr_space(
+        addr_space_t    *addr_space,
+        pte_t           *page_directory) {
 
-    addr_space->top_level.pd = paddr;
-    addr_space->cr3          = paddr;
+    addr_space->top_level.pd = page_directory;
+    addr_space->cr3          = vm_lookup_kernel_paddr(page_directory);
 
     return addr_space;
 }
