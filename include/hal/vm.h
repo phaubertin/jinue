@@ -84,7 +84,7 @@ bool vm_map_userspace(
 
 void vm_unmap_kernel(void *addr);
 
-void vm_unmap_user(addr_space_t *addr_space, void *addr);
+void vm_unmap_userspace(addr_space_t *addr_space, void *addr);
 
 void vm_change_flags(addr_space_t *addr_space, addr_t addr, int flags);
 

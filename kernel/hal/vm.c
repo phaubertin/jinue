@@ -558,7 +558,7 @@ void vm_unmap_kernel(void *addr) {
     vm_unmap(NULL, addr);
 }
 
-void vm_unmap_user(addr_space_t *addr_space, void *addr) {
+void vm_unmap_userspace(addr_space_t *addr_space, void *addr) {
     vm_unmap(addr_space, addr);
 }
 
