@@ -90,6 +90,7 @@ void page_free(void *page) {
 /* Get the number of pages currently allocatable by the page allocator
  *
  * @return page count
+ *
  * */
 unsigned int get_page_count(void) {
     return page_count;

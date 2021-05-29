@@ -171,7 +171,7 @@ void vm_set_no_pae(void) {
  * @param flags page table entry flags
  * @param num_entries number of entries to initialize
  *
- * */
+ */
 void vm_initialize_page_table_linear(
         pte_t       *page_table,
         uint64_t     start_paddr,
@@ -398,7 +398,7 @@ static pte_t *vm_lookup_page_table(
 
         clear_page(page_table);
 
-        if(is_user_pointer(addr)) {
+        if(is_userspace_pointer(addr)) {
             access_flags = VM_FLAG_USER;
         }
         else {
@@ -463,35 +463,65 @@ static pte_t *vm_lookup_page_table_entry(
     return get_pte_with_offset(page_table, page_table_offset_of(addr));
 }
 
+/**
+ * Invalidate the mapping of a single page.
+ *
+ * If reload_cr3 is true, the invalidation is performed by reloading the CR3
+ * control register. This is necessary when PAE is enabled when the PDPT was
+ * just modified. If reload_cr3 is false, which is the common case, the invlpg
+ * instruction is used instead.
+ *
+ * The invalidation is only performed is the specified address space is the
+ * currently active one or if the mapping is a kernel mapping, since kernel
+ * mappings are global.
+ *
+ * @param addr_space address space in which a mapping change was performed
+ * @param addr virtual address of mapping change
+ * @param reload_cr3 true if CR3 register must be reloaded
+ *
+ */
 static void invalidate_mapping(
         addr_space_t    *addr_space,
-        void            *vaddr,
+        void            *addr,
         bool             reload_cr3) {
 
-    if(reload_cr3) {
-        assert(addr_space != NULL);
+    assert(addr_space != NULL || is_kernel_pointer(addr));
 
-        uint32_t cr3 = get_cr3();
+    uint32_t cr3 = get_cr3();
 
-        if(cr3 == addr_space->cr3) {
+    /* Be careful with condition order here (short-circuit evaluation): if addr
+     * is a kernel pointer, addr_space is allowed to be NULL, so we musn't
+     * dereference it. */
+    if(is_kernel_pointer(addr) || cr3 == addr_space->cr3) {
+        if(reload_cr3) {
             set_cr3(cr3);
         }
-    }
-    else {
-        if(addr_space == NULL || addr_space->cr3 == get_cr3()) {
-            invalidate_tlb(vaddr);
+        else {
+            invalidate_tlb(addr);
         }
     }
 }
 
-/** 
-    Map a page frame (physical page) to a virtual memory page.
-    @param addr_space address space in which to map, can be NULL for global mappings (vaddr >= KLIMIT)
-    @param vaddr virtual address of mapping
-    @param paddr address of page frame
-    @param flags flags used for mapping (see VM_FLAG_x constants in vm.h)
-    @return true on success, false on page table allocation error
-*/
+/**
+ * Map a page frame (physical page) to a virtual memory page.
+ *
+ * This function is intended to be called by vm_map_userspace and vm_map_kernel().
+ * Either of these functions should be called elsewhere instead of calling this
+ * function directly.
+ *
+ * There is no need to specify an address space for kernel mappings since
+ * kernel mappings are global.
+ *
+ * Page tables are allocated as needed. If an allocation fails, this function
+ * returns false to indicate failure.
+ *
+ * @param addr_space address space in which to map, NULL for kernel mappings
+ * @param vaddr virtual address of mapping
+ * @param paddr address of page frame
+ * @param flags flags used for mapping (see VM_FLAG_x constants in vm.h)
+ * @return true on success, false on page table allocation error
+ *
+ */
 static bool vm_map(
         addr_space_t    *addr_space,
         void            *vaddr,
@@ -506,7 +536,7 @@ static bool vm_map(
     
     /* kernel page tables are pre-allocated so this should always succeed for
      * kernel mappings. */
-    assert(pte != NULL || is_user_pointer(vaddr));
+    assert(pte != NULL || is_userspace_pointer(vaddr));
     
     if(pte == NULL) {
         return false;
@@ -519,28 +549,60 @@ static bool vm_map(
     return true;
 }
 
+/**
+ * Establish a kernel virtual memory mapping for a single page.
+ *
+ * Kernel page tables are pre-allocated during kernel initialization so this is
+ * guaranteed to succeed. There is also no need to specify an address space
+ * since kernel mappings are global.
+ *
+ * @param vaddr virtual address of mapping
+ * @param paddr address of page frame
+ * @param flags flags used for the mapping (see VM_FLAG_x constants in vm.h)
+ *
+ */
 void vm_map_kernel(void *vaddr, kern_paddr_t paddr, int flags) {
     assert(is_kernel_pointer(vaddr));
 
     vm_map(NULL, vaddr, paddr, flags | VM_FLAG_KERNEL);
 }
 
+/**
+ * Establish a userspace virtual memory mapping for a single page.
+ *
+ * Page tables are allocated as needed. If an allocation fails, this function
+ * returns false to indicate failure.
+ *
+ * @param addr_space address space in which to map
+ * @param vaddr virtual address of mapping
+ * @param paddr address of page frame
+ * @param flags flags used for the mapping (see VM_FLAG_x constants in vm.h)
+ * @return true on success, false on page table allocation error
+ *
+ */
 bool vm_map_userspace(
         addr_space_t    *addr_space,
         void            *vaddr,
         user_paddr_t     paddr,
         int              flags) {
 
-    assert(is_user_pointer(vaddr));
+    assert(is_userspace_pointer(vaddr));
 
     return vm_map(addr_space, vaddr, paddr, flags | VM_FLAG_USER);
 }
 
 /**
-    Unmap a page from virtual memory.
-    @param addr_space address space from which to unmap, can be NULL for global mappings (addr >= KLIMIT)
-    @param addr address of page to unmap
-*/
+ * Unmap a page from virtual memory.
+ *
+ * There is no need to specify an address space for kernel mappings since
+ * kernel mappings are global.
+ *
+ * This function does not perform any page table deallocation.
+ *
+ * @param addr_space address space from which to unmap, NULL for kernel mappings
+ * @param addr address of page to unmap
+ *
+ */
 static void vm_unmap(addr_space_t *addr_space, void *addr) {
     /** ASSERTION: addr is aligned on a page boundary */
     assert( page_offset_of(addr) == 0 );
@@ -554,18 +616,49 @@ static void vm_unmap(addr_space_t *addr_space, void *addr) {
     }
 }
 
+/**
+ * Unmap a kernel page from virtual memory.
+ *
+ * There is no need to specify an address space since kernel mappings are global.
+ *
+ * This function does not perform any page table deallocation.
+ *
+ * @param addr address of page to unmap
+ *
+ */
 void vm_unmap_kernel(void *addr) {
+    assert(is_kernel_pointer(addr));
     vm_unmap(NULL, addr);
 }
 
+/**
+ * Unmap a user space page from virtual memory.
+ *
+ * This function does not perform any page table deallocation.
+ *
+ * @param addr_space address space from which to unmap
+ * @param addr address of page to unmap
+ *
+ */
 void vm_unmap_userspace(addr_space_t *addr_space, void *addr) {
+    assert(is_userspace_pointer(addr));
     vm_unmap(addr_space, addr);
 }
 
+/**
+ * Change the flags for the existing mapping of a single page.
+ *
+ * An example use case is to convert a read/write page mapping to a read-only
+ * mapping or vice versa.
+ *
+ * @param addr_space address space of the existing mapping
+ * @param addr address of page
+ * @param flags new flags for mapping
+ *
+ */
 void vm_change_flags(addr_space_t *addr_space, addr_t addr, int flags) {
     pte_t *pte = vm_lookup_page_table_entry(addr_space, addr, false, NULL);
     
-    /** ASSERTION: there is a page table entry marked present for this address */
     assert(pte != NULL && (get_pte_flags(pte) & VM_FLAG_PRESENT));
     
     /* perform the flags change */
@@ -574,13 +667,18 @@ void vm_change_flags(addr_space_t *addr_space, addr_t addr, int flags) {
     invalidate_mapping(addr_space, addr, false);
 }
 
+/**
+ * Look up the physical address of an existing kernel-mapped page frame.
+ *
+ * @param addr virtual address of kernel page
+ * @return physical address of page frame
+ *
+ */
 kern_paddr_t vm_lookup_kernel_paddr(void *addr) {
-    /** ASSERTION: addr is a kernel virtual address */
     assert( is_kernel_pointer(addr));
 
     pte_t *pte = vm_lookup_page_table_entry(NULL, addr, false, NULL);
 
-    /** ASSERTION: there is a page table entry marked present for this address */
     assert(pte != NULL && (get_pte_flags(pte) & VM_FLAG_PRESENT));
 
     return (kern_paddr_t)get_pte_paddr(pte);
