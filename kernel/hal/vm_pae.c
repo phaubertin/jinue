@@ -285,10 +285,14 @@ void vm_pae_destroy_addr_space(addr_space_t *addr_space) {
 pte_t *vm_pae_lookup_page_directory(
         addr_space_t    *addr_space,
         void            *addr,
-        bool             create_as_needed) {
+        bool             create_as_needed,
+        bool            *reload_cr3) {
 
     /** ASSERTION: addr_space must not be NULL */
     assert(addr_space != NULL);
+
+    /** ASSERTION: reload_cr3 can only be NULL if create_as_needed is false */
+    assert(reload_cr3 != NULL || !create_as_needed);
 
     pdpt_t *pdpt    = addr_space->top_level.pdpt;
     pte_t  *pdpte   = &pdpt->pd[pdpt_offset_of(addr)];
@@ -311,14 +315,10 @@ pte_t *vm_pae_lookup_page_directory(
                 vm_lookup_kernel_paddr(page_directory),
                 VM_FLAG_PRESENT);
 
-        uint32_t cr3 = get_cr3();
-
-        if(cr3 == addr_space->cr3) {
-            /* In 32-bit PAE mode, the CPU stores the four entries of the PDPT
-             * in registers. Whenever we modify an entry in the PDPT, we must
-             * reload CR3. */
-            set_cr3(cr3);
-        }
+        /* In 32-bit PAE mode, the CPU stores the four entries of the PDPT
+         * in registers. Whenever we modify an entry in the PDPT, we must
+         * reload CR3. */
+        *reload_cr3 = true;
     }
 
     return page_directory;

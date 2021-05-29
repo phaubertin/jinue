@@ -95,6 +95,17 @@ void elf_check(Elf32_Ehdr *elf) {
     }
 }
 
+static void checked_map_userspace(
+        addr_space_t    *addr_space,
+        void            *vaddr,
+        user_paddr_t     paddr,
+        int              flags) {
+
+    if(! vm_map_userspace(addr_space, vaddr, paddr, flags)) {
+        panic("Page table allocation error when loading ELF file");
+    }
+}
+
 void elf_load(
         elf_info_t      *info,
         Elf32_Ehdr      *elf,
@@ -143,7 +154,7 @@ void elf_load(
              * padding, we can just map the original pages. */
             while(vptr < vend) {
                 /** TODO add exec flag */
-                vm_map_user(
+                checked_map_userspace(
                         addr_space,
                         vptr,
                         vm_lookup_kernel_paddr(file_ptr),
@@ -174,7 +185,7 @@ void elf_load(
 
                 /* allocate and map the new page */
                 void *page = page_alloc();
-                vm_map_user(
+                checked_map_userspace(
                         addr_space,
                         vptr,
                         vm_lookup_kernel_paddr(page),
@@ -218,7 +229,7 @@ void elf_setup_stack(elf_info_t *info, boot_alloc_t *boot_alloc) {
          * which may contain sensitive information. Let's clear it. */
         clear_page(page);
 
-        vm_map_user(
+        checked_map_userspace(
                 info->addr_space,
                 vpage,
                 vm_lookup_kernel_paddr(page),

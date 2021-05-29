@@ -53,7 +53,8 @@ void vm_pae_destroy_addr_space(addr_space_t *addr_space);
 pte_t *vm_pae_lookup_page_directory(
         addr_space_t    *addr_space,
         void            *addr,
-        bool             create_as_needed);
+        bool             create_as_needed,
+        bool            *reload_cr3);
 
 unsigned int vm_pae_page_table_offset_of(void *addr);
 

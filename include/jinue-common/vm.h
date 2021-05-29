@@ -57,11 +57,6 @@ static inline bool is_user_pointer(const void *addr) {
     return (uintptr_t)addr < KLIMIT;
 }
 
-/** Check whether a pointer is in the fast path range for map/unmap operations */
-static inline bool is_fast_map_pointer(const void *addr) {
-    return is_kernel_pointer(addr);
-}
-
 /** Check whether a pointer is within the range mapped by the 32-bit setup code */
 static inline bool is_early_pointer(const void *addr) {
     return is_kernel_pointer(addr) && (uintptr_t)addr < KERNEL_EARLY_LIMIT;

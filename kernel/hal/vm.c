@@ -230,7 +230,11 @@ static pte_t *clone_first_kernel_page_directory(void) {
     pte_t *pd_template;
 
     if(pgtable_format_pae) {
-        pd_template = vm_pae_lookup_page_directory(&initial_addr_space, (void *)KLIMIT, false);
+        pd_template = vm_pae_lookup_page_directory(
+                &initial_addr_space,
+                (void *)KLIMIT,
+                false,
+                NULL);
     }
     else {
         pd_template = vm_x86_lookup_page_directory(&initial_addr_space);
@@ -352,7 +356,8 @@ void vm_boot_map(void *addr, uint32_t paddr, int num_entries) {
 static pte_t *vm_lookup_page_table(
         addr_space_t    *addr_space,
         void            *addr,
-        bool             create_as_needed) {
+        bool             create_as_needed,
+        bool            *reload_cr3) {
 
     pte_t *page_directory;
 
@@ -360,7 +365,11 @@ static pte_t *vm_lookup_page_table(
     assert(addr_space != NULL);
 
     if(pgtable_format_pae) {
-        page_directory = vm_pae_lookup_page_directory(addr_space, addr, create_as_needed);
+        page_directory = vm_pae_lookup_page_directory(
+                addr_space,
+                addr,
+                create_as_needed,
+                reload_cr3);
     }
     else {
         page_directory = vm_x86_lookup_page_directory(addr_space);
@@ -421,12 +430,13 @@ static pte_t *vm_lookup_page_table(
 static pte_t *vm_lookup_page_table_entry(
         addr_space_t    *addr_space,
         void            *addr,
-        bool             create_as_needed) {
+        bool             create_as_needed,
+        bool            *reload_cr3) {
 
     /** ASSERTION: addr is aligned on a page boundary */
     assert( page_offset_of(addr) == 0 );
 
-    if(is_fast_map_pointer(addr)) {
+    if(is_kernel_pointer(addr)) {
         /* Fast path for global allocations by the kernel:
          *  - The page tables for the region just above KLIMIT are pre-allocated
          *    during the creation of the address space, so there is no need to
@@ -440,7 +450,11 @@ static pte_t *vm_lookup_page_table_entry(
                 page_number_of((uintptr_t)addr - KLIMIT));
     }
 
-    pte_t *page_table = vm_lookup_page_table(addr_space, addr, create_as_needed);
+    pte_t *page_table = vm_lookup_page_table(
+            addr_space,
+            addr,
+            create_as_needed,
+            reload_cr3);
 
     if(page_table == NULL) {
         return NULL;
@@ -449,14 +463,36 @@ static pte_t *vm_lookup_page_table_entry(
     return get_pte_with_offset(page_table, page_table_offset_of(addr));
 }
 
+static void invalidate_mapping(
+        addr_space_t    *addr_space,
+        void            *vaddr,
+        bool             reload_cr3) {
+
+    if(reload_cr3) {
+        assert(addr_space != NULL);
+
+        uint32_t cr3 = get_cr3();
+
+        if(cr3 == addr_space->cr3) {
+            set_cr3(cr3);
+        }
+    }
+    else {
+        if(addr_space == NULL || addr_space->cr3 == get_cr3()) {
+            invalidate_tlb(vaddr);
+        }
+    }
+}
+
 /** 
     Map a page frame (physical page) to a virtual memory page.
     @param addr_space address space in which to map, can be NULL for global mappings (vaddr >= KLIMIT)
     @param vaddr virtual address of mapping
     @param paddr address of page frame
     @param flags flags used for mapping (see VM_FLAG_x constants in vm.h)
+    @return true on success, false on page table allocation error
 */
-static void vm_map(
+static bool vm_map(
         addr_space_t    *addr_space,
         void            *vaddr,
         user_paddr_t     paddr,
@@ -465,19 +501,39 @@ static void vm_map(
     /** ASSERTION: we assume vaddr is aligned on a page boundary */
     assert( page_offset_of(vaddr) == 0 );
     
-    pte_t *pte = vm_lookup_page_table_entry(addr_space, vaddr, true);
+    bool reload_cr3 = false;
+    pte_t *pte = vm_lookup_page_table_entry(addr_space, vaddr, true, &reload_cr3);
     
-    /* TODO handle allocation error */
-    /** ASSERTION: vm_lookup_page_table_entry() should not return NULL since its create_as_needed argument is true */
-    assert(pte != NULL);
+    /* kernel page tables are pre-allocated so this should always succeed for
+     * kernel mappings. */
+    assert(pte != NULL || is_user_pointer(vaddr));
     
-    set_pte(pte, paddr, flags | VM_FLAG_PRESENT);
-        
-    /* invalidate TLB entry for newly mapped page if the mapping is visible to
-     * the current CPU. */
-    if(addr_space == NULL || addr_space->cr3 == get_cr3()) {
-        invalidate_tlb(vaddr);
+    if(pte == NULL) {
+        return false;
     }
+
+    set_pte(pte, paddr, flags | VM_FLAG_PRESENT);
+
+    invalidate_mapping(addr_space, vaddr, reload_cr3);
+
+    return true;
+}
+
+void vm_map_kernel(void *vaddr, kern_paddr_t paddr, int flags) {
+    assert(is_kernel_pointer(vaddr));
+
+    vm_map(NULL, vaddr, paddr, flags | VM_FLAG_KERNEL);
+}
+
+bool vm_map_userspace(
+        addr_space_t    *addr_space,
+        void            *vaddr,
+        user_paddr_t     paddr,
+        int              flags) {
+
+    assert(is_user_pointer(vaddr));
+
+    return vm_map(addr_space, vaddr, paddr, flags | VM_FLAG_USER);
 }
 
 /**
@@ -489,27 +545,13 @@ static void vm_unmap(addr_space_t *addr_space, void *addr) {
     /** ASSERTION: addr is aligned on a page boundary */
     assert( page_offset_of(addr) == 0 );
     
-    pte_t *pte = vm_lookup_page_table_entry(addr_space, addr, false);
+    pte_t *pte = vm_lookup_page_table_entry(addr_space, addr, false, NULL);
     
     if(pte != NULL) {
         clear_pte(pte);
-        
-        /* invalidate TLB entry for newly mapped page */
-        invalidate_tlb(addr);
+
+        invalidate_mapping(addr_space, addr, false);
     }
-}
-
-void vm_map_kernel(void *vaddr, kern_paddr_t paddr, int flags) {
-    vm_map(NULL, vaddr, paddr, flags | VM_FLAG_KERNEL);
-}
-
-void vm_map_user(
-        addr_space_t    *addr_space,
-        void            *vaddr,
-        user_paddr_t     paddr,
-        int              flags) {
-
-    vm_map(addr_space, vaddr, paddr, flags | VM_FLAG_USER);
 }
 
 void vm_unmap_kernel(void *addr) {
@@ -520,20 +562,8 @@ void vm_unmap_user(addr_space_t *addr_space, void *addr) {
     vm_unmap(addr_space, addr);
 }
 
-kern_paddr_t vm_lookup_kernel_paddr(void *addr) {
-    /** ASSERTION: addr is a kernel virtual address */
-    assert( is_kernel_pointer(addr));
-
-    pte_t *pte = vm_lookup_page_table_entry(NULL, addr, false);
-
-    /** ASSERTION: there is a page table entry marked present for this address */
-    assert(pte != NULL && (get_pte_flags(pte) & VM_FLAG_PRESENT));
-
-    return (kern_paddr_t)get_pte_paddr(pte);
-}
-
 void vm_change_flags(addr_space_t *addr_space, addr_t addr, int flags) {
-    pte_t *pte = vm_lookup_page_table_entry(addr_space, addr, false);
+    pte_t *pte = vm_lookup_page_table_entry(addr_space, addr, false, NULL);
     
     /** ASSERTION: there is a page table entry marked present for this address */
     assert(pte != NULL && (get_pte_flags(pte) & VM_FLAG_PRESENT));
@@ -541,6 +571,17 @@ void vm_change_flags(addr_space_t *addr_space, addr_t addr, int flags) {
     /* perform the flags change */
     set_pte_flags(pte, flags | VM_FLAG_PRESENT);
     
-    /* invalidate TLB entry for the affected page */
-    invalidate_tlb(addr);
+    invalidate_mapping(addr_space, addr, false);
+}
+
+kern_paddr_t vm_lookup_kernel_paddr(void *addr) {
+    /** ASSERTION: addr is a kernel virtual address */
+    assert( is_kernel_pointer(addr));
+
+    pte_t *pte = vm_lookup_page_table_entry(NULL, addr, false, NULL);
+
+    /** ASSERTION: there is a page table entry marked present for this address */
+    assert(pte != NULL && (get_pte_flags(pte) & VM_FLAG_PRESENT));
+
+    return (kern_paddr_t)get_pte_paddr(pte);
 }
