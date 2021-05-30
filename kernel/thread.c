@@ -35,6 +35,7 @@
 #include <hal/vm.h>
 #include <boot.h>
 #include <object.h>
+#include <process.h>
 #include <page_alloc.h>
 #include <panic.h>
 #include <thread.h>
@@ -55,8 +56,8 @@ static void thread_init(thread_t *thread, process_t *process) {
 
 thread_t *thread_create(
         process_t       *process,
-        addr_t           entry,
-        addr_t           user_stack) {
+        void            *entry,
+        void            *user_stack) {
 
     void *thread_page = page_alloc();
 
@@ -67,20 +68,6 @@ thread_t *thread_create(
     thread_t *thread = thread_page_init(thread_page, entry, user_stack);
     thread_init(thread, process);
     
-    return thread;
-}
-
-thread_t *thread_create_boot(
-        process_t       *process,
-        addr_t           entry,
-        addr_t           user_stack,
-        boot_alloc_t    *boot_alloc) {
-
-    /* The kernel panics if this allocation fails. */
-    void *thread_page   = boot_page_alloc(boot_alloc);
-    thread_t *thread    = thread_page_init(thread_page, entry, user_stack);
-    thread_init(thread, process);
-
     return thread;
 }
 
@@ -123,10 +110,7 @@ void thread_switch(
         }
 
         if(from_process != to_thread->process) {
-            vm_switch_addr_space(
-                    &to_thread->process->addr_space,
-                    get_cpu_local_data()
-            );
+            process_switch_to(to_thread->process);
         }
 
         thread_context_switch(

@@ -53,18 +53,8 @@ static inline bool is_kernel_pointer(const void *addr) {
 }
 
 /** Check whether a pointer points to user space */
-static inline bool is_user_pointer(const void *addr) {
+static inline bool is_userspace_pointer(const void *addr) {
     return (uintptr_t)addr < KLIMIT;
-}
-
-/** Check whether a pointer is in the fast path range for map/unmap operations */
-static inline bool is_fast_map_pointer(const void *addr) {
-    return is_kernel_pointer(addr) && (uintptr_t)addr < KERNEL_PREALLOC_LIMIT;
-}
-
-/** Check whether a pointer is within the range mapped by the 32-bit setup code */
-static inline bool is_early_pointer(const void *addr) {
-    return is_kernel_pointer(addr) && (uintptr_t)addr < KERNEL_EARLY_LIMIT;
 }
 
 /** Maximum size of user buffer starting at specified address */
@@ -73,8 +63,8 @@ static inline uintptr_t user_pointer_max_size(const void *addr) {
 }
 
 /** Check that a buffer is completely in user space */
-static inline bool user_buffer_check(const void *addr, uintptr_t size) {
-    return is_user_pointer(addr) && size <= user_pointer_max_size(addr);
+static inline bool check_userspace_buffer(const void *addr, uintptr_t size) {
+    return is_userspace_pointer(addr) && size <= user_pointer_max_size(addr);
 }
 
 #endif

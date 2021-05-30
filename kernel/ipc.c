@@ -55,7 +55,7 @@ static void ipc_object_ctor(void *buffer, size_t ignore) {
     jinue_list_init(&ipc_object->recv_list);
 }
 
-void ipc_boot_init(boot_alloc_t *boot_alloc) {
+void ipc_boot_init(void) {
     slab_cache_init(
             &ipc_object_cache,
             "ipc_object_cache",
@@ -63,8 +63,7 @@ void ipc_boot_init(boot_alloc_t *boot_alloc) {
             0,
             ipc_object_ctor,
             NULL,
-            SLAB_DEFAULTS,
-            boot_alloc);
+            SLAB_DEFAULTS);
 
     proc_ipc = slab_cache_alloc(&ipc_object_cache);
 
@@ -156,7 +155,7 @@ void ipc_send(jinue_syscall_args_t *args) {
 
     char *user_ptr = (char *)args->arg2;
     
-    if(! user_buffer_check(user_ptr, message_info->buffer_size)) {
+    if(! check_userspace_buffer(user_ptr, message_info->buffer_size)) {
         syscall_args_set_error(args, JINUE_EINVAL);
         return;
     }
@@ -244,7 +243,7 @@ void ipc_receive(jinue_syscall_args_t *args) {
     char *user_ptr = (char *)args->arg2;
     size_t buffer_size = jinue_args_get_buffer_size(args);
     
-    if(! user_buffer_check(user_ptr, buffer_size)) {
+    if(! check_userspace_buffer(user_ptr, buffer_size)) {
         syscall_args_set_error(args, JINUE_EINVAL);
         return;
     }
@@ -347,7 +346,7 @@ void ipc_reply(jinue_syscall_args_t *args) {
 
     const char *user_ptr = (const char *)args->arg2;
 
-    if(! user_buffer_check(user_ptr, buffer_size)) {
+    if(! check_userspace_buffer(user_ptr, buffer_size)) {
         syscall_args_set_error(args, JINUE_EINVAL);
         return;
     }

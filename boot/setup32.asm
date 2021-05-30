@@ -76,7 +76,9 @@ _e820_map:          dd MUST_BE_SET_BELOW
 _cmdline:           dd MUST_BE_SET_BELOW
 _boot_heap:         dd MUST_BE_SET_BELOW
 _boot_end:          dd MUST_BE_SET_BELOW
-_page_table:        dd MUST_BE_SET_BELOW
+_page_table_1mb:    dd MUST_BE_SET_BELOW
+_page_table_16mb:   dd MUST_BE_SET_BELOW
+_page_table_klimit: dd MUST_BE_SET_BELOW
 _page_directory:    dd MUST_BE_SET_BELOW
 _setup_signature:   dd MUST_BE_SET_BELOW
 
@@ -163,11 +165,15 @@ skip_cmdline_copy:
     mov esp, eax                        ; set stack pointer
     
     ; Page tables need to be allocated:
-    ;   - One for first 2MB of memory
+    ;   - One for the first 2MB of memory
     ;   - BOOT_PTES_AT_16MB / VM_X86_PAGE_TABLE_PTES for mapping at 0x1000000 (16M)
     ;   - One for kernel image mapping at KLIMIT
-    mov dword [_page_table], eax
-    add eax, (2 + BOOT_PTES_AT_16MB / VM_X86_PAGE_TABLE_PTES) * PAGE_SIZE
+    mov dword [_page_table_1mb], eax
+    add eax, PAGE_SIZE
+    mov dword [_page_table_16mb], eax
+    add eax, PAGE_SIZE * BOOT_PTES_AT_16MB / VM_X86_PAGE_TABLE_PTES
+    mov dword [_page_table_klimit], eax
+    add eax, PAGE_SIZE
     mov dword [_page_directory], eax
     add eax, PAGE_SIZE
     mov dword [_boot_end], eax
@@ -186,22 +192,20 @@ skip_cmdline_copy:
 
     ; adjust the pointers in the boot information structure so they point in the
     ; kernel alias
-    add dword [_kernel_start],      BOOT_KERNEL_OFFSET
-    add dword [_proc_start],        BOOT_KERNEL_OFFSET
-    add dword [_image_start],       BOOT_KERNEL_OFFSET
-    add dword [_image_top],         BOOT_KERNEL_OFFSET
-    add dword [_e820_map],          BOOT_KERNEL_OFFSET
-    add dword [_cmdline],           BOOT_KERNEL_OFFSET
-    add dword [_boot_heap],         BOOT_KERNEL_OFFSET
-    add dword [_boot_end],          BOOT_KERNEL_OFFSET
-    add dword [_page_table],        BOOT_KERNEL_OFFSET
-    add dword [_page_directory],    BOOT_KERNEL_OFFSET
+    add dword [_kernel_start],      BOOT_OFFSET_FROM_1MB
+    add dword [_proc_start],        BOOT_OFFSET_FROM_1MB
+    add dword [_image_start],       BOOT_OFFSET_FROM_1MB
+    add dword [_image_top],         BOOT_OFFSET_FROM_1MB
+    add dword [_e820_map],          BOOT_OFFSET_FROM_1MB
+    add dword [_cmdline],           BOOT_OFFSET_FROM_1MB
+    add dword [_boot_heap],         BOOT_OFFSET_FROM_1MB
+    add dword [_boot_end],          BOOT_OFFSET_FROM_1MB
     
     ; adjust stack pointer to point in kernel alias
-    add esp, BOOT_KERNEL_OFFSET
+    add esp, BOOT_OFFSET_FROM_1MB
 
     ; jump to kernel alias
-    jmp just_right_here + BOOT_KERNEL_OFFSET
+    jmp just_right_here + BOOT_OFFSET_FROM_1MB
 just_right_here:
 
     ; null-terminate call stack (useful for debugging)
@@ -214,12 +218,12 @@ just_right_here:
     
     ; compute kernel entry point address
     mov esi, kernel_start           ; ELF header
-    add esi, BOOT_KERNEL_OFFSET
+    add esi, BOOT_OFFSET_FROM_1MB
     mov eax, [esi + 24]             ; e_entry member
     
     ; set address of boot information structure in esi for use by the kernel
     mov esi, boot_info_struct
-    add esi, BOOT_KERNEL_OFFSET     ; adjust to point in kernel alias
+    add esi, BOOT_OFFSET_FROM_1MB   ; adjust to point in kernel alias
     
     ; jump to kernel entry point
     jmp eax
@@ -241,14 +245,14 @@ just_right_here:
 initialize_page_tables:
     ; Initialize first page table for a 1:1 mapping of the first 2MB.
     mov eax, 0                          ; start address is 0
-    mov edi, dword [_page_table]        ; write address
+    mov edi, dword [_page_table_1mb]    ; write address
     call map_2_megabytes
 
     ; Initialize pages table to map BOOT_SIZE_AT_16MB starting at 0x1000000 (16M)
     ;
     ; Write address (edi) already has the correct value.
     mov eax, MEMORY_ADDR_16MB           ; start address
-    mov ecx, BOOT_PTES_AT_16MB
+    mov ecx, BOOT_PTES_AT_16MB          ; number of page table entries
     call map_linear
 
     ; Initialize last page table to map 2MB starting with the start of the
@@ -266,21 +270,19 @@ initialize_page_tables:
 
     ; add entry for the first page table
     mov edi, dword [_page_directory]
-    mov eax, dword [_page_table]
+    mov eax, dword [_page_table_1mb]
     or eax, VM_FLAG_READ_WRITE | VM_FLAG_PRESENT
     mov dword [edi], eax
 
     ; add entries for page tables for memory at 16MB
-    mov eax, dword [_page_table]
-    add eax, PAGE_SIZE
+    mov eax, dword [_page_table_16mb]
     lea edi, [edi + 4 * (MEMORY_ADDR_16MB >> 22)]
     mov ecx, BOOT_PTES_AT_16MB / VM_X86_PAGE_TABLE_PTES
     call map_linear
 
     ; add entry for the last page table
     mov edi, dword [_page_directory]
-    mov eax, edi
-    sub eax, PAGE_SIZE
+    mov eax, dword [_page_table_klimit]
     or eax, VM_FLAG_READ_WRITE | VM_FLAG_PRESENT
     mov dword [edi + 4 * (KLIMIT >> 22)], eax
 

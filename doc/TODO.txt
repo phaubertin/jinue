@@ -4,8 +4,6 @@
 
 - Stack alignment (?)
 
-- e820 map validation: ensure we have memory starting at 0x100000
-
 - One-byte relocation in boot/boot.asm (GNU extension)
 
 --- Roadmap

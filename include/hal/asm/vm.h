@@ -32,6 +32,7 @@
 #ifndef JINUE_HAL_ASM_VM_H
 #define JINUE_HAL_ASM_VM_H
 
+#include <jinue-common/asm/vm.h>
 #include <hal/asm/x86.h>
 
 /** page is present in memory */

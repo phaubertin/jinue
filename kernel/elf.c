@@ -95,13 +95,22 @@ void elf_check(Elf32_Ehdr *elf) {
     }
 }
 
+static void checked_map_userspace(
+        addr_space_t    *addr_space,
+        void            *vaddr,
+        user_paddr_t     paddr,
+        int              flags) {
+
+    if(! vm_map_userspace(addr_space, vaddr, paddr, flags)) {
+        panic("Page table allocation error when loading ELF file");
+    }
+}
+
 void elf_load(
         elf_info_t      *info,
         Elf32_Ehdr      *elf,
         addr_space_t    *addr_space,
         boot_alloc_t    *boot_alloc) {
-
-    unsigned int idx;
     
     /* check that ELF binary is valid */
     elf_check(elf);
@@ -113,15 +122,15 @@ void elf_load(
     info->at_phnum      = elf->e_phnum;
     info->at_phent      = elf->e_phentsize;
     info->addr_space    = addr_space;
-    info->entry         = (addr_t)elf->e_entry;
+    info->entry         = (void *)elf->e_entry;
 
-    for(idx = 0; idx < elf->e_phnum; ++idx) {
+    for(unsigned int idx = 0; idx < elf->e_phnum; ++idx) {
         if(phdr[idx].p_type != PT_LOAD) {
             continue;
         }
         
         /* check that the segment is not in the region reserved for kernel use */
-        if(! user_buffer_check((void *)phdr[idx].p_vaddr, phdr[idx].p_memsz)) {
+        if(! check_userspace_buffer((void *)phdr[idx].p_vaddr, phdr[idx].p_memsz)) {
             panic("process manager memory layout -- address of segment too low");
         }
         
@@ -136,15 +145,34 @@ void elf_load(
         file_ptr        = ALIGN_START_PTR(file_ptr, PAGE_SIZE);
         vptr            = ALIGN_START_PTR(vptr,     PAGE_SIZE);
         vend            = ALIGN_END_PTR(vend,       PAGE_SIZE);
-    
-        /* copy if we have to */
-        if( (phdr[idx].p_flags & PF_W) || (phdr[idx].p_filesz != phdr[idx].p_memsz) ) {
+
+        bool is_writable    = !!(phdr[idx].p_flags & PF_W);
+        bool needs_padding  = (phdr[idx].p_filesz != phdr[idx].p_memsz);
+
+        if(! (is_writable || needs_padding)) {
+            /* Since the segment has to be mapped read only and does not require
+             * padding, we can just map the original pages. */
             while(vptr < vend) {
-                unsigned long    flags;
-                char            *stop;
+                /** TODO add exec flag */
+                checked_map_userspace(
+                        addr_space,
+                        vptr,
+                        vm_lookup_kernel_paddr(file_ptr),
+                        VM_FLAG_READ_ONLY);
+
+                vptr     += PAGE_SIZE;
+                file_ptr += PAGE_SIZE;
+            }
+        }
+        else {
+            /* Segment is writable and/or needs padding. We need to allocate new
+             * pages for this segment. */
+            while(vptr < vend) {
+                int flags;
+                char *stop;
 
                 /* start of this page and next page */
-                char *vnext     = vptr + PAGE_SIZE;
+                char *vnext = vptr + PAGE_SIZE;
                 
                 /* set flags */
                 /** TODO: add exec flag once PAE is enabled */
@@ -156,8 +184,14 @@ void elf_load(
                 }
 
                 /* allocate and map the new page */
-                kern_paddr_t page = boot_page_frame_alloc(boot_alloc);
-                vm_map_user(addr_space, (addr_t)vptr, page, flags);
+                void *page = page_alloc();
+                checked_map_userspace(
+                        addr_space,
+                        vptr,
+                        vm_lookup_kernel_paddr(page),
+                        flags);
+
+                /* TODO transfer page ownership to userspace */
                                 
                 /* copy */
                 if(vnext > vfend) {
@@ -177,17 +211,6 @@ void elf_load(
                 }
             }
         }
-        else {            
-            while(vptr < vend) {
-                /* perform mapping */
-                /** TODO add exec flag once PAE is enabled
-                 *  TODO lookup actual address of page frame */
-                vm_map_user(addr_space, (addr_t)vptr, EARLY_PTR_TO_PHYS_ADDR(file_ptr), VM_FLAG_READ_ONLY);
-                
-                vptr     += PAGE_SIZE;
-                file_ptr += PAGE_SIZE;
-            }            
-        }
     }
     
     elf_setup_stack(info, boot_alloc);
@@ -196,35 +219,33 @@ void elf_load(
 }
 
 void elf_setup_stack(elf_info_t *info, boot_alloc_t *boot_alloc) {
-    kern_paddr_t page;
-    addr_t vpage;
-    
     /** TODO: check for overlap of stack with loaded segments */
     
     /* initial stack allocation */
-    for(vpage = (addr_t)STACK_START; vpage < (addr_t)STACK_BASE; vpage += PAGE_SIZE) {
-        page  = boot_page_frame_alloc(boot_alloc);
-        vm_map_user(info->addr_space, vpage, page, VM_FLAG_READ_WRITE);
+    for(addr_t vpage = (addr_t)STACK_START; vpage < (addr_t)STACK_BASE; vpage += PAGE_SIZE) {
+        void *page = page_alloc();
 
-        /* This newly allocated page may have data left from a previous boot which
-         * may contain sensitive information. Let's clear it. */
-        clear_page(vpage);
+        /* This newly allocated page may have data left from a previous boot
+         * which may contain sensitive information. Let's clear it. */
+        clear_page(page);
+
+        checked_map_userspace(
+                info->addr_space,
+                vpage,
+                vm_lookup_kernel_paddr(page),
+                VM_FLAG_READ_WRITE);
+
+        /* TODO transfer page ownership to userspace */
     }
-    
-    /* At this point, page has the address of the stack's top-most page frame,
-     * which is the one in which we are about to copy the auxiliary vectors. Map
-     * it temporarily in this address space so we can write to it. */
-    addr_t top_page = vmalloc();
-    vm_map_kernel(top_page, page, VM_FLAG_READ_WRITE);
 
     /* start at the top */
-    uint32_t *sp = (uint32_t *)(top_page + PAGE_SIZE);
+    uint32_t *sp = (uint32_t *)STACK_BASE;
     
     /* Program name string: "proc", null-terminated */
     *(--sp) = 0;
     *(--sp) = 0x636f7270;
     
-    char *argv0 = (char *)STACK_BASE - 2 * sizeof(uint32_t);
+    char *argv0 = (char *)sp;
     
     /* auxiliary vectors */
     Elf32_auxv_t *auxvp = (Elf32_auxv_t *)sp - 7;
@@ -262,11 +283,7 @@ void elf_setup_stack(elf_info_t *info, boot_alloc_t *boot_alloc) {
     /* argc */
     *(--sp) = 1;
 
-    info->stack_addr = (addr_t)STACK_BASE - PAGE_SIZE + ((addr_t)sp - top_page);
-
-    /* unmap and free temporary page */
-    vm_unmap_kernel(top_page);
-    vmfree(top_page);
+    info->stack_addr = sp;
 }
 
 int elf_lookup_symbol(

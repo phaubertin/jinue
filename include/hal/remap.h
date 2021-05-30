@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2021 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,45 +29,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <hal/vm.h>
-#include <assert.h>
-#include <panic.h>
-#include <pfalloc.h>
-#include <stddef.h>
+#ifndef JINUE_HAL_REMAP_H
+#define JINUE_HAL_REMAP_H
 
-pfalloc_cache_t global_pfalloc_cache;
+#include <hal/types.h>
 
-void init_pfalloc_cache(pfalloc_cache_t *pfcache, kern_paddr_t *stack_page) {
-    kern_paddr_t    *ptr;
-    unsigned int     idx;
-    
-    ptr = stack_page;
-    
-    for(idx = 0;idx < KERNEL_PAGE_STACK_SIZE; ++idx) {
-        ptr[idx] = PFNULL;
-    }
-    
-    pfcache->ptr   = stack_page;
-    pfcache->count = 0;
-}
+void move_and_remap_kernel(addr_t end_addr, addr_t pte, uint32_t cr3_value);
 
-kern_paddr_t pfalloc_from(pfalloc_cache_t *pfcache) {
-    if(pfcache->count == 0) {
-        panic("pfalloc_from(): no more pages to allocate");
-    }    
-    
-    --pfcache->count;
-    
-    return *(--pfcache->ptr);
-}
-
-void pffree_to(pfalloc_cache_t *pfcache, kern_paddr_t paddr) {
-    if(pfcache->count >= KERNEL_PAGE_STACK_SIZE) {
-        /** We are leaking memory here. Should we panic instead? */
-        return;
-    }
-    
-    ++pfcache->count;
-    
-    (pfcache->ptr++)[0] = paddr;
-}
+#endif

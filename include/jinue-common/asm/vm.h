@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_ASM_VM_H
-#define _JINUE_ASM_VM_H
+#ifndef _JINUE_COMMON_ASM_VM_H
+#define _JINUE_COMMON_ASM_VM_H
 
 #include <jinue-common/asm/types.h>
 
@@ -47,18 +47,6 @@
     region above KLIMIT has the same mapping in all address spaces. KLIMIT must
     be aligned on a page directory boundary in PAE mode. */
 #define KLIMIT                  0xc0000000
-
-/** limit of initial mapping performed by the 32-bit setup code */
-/* TODO delete this definition (maybe) */
-#define KERNEL_EARLY_LIMIT      (KLIMIT + 2 * MB)
-
-/** limit of the kernel image region */
-/* TODO delete this definition */
-#define KERNEL_IMAGE_END        (KLIMIT + 16 * MB)
-
-/** limit up to which page tables are preallocated during kernel initialization */
-/* TODO delete this definition */
-#define KERNEL_PREALLOC_LIMIT   (KLIMIT + 32 * MB)
 
 /** stack base address (stack top) */
 #define STACK_BASE              KLIMIT

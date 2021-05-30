@@ -29,6 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <hal/cpu_data.h>
 #include <hal/vm.h>
 #include <panic.h>
 #include <process.h>
@@ -46,7 +47,7 @@ static void process_ctor(void *buffer, size_t ignore) {
     object_header_init(&process->header, OBJECT_TYPE_PROCESS);
 }
 
-void process_boot_init(boot_alloc_t *boot_alloc) {
+void process_boot_init(void) {
     slab_cache_init(
             &process_cache,
             "process_cache",
@@ -54,8 +55,7 @@ void process_boot_init(boot_alloc_t *boot_alloc) {
             0,
             process_ctor,
             NULL,
-            SLAB_DEFAULTS,
-            boot_alloc);
+            SLAB_DEFAULTS);
 }
 
 static void process_init(process_t *process) {
@@ -70,8 +70,7 @@ process_t *process_create(void) {
 
         /* The address space object is located inside the process object but the
          * call to vm_create_addr_space() above can still fail if we cannot
-         * allocate the initial page directory/tables or, when PAE is enabled,
-         * if we cannot allocate a PDPT. */
+         * allocate the paging translation tables. */
         if(addr_space == NULL) {
             slab_cache_free(process);
             return NULL;
@@ -83,15 +82,10 @@ process_t *process_create(void) {
     return process;
 }
 
-process_t *process_create_initial(void) {
-    process_t *process = slab_cache_alloc(&process_cache);
-
-    if(process != NULL) {
-        memcpy(&process->addr_space, &initial_addr_space, sizeof(addr_space_t));
-        process_init(process);
-    }
-
-    return process;
+void process_destroy(process_t *process) {
+    /* TODO finalize descriptors */
+    vm_destroy_addr_space(&process->addr_space);
+    slab_cache_free(process);
 }
 
 object_ref_t *process_get_descriptor(process_t *process, int fd) {
@@ -114,4 +108,10 @@ int process_unused_descriptor(process_t *process) {
     }
 
     return -1;
+}
+
+void process_switch_to(process_t *process) {
+    vm_switch_addr_space(
+            &process->addr_space,
+            get_cpu_local_data());
 }

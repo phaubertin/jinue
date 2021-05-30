@@ -35,14 +35,16 @@
 #include <types.h>
 
 
-void process_boot_init(boot_alloc_t *boot_alloc);
+void process_boot_init(void);
 
 process_t *process_create(void);
 
-process_t *process_create_initial(void);
+void process_destroy(process_t *process);
 
 object_ref_t *process_get_descriptor(process_t *process, int fd);
 
 int process_unused_descriptor(process_t *process);
+
+void process_switch_to(process_t *process);
 
 #endif

@@ -62,9 +62,9 @@ static inline addr_t get_kernel_stack_base(thread_context_t *thread_ctx) {
 }
 
 thread_t *thread_page_init(
-        addr_t           thread_page,
-        addr_t           entry,
-        addr_t           user_stack);
+        void            *thread_page,
+        void            *entry,
+        void            *user_stack);
 
 void thread_context_switch(
         thread_context_t    *from_ctx,

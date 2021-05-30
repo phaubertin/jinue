@@ -37,8 +37,8 @@
 
 
 typedef struct {
-    addr_t           entry;
-    addr_t           stack_addr;
+    void            *entry;
+    void            *stack_addr;
     addr_t           at_phdr;
     int              at_phent;
     int              at_phnum;

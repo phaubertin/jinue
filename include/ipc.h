@@ -43,7 +43,7 @@
 #define IPC_FLAG_SYSTEM         (1<<8)
 
 
-void ipc_boot_init(boot_alloc_t *boot_alloc);
+void ipc_boot_init(void);
 
 ipc_t *ipc_object_create(int flags);
 

@@ -53,25 +53,22 @@
 #define PAGE_DIRECTORY_OFFSET_OF(x) ( ((uint32_t)(x) / (PAGE_SIZE * PAGE_TABLE_ENTRIES)) & PAGE_TABLE_MASK )
 
 
-extern pte_t *global_page_tables;
+extern pte_t *kernel_page_tables;
 
 extern size_t page_table_entries;
 
+extern bool pgtable_format_pae;
+
+void vm_initialize_page_table_linear(
+        pte_t       *page_table,
+        uint64_t     start_paddr,
+        int          flags,
+        int          num_entries);
 
 kern_paddr_t vm_clone_page_directory(
         kern_paddr_t         template_paddr,
         unsigned int         start_index);
 
-void vm_init_initial_page_directory(
-        pte_t           *page_directory,
-        boot_alloc_t    *boot_alloc,
-        unsigned int     start_index,
-        unsigned int     end_index,
-        bool             first_directory);
-
-void vm_destroy_page_directory(
-        kern_paddr_t         pgdir_paddr,
-        unsigned int         from_index,
-        unsigned int         to_index);
+void vm_destroy_page_directory(void *page_directory, unsigned int last_index);
 
 #endif

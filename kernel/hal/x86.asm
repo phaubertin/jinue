@@ -53,7 +53,7 @@ sti:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: invalidate_tlb
-; C PROTOTYPE: void invalidate_tlb(addr_t vaddr)
+; C PROTOTYPE: void invalidate_tlb(void *vaddr)
 ; ------------------------------------------------------------------------------
     global invalidate_tlb
 invalidate_tlb:
@@ -339,7 +339,7 @@ enable_pae:
     mov eax, [esp+ 4]   ; First argument: pdpt
 
     ; Jump to low-address alias
-    jmp just_here - BOOT_KERNEL_OFFSET
+    jmp just_here - BOOT_OFFSET_FROM_16MB
 just_here:
 
     ; Disable paging.
@@ -355,7 +355,7 @@ just_here:
     or eax, X86_CR4_PAE
     mov cr4, eax
 
-    ; Re-enabled paging.
+    ; Re-enable paging.
     or ecx, X86_CR0_PG
     mov cr0, ecx
 

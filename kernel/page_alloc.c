@@ -41,6 +41,8 @@ struct alloc_page {
 
 static struct alloc_page *head_page = NULL;
 
+unsigned int page_count = 0;
+
 /**
  * Allocate a page of kernel memory.
  *
@@ -61,6 +63,7 @@ void *page_alloc(void) {
 
     if(alloc_page != NULL) {
         head_page = alloc_page->next;
+        --page_count;
     }
 
     return alloc_page;
@@ -81,6 +84,16 @@ void page_free(void *page) {
     struct alloc_page *alloc_page = page;
     alloc_page->next    = head_page;
     head_page           = alloc_page;
+    ++page_count;
+}
+
+/* Get the number of pages currently allocatable by the page allocator
+ *
+ * @return page count
+ *
+ * */
+unsigned int get_page_count(void) {
+    return page_count;
 }
 
 /**

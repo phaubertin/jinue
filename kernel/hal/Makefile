@@ -45,8 +45,9 @@ sources.c    = \
 	vm_x86.c
 sources.nasm	 = \
 	abi.asm \
+	crt.asm \
 	io.asm \
-	startup.asm \
+	remap.asm \
 	trap.asm \
 	thread_switch.asm \
 	x86.asm \

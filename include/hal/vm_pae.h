@@ -38,15 +38,28 @@
 
 #include <types.h>
 
-void vm_pae_boot_init(void);
+void vm_pae_enable(boot_alloc_t *boot_alloc, const boot_info_t *boot_info);
 
-void vm_pae_enable(boot_alloc_t *boot_alloc);
+void vm_pae_create_initial_addr_space(
+        addr_space_t    *address_space,
+        pte_t           *page_directories,
+        boot_alloc_t    *boot_alloc);
 
-pte_t *vm_pae_lookup_page_directory(addr_space_t *addr_space, void *addr, bool create_as_needed);
+addr_space_t *vm_pae_create_addr_space(
+        addr_space_t    *addr_space,
+        pte_t           *first_page_directory);
 
-unsigned int vm_pae_page_table_offset_of(addr_t addr);
+void vm_pae_destroy_addr_space(addr_space_t *addr_space);
 
-unsigned int vm_pae_page_directory_offset_of(addr_t addr);
+pte_t *vm_pae_lookup_page_directory(
+        addr_space_t    *addr_space,
+        void            *addr,
+        bool             create_as_needed,
+        bool            *reload_cr3);
+
+unsigned int vm_pae_page_table_offset_of(void *addr);
+
+unsigned int vm_pae_page_directory_offset_of(void *addr);
 
 pte_t *vm_pae_get_pte_with_offset(pte_t *pte, unsigned int offset);
 
@@ -62,13 +75,7 @@ void vm_pae_clear_pte(pte_t *pte);
 
 void vm_pae_copy_pte(pte_t *dest, const pte_t *src);
 
-addr_space_t *vm_pae_create_addr_space(addr_space_t *addr_space);
-
-addr_space_t *vm_pae_create_initial_addr_space(boot_alloc_t *boot_alloc);
-
-void vm_pae_destroy_addr_space(addr_space_t *addr_space);
-
-void vm_pae_create_pdpt_cache(boot_alloc_t *boot_alloc);
+void vm_pae_create_pdpt_cache(void);
 
 #endif
 
