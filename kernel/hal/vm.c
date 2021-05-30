@@ -295,27 +295,18 @@ addr_space_t *vm_create_addr_space(addr_space_t *addr_space) {
     }
 }
 
-void vm_destroy_page_directory(
-        kern_paddr_t         pgdir_paddr,
-        unsigned int         from_index,
-        unsigned int         to_index) {
-
-    pte_t *page_directory = (pte_t *)vmalloc();
-    vm_map_kernel(page_directory, pgdir_paddr, VM_FLAG_READ_WRITE);
-
-    /* be careful not to free the kernel page tables */
-    for(unsigned int idx = from_index; idx < to_index; ++idx) {
+void vm_destroy_page_directory(void *page_directory, unsigned int last_index) {
+    for(unsigned int idx = 0; idx < last_index; ++idx) {
         pte_t *pte = get_pte_with_offset(page_directory, idx);
 
         if(get_pte_flags(pte) & VM_FLAG_PRESENT) {
-            /* TODO fix this */
-            //pffree( get_pte_paddr(pte) );
+            page_free(
+                    memory_lookup_page(
+                            get_pte_paddr(pte)));
         }
     }
 
-    /* TODO fix this */
-    vm_unmap_kernel(page_directory);
-    //pffree(pgdir_paddr);
+    page_free(page_directory);
 }
 
 void vm_destroy_addr_space(addr_space_t *addr_space) {

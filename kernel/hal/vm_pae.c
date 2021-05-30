@@ -244,32 +244,43 @@ addr_space_t *vm_pae_create_addr_space(
 }
 
 void vm_pae_destroy_addr_space(addr_space_t *addr_space) {
-    unsigned int idx;
-    pte_t pdpte;
-
     pdpt_t *pdpt = addr_space->top_level.pdpt;
 
-    for(idx = 0; idx < PDPT_ENTRIES; ++idx) {
-        pdpte.entry = pdpt->pd[idx].entry;
+    for(unsigned int idx = 0; idx < pdpt_offset_of((void *)KLIMIT); ++idx) {
+        pte_t *pdpte = &pdpt->pd[idx];
 
-        if(idx < pdpt_offset_of((addr_t)KLIMIT)) {
-            /* This page directory describes an address range entirely under
-             * KLIMIT so it is all user space: free all page tables in this
-             * page directory as well as the page directory itself. */
-            if(pdpte.entry & VM_FLAG_PRESENT) {
-                vm_destroy_page_directory(
-                        vm_pae_get_pte_paddr(&pdpte),
-                        0,
-                        page_table_entries);
-            }
+        if(vm_pae_get_pte_flags(pdpte) & VM_FLAG_PRESENT) {
+            vm_destroy_page_directory(
+                    memory_lookup_page(vm_pae_get_pte_paddr(pdpte)),
+                    page_table_entries);
         }
-        else {
-            /* This page directory describes an address range entirely above
-             * KLIMIT: do nothing.
-             *
-             * The page directory must not be freed because it is shared by all
-             * address spaces. */
-        }
+    }
+
+    /* Depending on the value of KLIMIT, there are two possible cases with
+     * regards to the first kernel page directory, i.e. the first page directory
+     * that links kernel page tables:
+     *
+     * 1. That page directory links *only* kernel page tables, i.e. the page
+     *    directory entry for address KLIMIT is the first entry of that page
+     *    directory. In this case, this page directory is shared by all address
+     *    spaces and we must do nothing here. We must not free the kernel page
+     *    tables it links to nor the page directory itself.
+     *
+     * 2. That page directory is split between userspace and the kernel. It
+     *    starts with userspace entries, followed by kernel entries, because the
+     *    entry for address KLIMIT is at some non-zero offset within this page
+     *    directory. In this case, we must free the userspace page tables, but
+     *    not the kernel page tables, and then free the page directory. */
+    unsigned int klimit_offset = vm_pae_page_directory_offset_of((void *)KLIMIT);
+
+    if(klimit_offset > 0) {
+        pte_t *pdpte = &pdpt->pd[pdpt_offset_of((void *)KLIMIT)];
+
+        assert(vm_pae_get_pte_flags(pdpte) & VM_FLAG_PRESENT);
+
+        vm_destroy_page_directory(
+                memory_lookup_page(vm_pae_get_pte_paddr(pdpte)),
+                klimit_offset);
     }
 
     slab_cache_free(pdpt);

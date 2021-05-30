@@ -62,7 +62,6 @@ void vm_x86_destroy_addr_space(addr_space_t *addr_space) {
             addr_space->top_level.pd,
             /* Free page tables for addresses 0..KLIMIT, be careful not to free
              * the kernel page tables starting at KLIMIT. */
-            0,
             vm_x86_page_directory_offset_of((addr_t)KLIMIT));
 }
 

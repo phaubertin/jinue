@@ -69,9 +69,6 @@ kern_paddr_t vm_clone_page_directory(
         kern_paddr_t         template_paddr,
         unsigned int         start_index);
 
-void vm_destroy_page_directory(
-        kern_paddr_t         pgdir_paddr,
-        unsigned int         from_index,
-        unsigned int         to_index);
+void vm_destroy_page_directory(void *page_directory, unsigned int last_index);
 
 #endif
