@@ -182,7 +182,7 @@ void vm_pae_enable(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
             (uintptr_t)page_directory_klimit,
             VM_FLAG_PRESENT);
 
-    enable_pae(PTR_TO_PHYS_ADDR_AT_16MB(pdpt));
+    x86_enable_pae(PTR_TO_PHYS_ADDR_AT_16MB(pdpt));
 }
 
 void vm_pae_create_initial_addr_space(

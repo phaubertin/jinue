@@ -334,8 +334,8 @@ rdtsc:
 ; FUNCTION: enable_pae
 ; C PROTOTYPE: void enable_pae(uint32_t cr3_value)
 ; ------------------------------------------------------------------------------
-    global enable_pae
-enable_pae:
+    global x86_enable_pae
+x86_enable_pae:
     mov eax, [esp+ 4]   ; First argument: pdpt
 
     ; Jump to low-address alias

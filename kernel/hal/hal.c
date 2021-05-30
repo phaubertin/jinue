@@ -65,13 +65,14 @@ static void move_kernel_at_16mb(const boot_info_t *boot_info) {
             (uint32_t)boot_info->page_directory);
 }
 
-static bool enable_pae_if_required(
+static bool enable_pae(
         boot_alloc_t *boot_alloc,
         const boot_info_t *boot_info) {
 
     bool use_pae = cpu_has_feature(CPU_FEATURE_PAE);
 
     if(! use_pae) {
+        printk("%kWarning: Physical Address Extension (PAE) not enabled. NX protection disabled.\n", VGA_COLOR_YELLOW);
         vm_set_no_pae();
     }
     else {
@@ -216,7 +217,7 @@ void hal_init(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
 
     move_kernel_at_16mb(boot_info);
 
-    bool pae_enabled = enable_pae_if_required(boot_alloc, boot_info);
+    bool pae_enabled = enable_pae(boot_alloc, boot_info);
 
     /* Re-initialize the boot page allocator to allocate following the kernel
      * image at 16MB rather than at 1MB, now that the kernel has been moved

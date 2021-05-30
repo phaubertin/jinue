@@ -99,7 +99,7 @@ uint32_t get_gs_ptr(uint32_t *ptr);
 
 uint64_t rdtsc(void);
 
-void enable_pae(uint32_t cr3_value);
+void x86_enable_pae(uint32_t cr3_value);
 
 #endif
 
