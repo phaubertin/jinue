@@ -38,7 +38,9 @@
 
 #include <hal/types.h>
 
-addr_space_t *vm_x86_create_initial_addr_space(pte_t *page_directory);
+void vm_x86_create_initial_addr_space(
+        addr_space_t    *address_space,
+        pte_t           *page_directory);
 
 addr_space_t *vm_x86_create_addr_space(
         addr_space_t    *addr_space,

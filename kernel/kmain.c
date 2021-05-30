@@ -99,11 +99,13 @@ void kmain(void) {
     process_boot_init();
 
     /* create process for process manager */
-    process_t *process = process_create_initial();
+    process_t *process = process_create();
 
     if(process == NULL) {
         panic("Could not create initial process.");
     }
+
+    process_switch_to(process);
 
     /* load process manager binary */
     Elf32_Ehdr *elf = find_process_manager(boot_info);

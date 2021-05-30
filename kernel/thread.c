@@ -35,6 +35,7 @@
 #include <hal/vm.h>
 #include <boot.h>
 #include <object.h>
+#include <process.h>
 #include <page_alloc.h>
 #include <panic.h>
 #include <thread.h>
@@ -109,10 +110,7 @@ void thread_switch(
         }
 
         if(from_process != to_thread->process) {
-            vm_switch_addr_space(
-                    &to_thread->process->addr_space,
-                    get_cpu_local_data()
-            );
+            process_switch_to(to_thread->process);
         }
 
         thread_context_switch(

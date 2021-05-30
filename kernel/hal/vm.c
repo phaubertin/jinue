@@ -50,11 +50,11 @@ pte_t *kernel_page_tables;
 
 pte_t *kernel_page_directories;
 
-addr_space_t initial_addr_space;
-
 size_t page_table_entries;
 
 bool pgtable_format_pae;
+
+static addr_space_t initial_addr_space;
 
 static pte_t *get_pte_with_offset(pte_t *pte, unsigned int offset) {
     if(pgtable_format_pae) {
@@ -219,11 +219,16 @@ addr_space_t *vm_create_initial_addr_space(boot_alloc_t *boot_alloc) {
             num_page_tables);
 
     if(pgtable_format_pae) {
-        return vm_pae_create_initial_addr_space(page_directories, boot_alloc);
+        vm_pae_create_initial_addr_space(
+                &initial_addr_space,
+                page_directories,
+                boot_alloc);
     }
     else {
-        return vm_x86_create_initial_addr_space(page_directories);
+        vm_x86_create_initial_addr_space(&initial_addr_space, page_directories);
     }
+
+    return &initial_addr_space;
 }
 
 static pte_t *clone_first_kernel_page_directory(void) {

@@ -63,7 +63,7 @@ struct pdpt_t {
 /** slab cache that allocates Page Directory Pointer Tables (PDPTs) */
 static slab_cache_t pdpt_cache;
 
-pdpt_t *initial_pdpt;
+static pdpt_t *initial_pdpt;
 
 /** Get the Page Directory Pointer Table (PDPT) index of a virtual address
  *  @param addr virtual address
@@ -185,7 +185,8 @@ void vm_pae_enable(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
     enable_pae(PTR_TO_PHYS_ADDR_AT_16MB(pdpt));
 }
 
-addr_space_t *vm_pae_create_initial_addr_space(
+void vm_pae_create_initial_addr_space(
+        addr_space_t    *address_space,
         pte_t           *page_directories,
         boot_alloc_t    *boot_alloc) {
 
@@ -200,10 +201,8 @@ addr_space_t *vm_pae_create_initial_addr_space(
             VM_FLAG_PRESENT,
             PDPT_ENTRIES - offset);
 
-    initial_addr_space.top_level.pdpt   = initial_pdpt;
-    initial_addr_space.cr3              = VIRT_TO_PHYS_AT_16MB(initial_pdpt);
-
-    return &initial_addr_space;
+    address_space->top_level.pdpt   = initial_pdpt;
+    address_space->cr3              = VIRT_TO_PHYS_AT_16MB(initial_pdpt);
 }
 
 addr_space_t *vm_pae_create_addr_space(
@@ -219,7 +218,6 @@ addr_space_t *vm_pae_create_addr_space(
 
     clear_pdpt(pdpt);
 
-    pdpt_t *template_pdpt       = initial_addr_space.top_level.pdpt;
     unsigned int klimit_offset  = pdpt_offset_of((void *)KLIMIT);
 
     vm_pae_set_pte(
@@ -228,7 +226,7 @@ addr_space_t *vm_pae_create_addr_space(
             VM_FLAG_PRESENT);
 
     for(int idx = klimit_offset + 1; idx < PDPT_ENTRIES; ++idx) {
-        vm_pae_copy_pte(&pdpt->pd[idx], &template_pdpt->pd[idx]);
+        vm_pae_copy_pte(&pdpt->pd[idx], &initial_pdpt->pd[idx]);
     }
 
     /* Lookup the physical address of the page where the PDPT resides. */

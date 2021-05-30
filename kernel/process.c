@@ -29,6 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <hal/cpu_data.h>
 #include <hal/vm.h>
 #include <panic.h>
 #include <process.h>
@@ -81,15 +82,10 @@ process_t *process_create(void) {
     return process;
 }
 
-process_t *process_create_initial(void) {
-    process_t *process = slab_cache_alloc(&process_cache);
-
-    if(process != NULL) {
-        memcpy(&process->addr_space, &initial_addr_space, sizeof(addr_space_t));
-        process_init(process);
-    }
-
-    return process;
+void process_destroy(process_t *process) {
+    /* TODO finalize descriptors */
+    vm_destroy_addr_space(&process->addr_space);
+    slab_cache_free(process);
 }
 
 object_ref_t *process_get_descriptor(process_t *process, int fd) {
@@ -112,4 +108,10 @@ int process_unused_descriptor(process_t *process) {
     }
 
     return -1;
+}
+
+void process_switch_to(process_t *process) {
+    vm_switch_addr_space(
+            &process->addr_space,
+            get_cpu_local_data());
 }

@@ -60,8 +60,6 @@
 
 #define ADDR_4GB    UINT64_C(0x100000000)
 
-extern addr_space_t initial_addr_space;
-
 void vm_set_no_pae(void);
 
 addr_space_t *vm_create_initial_addr_space(boot_alloc_t *boot_alloc);
