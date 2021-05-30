@@ -55,12 +55,11 @@
  * */
 void boot_alloc_init(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
     memset(boot_alloc, 0, sizeof(boot_alloc_t));
-    boot_alloc->heap_ptr    = boot_info->boot_heap;
+    boot_alloc->heap_ptr = boot_info->boot_heap;
     /* TODO handle heap limit. */
 
     boot_alloc->current_page        = (void *)PTR_TO_PHYS_ADDR_AT_1MB(boot_info->boot_end);
-    /* TODO we will probably want to define a constant for this */
-    boot_alloc->page_limit          = (void *)(2 * MB);
+    boot_alloc->page_limit          = (char *)MEMORY_ADDR_1MB + BOOT_SIZE_AT_1MB;
     boot_alloc->first_page_at_16mb  = (char *)boot_info->page_table_1mb + 15 * MB;
 }
 
