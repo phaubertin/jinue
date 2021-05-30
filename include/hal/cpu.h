@@ -59,6 +59,8 @@
 
 #define CPU_FEATURE_PAE             (1<<4)
 
+#define CPU_FEATURE_PGE             (1<<5)
+
 
 #define CPU_EFLAGS_ID               (1<<21)
 
@@ -70,6 +72,8 @@
 #define CPUID_FEATURE_APIC          (1<<9)
 
 #define CPUID_FEATURE_SEP           (1<<11)
+
+#define CPUID_FEATURE_PGE           (1<<13)
 
 #define CPUID_FEATURE_CLFLUSH       (1<<19)
 

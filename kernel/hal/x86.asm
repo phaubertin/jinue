@@ -355,7 +355,7 @@ just_here:
     or eax, X86_CR4_PAE
     mov cr4, eax
 
-    ; Re-enabled paging.
+    ; Re-enable paging.
     or ecx, X86_CR0_PG
     mov cr0, ecx
 

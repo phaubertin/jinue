@@ -168,6 +168,11 @@ void cpu_detect_features(void) {
             if(flags & CPUID_FEATURE_CLFLUSH) {
                 cpu_info.dcache_alignment = ((regs.ebx >> 8) & 0xff) * 8;
             }
+
+            /* global pages */
+            if(flags & CPUID_FEATURE_PGE) {
+                cpu_info.features |= CPU_FEATURE_PGE;
+            }
         }
 
         /* extended function 0: max value of eax when calling CPUID (extended function) */

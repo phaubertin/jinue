@@ -124,6 +124,12 @@ static void remap_text_video_memory(boot_alloc_t *boot_alloc) {
     vga_set_base_addr(mapped);
 }
 
+static void enable_global_pages(void) {
+    if(cpu_has_feature(CPU_FEATURE_PGE)) {
+        set_cr4(get_cr4() | X86_CR4_PGE);
+    }
+}
+
 static void initialize_page_allocator(boot_alloc_t *boot_alloc) {
     while(! boot_page_alloc_is_empty(boot_alloc)) {
         page_free(boot_page_alloc(boot_alloc));
@@ -253,6 +259,8 @@ void hal_init(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
 
     /* switch to new address space */
     vm_switch_addr_space(addr_space, cpu_data);
+
+    enable_global_pages();
 
     /* From this point, we are ready to switch to the new address space, so we
      * don't need to allocate any more pages from the boot allocator. Transfer
