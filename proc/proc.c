@@ -88,7 +88,7 @@ void thread_a(void) {
     jinue_thread_exit();
 }
 
-static void dump_phys_memory_map(const jinue_mem_map_t *map) {
+static void dump_phys_memory_map(const jinue_mem_map_t *map, bool ram_only) {
     unsigned int idx;
 
     printk("Dump of the BIOS memory map:\n");
@@ -96,13 +96,15 @@ static void dump_phys_memory_map(const jinue_mem_map_t *map) {
     for(idx = 0; idx < map->num_entries; ++idx) {
         const jinue_mem_entry_t *entry = &map->entry[idx];
 
-        printk(
-                "%c [%q-%q] %s\n",
-                (entry->type==E820_RAM)?'*':' ',
-                entry->addr,
-                entry->addr + entry->size - 1,
-                jinue_pys_mem_type_description(entry->type)
-        );
+        if(entry->type == E820_RAM || !ram_only) {
+            printk(
+                    "%c [%q-%q] %s\n",
+                    (entry->type==E820_RAM)?'*':' ',
+                    entry->addr,
+                    entry->addr + entry->size - 1,
+                    jinue_pys_mem_type_description(entry->type)
+            );
+        }
     }
 }
 
@@ -129,13 +131,12 @@ int main(int argc, char *argv[], char *envp[]) {
         return EXIT_FAILURE;
     }
 
-    dump_phys_memory_map((jinue_mem_map_t *)&call_buffer);
-
-    printk("Creating IPC object descriptor.\n");
+    dump_phys_memory_map((jinue_mem_map_t *)&call_buffer, true);
 
     int fd = jinue_create_ipc(JINUE_IPC_NONE, &errno);
 
     if(fd < 0) {
+        printk("Creating IPC object descriptor.\n");
         printk("Error number: %u\n", errno);
     }
     else {
@@ -143,8 +144,6 @@ int main(int argc, char *argv[], char *envp[]) {
         jinue_message_t message;
 
         printk("Main thread got descriptor %u.\n", fd);
-        
-        printk("Creating thread A.\n");
 
         (void)jinue_thread_create(thread_a, &thread_a_stack[THREAD_STACK_SIZE], NULL);
 
