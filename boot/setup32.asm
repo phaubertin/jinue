@@ -185,9 +185,9 @@ skip_cmdline_copy:
     mov eax, [_page_directory]
     mov cr3, eax
 
-    ; enable paging
+    ; enable paging (PG), prevent kernel from writing to read-only pages (WP)
     mov eax, cr0
-    or eax, X86_CR0_PG
+    or eax, X86_CR0_PG | X86_CR0_WP
     mov cr0, eax
 
     ; adjust the pointers in the boot information structure so they point in the
