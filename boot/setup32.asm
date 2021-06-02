@@ -63,24 +63,24 @@ image_start:
     ; boot_info_t struct declaration in include/hal/boot.h.
     align 4
 boot_info_struct:
-_kernel_start:      dd kernel_start
-_kernel_size:       dd kernel_size
-_proc_start:        dd proc_start
-_proc_size:         dd proc_size
-_image_start:       dd image_start
-_image_top:         dd MUST_BE_SET_BELOW
-_ramdisk_start:     dd MUST_BE_SET_BELOW
-_ramdisk_size:      dd MUST_BE_SET_BELOW
-_e820_entries:      dd MUST_BE_SET_BELOW
-_e820_map:          dd MUST_BE_SET_BELOW
-_cmdline:           dd MUST_BE_SET_BELOW
-_boot_heap:         dd MUST_BE_SET_BELOW
-_boot_end:          dd MUST_BE_SET_BELOW
-_page_table_1mb:    dd MUST_BE_SET_BELOW
-_page_table_16mb:   dd MUST_BE_SET_BELOW
-_page_table_klimit: dd MUST_BE_SET_BELOW
-_page_directory:    dd MUST_BE_SET_BELOW
-_setup_signature:   dd MUST_BE_SET_BELOW
+    dd kernel_start         ; kernel_start
+    dd kernel_size          ; kernel_size
+    dd proc_start           ; proc_start
+    dd proc_size            ; proc_size
+    dd image_start          ; image_start
+    dd MUST_BE_SET_BELOW    ; image_top
+    dd MUST_BE_SET_BELOW    ; ramdisk_start
+    dd MUST_BE_SET_BELOW    ; ramdisk_size
+    dd MUST_BE_SET_BELOW    ; e820_entries
+    dd MUST_BE_SET_BELOW    ; e820_map
+    dd MUST_BE_SET_BELOW    ; cmdline
+    dd MUST_BE_SET_BELOW    ; boot_heap
+    dd MUST_BE_SET_BELOW    ; boot_end
+    dd MUST_BE_SET_BELOW    ; page_table_1mb
+    dd MUST_BE_SET_BELOW    ; page_table_16mb
+    dd MUST_BE_SET_BELOW    ; page_table_klimit
+    dd MUST_BE_SET_BELOW    ; page_directory
+    dd MUST_BE_SET_BELOW    ; setup_signature
 
     ; Empty string used to represent an empty kernel command line.
 empty_string:
@@ -93,17 +93,21 @@ start:
     ; we are going up
     cld
     
+    ; Set ebp to the start of the boot_info_t structure. All accesses to that
+    ; structure will be relative to ebp.
+    mov ebp, boot_info_struct
+
     ; On entry, esi points to the real mode code start/zero-page address
     
     ; Copy signature so it can be checked by the kernel
     mov eax, dword [esi + BOOT_SETUP_HEADER]
-    mov dword [_setup_signature], eax
+    mov dword [ebp + BOOT_INFO_SETUP_SIGNATURE], eax
 
     ; Copy initial RAM disk address and size
     mov eax, dword [esi + BOOT_RAMDISK_IMAGE]
-    mov dword [_ramdisk_start], eax
+    mov dword [ebp + BOOT_INFO_RAMDISK_START], eax
     mov eax, dword [esi + BOOT_RAMDISK_SIZE]
-    mov dword [_ramdisk_size], eax
+    mov dword [ebp + BOOT_INFO_RAMDISK_SIZE], eax
 
     ; figure out the size of the kernel image
     mov eax, dword [esi + BOOT_SYSIZE]
@@ -115,7 +119,7 @@ start:
     
     ; set pointer to top of kernel image
     add eax, BOOT_SETUP32_ADDR
-    mov dword [_image_top], eax
+    mov dword [ebp + BOOT_INFO_IMAGE_TOP], eax
 
     ; --------------------------------------
     ; setup boot-time heap and kernel stack
@@ -125,19 +129,19 @@ start:
     ; copy e820 memory map
     mov cl, byte [esi + BOOT_E820_ENTRIES]
     movzx ecx, cl                   ; number of entries
-    mov dword [_e820_entries], ecx
+    mov dword [ebp + BOOT_INFO_E820_ENTRIES], ecx
     lea ecx, [5 * ecx]              ; times 20 (size of one entry), which is 5 ...
     shl ecx, 2                      ; ... times 2^2
     
     mov edi, eax
-    mov dword [_e820_map], edi
+    mov dword [ebp + BOOT_INFO_E820_MAP], edi
     mov ebx, esi                    ; remember current esi in ebx
     add esi, BOOT_E820_MAP
     
     rep movsb
 
     ; copy command line
-    mov dword [_cmdline], empty_string
+    mov dword [ebp + BOOT_INFO_CMDLINE], empty_string
 
     mov esi, dword [ebx + BOOT_CMD_LINE_PTR]
     or esi, esi                     ; if command line pointer is NULL...
@@ -145,7 +149,7 @@ start:
 
     ; Following the e820 memory map copy above, edi is already where we
     ; want it to be.
-    mov dword [_cmdline], edi
+    mov dword [ebp + BOOT_INFO_CMDLINE], edi
 cmdline_copy:
     lodsb                           ; load next character
     stosb                           ; store character in destination
@@ -155,9 +159,9 @@ cmdline_copy:
 skip_cmdline_copy:
     ; setup boot stack and heap, then use new stack
     mov eax, edi
-    add eax, 7                          ; align address up...
-    and eax, ~7                         ; ... to an eight-byte boundary
-    mov [_boot_heap], eax               ; store heap start address
+    add eax, 7                              ; align address up...
+    and eax, ~7                             ; ... to an eight-byte boundary
+    mov [ebp + BOOT_INFO_BOOT_HEAP], eax    ; store heap start address
     
     add eax, BOOT_STACK_HEAP_SIZE       ; add stack and heap size
     add eax, PAGE_SIZE - 1              ; align address up...
@@ -168,21 +172,21 @@ skip_cmdline_copy:
     ;   - One for the first 2MB of memory
     ;   - BOOT_PTES_AT_16MB / VM_X86_PAGE_TABLE_PTES for mapping at 0x1000000 (16M)
     ;   - One for kernel image mapping at KLIMIT
-    mov dword [_page_table_1mb], eax
+    mov dword [ebp + BOOT_INFO_PAGE_TABLE_1MB], eax
     add eax, PAGE_SIZE
-    mov dword [_page_table_16mb], eax
+    mov dword [ebp + BOOT_INFO_PAGE_TABLE_16MB], eax
     add eax, PAGE_SIZE * BOOT_PTES_AT_16MB / VM_X86_PAGE_TABLE_PTES
-    mov dword [_page_table_klimit], eax
+    mov dword [ebp + BOOT_INFO_PAGE_TABLE_KLIMIT], eax
     add eax, PAGE_SIZE
-    mov dword [_page_directory], eax
+    mov dword [ebp + BOOT_INFO_PAGE_DIRECTORY], eax
     add eax, PAGE_SIZE
-    mov dword [_boot_end], eax
+    mov dword [ebp + BOOT_INFO_BOOT_END], eax
 
     ; Allocate and initialize initial page tables and page directory.
     call initialize_page_tables
     
     ; set page directory address in CR3
-    mov eax, [_page_directory]
+    mov eax, [ebp + BOOT_INFO_PAGE_DIRECTORY]
     mov cr3, eax
 
     ; enable paging (PG), prevent kernel from writing to read-only pages (WP)
@@ -192,14 +196,14 @@ skip_cmdline_copy:
 
     ; adjust the pointers in the boot information structure so they point in the
     ; kernel alias
-    add dword [_kernel_start],      BOOT_OFFSET_FROM_1MB
-    add dword [_proc_start],        BOOT_OFFSET_FROM_1MB
-    add dword [_image_start],       BOOT_OFFSET_FROM_1MB
-    add dword [_image_top],         BOOT_OFFSET_FROM_1MB
-    add dword [_e820_map],          BOOT_OFFSET_FROM_1MB
-    add dword [_cmdline],           BOOT_OFFSET_FROM_1MB
-    add dword [_boot_heap],         BOOT_OFFSET_FROM_1MB
-    add dword [_boot_end],          BOOT_OFFSET_FROM_1MB
+    add dword [ebp + BOOT_INFO_KERNEL_START],   BOOT_OFFSET_FROM_1MB
+    add dword [ebp + BOOT_INFO_PROC_START],     BOOT_OFFSET_FROM_1MB
+    add dword [ebp + BOOT_INFO_IMAGE_START],    BOOT_OFFSET_FROM_1MB
+    add dword [ebp + BOOT_INFO_IMAGE_TOP],      BOOT_OFFSET_FROM_1MB
+    add dword [ebp + BOOT_INFO_E820_MAP],       BOOT_OFFSET_FROM_1MB
+    add dword [ebp + BOOT_INFO_CMDLINE],        BOOT_OFFSET_FROM_1MB
+    add dword [ebp + BOOT_INFO_BOOT_HEAP],      BOOT_OFFSET_FROM_1MB
+    add dword [ebp + BOOT_INFO_BOOT_END],       BOOT_OFFSET_FROM_1MB
     
     ; adjust stack pointer to point in kernel alias
     add esp, BOOT_OFFSET_FROM_1MB
@@ -213,18 +217,18 @@ just_right_here:
     push eax
     push eax
     
-    ; initialize frame pointer    
-    xor ebp, ebp
-    
     ; compute kernel entry point address
     mov esi, kernel_start           ; ELF header
     add esi, BOOT_OFFSET_FROM_1MB
     mov eax, [esi + 24]             ; e_entry member
     
     ; set address of boot information structure in esi for use by the kernel
-    mov esi, boot_info_struct
+    mov esi, ebp
     add esi, BOOT_OFFSET_FROM_1MB   ; adjust to point in kernel alias
     
+    ; initialize frame pointer
+    xor ebp, ebp
+
     ; jump to kernel entry point
     jmp eax
 
@@ -244,8 +248,8 @@ just_right_here:
     ;       eax, ebx, ecx, edx, esi, edi are caller saved
 initialize_page_tables:
     ; Initialize first page table for a 1:1 mapping of the first 2MB.
-    mov eax, 0                          ; start address is 0
-    mov edi, dword [_page_table_1mb]    ; write address
+    mov eax, 0                                      ; start address is 0
+    mov edi, dword [ebp + BOOT_INFO_PAGE_TABLE_1MB] ; write address
     call map_2_megabytes
 
     ; Initialize pages table to map BOOT_SIZE_AT_16MB starting at 0x1000000 (16M)
@@ -263,26 +267,26 @@ initialize_page_tables:
     call map_2_megabytes
 
     ; clear initial page directory
-    mov edi, dword [_page_directory]    ; write address
+    mov edi, dword [ebp + BOOT_INFO_PAGE_DIRECTORY] ; write address
     mov ecx, 1024                       ; write 1024 entries (full table)
 
     rep stosd
 
     ; add entry for the first page table
-    mov edi, dword [_page_directory]
-    mov eax, dword [_page_table_1mb]
+    mov edi, dword [ebp + BOOT_INFO_PAGE_DIRECTORY]
+    mov eax, dword [ebp + BOOT_INFO_PAGE_TABLE_1MB]
     or eax, VM_FLAG_READ_WRITE | VM_FLAG_PRESENT
     mov dword [edi], eax
 
     ; add entries for page tables for memory at 16MB
-    mov eax, dword [_page_table_16mb]
+    mov eax, dword [ebp + BOOT_INFO_PAGE_TABLE_16MB]
     lea edi, [edi + 4 * (MEMORY_ADDR_16MB >> 22)]
     mov ecx, BOOT_PTES_AT_16MB / VM_X86_PAGE_TABLE_PTES
     call map_linear
 
     ; add entry for the last page table
-    mov edi, dword [_page_directory]
-    mov eax, dword [_page_table_klimit]
+    mov edi, dword [ebp + BOOT_INFO_PAGE_DIRECTORY]
+    mov eax, dword [ebp + BOOT_INFO_PAGE_TABLE_KLIMIT]
     or eax, VM_FLAG_READ_WRITE | VM_FLAG_PRESENT
     mov dword [edi + 4 * (KLIMIT >> 22)], eax
 
