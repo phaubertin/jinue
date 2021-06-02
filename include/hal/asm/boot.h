@@ -143,4 +143,7 @@
 /** Offset of the setup_signature boot_info_t member */
 #define BOOT_INFO_SETUP_SIGNATURE   68
 
+/** Size of boot_info_t */
+#define BOOT_INFO_SIZE              72
+
 #endif

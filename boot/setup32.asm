@@ -93,12 +93,42 @@ start:
     ; we are going up
     cld
     
+    ; On entry, esi points to the real mode code start/zero-page address
+    ;
+    ; figure out the size of the kernel image
+    mov eax, dword [esi + BOOT_SYSIZE]
+    shl eax, 4              ; times 16
+
+    ; align to page boundary
+    add eax, PAGE_SIZE - 1
+    and eax, ~PAGE_MASK
+
+    ; compute top of kernel image
+    add eax, BOOT_SETUP32_ADDR
+
+    ; We put the boot heap immediately after the kernel image and allocate
+    ; the boot_info_t structure on that heap.
+    ;
     ; Set ebp to the start of the boot_info_t structure. All accesses to that
     ; structure will be relative to ebp.
-    mov ebp, boot_info_struct
-
-    ; On entry, esi points to the real mode code start/zero-page address
+    mov ebp, eax
     
+    ; Set heap pointer taking into account allocation of boot_info_t structure.
+    add eax, BOOT_INFO_SIZE
+    add eax, 7                      ; align address up...
+    and eax, ~7                     ; ... to an eight-byte boundary
+    mov dword [ebp + BOOT_INFO_BOOT_HEAP], eax
+
+    ; Values provided by linker.
+    mov dword [ebp + BOOT_INFO_KERNEL_START], kernel_start
+    mov dword [ebp + BOOT_INFO_KERNEL_SIZE], kernel_size
+    mov dword [ebp + BOOT_INFO_PROC_START], proc_start
+    mov dword [ebp + BOOT_INFO_PROC_SIZE], proc_size
+    mov dword [ebp + BOOT_INFO_IMAGE_START], image_start
+
+    ; set pointer to top of kernel image
+    mov dword [ebp + BOOT_INFO_IMAGE_TOP], ebp
+
     ; Copy signature so it can be checked by the kernel
     mov eax, dword [esi + BOOT_SETUP_HEADER]
     mov dword [ebp + BOOT_INFO_SETUP_SIGNATURE], eax
@@ -109,21 +139,16 @@ start:
     mov eax, dword [esi + BOOT_RAMDISK_SIZE]
     mov dword [ebp + BOOT_INFO_RAMDISK_SIZE], eax
 
-    ; figure out the size of the kernel image
-    mov eax, dword [esi + BOOT_SYSIZE]
-    shl eax, 4              ; times 16
-    
-    ; align to page boundary
-    add eax, PAGE_SIZE - 1
-    and eax, ~PAGE_MASK
-    
-    ; set pointer to top of kernel image
-    add eax, BOOT_SETUP32_ADDR
-    mov dword [ebp + BOOT_INFO_IMAGE_TOP], eax
+    ; setup boot stack and heap, then use new stack
+    mov eax, ebp
+    add eax, BOOT_STACK_HEAP_SIZE           ; add stack and heap size
+    add eax, PAGE_SIZE - 1                  ; align address up...
+    and eax, ~PAGE_MASK                     ; ... to a page boundary
+    mov esp, eax                            ; set stack pointer
 
     ; --------------------------------------
     ; setup boot-time heap and kernel stack
-    ; see doc/layout.txt
+    ; see doc/layout.md
     ; --------------------------------------
 
     ; copy e820 memory map
@@ -159,14 +184,8 @@ cmdline_copy:
 skip_cmdline_copy:
     ; setup boot stack and heap, then use new stack
     mov eax, edi
-    add eax, 7                              ; align address up...
-    and eax, ~7                             ; ... to an eight-byte boundary
-    mov [ebp + BOOT_INFO_BOOT_HEAP], eax    ; store heap start address
-    
-    add eax, BOOT_STACK_HEAP_SIZE       ; add stack and heap size
     add eax, PAGE_SIZE - 1              ; align address up...
     and eax, ~PAGE_MASK                 ; ... to a page boundary
-    mov esp, eax                        ; set stack pointer
     
     ; Page tables need to be allocated:
     ;   - One for the first 2MB of memory
