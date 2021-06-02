@@ -26,7 +26,7 @@ protocol version 2.4.
 
 Once it is loaded in memory by the boot loader and all the setup, startup and
 initialization code has run, the layout in memory is as shown below. boot_info
-is a data structure located at the beginning of the 32-bit setup code.
+is a data structure allocated on the boot heap by the 32-bit setup code.
 
 ```
   +---------------------------------------+ kernel_vm_top = kernel_region_top + VGA_TEXT_VID_SIZE
@@ -41,7 +41,10 @@ is a data structure located at the beginning of the 32-bit setup code.
   +---------------------------------------+ boot_info.page_directory
   |         initial page tables           |
   |           (PAE disabled)              |
-  +---------------------------------------+ boot_info.page_table  -+-
+  +---------------------------------------+ boot_info.page_table
+  |         kernel command line           |
+  |       BIOS physical memory map        |
+  +---------------------------------------+ boot_info.e820_map    -+-
   |          kernel stack (boot)          |                        |
   +-----v---------------------------v-----+ (stack pointer)        |
   |                                       |                        |
@@ -50,11 +53,10 @@ is a data structure located at the beginning of the 32-bit setup code.
   +-----^---------------------------^-----+ boot_heap              | stack/heap
   |     kernel heap allocations (boot)    |                        |
   |      kernel physical memory map       |                        |
-  +---------------------------------------+ boot_info.boot_heap   -+-
-  |         kernel command line           |
-  |       BIOS physical memory map        |
-  +=======================================+ boot_info.image_top
-  |                                       | = boot_info.e820_map
+  +---------------------------------------+ boot_info.boot_heap    |
+  |              boot_info                |                        |
+  +=======================================+ boot_info.image_top   -+-
+  |                                       |
   |         process manager (ELF)         |
   |                                       |
   +---------------------------------------+ boot_info.proc_start
