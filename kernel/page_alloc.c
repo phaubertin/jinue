@@ -128,7 +128,7 @@ bool add_page_frame(kern_paddr_t paddr) {
         return false;
     }
 
-    vm_map_kernel(page, paddr, VM_FLAG_READ_WRITE);
+    vm_map_kernel(page, paddr, VM_MAP_READ | VM_MAP_WRITE);
 
     /* Since this page is coming from userspace, is is important to clear it:
      * 1) The page may contain sensitive information, which we don't want to

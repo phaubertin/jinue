@@ -152,13 +152,22 @@ void elf_load(
         if(! (is_writable || needs_padding)) {
             /* Since the segment has to be mapped read only and does not require
              * padding, we can just map the original pages. */
+            int flags = 0;
+
+            if(phdr[idx].p_flags & PF_R) {
+                flags |= VM_MAP_READ;
+            }
+
+            if(phdr[idx].p_flags & PF_X) {
+                flags |= VM_MAP_EXEC;
+            }
+
             while(vptr < vend) {
-                /** TODO add exec flag */
                 checked_map_userspace(
                         addr_space,
                         vptr,
                         vm_lookup_kernel_paddr(file_ptr),
-                        VM_FLAG_READ_ONLY);
+                        flags);
 
                 vptr     += PAGE_SIZE;
                 file_ptr += PAGE_SIZE;
@@ -168,19 +177,24 @@ void elf_load(
             /* Segment is writable and/or needs padding. We need to allocate new
              * pages for this segment. */
             while(vptr < vend) {
-                int flags;
                 char *stop;
 
                 /* start of this page and next page */
                 char *vnext = vptr + PAGE_SIZE;
                 
                 /* set flags */
-                /** TODO: add exec flag once PAE is enabled */
-                if(phdr[idx].p_flags & PF_W) {
-                    flags = VM_FLAG_READ_WRITE;
+                int flags = 0;
+
+                if(phdr[idx].p_flags & PF_R) {
+                    flags |= VM_MAP_READ;
                 }
-                else  {
-                    flags = VM_FLAG_READ_ONLY;
+
+                if(phdr[idx].p_flags & PF_W) {
+                    flags |= VM_MAP_WRITE;
+                }
+
+                if(phdr[idx].p_flags & PF_X) {
+                    flags |= VM_MAP_EXEC;
                 }
 
                 /* allocate and map the new page */
@@ -233,7 +247,7 @@ void elf_setup_stack(elf_info_t *info, boot_alloc_t *boot_alloc) {
                 info->addr_space,
                 vpage,
                 vm_lookup_kernel_paddr(page),
-                VM_FLAG_READ_WRITE);
+                VM_MAP_READ | VM_MAP_WRITE);
 
         /* TODO transfer page ownership to userspace */
     }

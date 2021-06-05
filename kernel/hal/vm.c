@@ -560,7 +560,7 @@ static bool vm_map(
 void vm_map_kernel(void *vaddr, kern_paddr_t paddr, int flags) {
     assert(is_kernel_pointer(vaddr));
 
-    vm_map(NULL, vaddr, paddr, flags | VM_FLAG_KERNEL);
+    vm_map(NULL, vaddr, paddr, flags | VM_FLAG_KERNEL | VM_FLAG_PRESENT);
 }
 
 /**
@@ -584,7 +584,7 @@ bool vm_map_userspace(
 
     assert(is_userspace_pointer(vaddr));
 
-    return vm_map(addr_space, vaddr, paddr, flags | VM_FLAG_USER);
+    return vm_map(addr_space, vaddr, paddr, flags | VM_FLAG_USER | VM_FLAG_PRESENT);
 }
 
 /**
