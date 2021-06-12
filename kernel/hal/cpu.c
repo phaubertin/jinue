@@ -90,7 +90,7 @@ void cpu_init_data(cpu_data_t *data) {
      *   segment limit, there is no I/O permission map, and all I/O instructions
      *   generate exceptions when the CPL is greater than the current IOPL. " */
     tss->iomap = TSS_LIMIT;
-}    
+}
 
 void cpu_detect_features(void) {
     uint32_t temp_eflags;

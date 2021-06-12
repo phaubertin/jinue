@@ -294,7 +294,7 @@ initialize_page_tables:
     ; add entry for the first page table
     mov edi, dword [ebp + BOOT_INFO_PAGE_DIRECTORY]
     mov eax, dword [ebp + BOOT_INFO_PAGE_TABLE_1MB]
-    or eax, VM_FLAG_READ_WRITE | VM_FLAG_PRESENT
+    or eax, X86_PTE_READ_WRITE | X86_PTE_PRESENT
     mov dword [edi], eax
 
     ; add entries for page tables for memory at 16MB
@@ -306,7 +306,7 @@ initialize_page_tables:
     ; add entry for the last page table
     mov edi, dword [ebp + BOOT_INFO_PAGE_DIRECTORY]
     mov eax, dword [ebp + BOOT_INFO_PAGE_TABLE_KLIMIT]
-    or eax, VM_FLAG_READ_WRITE | VM_FLAG_PRESENT
+    or eax, X86_PTE_READ_WRITE | X86_PTE_PRESENT
     mov dword [edi + 4 * (KLIMIT >> 22)], eax
 
     ret
@@ -327,7 +327,7 @@ initialize_page_tables:
     ;       eax, ecx are caller saved
 map_linear:
     ; page table entry flags
-    or eax, VM_FLAG_READ_WRITE | VM_FLAG_PRESENT
+    or eax, X86_PTE_READ_WRITE | X86_PTE_PRESENT
 
 .loop:
     ; store eax in page table entry pointed to by edi, then add 4 to edi to

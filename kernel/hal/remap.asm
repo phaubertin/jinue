@@ -121,7 +121,7 @@ move_and_remap_kernel:
     shr ecx, 12                 ; divide by 4096 for number of pages and PTEs
 
     ; value for first page table entry (PTE)
-    mov eax, MEMORY_ADDR_16MB | VM_FLAG_READ_WRITE | VM_FLAG_PRESENT
+    mov eax, MEMORY_ADDR_16MB | X86_PTE_READ_WRITE | X86_PTE_PRESENT
 
 .loop:
     ; store eax in PTE pointed to by edi, then add 4 to edi to point to the next

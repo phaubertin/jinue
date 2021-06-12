@@ -109,7 +109,7 @@ void vm_pae_enable(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
     vm_initialize_page_table_linear(
             page_table_1mb,
             0,
-            VM_FLAG_READ_WRITE,
+            X86_PTE_READ_WRITE,
             PAGE_TABLE_ENTRIES);
 
     /* Second mapping (two page tables) */
@@ -120,7 +120,7 @@ void vm_pae_enable(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
     vm_initialize_page_table_linear(
             page_table_16mb,
             MEMORY_ADDR_16MB,
-            VM_FLAG_READ_WRITE,
+            X86_PTE_READ_WRITE,
             BOOT_PTES_AT_16MB);
 
     /* Third mapping */
@@ -131,13 +131,13 @@ void vm_pae_enable(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
     vm_initialize_page_table_linear(
             page_table_klimit,
             MEMORY_ADDR_16MB,
-            VM_FLAG_READ_WRITE,
+            X86_PTE_READ_WRITE,
             num_entries_at_16mb);
 
     vm_initialize_page_table_linear(
             vm_pae_get_pte_with_offset(page_table_klimit, num_entries_at_16mb),
             MEMORY_ADDR_1MB + size_at_16mb,
-            VM_FLAG_READ_WRITE,
+            X86_PTE_READ_WRITE,
             PAGE_TABLE_ENTRIES - num_entries_at_16mb);
 
     /* Page directory for first two mappings */
@@ -147,14 +147,14 @@ void vm_pae_enable(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
     vm_pae_set_pte(
             low_page_directory,
             (uintptr_t)page_table_1mb,
-            VM_FLAG_READ_WRITE | VM_FLAG_PRESENT);
+            X86_PTE_READ_WRITE | X86_PTE_PRESENT);
 
     vm_initialize_page_table_linear(
             vm_pae_get_pte_with_offset(
                     low_page_directory,
                     vm_pae_page_directory_offset_of((addr_t)MEMORY_ADDR_16MB)),
             (uintptr_t)page_table_16mb,
-            VM_FLAG_READ_WRITE,
+            X86_PTE_READ_WRITE,
             BOOT_PTES_AT_16MB / PAGE_TABLE_ENTRIES);
 
     /* Page directory for third mapping */
@@ -166,7 +166,7 @@ void vm_pae_enable(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
                     page_directory_klimit,
                     vm_pae_page_directory_offset_of((addr_t)KLIMIT)),
             (uintptr_t)page_table_klimit,
-            VM_FLAG_READ_WRITE | VM_FLAG_PRESENT);
+            X86_PTE_READ_WRITE | X86_PTE_PRESENT);
 
     /* Initialize PDPT */
     pdpt_t *pdpt = boot_heap_alloc(boot_alloc, pdpt_t, sizeof(pdpt_t));
@@ -175,12 +175,12 @@ void vm_pae_enable(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
     vm_pae_set_pte(
             &pdpt->pd[0],
             (uintptr_t)low_page_directory,
-            VM_FLAG_PRESENT);
+            X86_PTE_PRESENT);
 
     vm_pae_set_pte(
             &pdpt->pd[pdpt_offset_of((addr_t)KLIMIT)],
             (uintptr_t)page_directory_klimit,
-            VM_FLAG_PRESENT);
+            X86_PTE_PRESENT);
 
     x86_enable_pae(PTR_TO_PHYS_ADDR_AT_16MB(pdpt));
 }
@@ -198,7 +198,7 @@ void vm_pae_create_initial_addr_space(
     vm_initialize_page_table_linear(
             &initial_pdpt->pd[offset],
             (uintptr_t)page_directories,
-            VM_FLAG_PRESENT,
+            X86_PTE_PRESENT,
             PDPT_ENTRIES - offset);
 
     address_space->top_level.pdpt   = initial_pdpt;
@@ -223,7 +223,7 @@ addr_space_t *vm_pae_create_addr_space(
     vm_pae_set_pte(
             &pdpt->pd[klimit_offset],
             vm_lookup_kernel_paddr(first_page_directory),
-            VM_FLAG_PRESENT);
+            X86_PTE_PRESENT);
 
     for(int idx = klimit_offset + 1; idx < PDPT_ENTRIES; ++idx) {
         vm_pae_copy_pte(&pdpt->pd[idx], &initial_pdpt->pd[idx]);
@@ -247,7 +247,7 @@ void vm_pae_destroy_addr_space(addr_space_t *addr_space) {
     for(unsigned int idx = 0; idx < pdpt_offset_of((void *)KLIMIT); ++idx) {
         pte_t *pdpte = &pdpt->pd[idx];
 
-        if(vm_pae_get_pte_flags(pdpte) & VM_FLAG_PRESENT) {
+        if(vm_pae_pte_is_present(pdpte)) {
             vm_destroy_page_directory(
                     memory_lookup_page(vm_pae_get_pte_paddr(pdpte)),
                     page_table_entries);
@@ -274,7 +274,7 @@ void vm_pae_destroy_addr_space(addr_space_t *addr_space) {
     if(klimit_offset > 0) {
         pte_t *pdpte = &pdpt->pd[pdpt_offset_of((void *)KLIMIT)];
 
-        assert(vm_pae_get_pte_flags(pdpte) & VM_FLAG_PRESENT);
+        assert(vm_pae_pte_is_present(pdpte));
 
         vm_destroy_page_directory(
                 memory_lookup_page(vm_pae_get_pte_paddr(pdpte)),
@@ -306,7 +306,7 @@ pte_t *vm_pae_lookup_page_directory(
     pdpt_t *pdpt    = addr_space->top_level.pdpt;
     pte_t  *pdpte   = &pdpt->pd[pdpt_offset_of(addr)];
     
-    if(vm_pae_get_pte_flags(pdpte) & VM_FLAG_PRESENT) {
+    if(vm_pae_pte_is_present(pdpte)) {
         return memory_lookup_page(vm_pae_get_pte_paddr(pdpte));
     }
 
@@ -322,7 +322,7 @@ pte_t *vm_pae_lookup_page_directory(
         vm_pae_set_pte(
                 pdpte,
                 vm_lookup_kernel_paddr(page_directory),
-                VM_FLAG_PRESENT);
+                X86_PTE_PRESENT);
 
         /* In 32-bit PAE mode, the CPU stores the four entries of the PDPT
          * in registers. Whenever we modify an entry in the PDPT, we must
@@ -345,18 +345,19 @@ pte_t *vm_pae_get_pte_with_offset(pte_t *pte, unsigned int offset) {
     return &pte[offset];
 }
 
-/** TODO handle flag bit position > 31 for NX bit support */
-void vm_pae_set_pte(pte_t *pte, uint64_t paddr, int flags) {
+bool vm_pae_pte_is_present(const pte_t *pte) {
+    return !!( pte->entry & (X86_PTE_PRESENT | VM_PTE_PROT_NONE));
+}
+
+void vm_pae_set_pte(pte_t *pte, uint64_t paddr, uint64_t flags) {
+    /* TODO assert with proper mask on address */
     pte->entry = paddr | flags;
 }
 
 /** TODO handle flag bit position > 31 for NX bit support */
-void vm_pae_set_pte_flags(pte_t *pte, int flags) {
+void vm_pae_set_pte_flags(pte_t *pte, uint64_t flags) {
+    /* TODO fix this */
     pte->entry = (pte->entry & ~(uint64_t)PAGE_MASK) | flags;
-}
-
-int vm_pae_get_pte_flags(const pte_t *pte) {
-    return pte->entry & PAGE_MASK;
 }
 
 /** TODO mask NX bit as well, maximum 52 bits supported */
