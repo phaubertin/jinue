@@ -29,9 +29,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <hal/vm_private.h>
 #include <hal/boot.h>
+#include <hal/cpu.h>
 #include <hal/memory.h>
+#include <hal/vm_private.h>
 #include <hal/x86.h>
 #include <assert.h>
 #include <boot.h>
@@ -64,6 +65,8 @@ struct pdpt_t {
 static slab_cache_t pdpt_cache;
 
 static pdpt_t *initial_pdpt;
+
+static uint64_t page_frame_number_mask;
 
 /** Get the Page Directory Pointer Table (PDPT) index of a virtual address
  *  @param addr virtual address
@@ -100,8 +103,9 @@ static void clear_pdpt(pdpt_t *pdpt) {
  *
  * */
 void vm_pae_enable(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
-    pgtable_format_pae = true;
-    page_table_entries = VM_PAE_PAGE_TABLE_PTES;
+    pgtable_format_pae      = true;
+    page_table_entries      = VM_PAE_PAGE_TABLE_PTES;
+    page_frame_number_mask  = ((UINT64_C(1) << cpu_info.maxphyaddr) - 1) & (~PAGE_MASK);
 
     /* First mapping */
     pte_t *page_table_1mb = boot_page_alloc(boot_alloc);
@@ -350,19 +354,16 @@ bool vm_pae_pte_is_present(const pte_t *pte) {
 }
 
 void vm_pae_set_pte(pte_t *pte, uint64_t paddr, uint64_t flags) {
-    /* TODO assert with proper mask on address */
+    assert((paddr & ~page_frame_number_mask) == 0);
     pte->entry = paddr | flags;
 }
 
-/** TODO handle flag bit position > 31 for NX bit support */
 void vm_pae_set_pte_flags(pte_t *pte, uint64_t flags) {
-    /* TODO fix this */
-    pte->entry = (pte->entry & ~(uint64_t)PAGE_MASK) | flags;
+    pte->entry = (pte->entry & page_frame_number_mask) | flags;
 }
 
-/** TODO mask NX bit as well, maximum 52 bits supported */
 uint64_t vm_pae_get_pte_paddr(const pte_t *pte) {
-    return (pte->entry & ~(uint64_t)PAGE_MASK);
+    return (pte->entry & page_frame_number_mask);
 }
 
 void vm_pae_clear_pte(pte_t *pte) {
