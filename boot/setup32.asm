@@ -59,29 +59,6 @@
 image_start:
     jmp short header_end
 
-    ; The structure below (i.e. the boot information structure) must match the
-    ; boot_info_t struct declaration in include/hal/boot.h.
-    align 4
-boot_info_struct:
-    dd kernel_start         ; kernel_start
-    dd kernel_size          ; kernel_size
-    dd proc_start           ; proc_start
-    dd proc_size            ; proc_size
-    dd image_start          ; image_start
-    dd MUST_BE_SET_BELOW    ; image_top
-    dd MUST_BE_SET_BELOW    ; ramdisk_start
-    dd MUST_BE_SET_BELOW    ; ramdisk_size
-    dd MUST_BE_SET_BELOW    ; e820_entries
-    dd MUST_BE_SET_BELOW    ; e820_map
-    dd MUST_BE_SET_BELOW    ; cmdline
-    dd MUST_BE_SET_BELOW    ; boot_heap
-    dd MUST_BE_SET_BELOW    ; boot_end
-    dd MUST_BE_SET_BELOW    ; page_table_1mb
-    dd MUST_BE_SET_BELOW    ; page_table_16mb
-    dd MUST_BE_SET_BELOW    ; page_table_klimit
-    dd MUST_BE_SET_BELOW    ; page_directory
-    dd MUST_BE_SET_BELOW    ; setup_signature
-
     ; Empty string used to represent an empty kernel command line.
 empty_string:
     db 0
