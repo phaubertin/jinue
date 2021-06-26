@@ -112,6 +112,9 @@ typedef struct {
     pte_t           *page_table_klimit;
     pte_t           *page_directory;
     uint32_t         setup_signature;
+    void            *data_start;
+    size_t           data_size;
+    size_t           data_physaddr;
 } boot_info_t;
 
 typedef uint64_t seg_descriptor_t;

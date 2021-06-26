@@ -295,4 +295,41 @@
 /** Address of vDSO */
 #define AT_SYSINFO_EHDR 33
 
+
+/** Offset of e_entry field in Elf32_Ehdr */
+#define ELF_E_ENTRY     24
+
+/** Offset of e_phoff field in Elf32_Ehdr */
+#define ELF_E_PHOFF     28
+
+/* Offset of e_phnum in Elf32_Ehdr */
+#define ELF_E_PHNUM     44
+
+/* Offset of p_type in Elf32_Phdr */
+#define ELF_P_TYPE      0
+
+/* Offset of p_offset in Elf32_Phdr */
+#define ELF_P_OFFSET    4
+
+/* Offset of p_vaddr in Elf32_Phdr */
+#define ELF_P_VADDR     8
+
+/* Offset of p_paddr in Elf32_Phdr */
+#define ELF_P_PADDR     12
+
+/* Offset of p_filesz in Elf32_Phdr */
+#define ELF_P_FILESZ    16
+
+/* Offset of p_memsz in Elf32_Phdr */
+#define ELF_P_MEMSZ     20
+
+/* Offset of p_flags in Elf32_Phdr */
+#define ELF_P_FLAGS     24
+
+/* Offset of p_align in Elf32_Phdr */
+#define ELF_P_ALIGN     28
+
+/* Size of Elf32_Phdr */
+#define ELF_PHDR_SIZE   32
+
 #endif
