@@ -10,12 +10,12 @@ protocol version 2.4.
   +---------------------------------------+              | Real mode code
   |           16-bit setup code           |              |
   |            (boot/setup.asm)           |              |
-  +---------------------------------------+             -+-
-  |           32-bit setup code           |              |
-  |           (boot/setup32.asm)          |              |
-  +---------------------------------------+              |
-  |                                       |              |
-  |           microkernel (ELF)           |              | Protected mode
+  +---------------------------------------+             -+-                             |
+  |           32-bit setup code           |              |                         file |
+  |           (boot/setup32.asm)          |              |                       offset |
+  +---------------------------------------+              |                    increases |
+  |                                       |              |                              |
+  |           microkernel (ELF)           |              | Protected mode               V
   |                                       |              | kernel
   +---------------------------------------+              |
   |                                       |              |
@@ -29,43 +29,50 @@ initialization code has run, the layout in memory is as shown below. boot_info
 is a data structure allocated on the boot heap by the 32-bit setup code.
 
 ```
-  +---------------------------------------+ kernel_vm_top = kernel_region_top + VGA_TEXT_VID_SIZE
+  +---------------------------------------+
+  |   more initial allocations by kernel  |
+  |      (1:1 virtual memory mapping)     |
+  +---------------------------------------+
   |          VGA text video buffer        |
   |             (maps 0xb8000)            |
-  +=======================================+ kernel_region_top
-  |                                       |
+  +---------------------------------------+
   |   initial page allocations by kernel  |
-  |      (1:1 virtual memory mapping)     | vvv end of allocations by setup code
-  +=======================================+ boot_info.boot_end
-  |        initial page directory         | 
-  +---------------------------------------+ boot_info.page_directory
-  |         initial page tables           |
-  |           (PAE disabled)              |
-  +---------------------------------------+ boot_info.page_table
-  |         kernel command line           |
-  |       BIOS physical memory map        |
-  +---------------------------------------+ boot_info.e820_map    -+-
-  |          kernel stack (boot)          |                        |
-  +-----v---------------------------v-----+ (stack pointer)        |
-  |                                       |                        |
-  |                . . .                  |                        |
-  |                                       |                        | kernel boot
-  +-----^---------------------------^-----+ boot_heap              | stack/heap
-  |     kernel heap allocations (boot)    |                        |
-  |      kernel physical memory map       |                        |
-  +---------------------------------------+ boot_info.boot_heap    |
-  |              boot_info                |                        |
-  +=======================================+ boot_info.image_top   -+-
-  |                                       |
-  |         process manager (ELF)         |
-  |                                       |
-  +---------------------------------------+ boot_info.proc_start
-  |                                       |
-  |           microkernel (ELF)           |
-  |                                       |
-  +---------------------------------------+ boot_info.kernel_start
-  |           32-bit setup code           |
-  +---------------------------------------+ boot_info.image_start (KLIMIT + 0x100000)
+  |      (1:1 virtual memory mapping)     |
+  +=======================================+ boot_info.boot_end          -+-
+  |        initial page directory         |                              | 
+  +---------------------------------------+ boot_info.page_directory     |
+  |         initial page tables           |                              |
+  |           (PAE disabled)              |                              |
+  +---------------------------------------+ boot_info.page_table         | setup code
+  |         kernel command line           |                              | allocations
+  +---------------------------------------+ boot_info.cmdline            |
+  |       BIOS physical memory map        |                              |
+  +---------------------------------------+ boot_info.e820_map           |    
+  |         kernel data segment           |                              |                  ^
+  |       (copied from ELF binary)        |                              |                  |
+  +---------------------------------------+ boot_info.data_physaddr     -+-         address |
+  |          kernel stack (boot)          |                              |        increases |
+  +-----v---------------------------v-----+ (stack pointer)              |                  |
+  |                                       |                              |                  |
+  |                . . .                  |                              |
+  |                                       |                              | kernel boot
+  +-----^---------------------------^-----+ boot_heap                    | stack/heap
+  |     kernel heap allocations (boot)    |                              |
+  |      kernel physical memory map       |                              |
+  +---------------------------------------+ boot_info.boot_heap          |
+  |              boot_info                |                              |
+  +=======================================+ boot_info.image_top         -+-
+  |                                       |                              |
+  |         process manager (ELF)         |                              |
+  |                                       |                              |
+  +---------------------------------------+ boot_info.proc_start         |
+  |                                       |                              | kernel image
+  |           microkernel (ELF)           |                              |
+  |                                       |                              |
+  +---------------------------------------+ boot_info.kernel_start       |
+  |           32-bit setup code           |                              |
+  +---------------------------------------+ boot_info.image_start       -+-
+                                            (KLIMIT + 0x100000)
 ```
   
 The boot kernel stack is used only during initialization. Once the first thread
