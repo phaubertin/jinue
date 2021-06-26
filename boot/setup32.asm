@@ -150,9 +150,12 @@ start:
     ; This is the end of allocations made by this setup code.
     mov dword [ebp + BOOT_INFO_BOOT_END], edi
 
-    ; Initialize initial page tables and page directory.
+    ; Initialize initial page tables.
     call initialize_page_tables
     
+    ; Initialize initial page directory.
+    call initialize_page_directory
+
     ; Enable paging and protect read-only pages from being written to by the
     ; kernel
     call enable_paging
@@ -466,7 +469,7 @@ allocate_page_tables:
     ; --------------------------------------------------------------------------
     ; Function: initialize_page_tables
     ; --------------------------------------------------------------------------
-    ; Initialize initial non-PAE page tables and page directory.
+    ; Initialize initial non-PAE page tables.
     ;
     ; Arguments:
     ;       ebp address of the boot_info_t structure
@@ -499,6 +502,19 @@ initialize_page_tables:
 
     rep stosd
 
+    ret
+
+    ; --------------------------------------------------------------------------
+    ; Function: initialize_page_directory
+    ; --------------------------------------------------------------------------
+    ; Initialize initial non-PAE page directory.
+    ;
+    ; Arguments:
+    ;       ebp address of the boot_info_t structure
+    ;
+    ; Returns:
+    ;       eax, ecx, edi are caller saved
+initialize_page_directory:
     ; add entry for the first page table
     mov edi, dword [ebp + BOOT_INFO_PAGE_DIRECTORY]
     mov eax, dword [ebp + BOOT_INFO_PAGE_TABLE_1MB]
