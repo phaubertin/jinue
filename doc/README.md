@@ -8,4 +8,7 @@ This directory contains documentation.
 
 ### Work in Progress
 
+* [Architecture Survey - MMU](mmu-arch.md)
+* [Inter-Process Communication (IPC)](ipc.txt)
 * [Memory Management](memory.md)
+* Random [Design Notes](design-notes.txt)
