@@ -1,6 +1,7 @@
 # Memory Management
 
-This is a design document. None of this is already implemented yet.
+*Note: This design document is a work in progress. None of this is implemented
+yet.*
 
 ## Physical Memory Ownership Model
 
