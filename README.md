@@ -73,3 +73,9 @@ boot manager as if you were loading a Linux image with the 16-bit boot protocol
 For detail on the Linux boot protocol, see
 [documentation/x86/boot.txt](https://www.kernel.org/doc/Documentation/x86/boot.txt)
 in the Linux source tree.
+
+Documentation
+-------------
+
+There is some documentation in the [doc/ directory](doc/README.md). It is still
+very much a work in progress.
