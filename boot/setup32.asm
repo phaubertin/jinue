@@ -28,17 +28,140 @@
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ; ------------------------------------------------------------------------------
-; Among other things, this setup code sets up the initial page tables and then
-; enables paging. The mappings are set as follow, all read/write:
-;   - The first two megabytes of physical memory are identity mapped. This is
-;     where the kernel image is loaded by the boot loader. This mapping also
-;     contains other data set up by the boot loader as well as the VGA text
-;     video memory.
-;   - The four megabytes at 0x1000000 (i.e. 16M) are identity mapped. The kernel
-;     moves its own image there as part of its initialization.
-;   - The second and third megabytes of physical memory (start address 0x100000)
-;     is mapped at KLIMIT (0xc0000000). This maps the kernel image to the
-;     virtual address expected by the kernel.
+
+; This setup code performs a few tasks to support the kernel's initialization,
+; which include:
+;   - Allocating a boot-time stack and heap;
+;   - Copying the BIOS memory map and the kernel command line;
+;   - Loading the kernel's data segment; and
+;   - Allocate and initialize the initial page tables, then enabling paging.
+;
+; The boot loader loads the kernel image at address 0x100000 (1MB). This setup
+; code allocates all the memory it needs right after the kernel image. Once it
+; completes and passes control to the kernel, the memory layout looks like this
+; (see doc/layout.md for detail):
+
+; +===================================+ boot_info.boot_end      ===
+; |      initial page directory       |                          ^
+; +-----------------------------------+ boot_info.page_directory |
+; |       initial page tables         |                          |
+; |         (PAE disabled)            |                          |
+; +-----------------------------------+ boot_info.page_table     | setup code
+; |       kernel command line         |                          | allocations
+; +-----------------------------------+ boot_info.cmdline        |
+; |     BIOS physical memory map      |                          |
+; +-----------------------------------+ boot_info.e820_map       |
+; |       kernel data segment         |                          |
+; |     (copied from ELF binary)      |                          v
+; +-----------------------------------+ boot_info.data_physaddr ---
+; |        kernel stack (boot)        |                          ^
+; +-----v-----------------------v-----+ (stack pointer)          |
+; |                                   |                          |
+; |              . . .                |                          | kernel boot
+; |                                   |                          | stack/heap
+; +-----^-----------------------^-----+ boot_info.boot_heap      |
+; |            boot_info              |                          v
+; +===================================+ boot_info.image_top     ===
+; |                                   |                          ^
+; |       process manager (ELF)       |                          |
+; |                                   |                          |
+; +-----------------------------------+ boot_info.proc_start     |
+; |                                   |                          | kernel image
+; |         microkernel (ELF)         |                          |
+; |                                   |                          |
+; +-----------------------------------+ boot_info.kernel_start   |
+; |         32-bit setup code         |                          |
+; |         (i.e. this code)          |                          v
+; +===================================+ boot_info.image_start   ===
+;                                           0x100000 (1MB)
+;
+; The boot information structure (boot_info) is a data structure this setup code
+; allocates on the boot heap and uses to pass information to the kernel. It is
+; declared in the hal/types.h header file, with matching constant declarations
+; in hal/asm/boot.h that specify the offset of each member of the structure.
+;
+; The initial page tables initialized by this code define three mappings:
+;
+;  1) The first two megabytes of physical memory are identity mapped (virtual
+;     address = physical address). The kernel image is loaded by the bootloader
+;     in this region, at address 0x100000 (1MB). This mapping also contains
+;     other data set up by the bootloader as well as the VGA text video memory.
+;     The kernel image is mapped read only while the rest of the memory is
+;     mapped read/write.
+;
+;  2) A few megabytes of memory (BOOT_SIZE_AT_16MB) starting at 0x1000000 (i.e.
+;     16M) are also identity mapped. The kernel moves its own image there as
+;     part of its initialization. This region is mapped read/write.
+;
+;  3) The part of the second megabyte of physical memory (start address 0x100000)
+;     that contain the kernel image as well as the following initial allocations
+;     up to but *excluding* the initial page tables and page directory is mapped
+;     at KLIMIT (0xc0000000). This is where the kernel is intended to be loaded
+;     and ran. This is a linear mapping with one exception: the kernel's data
+;     segment is a copy of the content in the ELF binary, with appropriate
+;     zero-padding for uninitialized data (.bss section) and the copy is mapped
+;     read/write at the address where the kernel expects to find it. The rest of
+;     the kernel image is mapped read only and the rest of the region is
+;     read/write.
+;
+;       +=======================================+ 0x100000000 (4GB)
+;       |                                       |
+;       .                                       .
+;       .               unmapped                .
+;       .                                       .
+;       |                                       |
+;  ===  +=======================================+
+;   ^   |          initial allocations          |
+;   |   |             (read/write)              |
+;   |   +---------------------------------------+
+;   |   |          rest of kernel image         |
+;       |             (read only)               | --------------------------+
+;   3)  +---------------------------------------+                           |
+;       |          kernel data segment          |                           |
+;   |   |   copy from ELF binary + zero padded  | ----------------------+   |
+;   |   |             (read/write)              |                       |   |
+;   |   +---------------------------------------+                       |   |
+;   |   |             kernel code               |                       |   |
+;   |   |     this setup code + text segment    | --------------------------+
+;   v   |             (read only)               |                       |   |
+;  ===  +=======================================+ 0xc0000000 (KLIMIT)   |   |
+;       |                                       |                       |   |
+;       .                                       .                       |   |
+;       .               unmapped                .                       |   |
+;       .                                       .                       |   |
+;       |                                       |                       |   |
+;  ===  +=======================================+ 0x1000000             |   |
+;   ^   |                                       |   + BOOT_SIZE_AT_16MB |   |
+;       |                                       |                       |   |
+;   2)  |              read/write               |                       |   |
+;       |                                       |                       |   |
+;   v   |                                       |                       |   |
+;  ===  +=======================================+ 0x1000000 (16MB)      |   |
+;       |                                       |                       |   |
+;       .                                       .                       |   |
+;       .               unmapped                .                       |   |
+;       .                                       .                       |   |
+;       |                                       |                       |   |
+;  ===  +=======================================+ 0x200000 (2MB)        |   |
+;   ^   |                                       |                       |   |
+;   |   |              read/write               |                       |   |
+;   |   |                                       |                       |   |
+;   |   |^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^|                       |   |
+;   |   |           initial allocations         | <---------------------+   |
+;   |   +---------------------------------------+ boot_info.image_top       |
+;   |   |             kernel image              |                           |
+;   |   |             (read only)               | <-------------------------+
+;       +---------------------------------------+ 0x100000 (1MB)
+;   1)  |                                       |
+;       |              read/write               |
+;   |   |                                       |
+;   |   +---------------------------------------+ 0xc0000
+;   |   |           text video memory           |
+;   |   +---------------------------------------+ 0xb8000
+;   |   |                                       |
+;   |   |              read/write               |
+;   v   |                                       |
+;  ===  +=======================================+ 0
 
 #include <jinue-common/asm/elf.h>
 #include <hal/asm/boot.h>
@@ -134,7 +257,7 @@ start:
 
     ; copy data segment and set fields regarding its size and location in the
     ; boot_info_t structure.
-    call copy_data_segment
+    call prepare_data_segment
 
     ; copy BIOS memory map
     mov esi, dword [esp + VAR_ZERO_PAGE]
@@ -320,10 +443,11 @@ initialize_boot_info:
     ret
 
     ; --------------------------------------------------------------------------
-    ; Function: copy_data_segment
+    ; Function: prepare_data_segment
     ; --------------------------------------------------------------------------
-    ; Find and copy the kernel's data segment, then set its location and size in
-    ; the boot_info_t structure.
+    ; Find and copy the kernel's data segment, add zero padding for
+    ; uninitialized data and set its location and size in the boot_info_t
+    ; structure.
     ;
     ; Arguments:
     ;       edi address where data segment will be copied
@@ -332,7 +456,7 @@ initialize_boot_info:
     ; Returns:
     ;       edi address of top of copied data segment (for subsequent allocations)
     ;       eax, ebx, ecx, edx, esi are caller saved
-copy_data_segment:
+prepare_data_segment:
     ; Check magic numbers at the beginning of the ELF header.
     mov eax, kernel_start
     cmp byte [eax + EI_MAG0], ELF_MAGIC0
@@ -348,9 +472,8 @@ copy_data_segment:
     cmp byte [eax + EI_DATA], ELFDATA2LSB
     jnz .fail
 
-    ; Put current allocation address (eax) in the physical address of data
-    ; segment field in the boot_info_t structure and also set it as destination
-    ; of data segment copy (edi).
+    ; Put destination address (edi) in the physical address of data segment
+    ; field in the boot_info_t structure.
     mov dword [ebp + BOOT_INFO_DATA_PHYSADDR], edi
 
     ; ecx is the loop counter when iterating on program headers. Set to number
@@ -468,7 +591,7 @@ allocate_page_tables:
     ret
 
     ; --------------------------------------------------------------------------
-    ; Function: map_kernel_image
+    ; Function: map_kernel_image_1mb
     ; --------------------------------------------------------------------------
     ; Map the 1MB of memory that starts with the kernel image, followed by boot
     ; stack/heap and initial memory allocations.
@@ -480,12 +603,7 @@ allocate_page_tables:
     ; Returns:
     ;       edi address of first page table entry after mapped 1MB
     ;       eax, ebx, ecx are caller saved
-map_kernel_image:
-    ; Check if we were able to find and copy the data segment earlier.
-    mov eax, dword [ebp + BOOT_INFO_DATA_SIZE]
-    or eax, eax
-    jz .skip
-
+map_kernel_image_1mb:
     ; Compute number of entries to map kernel image
     mov ecx, dword [ebp + BOOT_INFO_IMAGE_TOP]      ; end of image
     sub ecx, dword [ebp + BOOT_INFO_IMAGE_START]    ; minus start of image
@@ -498,8 +616,8 @@ map_kernel_image:
     mov eax, dword [ebp + BOOT_INFO_IMAGE_START]
     call map_linear
 
-    ; map remaining of second MB read/write. This includes boot stack/heap and
-    ; initial allocations.
+    ; map remaining of MB read/write. This includes boot stack/heap and initial
+    ; allocations.
     mov eax, ebx
     shl eax, PAGE_BITS                              ; image size
     add eax, dword [ebp + BOOT_INFO_IMAGE_START]    ; image end = size + offset
@@ -510,15 +628,69 @@ map_kernel_image:
 
     call map_linear
 
-    ; remember edi for return value
+    ret
+
+    ; --------------------------------------------------------------------------
+    ; Function: map_kernel
+    ; --------------------------------------------------------------------------
+    ; Map the 1MB of memory that starts with the kernel image, followed by boot
+    ; stack/heap and initial memory allocations.
+    ;
+    ; Arguments:
+    ;       edi address of first page table entry
+    ;       ebp address of the boot_info_t structure
+    ;
+    ; Returns:
+    ;       edi address of first page table entry after mapped 1MB
+    ;       eax, ebx, ecx are caller saved
+map_kernel:
+    ; remember edi for later
     push edi
+
+    ; ----------------------------------------------
+    ; map kernel image (read only)
+    ; ----------------------------------------------
+
+    ; compute number of entries to map kernel image
+    mov ecx, dword [ebp + BOOT_INFO_IMAGE_TOP]      ; end of image
+    sub ecx, dword [ebp + BOOT_INFO_IMAGE_START]    ; minus start of image
+    shr ecx, PAGE_BITS                              ; divide by page size
+
+    ; start address, read only
+    mov eax, dword [ebp + BOOT_INFO_IMAGE_START]
+
+    ; Check if we were able to find and copy the data segment earlier. If we
+    ; weren't, let's just map the whole kernel image read/write and let the
+    ; kernel deal with it later.
+    ;
+    ; If we weren't able to find the data segment, its size has been set to
+    ; zero.
+    mov ebx, dword [ebp + BOOT_INFO_DATA_SIZE]
+    or ebx, ebx
+    jnz .readonly
+
+    or eax, X86_PTE_READ_WRITE
+
+.readonly:
+    call map_linear
+
+    ; ----------------------------------------------
+    ; map kernel data segment (read/write)
+    ; ----------------------------------------------
+    ; Remember edi for later and restore value from entry.
+    mov eax, edi
+    pop edi
+    push eax
+
+    ; Don't map the data segment if we weren't able to find it.
+    or ebx, ebx
+    jz .skip_data
 
     ; start page table entry for data segment
     mov eax, dword [ebp + BOOT_INFO_DATA_START]     ; data segment start
     sub eax, BOOT_OFFSET_FROM_1MB                   ; remove mapping offset
     sub eax, dword [ebp + BOOT_INFO_IMAGE_START]    ; minus image start (offset)
     shr eax, (PAGE_BITS - 2)    ; divide by page size, multiply by entry size
-    sub edi, 1024               ; back to image start (256 entries times 4 bytes)
     add edi, eax                ; and add offset
 
     ; number of page table entries in data segment
@@ -531,19 +703,43 @@ map_kernel_image:
 
     call map_linear
 
+    ; ----------------------------------------------
+    ; map initial allocations (read/write)
+    ; ----------------------------------------------
+    ; Map initial allocations, including kernel boot stack and heap, up to but
+    ; excluding initial page tables and page directory.
+
+    ; go back to first page table entry after the kernel image
+.skip_data:
     pop edi
 
-    ret
+    ; physical address
+    mov eax, dword [ebp + BOOT_INFO_IMAGE_TOP]
 
-.skip:
-    ; Earlier, this setup code wasn't able to find the kernel's data segment.
-    ; Let's just map the whole 1MB read/write and let the kernel deal with this
-    ; error condition later.
-    mov eax, dword [ebp + BOOT_INFO_IMAGE_START]    ; start address
-    or eax, X86_PTE_READ_WRITE                      ; access flags
-    mov ecx, 256                                    ; number of entries
+    ; number of entries
+    mov ecx, dword [ebp + BOOT_INFO_PAGE_TABLE_1MB] ; address of page tables
+    sub ecx, eax                                    ; minus image top
+    shr ecx, PAGE_BITS                              ; divide by page size
+
+    ; access flags
+    or eax, X86_PTE_READ_WRITE
 
     call map_linear
+
+    ; ----------------------------------------------
+    ; clear remainder of page table
+    ; ----------------------------------------------
+
+    ; number of entries already mapped
+    mov eax, dword [ebp + BOOT_INFO_PAGE_TABLE_1MB] ; address of page tables
+    sub eax, dword [ebp + BOOT_INFO_IMAGE_TOP]      ; minus image start
+    shr eax, PAGE_BITS                              ; divide by page size
+
+    ; number of entries
+    mov ecx, 1024                                   ; entries per page table
+    sub ecx, eax                                    ; already mapped
+
+    call clear_ptes
 
     ret
 
@@ -569,7 +765,7 @@ initialize_page_tables:
     call map_linear
 
     ; map kernel image and read/write memory that follows (1MB)
-    call map_kernel_image
+    call map_kernel_image_1mb
 
     ; clear remaining half of page table (2MB)
     mov ecx, 512
@@ -592,11 +788,7 @@ initialize_page_tables:
     ; ----------------------------------------------
 
     ; map kernel image and read/write memory that follows (1MB)
-    call map_kernel_image
-
-    ; clear remaining entries in page table (3MB)
-    mov ecx, 768
-    call clear_ptes
+    call map_kernel
 
     ret
 

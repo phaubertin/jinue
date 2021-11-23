@@ -42,10 +42,10 @@ const boot_info_t *boot_info;
 bool boot_info_check(bool panic_on_failure) {
     const char *error_description = NULL;
 
-    /* This data structure is accessed early during the boot process, before
-     * paging is enabled. What this means is that, if boot_info is NULL and we
-     * dereference it, it does *not* cause a page fault or any other CPU
-     * exception. */
+    /* This data structure is accessed early during the boot process, when the
+     * first two megabytes of memory are still identity mapped. This means, if
+     * boot_info is NULL and we dereference it, it does *not* cause a page fault
+     * or any other CPU exception. */
     if(boot_info == NULL) {
         error_description = "Boot information structure pointer is NULL.";
     }

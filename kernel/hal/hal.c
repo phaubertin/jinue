@@ -58,6 +58,14 @@
 /** Specifies the entry point to use for system calls */
 int syscall_method;
 
+static void check_data_segment(const boot_info_t *boot_info) {
+    if(     boot_info->data_start == 0 ||
+            boot_info->data_size == 0 ||
+            boot_info->data_physaddr == 0) {
+        panic("Setup code wasn't able to load kernel data segment");
+    }
+}
+
 static void move_kernel_at_16mb(const boot_info_t *boot_info) {
     move_and_remap_kernel(
             (addr_t)boot_info->page_table_1mb,
@@ -213,6 +221,8 @@ static void select_syscall_method(void) {
 void hal_init(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
     cpu_detect_features();
 
+    check_data_segment(boot_info);
+
     check_memory(boot_info);
 
     move_kernel_at_16mb(boot_info);
@@ -267,7 +277,6 @@ void hal_init(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
      * don't need to allocate any more pages from the boot allocator. Transfer
      * the remaining pages to the run-time page allocator. */
     boot_reinit_at_klimit(boot_alloc);
-
     initialize_page_allocator(boot_alloc);
 
     /* Initialize GDT and TSS */

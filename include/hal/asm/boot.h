@@ -79,6 +79,7 @@
 
 #define BOOT_SIZE_AT_1MB        (1 * MB)
 
+/* must be a multiple of 4MB (full page tables) */
 #define BOOT_SIZE_AT_16MB       (8 * MB)
 
 #define BOOT_PTES_AT_16MB       (BOOT_SIZE_AT_16MB / PAGE_SIZE)
