@@ -190,6 +190,29 @@ void vm_initialize_page_table_linear(
     }
 }
 
+/**
+ * Write protect the kernel image at address 0x1000000 (16MB)
+ *
+ * This function is called during initialization after the kernel image has been
+ * moved from address 0x100000 (1MB) to address 0x1000000 (16MB) to ensure the
+ * new copy is read only.
+ *
+ * @param boot_info boot information structure
+ *
+ */
+void vm_write_protect_kernel_image(const boot_info_t *boot_info) {
+    size_t image_size = (char *)boot_info->image_top - (char *)boot_info->image_start;
+    size_t image_pages = image_size / PAGE_SIZE;
+
+    for(int idx = 0; idx < image_pages; ++idx) {
+        set_pte_flags(
+                get_pte_with_offset(boot_info->page_table_16mb, idx),
+                X86_PTE_PRESENT); /* read only */
+    }
+
+    set_cr3((uintptr_t)boot_info->page_directory);
+}
+
 addr_space_t *vm_create_initial_addr_space(boot_alloc_t *boot_alloc) {
     /* Pre-allocate all the kernel page tables. */
     int num_pages       = (ADDR_4GB - KLIMIT) / PAGE_SIZE;

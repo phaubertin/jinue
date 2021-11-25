@@ -82,71 +82,99 @@ static void clear_pdpt(pdpt_t *pdpt) {
 }
 
 /**
- * Enable Physical Address Extension (PAE)
+ * Initialize boot-time page table for identity mapping at 1MB
  *
- * The 32-bit setup code has set up initial page tables with the following three
- * mappings:
- * 1) First two megabytes of memory are identity mapped.
- * 2) Four megabytes of memory at 0x1000000 (16M) are identity mapped.
- * 3) Two megabytes of memory starting with kernel image mapped at KLIMIT.
- *
- * This function creates new paging structures with the exact same mappings but
- * with PAE format, then enables PAE.
- *
- * Mappings 1) and 3) are both 2MB, which required one page table each. Mapping
- * 2 is 4MB, so it requires two page tables, for a total of four.
- *
- * Mappings 1) and 2) are in the first page directory while mapping 3) is not,
- * so we need two page directories.
- *
- * @param boot_alloc the initialization-time page allocator structure
+ * @param page_table_1mb page table for mapping at 0x100000 (1MB)
  *
  * */
-void vm_pae_enable(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
-    pgtable_format_pae      = true;
-    page_table_entries      = VM_PAE_PAGE_TABLE_PTES;
-    page_frame_number_mask  = ((UINT64_C(1) << cpu_info.maxphyaddr) - 1) & (~PAGE_MASK);
-
-    /* First mapping */
-    pte_t *page_table_1mb = boot_page_alloc(boot_alloc);
-
+static void initialize_boot_mapping_at_1mb(pte_t *page_table_1mb) {
     vm_initialize_page_table_linear(
             page_table_1mb,
             0,
             X86_PTE_READ_WRITE,
             PAGE_TABLE_ENTRIES);
+}
 
-    /* Second mapping (two page tables) */
-    pte_t *page_table_16mb = boot_page_alloc_n(
-            boot_alloc,
-            BOOT_PTES_AT_16MB / PAGE_TABLE_ENTRIES);
+/**
+ * Initialize boot-time page tables for identity mapping at 16MB
+ *
+ * @param page_table_16mb first page table for mapping at 0x1000000 (16MB)
+ *
+ * */
+static void initialize_boot_mapping_at_16mb(
+        pte_t               *page_table_16mb,
+        const boot_info_t   *boot_info) {
 
+    /* map whole region read/write */
     vm_initialize_page_table_linear(
             page_table_16mb,
             MEMORY_ADDR_16MB,
             X86_PTE_READ_WRITE,
             BOOT_PTES_AT_16MB);
 
-    /* Third mapping */
-    pte_t *page_table_klimit = boot_page_alloc(boot_alloc);
+    size_t image_size = (char *)boot_info->image_top - (char *)boot_info->image_start;
+    size_t image_pages = image_size / PAGE_SIZE;
+
+    /* map kernel image read only */
+    vm_initialize_page_table_linear(
+            page_table_16mb,
+            MEMORY_ADDR_16MB,
+            0,
+            image_pages);
+}
+
+/**
+ * Initialize boot-time page table for mapping at KLIMIT
+ *
+ * @param page_table_klimit page table for mapping at KLIMIT
+ *
+ * */
+static void initialize_boot_mapping_at_klimit(
+        pte_t               *page_table_klimit,
+        const boot_info_t   *boot_info) {
+
     uint32_t size_at_16mb = (uint32_t)boot_info->page_table_1mb - MEMORY_ADDR_1MB;
     uint32_t num_entries_at_16mb = size_at_16mb / PAGE_SIZE;
 
+    /* map region read/write  */
     vm_initialize_page_table_linear(
             page_table_klimit,
             MEMORY_ADDR_16MB,
             X86_PTE_READ_WRITE,
             num_entries_at_16mb);
 
-    vm_initialize_page_table_linear(
-            vm_pae_get_pte_with_offset(page_table_klimit, num_entries_at_16mb),
-            MEMORY_ADDR_1MB + size_at_16mb,
-            X86_PTE_READ_WRITE,
-            PAGE_TABLE_ENTRIES - num_entries_at_16mb);
+    size_t image_size = (char *)boot_info->image_top - (char *)boot_info->image_start;
+    size_t image_pages = image_size / PAGE_SIZE;
 
-    /* Page directory for first two mappings */
-    pte_t *low_page_directory = boot_page_alloc(boot_alloc);
-    clear_page(low_page_directory);
+    /* map kernel image read only */
+    vm_initialize_page_table_linear(
+            page_table_klimit,
+            MEMORY_ADDR_16MB,
+            0,
+            image_pages);
+
+    /* map kernel data segment */
+    size_t offset = ((uintptr_t)boot_info->data_start - KLIMIT) / PAGE_SIZE;
+
+    vm_initialize_page_table_linear(
+            vm_pae_get_pte_with_offset(page_table_klimit, offset),
+            boot_info->data_physaddr + MEMORY_ADDR_16MB - MEMORY_ADDR_1MB,
+            X86_PTE_READ_WRITE,
+            boot_info->data_size / PAGE_SIZE);
+}
+
+/**
+ * Initialize boot-time page directory for identity mappings at 1MB and 16MB
+ *
+ * @param low_page_directory first page directory
+ * @param page_table_1mb page table for mapping at 0x100000 (1MB)
+ * @param page_table_16mb first page table for mapping at 0x1000000 (16MB)
+ *
+ * */
+static void initialize_boot_low_page_directory(
+        pte_t           *low_page_directory,
+        const pte_t     *page_table_1mb,
+        const pte_t     *page_table_16mb) {
 
     vm_pae_set_pte(
             low_page_directory,
@@ -160,10 +188,18 @@ void vm_pae_enable(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
             (uintptr_t)page_table_16mb,
             X86_PTE_READ_WRITE,
             BOOT_PTES_AT_16MB / PAGE_TABLE_ENTRIES);
+}
 
-    /* Page directory for third mapping */
-    pte_t *page_directory_klimit = boot_page_alloc(boot_alloc);
-    clear_page(page_directory_klimit);
+/**
+ * Initialize boot-time page directory for mapping at KLIMIT
+ *
+ * @param page_directory_klimit page directory for mapping at KLIMIT
+ * @param page_table_klimit page table for mapping at KLIMIT
+ *
+ * */
+static void initialize_boot_page_directory_klimit(
+        pte_t           *page_directory_klimit,
+        const pte_t     *page_table_klimit) {
 
     vm_pae_set_pte(
             vm_pae_get_pte_with_offset(
@@ -171,10 +207,20 @@ void vm_pae_enable(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
                     vm_pae_page_directory_offset_of((addr_t)KLIMIT)),
             (uintptr_t)page_table_klimit,
             X86_PTE_READ_WRITE | X86_PTE_PRESENT);
+}
 
-    /* Initialize PDPT */
-    pdpt_t *pdpt = boot_heap_alloc(boot_alloc, pdpt_t, sizeof(pdpt_t));
-    clear_pdpt(pdpt);
+/**
+ * Initialize boot-time Page Directory Pointer Table (PDPT)
+ *
+ * @param pdpt Page Directory Pointer Table (PDPT)
+ * @param low_page_directory first page directory
+ * @param page_directory_klimit page directory for mapping at KLIMIT
+ *
+ * */
+static void initialize_boot_pdpt(
+        pdpt_t          *pdpt,
+        const pte_t     *low_page_directory,
+        const pte_t     *page_directory_klimit) {
 
     vm_pae_set_pte(
             &pdpt->pd[0],
@@ -185,6 +231,93 @@ void vm_pae_enable(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
             &pdpt->pd[pdpt_offset_of((addr_t)KLIMIT)],
             (uintptr_t)page_directory_klimit,
             X86_PTE_PRESENT);
+}
+
+/**
+ * Allocate and initialize boot-time PAE page tables
+ *
+ * The 32-bit setup code has set up initial page tables with the following three
+ * mappings:
+ *
+ * 1) First two megabytes of memory are identity mapped.
+ * 2) Some megabytes of memory at 0x1000000 (16M) are also identity mapped.
+ * 3) The kernel image and following stack, heap and other initial allocations
+ *    are mapped at KLIMIT.
+ *
+ * See doc/layout.md for detail on mappings.
+ *
+ * This function creates new paging structures with the exact same mappings as
+ * the current ones but in PAE format.
+ *
+ * Mappings 1) and 3) are 2MB or less and so require one page table each.
+ * Mapping 2 is a few megabytes and requires a few page tables.
+ *
+ * Mappings 1) and 2) are in the first page directory while mapping 3) is not,
+ * so we need two page directories.
+ *
+ * @param boot_alloc state of the boot-time allocator
+ * @param boot_info boot information structure
+ *
+ * */
+static pdpt_t *initialize_boot_page_tables(
+        boot_alloc_t        *boot_alloc,
+        const boot_info_t   *boot_info) {
+
+    /* First mapping */
+    pte_t *page_table_1mb = boot_page_alloc(boot_alloc);
+
+    initialize_boot_mapping_at_1mb(page_table_1mb);
+
+    /* Second mapping (a few page tables) */
+    pte_t *page_table_16mb = boot_page_alloc_n(
+            boot_alloc,
+            BOOT_PTES_AT_16MB / PAGE_TABLE_ENTRIES);
+
+    initialize_boot_mapping_at_16mb(page_table_16mb, boot_info);
+
+    /* Third mapping */
+    pte_t *page_table_klimit = boot_page_alloc(boot_alloc);
+
+    initialize_boot_mapping_at_klimit(page_table_klimit, boot_info);
+
+    /* Page directory for first two mappings */
+    pte_t *low_page_directory = boot_page_alloc(boot_alloc);
+
+    initialize_boot_low_page_directory(
+            low_page_directory,
+            page_table_1mb,
+            page_table_16mb);
+
+    /* Page directory for third mapping */
+    pte_t *page_directory_klimit = boot_page_alloc(boot_alloc);
+
+    initialize_boot_page_directory_klimit(
+            page_directory_klimit,
+            page_table_klimit);
+
+    /* Initialize PDPT */
+    pdpt_t *pdpt = boot_heap_alloc(boot_alloc, pdpt_t, sizeof(pdpt_t));
+
+    initialize_boot_pdpt(pdpt, low_page_directory, page_directory_klimit);
+
+    return pdpt;
+}
+
+/**
+ * Enable Physical Address Extension (PAE)
+ *
+ * Allocate and initialize boot-time page tables, then enable PAE.
+ *
+ * @param boot_alloc state of the boot-time allocator
+ * @param boot_info boot information structure
+ *
+ * */
+void vm_pae_enable(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
+    pgtable_format_pae      = true;
+    page_table_entries      = VM_PAE_PAGE_TABLE_PTES;
+    page_frame_number_mask  = ((UINT64_C(1) << cpu_info.maxphyaddr) - 1) & (~PAGE_MASK);
+
+    pdpt_t *pdpt = initialize_boot_page_tables(boot_alloc, boot_info);
 
     x86_enable_pae(PTR_TO_PHYS_ADDR_AT_16MB(pdpt));
 }
@@ -196,7 +329,6 @@ void vm_pae_create_initial_addr_space(
 
     /* Allocate initial PDPT. PDPT must be 32-byte aligned. */
     initial_pdpt = boot_heap_alloc(boot_alloc, pdpt_t, 32);
-    clear_pdpt(initial_pdpt);
 
     int offset = pdpt_offset_of((void *)KLIMIT);
     vm_initialize_page_table_linear(
@@ -222,7 +354,7 @@ addr_space_t *vm_pae_create_addr_space(
 
     clear_pdpt(pdpt);
 
-    unsigned int klimit_offset  = pdpt_offset_of((void *)KLIMIT);
+    unsigned int klimit_offset = pdpt_offset_of((void *)KLIMIT);
 
     vm_pae_set_pte(
             &pdpt->pd[klimit_offset],

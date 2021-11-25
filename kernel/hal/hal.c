@@ -71,6 +71,8 @@ static void move_kernel_at_16mb(const boot_info_t *boot_info) {
             (addr_t)boot_info->page_table_1mb,
             (addr_t)boot_info->page_table_klimit,
             (uint32_t)boot_info->page_directory);
+
+    vm_write_protect_kernel_image(boot_info);
 }
 
 static bool enable_pae(
