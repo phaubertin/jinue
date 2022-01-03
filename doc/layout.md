@@ -25,27 +25,27 @@ version 2.04.
   |                                       |              | kernel
   +---------------------------------------+              | (32 bits)
   |                                       |              |
-  |         process manager (ELF)         |              |
+  |        user space loader (ELF)        |              |
   |                                       |              |
   +---------------------------------------+ (file end)  -+-
 ```
 
-Following the
+As described in the
 [Linux/x86 Boot Protocol](https://www.kernel.org/doc/html/latest/x86/boot.html),
 the boot loader (e.g. [GRUB](https://www.gnu.org/software/grub/)) loads the
 16-bit boot sector and setup code at an address somewhere under address 0x100000
 (1MB) and the rest of the image starting at address 0x100000 (1MB).
 
-The 16-bit setup code doesn't affect the memory layout and is not used in any
-way once it is done running and passes control to the 32-bit setup code. It will
-not be mentioned further. The 32-bit portion of the kernel image file loaded
-starting at address 0x100000 (1 MB) is what we will refer to as the kernel
-image.
+The 16-bit setup code doesn't affect the memory layout in protected mode and
+is not used in any way once it is done running and has passed control to the
+32-bit setup code. It will not be mentioned further. The 32-bit portion of the
+kernel image file loaded starting at address 0x100000 (1 MB) is what we will
+refer to as the kernel image.
 
 ```
   +---------------------------------------+                        -+-
   |                                       |                         |
-  |         process manager (ELF)         |                         |
+  |        user space loader (ELF)        |                         |
   |                                       |                         |
   +---------------------------------------+                         |
   |                                       |                         | kernel image     ^
@@ -66,7 +66,8 @@ loads this binary in user space and gives control to it. This program is
 responsible for decompressing the initial RAM disk image, finding the initial
 process, loading it and running it. (TODO the user space loader is not yet
 implemented. For now, this binary simply runs some basic functional tests and
-prints debugging information.)
+prints debugging information. It is still referred to in some places in the
+documentation as the "process manager".)
 
 ## 32-bit Setup Code
 
@@ -78,11 +79,11 @@ environment it needs. These tasks include:
 * Allocating a boot-time stack and heap;
 * Copying the BIOS memory map and the kernel command line;
 * Loading the kernel's data segment; and
-* Allocating and initializing the initial page tables, then enabling paging.
+* Allocating and initializing the initial page tables, and then enabling paging.
 
 As it runs, the 32-bit setup code allocates memory right after the kernel image.
 Once it completes and passes control to the kernel binary's entry point, the
-physical memory starting at address 0x10000 (1MB) looks like this:
+physical memory starting at address 0x100000 (1MB) looks like this:
 
 ```
   +=======================================+ boot_info.boot_end          -+-
@@ -109,7 +110,7 @@ physical memory starting at address 0x10000 (1MB) looks like this:
   |              boot_info                |                              |
   +=======================================+ boot_info.image_top         -+-
   |                                       |                              |
-  |         process manager (ELF)         |                              |
+  |        user space loader (ELF)        |                              |
   |                                       |                              |
   +---------------------------------------+ boot_info.proc_start         |
   |                                       |                              | kernel image
@@ -122,7 +123,8 @@ physical memory starting at address 0x10000 (1MB) looks like this:
 ```
 
 The boot information structure (`boot_info`) is a data structure allocated on the
-boot heap by the 32-bit setup code and used to pass information to the kernel.
+boot heap by the 32-bit setup code. It is used to pass information related to
+the boot process to the kernel.
 
 The 32-bit setup code does not enable Physical Address Extension (PAE). This is
 done later in the initialization process by the kernel itself, if appropriate.
@@ -132,10 +134,10 @@ virtual memory mappings:
 
 1. The first two megabytes of physical memory are identity mapped (virtual
 address = physical address). This mapping contains the kernel image, other data
-set up by the bootloader as welle as the VGA text video memory. The kernel image
+set up by the bootloader as well as the VGA text video memory. The kernel image
 is mapped read only while the rest of the memory is mapped read/write.
 2. Starting at address 0x1000000 (i.e. 16MB), a few megabytes of memory
-(size [BOOT_SIZE_AT_16MB](../include/hal/asm/boot.h) are also identity mapped.
+(size [BOOT_SIZE_AT_16MB](../include/hal/asm/boot.h)) are also identity mapped.
 Early in its initialization process, the kernel move its own image there. This
 region is mapped read/write.
 3. The kernel image as well as some of the initial memory allocations, up to but
@@ -201,6 +203,7 @@ ISA DMA limit.
         +=======================================+
         |                                       |
  +------|   kernel image + initial allocations  |
+ |      |                                       |
  |      +=======================================+ 0xc0000000 (KLIMIT)
  |      |                                       |
  |      |                                       |
@@ -220,13 +223,13 @@ ISA DMA limit.
         |   kernel image + initial allocations  |
         +---------------------------------------+ 0x100000 (1MB)
         | physical memory starting at address 0 |
-        |  text video memory, boot loader data  |        
+        |       (text video memory, etc.)       |        
         +---------------------------------------+ 0
 ```
 
 The initial page tables and page directory are not moved because they are
-temporary. New per-process and global page tables are created later and these
-initial page table are discarded at that point.
+temporary. New per-process and global page tables are created later and the
+initial page table are then discarded.
 
 ## Enabling Physical Address Extension (PAE)
 
@@ -234,8 +237,8 @@ After the kernel image is moved and remapped, PAE is enabled if supported by the
 CPU unless disabled by options on the kernel command line. (TODO support for
 the kernel command line is not yet implemented.) In order to enable PAE, a new
 set of page tables and page directories with the right format must first be
-allocated and initialized. These new page tables implement the exact same
-mappings as the existing, non-PAE ones.
+allocated and initialized. These new page tables implement the same mappings
+as the existing, non-PAE ones.
 
 The new page tables are allocated right after the existing page tables and page
 directory, i.e. in the 0-2MB region rather than in the region starting at
@@ -249,7 +252,8 @@ address 0x1000000 (16MB).
   |       initial PAE page tables         |
   |                                       |
   +=======================================+ boot_info.boot_end          -+-
-  |        initial page directory         |                              | 
+  |        initial page directory         |                              |
+  |           (PAE disabled)              |                              |
   +---------------------------------------+ boot_info.page_directory     |
   |                                       |                              |
   |         initial page tables           | boot_info.page_table_klimit  | setup code
@@ -313,7 +317,7 @@ is a data structure allocated on the boot heap by the 32-bit setup code.
   |              boot_info                |                              |
   +=======================================+ boot_info.image_top         -+-
   |                                       |                              |
-  |         process manager (ELF)         |                              |
+  |        user space loader (ELF)        |                              |
   |                                       |                              |
   +---------------------------------------+ boot_info.proc_start         |
   |                                       |                              | kernel image
@@ -340,7 +344,7 @@ this:
   |     available for global mappings     |
   |                                       |
   +---------------------------------------+ kernel_vm_top
-  |    microkernel, process manager,etc.  |
+  | microkernel, user space loader, etc.  |
   |              (see above)              |  
   +=======================================+ KLIMIT (0xc0000000 = 3GB)
   |                                       |
