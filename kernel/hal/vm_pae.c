@@ -105,22 +105,22 @@ static void initialize_boot_mapping_at_16mb(
         pte_t               *page_table_16mb,
         const boot_info_t   *boot_info) {
 
-    /* map whole region read/write */
-    vm_initialize_page_table_linear(
-            page_table_16mb,
-            MEMORY_ADDR_16MB,
-            X86_PTE_READ_WRITE,
-            BOOT_PTES_AT_16MB);
-
     size_t image_size = (char *)boot_info->image_top - (char *)boot_info->image_start;
     size_t image_pages = image_size / PAGE_SIZE;
 
     /* map kernel image read only */
-    vm_initialize_page_table_linear(
+    pte_t *next_pte = vm_initialize_page_table_linear(
             page_table_16mb,
             MEMORY_ADDR_16MB,
             0,
             image_pages);
+
+    /* map remaining of region read/write */
+    vm_initialize_page_table_linear(
+            next_pte,
+            MEMORY_ADDR_16MB + image_size,
+            X86_PTE_READ_WRITE,
+            BOOT_PTES_AT_16MB - image_pages);
 }
 
 /**

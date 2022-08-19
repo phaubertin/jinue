@@ -170,9 +170,10 @@ void vm_set_no_pae(void) {
  * @param start_paddr start physical address
  * @param flags page table entry flags
  * @param num_entries number of entries to initialize
+ * @return first page table entry after affected ones
  *
  */
-void vm_initialize_page_table_linear(
+pte_t *vm_initialize_page_table_linear(
         pte_t       *page_table,
         uint64_t     start_paddr,
         uint64_t     flags,
@@ -188,6 +189,8 @@ void vm_initialize_page_table_linear(
 
         paddr += PAGE_SIZE;
     }
+
+    return get_pte_with_offset(page_table, num_entries);
 }
 
 /**

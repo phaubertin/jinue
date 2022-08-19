@@ -331,8 +331,8 @@ rdtsc:
     ret
 
 ; ------------------------------------------------------------------------------
-; FUNCTION: enable_pae
-; C PROTOTYPE: void enable_pae(uint32_t cr3_value)
+; FUNCTION: x86_enable_pae
+; C PROTOTYPE: void x86_enable_pae(uint32_t cr3_value)
 ; ------------------------------------------------------------------------------
     global x86_enable_pae
 x86_enable_pae:

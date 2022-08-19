@@ -64,7 +64,7 @@ extern size_t page_table_entries;
 
 extern bool pgtable_format_pae;
 
-void vm_initialize_page_table_linear(
+pte_t *vm_initialize_page_table_linear(
         pte_t       *page_table,
         uint64_t     start_paddr,
         uint64_t     flags,

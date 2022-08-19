@@ -66,6 +66,16 @@ static void check_data_segment(const boot_info_t *boot_info) {
     }
 }
 
+static void check_alignment(const boot_info_t *boot_info) {
+    if(page_offset_of(boot_info->image_start) != 0) {
+        panic("Kernel image start is not aligned on a page boundary");
+    }
+
+    if(page_offset_of(boot_info->image_top) != 0) {
+        panic("Top of kernel image is not aligned on a page boundary");
+    }
+}
+
 static void move_kernel_at_16mb(const boot_info_t *boot_info) {
     move_and_remap_kernel(
             (addr_t)boot_info->page_table_1mb,
@@ -224,6 +234,8 @@ void hal_init(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
     cpu_detect_features();
 
     check_data_segment(boot_info);
+
+    check_alignment(boot_info);
 
     check_memory(boot_info);
 

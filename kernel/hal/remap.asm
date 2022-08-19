@@ -47,8 +47,8 @@
 ;       1. Copy the kernel image and a few allocated pages that immediately
 ;          follow the kernel image and contain the boot stack and heap from
 ;          0x100000 (1MB) to 0x1000000 (16MB). (The initial page tables, which
-;          are also allocated following the kernel image, are *not* part of the
-;          contiguous range that is copied.
+;          are also allocated following the kernel image, are *excluded* from
+;          the contiguous range that is copied.
 ;       2. Modify the initial page tables so the virtual memory range at KLIMIT
 ;          points to the copy, not the original.
 ;       3. Reload CR3 to flush the TLB.
