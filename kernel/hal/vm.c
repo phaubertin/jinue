@@ -50,7 +50,7 @@ pte_t *kernel_page_tables;
 
 pte_t *kernel_page_directories;
 
-size_t page_table_entries;
+size_t entries_per_page_table;
 
 bool pgtable_format_pae;
 
@@ -159,8 +159,8 @@ static user_paddr_t get_pte_paddr(const pte_t *pte) {
 }
 
 void vm_set_no_pae(void) {
-    pgtable_format_pae = false;
-    page_table_entries = VM_X86_PAGE_TABLE_PTES;
+    pgtable_format_pae      = false;
+    entries_per_page_table  = VM_X86_PAGE_TABLE_PTES;
 }
 
 /**
@@ -219,7 +219,7 @@ void vm_write_protect_kernel_image(const boot_info_t *boot_info) {
 addr_space_t *vm_create_initial_addr_space(boot_alloc_t *boot_alloc) {
     /* Pre-allocate all the kernel page tables. */
     int num_pages       = (ADDR_4GB - KLIMIT) / PAGE_SIZE;
-    int num_page_tables = num_pages / page_table_entries;
+    int num_page_tables = num_pages / entries_per_page_table;
     pte_t *page_tables  = boot_page_alloc_n(boot_alloc, num_page_tables);
     kernel_page_tables  = (pte_t *)PHYS_TO_VIRT_AT_16MB(page_tables);
 
@@ -233,7 +233,7 @@ addr_space_t *vm_create_initial_addr_space(boot_alloc_t *boot_alloc) {
 
     /* The number of entries in a pages table (page_table_entries) is also the
      * number of entries in a page directory. */
-    int num_page_dirs       = ALIGN_END(num_page_tables, page_table_entries) / page_table_entries;
+    int num_page_dirs       = ALIGN_END(num_page_tables, entries_per_page_table) / entries_per_page_table;
     int offset              = page_directory_offset_of((void *)KLIMIT);
     pte_t *page_directories = boot_page_alloc_n(boot_alloc, num_page_dirs);
     kernel_page_directories = (pte_t *)PHYS_TO_VIRT_AT_16MB(page_directories);
@@ -289,7 +289,7 @@ static pte_t *clone_first_kernel_page_directory(void) {
         copy_ptes(
                 get_pte_with_offset(page_directory, klimit_offset),
                 get_pte_with_offset(pd_template, klimit_offset),
-                page_table_entries - klimit_offset);
+                entries_per_page_table - klimit_offset);
     }
 
     return page_directory;

@@ -60,7 +60,7 @@
 
 extern pte_t *kernel_page_tables;
 
-extern size_t page_table_entries;
+extern size_t entries_per_page_table;
 
 extern bool pgtable_format_pae;
 

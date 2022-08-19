@@ -314,7 +314,7 @@ static pdpt_t *initialize_boot_page_tables(
  * */
 void vm_pae_enable(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
     pgtable_format_pae      = true;
-    page_table_entries      = VM_PAE_PAGE_TABLE_PTES;
+    entries_per_page_table  = VM_PAE_PAGE_TABLE_PTES;
     page_frame_number_mask  = ((UINT64_C(1) << cpu_info.maxphyaddr) - 1) & (~PAGE_MASK);
 
     pdpt_t *pdpt = initialize_boot_page_tables(boot_alloc, boot_info);
@@ -386,7 +386,7 @@ void vm_pae_destroy_addr_space(addr_space_t *addr_space) {
         if(vm_pae_pte_is_present(pdpte)) {
             vm_destroy_page_directory(
                     memory_lookup_page(vm_pae_get_pte_paddr(pdpte)),
-                    page_table_entries);
+                    entries_per_page_table);
         }
     }
 
