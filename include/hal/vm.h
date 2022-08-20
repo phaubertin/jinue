@@ -64,7 +64,9 @@ void vm_set_no_pae(void);
 
 void vm_write_protect_kernel_image(const boot_info_t *boot_info);
 
-addr_space_t *vm_create_initial_addr_space(boot_alloc_t *boot_alloc);
+addr_space_t *vm_create_initial_addr_space(
+        boot_alloc_t        *boot_alloc,
+        const boot_info_t   *boot_info);
 
 addr_space_t *vm_create_addr_space(addr_space_t *addr_space);
 

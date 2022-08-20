@@ -216,33 +216,72 @@ void vm_write_protect_kernel_image(const boot_info_t *boot_info) {
     set_cr3((uintptr_t)boot_info->page_directory);
 }
 
-addr_space_t *vm_create_initial_addr_space(boot_alloc_t *boot_alloc) {
-    /* Pre-allocate all the kernel page tables. */
-    int num_pages       = (ADDR_4GB - KLIMIT) / PAGE_SIZE;
-    int num_page_tables = num_pages / entries_per_page_table;
-    pte_t *page_tables  = boot_page_alloc_n(boot_alloc, num_page_tables);
-    kernel_page_tables  = (pte_t *)PHYS_TO_VIRT_AT_16MB(page_tables);
+static void initialize_initial_page_tables(
+        pte_t               *page_tables,
+        const boot_info_t   *boot_info) {
 
-    /* Initialize the first few page tables to map BOOT_SIZE_AT_16MB starting
-     * at 0x1000000 (i.e. at 16MB). */
-    vm_initialize_page_table_linear(
+    size_t image_size  = (char *)boot_info->image_top - (char *)boot_info->image_start;
+    size_t image_pages = image_size / PAGE_SIZE;
+
+    /* map kernel image read only */
+    pte_t *next_pte_after_image = vm_initialize_page_table_linear(
             page_tables,
             MEMORY_ADDR_16MB,
-            X86_PTE_READ_WRITE | X86_PTE_GLOBAL,
-            BOOT_SIZE_AT_16MB / PAGE_SIZE);
+            X86_PTE_GLOBAL,
+            image_pages);
 
-    /* The number of entries in a pages table (page_table_entries) is also the
-     * number of entries in a page directory. */
-    int num_page_dirs       = ALIGN_END(num_page_tables, entries_per_page_table) / entries_per_page_table;
-    int offset              = page_directory_offset_of((void *)KLIMIT);
-    pte_t *page_directories = boot_page_alloc_n(boot_alloc, num_page_dirs);
-    kernel_page_directories = (pte_t *)PHYS_TO_VIRT_AT_16MB(page_directories);
+    /* map kernel data segment */
+    size_t offset = ((uintptr_t)boot_info->data_start - KLIMIT) / PAGE_SIZE;
+
+    vm_initialize_page_table_linear(
+            vm_pae_get_pte_with_offset(page_tables, offset),
+            boot_info->data_physaddr + MEMORY_ADDR_16MB - MEMORY_ADDR_1MB,
+            X86_PTE_READ_WRITE | X86_PTE_GLOBAL,
+            boot_info->data_size / PAGE_SIZE);
+
+    /* map rest of region read/write */
+    vm_initialize_page_table_linear(
+            next_pte_after_image,
+            MEMORY_ADDR_16MB + image_size,
+            X86_PTE_READ_WRITE | X86_PTE_GLOBAL,
+            BOOT_SIZE_AT_16MB / PAGE_SIZE - image_pages);
+}
+
+static void initialize_initial_page_directories(
+        pte_t   *page_directories,
+        pte_t   *page_tables,
+        int      num_page_tables) {
+
+    int offset = page_directory_offset_of((void *)KLIMIT);
 
     vm_initialize_page_table_linear(
             get_pte_with_offset(page_directories, offset),
             (uintptr_t)page_tables,
             X86_PTE_READ_WRITE,
             num_page_tables);
+}
+
+addr_space_t *vm_create_initial_addr_space(
+        boot_alloc_t        *boot_alloc,
+        const boot_info_t   *boot_info) {
+
+    /* Pre-allocate all the kernel page tables. */
+    int num_pages           = (ADDR_4GB - KLIMIT) / PAGE_SIZE;
+    int num_page_tables     = num_pages / entries_per_page_table;
+
+    /* The number of entries in a pages table (page_table_entries) is also the
+     * number of entries in a page directory. */
+    int num_page_dirs       = ALIGN_END(num_page_tables, entries_per_page_table) / entries_per_page_table;
+
+    /* allocate tables */
+    pte_t *page_tables      = boot_page_alloc_n(boot_alloc, num_page_tables);
+    pte_t *page_directories = boot_page_alloc_n(boot_alloc, num_page_dirs);
+
+    initialize_initial_page_tables(page_tables, boot_info);
+    initialize_initial_page_directories(page_directories, page_tables, num_page_tables);
+
+    kernel_page_tables      = (pte_t *)PHYS_TO_VIRT_AT_16MB(page_tables);
+    kernel_page_directories = (pte_t *)PHYS_TO_VIRT_AT_16MB(page_directories);
 
     if(pgtable_format_pae) {
         vm_pae_create_initial_addr_space(

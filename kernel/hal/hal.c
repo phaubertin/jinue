@@ -272,7 +272,7 @@ void hal_init(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
     /* Initialize programmable interrupt_controller. */
     pic8259_init(IDT_PIC8259_BASE);
 
-    addr_space_t *addr_space = vm_create_initial_addr_space(boot_alloc);
+    addr_space_t *addr_space = vm_create_initial_addr_space(boot_alloc, boot_info);
 
     memory_initialize_array(boot_alloc, boot_info);
 
