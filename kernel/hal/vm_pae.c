@@ -136,18 +136,11 @@ static void initialize_boot_mapping_at_klimit(
     uint32_t size_at_16mb = (uint32_t)boot_info->page_table_1mb - MEMORY_ADDR_1MB;
     uint32_t num_entries_at_16mb = size_at_16mb / PAGE_SIZE;
 
-    /* map region read/write  */
-    vm_initialize_page_table_linear(
-            page_table_klimit,
-            MEMORY_ADDR_16MB,
-            X86_PTE_READ_WRITE,
-            num_entries_at_16mb);
-
     size_t image_size = (char *)boot_info->image_top - (char *)boot_info->image_start;
     size_t image_pages = image_size / PAGE_SIZE;
 
     /* map kernel image read only */
-    vm_initialize_page_table_linear(
+    pte_t *next_pte_after_image = vm_initialize_page_table_linear(
             page_table_klimit,
             MEMORY_ADDR_16MB,
             0,
@@ -161,6 +154,13 @@ static void initialize_boot_mapping_at_klimit(
             boot_info->data_physaddr + MEMORY_ADDR_16MB - MEMORY_ADDR_1MB,
             X86_PTE_READ_WRITE,
             boot_info->data_size / PAGE_SIZE);
+
+    /* map rest of region read/write */
+    vm_initialize_page_table_linear(
+            next_pte_after_image,
+            MEMORY_ADDR_16MB + image_size,
+            X86_PTE_READ_WRITE,
+            num_entries_at_16mb - image_pages);
 }
 
 /**
