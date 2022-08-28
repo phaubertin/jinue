@@ -84,6 +84,7 @@ static void sys_thread_create(jinue_syscall_args_t *args) {
             (addr_t)args->arg2,
             (addr_t)args->arg3);
 
+    /** TODO return descriptor that represents thread */
     if(thread == NULL) {
         syscall_args_set_error(args, JINUE_EAGAIN);
     }
