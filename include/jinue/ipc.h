@@ -71,6 +71,6 @@ int jinue_reply(
         unsigned int     n_desc,
         int             *perrno);
 
-int jinue_create_ipc(int flags, int *perrno);
+int jinue_create_ipc_endpoint(int flags, int *perrno);
 
 #endif

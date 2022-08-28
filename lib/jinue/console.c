@@ -44,7 +44,7 @@ void console_printn(const char *message, unsigned int n, int colour) {
         }
 
         (void)jinue_send(
-                SYSCALL_FUNCT_CONSOLE_PUTS,
+                SYSCALL_FUNC_CONSOLE_PUTS,
                 -1,             /* target */
                 (char *)ptr,    /* buffer */
                 size,           /* buffer size */
@@ -60,7 +60,7 @@ void console_printn(const char *message, unsigned int n, int colour) {
 void console_putc(char c, int colour) {
     jinue_syscall_args_t args;
 
-    args.arg0 = SYSCALL_FUNCT_CONSOLE_PUTC;
+    args.arg0 = SYSCALL_FUNC_CONSOLE_PUTC;
     args.arg1 = (uintptr_t)c;
     args.arg2 = 0;
     args.arg3 = 0;

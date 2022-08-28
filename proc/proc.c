@@ -45,6 +45,8 @@
 
 #define CALL_BUFFER_SIZE    512
 
+#define MSG_FUNC_TEST       (SYSCALL_USER_BASE + 0)
+
 int errno;
 
 Elf32_auxv_t *auxvp;
@@ -67,13 +69,13 @@ void thread_a(void) {
         printk("Thread A is sending message: %s\n", message);
 
         int ret = jinue_send(
-                SYSCALL_FUNCT_USER_BASE,    /* function number */
-                fd,                         /* target descriptor */
-                message,                    /* buffer address */
-                sizeof(message),            /* buffer size */
-                sizeof(message),            /* data size */
-                0,                          /* number of descriptors */
-                &errno);                    /* error number */
+                SYSCALL_USER_BASE,  /* function number */
+                fd,                 /* target descriptor */
+                message,            /* buffer address */
+                sizeof(message),    /* buffer size */
+                sizeof(message),    /* data size */
+                0,                  /* number of descriptors */
+                &errno);            /* error number */
 
         if(ret < 0) {
             printk("jinue_send() failed with error: %u.\n", errno);
@@ -123,7 +125,7 @@ int main(int argc, char *argv[], char *envp[]) {
     
     /* get free memory blocks from microkernel */
     errno = 0;
-    status = jinue_get_phys_memory((jinue_mem_map_t *)&call_buffer, sizeof(call_buffer), &errno);
+    status = jinue_get_user_memory((jinue_mem_map_t *)&call_buffer, sizeof(call_buffer), &errno);
 
     if(status != 0) {
         printk("error: could not get physical memory map from microkernel.\n");
@@ -133,7 +135,7 @@ int main(int argc, char *argv[], char *envp[]) {
 
     dump_phys_memory_map((jinue_mem_map_t *)&call_buffer, true);
 
-    int fd = jinue_create_ipc(JINUE_IPC_NONE, &errno);
+    int fd = jinue_create_ipc_endpoint(JINUE_IPC_NONE, &errno);
 
     if(fd < 0) {
         printk("Creating IPC object descriptor.\n");
@@ -156,6 +158,9 @@ int main(int argc, char *argv[], char *envp[]) {
 
         if(ret < 0) {
             printk("jinue_receive() failed with error: %u.\n", errno);
+        }
+        else if(message.function != MSG_FUNC_TEST) {
+            printk("jinue_receive() unexpected function number: %u.\n", message.function);
         }
         else {
             char reply[] = "OK";
