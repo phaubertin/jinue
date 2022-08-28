@@ -45,6 +45,8 @@
 
 #define CALL_BUFFER_SIZE    512
 
+#define MSG_FUNC_TEST       (SYSCALL_USER_BASE + 0)
+
 int errno;
 
 Elf32_auxv_t *auxvp;
@@ -67,13 +69,13 @@ void thread_a(void) {
         printk("Thread A is sending message: %s\n", message);
 
         int ret = jinue_send(
-                SYSCALL_FUNCT_USER_BASE,    /* function number */
-                fd,                         /* target descriptor */
-                message,                    /* buffer address */
-                sizeof(message),            /* buffer size */
-                sizeof(message),            /* data size */
-                0,                          /* number of descriptors */
-                &errno);                    /* error number */
+                SYSCALL_USER_BASE,  /* function number */
+                fd,                 /* target descriptor */
+                message,            /* buffer address */
+                sizeof(message),    /* buffer size */
+                sizeof(message),    /* data size */
+                0,                  /* number of descriptors */
+                &errno);            /* error number */
 
         if(ret < 0) {
             printk("jinue_send() failed with error: %u.\n", errno);
@@ -156,6 +158,9 @@ int main(int argc, char *argv[], char *envp[]) {
 
         if(ret < 0) {
             printk("jinue_receive() failed with error: %u.\n", errno);
+        }
+        else if(message.function != MSG_FUNC_TEST) {
+            printk("jinue_receive() unexpected function number: %u.\n", message.function);
         }
         else {
             char reply[] = "OK";

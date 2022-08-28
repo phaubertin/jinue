@@ -51,15 +51,15 @@ void dispatch_syscall(trapframe_t *trapframe) {
     /** TODO for check negative values (especially -1) */
     uintptr_t function_number = args->arg0;
     
-    if(function_number < SYSCALL_FUNCT_PROC_BASE) {
+    if(function_number < SYSCALL_USER_BASE) {
         /* microkernel system calls */
         switch(function_number) {
         
-        case SYSCALL_FUNCT_SYSCALL_METHOD:
+        case SYSCALL_FUNC_SYSCALL_METHOD:
             syscall_args_set_return(args, syscall_method);
             break;
             
-        case SYSCALL_FUNCT_CONSOLE_PUTC:
+        case SYSCALL_FUNC_CONSOLE_PUTC:
             /** TODO: permission check */
             console_putc(
                     (char)args->arg1,
@@ -67,7 +67,7 @@ void dispatch_syscall(trapframe_t *trapframe) {
             syscall_args_set_return(args, 0);
             break;
         
-        case SYSCALL_FUNCT_CONSOLE_PUTS:
+        case SYSCALL_FUNC_CONSOLE_PUTS:
             /** TODO: permission check, sanity check (data size vs buffer size) */
             console_printn(
                     (char *)args->arg2,
@@ -76,7 +76,7 @@ void dispatch_syscall(trapframe_t *trapframe) {
             syscall_args_set_return(args, 0);
             break;
         
-        case SYSCALL_FUNCT_THREAD_CREATE:
+        case SYSCALL_FUNC_THREAD_CREATE:
         {
             thread_t *thread = thread_create(
                     /* TODO use arg1 as an address space reference if specified */
@@ -93,7 +93,7 @@ void dispatch_syscall(trapframe_t *trapframe) {
         }
             break;
         
-        case SYSCALL_FUNCT_THREAD_YIELD:
+        case SYSCALL_FUNC_THREAD_YIELD:
             thread_yield_from(
                     get_current_thread(),
                     false,          /* don't block */
@@ -101,7 +101,7 @@ void dispatch_syscall(trapframe_t *trapframe) {
             syscall_args_set_return(args, 0);
             break;
 
-        case SYSCALL_FUNCT_SET_THREAD_LOCAL_ADDR:
+        case SYSCALL_FUNC_SET_THREAD_LOCAL_ADDR:
             thread_context_set_local_storage(
                     &get_current_thread()->thread_ctx,
                     (addr_t)args->arg1,
@@ -109,14 +109,14 @@ void dispatch_syscall(trapframe_t *trapframe) {
             syscall_args_set_return(args, 0);
             break;
 
-        case SYSCALL_FUNCT_GET_THREAD_LOCAL_ADDR:
+        case SYSCALL_FUNC_GET_THREAD_LOCAL_ADDR:
             syscall_args_set_return_ptr(
                     args,
                     thread_context_get_local_storage(
                             &get_current_thread()->thread_ctx));
             break;
         
-        case SYSCALL_FUNCT_GET_PHYS_MEMORY:
+        case SYSCALL_FUNC_GET_PHYS_MEMORY:
         {
             unsigned int idx;
 
@@ -142,7 +142,7 @@ void dispatch_syscall(trapframe_t *trapframe) {
         }
             break;
             
-        case SYSCALL_FUNCT_CREATE_IPC:
+        case SYSCALL_FUNC_CREATE_IPC:
         {
             ipc_t *ipc;
 
@@ -185,11 +185,11 @@ void dispatch_syscall(trapframe_t *trapframe) {
             
         }
             break;
-        case SYSCALL_FUNCT_RECEIVE:
+        case SYSCALL_FUNC_RECEIVE:
             ipc_receive(args);
             break;
 
-        case SYSCALL_FUNCT_REPLY:
+        case SYSCALL_FUNC_REPLY:
             ipc_reply(args);
             break;
 
@@ -202,16 +202,6 @@ void dispatch_syscall(trapframe_t *trapframe) {
             
             syscall_args_set_error(args, JINUE_ENOSYS);
         }
-    }
-    else if(function_number < SYSCALL_FUNCT_SYSTEM_BASE) {
-        /* process manager system calls */
-        printk("PROC SYSCALL: function %u arg1=%u(0x%x) arg2=%u(0x%x) arg3=%u(0x%x)\n",
-                function_number,
-                args->arg1, args->arg1,
-                args->arg2, args->arg2,
-                args->arg3, args->arg3 );
-            
-        syscall_args_set_error(args, JINUE_ENOSYS);
     }
     else {
         /* inter-process message */

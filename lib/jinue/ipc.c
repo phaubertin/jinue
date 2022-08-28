@@ -89,7 +89,7 @@ int jinue_receive(
         buffer_size = JINUE_SEND_MAX_SIZE;
     }
 
-    args.arg0 = SYSCALL_FUNCT_RECEIVE;
+    args.arg0 = SYSCALL_FUNC_RECEIVE;
     args.arg1 = (uintptr_t)fd;
     args.arg2 = (uintptr_t)buffer;
     args.arg3 = jinue_args_pack_buffer_size(buffer_size);
@@ -132,7 +132,7 @@ int jinue_reply(
         buffer_size = JINUE_SEND_MAX_SIZE;
     }
 
-    args.arg0 = SYSCALL_FUNCT_REPLY;
+    args.arg0 = SYSCALL_FUNC_REPLY;
     args.arg1 = 0;
     args.arg2 = (uintptr_t)buffer;
     args.arg3 =     jinue_args_pack_buffer_size(buffer_size)
@@ -145,7 +145,7 @@ int jinue_reply(
 int jinue_create_ipc(int flags, int *perrno) {
     jinue_syscall_args_t args;
 
-    args.arg0 = SYSCALL_FUNCT_CREATE_IPC;
+    args.arg0 = SYSCALL_FUNC_CREATE_IPC;
     args.arg1 = (uintptr_t)flags;
     args.arg2 = 0;
     args.arg3 = 0;
