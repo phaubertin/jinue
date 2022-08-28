@@ -50,9 +50,9 @@ const char *jinue_pys_mem_type_description(uint32_t type) {
     }
 }
 
-int jinue_get_phys_memory(jinue_mem_map_t *buffer, size_t buffer_size, int *perrno) {
+int jinue_get_user_memory(jinue_mem_map_t *buffer, size_t buffer_size, int *perrno) {
     return jinue_send(
-            SYSCALL_FUNCT_GET_PHYS_MEMORY,
+            SYSCALL_FUNC_GET_USER_MEMORY,
             -1,                 /* target */
             (char *)buffer,     /* buffer */
             buffer_size,        /* buffer size */
