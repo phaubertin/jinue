@@ -44,167 +44,201 @@
 #include <syscall.h>
 #include <thread.h>
 
+static void sys_nosys(jinue_syscall_args_t *args) {
+    uintptr_t function_number = args->arg0;
+    printk("SYSCALL: function %u arg1=%u(0x%x) arg2=%u(0x%x) arg3=%u(0x%x)\n",
+        function_number,
+        args->arg1, args->arg1,
+        args->arg2, args->arg2,
+        args->arg3, args->arg3 );
+
+    syscall_args_set_error(args, JINUE_ENOSYS);
+}
+
+static void sys_get_syscall_method(jinue_syscall_args_t *args) {
+    syscall_args_set_return(args, syscall_method);
+}
+
+static void sys_console_putc(jinue_syscall_args_t *args) {
+    /** TODO: permission check */
+    console_putc(
+            (char)args->arg1,
+            CONSOLE_DEFAULT_COLOR);
+
+    syscall_args_set_return(args, 0);
+}
+
+static void sys_console_puts(jinue_syscall_args_t *args) {
+    /** TODO: permission check, sanity check (data size vs buffer size) */
+    console_printn(
+            (char *)args->arg2,
+            jinue_args_get_data_size(args),
+            CONSOLE_DEFAULT_COLOR);
+    syscall_args_set_return(args, 0);
+}
+
+static void sys_thread_create(jinue_syscall_args_t *args) {
+    thread_t *thread = thread_create(
+            /* TODO use arg1 as an address space reference if specified */
+            get_current_thread()->process,
+            (addr_t)args->arg2,
+            (addr_t)args->arg3);
+
+    if(thread == NULL) {
+        syscall_args_set_error(args, JINUE_EAGAIN);
+    }
+    else {
+        syscall_args_set_return(args, 0);
+    }
+}
+
+static void sys_thread_yield(jinue_syscall_args_t *args) {
+    thread_yield_from(
+            get_current_thread(),
+            false,          /* don't block */
+            args->arg1);    /* destroy (aka. exit) thread if true */
+    syscall_args_set_return(args, 0);
+}
+
+static void sys_set_thread_local_address(jinue_syscall_args_t *args) {
+    thread_context_set_local_storage(
+            &get_current_thread()->thread_ctx,
+            (addr_t)args->arg1,
+            (size_t)args->arg2);
+    syscall_args_set_return(args, 0);
+}
+
+static void sys_get_thread_local_address(jinue_syscall_args_t *args) {
+    syscall_args_set_return_ptr(
+            args,
+            thread_context_get_local_storage(
+                    &get_current_thread()->thread_ctx));
+}
+
+static void sys_get_user_memory(jinue_syscall_args_t *args) {
+    unsigned int idx;
+
+    /** TODO: check user pointer */
+    size_t buffer_size = jinue_args_get_buffer_size(args);
+    jinue_mem_map_t *map = (jinue_mem_map_t *)jinue_args_get_buffer_ptr(args);
+    const boot_info_t *boot_info = get_boot_info();
+
+    if(buffer_size < sizeof(jinue_mem_map_t) + boot_info->e820_entries * sizeof(jinue_mem_entry_t) ) {
+        syscall_args_set_error(args, JINUE_EINVAL);
+    }
+    else {
+        map->num_entries = boot_info->e820_entries;
+
+        for(idx = 0; idx < map->num_entries; ++idx) {
+            map->entry[idx].addr = boot_info->e820_map[idx].addr;
+            map->entry[idx].size = boot_info->e820_map[idx].size;
+            map->entry[idx].type = boot_info->e820_map[idx].type;
+        }
+
+        syscall_args_set_return(args, 0);
+    }
+}
+
+static void sys_create_ipc_endpoint(jinue_syscall_args_t *args) {
+    ipc_t *ipc;
+
+    thread_t *thread = get_current_thread();
+
+    int fd = process_unused_descriptor(thread->process);
+
+    if(fd < 0) {
+        syscall_args_set_error(args, JINUE_EAGAIN);
+        return;
+    }
+
+    if(args->arg1 & JINUE_IPC_PROC) {
+        ipc = ipc_get_proc_object();
+    }
+    else {
+        int flags = IPC_FLAG_NONE;
+
+        if(args->arg1 & JINUE_IPC_SYSTEM) {
+            flags |= IPC_FLAG_SYSTEM;
+        }
+
+        ipc = ipc_object_create(flags);
+
+        if(ipc == NULL) {
+            syscall_args_set_error(args, JINUE_EAGAIN);
+            return;
+        }
+    }
+
+    object_ref_t *ref = process_get_descriptor(thread->process, fd);
+
+    object_addref(&ipc->header);
+
+    ref->object = &ipc->header;
+    ref->flags  = OBJECT_REF_FLAG_VALID | OBJECT_REF_FLAG_OWNER;
+    ref->cookie = 0;
+
+    syscall_args_set_return(args, fd);
+}
+
+static void sys_send(jinue_syscall_args_t *args) {
+    ipc_send(args);
+}
+
+static void sys_receive(jinue_syscall_args_t *args) {
+    ipc_receive(args);
+}
+
+static void sys_reply(jinue_syscall_args_t *args) {
+    ipc_reply(args);
+}
 
 void dispatch_syscall(trapframe_t *trapframe) {
     jinue_syscall_args_t *args = (jinue_syscall_args_t *)&trapframe->msg_arg0;
     
-    /** TODO for check negative values (especially -1) */
     uintptr_t function_number = args->arg0;
     
     if(function_number < SYSCALL_USER_BASE) {
         /* microkernel system calls */
         switch(function_number) {
-        
-        case SYSCALL_FUNC_SYSCALL_METHOD:
-            syscall_args_set_return(args, syscall_method);
+        case SYSCALL_FUNC_GET_SYSCALL_METHOD:
+            sys_get_syscall_method(args);
             break;
-            
         case SYSCALL_FUNC_CONSOLE_PUTC:
-            /** TODO: permission check */
-            console_putc(
-                    (char)args->arg1,
-                    CONSOLE_DEFAULT_COLOR);
-            syscall_args_set_return(args, 0);
+            sys_console_putc(args);
             break;
-        
         case SYSCALL_FUNC_CONSOLE_PUTS:
-            /** TODO: permission check, sanity check (data size vs buffer size) */
-            console_printn(
-                    (char *)args->arg2,
-                    jinue_args_get_data_size(args),
-                    CONSOLE_DEFAULT_COLOR);
-            syscall_args_set_return(args, 0);
+            sys_console_puts(args);
             break;
-        
         case SYSCALL_FUNC_THREAD_CREATE:
-        {
-            thread_t *thread = thread_create(
-                    /* TODO use arg1 as an address space reference if specified */
-                    get_current_thread()->process,
-                    (addr_t)args->arg2,
-                    (addr_t)args->arg3);
-
-            if(thread == NULL) {
-                syscall_args_set_error(args, JINUE_EAGAIN);
-            }
-            else {
-                syscall_args_set_return(args, 0);
-            }
-        }
+            sys_thread_create(args);
             break;
-        
         case SYSCALL_FUNC_THREAD_YIELD:
-            thread_yield_from(
-                    get_current_thread(),
-                    false,          /* don't block */
-                    args->arg1);    /* destroy (aka. exit) thread if true */
-            syscall_args_set_return(args, 0);
+            sys_thread_yield(args);
             break;
-
         case SYSCALL_FUNC_SET_THREAD_LOCAL_ADDR:
-            thread_context_set_local_storage(
-                    &get_current_thread()->thread_ctx,
-                    (addr_t)args->arg1,
-                    (size_t)args->arg2);
-            syscall_args_set_return(args, 0);
+            sys_set_thread_local_address(args);
             break;
-
         case SYSCALL_FUNC_GET_THREAD_LOCAL_ADDR:
-            syscall_args_set_return_ptr(
-                    args,
-                    thread_context_get_local_storage(
-                            &get_current_thread()->thread_ctx));
+            sys_get_thread_local_address(args);
             break;
-        
-        case SYSCALL_FUNC_GET_PHYS_MEMORY:
-        {
-            unsigned int idx;
-
-            /** TODO: check user pointer */
-            size_t buffer_size = jinue_args_get_buffer_size(args);
-            jinue_mem_map_t *map = (jinue_mem_map_t *)jinue_args_get_buffer_ptr(args);
-            const boot_info_t *boot_info = get_boot_info();
-
-            if(buffer_size < sizeof(jinue_mem_map_t) + boot_info->e820_entries * sizeof(jinue_mem_entry_t) ) {
-                syscall_args_set_error(args, JINUE_EINVAL);
-            }
-            else {
-                map->num_entries = boot_info->e820_entries;
-
-                for(idx = 0; idx < map->num_entries; ++idx) {
-                    map->entry[idx].addr = boot_info->e820_map[idx].addr;
-                    map->entry[idx].size = boot_info->e820_map[idx].size;
-                    map->entry[idx].type = boot_info->e820_map[idx].type;
-                }
-
-                syscall_args_set_return(args, 0);
-            }
-        }
+        case SYSCALL_FUNC_GET_USER_MEMORY:
+            sys_get_user_memory(args);
             break;
-            
-        case SYSCALL_FUNC_CREATE_IPC:
-        {
-            ipc_t *ipc;
-
-            thread_t *thread = get_current_thread();
-            
-            int fd = process_unused_descriptor(thread->process);
-            
-            if(fd < 0) {
-                syscall_args_set_error(args, JINUE_EAGAIN);
-                break;
-            }
-            
-            if(args->arg1 & JINUE_IPC_PROC) {
-                ipc = ipc_get_proc_object();
-            }
-            else {
-                int flags = IPC_FLAG_NONE;
-
-                if(args->arg1 & JINUE_IPC_SYSTEM) {
-                    flags |= IPC_FLAG_SYSTEM;
-                }
-
-                ipc = ipc_object_create(flags);
-
-                if(ipc == NULL) {
-                    syscall_args_set_error(args, JINUE_EAGAIN);
-                    break;
-                }
-            }
-            
-            object_ref_t *ref = process_get_descriptor(thread->process, fd);
-            
-            object_addref(&ipc->header);
-            
-            ref->object = &ipc->header;
-            ref->flags  = OBJECT_REF_FLAG_VALID | OBJECT_REF_FLAG_OWNER;
-            ref->cookie = 0;
-            
-            syscall_args_set_return(args, fd);
-            
-        }
+        case SYSCALL_FUNC_CREATE_IPC_ENDPOINT:
+            sys_create_ipc_endpoint(args);
             break;
         case SYSCALL_FUNC_RECEIVE:
-            ipc_receive(args);
+            sys_receive(args);
             break;
-
         case SYSCALL_FUNC_REPLY:
-            ipc_reply(args);
+            sys_reply(args);
             break;
-
         default:
-            printk("SYSCALL: function %u arg1=%u(0x%x) arg2=%u(0x%x) arg3=%u(0x%x)\n",
-                function_number,
-                args->arg1, args->arg1,
-                args->arg2, args->arg2,
-                args->arg3, args->arg3 );
-            
-            syscall_args_set_error(args, JINUE_ENOSYS);
+            sys_nosys(args);
         }
     }
     else {
         /* inter-process message */
-        ipc_send(args);
+        sys_send(args);
     }
 }

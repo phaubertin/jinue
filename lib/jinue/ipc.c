@@ -63,6 +63,7 @@ int jinue_send(
         buffer_size = JINUE_SEND_MAX_SIZE;
     }
 
+    /** TODO how do we deal with negative function numbers? Is int the right type?*/
     args.arg0 = (uintptr_t)function;
     args.arg1 = (uintptr_t)fd;
     args.arg2 = (uintptr_t)buffer;
@@ -142,10 +143,10 @@ int jinue_reply(
     return jinue_call(&args, perrno);
 }
 
-int jinue_create_ipc(int flags, int *perrno) {
+int jinue_create_ipc_endpoint(int flags, int *perrno) {
     jinue_syscall_args_t args;
 
-    args.arg0 = SYSCALL_FUNC_CREATE_IPC;
+    args.arg0 = SYSCALL_FUNC_CREATE_IPC_ENDPOINT;
     args.arg1 = (uintptr_t)flags;
     args.arg2 = 0;
     args.arg3 = 0;

@@ -82,7 +82,7 @@ int jinue_call(jinue_syscall_args_t *args, int *perrno) {
 void jinue_get_syscall_implementation(void) {
     jinue_syscall_args_t args;
 
-    args.arg0 = SYSCALL_FUNC_SYSCALL_METHOD;
+    args.arg0 = SYSCALL_FUNC_GET_SYSCALL_METHOD;
     args.arg1 = 0;
     args.arg2 = 0;
     args.arg3 = 0;

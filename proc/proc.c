@@ -125,7 +125,7 @@ int main(int argc, char *argv[], char *envp[]) {
     
     /* get free memory blocks from microkernel */
     errno = 0;
-    status = jinue_get_phys_memory((jinue_mem_map_t *)&call_buffer, sizeof(call_buffer), &errno);
+    status = jinue_get_user_memory((jinue_mem_map_t *)&call_buffer, sizeof(call_buffer), &errno);
 
     if(status != 0) {
         printk("error: could not get physical memory map from microkernel.\n");
@@ -135,7 +135,7 @@ int main(int argc, char *argv[], char *envp[]) {
 
     dump_phys_memory_map((jinue_mem_map_t *)&call_buffer, true);
 
-    int fd = jinue_create_ipc(JINUE_IPC_NONE, &errno);
+    int fd = jinue_create_ipc_endpoint(JINUE_IPC_NONE, &errno);
 
     if(fd < 0) {
         printk("Creating IPC object descriptor.\n");

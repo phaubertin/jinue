@@ -36,7 +36,7 @@
 #define SYSCALL_IRQ    0x80
 
 /** get best system call implementation number based on CPU features */
-#define SYSCALL_FUNC_SYSCALL_METHOD              1
+#define SYSCALL_FUNC_GET_SYSCALL_METHOD          1
 
 /** send a character to in-kernel console driver */
 #define SYSCALL_FUNC_CONSOLE_PUTC                2
@@ -56,11 +56,11 @@
 /** get address of thread local storage for current thread */
 #define SYSCALL_FUNC_GET_THREAD_LOCAL_ADDR       7
 
-/** get free memory block list for management by process manager */
-#define SYSCALL_FUNC_GET_PHYS_MEMORY             8
+/** get free memory block list for management by user space */
+#define SYSCALL_FUNC_GET_USER_MEMORY             8
 
 /** create an IPC object to receive messages */
-#define SYSCALL_FUNC_CREATE_IPC                  9
+#define SYSCALL_FUNC_CREATE_IPC_ENDPOINT         9
 
 /** receive a message on an IPC object */
 #define SYSCALL_FUNC_RECEIVE                    10
