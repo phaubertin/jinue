@@ -30,8 +30,8 @@
  */
 
 #include <jinue-common/errno.h>
-#include <hal/boot.h>
 #include <hal/cpu_data.h>
+#include <hal/memory.h>
 #include <hal/thread.h>
 #include <hal/trap.h>
 #include <console.h>
@@ -79,11 +79,14 @@ static void sys_console_puts(jinue_syscall_args_t *args) {
 }
 
 static void sys_thread_create(jinue_syscall_args_t *args) {
+    void *entry         = (void *)args->arg2;
+    void *user_stack    = (void *)args->arg3;
+
     thread_t *thread = thread_create(
             /* TODO use arg1 as an address space reference if specified */
             get_current_thread()->process,
-            (addr_t)args->arg2,
-            (addr_t)args->arg3);
+            entry,
+            user_stack);
 
     /** TODO return descriptor that represents thread */
     if(thread == NULL) {
@@ -116,27 +119,12 @@ static void sys_get_thread_local_address(jinue_syscall_args_t *args) {
 }
 
 static void sys_get_user_memory(jinue_syscall_args_t *args) {
-    unsigned int idx;
-
     /** TODO: check user pointer */
-    size_t buffer_size = jinue_args_get_buffer_size(args);
-    jinue_mem_map_t *map = (jinue_mem_map_t *)jinue_args_get_buffer_ptr(args);
-    const boot_info_t *boot_info = get_boot_info();
+    size_t buffer_size      = jinue_args_get_buffer_size(args);
+    jinue_mem_map_t *map    = (jinue_mem_map_t *)jinue_args_get_buffer_ptr(args);
 
-    if(buffer_size < sizeof(jinue_mem_map_t) + boot_info->e820_entries * sizeof(jinue_mem_entry_t) ) {
-        syscall_args_set_error(args, JINUE_EINVAL);
-    }
-    else {
-        map->num_entries = boot_info->e820_entries;
-
-        for(idx = 0; idx < map->num_entries; ++idx) {
-            map->entry[idx].addr = boot_info->e820_map[idx].addr;
-            map->entry[idx].size = boot_info->e820_map[idx].size;
-            map->entry[idx].type = boot_info->e820_map[idx].type;
-        }
-
-        syscall_args_set_return(args, 0);
-    }
+    int retval = memory_get_map(map, buffer_size);
+    set_return_value_or_error(args, retval);
 }
 
 static void sys_create_ipc_endpoint(jinue_syscall_args_t *args) {

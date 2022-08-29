@@ -44,4 +44,6 @@ void memory_initialize_array(
 
 void *memory_lookup_page(uint64_t paddr);
 
+int memory_get_map(jinue_mem_map_t *map, size_t buffer_size);
+
 #endif
