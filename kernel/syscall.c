@@ -98,6 +98,8 @@ static void sys_thread_create(jinue_syscall_args_t *args) {
 }
 
 static void sys_thread_yield(jinue_syscall_args_t *args) {
+    /* TODO this system call yields or destroy depending on arg1. This shouldn't
+     * be done by the same system call. */
     thread_yield_from(
             get_current_thread(),
             false,          /* don't block */
