@@ -72,7 +72,7 @@ void ipc_boot_init(void) {
     }
 }
 
-ipc_t *ipc_object_create(int flags) {
+static ipc_t *ipc_object_create(int flags) {
     ipc_t *ipc = slab_cache_alloc(&ipc_object_cache);
     
     if(ipc != NULL) {
@@ -82,8 +82,47 @@ ipc_t *ipc_object_create(int flags) {
     return ipc;
 }
 
-ipc_t *ipc_get_proc_object(void) {
+static ipc_t *ipc_get_proc_object(void) {
     return proc_ipc;
+}
+
+int ipc_create_for_current_process(int flags) {
+    ipc_t *ipc;
+
+    thread_t *thread = get_current_thread();
+
+    int fd = process_unused_descriptor(thread->process);
+
+    if(fd < 0) {
+        return -JINUE_EAGAIN;
+    }
+
+    if(flags & JINUE_IPC_PROC) {
+        ipc = ipc_get_proc_object();
+    }
+    else {
+        int ipc_flags = IPC_FLAG_NONE;
+
+        if(flags & JINUE_IPC_SYSTEM) {
+            ipc_flags |= IPC_FLAG_SYSTEM;
+        }
+
+        ipc = ipc_object_create(ipc_flags);
+
+        if(ipc == NULL) {
+            return -JINUE_EAGAIN;
+        }
+    }
+
+    object_ref_t *ref = process_get_descriptor(thread->process, fd);
+
+    object_addref(&ipc->header);
+
+    ref->object = &ipc->header;
+    ref->flags  = OBJECT_REF_FLAG_VALID | OBJECT_REF_FLAG_OWNER;
+    ref->cookie = 0;
+
+    return fd;
 }
 
 void ipc_send(jinue_syscall_args_t *args) {

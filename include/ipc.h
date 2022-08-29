@@ -45,9 +45,7 @@
 
 void ipc_boot_init(void);
 
-ipc_t *ipc_object_create(int flags);
-
-ipc_t *ipc_get_proc_object(void);
+int ipc_create_for_current_process(int flags);
 
 void ipc_send(jinue_syscall_args_t *args);
 

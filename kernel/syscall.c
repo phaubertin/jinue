@@ -44,6 +44,15 @@
 #include <syscall.h>
 #include <thread.h>
 
+static void set_return_value_or_error(jinue_syscall_args_t *args, int retval) {
+    if(retval < 0) {
+        syscall_args_set_error(args, -retval);
+    }
+    else {
+        syscall_args_set_return(args, retval);
+    }
+}
+
 static void sys_nosys(jinue_syscall_args_t *args) {
     uintptr_t function_number = args->arg0;
     printk("SYSCALL: function %u arg1=%u(0x%x) arg2=%u(0x%x) arg3=%u(0x%x)\n",
@@ -51,7 +60,6 @@ static void sys_nosys(jinue_syscall_args_t *args) {
         args->arg1, args->arg1,
         args->arg2, args->arg2,
         args->arg3, args->arg3 );
-
     syscall_args_set_error(args, JINUE_ENOSYS);
 }
 
@@ -64,7 +72,6 @@ static void sys_console_putc(jinue_syscall_args_t *args) {
     console_putc(
             (char)args->arg1,
             CONSOLE_DEFAULT_COLOR);
-
     syscall_args_set_return(args, 0);
 }
 
@@ -110,10 +117,8 @@ static void sys_set_thread_local_address(jinue_syscall_args_t *args) {
 }
 
 static void sys_get_thread_local_address(jinue_syscall_args_t *args) {
-    syscall_args_set_return_ptr(
-            args,
-            thread_context_get_local_storage(
-                    &get_current_thread()->thread_ctx));
+    addr_t tls = thread_context_get_local_storage(&get_current_thread()->thread_ctx);
+    syscall_args_set_return_ptr(args, tls);
 }
 
 static void sys_get_user_memory(jinue_syscall_args_t *args) {
@@ -141,44 +146,8 @@ static void sys_get_user_memory(jinue_syscall_args_t *args) {
 }
 
 static void sys_create_ipc_endpoint(jinue_syscall_args_t *args) {
-    ipc_t *ipc;
-
-    thread_t *thread = get_current_thread();
-
-    int fd = process_unused_descriptor(thread->process);
-
-    if(fd < 0) {
-        syscall_args_set_error(args, JINUE_EAGAIN);
-        return;
-    }
-
-    if(args->arg1 & JINUE_IPC_PROC) {
-        ipc = ipc_get_proc_object();
-    }
-    else {
-        int flags = IPC_FLAG_NONE;
-
-        if(args->arg1 & JINUE_IPC_SYSTEM) {
-            flags |= IPC_FLAG_SYSTEM;
-        }
-
-        ipc = ipc_object_create(flags);
-
-        if(ipc == NULL) {
-            syscall_args_set_error(args, JINUE_EAGAIN);
-            return;
-        }
-    }
-
-    object_ref_t *ref = process_get_descriptor(thread->process, fd);
-
-    object_addref(&ipc->header);
-
-    ref->object = &ipc->header;
-    ref->flags  = OBJECT_REF_FLAG_VALID | OBJECT_REF_FLAG_OWNER;
-    ref->cookie = 0;
-
-    syscall_args_set_return(args, fd);
+    int fd = ipc_create_for_current_process((int)args->arg1);
+    set_return_value_or_error(args, fd);
 }
 
 static void sys_send(jinue_syscall_args_t *args) {
