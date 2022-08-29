@@ -54,12 +54,6 @@ static void set_return_value_or_error(jinue_syscall_args_t *args, int retval) {
 }
 
 static void sys_nosys(jinue_syscall_args_t *args) {
-    uintptr_t function_number = args->arg0;
-    printk("SYSCALL: function %u arg1=%u(0x%x) arg2=%u(0x%x) arg3=%u(0x%x)\n",
-        function_number,
-        args->arg1, args->arg1,
-        args->arg2, args->arg2,
-        args->arg3, args->arg3 );
     syscall_args_set_error(args, JINUE_ENOSYS);
 }
 
