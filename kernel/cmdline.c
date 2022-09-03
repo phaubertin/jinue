@@ -75,7 +75,7 @@ static const enum_def_t bool_names[] = {
     {NULL, 0}
 };
 
-static cmdline_opts_t cmdline_opts = {
+static cmdline_opts_t cmdline_options = {
     .pae                = CMDLINE_OPT_PAE_AUTO,
     .serial_enabled     = false,
     .serial_baud_rate   = CONSOLE_SERIAL_BAUD_RATE,
@@ -83,6 +83,6 @@ static cmdline_opts_t cmdline_opts = {
     .vga_enabled        = true,
 };
 
-const cmdline_opts_t *cmdline_get_opts(void) {
-    return &cmdline_opts;
+const cmdline_opts_t *cmdline_get_options(void) {
+    return &cmdline_options;
 }

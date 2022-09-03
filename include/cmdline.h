@@ -48,6 +48,6 @@ typedef struct {
     bool                 vga_enabled;
 } cmdline_opts_t;
 
-const cmdline_opts_t *cmdline_get_opts(void);
+const cmdline_opts_t *cmdline_get_options(void);
 
 #endif
