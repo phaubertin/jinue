@@ -46,7 +46,7 @@ typedef enum {
     CMDLINE_OPT_NAME_VGA_ENABLED,
 } cmdline_opt_names_t;
 
-enum_def_t opt_names[] = {
+static const enum_def_t opt_names[] = {
     {"pae",                 CMDLINE_OPT_NAME_PAE},
     {"serial_enabled",      CMDLINE_OPT_NAME_SERIAL_ENABLED},
     {"serial_baud_rate",    CMDLINE_OPT_NAME_SERIAL_BAUD_RATE},
@@ -56,14 +56,14 @@ enum_def_t opt_names[] = {
     {NULL, 0}
 };
 
-enum_def_t opt_pae_names[] = {
+static const enum_def_t opt_pae_names[] = {
     {"auto",        CMDLINE_OPT_PAE_AUTO},
     {"disable",     CMDLINE_OPT_PAE_DISABLE},
     {"require",     CMDLINE_OPT_PAE_REQUIRE},
     {NULL, 0}
 };
 
-enum_def_t bool_names[] = {
+static const enum_def_t bool_names[] = {
     {"true",    true},
     {"yes",     true},
     {"enable",  true},
