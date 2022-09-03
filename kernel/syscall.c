@@ -87,7 +87,7 @@ static int check_input_buffer(
 }
 
 static int check_output_buffer(
-        syscall_output_buffer_t  *buffer,
+        syscall_output_buffer_t *buffer,
         jinue_syscall_args_t    *args) {
 
     buffer->user_ptr    = jinue_args_get_buffer_ptr(args);
@@ -131,9 +131,18 @@ static void sys_console_puts(jinue_syscall_args_t *args) {
 }
 
 static void sys_thread_create(jinue_syscall_args_t *args) {
-    /* TODO validate these arguments (user pointers) */
     void *entry         = (void *)args->arg2;
     void *user_stack    = (void *)args->arg3;
+
+    if(!is_userspace_pointer(entry)) {
+        syscall_args_set_error(args, JINUE_EINVAL);
+        return;
+    }
+
+    if(!is_userspace_pointer(user_stack)) {
+        syscall_args_set_error(args, JINUE_EINVAL);
+        return;
+    }
 
     thread_t *thread = thread_create(
             /* TODO use arg1 as an address space reference if specified */
@@ -161,11 +170,18 @@ static void sys_thread_yield(jinue_syscall_args_t *args) {
 }
 
 static void sys_set_thread_local_address(jinue_syscall_args_t *args) {
-    /* TODO validate arguments */
+    addr_t addr = (addr_t)args->arg1;
+    size_t size = (size_t)args->arg2;
+
+    if(! check_userspace_buffer(addr, size)) {
+        syscall_args_set_error(args, JINUE_EINVAL);
+        return;
+    }
+
     thread_context_set_local_storage(
             &get_current_thread()->thread_ctx,
-            (addr_t)args->arg1,
-            (size_t)args->arg2);
+            addr,
+            size);
     syscall_args_set_return(args, 0);
 }
 
