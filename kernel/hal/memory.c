@@ -249,12 +249,15 @@ void *memory_lookup_page(uint64_t paddr) {
     return (void *)memory_array[entry_index];
 }
 
-int memory_get_map(jinue_mem_map_t *map, size_t buffer_size) {
+int memory_get_map(const syscall_output_buffer_t *buffer) {
     unsigned int idx;
 
-    const boot_info_t *boot_info = get_boot_info();
+    const boot_info_t *boot_info    = get_boot_info();
+    jinue_mem_map_t *map            = buffer->user_ptr;
+    size_t result_size              =
+            sizeof(jinue_mem_map_t) + boot_info->e820_entries * sizeof(jinue_mem_entry_t);
 
-    if(buffer_size < sizeof(jinue_mem_map_t) + boot_info->e820_entries * sizeof(jinue_mem_entry_t) ) {
+    if(buffer->buffer_size < result_size) {
         return -JINUE_EINVAL;
     }
 

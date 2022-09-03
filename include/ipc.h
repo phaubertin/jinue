@@ -47,10 +47,17 @@ void ipc_boot_init(void);
 
 int ipc_create_for_current_process(int flags);
 
-void ipc_send(jinue_syscall_args_t *args);
+int ipc_send(
+        int                              fd,
+        int                              function,
+        const syscall_input_buffer_t    *buffer,
+        jinue_syscall_args_t            *args);
 
-void ipc_receive(jinue_syscall_args_t *args);
+int ipc_receive(
+        int                              fd,
+        const syscall_output_buffer_t   *buffer,
+        jinue_syscall_args_t            *args);
 
-void ipc_reply(jinue_syscall_args_t *args);
+int ipc_reply(const syscall_input_buffer_t *buffer);
 
 #endif

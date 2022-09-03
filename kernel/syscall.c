@@ -30,6 +30,7 @@
  */
 
 #include <jinue-common/errno.h>
+#include <jinue-common/vm.h>
 #include <hal/cpu_data.h>
 #include <hal/memory.h>
 #include <hal/thread.h>
@@ -51,6 +52,57 @@ static void set_return_value_or_error(jinue_syscall_args_t *args, int retval) {
     else {
         syscall_args_set_return(args, retval);
     }
+}
+
+static int check_input_buffer(
+        syscall_input_buffer_t  *buffer,
+        jinue_syscall_args_t    *args) {
+
+    buffer->user_ptr    = jinue_args_get_buffer_ptr(args);
+    buffer->buffer_size = jinue_args_get_buffer_size(args);
+    buffer->data_size   = jinue_args_get_data_size(args);
+    buffer->desc_n      = jinue_args_get_n_desc(args);
+    /* TODO aren't we missing padding size here? */
+    buffer->total_size  =
+            buffer->data_size + buffer->desc_n * sizeof(jinue_ipc_descriptor_t);
+
+    if(buffer->buffer_size > JINUE_SEND_MAX_SIZE) {
+        return -JINUE_EINVAL;
+    }
+
+    if(buffer->total_size > buffer->buffer_size) {
+        return -JINUE_EINVAL;
+    }
+
+    if(buffer->desc_n > JINUE_SEND_MAX_N_DESC) {
+        return -JINUE_EINVAL;
+    }
+
+    /* TODO should we accept NULL if buffer size is zero? */
+    if(! check_userspace_buffer(buffer->user_ptr, buffer->buffer_size)) {
+        return -JINUE_EINVAL;
+    }
+
+    return 0;
+}
+
+static int check_output_buffer(
+        syscall_output_buffer_t  *buffer,
+        jinue_syscall_args_t    *args) {
+
+    buffer->user_ptr    = jinue_args_get_buffer_ptr(args);
+    buffer->buffer_size = jinue_args_get_buffer_size(args);
+
+    if(buffer->buffer_size > JINUE_SEND_MAX_SIZE) {
+        return -JINUE_EINVAL;
+    }
+
+    /* TODO should we accept NULL if buffer size is zero? */
+    if(! check_userspace_buffer(buffer->user_ptr, buffer->buffer_size)) {
+        return -JINUE_EINVAL;
+    }
+
+    return 0;
 }
 
 static void sys_nosys(jinue_syscall_args_t *args) {
@@ -79,6 +131,7 @@ static void sys_console_puts(jinue_syscall_args_t *args) {
 }
 
 static void sys_thread_create(jinue_syscall_args_t *args) {
+    /* TODO validate these arguments (user pointers) */
     void *entry         = (void *)args->arg2;
     void *user_stack    = (void *)args->arg3;
 
@@ -108,6 +161,7 @@ static void sys_thread_yield(jinue_syscall_args_t *args) {
 }
 
 static void sys_set_thread_local_address(jinue_syscall_args_t *args) {
+    /* TODO validate arguments */
     thread_context_set_local_storage(
             &get_current_thread()->thread_ctx,
             (addr_t)args->arg1,
@@ -121,11 +175,16 @@ static void sys_get_thread_local_address(jinue_syscall_args_t *args) {
 }
 
 static void sys_get_user_memory(jinue_syscall_args_t *args) {
-    /** TODO: check user pointer */
-    size_t buffer_size      = jinue_args_get_buffer_size(args);
-    jinue_mem_map_t *map    = (jinue_mem_map_t *)jinue_args_get_buffer_ptr(args);
+    syscall_output_buffer_t buffer;
 
-    int retval = memory_get_map(map, buffer_size);
+    int checkval = check_output_buffer(&buffer, args);
+
+    if(checkval < 0) {
+        syscall_args_set_error(args, -checkval);
+        return;
+    }
+
+    int retval = memory_get_map(&buffer);
     set_return_value_or_error(args, retval);
 }
 
@@ -135,25 +194,75 @@ static void sys_create_ipc_endpoint(jinue_syscall_args_t *args) {
 }
 
 static void sys_send(jinue_syscall_args_t *args) {
-    ipc_send(args);
+    syscall_input_buffer_t buffer;
+
+    int function    = args->arg0;
+    int fd          = args->arg1;
+    int checkval    = check_input_buffer(&buffer, args);
+
+    if(checkval < 0) {
+        syscall_args_set_error(args, -checkval);
+        return;
+    }
+
+    /* We need to pass the full args here so the receiver thread can set the
+     * return values in ipc_reply(). */
+    int retval = ipc_send(fd, function, &buffer, args);
+    set_return_value_or_error(args, retval);
 }
 
 static void sys_receive(jinue_syscall_args_t *args) {
-    ipc_receive(args);
+    syscall_output_buffer_t  buffer;
+
+    int fd          = (int)args->arg1;
+    int checkval    = check_output_buffer(&buffer, args);
+
+    if(checkval < 0) {
+        syscall_args_set_error(args, -checkval);
+        return;
+    }
+
+    /* This function does not set only a return value on success but needs to
+     * be able to set the value of all registers, which is why we pass the
+     * full args here. */
+    int retval = ipc_receive(fd, &buffer, args);
+
+    /* ipc_receive() sets the return values on success so we only need to
+     * handle the error cases here. */
+    if(retval < 0) {
+        syscall_args_set_error(args, -retval);
+    }
 }
 
 static void sys_reply(jinue_syscall_args_t *args) {
-    ipc_reply(args);
+    syscall_input_buffer_t buffer;
+
+    int checkval = check_input_buffer(&buffer, args);
+
+    if(checkval < 0) {
+        syscall_args_set_error(args, -checkval);
+        return;
+    }
+
+    int retval = ipc_reply(&buffer);
+    set_return_value_or_error(args, retval);
 }
 
 void dispatch_syscall(trapframe_t *trapframe) {
     jinue_syscall_args_t *args = (jinue_syscall_args_t *)&trapframe->msg_arg0;
     
-    uintptr_t function_number = args->arg0;
+    int function = args->arg0;
     
-    if(function_number < SYSCALL_USER_BASE) {
+    if(function < 0) {
+        /* The function number is expected to be non-negative. This is especially
+         * important for the return value of the ipc_receive() system call because,
+         * when the system call returns, a negative value (specifically -1), means
+         * the call failed. */
+        syscall_args_set_error(args, JINUE_EINVAL);
+    }
+    else if(function < SYSCALL_USER_BASE) {
         /* microkernel system calls */
-        switch(function_number) {
+        switch(function) {
         case SYSCALL_FUNC_GET_SYSCALL_METHOD:
             sys_get_syscall_method(args);
             break;

@@ -54,7 +54,6 @@ int jinue_send(
      * because the kernel cannot check this once the values have been packed. */
     if(data_size > JINUE_SEND_MAX_SIZE || n_desc > JINUE_SEND_MAX_N_DESC) {
         set_errno(perrno, JINUE_EINVAL);
-
         return -1;
     }
 

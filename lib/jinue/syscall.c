@@ -71,7 +71,7 @@ int jinue_call(jinue_syscall_args_t *args, int *perrno) {
     jinue_call_raw(args);
 
     if(perrno != NULL) {
-        if(args->arg1 != 0) {
+        if(args->arg1 < 0) {
             *perrno = args->arg1;
         }
     }
