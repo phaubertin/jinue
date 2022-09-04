@@ -41,13 +41,16 @@ typedef enum {
 } cmdline_opt_pae_t;
 
 typedef struct {
+    /* TODO use pae option */
     cmdline_opt_pae_t    pae;
-    bool                 serial_enabled;
+    bool                 serial_enable;
     int                  serial_baud_rate;
     int                  serial_ioport;
-    bool                 vga_enabled;
+    bool                 vga_enable;
 } cmdline_opts_t;
 
 const cmdline_opts_t *cmdline_get_options(void);
+
+void cmdline_parse_options(const char *cmdline);
 
 #endif

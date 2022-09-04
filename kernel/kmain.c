@@ -31,8 +31,10 @@
 
 #include <hal/boot.h>
 #include <hal/hal.h>
+#include <hal/vga.h>
 #include <hal/vm.h>
 #include <boot.h>
+#include <cmdline.h>
 #include <console.h>
 #include <elf.h>
 #include <hal/memory.h>
@@ -65,13 +67,25 @@ static Elf32_Ehdr *find_process_manager(const boot_info_t *boot_info) {
 void kmain(void) {
     elf_info_t elf_info;
     
+    const boot_info_t *boot_info = get_boot_info();
+
+    /* The boot_info structure has not been validated yes, so let'S not take any
+     * chances. We want to parse the command line before doing anything that
+     * logs to the console (including anything that can fail like validating the
+     * boot_info structure) because the command line might contain arguments
+     * that control where we log (VGA and/or UART) as well as other relevant
+     * settings (e.g. UART baud rate). */
+    if(boot_info->cmdline != NULL) {
+        cmdline_parse_options(boot_info->cmdline);
+    }
+
+    const cmdline_opts_t *cmdline_opts = cmdline_get_options();
+
     /* initialize console and say hello */
-    console_init();
+    console_init(cmdline_opts);
     
-    /* Say hello. */
     printk("Kernel revision " GIT_REVISION " built " BUILD_TIME " on " BUILD_HOST "\n");
     
-    const boot_info_t *boot_info = get_boot_info();
     (void)boot_info_check(true);
 
     if(boot_info->ramdisk_start == 0 || boot_info->ramdisk_size == 0) {
@@ -90,7 +104,7 @@ void kmain(void) {
     boot_alloc_init(&boot_alloc, boot_info);
 
     /* initialize hardware abstraction layer */
-    hal_init(&boot_alloc, boot_info);
+    hal_init(&boot_alloc, boot_info, cmdline_opts);
 
     /* initialize caches */
     ipc_boot_init();

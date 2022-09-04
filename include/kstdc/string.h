@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2022 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_KSTDC_STRING_H
-#define _JINUE_KSTDC_STRING_H
+#ifndef _JINUE_KSTDC_CTYPE_H
+#define _JINUE_KSTDC_CTYPE_H
 
 #include <stddef.h>
 

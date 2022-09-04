@@ -33,16 +33,8 @@
 #define JINUE_KERNEL_CONSOLE_H
 
 #include <jinue-common/console.h>
-#include <hal/serial.h>
-/* TODO why do we need to include this? */
-#include <hal/vga.h>
+#include <cmdline.h>
 
-/* TODO this is hardware specific and shouldn't be in this file */
-#define CONSOLE_SERIAL_IOPORT       SERIAL_COM1_IOPORT
-
-/* TODO this is hardware specific and shouldn't be in this file */
-#define CONSOLE_SERIAL_BAUD_RATE    115200
-
-void console_init(void);
+void console_init(const cmdline_opts_t *cmdline_opts);
 
 #endif

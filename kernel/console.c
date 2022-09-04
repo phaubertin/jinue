@@ -31,23 +31,41 @@
 
 #include <hal/serial.h>
 #include <hal/vga.h>
+#include <cmdline.h>
 #include <console.h>
 #include <string.h>
 
 
-void console_init(void) {
-    vga_init();
-    serial_init(CONSOLE_SERIAL_IOPORT, CONSOLE_SERIAL_BAUD_RATE);
+void console_init(const cmdline_opts_t *cmdline_opts) {
+    /* TODO validate arguments before using them */
+    if(cmdline_opts->vga_enable) {
+        vga_init();
+    }
+    if(cmdline_opts->serial_enable) {
+        serial_init(cmdline_opts->serial_ioport, cmdline_opts->serial_baud_rate);
+    }
 }
 
 void console_printn(const char *message, unsigned int n, int colour) {
-    vga_printn(message, n, colour);
-    serial_printn(CONSOLE_SERIAL_IOPORT, message, n);
+    const cmdline_opts_t *cmdline_opts = cmdline_get_options();
+
+    if(cmdline_opts->vga_enable) {
+        vga_printn(message, n, colour);
+    }
+    if(cmdline_opts->serial_enable) {
+        serial_printn(cmdline_opts->serial_ioport, message, n);
+    }
 }
 
 void console_putc(char c, int colour) {
-    vga_putc(c, colour);
-    serial_putc(CONSOLE_SERIAL_IOPORT, c);
+    const cmdline_opts_t *cmdline_opts = cmdline_get_options();
+
+    if(cmdline_opts->vga_enable) {
+        vga_putc(c, colour);
+    }
+    if(cmdline_opts->serial_enable) {
+        serial_putc(cmdline_opts->serial_ioport, c);
+    }
 }
 
 void console_print(const char *message, int colour) {

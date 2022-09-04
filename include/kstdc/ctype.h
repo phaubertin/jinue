@@ -29,16 +29,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_HAL_H
-#define JINUE_HAL_H
+#ifndef _JINUE_KSTDC_CTYPE_H
+#define _JINUE_KSTDC_CTYPE_H
 
-#include <cmdline.h>
-#include <types.h>
+static inline int isdigit(int c) {
+    return c >= '0' && c <= '9';
+}
 
-void hal_init(
-        boot_alloc_t            *boot_alloc,
-        const boot_info_t       *boot_info,
-        const cmdline_opts_t    *cmdline_opts);
+static inline int isxdigit(int c) {
+    return isdigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+}
 
 #endif
-
