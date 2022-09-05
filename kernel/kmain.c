@@ -69,7 +69,7 @@ void kmain(void) {
     
     const boot_info_t *boot_info = get_boot_info();
 
-    /* The boot_info structure has not been validated yes, so let'S not take any
+    /* The boot_info structure has not been validated yes, so let's not take any
      * chances. We want to parse the command line before doing anything that
      * logs to the console (including anything that can fail like validating the
      * boot_info structure) because the command line might contain arguments
@@ -83,7 +83,7 @@ void kmain(void) {
 
     /* initialize console and say hello */
     console_init(cmdline_opts);
-    
+
     printk("Kernel revision " GIT_REVISION " built " BUILD_TIME " on " BUILD_HOST "\n");
     
     (void)boot_info_check(true);

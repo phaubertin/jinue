@@ -82,7 +82,7 @@ static const enum_def_t opt_names[] = {
     {"serial_enable",       CMDLINE_OPT_NAME_SERIAL_ENABLE},
     {"serial_baud_rate",    CMDLINE_OPT_NAME_SERIAL_BAUD_RATE},
     {"serial_ioport",       CMDLINE_OPT_NAME_SERIAL_IOPORT},
-    {"serial_portn",        CMDLINE_OPT_NAME_SERIAL_PORTN},
+    {"serial_dev",          CMDLINE_OPT_NAME_SERIAL_PORTN},
     {"vga_enable",          CMDLINE_OPT_NAME_VGA_ENABLE},
     {NULL, 0}
 };
