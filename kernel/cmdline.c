@@ -34,6 +34,18 @@
 #include <cmdline.h>
 #include <console.h>
 
+/** Maximum valid command line length
+ *
+ * Here, the limiting factor is the size of the user loader's stack since these
+ * options will end up on its command line or its environment. */
+#define CMDLINE_MAX_VALID_LENGTH    4096
+
+/** Maximum command line length that cmdline_parse_options() will attempt to parse
+ *
+ * cmdline_parse_options() can really parse any length. The intent here is to
+ * attempt to detect a missing NUL terminator. */
+#define CMDLINE_MAX_PARSE_LENGTH    1000000
+
 typedef enum {
     PARSE_STATE_START,
     PARSE_STATE_NAME,
@@ -130,10 +142,28 @@ static cmdline_opts_t cmdline_options = {
     .vga_enable         = true,
 };
 
+/**
+ * Get the kernel command line options parsed with cmdline_parse_options().
+ *
+ * If called before cmdline_parse_options(), the returned options structure
+ * contains the defaults.
+ *
+ * @return kernel command line options
+ *
+ * */
 const cmdline_opts_t *cmdline_get_options(void) {
     return &cmdline_options;
 }
 
+/**
+ * Attempt to match an enum value
+ *
+ * @param value set to numeric value of the enum only if there is a match
+ * @param def enum definition
+ * @param token potential name representing an enum value
+ * @return true if an enum value was successfully matched, false otherwise
+ *
+ * */
 static bool match_enum(int *value, const enum_def_t *def, const token_t *token) {
     for(int def_index = 0; def[def_index].name != NULL; ++def_index) {
         int token_index;
@@ -185,6 +215,22 @@ static bool match_enum(int *value, const enum_def_t *def, const token_t *token) 
     return false;
 }
 
+/**
+ * Convert a decimal or hexadecimal digit to it's integer value
+ *
+ * For characters 0-9, values 0-9 are returned
+ * For characters a-f, values 10-15 are returned
+ * For characters A-F, values 10-15 are returned
+ *
+ * For any other character, behaviour is undefined. The digit character is
+ * expected to have been validated (i.e. in the right range) before this
+ * function is called.
+ *
+ * @param c decimal or hexadecimal digit character
+ * @return integer value of digit
+ *
+ * */
+
 /* This function works for decimal and hexadecimal digits. Passing anything else
  * results in undefined behaviour, i.e. input needs to be validated first. */
 static int integer(int c) {
@@ -204,6 +250,18 @@ static int integer(int c) {
     return c - 'A' + 10;
 }
 
+/**
+ * Attempt to match an integer value
+ *
+ * Decimal integer and hexadecimal values are accepted. Negative values are
+ * rejected. Maximum value for a decimal value is currently 999 999 999 for
+ * easier implementation.
+ *
+ * @param ivalue set to integer value only if there is a match
+ * @param token potential integer value
+ * @return true if parsed successfully as an integer, false otherwise
+ *
+ * */
 static bool match_integer(int *ivalue, const token_t *value) {
     if(value->length < 1) {
         return false;
@@ -278,6 +336,15 @@ static bool match_integer(int *ivalue, const token_t *value) {
     }
 }
 
+/**
+ * Given a name-value pair, set the relevant command line option
+ *
+ * Unrecognized options are ignored.
+ *
+ * @param name token representing the option name
+ * @param value token representing the option value
+ *
+ * */
 void process_name_value_pair(const token_t *name, const token_t *value) {
     int opt_name;
     int opt_value;
@@ -321,14 +388,47 @@ void process_name_value_pair(const token_t *name, const token_t *value) {
     }
 }
 
+/**
+ * Check whether a character represents a command line separator
+ *
+ * A space or horizontal tab is a separator.
+ *
+ * The terminating NUL is also treated as a "separator", which ensures the last
+ * option on the command line is processed correctly. This is important in
+ * parsing states that represent the end of an option. In other states, it
+ * really does not matter because the end of the command line means parsing is
+ * done either way. (See cmdline_parse_options() for this paragraph to make
+ * sense.)
+ *
+ * @param c character to check
+ * @return true if the character is a separator, false otherwise
+ *
+ * */
 static bool is_separator(int c) {
-    /* Having the end of the string (NUL character) here ensures the last option
-     * on the command line is processed correctly.This is important for parsing
-     * states that mark the end of an option. For other states, it really does
-     * not matter because the end of the command line means we are done. */
     return c == ' ' || c == '\t' || c == '\0';
 }
 
+/**
+ * Parse the kernel command line options
+ *
+ * After this function is called, the options can be retrieved by calling
+ * cmdline_get_options().
+ *
+ * This function is fairly permissive. Unrecognized options or options without
+ * and equal sign do not make the command line invalid. These options are
+ * likely intended for the initial process rather than the kernel, so they are
+ * ignored.
+ *
+ * Parsing may fail if options are malformed or it the command line is too long,
+ * but we want to do our best to continue parsing other valid options when this
+ * happens. An invalid command line will lead to a kernel panic, but some
+ * options affect logging (VGA and/or serial port enabled, baud rate, etc.) and
+ * we would rather log the failure at the right place in the right way if
+ * possible.
+ *
+ * @param cmdline command line string
+ *
+ * */
 void cmdline_parse_options(const char *cmdline) {
     token_t name;
     token_t value;
