@@ -177,15 +177,6 @@ static bool match_enum(int *value, const enum_def_t *def, const token_t *token) 
             int name_c  = this_def->name[token_index];
             int token_c = token->start[token_index];
 
-            /* We treat dashes and underscores as equivalent. */
-            if(name_c == '_') {
-                name_c = '-';
-            }
-
-            if(token_c == '_') {
-                token_c = '-';
-            }
-
             /* Corner case: if the name from the enum definition is a prefix of
              * the token, once we reach the end of it, name_c will be the NUL
              * character and token_c will not. */
@@ -450,13 +441,13 @@ void cmdline_parse_options(const char *cmdline) {
         case PARSE_STATE_START:
             if(c == '-') {
                 /* We might be at the start of an option that starts with one or
-                 * more dashes, but we can might also be at the start of the
-                 * double dash that marks the end of the options parsed by the
-                 * kernel. We will only know for sure later. */
+                 * more dashes, or we might also be at the start of the double
+                 * dash that marks the end of the options parsed by the kernel.
+                 * We will only know for sure later. */
                 name.start  = current;
                 state       = PARSE_STATE_DASH1;
             }
-            else if(is_separator(c)) {
+            else if(! is_separator(c)) {
                 /* We are at the start of an option, possibly a name-value pair,
                  * i.e. a name and value separated by an equal sign. */
                 name.start  = current;
