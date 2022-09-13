@@ -72,13 +72,13 @@ typedef enum {
     PARSE_STATE_START,
     PARSE_STATE_NAME,
     PARSE_STATE_EQUAL,
-    PARSE_STATE_START_QUOTE,
+    PARSE_STATE_VALUE_START_QUOTE,
     PARSE_STATE_VALUE,
     PARSE_STATE_QUOTED_VALUE,
-    PARSE_STATE_END_QUOTE,
+    PARSE_STATE_VALUE_END_QUOTE,
     PARSE_STATE_DASH1,
     PARSE_STATE_DASH2,
-    PARSE_STATE_RECOVER,
+    PARSE_STATE_DONE,
 } parse_state_t;
 
 typedef struct {
@@ -552,7 +552,7 @@ void cmdline_parse_options(const char *cmdline) {
     token_t name;
     token_t value;
 
-    /* Some command line arguments affect how e do logging (e.g. VGA and/or
+    /* Some command line arguments affect how we do logging (e.g. VGA and/or
      * serial port enabled, baud rate, etc.). For this reason, when we encounter
      * an error, we continue parsing the arguments. The kernel's main function
      * does things in this order:
@@ -574,8 +574,10 @@ void cmdline_parse_options(const char *cmdline) {
     }
 
     parse_state_t state = PARSE_STATE_START;
-    bool done           = false;
     int pos             = 0;
+
+    /* TODO validate (but ignore) the command line options after the -- */
+    /* TODO support options in quotes */
 
     while(true) {
         const char *current = &cmdline[pos];
@@ -640,7 +642,7 @@ void cmdline_parse_options(const char *cmdline) {
                 /* Looks like this is going to be a value in quotes. The value
                  * will end with a closing quote, not with the next separator
                  * (i.e. space) or the end of the command line. */
-                state = PARSE_STATE_START_QUOTE;
+                state = PARSE_STATE_VALUE_START_QUOTE;
             }
             else {
                 /* We are at the start of an unquoted value. */
@@ -648,7 +650,7 @@ void cmdline_parse_options(const char *cmdline) {
                 state = PARSE_STATE_VALUE;
             }
             break;
-        case PARSE_STATE_START_QUOTE:
+        case PARSE_STATE_VALUE_START_QUOTE:
             /* We are at the start of a value in quotes. This state is needed so
              * the value excludes the opening quote. */
             value.start = current;
@@ -670,10 +672,10 @@ void cmdline_parse_options(const char *cmdline) {
                  * before processing the pair. If it is followed by random junk
                  * instead, this is not a valid option. */
                 value.length = current - value.start;
-                state = PARSE_STATE_END_QUOTE;
+                state = PARSE_STATE_VALUE_END_QUOTE;
             }
             break;
-        case PARSE_STATE_END_QUOTE:
+        case PARSE_STATE_VALUE_END_QUOTE:
             if(is_separator(c)) {
                 /* We are at a separator that follows a value in quotes. This
                  * makes the option valid, so let's process it. */
@@ -681,10 +683,21 @@ void cmdline_parse_options(const char *cmdline) {
                 state = PARSE_STATE_START;
             }
             else {
-                /* We found random junk after the quoted value. This is an
-                 * invalid option. */
+                /* We found random junk after the quoted value. Let's flag the
+                 * error and then try to continue parsing by assuming it's just
+                 * a missing separator. */
                 cmdline_errors |= CMDLINE_ERROR_JUNK_AFTER_ENDQUOTE;
-                state = PARSE_STATE_RECOVER;
+
+                /* The following uses the same logic as the PARSE_STATE_START
+                 * state.*/
+                if(c == '-') {
+                    name.start  = current;
+                    state       = PARSE_STATE_DASH1;
+                }
+                else {
+                    name.start  = current;
+                    state       = PARSE_STATE_NAME;
+                }
             }
             break;
         case PARSE_STATE_DASH1:
@@ -705,7 +718,7 @@ void cmdline_parse_options(const char *cmdline) {
             if(is_separator(c)) {
                 /* We just found a double dash by itself. We are done. The
                  * options that follow aren't ours. */
-                done = true;
+                state = PARSE_STATE_DONE;
             }
             else {
                 /* We are at the start of an option that starts with two dashes,
@@ -714,24 +727,19 @@ void cmdline_parse_options(const char *cmdline) {
                 state = PARSE_STATE_START;
             }
             break;
-        case PARSE_STATE_RECOVER:
-            /* We transition to this state when we encounter certain parsing
-             * errors. We attempt to recover by discarding characters until the
-             * next separator, and then continuing parsing there.
-             *
-             * TODO can we handle the special case of a missing separator
-             * followed by an option with a quoted value? */
-            if(is_separator(c)) {
-                state = PARSE_STATE_START;
-            }
+        case PARSE_STATE_DONE:
+            /* Make compiler happy by having a case for PARSE_STATE_DONE in this
+             * switch statement even though it does nothing. */
             break;
         }
 
-        /* Make sure we are not creating an infinite loop. Some states need to
-         * handle the NUL character specifically to make sure the last option
-         * on the command line is handled correctly. However, for any state, we
-         * are now done. */
-        if(c == '\0' || done) {
+        /* Make sure we are not creating an infinite loop.
+         *
+         * Some states need to handle the NUL character specifically to make
+         * sure the last option on the command line is handled correctly.
+         * However, in any state, once we encounter the terminating NUL, we are
+         * done. */
+        if(c == '\0' || state == PARSE_STATE_DONE) {
             break;
         }
 
