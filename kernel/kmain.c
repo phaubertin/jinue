@@ -69,34 +69,38 @@ void kmain(void) {
     
     const boot_info_t *boot_info = get_boot_info();
 
-    /* The boot_info structure has not been validated yes, so let's not take any
+    /* TODO reword this
+     *
+     * The boot_info structure has not been validated yet, so let's not take any
      * chances. We want to parse the command line before doing anything that
      * logs to the console (including anything that can fail like validating the
      * boot_info structure) because the command line might contain arguments
      * that control where we log (VGA and/or UART) as well as other relevant
      * settings (e.g. UART baud rate). */
-    if(boot_info->cmdline != NULL) {
-        cmdline_parse_options(boot_info->cmdline);
-    }
+    cmdline_parse_options(boot_info->cmdline);
 
     const cmdline_opts_t *cmdline_opts = cmdline_get_options();
 
     /* initialize console and say hello */
     console_init(cmdline_opts);
 
+    printk("Jinue microkernel started.\n");
     printk("Kernel revision " GIT_REVISION " built " BUILD_TIME " on " BUILD_HOST "\n");
     
+    cmdline_process_errors();
+
     (void)boot_info_check(true);
 
     if(boot_info->ramdisk_start == 0 || boot_info->ramdisk_size == 0) {
+        /* TODO once user loader is implemented, this needs to be a kernel panic. */
         printk("%kWarning: no initial RAM disk loaded.\n", VGA_COLOR_YELLOW);
     }
     else {
-        printk("RAM disk with size %u bytes loaded at address %x.\n", boot_info->ramdisk_size, boot_info->ramdisk_start);
+        printk("Bootloader has loaded RAM disk with size %u bytes at address %x.\n", boot_info->ramdisk_size, boot_info->ramdisk_start);
     }
 
     printk("Kernel command line:\n", boot_info->kernel_size);
-    printk("    %s\n", boot_info->cmdline);
+    printk("%s\n", boot_info->cmdline);
     printk("---\n");
 
     /* Initialize the boot allocator. */
@@ -133,6 +137,10 @@ void kmain(void) {
     if(thread == NULL) {
         panic("Could not create initial thread.");
     }
+
+    /* This should be the last thing the kernel prints before passing control
+     * to the user space loader. */
+    printk("---\n");
 
     /* start process manager
      *

@@ -33,18 +33,40 @@
 #include <ctype.h>
 #include <cmdline.h>
 #include <console.h>
+#include <panic.h>
+#include <printk.h>
 
 /** Maximum valid command line length
  *
  * Here, the limiting factor is the size of the user loader's stack since these
- * options will end up on its command line or its environment. */
-#define CMDLINE_MAX_VALID_LENGTH    4096
+ * options will end up on its command line or its environment.
+ *
+ * TODO we need to upgrade to boot protocol 2.06+ before we can increase this. */
+#define CMDLINE_MAX_VALID_LENGTH    255
 
 /** Maximum command line length that cmdline_parse_options() will attempt to parse
  *
  * cmdline_parse_options() can really parse any length. The intent here is to
  * attempt to detect a missing NUL terminator. */
-#define CMDLINE_MAX_PARSE_LENGTH    1000000
+#define CMDLINE_MAX_PARSE_LENGTH    (1000 * 1000)
+
+#define CMDLINE_ERROR_TOO_LONG                  (1<<0)
+
+#define CMDLINE_ERROR_IS_NULL                   (1<<1)
+
+#define CMDLINE_ERROR_INVALID_PAE               (1<<2)
+
+#define CMDLINE_ERROR_INVALID_SERIAL_ENABLE     (1<<3)
+
+#define CMDLINE_ERROR_INVALID_SERIAL_BAUD_RATE  (1<<4)
+
+#define CMDLINE_ERROR_INVALID_SERIAL_IOPORT     (1<<5)
+
+#define CMDLINE_ERROR_INVALID_SERIAL_DEV        (1<<6)
+
+#define CMDLINE_ERROR_INVALID_VGA_ENABLE        (1<<7)
+
+#define CMDLINE_ERROR_JUNK_AFTER_ENDQUOTE       (1<<8)
 
 typedef enum {
     PARSE_STATE_START,
@@ -56,6 +78,7 @@ typedef enum {
     PARSE_STATE_END_QUOTE,
     PARSE_STATE_DASH1,
     PARSE_STATE_DASH2,
+    PARSE_STATE_RECOVER,
 } parse_state_t;
 
 typedef struct {
@@ -73,7 +96,7 @@ typedef enum {
     CMDLINE_OPT_NAME_SERIAL_ENABLE,
     CMDLINE_OPT_NAME_SERIAL_BAUD_RATE,
     CMDLINE_OPT_NAME_SERIAL_IOPORT,
-    CMDLINE_OPT_NAME_SERIAL_PORTN,
+    CMDLINE_OPT_NAME_SERIAL_DEV,
     CMDLINE_OPT_NAME_VGA_ENABLE,
 } cmdline_opt_names_t;
 
@@ -82,7 +105,7 @@ static const enum_def_t opt_names[] = {
     {"serial_enable",       CMDLINE_OPT_NAME_SERIAL_ENABLE},
     {"serial_baud_rate",    CMDLINE_OPT_NAME_SERIAL_BAUD_RATE},
     {"serial_ioport",       CMDLINE_OPT_NAME_SERIAL_IOPORT},
-    {"serial_dev",          CMDLINE_OPT_NAME_SERIAL_PORTN},
+    {"serial_dev",          CMDLINE_OPT_NAME_SERIAL_DEV},
     {"vga_enable",          CMDLINE_OPT_NAME_VGA_ENABLE},
     {NULL, 0}
 };
@@ -122,6 +145,21 @@ static const enum_def_t serial_ports[] = {
     {NULL, 0}
 };
 
+static const enum_def_t serial_baud_rates[] = {
+    {"300",         300},
+    {"600",         600},
+    {"1200",        1200},
+    {"2400",        2400},
+    {"4800",        4800},
+    {"9600",        9600},
+    {"14400",       14400},
+    {"19200",       19200},
+    {"38400",       38400},
+    {"57600",       57600},
+    {"115200",      115200},
+    {NULL, 0}
+};
+
 static const enum_def_t bool_names[] = {
     {"true",    true},
     {"yes",     true},
@@ -142,6 +180,8 @@ static cmdline_opts_t cmdline_options = {
     .vga_enable         = true,
 };
 
+static int cmdline_errors;
+
 /**
  * Get the kernel command line options parsed with cmdline_parse_options().
  *
@@ -153,6 +193,71 @@ static cmdline_opts_t cmdline_options = {
  * */
 const cmdline_opts_t *cmdline_get_options(void) {
     return &cmdline_options;
+}
+
+/**
+ * Process command line parsing errors
+ *
+ * This function is to be called after calling cmdline_parse_options(). It
+ * logs a message for any parsing error that occurred and then panics if any
+ * parsing error was fatal.
+ *
+ * This two-step process is needed because some command line arguments influence
+ * how logging is performed (enable VGA and/or serial logging, baud rate, etc.).
+ * Because of this, even if some parsing errors are found, we want to do our
+ * best to parse these options so the errors are logged in the right way.
+ *
+ * The kernel's main function (i.e. kmain()) is expected to do the following, in
+ * this order:
+ * - Call cmdline_parse_options() to parse command line option.
+ * - Initialize the console, taking into account the relevant options.
+ * - Call this function.
+ *
+ * */
+void cmdline_process_errors(void) {
+    if(cmdline_errors != 0) {
+        printk("There are issues with the kernel command line:\n");
+    }
+
+    if(cmdline_errors & CMDLINE_ERROR_TOO_LONG) {
+        printk("    Kernel command line is too long\n");
+    }
+
+    if(cmdline_errors & CMDLINE_ERROR_IS_NULL) {
+        printk("    No kernel command line/command line is NULL\n");
+    }
+
+    if(cmdline_errors & CMDLINE_ERROR_INVALID_PAE) {
+        printk("    Invalid value for argument 'pae'\n");
+    }
+
+    if(cmdline_errors & CMDLINE_ERROR_INVALID_SERIAL_ENABLE) {
+        printk("    Invalid value for argument 'serial_enable'\n");
+    }
+
+    if(cmdline_errors & CMDLINE_ERROR_INVALID_SERIAL_BAUD_RATE) {
+        printk("    Invalid value for argument 'serial_baud_rate'\n");
+    }
+
+    if(cmdline_errors & CMDLINE_ERROR_INVALID_SERIAL_IOPORT) {
+        printk("    Invalid value for argument 'serial_ioport'\n");
+    }
+
+    if(cmdline_errors & CMDLINE_ERROR_INVALID_SERIAL_DEV) {
+        printk("    Invalid value for argument 'serial_dev'\n");
+    }
+
+    if(cmdline_errors & CMDLINE_ERROR_INVALID_VGA_ENABLE) {
+        printk("    Invalid value for argument 'vga_enable'\n");
+    }
+
+    if(cmdline_errors & CMDLINE_ERROR_JUNK_AFTER_ENDQUOTE) {
+        printk("    Invalid character after closing quote, separator (e.g. space) expected\n");
+    }
+
+    if(cmdline_errors != 0) {
+        panic("Invalid kernel command line");
+    }
 }
 
 /**
@@ -261,11 +366,11 @@ static bool match_integer(int *ivalue, const token_t *value) {
     int c = value->start[0];
 
     if(value->length == 1) {
-        /* Corner case: we don't have a need for negative integers. */
         if(!isdigit(c)) {
             return false;
         }
-        return integer(c);
+        *ivalue = integer(c);
+        return true;
     }
 
     if(c == 0) {
@@ -341,7 +446,7 @@ void process_name_value_pair(const token_t *name, const token_t *value) {
     int opt_value;
 
     if(! match_enum(&opt_name, opt_names, name)) {
-        /* Unknown option */
+        /* Unknown option - ignore */
         return;
     }
 
@@ -350,30 +455,53 @@ void process_name_value_pair(const token_t *name, const token_t *value) {
         if(match_enum(&opt_value, opt_pae_names, value)) {
             cmdline_options.pae = opt_value;
         }
+        else {
+            cmdline_errors |= CMDLINE_ERROR_INVALID_PAE;
+        }
         break;
     case CMDLINE_OPT_NAME_SERIAL_ENABLE:
         if(match_enum(&opt_value, bool_names, value)) {
             cmdline_options.serial_enable = opt_value;
         }
+        else {
+            cmdline_errors |= CMDLINE_ERROR_INVALID_SERIAL_ENABLE;
+        }
         break;
     case CMDLINE_OPT_NAME_SERIAL_BAUD_RATE:
-        if(match_integer(&opt_value, value)) {
+        if(match_enum(&opt_value, serial_baud_rates, value)) {
             cmdline_options.serial_baud_rate = opt_value;
+        }
+        else {
+            cmdline_errors |= CMDLINE_ERROR_INVALID_SERIAL_BAUD_RATE;
         }
         break;
     case CMDLINE_OPT_NAME_SERIAL_IOPORT:
         if(match_integer(&opt_value, value)) {
-            cmdline_options.serial_ioport = opt_value;
+            if(opt_value > SERIAL_MAX_IOPORT) {
+                cmdline_errors |= CMDLINE_ERROR_INVALID_SERIAL_IOPORT;
+            }
+            else {
+                cmdline_options.serial_ioport = opt_value;
+            }
+        }
+        else {
+            cmdline_errors |= CMDLINE_ERROR_INVALID_SERIAL_IOPORT;
         }
         break;
-    case CMDLINE_OPT_NAME_SERIAL_PORTN:
+    case CMDLINE_OPT_NAME_SERIAL_DEV:
         if(match_enum(&opt_value, serial_ports, value)) {
-            cmdline_options.serial_ioport   = opt_value;
+            cmdline_options.serial_ioport = opt_value;
+        }
+        else {
+            cmdline_errors |= CMDLINE_ERROR_INVALID_SERIAL_DEV;
         }
         break;
     case CMDLINE_OPT_NAME_VGA_ENABLE:
         if(match_enum(&opt_value, bool_names, value)) {
             cmdline_options.vga_enable = opt_value;
+        }
+        else {
+            cmdline_errors |= CMDLINE_ERROR_INVALID_VGA_ENABLE;
         }
         break;
     }
@@ -424,18 +552,53 @@ void cmdline_parse_options(const char *cmdline) {
     token_t name;
     token_t value;
 
+    /* Some command line arguments affect how e do logging (e.g. VGA and/or
+     * serial port enabled, baud rate, etc.). For this reason, when we encounter
+     * an error, we continue parsing the arguments. The kernel's main function
+     * does things in this order:
+     *
+     * - Parse the command line with this function.
+     * - Initialize the console (VGA and serial port) based on the command line
+     *   options.
+     * - Call cmdline_process_errors() to report command line parsing errors,
+     *   ideally on the right logging devices if the relevant options weren't
+     *   affected.
+     *
+     * The cmdline_errors variable keeps track of errors for use later by the
+     * cmdline_process_errors() function. */
+    cmdline_errors = 0;
+
     if(cmdline == NULL) {
+        cmdline_errors |= CMDLINE_ERROR_IS_NULL;
         return;
     }
 
     parse_state_t state = PARSE_STATE_START;
-    const char *current = cmdline;
     bool done           = false;
-
-    /* TODO we need a maximum length on the command line. .*/
+    int pos             = 0;
 
     while(true) {
-        char c = *current;
+        const char *current = &cmdline[pos];
+        char c              = *current;
+
+        /* TODO check how the 32-bit setup code behaves when it copies the command line. */
+        if(pos >= CMDLINE_MAX_VALID_LENGTH) {
+            /* Command line is too long. The limiting factor here is the stack
+             * size of the user loader and of the initial process, since we intend
+             * to copy the options from this command line to their command line
+             * and environment.
+             *
+             * Let's still continue parsing though so we have better chances to
+             * have the right VGA and serial port options when we report this
+             * error. */
+            cmdline_errors |= CMDLINE_ERROR_TOO_LONG;
+
+            if(pos >= CMDLINE_MAX_PARSE_LENGTH) {
+                /* The command line is *way* too long, probably because the
+                 * terminating NUL character is missing. Let's give up. */
+                break;
+            }
+        }
 
         switch(state) {
         case PARSE_STATE_START:
@@ -519,11 +682,9 @@ void cmdline_parse_options(const char *cmdline) {
             }
             else {
                 /* We found random junk after the quoted value. This is an
-                 * invalid option. Let's stop parsing.
-                 *
-                 * TODO let's try to be more resilient and do our best to
-                 * recover and continue when we encounter an invalid option. */
-                done = true;
+                 * invalid option. */
+                cmdline_errors |= CMDLINE_ERROR_JUNK_AFTER_ENDQUOTE;
+                state = PARSE_STATE_RECOVER;
             }
             break;
         case PARSE_STATE_DASH1:
@@ -553,6 +714,17 @@ void cmdline_parse_options(const char *cmdline) {
                 state = PARSE_STATE_START;
             }
             break;
+        case PARSE_STATE_RECOVER:
+            /* We transition to this state when we encounter certain parsing
+             * errors. We attempt to recover by discarding characters until the
+             * next separator, and then continuing parsing there.
+             *
+             * TODO can we handle the special case of a missing separator
+             * followed by an option with a quoted value? */
+            if(is_separator(c)) {
+                state = PARSE_STATE_START;
+            }
+            break;
         }
 
         /* Make sure we are not creating an infinite loop. Some states need to
@@ -563,6 +735,6 @@ void cmdline_parse_options(const char *cmdline) {
             break;
         }
 
-        ++current;
+        ++pos;
     }
 }

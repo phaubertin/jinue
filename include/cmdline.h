@@ -51,6 +51,8 @@ typedef struct {
 
 const cmdline_opts_t *cmdline_get_options(void);
 
+void cmdline_process_errors(void);
+
 void cmdline_parse_options(const char *cmdline);
 
 #endif
