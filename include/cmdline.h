@@ -41,7 +41,6 @@ typedef enum {
 } cmdline_opt_pae_t;
 
 typedef struct {
-    /* TODO use pae option */
     cmdline_opt_pae_t    pae;
     bool                 serial_enable;
     int                  serial_baud_rate;

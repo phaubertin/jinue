@@ -37,7 +37,6 @@
 
 
 void console_init(const cmdline_opts_t *cmdline_opts) {
-    /* TODO validate arguments before using them */
     if(cmdline_opts->vga_enable) {
         vga_init();
     }
