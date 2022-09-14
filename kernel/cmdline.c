@@ -93,6 +93,15 @@ typedef struct {
     int          enum_value;
 } enum_def_t;
 
+typedef struct {
+    const char      *cmdline;
+    parse_state_t    state;
+    token_t          option;
+    token_t          value;
+    int              position;
+    int              errors;
+} parse_context_t;
+
 typedef enum {
     CMDLINE_OPT_NAME_PAE,
     CMDLINE_OPT_NAME_SERIAL_ENABLE,
@@ -183,6 +192,13 @@ static cmdline_opts_t cmdline_options = {
 };
 
 static int cmdline_errors;
+
+static void initialize_context(parse_context_t *context, const char *cmdline) {
+    context->cmdline    = cmdline;
+    context->state      = PARSE_STATE_START;
+    context->position   = 0;
+    context->errors     = 0;
+}
 
 /**
  * Attempt to match an enum value
@@ -365,67 +381,67 @@ static bool match_integer(int *ivalue, const token_t *value) {
  * @param value token representing the option value
  *
  * */
-void process_name_value_pair(const token_t *name, const token_t *value) {
+static void process_name_value_pair(parse_context_t *context) {
     int opt_name;
     int opt_value;
 
-    if(! match_enum(&opt_name, opt_names, name)) {
+    if(! match_enum(&opt_name, opt_names, &context->option)) {
         /* Unknown option - ignore */
         return;
     }
 
     switch(opt_name) {
     case CMDLINE_OPT_NAME_PAE:
-        if(match_enum(&opt_value, opt_pae_names, value)) {
+        if(match_enum(&opt_value, opt_pae_names, &context->value)) {
             cmdline_options.pae = opt_value;
         }
         else {
-            cmdline_errors |= CMDLINE_ERROR_INVALID_PAE;
+            context->errors |= CMDLINE_ERROR_INVALID_PAE;
         }
         break;
     case CMDLINE_OPT_NAME_SERIAL_ENABLE:
-        if(match_enum(&opt_value, bool_names, value)) {
+        if(match_enum(&opt_value, bool_names, &context->value)) {
             cmdline_options.serial_enable = opt_value;
         }
         else {
-            cmdline_errors |= CMDLINE_ERROR_INVALID_SERIAL_ENABLE;
+            context->errors |= CMDLINE_ERROR_INVALID_SERIAL_ENABLE;
         }
         break;
     case CMDLINE_OPT_NAME_SERIAL_BAUD_RATE:
-        if(match_enum(&opt_value, serial_baud_rates, value)) {
+        if(match_enum(&opt_value, serial_baud_rates, &context->value)) {
             cmdline_options.serial_baud_rate = opt_value;
         }
         else {
-            cmdline_errors |= CMDLINE_ERROR_INVALID_SERIAL_BAUD_RATE;
+            context->errors |= CMDLINE_ERROR_INVALID_SERIAL_BAUD_RATE;
         }
         break;
     case CMDLINE_OPT_NAME_SERIAL_IOPORT:
-        if(match_integer(&opt_value, value)) {
+        if(match_integer(&opt_value, &context->value)) {
             if(opt_value > SERIAL_MAX_IOPORT) {
-                cmdline_errors |= CMDLINE_ERROR_INVALID_SERIAL_IOPORT;
+                context->errors |= CMDLINE_ERROR_INVALID_SERIAL_IOPORT;
             }
             else {
                 cmdline_options.serial_ioport = opt_value;
             }
         }
         else {
-            cmdline_errors |= CMDLINE_ERROR_INVALID_SERIAL_IOPORT;
+            context->errors |= CMDLINE_ERROR_INVALID_SERIAL_IOPORT;
         }
         break;
     case CMDLINE_OPT_NAME_SERIAL_DEV:
-        if(match_enum(&opt_value, serial_ports, value)) {
+        if(match_enum(&opt_value, serial_ports, &context->value)) {
             cmdline_options.serial_ioport = opt_value;
         }
         else {
-            cmdline_errors |= CMDLINE_ERROR_INVALID_SERIAL_DEV;
+            context->errors |= CMDLINE_ERROR_INVALID_SERIAL_DEV;
         }
         break;
     case CMDLINE_OPT_NAME_VGA_ENABLE:
-        if(match_enum(&opt_value, bool_names, value)) {
+        if(match_enum(&opt_value, bool_names, &context->value)) {
             cmdline_options.vga_enable = opt_value;
         }
         else {
-            cmdline_errors |= CMDLINE_ERROR_INVALID_VGA_ENABLE;
+            context->errors |= CMDLINE_ERROR_INVALID_VGA_ENABLE;
         }
         break;
     }
@@ -476,12 +492,9 @@ static bool is_separator(int c) {
  *
  * */
 void cmdline_parse_options(const char *cmdline) {
-    token_t name;
-    token_t value;
+    parse_context_t context;
 
-    /* cmdline_errors keeps track of errors for later reporting by the
-     * cmdline_process_errors() function. */
-    cmdline_errors = 0;
+    initialize_context(&context, cmdline);
 
     /* This function is the first thing that gets called during kernel
      * initialization. At this point, no validation has been done on the boot
@@ -491,17 +504,14 @@ void cmdline_parse_options(const char *cmdline) {
         return;
     }
 
-    parse_state_t state = PARSE_STATE_START;
-    int pos             = 0;
-
     /* TODO validate (but ignore) the command line options after the -- */
 
     while(true) {
-        const char *current = &cmdline[pos];
+        const char *current = &context.cmdline[context.position];
         char c              = *current;
 
         /* TODO check how the 32-bit setup code behaves when it copies the command line. */
-        if(pos >= CMDLINE_MAX_VALID_LENGTH) {
+        if(context.position >= CMDLINE_MAX_VALID_LENGTH) {
             /* Command line is too long. The limiting factor here is the stack
              * size of the user loader and of the initial process, since we intend
              * to copy the options from this command line to their command line
@@ -512,71 +522,71 @@ void cmdline_parse_options(const char *cmdline) {
              * error. */
             cmdline_errors |= CMDLINE_ERROR_TOO_LONG;
 
-            if(pos >= CMDLINE_MAX_PARSE_LENGTH) {
+            if(context.position >= CMDLINE_MAX_PARSE_LENGTH) {
                 /* The command line is *way* too long, probably because the
                  * terminating NUL character is missing. Let's give up. */
                 break;
             }
         }
 
-        switch(state) {
+        switch(context.state) {
         case PARSE_STATE_START:
             if(c == '"') {
                 /* This is the opening quote of a quoted option. */
-                state       = PARSE_STATE_OPTION_START_QUOTE;
+                context.state = PARSE_STATE_OPTION_START_QUOTE;
             }
             else if(c == '-') {
                 /* We might be at the start of an option that starts with one or
                  * more dashes, or we might also be at the start of the double
                  * dash that marks the end of the options parsed by the kernel.
                  * We will only know for sure later. */
-                name.start  = current;
-                state       = PARSE_STATE_DASH1;
+                context.option.start    = current;
+                context.state           = PARSE_STATE_DASH1;
             }
             else if(! is_separator(c)) {
                 /* We are at the start of an option, possibly a name-value pair,
                  * i.e. a name and value separated by an equal sign. */
-                name.start  = current;
-                state       = PARSE_STATE_NAME;
+                context.option.start    = current;
+                context.state           = PARSE_STATE_NAME;
             }
             break;
         case PARSE_STATE_NAME:
             if(c == '=') {
                 /* We just encountered an equal sign, so we are at the end of
                  * the name in what looks like an name-value pair. */
-                name.length = current - name.start;
-                state = PARSE_STATE_EQUAL;
+                context.option.length   = current - context.option.start;
+                context.state           = PARSE_STATE_EQUAL;
             }
             else if(is_separator(c)) {
                 /* We did not encounter an equal sign, so let's just ignore this
                  * option. */
-                state = PARSE_STATE_START;
+                context.state = PARSE_STATE_START;
             }
             break;
         case PARSE_STATE_EQUAL:
             if(is_separator(c)) {
                 /* The empty string is not valid for any option we currently
                  * support. */
-                state = PARSE_STATE_START;
+                context.state = PARSE_STATE_START;
             }
             else if(c == '"') {
                 /* Looks like this is going to be a value in quotes. The value
                  * will end with a closing quote, not with the next separator
                  * (i.e. space) or the end of the command line. */
-                state = PARSE_STATE_VALUE_START_QUOTE;
+                context.state = PARSE_STATE_VALUE_START_QUOTE;
             }
             else {
                 /* We are at the start of an unquoted value. */
-                value.start = current;
-                state = PARSE_STATE_VALUE;
+                context.value.start = current;
+                context.state       = PARSE_STATE_VALUE;
             }
             break;
         case PARSE_STATE_VALUE:
             if(is_separator(c)) {
                 /* We are at the end of a name-value pair. Time to process it. */
-                value.length = current - value.start;
-                process_name_value_pair(&name, &value);
-                state = PARSE_STATE_START;
+                context.state           = PARSE_STATE_START;
+                context.value.length    = current - context.value.start;
+                process_name_value_pair(&context);
             }
             break;
         case PARSE_STATE_VALUE_START_QUOTE:
@@ -584,30 +594,31 @@ void cmdline_parse_options(const char *cmdline) {
              * the value excludes the opening quote. */
             if(c == '"') {
                 /* empty value in quotes */
-                value.start     = current;
-                value.length    = 0;
-                process_name_value_pair(&name, &value);
-                state = PARSE_STATE_END_QUOTE;
+                context.state           = PARSE_STATE_END_QUOTE;
+                context.value.start     = current;
+                context.value.length    = 0;
+                process_name_value_pair(&context);
+
             }
             else {
-                value.start = current;
-                state = PARSE_STATE_QUOTED_VALUE;
+                context.value.start = current;
+                context.state       = PARSE_STATE_QUOTED_VALUE;
             }
             break;
         case PARSE_STATE_QUOTED_VALUE:
             if(c == '"') {
                 /* We are at the end of a name-value pair where the value is in
                  * quotes. Let's process it. */
-                value.length = current - value.start;
-                process_name_value_pair(&name, &value);
-                state = PARSE_STATE_END_QUOTE;
+                context.state           = PARSE_STATE_END_QUOTE;
+                context.value.length    = current - context.value.start;
+                process_name_value_pair(&context);
             }
             break;
         case PARSE_STATE_END_QUOTE:
             if(is_separator(c)) {
                 /* We are at a separator that follows a value in quotes or a
                  * quoted option. */
-                state = PARSE_STATE_START;
+                context.state = PARSE_STATE_START;
             }
             else {
                 /* We found random junk after the quoted option/value. Let's
@@ -618,15 +629,15 @@ void cmdline_parse_options(const char *cmdline) {
                 /* The following uses the same logic as the PARSE_STATE_START
                  * state.*/
                 if(c == '"') {
-                    state       = PARSE_STATE_OPTION_START_QUOTE;
+                    context.state = PARSE_STATE_OPTION_START_QUOTE;
                 }
                 else if(c == '-') {
-                    name.start  = current;
-                    state       = PARSE_STATE_DASH1;
+                    context.option.start    = current;
+                    context.state           = PARSE_STATE_DASH1;
                 }
                 else {
-                    name.start  = current;
-                    state       = PARSE_STATE_NAME;
+                    context.option.start    = current;
+                    context.state           = PARSE_STATE_NAME;
                 }
             }
             break;
@@ -636,39 +647,39 @@ void cmdline_parse_options(const char *cmdline) {
                  * dashes (on the second dash) or we might be on the second
                  * dash of a double dash that ends the kernel options. The next
                  * character will tell. */
-                state = PARSE_STATE_DASH2;
+                context.state = PARSE_STATE_DASH2;
             }
             else {
                 /* We are at the start of an option that starts with a single
                  * dash. name.start has already been set in PARSE_STATE_START. */
-                state = PARSE_STATE_NAME;
+                context.state = PARSE_STATE_NAME;
             }
             break;
         case PARSE_STATE_DASH2:
             if(is_separator(c)) {
                 /* We just found a double dash by itself. We are done. The
                  * options that follow aren't ours. */
-                state = PARSE_STATE_DONE;
+                context.state = PARSE_STATE_DONE;
             }
             else {
                 /* We are at the start of an option that starts with two dashes,
                  * right after the second dash. name.start has already been set
                  * in PARSE_STATE_START. */
-                state = PARSE_STATE_START;
+                context.state = PARSE_STATE_START;
             }
             break;
         case PARSE_STATE_OPTION_START_QUOTE:
             if(c == '"') {
                 /* empty option in quotes */
-                state   = PARSE_STATE_END_QUOTE;
+                context.state = PARSE_STATE_END_QUOTE;
             }
             else {
-                state   = PARSE_STATE_QUOTED_OPTION;
+                context.state = PARSE_STATE_QUOTED_OPTION;
             }
             break;
         case PARSE_STATE_QUOTED_OPTION:
             if(c == '"') {
-                state = PARSE_STATE_END_QUOTE;
+                context.state = PARSE_STATE_END_QUOTE;
             }
             break;
         case PARSE_STATE_DONE:
@@ -683,12 +694,16 @@ void cmdline_parse_options(const char *cmdline) {
          * sure the last option on the command line is handled correctly.
          * However, in any state, once we encounter the terminating NUL, we are
          * done. */
-        if(c == '\0' || state == PARSE_STATE_DONE) {
+        if(c == '\0' || context.state == PARSE_STATE_DONE) {
             break;
         }
 
-        ++pos;
+        ++context.position;
     }
+
+    /* cmdline_errors keeps track of errors for later reporting by the
+     * cmdline_process_errors() function. */
+    cmdline_errors = context.errors;
 }
 
 /**
