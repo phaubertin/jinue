@@ -33,4 +33,10 @@
 #define SERIAL_REG_SCRATCH          7
 
 
+#define SERIAL_DEFAULT_IOPORT       SERIAL_COM1_IOPORT
+
+#define SERIAL_MAX_IOPORT           (0x10000 - 8)
+
+#define SERIAL_DEFAULT_BAUD_RATE    115200
+
 #endif
