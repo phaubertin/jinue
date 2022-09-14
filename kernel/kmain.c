@@ -67,21 +67,21 @@ static Elf32_Ehdr *find_process_manager(const boot_info_t *boot_info) {
 void kmain(void) {
     elf_info_t elf_info;
     
+    /* Retrieve the boot information structure, which contains information
+     * passed to the kernel by the setup code. */
     const boot_info_t *boot_info = get_boot_info();
 
-    /* TODO reword this
+    /* The first thing we want to do is parse the command line options, before
+     * we log anything, because some options affect logging, such as whether we
+     * need to log to VGA and/or serial port, the baud rate, etc.
      *
-     * The boot_info structure has not been validated yet, so let's not take any
-     * chances. We want to parse the command line before doing anything that
-     * logs to the console (including anything that can fail like validating the
-     * boot_info structure) because the command line might contain arguments
-     * that control where we log (VGA and/or UART) as well as other relevant
-     * settings (e.g. UART baud rate). */
+     * We won't even validate the boot information structure yet because
+     * boot_info_check() logs errors (actually panics) on failure. */
     cmdline_parse_options(boot_info->cmdline);
 
+    /* Now that we parsed the command line options, we can initialize the
+     * console (i.e. logging) properly and say hello. */
     const cmdline_opts_t *cmdline_opts = cmdline_get_options();
-
-    /* initialize console and say hello */
     console_init(cmdline_opts);
 
     printk("Jinue microkernel started.\n");
@@ -91,8 +91,12 @@ void kmain(void) {
     printk("%s\n", boot_info->cmdline);
     printk("---\n");
 
-    cmdline_process_errors();
+    /* If there were issues parsing the command line, these will be reported
+     * here (i.e. panic), now that the console has been initialized and we can
+     * log things. */
+    cmdline_report_parsing_errors();
 
+    /* Validate the boot information structure. */
     (void)boot_info_check(true);
 
     if(boot_info->ramdisk_start == 0 || boot_info->ramdisk_size == 0) {
@@ -107,7 +111,7 @@ void kmain(void) {
     boot_alloc_t boot_alloc;
     boot_alloc_init(&boot_alloc, boot_info);
 
-    /* initialize hardware abstraction layer */
+    /* initialize the hardware abstraction layer */
     hal_init(&boot_alloc, boot_info, cmdline_opts);
 
     /* initialize caches */

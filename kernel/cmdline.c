@@ -185,84 +185,6 @@ static cmdline_opts_t cmdline_options = {
 static int cmdline_errors;
 
 /**
- * Get the kernel command line options parsed with cmdline_parse_options().
- *
- * If called before cmdline_parse_options(), the returned options structure
- * contains the defaults.
- *
- * @return kernel command line options
- *
- * */
-const cmdline_opts_t *cmdline_get_options(void) {
-    return &cmdline_options;
-}
-
-/**
- * Process command line parsing errors
- *
- * This function is to be called after calling cmdline_parse_options(). It
- * logs a message for any parsing error that occurred and then panics if any
- * parsing error was fatal.
- *
- * This two-step process is needed because some command line arguments influence
- * how logging is performed (enable VGA and/or serial logging, baud rate, etc.).
- * Because of this, even if some parsing errors are found, we want to do our
- * best to parse these options so the errors are logged in the right way.
- *
- * The kernel's main function (i.e. kmain()) is expected to do the following, in
- * this order:
- * - Call cmdline_parse_options() to parse command line option.
- * - Initialize the console, taking into account the relevant options.
- * - Call this function.
- *
- * */
-void cmdline_process_errors(void) {
-    if(cmdline_errors != 0) {
-        printk("There are issues with the kernel command line:\n");
-    }
-
-    if(cmdline_errors & CMDLINE_ERROR_TOO_LONG) {
-        printk("    Kernel command line is too long\n");
-    }
-
-    if(cmdline_errors & CMDLINE_ERROR_IS_NULL) {
-        printk("    No kernel command line/command line is NULL\n");
-    }
-
-    if(cmdline_errors & CMDLINE_ERROR_INVALID_PAE) {
-        printk("    Invalid value for argument 'pae'\n");
-    }
-
-    if(cmdline_errors & CMDLINE_ERROR_INVALID_SERIAL_ENABLE) {
-        printk("    Invalid value for argument 'serial_enable'\n");
-    }
-
-    if(cmdline_errors & CMDLINE_ERROR_INVALID_SERIAL_BAUD_RATE) {
-        printk("    Invalid value for argument 'serial_baud_rate'\n");
-    }
-
-    if(cmdline_errors & CMDLINE_ERROR_INVALID_SERIAL_IOPORT) {
-        printk("    Invalid value for argument 'serial_ioport'\n");
-    }
-
-    if(cmdline_errors & CMDLINE_ERROR_INVALID_SERIAL_DEV) {
-        printk("    Invalid value for argument 'serial_dev'\n");
-    }
-
-    if(cmdline_errors & CMDLINE_ERROR_INVALID_VGA_ENABLE) {
-        printk("    Invalid value for argument 'vga_enable'\n");
-    }
-
-    if(cmdline_errors & CMDLINE_ERROR_JUNK_AFTER_ENDQUOTE) {
-        printk("    Invalid character after closing quote, separator (e.g. space) expected\n");
-    }
-
-    if(cmdline_errors != 0) {
-        panic("Invalid kernel command line");
-    }
-}
-
-/**
  * Attempt to match an enum value
  *
  * @param value set to numeric value of the enum only if there is a match
@@ -540,12 +462,15 @@ static bool is_separator(int c) {
  * likely intended for the initial process rather than the kernel, so they are
  * ignored.
  *
- * Parsing may fail if options are malformed or it the command line is too long,
- * but we want to do our best to continue parsing other valid options when this
- * happens. An invalid command line will lead to a kernel panic, but some
- * options affect logging (VGA and/or serial port enabled, baud rate, etc.) and
- * we would rather log the failure at the right place in the right way if
- * possible.
+ * Some options affect logging (e.g. VGA and/or serial port enabled, baud rate,
+ * etc.). For this reason:
+ * - This function will do its best to continue parsing options once parsing
+ *   errors are encountered, to maximize chances we will get the logging options
+ *   right.
+ * - The actual reporting of parsing errors is done by a separate function, i.e.
+ *   cmdline_report_parsing_errors(). This makes it possible to first parse the
+ *   command line, then initialize logging with (hopefully) the right options,
+ *   and then report parsing errors.
  *
  * @param cmdline command line string
  *
@@ -554,22 +479,13 @@ void cmdline_parse_options(const char *cmdline) {
     token_t name;
     token_t value;
 
-    /* Some command line arguments affect how we do logging (e.g. VGA and/or
-     * serial port enabled, baud rate, etc.). For this reason, when we encounter
-     * an error, we continue parsing the arguments. The kernel's main function
-     * does things in this order:
-     *
-     * - Parse the command line with this function.
-     * - Initialize the console (VGA and serial port) based on the command line
-     *   options.
-     * - Call cmdline_process_errors() to report command line parsing errors,
-     *   ideally on the right logging devices if the relevant options weren't
-     *   affected.
-     *
-     * The cmdline_errors variable keeps track of errors for use later by the
+    /* cmdline_errors keeps track of errors for later reporting by the
      * cmdline_process_errors() function. */
     cmdline_errors = 0;
 
+    /* This function is the first thing that gets called during kernel
+     * initialization. At this point, no validation has been done on the boot
+     * information structure which contains the command line argument pointer. */
     if(cmdline == NULL) {
         cmdline_errors |= CMDLINE_ERROR_IS_NULL;
         return;
@@ -772,5 +688,79 @@ void cmdline_parse_options(const char *cmdline) {
         }
 
         ++pos;
+    }
+}
+
+/**
+ * Get the kernel command line options parsed with cmdline_parse_options().
+ *
+ * If called before cmdline_parse_options(), the returned options structure
+ * contains the defaults.
+ *
+ * @return kernel command line options
+ *
+ * */
+const cmdline_opts_t *cmdline_get_options(void) {
+    return &cmdline_options;
+}
+
+/**
+ * Report command line parsing errors
+ *
+ * Call this function after parsing the command line, i.e. after calling
+ * cmdline_parse_options(), once the console (i.e. logging) has been initialized.
+ * It logs a message for any parsing error that occurred and then panics if any
+ * parsing error was fatal.
+ *
+ * This two-step process is needed because some command line arguments influence
+ * how logging is performed (enable VGA and/or serial logging, baud rate, etc.).
+ * For this reason, we want to first parse the command line, then initialize the
+ * console (taking command line options into account), and then report parsing
+ * errors.
+ *
+ * */
+void cmdline_report_parsing_errors(void) {
+    if(cmdline_errors != 0) {
+        printk("There are issues with the kernel command line:\n");
+    }
+
+    if(cmdline_errors & CMDLINE_ERROR_TOO_LONG) {
+        printk("    Kernel command line is too long\n");
+    }
+
+    if(cmdline_errors & CMDLINE_ERROR_IS_NULL) {
+        printk("    No kernel command line/command line is NULL\n");
+    }
+
+    if(cmdline_errors & CMDLINE_ERROR_INVALID_PAE) {
+        printk("    Invalid value for argument 'pae'\n");
+    }
+
+    if(cmdline_errors & CMDLINE_ERROR_INVALID_SERIAL_ENABLE) {
+        printk("    Invalid value for argument 'serial_enable'\n");
+    }
+
+    if(cmdline_errors & CMDLINE_ERROR_INVALID_SERIAL_BAUD_RATE) {
+        printk("    Invalid value for argument 'serial_baud_rate'\n");
+    }
+
+    if(cmdline_errors & CMDLINE_ERROR_INVALID_SERIAL_IOPORT) {
+        printk("    Invalid value for argument 'serial_ioport'\n");
+    }
+
+    if(cmdline_errors & CMDLINE_ERROR_INVALID_SERIAL_DEV) {
+        printk("    Invalid value for argument 'serial_dev'\n");
+    }
+
+    if(cmdline_errors & CMDLINE_ERROR_INVALID_VGA_ENABLE) {
+        printk("    Invalid value for argument 'vga_enable'\n");
+    }
+
+    if(cmdline_errors & CMDLINE_ERROR_JUNK_AFTER_ENDQUOTE) {
+        printk("    Invalid character after closing quote, separator (e.g. space) expected\n");
+    }
+
+    if(cmdline_errors != 0) {
+        panic("Invalid kernel command line");
     }
 }

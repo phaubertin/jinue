@@ -49,10 +49,10 @@ typedef struct {
     bool                 vga_enable;
 } cmdline_opts_t;
 
+void cmdline_parse_options(const char *cmdline);
+
 const cmdline_opts_t *cmdline_get_options(void);
 
-void cmdline_process_errors(void);
-
-void cmdline_parse_options(const char *cmdline);
+void cmdline_report_parsing_errors(void);
 
 #endif
