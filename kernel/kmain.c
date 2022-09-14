@@ -87,6 +87,10 @@ void kmain(void) {
     printk("Jinue microkernel started.\n");
     printk("Kernel revision " GIT_REVISION " built " BUILD_TIME " on " BUILD_HOST "\n");
     
+    printk("Kernel command line:\n", boot_info->kernel_size);
+    printk("%s\n", boot_info->cmdline);
+    printk("---\n");
+
     cmdline_process_errors();
 
     (void)boot_info_check(true);
@@ -98,10 +102,6 @@ void kmain(void) {
     else {
         printk("Bootloader has loaded RAM disk with size %u bytes at address %x.\n", boot_info->ramdisk_size, boot_info->ramdisk_start);
     }
-
-    printk("Kernel command line:\n", boot_info->kernel_size);
-    printk("%s\n", boot_info->cmdline);
-    printk("---\n");
 
     /* Initialize the boot allocator. */
     boot_alloc_t boot_alloc;

@@ -72,12 +72,14 @@ typedef enum {
     PARSE_STATE_START,
     PARSE_STATE_NAME,
     PARSE_STATE_EQUAL,
-    PARSE_STATE_VALUE_START_QUOTE,
     PARSE_STATE_VALUE,
+    PARSE_STATE_VALUE_START_QUOTE,
     PARSE_STATE_QUOTED_VALUE,
-    PARSE_STATE_VALUE_END_QUOTE,
+    PARSE_STATE_END_QUOTE,
     PARSE_STATE_DASH1,
     PARSE_STATE_DASH2,
+    PARSE_STATE_OPTION_START_QUOTE,
+    PARSE_STATE_QUOTED_OPTION,
     PARSE_STATE_DONE,
 } parse_state_t;
 
@@ -577,7 +579,6 @@ void cmdline_parse_options(const char *cmdline) {
     int pos             = 0;
 
     /* TODO validate (but ignore) the command line options after the -- */
-    /* TODO support options in quotes */
 
     while(true) {
         const char *current = &cmdline[pos];
@@ -604,7 +605,11 @@ void cmdline_parse_options(const char *cmdline) {
 
         switch(state) {
         case PARSE_STATE_START:
-            if(c == '-') {
+            if(c == '"') {
+                /* This is the opening quote of a quoted option. */
+                state       = PARSE_STATE_OPTION_START_QUOTE;
+            }
+            else if(c == '-') {
                 /* We might be at the start of an option that starts with one or
                  * more dashes, or we might also be at the start of the double
                  * dash that marks the end of the options parsed by the kernel.
@@ -650,12 +655,6 @@ void cmdline_parse_options(const char *cmdline) {
                 state = PARSE_STATE_VALUE;
             }
             break;
-        case PARSE_STATE_VALUE_START_QUOTE:
-            /* We are at the start of a value in quotes. This state is needed so
-             * the value excludes the opening quote. */
-            value.start = current;
-            state = PARSE_STATE_QUOTED_VALUE;
-            break;
         case PARSE_STATE_VALUE:
             if(is_separator(c)) {
                 /* We are at the end of a name-value pair. Time to process it. */
@@ -664,33 +663,48 @@ void cmdline_parse_options(const char *cmdline) {
                 state = PARSE_STATE_START;
             }
             break;
-        case PARSE_STATE_QUOTED_VALUE:
+        case PARSE_STATE_VALUE_START_QUOTE:
+            /* We are at the start of a value in quotes. This state is needed so
+             * the value excludes the opening quote. */
             if(c == '"') {
-                /* We are probably at the end of a name-value pair where the
-                 * value is in quotes. However, let's make sure the end quote is
-                 * followed by a separator or by the end of the command line
-                 * before processing the pair. If it is followed by random junk
-                 * instead, this is not a valid option. */
-                value.length = current - value.start;
-                state = PARSE_STATE_VALUE_END_QUOTE;
+                /* empty value in quotes */
+                value.start     = current;
+                value.length    = 0;
+                process_name_value_pair(&name, &value);
+                state = PARSE_STATE_END_QUOTE;
+            }
+            else {
+                value.start = current;
+                state = PARSE_STATE_QUOTED_VALUE;
             }
             break;
-        case PARSE_STATE_VALUE_END_QUOTE:
-            if(is_separator(c)) {
-                /* We are at a separator that follows a value in quotes. This
-                 * makes the option valid, so let's process it. */
+        case PARSE_STATE_QUOTED_VALUE:
+            if(c == '"') {
+                /* We are at the end of a name-value pair where the value is in
+                 * quotes. Let's process it. */
+                value.length = current - value.start;
                 process_name_value_pair(&name, &value);
+                state = PARSE_STATE_END_QUOTE;
+            }
+            break;
+        case PARSE_STATE_END_QUOTE:
+            if(is_separator(c)) {
+                /* We are at a separator that follows a value in quotes or a
+                 * quoted option. */
                 state = PARSE_STATE_START;
             }
             else {
-                /* We found random junk after the quoted value. Let's flag the
-                 * error and then try to continue parsing by assuming it's just
-                 * a missing separator. */
+                /* We found random junk after the quoted option/value. Let's
+                 * flag the error and then try to continue parsing by assuming
+                 * it's just a missing separator. */
                 cmdline_errors |= CMDLINE_ERROR_JUNK_AFTER_ENDQUOTE;
 
                 /* The following uses the same logic as the PARSE_STATE_START
                  * state.*/
-                if(c == '-') {
+                if(c == '"') {
+                    state       = PARSE_STATE_OPTION_START_QUOTE;
+                }
+                else if(c == '-') {
                     name.start  = current;
                     state       = PARSE_STATE_DASH1;
                 }
@@ -725,6 +739,20 @@ void cmdline_parse_options(const char *cmdline) {
                  * right after the second dash. name.start has already been set
                  * in PARSE_STATE_START. */
                 state = PARSE_STATE_START;
+            }
+            break;
+        case PARSE_STATE_OPTION_START_QUOTE:
+            if(c == '"') {
+                /* empty option in quotes */
+                state   = PARSE_STATE_END_QUOTE;
+            }
+            else {
+                state   = PARSE_STATE_QUOTED_OPTION;
+            }
+            break;
+        case PARSE_STATE_QUOTED_OPTION:
+            if(c == '"') {
+                state = PARSE_STATE_END_QUOTE;
             }
             break;
         case PARSE_STATE_DONE:
