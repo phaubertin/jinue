@@ -58,4 +58,8 @@ char *cmdline_write_arguments(char *buffer, const char *cmdline);
 
 char *cmdline_write_environ(char *buffer, const char *cmdline);
 
+size_t cmdline_count_arguments(const char *cmdline);
+
+size_t cmdline_count_environ(const char *cmdline);
+
 #endif

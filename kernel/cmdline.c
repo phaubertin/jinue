@@ -1061,3 +1061,57 @@ char *cmdline_write_environ(char *buffer, const char *cmdline) {
 
     return buffer;
 }
+
+/* Count arguments parsed from the kernel command line
+ *
+ * This function assumes the command line is valid, i.e. that it has been
+ * checked by earlier calls to cmdline_parse_options() and
+ * cmdline_report_parsing_errors().
+ *
+ * @param cmdline command line string
+ * @return number of arguments
+ *
+ * */
+size_t cmdline_count_arguments(const char *cmdline) {
+    parse_context_t context;
+
+    size_t count = 0;
+    initialize_context(&context, cmdline);
+
+    do {
+        mutate_context(&context);
+
+        if(context.has_argument) {
+            ++count;
+        }
+    } while (!context.done);
+
+    return count;
+}
+
+/* Count environment variables parsed from the kernel command line
+ *
+ * This function assumes the command line is valid, i.e. that it has been
+ * checked by earlier calls to cmdline_parse_options() and
+ * cmdline_report_parsing_errors().
+ *
+ * @param cmdline command line string
+ * @return number of environment variables
+ *
+ * */
+size_t cmdline_count_environ(const char *cmdline) {
+    parse_context_t context;
+
+    size_t count = 0;
+    initialize_context(&context, cmdline);
+
+    do {
+        mutate_context(&context);
+
+        if(context.has_option) {
+            ++count;
+        }
+    } while (!context.done);
+
+    return count;
+}
