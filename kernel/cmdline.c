@@ -68,6 +68,8 @@
 
 #define CMDLINE_ERROR_JUNK_AFTER_ENDQUOTE       (1<<8)
 
+#define CMDLINE_ERROR_UNCLOSED_QUOTES           (1<<9)
+
 typedef enum {
     PARSE_STATE_START,
     PARSE_STATE_NAME,
@@ -80,7 +82,15 @@ typedef enum {
     PARSE_STATE_DASH2,
     PARSE_STATE_OPTION_START_QUOTE,
     PARSE_STATE_QUOTED_OPTION,
-    PARSE_STATE_DONE,
+    PARSE_STATE_ARG_START,
+    PARSE_STATE_ARG,
+    PARSE_STATE_ARG_EQUAL,
+    PARSE_STATE_ARG_VALUE,
+    PARSE_STATE_ARG_QUOTED_VALUE,
+    PARSE_STATE_ARG_VALUE_END_QUOTE,
+    PARSE_STATE_ARG_START_QUOTE,
+    PARSE_STATE_QUOTED_ARG,
+    PARSE_STATE_ARG_END_QUOTE,
 } parse_state_t;
 
 typedef struct {
@@ -236,8 +246,6 @@ static void mutate_context(parse_context_t *context) {
     context->has_argument   = false;
     context->has_name_value = false;
 
-    /* TODO validate (but ignore) the command line options after the -- */
-
     while(!(has_action || context->done)) {
         const char *current = &context->cmdline[context->position];
         char c              = *current;
@@ -252,7 +260,7 @@ static void mutate_context(parse_context_t *context) {
              * Let's still continue parsing though so we have better chances to
              * have the right VGA and serial port options when we report this
              * error. */
-            cmdline_errors |= CMDLINE_ERROR_TOO_LONG;
+            context->errors |= CMDLINE_ERROR_TOO_LONG;
 
             if(context->position >= CMDLINE_MAX_PARSE_LENGTH) {
                 /* The command line is *way* too long, probably because the
@@ -265,7 +273,7 @@ static void mutate_context(parse_context_t *context) {
         switch(context->state) {
         case PARSE_STATE_START:
             if(c == '"') {
-                /* This is the opening quote of a quoted option. */
+                /* This is the opening quote of a quoted argument. */
                 context->state = PARSE_STATE_OPTION_START_QUOTE;
             }
             else if(c == '-') {
@@ -291,16 +299,25 @@ static void mutate_context(parse_context_t *context) {
                 context->state          = PARSE_STATE_EQUAL;
             }
             else if(is_separator(c)) {
-                /* We did not encounter an equal sign, so let's just ignore this
-                 * option. */
-                context->state = PARSE_STATE_START;
+                /* We did not encounter an equal sign, so this is an argument. */
+                context->state          = PARSE_STATE_START;
+                context->option.length  = current - context->option.start;
+                context->has_argument   = true;
+                context->is_quoted      = false;
+                has_action              = true;
             }
             break;
         case PARSE_STATE_EQUAL:
+            /* We are right after an option's equal sign that separate the name
+             * of the option and it's value. */
             if(is_separator(c)) {
-                /* The empty string is not valid for any option we currently
-                 * support. */
-                context->state = PARSE_STATE_START;
+                /* The value is an empty string. */
+                context->state          = PARSE_STATE_START;
+                context->value.start    = current;
+                context->value.length   = 0;
+                context->has_name_value = true;
+                context->is_quoted      = false;
+                has_action              = true;
             }
             else if(c == '"') {
                 /* Looks like this is going to be a value in quotes. The value
@@ -337,6 +354,16 @@ static void mutate_context(parse_context_t *context) {
                 has_action              = true;
 
             }
+            else if(c == '\0') {
+                /* We reached the end of the command line but we are still
+                 * expecting a closing quote character. Let's report this as an
+                 * error.
+                 *
+                 * No need to do anything else than that because the NUL
+                 * character leads to context->done being set for any state (see
+                 * after this switch-case statement). */
+                context->errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
+            }
             else {
                 context->value.start    = current;
                 context->state          = PARSE_STATE_QUOTED_VALUE;
@@ -352,6 +379,9 @@ static void mutate_context(parse_context_t *context) {
                 context->is_quoted      = true;
                 has_action              = true;
             }
+            else if(c == '\0') {
+                context->errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
+            }
             break;
         case PARSE_STATE_END_QUOTE:
             if(is_separator(c)) {
@@ -363,12 +393,12 @@ static void mutate_context(parse_context_t *context) {
                 /* We found random junk after the quoted option/value. Let's
                  * flag the error and then try to continue parsing by assuming
                  * it's just a missing separator. */
-                cmdline_errors |= CMDLINE_ERROR_JUNK_AFTER_ENDQUOTE;
+                context->errors |= CMDLINE_ERROR_JUNK_AFTER_ENDQUOTE;
 
-                /* The following uses the same logic as the PARSE_STATE_START
-                 * state.*/
+                /* The following is the same logic as the PARSE_STATE_START
+                 * state. */
                 if(c == '"') {
-                    context->state = PARSE_STATE_OPTION_START_QUOTE;
+                    context->state          = PARSE_STATE_OPTION_START_QUOTE;
                 }
                 else if(c == '-') {
                     context->option.start   = current;
@@ -396,9 +426,10 @@ static void mutate_context(parse_context_t *context) {
             break;
         case PARSE_STATE_DASH2:
             if(is_separator(c)) {
-                /* We just found a double dash by itself. We are done. The
-                 * options that follow aren't ours. */
-                context->state = PARSE_STATE_DONE;
+                /* We just found a double dash by itself. We are done with
+                 * kernel options. Everything that follows is arguments for
+                 * user space. */
+                context->state = PARSE_STATE_ARG_START;
             }
             else {
                 /* We are at the start of an option that starts with two dashes,
@@ -409,21 +440,169 @@ static void mutate_context(parse_context_t *context) {
             break;
         case PARSE_STATE_OPTION_START_QUOTE:
             if(c == '"') {
-                /* empty option in quotes */
-                context->state = PARSE_STATE_END_QUOTE;
+                /* empty argument in quotes */
+                context->state          = PARSE_STATE_END_QUOTE;
+                context->option.start   = current;
+                context->option.length  = 0;
+                context->has_argument   = true;
+                context->is_quoted      = true;
+                has_action              = true;
+            }
+            else if(c == '\0') {
+                context->errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
             }
             else {
-                context->state = PARSE_STATE_QUOTED_OPTION;
+                context->state          = PARSE_STATE_QUOTED_OPTION;
+                context->option.start   = current;
             }
             break;
         case PARSE_STATE_QUOTED_OPTION:
             if(c == '"') {
-                context->state = PARSE_STATE_END_QUOTE;
+                context->state          = PARSE_STATE_END_QUOTE;
+                context->option.length  = current - context->option.start;
+                context->has_argument   = true;
+                context->is_quoted      = true;
+                has_action              = true;
+            }
+            else if(c == '\0') {
+                context->errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
             }
             break;
-        case PARSE_STATE_DONE:
-            /* Make compiler happy by having a case for PARSE_STATE_DONE in this
-             * switch statement even though it does nothing. */
+        case PARSE_STATE_ARG_START:
+            if(c == '"') {
+                /* This is the opening quote of a quoted argument. */
+                context->state = PARSE_STATE_ARG_START_QUOTE;
+            }
+            else if(!is_separator(c)) {
+                context->option.start   = current;
+                context->state          = PARSE_STATE_ARG;
+            }
+            break;
+        case PARSE_STATE_ARG:
+            if(c == '=') {
+                /* Event though this is an argument for user space, we still
+                 * treat the equal sign specially since the value that follows
+                 * might be in quotes. */
+                context->state = PARSE_STATE_ARG_EQUAL;
+            }
+            else if(is_separator(c)) {
+                /* We did not encounter an equal sign, so this is an argument. */
+                context->state          = PARSE_STATE_ARG_START;
+                context->option.length  = current - context->option.start;
+                context->has_argument   = true;
+                context->is_quoted      = false;
+                has_action              = true;
+            }
+            break;
+        case PARSE_STATE_ARG_EQUAL:
+            if(is_separator(c)) {
+                /* The argument ends with an equal sign. */
+                context->state          = PARSE_STATE_ARG_START;
+                context->option.length  = current - context->option.start;
+                context->has_argument   = true;
+                context->is_quoted      = false;
+                has_action              = true;
+            }
+            else if(c == '"') {
+                /* Looks like this is going to be a value in quotes. The value
+                 * will end with a closing quote, not with the next separator
+                 * (i.e. space) or the end of the command line. */
+                context->state = PARSE_STATE_ARG_QUOTED_VALUE;
+            }
+            else {
+                /* The argument just continues after the equal sign.*/
+                context->state = PARSE_STATE_ARG_VALUE;
+            }
+            break;
+        case PARSE_STATE_ARG_VALUE:
+            if(is_separator(c)) {
+                /* End of unquoted argument. */
+                context->state          = PARSE_STATE_ARG_START;
+                context->option.length  = current - context->option.start;
+                context->has_argument   = true;
+                context->is_quoted      = false;
+                has_action              = true;
+            }
+            break;
+        case PARSE_STATE_ARG_QUOTED_VALUE:
+            if(c == '"') {
+                /* We are at the end of an argument with a quoted value after
+                 * the equal sign. Unlike other cases of quoted options or
+                 * arguments, here, we want to include the closing quote as part
+                 * of the argument. */
+                context->state  = PARSE_STATE_ARG_VALUE_END_QUOTE;
+            }
+            else if(c == '\0') {
+                context->errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
+            }
+            break;
+        case PARSE_STATE_ARG_VALUE_END_QUOTE:
+            /* Process the argument, including the closing quote. */
+            context->option.length  = current - context->option.start;
+            context->has_argument   = true;
+            /* The opening and closing quotes that surround the value are
+             * included in the argument. */
+            context->is_quoted      = false;
+            has_action              = true;
+
+            if(is_separator(c)) {
+                /* We are at a separator that follows an argument with a quoted
+                 * value. */
+                context->state = PARSE_STATE_ARG_START;
+            }
+            else {
+                /* We found random junk after the quoted argument. Let's flag
+                 * the error and then stop. Since we are after the --, there are
+                 * no more kernel options coming, so there is no use in
+                 * continuing parsing further. */
+                context->errors |= CMDLINE_ERROR_JUNK_AFTER_ENDQUOTE;
+                context->done   = true;
+            }
+            break;
+        case PARSE_STATE_ARG_START_QUOTE:
+            if(c == '"') {
+                /* empty argument in quotes */
+                context->state          = PARSE_STATE_ARG_END_QUOTE;
+                context->option.start   = current;
+                context->option.length  = 0;
+                context->has_argument   = true;
+                context->is_quoted      = true;
+                has_action              = true;
+            }
+            else if(c == '\0') {
+                context->errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
+            }
+            else {
+                context->state          = PARSE_STATE_QUOTED_ARG;
+                context->option.start   = current;
+            }
+            break;
+        case PARSE_STATE_QUOTED_ARG:
+            if(c == '"') {
+                /* We are at the end of a quoted argument. */
+                context->state          = PARSE_STATE_ARG_END_QUOTE;
+                context->option.length  = current - context->option.start;
+                context->has_argument   = true;
+                context->is_quoted      = true;
+                has_action              = true;
+            }
+            else if(c == '\0') {
+                context->errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
+            }
+            break;
+        case PARSE_STATE_ARG_END_QUOTE:
+            if(is_separator(c)) {
+                /* We are at a separator that follows a quoted argument. */
+                context->state = PARSE_STATE_ARG_START;
+            }
+            else {
+                /* We found random junk after the quoted argument. Let's flag
+                 * the error and then stop. Since we are after the --, there are
+                 * no more kernel options coming, so there is no use in
+                 * continuing parsing further. */
+                context->errors |= CMDLINE_ERROR_JUNK_AFTER_ENDQUOTE;
+                context->done   = true;
+            }
             break;
         }
 
@@ -433,7 +612,7 @@ static void mutate_context(parse_context_t *context) {
          * sure the last option on the command line is handled correctly.
          * However, in any state, once we encounter the terminating NUL, we are
          * done. */
-        if(c == '\0' || context->state == PARSE_STATE_DONE) {
+        if(c == '\0') {
             context->done = true;
         }
 
@@ -805,6 +984,10 @@ void cmdline_report_parsing_errors(void) {
 
     if(cmdline_errors & CMDLINE_ERROR_JUNK_AFTER_ENDQUOTE) {
         printk("    Invalid character after closing quote, separator (e.g. space) expected\n");
+    }
+
+    if(cmdline_errors & CMDLINE_ERROR_UNCLOSED_QUOTES) {
+        printk("    Unclosed quotes at end of input. Is closing quote missing?\n");
     }
 
     if(cmdline_errors != 0) {
