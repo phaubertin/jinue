@@ -35,6 +35,7 @@
 #include <console.h>
 #include <panic.h>
 #include <printk.h>
+#include <string.h>
 
 /** Maximum valid command line length
  *
@@ -111,9 +112,8 @@ typedef struct {
     int              position;
     int              errors;
     bool             done;
-    bool             has_name_value;
+    bool             has_option;
     bool             has_argument;
-    bool             is_quoted;
 } parse_context_t;
 
 typedef enum {
@@ -244,7 +244,7 @@ static void mutate_context(parse_context_t *context) {
     bool has_action = false;
 
     context->has_argument   = false;
-    context->has_name_value = false;
+    context->has_option = false;
 
     while(!(has_action || context->done)) {
         const char *current = &context->cmdline[context->position];
@@ -303,7 +303,6 @@ static void mutate_context(parse_context_t *context) {
                 context->state          = PARSE_STATE_START;
                 context->option.length  = current - context->option.start;
                 context->has_argument   = true;
-                context->is_quoted      = false;
                 has_action              = true;
             }
             break;
@@ -315,8 +314,7 @@ static void mutate_context(parse_context_t *context) {
                 context->state          = PARSE_STATE_START;
                 context->value.start    = current;
                 context->value.length   = 0;
-                context->has_name_value = true;
-                context->is_quoted      = false;
+                context->has_option = true;
                 has_action              = true;
             }
             else if(c == '"') {
@@ -336,8 +334,7 @@ static void mutate_context(parse_context_t *context) {
                 /* We are at the end of a name-value pair. Time to process it. */
                 context->state          = PARSE_STATE_START;
                 context->value.length   = current - context->value.start;
-                context->has_name_value = true;
-                context->is_quoted      = false;
+                context->has_option = true;
                 has_action              = true;
             }
             break;
@@ -349,8 +346,7 @@ static void mutate_context(parse_context_t *context) {
                 context->state          = PARSE_STATE_END_QUOTE;
                 context->value.start    = current;
                 context->value.length   = 0;
-                context->has_name_value = true;
-                context->is_quoted      = true;
+                context->has_option = true;
                 has_action              = true;
 
             }
@@ -375,8 +371,7 @@ static void mutate_context(parse_context_t *context) {
                  * quotes. Let's process it. */
                 context->state          = PARSE_STATE_END_QUOTE;
                 context->value.length   = current - context->value.start;
-                context->has_name_value = true;
-                context->is_quoted      = true;
+                context->has_option = true;
                 has_action              = true;
             }
             else if(c == '\0') {
@@ -445,7 +440,6 @@ static void mutate_context(parse_context_t *context) {
                 context->option.start   = current;
                 context->option.length  = 0;
                 context->has_argument   = true;
-                context->is_quoted      = true;
                 has_action              = true;
             }
             else if(c == '\0') {
@@ -461,7 +455,6 @@ static void mutate_context(parse_context_t *context) {
                 context->state          = PARSE_STATE_END_QUOTE;
                 context->option.length  = current - context->option.start;
                 context->has_argument   = true;
-                context->is_quoted      = true;
                 has_action              = true;
             }
             else if(c == '\0') {
@@ -490,7 +483,6 @@ static void mutate_context(parse_context_t *context) {
                 context->state          = PARSE_STATE_ARG_START;
                 context->option.length  = current - context->option.start;
                 context->has_argument   = true;
-                context->is_quoted      = false;
                 has_action              = true;
             }
             break;
@@ -500,7 +492,6 @@ static void mutate_context(parse_context_t *context) {
                 context->state          = PARSE_STATE_ARG_START;
                 context->option.length  = current - context->option.start;
                 context->has_argument   = true;
-                context->is_quoted      = false;
                 has_action              = true;
             }
             else if(c == '"') {
@@ -520,7 +511,6 @@ static void mutate_context(parse_context_t *context) {
                 context->state          = PARSE_STATE_ARG_START;
                 context->option.length  = current - context->option.start;
                 context->has_argument   = true;
-                context->is_quoted      = false;
                 has_action              = true;
             }
             break;
@@ -540,9 +530,6 @@ static void mutate_context(parse_context_t *context) {
             /* Process the argument, including the closing quote. */
             context->option.length  = current - context->option.start;
             context->has_argument   = true;
-            /* The opening and closing quotes that surround the value are
-             * included in the argument. */
-            context->is_quoted      = false;
             has_action              = true;
 
             if(is_separator(c)) {
@@ -566,7 +553,6 @@ static void mutate_context(parse_context_t *context) {
                 context->option.start   = current;
                 context->option.length  = 0;
                 context->has_argument   = true;
-                context->is_quoted      = true;
                 has_action              = true;
             }
             else if(c == '\0') {
@@ -583,7 +569,6 @@ static void mutate_context(parse_context_t *context) {
                 context->state          = PARSE_STATE_ARG_END_QUOTE;
                 context->option.length  = current - context->option.start;
                 context->has_argument   = true;
-                context->is_quoted      = true;
                 has_action              = true;
             }
             else if(c == '\0') {
@@ -909,7 +894,7 @@ void cmdline_parse_options(const char *cmdline) {
     do {
         mutate_context(&context);
 
-        if(context.has_name_value) {
+        if(context.has_option) {
             process_name_value_pair(&context);
         }
     } while (!context.done);
@@ -923,7 +908,7 @@ void cmdline_parse_options(const char *cmdline) {
  * If called before cmdline_parse_options(), the returned options structure
  * contains the defaults.
  *
- * @return kernel command line options
+ * @return options parsed from kernel command line
  *
  * */
 const cmdline_opts_t *cmdline_get_options(void) {
@@ -993,4 +978,91 @@ void cmdline_report_parsing_errors(void) {
     if(cmdline_errors != 0) {
         panic("Invalid kernel command line");
     }
+}
+
+/* Write a character into buffer
+ *
+ * @param buffer address where writing starts
+ * @param c character to write
+ * @return pointer to first byte after written data
+ *
+ * */
+static char *write_character(char *buffer, int c) {
+    *buffer = c;
+    return buffer + 1;
+}
+
+/* Write a token into buffer
+ *
+ * @param buffer address where writing starts
+ * @param token token describing data to write
+ * @return pointer to first byte after written data
+ *
+ * */
+static char *write_token(char *buffer, const token_t *token) {
+    memcpy(buffer, token->start, token->length);
+    return buffer + token->length;
+}
+
+/* Write arguments parsed from the kernel command line into buffer
+ *
+ * This function assumes the command line is valid, i.e. that it has been
+ * checked by earlier calls to cmdline_parse_options() and
+ * cmdline_report_parsing_errors().
+ *
+ * @param buffer buffer where arguments are written
+ * @param cmdline command line string
+ * @return pointer to first byte after written data
+ *
+ * */
+char *cmdline_write_arguments(char *buffer, const char *cmdline) {
+    parse_context_t context;
+
+    /* Here, we can a */
+
+    initialize_context(&context, cmdline);
+
+    do {
+        mutate_context(&context);
+
+        if(context.has_argument) {
+            buffer = write_token(buffer, &context.option);
+            buffer = write_character(buffer, '\0');
+        }
+    } while (!context.done);
+
+    return buffer;
+}
+
+/* Write environment variables parsed from the kernel command line into buffer
+ *
+ * This function assumes the command line is valid, i.e. that it has been
+ * checked by earlier calls to cmdline_parse_options() and
+ * cmdline_report_parsing_errors().
+ *
+ * @param buffer buffer where the environment variables are written
+ * @param cmdline command line string
+ * @return pointer to first byte after written data
+ *
+ * */
+char *cmdline_write_environ(char *buffer, const char *cmdline) {
+    parse_context_t context;
+
+    /* Here, we can assume the command line is valid because it has been checked
+     * by an earlier call to cmdline_parse_options(). */
+
+    initialize_context(&context, cmdline);
+
+    do {
+        mutate_context(&context);
+
+        if(context.has_option) {
+            buffer = write_token(buffer, &context.option);
+            buffer = write_character(buffer, '=');
+            buffer = write_token(buffer, &context.value);
+            buffer = write_character(buffer, '\0');
+        }
+    } while (!context.done);
+
+    return buffer;
 }

@@ -54,4 +54,8 @@ const cmdline_opts_t *cmdline_get_options(void);
 
 void cmdline_report_parsing_errors(void);
 
+char *cmdline_write_arguments(char *buffer, const char *cmdline);
+
+char *cmdline_write_environ(char *buffer, const char *cmdline);
+
 #endif
