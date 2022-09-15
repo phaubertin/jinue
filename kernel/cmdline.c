@@ -1018,8 +1018,6 @@ static char *write_token(char *buffer, const token_t *token) {
 char *cmdline_write_arguments(char *buffer, const char *cmdline) {
     parse_context_t context;
 
-    /* Here, we can a */
-
     initialize_context(&context, cmdline);
 
     do {
@@ -1047,9 +1045,6 @@ char *cmdline_write_arguments(char *buffer, const char *cmdline) {
  * */
 char *cmdline_write_environ(char *buffer, const char *cmdline) {
     parse_context_t context;
-
-    /* Here, we can assume the command line is valid because it has been checked
-     * by an earlier call to cmdline_parse_options(). */
 
     initialize_context(&context, cmdline);
 
