@@ -43,6 +43,7 @@ typedef struct {
     int              at_phent;
     int              at_phnum;
     addr_space_t    *addr_space;
+    const char      *argv0;
 } elf_info_t;
 
 typedef struct {
@@ -68,10 +69,14 @@ void elf_check(Elf32_Ehdr *elf);
 void elf_load(
         elf_info_t      *info,
         Elf32_Ehdr      *elf,
+        const char      *argv0,
+        const char      *cmdline,
         addr_space_t    *addr_space,
         boot_alloc_t    *boot_alloc);
 
-void elf_setup_stack(elf_info_t *info, boot_alloc_t *boot_alloc);
+void elf_allocate_stack(elf_info_t *info, boot_alloc_t *boot_alloc);
+
+void elf_initialize_stack(elf_info_t *info, const char *cmdline);
 
 int elf_lookup_symbol(
         const Elf32_Ehdr    *elf_header,

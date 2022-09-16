@@ -130,7 +130,13 @@ void kmain(void) {
     /* load process manager binary */
     Elf32_Ehdr *elf = find_process_manager(boot_info);
 
-    elf_load(&elf_info, elf, &process->addr_space, &boot_alloc);
+    elf_load(
+            &elf_info,
+            elf,
+            "userload",
+            boot_info->cmdline,
+            &process->addr_space,
+            &boot_alloc);
 
     /* create initial thread */
     thread_t *thread = thread_create(

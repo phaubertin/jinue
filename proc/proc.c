@@ -55,6 +55,7 @@ int fd;
 
 char thread_a_stack[THREAD_STACK_SIZE];
 
+extern char **jinue_environ;
 
 void thread_a(void) {
     int errno;
@@ -110,12 +111,31 @@ static void dump_phys_memory_map(const jinue_mem_map_t *map, bool ram_only) {
     }
 }
 
-int main(int argc, char *argv[], char *envp[]) {
+static void dump_cmdline_arguments(int argc, char *argv[]) {
+    printk("Command line arguments:\n");
+
+    for(int idx = 0; idx < argc; ++idx) {
+        printk("    %s\n", argv[idx]);
+    }
+}
+
+static void dump_environ(void) {
+    printk("Environment variables:\n");
+
+    for(char **envvar = jinue_environ; *envvar != NULL; ++envvar) {
+        printk("    %s\n", *envvar);
+    }
+}
+
+int main(int argc, char *argv[]) {
     char call_buffer[CALL_BUFFER_SIZE];
     int status;
     
     /* say hello */
     printk("Process manager (%s) started.\n", argv[0]);
+
+    dump_cmdline_arguments(argc, argv);
+    dump_environ();
 
     /* get system call implementation so we can use something faster than the
      * interrupt-based one if available */

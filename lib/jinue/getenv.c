@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2022 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,35 +29,19 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_COMMON_ASM_VM_H
-#define _JINUE_COMMON_ASM_VM_H
+#include <stddef.h>
 
-#include <jinue-common/asm/types.h>
+/* This is set by crt.asm. */
+char **jinue_environ = NULL;
 
-/** number of bits in virtual address for offset inside page */
-#define PAGE_BITS               12
+const char *jinue_getenv(const char *name) {
+    if(jinue_environ == NULL) {
+        return NULL;
+    }
 
-/** size of page */
-#define PAGE_SIZE               (1<<PAGE_BITS) /* 4096 */
+    for(char **envvar = jinue_environ; *envvar != NULL; ++envvar) {
+        /* TODO */
+    }
 
-/** bit mask for offset in page */
-#define PAGE_MASK               (PAGE_SIZE - 1)
-
-/** The virtual address range starting at KLIMIT is reserved by the kernel. The
-    region above KLIMIT has the same mapping in all address spaces. KLIMIT must
-    be aligned on a page directory boundary in PAE mode. */
-#define KLIMIT                  0xc0000000
-
-/** stack base address (stack top) */
-#define STACK_BASE              KLIMIT
-
-/** initial stack size */
-#define STACK_SIZE              (128 * KB)
-
-/** stack portion reserved for environment, arguments and auxiliary vectors */
-#define RESERVED_STACK_SIZE     (32 * KB)
-
-/** initial stack lower address */
-#define STACK_START             (STACK_BASE - STACK_SIZE)
-
-#endif
+    return NULL;
+}

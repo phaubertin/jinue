@@ -32,11 +32,13 @@
 #include <hal/vm.h>
 #include <assert.h>
 #include <boot.h>
+#include <cmdline.h>
 #include <elf.h>
 #include <page_alloc.h>
 #include <panic.h>
 #include <printk.h>
 #include <vmalloc.h>
+#include <string.h>
 #include <util.h>
 
 
@@ -109,6 +111,8 @@ static void checked_map_userspace(
 void elf_load(
         elf_info_t      *info,
         Elf32_Ehdr      *elf,
+        const char      *argv0,
+        const char      *cmdline,
         addr_space_t    *addr_space,
         boot_alloc_t    *boot_alloc) {
     
@@ -123,6 +127,7 @@ void elf_load(
     info->at_phent      = elf->e_phentsize;
     info->addr_space    = addr_space;
     info->entry         = (void *)elf->e_entry;
+    info->argv0         = argv0;
 
     for(unsigned int idx = 0; idx < elf->e_phnum; ++idx) {
         if(phdr[idx].p_type != PT_LOAD) {
@@ -213,11 +218,112 @@ void elf_load(
         }
     }
     
-    elf_setup_stack(info, boot_alloc);
+    elf_allocate_stack(info, boot_alloc);
+
+    elf_initialize_stack(info, cmdline);
     
     printk("ELF binary loaded.\n");
 }
 
+void elf_allocate_stack(elf_info_t *info, boot_alloc_t *boot_alloc) {
+    /** TODO: check for overlap of stack with loaded segments */
+
+    for(addr_t vpage = (addr_t)STACK_START; vpage < (addr_t)STACK_BASE; vpage += PAGE_SIZE) {
+        void *page = page_alloc();
+
+        /* This newly allocated page may have data left from a previous boot
+         * which may contain sensitive information. Let's clear it. */
+        clear_page(page);
+
+        checked_map_userspace(
+                info->addr_space,
+                vpage,
+                vm_lookup_kernel_paddr(page),
+                VM_FLAG_READ_WRITE);
+
+        /* TODO transfer page ownership to userspace */
+    }
+}
+
+static void initialize_string_array(char **array, char *str, size_t n) {
+    for(int idx = 0; idx < n; ++idx) {
+        /* Write address of current string. */
+        array[idx] = str;
+
+        /* skip to end of string */
+        while(*str != '\0') {
+            ++str;
+        }
+
+        /* skip terminator to get to next string */
+        ++str;
+    }
+}
+
+void elf_initialize_stack(elf_info_t *info, const char *cmdline) {
+    uintptr_t *sp       = (uintptr_t *)(STACK_BASE - RESERVED_STACK_SIZE);
+    info->stack_addr    = sp;
+
+    /* We add 1 because argv[0] is the program name, which is not on the kernel
+     * command line. */
+    size_t argc = cmdline_count_arguments(cmdline) + 1;
+    *(sp++) = argc;
+
+    /* Reserve space for argv and remember where we are. We will fill in the
+     * pointers later. We add 1 to argc for the terminating NULL entry. */
+    char **argv = (char **)sp;
+    argv[argc] = NULL;
+    sp += argc + 1;
+
+    /* Reserve space for envp. Again, we will fill in the pointer values later.
+     * We add 1 to nenv for the terminating NULL entry. */
+    size_t nenv = cmdline_count_environ(cmdline);
+    char **envp = (char **)sp;
+    envp[nenv] = NULL;
+    sp += (nenv + 1);
+
+    /* Auxiliary vectors */
+    Elf32_auxv_t *auxvp = (Elf32_auxv_t *)sp;
+    sp = (uintptr_t *)(auxvp + 7);
+
+    auxvp[0].a_type     = AT_PHDR;
+    auxvp[0].a_un.a_val = (int32_t)info->at_phdr;
+
+    auxvp[1].a_type     = AT_PHENT;
+    auxvp[1].a_un.a_val = (int32_t)info->at_phent;
+
+    auxvp[2].a_type     = AT_PHNUM;
+    auxvp[2].a_un.a_val = (int32_t)info->at_phnum;
+
+    auxvp[3].a_type     = AT_PAGESZ;
+    auxvp[3].a_un.a_val = PAGE_SIZE;
+
+    auxvp[4].a_type     = AT_ENTRY;
+    auxvp[4].a_un.a_val = (int32_t)info->entry;
+
+    auxvp[5].a_type     = AT_STACKBASE;
+    auxvp[5].a_un.a_val = STACK_BASE;
+
+    auxvp[6].a_type     = AT_NULL;
+    auxvp[6].a_un.a_val = 0;
+
+    /* Write arguments and environment variables (i.e. the actual strings). */
+    char *const args = (char *)sp;
+
+    strcpy(args, info->argv0);
+
+    char *const arg1 = args + strlen(info->argv0) + 1;
+
+    char *const envs = cmdline_write_arguments(arg1, cmdline);
+
+    cmdline_write_environ(envs, cmdline);
+
+    /* Fill in content of pointer arrays argv and envp. */
+    initialize_string_array(argv, args, argc);
+    initialize_string_array(envp, envs, nenv);
+}
+
+/*TODO delete this function */
 void elf_setup_stack(elf_info_t *info, boot_alloc_t *boot_alloc) {
     /** TODO: check for overlap of stack with loaded segments */
     

@@ -30,8 +30,8 @@
     bits 32
     
     extern main
-    extern exit
     extern auxvp
+    extern jinue_environ
 
 ; ------------------------------------------------------------------------------
 ; ELF binary entry point
@@ -61,6 +61,7 @@ _start:
     
     ; Store envp as third argument to main
     mov dword [ebp-4], esi
+    mov dword [jinue_environ], esi
     
     ; Increment esi (by 4 each time) until we find the NULL pointer which marks
     ; the end of the environment variables. Since esi is post-incremented, it
