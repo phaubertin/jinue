@@ -245,6 +245,7 @@ void elf_allocate_stack(elf_info_t *info, boot_alloc_t *boot_alloc) {
     }
 }
 
+/* TODO can we make array more const? */
 static void initialize_string_array(char **array, char *str, size_t n) {
     for(int idx = 0; idx < n; ++idx) {
         /* Write address of current string. */
