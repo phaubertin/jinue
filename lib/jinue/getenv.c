@@ -29,6 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <jinue/getenv.h>
 #include <stddef.h>
 
 /* This is set by crt.asm. */

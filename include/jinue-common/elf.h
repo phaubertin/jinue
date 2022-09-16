@@ -308,7 +308,7 @@ typedef struct {
 typedef struct {
     int a_type;
     union {
-        int32_t a_val;
+        uint32_t a_val;
     } a_un;
 } Elf32_auxv_t;
 

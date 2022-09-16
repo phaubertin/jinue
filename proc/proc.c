@@ -49,8 +49,6 @@
 
 int errno;
 
-Elf32_auxv_t *auxvp;
-
 int fd;
 
 char thread_a_stack[THREAD_STACK_SIZE];

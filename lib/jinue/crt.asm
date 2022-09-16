@@ -30,7 +30,7 @@
     bits 32
     
     extern main
-    extern auxvp
+    extern jinue_auxvp
     extern jinue_environ
 
 ; ------------------------------------------------------------------------------
@@ -72,7 +72,7 @@ _start:
     repnz scasd
     
     ; Set address of auxiliary vectors
-    mov dword [auxvp], edi
+    mov dword [jinue_auxvp], edi
     
     ; Now that all arguments are where they should be, call main()
     call main

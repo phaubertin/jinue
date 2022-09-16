@@ -30,7 +30,14 @@
 jinue_root = ../..
 include $(jinue_root)/header.mk
 
-sources.c        = getenv.c ipc.c memory.c printk.c syscall.c console.c
+sources.c 		= \
+	getauxval.c \
+	getenv.c \
+	ipc.c \
+	memory.c \
+	printk.c \
+	syscall.c \
+	console.c
 sources.nasm     = crt.asm stubs.asm
 
 target.user      = libjinue.a
@@ -39,7 +46,7 @@ target.kernel    = libjinue-kernel.a
 
 targets          = $(target.user) $(target.kernel) $(target.proc)
 
-objects.user     = crt.o getenv.o ipc.o memory.o stubs.o syscall.o
+objects.user     = crt.o getauxval.o getenv.o ipc.o memory.o stubs.o syscall.o
 objects.proc     = printk.o console.o
 objects.kernel   = printk.o
 
