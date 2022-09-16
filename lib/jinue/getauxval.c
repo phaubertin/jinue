@@ -29,35 +29,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/getenv.h>
-#include <stdbool.h>
+#include <jinue/getauxval.h>
 #include <stddef.h>
 
 /* This is set by crt.asm. */
-char **jinue_environ = NULL;
+char **jinue_auxvp = NULL;
 
-const char *jinue_getenv(const char *name) {
-    if(jinue_environ == NULL) {
-        return NULL;
-    }
-
-    for(char **envvar = jinue_environ; *envvar != NULL; ++envvar) {
-        int idx;
-        bool match = true;
-
-        for(idx = 0; name[idx] != '\0'; ++idx) {
-            /* Special case handled here with the general case: the environment
-             * variable string is shorter than name. */
-            if((*envvar)[idx] != name[idx]) {
-                match = false;
-                break;
-            }
-        }
-
-        if(match && (*envvar)[idx] == '=') {
-            return &(*envvar)[idx + 1];
-        }
-    }
-
+uint32_t jinue_getauxval(int type) {
+    /* TODO*/
     return NULL;
 }

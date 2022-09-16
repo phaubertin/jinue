@@ -31,6 +31,7 @@
 
 #include <jinue/elf.h>
 #include <jinue/errno.h>
+#include <jinue/getenv.h>
 #include <jinue/ipc.h>
 #include <jinue/memory.h>
 #include <jinue/syscall.h>
@@ -89,12 +90,25 @@ void thread_a(void) {
     jinue_thread_exit();
 }
 
+static bool bool_getenv(const char *name) {
+    const char *value = jinue_getenv(name);
+
+    if(value == NULL) {
+        return false;
+    }
+
+    /* TODO we need a strcmp() implementation */
+    return value[0] == '1' && value[1] == '\0';
+}
+
 static void dump_phys_memory_map(const jinue_mem_map_t *map, bool ram_only) {
-    unsigned int idx;
+    if(! bool_getenv("DEBUG_DUMP_MEMORY_MAP")) {
+        return;
+    }
 
     printk("Dump of the BIOS memory map:\n");
 
-    for(idx = 0; idx < map->num_entries; ++idx) {
+    for(int idx = 0; idx < map->num_entries; ++idx) {
         const jinue_mem_entry_t *entry = &map->entry[idx];
 
         if(entry->type == E820_RAM || !ram_only) {
@@ -110,6 +124,10 @@ static void dump_phys_memory_map(const jinue_mem_map_t *map, bool ram_only) {
 }
 
 static void dump_cmdline_arguments(int argc, char *argv[]) {
+    if(! bool_getenv("DEBUG_DUMP_CMDLINE_ARGS")) {
+        return;
+    }
+
     printk("Command line arguments:\n");
 
     for(int idx = 0; idx < argc; ++idx) {
@@ -118,6 +136,10 @@ static void dump_cmdline_arguments(int argc, char *argv[]) {
 }
 
 static void dump_environ(void) {
+    if(! bool_getenv("DEBUG_DUMP_ENVIRON")) {
+        return;
+    }
+
     printk("Environment variables:\n");
 
     for(char **envvar = jinue_environ; *envvar != NULL; ++envvar) {
