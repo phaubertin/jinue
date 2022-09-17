@@ -245,8 +245,7 @@ void elf_allocate_stack(elf_info_t *info, boot_alloc_t *boot_alloc) {
     }
 }
 
-/* TODO can we make array more const? */
-static void initialize_string_array(char **array, char *str, size_t n) {
+static void initialize_string_array(const char *array[], const char *str, size_t n) {
     for(int idx = 0; idx < n; ++idx) {
         /* Write address of current string. */
         array[idx] = str;
@@ -272,14 +271,14 @@ void elf_initialize_stack(elf_info_t *info, const char *cmdline) {
 
     /* Reserve space for argv and remember where we are. We will fill in the
      * pointers later. We add 1 to argc for the terminating NULL entry. */
-    char **argv = (char **)sp;
+    const char **argv = (const char **)sp;
     argv[argc] = NULL;
     sp += argc + 1;
 
     /* Reserve space for envp. Again, we will fill in the pointer values later.
      * We add 1 to nenv for the terminating NULL entry. */
     size_t nenv = cmdline_count_environ(cmdline);
-    char **envp = (char **)sp;
+    const char **envp = (const char **)sp;
     envp[nenv] = NULL;
     sp += (nenv + 1);
 
