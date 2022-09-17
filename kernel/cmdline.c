@@ -626,6 +626,15 @@ static const enum_def_t *get_enum_entry_by_token(const enum_def_t *def, const to
             int name_c  = def_entry->name[token_index];
             int token_c = token->start[token_index];
 
+            /* Underscore (_) and dash (-) are treated as equivalent. */
+            if(name_c == '-') {
+                name_c = '_';
+            }
+
+            if(token_c == '-') {
+                token_c = '_';
+            }
+
             /* Corner case: if the name from the enum definition is a prefix of
              * the token, once we reach the end of it, name_c will be the NUL
              * character and token_c will not. */
