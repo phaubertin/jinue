@@ -31,8 +31,10 @@
 
 #include <hal/boot.h>
 #include <hal/hal.h>
+#include <hal/vga.h>
 #include <hal/vm.h>
 #include <boot.h>
+#include <cmdline.h>
 #include <console.h>
 #include <elf.h>
 #include <hal/memory.h>
@@ -65,32 +67,52 @@ static Elf32_Ehdr *find_process_manager(const boot_info_t *boot_info) {
 void kmain(void) {
     elf_info_t elf_info;
     
-    /* initialize console and say hello */
-    console_init();
-    
-    /* Say hello. */
+    /* Retrieve the boot information structure, which contains information
+     * passed to the kernel by the setup code. */
+    const boot_info_t *boot_info = get_boot_info();
+
+    /* The first thing we want to do is parse the command line options, before
+     * we log anything, because some options affect logging, such as whether we
+     * need to log to VGA and/or serial port, the baud rate, etc.
+     *
+     * We won't even validate the boot information structure yet because
+     * boot_info_check() logs errors (actually panics) on failure. */
+    cmdline_parse_options(boot_info->cmdline);
+
+    /* Now that we parsed the command line options, we can initialize the
+     * console (i.e. logging) properly and say hello. */
+    const cmdline_opts_t *cmdline_opts = cmdline_get_options();
+    console_init(cmdline_opts);
+
+    printk("Jinue microkernel started.\n");
     printk("Kernel revision " GIT_REVISION " built " BUILD_TIME " on " BUILD_HOST "\n");
     
-    const boot_info_t *boot_info = get_boot_info();
+    printk("Kernel command line:\n", boot_info->kernel_size);
+    printk("%s\n", boot_info->cmdline);
+    printk("---\n");
+
+    /* If there were issues parsing the command line, these will be reported
+     * here (i.e. panic), now that the console has been initialized and we can
+     * log things. */
+    cmdline_report_parsing_errors();
+
+    /* Validate the boot information structure. */
     (void)boot_info_check(true);
 
     if(boot_info->ramdisk_start == 0 || boot_info->ramdisk_size == 0) {
+        /* TODO once user loader is implemented, this needs to be a kernel panic. */
         printk("%kWarning: no initial RAM disk loaded.\n", VGA_COLOR_YELLOW);
     }
     else {
-        printk("RAM disk with size %u bytes loaded at address %x.\n", boot_info->ramdisk_size, boot_info->ramdisk_start);
+        printk("Bootloader has loaded RAM disk with size %u bytes at address %x.\n", boot_info->ramdisk_size, boot_info->ramdisk_start);
     }
-
-    printk("Kernel command line:\n", boot_info->kernel_size);
-    printk("    %s\n", boot_info->cmdline);
-    printk("---\n");
 
     /* Initialize the boot allocator. */
     boot_alloc_t boot_alloc;
     boot_alloc_init(&boot_alloc, boot_info);
 
-    /* initialize hardware abstraction layer */
-    hal_init(&boot_alloc, boot_info);
+    /* initialize the hardware abstraction layer */
+    hal_init(&boot_alloc, boot_info, cmdline_opts);
 
     /* initialize caches */
     ipc_boot_init();
@@ -119,6 +141,10 @@ void kmain(void) {
     if(thread == NULL) {
         panic("Could not create initial thread.");
     }
+
+    /* This should be the last thing the kernel prints before passing control
+     * to the user space loader. */
+    printk("---\n");
 
     /* start process manager
      *

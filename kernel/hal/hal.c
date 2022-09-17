@@ -45,6 +45,7 @@
 #include <hal/vm.h>
 #include <hal/vm_pae.h>
 #include <hal/x86.h>
+#include <cmdline.h>
 #include <boot.h>
 #include <panic.h>
 #include <page_alloc.h>
@@ -85,11 +86,23 @@ static void move_kernel_at_16mb(const boot_info_t *boot_info) {
     vm_write_protect_kernel_image(boot_info);
 }
 
-static bool enable_pae(
-        boot_alloc_t *boot_alloc,
-        const boot_info_t *boot_info) {
+static bool maybe_enable_pae(
+        boot_alloc_t            *boot_alloc,
+        const boot_info_t       *boot_info,
+        const cmdline_opts_t    *cmdline_opts) {
 
-    bool use_pae = cpu_has_feature(CPU_FEATURE_PAE);
+    bool use_pae;
+
+    if(cpu_has_feature(CPU_FEATURE_PAE)) {
+        use_pae = (cmdline_opts->pae != CMDLINE_OPT_PAE_DISABLE);
+    }
+    else {
+        if(cmdline_opts->pae == CMDLINE_OPT_PAE_REQUIRE) {
+            panic("Option pae=require passed on kernel command line but PAE is not supported.");
+        }
+
+        use_pae = false;
+    }
 
     if(! use_pae) {
         printk("%kWarning: Physical Address Extension (PAE) not enabled. NX protection disabled.\n", VGA_COLOR_YELLOW);
@@ -230,7 +243,10 @@ static void select_syscall_method(void) {
     }
 }
 
-void hal_init(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
+void hal_init(
+        boot_alloc_t            *boot_alloc,
+        const boot_info_t       *boot_info,
+        const cmdline_opts_t    *cmdline_opts) {
     cpu_detect_features();
 
     check_data_segment(boot_info);
@@ -241,7 +257,7 @@ void hal_init(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
 
     move_kernel_at_16mb(boot_info);
 
-    bool pae_enabled = enable_pae(boot_alloc, boot_info);
+    bool pae_enabled = maybe_enable_pae(boot_alloc, boot_info, cmdline_opts);
 
     /* Re-initialize the boot page allocator to allocate following the kernel
      * image at 16MB rather than at 1MB, now that the kernel has been moved
