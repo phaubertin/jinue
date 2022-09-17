@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2022 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,44 +29,37 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <hal/serial.h>
-#include <hal/vga.h>
-#include <cmdline.h>
-#include <console.h>
-#include <string.h>
+#ifndef JINUE_KERNEL_CMDLINE_H
+#define JINUE_KERNEL_CMDLINE_H
 
+#include <types.h>
 
-void console_init(const cmdline_opts_t *cmdline_opts) {
-    if(cmdline_opts->vga_enable) {
-        vga_init();
-    }
-    if(cmdline_opts->serial_enable) {
-        serial_init(cmdline_opts->serial_ioport, cmdline_opts->serial_baud_rate);
-    }
-}
+typedef enum {
+    CMDLINE_OPT_PAE_AUTO,
+    CMDLINE_OPT_PAE_DISABLE,
+    CMDLINE_OPT_PAE_REQUIRE
+} cmdline_opt_pae_t;
 
-void console_printn(const char *message, unsigned int n, int colour) {
-    const cmdline_opts_t *cmdline_opts = cmdline_get_options();
+typedef struct {
+    cmdline_opt_pae_t    pae;
+    bool                 serial_enable;
+    int                  serial_baud_rate;
+    int                  serial_ioport;
+    bool                 vga_enable;
+} cmdline_opts_t;
 
-    if(cmdline_opts->vga_enable) {
-        vga_printn(message, n, colour);
-    }
-    if(cmdline_opts->serial_enable) {
-        serial_printn(cmdline_opts->serial_ioport, message, n);
-    }
-}
+void cmdline_parse_options(const char *cmdline);
 
-void console_putc(char c, int colour) {
-    const cmdline_opts_t *cmdline_opts = cmdline_get_options();
+const cmdline_opts_t *cmdline_get_options(void);
 
-    if(cmdline_opts->vga_enable) {
-        vga_putc(c, colour);
-    }
-    if(cmdline_opts->serial_enable) {
-        serial_putc(cmdline_opts->serial_ioport, c);
-    }
-}
+void cmdline_report_parsing_errors(void);
 
-void console_print(const char *message, int colour) {
-    console_printn(message, strlen(message), colour);
-}
+char *cmdline_write_arguments(char *buffer, const char *cmdline);
+
+char *cmdline_write_environ(char *buffer, const char *cmdline);
+
+size_t cmdline_count_arguments(const char *cmdline);
+
+size_t cmdline_count_environ(const char *cmdline);
+
+#endif

@@ -46,6 +46,7 @@ sources.c		 = \
 	boot.c \
 	c-assert.c \
 	c-string.c \
+	cmdline.c \
 	console.c \
 	debug.c \
 	elf.c \

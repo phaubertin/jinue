@@ -42,7 +42,7 @@ void *memset(void *s, int c, size_t n) {
     return s;
 }
 
-void *memcpy(void *dest, const void *src, size_t n) {
+void *memcpy(void *restrict dest, const void *restrict src, size_t n) {
     size_t       idx;
     char        *cdest  = dest;
     const char  *csrc   = src;
@@ -63,4 +63,16 @@ size_t strlen(const char *s) {
     }
     
     return count;
+}
+
+char *strcpy(char *restrict dest, const char *restrict src) {
+    size_t       idx;
+    char        *cdest  = dest;
+    const char  *csrc   = src;
+
+    for(idx = 0; csrc[idx] != '\0'; ++idx) {
+        cdest[idx] = csrc[idx];
+    }
+
+    return dest;
 }
