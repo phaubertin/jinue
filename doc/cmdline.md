@@ -2,8 +2,8 @@
 
 ## Command Line Syntax
 
-The syntax of the command line is very similar to that of
-[Linux](https://github.com/torvalds/linux/blob/master/Documentation/admin-guide/kernel-parameters.rst).
+The syntax of the command line is very similar to that of the
+[Linux kernel command line](https://github.com/torvalds/linux/blob/master/Documentation/admin-guide/kernel-parameters.rst).
 This is on purpose, so the Jinue microkernel can be loaded by boot loaders
 intended for Linux.
 
