@@ -35,6 +35,7 @@
 #include <console.h>
 #include <panic.h>
 #include <printk.h>
+#include <string.h>
 
 /** Maximum valid command line length
  *
@@ -68,6 +69,8 @@
 
 #define CMDLINE_ERROR_JUNK_AFTER_ENDQUOTE       (1<<8)
 
+#define CMDLINE_ERROR_UNCLOSED_QUOTES           (1<<9)
+
 typedef enum {
     PARSE_STATE_START,
     PARSE_STATE_NAME,
@@ -78,9 +81,17 @@ typedef enum {
     PARSE_STATE_END_QUOTE,
     PARSE_STATE_DASH1,
     PARSE_STATE_DASH2,
-    PARSE_STATE_OPTION_START_QUOTE,
-    PARSE_STATE_QUOTED_OPTION,
-    PARSE_STATE_DONE,
+    PARSE_STATE_ARGUMENT_START_QUOTE,
+    PARSE_STATE_QUOTED_ARGUMENT,
+    PARSE_STATE_AFTER2DASH_START,
+    PARSE_STATE_AFTER2DASH_ARGUMENT,
+    PARSE_STATE_AFTER2DASH_EQUAL,
+    PARSE_STATE_AFTER2DASH_VALUE,
+    PARSE_STATE_AFTER2DASH_QUOTED_VALUE,
+    PARSE_STATE_AFTER2DASH_VALUE_END_QUOTE,
+    PARSE_STATE_AFTER2DASH_START_QUOTE,
+    PARSE_STATE_AFTER2DASH_QUOTED_ARGUMENT,
+    PARSE_STATE_AFTER2DASH_END_QUOTE,
 } parse_state_t;
 
 typedef struct {
@@ -93,6 +104,18 @@ typedef struct {
     int          enum_value;
 } enum_def_t;
 
+typedef struct {
+    const char      *cmdline;
+    parse_state_t    state;
+    token_t          option;
+    token_t          value;
+    int              position;
+    int              errors;
+    bool             done;
+    bool             has_option;
+    bool             has_argument;
+} parse_context_t;
+
 typedef enum {
     CMDLINE_OPT_NAME_PAE,
     CMDLINE_OPT_NAME_SERIAL_ENABLE,
@@ -102,7 +125,7 @@ typedef enum {
     CMDLINE_OPT_NAME_VGA_ENABLE,
 } cmdline_opt_names_t;
 
-static const enum_def_t opt_names[] = {
+static const enum_def_t kernel_option_names[] = {
     {"pae",                 CMDLINE_OPT_NAME_PAE},
     {"serial_enable",       CMDLINE_OPT_NAME_SERIAL_ENABLE},
     {"serial_baud_rate",    CMDLINE_OPT_NAME_SERIAL_BAUD_RATE},
@@ -184,27 +207,433 @@ static cmdline_opts_t cmdline_options = {
 
 static int cmdline_errors;
 
+static void initialize_context(parse_context_t *context, const char *cmdline) {
+    context->cmdline        = cmdline;
+    context->state          = PARSE_STATE_START;
+    context->position       = 0;
+    context->errors         = 0;
+    context->done           = false;
+
+    context->option.start   = NULL;
+    context->option.length  = 0;
+    context->value.start    = NULL;
+    context->value.length   = 0;
+}
+
 /**
- * Attempt to match an enum value
+ * Check whether a character represents a command line separator
  *
- * @param value set to numeric value of the enum only if there is a match
- * @param def enum definition
- * @param token potential name representing an enum value
- * @return true if an enum value was successfully matched, false otherwise
+ * A space or horizontal tab is a separator.
+ *
+ * The terminating NUL is also treated as a "separator", which ensures the last
+ * option on the command line is processed correctly. This is important in
+ * parsing states that represent the end of an option. In other states, it
+ * really does not matter because the end of the command line means parsing is
+ * done either way. (See cmdline_parse_options() for this paragraph to make
+ * sense.)
+ *
+ * @param c character to check
+ * @return true if the character is a separator, false otherwise
  *
  * */
-static bool match_enum(int *value, const enum_def_t *def, const token_t *token) {
+static bool is_separator(int c) {
+    return c == ' ' || c == '\t' || c == '\0';
+}
+
+static void mutate_context(parse_context_t *context) {
+    bool has_action = false;
+
+    context->has_argument   = false;
+    context->has_option = false;
+
+    while(!(has_action || context->done)) {
+        const char *current = &context->cmdline[context->position];
+        char c              = *current;
+
+        /* TODO check how the 32-bit setup code behaves when it copies the command line. */
+        if(context->position >= CMDLINE_MAX_VALID_LENGTH) {
+            /* Command line is too long. The limiting factor here is the stack
+             * size of the user loader and of the initial process, since we intend
+             * to copy the options from this command line to their command line
+             * and environment.
+             *
+             * Let's still continue parsing though so we have better chances to
+             * have the right VGA and serial port options when we report this
+             * error. */
+            context->errors |= CMDLINE_ERROR_TOO_LONG;
+
+            if(context->position >= CMDLINE_MAX_PARSE_LENGTH) {
+                /* The command line is *way* too long, probably because the
+                 * terminating NUL character is missing. Let's give up. */
+                context->done = true;
+                break;
+            }
+        }
+
+        switch(context->state) {
+        case PARSE_STATE_START:
+            if(c == '"') {
+                /* This is the opening quote of a quoted argument. */
+                context->state = PARSE_STATE_ARGUMENT_START_QUOTE;
+            }
+            else if(c == '-') {
+                /* We might be at the start of an option that starts with one or
+                 * more dashes, or we might also be at the start of the double
+                 * dash that marks the end of the options parsed by the kernel.
+                 * We will only know for sure later. */
+                context->option.start   = current;
+                context->state          = PARSE_STATE_DASH1;
+            }
+            else if(! is_separator(c)) {
+                /* We are at the start of an option, possibly a name-value pair,
+                 * i.e. a name and value separated by an equal sign. */
+                context->option.start   = current;
+                context->state          = PARSE_STATE_NAME;
+            }
+            break;
+        case PARSE_STATE_NAME:
+            if(c == '=') {
+                /* We just encountered an equal sign, so we are at the end of
+                 * the name in what looks like an name-value pair. */
+                context->option.length  = current - context->option.start;
+                context->state          = PARSE_STATE_EQUAL;
+            }
+            else if(is_separator(c)) {
+                /* We did not encounter an equal sign, so this is an argument. */
+                context->state          = PARSE_STATE_START;
+                context->option.length  = current - context->option.start;
+                context->has_argument   = true;
+                has_action              = true;
+            }
+            break;
+        case PARSE_STATE_EQUAL:
+            /* We are right after an option's equal sign that separate the name
+             * of the option and it's value. */
+            if(is_separator(c)) {
+                /* The value is an empty string. */
+                context->state          = PARSE_STATE_START;
+                context->value.start    = current;
+                context->value.length   = 0;
+                context->has_option = true;
+                has_action              = true;
+            }
+            else if(c == '"') {
+                /* Looks like this is going to be a value in quotes. The value
+                 * will end with a closing quote, not with the next separator
+                 * (i.e. space) or the end of the command line. */
+                context->state = PARSE_STATE_VALUE_START_QUOTE;
+            }
+            else {
+                /* We are at the start of an unquoted value. */
+                context->value.start    = current;
+                context->state          = PARSE_STATE_VALUE;
+            }
+            break;
+        case PARSE_STATE_VALUE:
+            if(is_separator(c)) {
+                /* We are at the end of a name-value pair. Time to process it. */
+                context->state          = PARSE_STATE_START;
+                context->value.length   = current - context->value.start;
+                context->has_option = true;
+                has_action              = true;
+            }
+            break;
+        case PARSE_STATE_VALUE_START_QUOTE:
+            /* We are at the start of a value in quotes. This state is needed so
+             * the value excludes the opening quote. */
+            if(c == '"') {
+                /* empty value in quotes */
+                context->state          = PARSE_STATE_END_QUOTE;
+                context->value.start    = current;
+                context->value.length   = 0;
+                context->has_option = true;
+                has_action              = true;
+
+            }
+            else if(c == '\0') {
+                /* We reached the end of the command line but we are still
+                 * expecting a closing quote character. Let's report this as an
+                 * error.
+                 *
+                 * No need to do anything else than that because the NUL
+                 * character leads to context->done being set for any state (see
+                 * after this switch-case statement). */
+                context->errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
+            }
+            else {
+                context->value.start    = current;
+                context->state          = PARSE_STATE_QUOTED_VALUE;
+            }
+            break;
+        case PARSE_STATE_QUOTED_VALUE:
+            if(c == '"') {
+                /* We are at the end of a name-value pair where the value is in
+                 * quotes. Let's process it. */
+                context->state          = PARSE_STATE_END_QUOTE;
+                context->value.length   = current - context->value.start;
+                context->has_option = true;
+                has_action              = true;
+            }
+            else if(c == '\0') {
+                context->errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
+            }
+            break;
+        case PARSE_STATE_END_QUOTE:
+            if(is_separator(c)) {
+                /* We are at a separator that follows a value in quotes or a
+                 * quoted option. */
+                context->state = PARSE_STATE_START;
+            }
+            else {
+                /* We found random junk after the quoted option/value. Let's
+                 * flag the error and then try to continue parsing by assuming
+                 * it's just a missing separator. */
+                context->errors |= CMDLINE_ERROR_JUNK_AFTER_ENDQUOTE;
+
+                /* The following is the same logic as the PARSE_STATE_START
+                 * state. */
+                if(c == '"') {
+                    context->state          = PARSE_STATE_ARGUMENT_START_QUOTE;
+                }
+                else if(c == '-') {
+                    context->option.start   = current;
+                    context->state          = PARSE_STATE_DASH1;
+                }
+                else {
+                    context->option.start   = current;
+                    context->state          = PARSE_STATE_NAME;
+                }
+            }
+            break;
+        case PARSE_STATE_DASH1:
+            if(c == '-') {
+                /* We might be at the start of an option that starts with two
+                 * dashes (on the second dash) or we might be on the second
+                 * dash of a double dash that ends the kernel options. The next
+                 * character will tell. */
+                context->state = PARSE_STATE_DASH2;
+            }
+            else {
+                /* We are at the start of an option that starts with a single
+                 * dash. name.start has already been set in PARSE_STATE_START. */
+                context->state = PARSE_STATE_NAME;
+            }
+            break;
+        case PARSE_STATE_DASH2:
+            if(is_separator(c)) {
+                /* We just found a double dash by itself. We are done with
+                 * kernel options. Everything that follows is arguments for
+                 * user space. */
+                context->state = PARSE_STATE_AFTER2DASH_START;
+            }
+            else {
+                /* We are at the start of an option that starts with two dashes,
+                 * right after the second dash. name.start has already been set
+                 * in PARSE_STATE_START. */
+                context->state = PARSE_STATE_START;
+            }
+            break;
+        case PARSE_STATE_ARGUMENT_START_QUOTE:
+            if(c == '"') {
+                /* empty argument in quotes */
+                context->state          = PARSE_STATE_END_QUOTE;
+                context->option.start   = current;
+                context->option.length  = 0;
+                context->has_argument   = true;
+                has_action              = true;
+            }
+            else if(c == '\0') {
+                context->errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
+            }
+            else {
+                context->state          = PARSE_STATE_QUOTED_ARGUMENT;
+                context->option.start   = current;
+            }
+            break;
+        case PARSE_STATE_QUOTED_ARGUMENT:
+            if(c == '"') {
+                context->state          = PARSE_STATE_END_QUOTE;
+                context->option.length  = current - context->option.start;
+                context->has_argument   = true;
+                has_action              = true;
+            }
+            else if(c == '\0') {
+                context->errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
+            }
+            break;
+        case PARSE_STATE_AFTER2DASH_START:
+            if(c == '"') {
+                /* This is the opening quote of a quoted argument. */
+                context->state = PARSE_STATE_AFTER2DASH_START_QUOTE;
+            }
+            else if(!is_separator(c)) {
+                context->option.start   = current;
+                context->state          = PARSE_STATE_AFTER2DASH_ARGUMENT;
+            }
+            break;
+        case PARSE_STATE_AFTER2DASH_ARGUMENT:
+            if(c == '=') {
+                /* Event though this is an argument for user space, we still
+                 * treat the equal sign specially since the value that follows
+                 * might be in quotes. */
+                context->state = PARSE_STATE_AFTER2DASH_EQUAL;
+            }
+            else if(is_separator(c)) {
+                /* We did not encounter an equal sign, so this is an argument. */
+                context->state          = PARSE_STATE_AFTER2DASH_START;
+                context->option.length  = current - context->option.start;
+                context->has_argument   = true;
+                has_action              = true;
+            }
+            break;
+        case PARSE_STATE_AFTER2DASH_EQUAL:
+            if(is_separator(c)) {
+                /* The argument ends with an equal sign. */
+                context->state          = PARSE_STATE_AFTER2DASH_START;
+                context->option.length  = current - context->option.start;
+                context->has_argument   = true;
+                has_action              = true;
+            }
+            else if(c == '"') {
+                /* Looks like this is going to be a value in quotes. The value
+                 * will end with a closing quote, not with the next separator
+                 * (i.e. space) or the end of the command line. */
+                context->state = PARSE_STATE_AFTER2DASH_QUOTED_VALUE;
+            }
+            else {
+                /* The argument just continues after the equal sign.*/
+                context->state = PARSE_STATE_AFTER2DASH_VALUE;
+            }
+            break;
+        case PARSE_STATE_AFTER2DASH_VALUE:
+            if(is_separator(c)) {
+                /* End of unquoted argument. */
+                context->state          = PARSE_STATE_AFTER2DASH_START;
+                context->option.length  = current - context->option.start;
+                context->has_argument   = true;
+                has_action              = true;
+            }
+            break;
+        case PARSE_STATE_AFTER2DASH_QUOTED_VALUE:
+            if(c == '"') {
+                /* We are at the end of an argument with a quoted value after
+                 * the equal sign. Unlike other cases of quoted options or
+                 * arguments, here, we want to include the closing quote as part
+                 * of the argument. */
+                context->state  = PARSE_STATE_AFTER2DASH_VALUE_END_QUOTE;
+            }
+            else if(c == '\0') {
+                context->errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
+            }
+            break;
+        case PARSE_STATE_AFTER2DASH_VALUE_END_QUOTE:
+            /* Process the argument, including the closing quote. */
+            context->option.length  = current - context->option.start;
+            context->has_argument   = true;
+            has_action              = true;
+
+            if(is_separator(c)) {
+                /* We are at a separator that follows an argument with a quoted
+                 * value. */
+                context->state = PARSE_STATE_AFTER2DASH_START;
+            }
+            else {
+                /* We found random junk after the quoted argument. Let's flag
+                 * the error and then stop. Since we are after the --, there are
+                 * no more kernel options coming, so there is no use in
+                 * continuing parsing further. */
+                context->errors |= CMDLINE_ERROR_JUNK_AFTER_ENDQUOTE;
+                context->done   = true;
+            }
+            break;
+        case PARSE_STATE_AFTER2DASH_START_QUOTE:
+            if(c == '"') {
+                /* empty argument in quotes */
+                context->state          = PARSE_STATE_AFTER2DASH_END_QUOTE;
+                context->option.start   = current;
+                context->option.length  = 0;
+                context->has_argument   = true;
+                has_action              = true;
+            }
+            else if(c == '\0') {
+                context->errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
+            }
+            else {
+                context->state          = PARSE_STATE_AFTER2DASH_QUOTED_ARGUMENT;
+                context->option.start   = current;
+            }
+            break;
+        case PARSE_STATE_AFTER2DASH_QUOTED_ARGUMENT:
+            if(c == '"') {
+                /* We are at the end of a quoted argument. */
+                context->state          = PARSE_STATE_AFTER2DASH_END_QUOTE;
+                context->option.length  = current - context->option.start;
+                context->has_argument   = true;
+                has_action              = true;
+            }
+            else if(c == '\0') {
+                context->errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
+            }
+            break;
+        case PARSE_STATE_AFTER2DASH_END_QUOTE:
+            if(is_separator(c)) {
+                /* We are at a separator that follows a quoted argument. */
+                context->state = PARSE_STATE_AFTER2DASH_START;
+            }
+            else {
+                /* We found random junk after the quoted argument. Let's flag
+                 * the error and then stop. Since we are after the --, there are
+                 * no more kernel options coming, so there is no use in
+                 * continuing parsing further. */
+                context->errors |= CMDLINE_ERROR_JUNK_AFTER_ENDQUOTE;
+                context->done   = true;
+            }
+            break;
+        }
+
+        /* Make sure we are not creating an infinite loop.
+         *
+         * Some states need to handle the NUL character specifically to make
+         * sure the last option on the command line is handled correctly.
+         * However, in any state, once we encounter the terminating NUL, we are
+         * done. */
+        if(c == '\0') {
+            context->done = true;
+        }
+
+        ++context->position;
+    }
+}
+
+/**
+ * Retrieve enum definition entry by name represented by a token
+ *
+ * @param def enum definition
+ * @param token name to search in enum definition
+ * @return enum definition entry if found, NULL otherwise
+ *
+ * */
+static const enum_def_t *get_enum_entry_by_token(const enum_def_t *def, const token_t *token) {
     for(int def_index = 0; def[def_index].name != NULL; ++def_index) {
         int token_index;
 
-        const enum_def_t *this_def = &def[def_index];
+        const enum_def_t *def_entry = &def[def_index];
 
         /* Optimism, captain! */
         bool match = true;
 
         for(token_index = 0; token_index < token->length; ++token_index) {
-            int name_c  = this_def->name[token_index];
+            int name_c  = def_entry->name[token_index];
             int token_c = token->start[token_index];
+
+            /* Underscore (_) and dash (-) are treated as equivalent. */
+            if(name_c == '-') {
+                name_c = '_';
+            }
+
+            if(token_c == '-') {
+                token_c = '_';
+            }
 
             /* Corner case: if the name from the enum definition is a prefix of
              * the token, once we reach the end of it, name_c will be the NUL
@@ -224,15 +653,34 @@ static bool match_enum(int *value, const enum_def_t *def, const token_t *token) 
              * Corner case: both strings might be empty, which is why we don't
              * use name_c here. (Its scope could have been outside the loop
              * instead of token_index.) */
-            if(this_def->name[token_index] == '\0') {
-                *value = this_def->enum_value;
-                return true;
+            if(def_entry->name[token_index] == '\0') {
+                return def_entry;
             }
         }
     }
 
     /* No match */
-    return false;
+    return NULL;
+}
+
+/**
+ * Attempt to match an enum value
+ *
+ * @param value set to numeric value of the enum only if there is a match
+ * @param def enum definition
+ * @param token potential name representing an enum value
+ * @return true if an enum value was successfully matched, false otherwise
+ *
+ * */
+static bool match_enum(int *value, const enum_def_t *def, const token_t *token) {
+    const enum_def_t *entry = get_enum_entry_by_token(def, token);
+
+    if(entry == NULL) {
+        return false;
+    }
+
+    *value = entry->enum_value;
+    return true;
 }
 
 /**
@@ -365,90 +813,70 @@ static bool match_integer(int *ivalue, const token_t *value) {
  * @param value token representing the option value
  *
  * */
-void process_name_value_pair(const token_t *name, const token_t *value) {
+static void process_name_value_pair(parse_context_t *context) {
     int opt_name;
     int opt_value;
 
-    if(! match_enum(&opt_name, opt_names, name)) {
+    if(! match_enum(&opt_name, kernel_option_names, &context->option)) {
         /* Unknown option - ignore */
         return;
     }
 
     switch(opt_name) {
     case CMDLINE_OPT_NAME_PAE:
-        if(match_enum(&opt_value, opt_pae_names, value)) {
+        if(match_enum(&opt_value, opt_pae_names, &context->value)) {
             cmdline_options.pae = opt_value;
         }
         else {
-            cmdline_errors |= CMDLINE_ERROR_INVALID_PAE;
+            context->errors |= CMDLINE_ERROR_INVALID_PAE;
         }
         break;
     case CMDLINE_OPT_NAME_SERIAL_ENABLE:
-        if(match_enum(&opt_value, bool_names, value)) {
+        if(match_enum(&opt_value, bool_names, &context->value)) {
             cmdline_options.serial_enable = opt_value;
         }
         else {
-            cmdline_errors |= CMDLINE_ERROR_INVALID_SERIAL_ENABLE;
+            context->errors |= CMDLINE_ERROR_INVALID_SERIAL_ENABLE;
         }
         break;
     case CMDLINE_OPT_NAME_SERIAL_BAUD_RATE:
-        if(match_enum(&opt_value, serial_baud_rates, value)) {
+        if(match_enum(&opt_value, serial_baud_rates, &context->value)) {
             cmdline_options.serial_baud_rate = opt_value;
         }
         else {
-            cmdline_errors |= CMDLINE_ERROR_INVALID_SERIAL_BAUD_RATE;
+            context->errors |= CMDLINE_ERROR_INVALID_SERIAL_BAUD_RATE;
         }
         break;
     case CMDLINE_OPT_NAME_SERIAL_IOPORT:
-        if(match_integer(&opt_value, value)) {
+        if(match_integer(&opt_value, &context->value)) {
             if(opt_value > SERIAL_MAX_IOPORT) {
-                cmdline_errors |= CMDLINE_ERROR_INVALID_SERIAL_IOPORT;
+                context->errors |= CMDLINE_ERROR_INVALID_SERIAL_IOPORT;
             }
             else {
                 cmdline_options.serial_ioport = opt_value;
             }
         }
         else {
-            cmdline_errors |= CMDLINE_ERROR_INVALID_SERIAL_IOPORT;
+            context->errors |= CMDLINE_ERROR_INVALID_SERIAL_IOPORT;
         }
         break;
     case CMDLINE_OPT_NAME_SERIAL_DEV:
-        if(match_enum(&opt_value, serial_ports, value)) {
+        if(match_enum(&opt_value, serial_ports, &context->value)) {
             cmdline_options.serial_ioport = opt_value;
         }
         else {
-            cmdline_errors |= CMDLINE_ERROR_INVALID_SERIAL_DEV;
+            context->errors |= CMDLINE_ERROR_INVALID_SERIAL_DEV;
         }
         break;
     case CMDLINE_OPT_NAME_VGA_ENABLE:
-        if(match_enum(&opt_value, bool_names, value)) {
+        if(match_enum(&opt_value, bool_names, &context->value)) {
             cmdline_options.vga_enable = opt_value;
         }
         else {
-            cmdline_errors |= CMDLINE_ERROR_INVALID_VGA_ENABLE;
+            context->errors |= CMDLINE_ERROR_INVALID_VGA_ENABLE;
         }
         break;
     }
-}
-
-/**
- * Check whether a character represents a command line separator
- *
- * A space or horizontal tab is a separator.
- *
- * The terminating NUL is also treated as a "separator", which ensures the last
- * option on the command line is processed correctly. This is important in
- * parsing states that represent the end of an option. In other states, it
- * really does not matter because the end of the command line means parsing is
- * done either way. (See cmdline_parse_options() for this paragraph to make
- * sense.)
- *
- * @param c character to check
- * @return true if the character is a separator, false otherwise
- *
- * */
-static bool is_separator(int c) {
-    return c == ' ' || c == '\t' || c == '\0';
 }
 
 /**
@@ -476,219 +904,29 @@ static bool is_separator(int c) {
  *
  * */
 void cmdline_parse_options(const char *cmdline) {
-    token_t name;
-    token_t value;
-
-    /* cmdline_errors keeps track of errors for later reporting by the
-     * cmdline_process_errors() function. */
-    cmdline_errors = 0;
+    parse_context_t context;
 
     /* This function is the first thing that gets called during kernel
      * initialization. At this point, no validation has been done on the boot
      * information structure which contains the command line argument pointer. */
     if(cmdline == NULL) {
+        /* cmdline_errors keeps track of errors for later reporting by the
+         * cmdline_process_errors() function. */
         cmdline_errors |= CMDLINE_ERROR_IS_NULL;
         return;
     }
 
-    parse_state_t state = PARSE_STATE_START;
-    int pos             = 0;
+    initialize_context(&context, cmdline);
 
-    /* TODO validate (but ignore) the command line options after the -- */
+    do {
+        mutate_context(&context);
 
-    while(true) {
-        const char *current = &cmdline[pos];
-        char c              = *current;
-
-        /* TODO check how the 32-bit setup code behaves when it copies the command line. */
-        if(pos >= CMDLINE_MAX_VALID_LENGTH) {
-            /* Command line is too long. The limiting factor here is the stack
-             * size of the user loader and of the initial process, since we intend
-             * to copy the options from this command line to their command line
-             * and environment.
-             *
-             * Let's still continue parsing though so we have better chances to
-             * have the right VGA and serial port options when we report this
-             * error. */
-            cmdline_errors |= CMDLINE_ERROR_TOO_LONG;
-
-            if(pos >= CMDLINE_MAX_PARSE_LENGTH) {
-                /* The command line is *way* too long, probably because the
-                 * terminating NUL character is missing. Let's give up. */
-                break;
-            }
+        if(context.has_option) {
+            process_name_value_pair(&context);
         }
+    } while (!context.done);
 
-        switch(state) {
-        case PARSE_STATE_START:
-            if(c == '"') {
-                /* This is the opening quote of a quoted option. */
-                state       = PARSE_STATE_OPTION_START_QUOTE;
-            }
-            else if(c == '-') {
-                /* We might be at the start of an option that starts with one or
-                 * more dashes, or we might also be at the start of the double
-                 * dash that marks the end of the options parsed by the kernel.
-                 * We will only know for sure later. */
-                name.start  = current;
-                state       = PARSE_STATE_DASH1;
-            }
-            else if(! is_separator(c)) {
-                /* We are at the start of an option, possibly a name-value pair,
-                 * i.e. a name and value separated by an equal sign. */
-                name.start  = current;
-                state       = PARSE_STATE_NAME;
-            }
-            break;
-        case PARSE_STATE_NAME:
-            if(c == '=') {
-                /* We just encountered an equal sign, so we are at the end of
-                 * the name in what looks like an name-value pair. */
-                name.length = current - name.start;
-                state = PARSE_STATE_EQUAL;
-            }
-            else if(is_separator(c)) {
-                /* We did not encounter an equal sign, so let's just ignore this
-                 * option. */
-                state = PARSE_STATE_START;
-            }
-            break;
-        case PARSE_STATE_EQUAL:
-            if(is_separator(c)) {
-                /* The empty string is not valid for any option we currently
-                 * support. */
-                state = PARSE_STATE_START;
-            }
-            else if(c == '"') {
-                /* Looks like this is going to be a value in quotes. The value
-                 * will end with a closing quote, not with the next separator
-                 * (i.e. space) or the end of the command line. */
-                state = PARSE_STATE_VALUE_START_QUOTE;
-            }
-            else {
-                /* We are at the start of an unquoted value. */
-                value.start = current;
-                state = PARSE_STATE_VALUE;
-            }
-            break;
-        case PARSE_STATE_VALUE:
-            if(is_separator(c)) {
-                /* We are at the end of a name-value pair. Time to process it. */
-                value.length = current - value.start;
-                process_name_value_pair(&name, &value);
-                state = PARSE_STATE_START;
-            }
-            break;
-        case PARSE_STATE_VALUE_START_QUOTE:
-            /* We are at the start of a value in quotes. This state is needed so
-             * the value excludes the opening quote. */
-            if(c == '"') {
-                /* empty value in quotes */
-                value.start     = current;
-                value.length    = 0;
-                process_name_value_pair(&name, &value);
-                state = PARSE_STATE_END_QUOTE;
-            }
-            else {
-                value.start = current;
-                state = PARSE_STATE_QUOTED_VALUE;
-            }
-            break;
-        case PARSE_STATE_QUOTED_VALUE:
-            if(c == '"') {
-                /* We are at the end of a name-value pair where the value is in
-                 * quotes. Let's process it. */
-                value.length = current - value.start;
-                process_name_value_pair(&name, &value);
-                state = PARSE_STATE_END_QUOTE;
-            }
-            break;
-        case PARSE_STATE_END_QUOTE:
-            if(is_separator(c)) {
-                /* We are at a separator that follows a value in quotes or a
-                 * quoted option. */
-                state = PARSE_STATE_START;
-            }
-            else {
-                /* We found random junk after the quoted option/value. Let's
-                 * flag the error and then try to continue parsing by assuming
-                 * it's just a missing separator. */
-                cmdline_errors |= CMDLINE_ERROR_JUNK_AFTER_ENDQUOTE;
-
-                /* The following uses the same logic as the PARSE_STATE_START
-                 * state.*/
-                if(c == '"') {
-                    state       = PARSE_STATE_OPTION_START_QUOTE;
-                }
-                else if(c == '-') {
-                    name.start  = current;
-                    state       = PARSE_STATE_DASH1;
-                }
-                else {
-                    name.start  = current;
-                    state       = PARSE_STATE_NAME;
-                }
-            }
-            break;
-        case PARSE_STATE_DASH1:
-            if(c == '-') {
-                /* We might be at the start of an option that starts with two
-                 * dashes (on the second dash) or we might be on the second
-                 * dash of a double dash that ends the kernel options. The next
-                 * character will tell. */
-                state = PARSE_STATE_DASH2;
-            }
-            else {
-                /* We are at the start of an option that starts with a single
-                 * dash. name.start has already been set in PARSE_STATE_START. */
-                state = PARSE_STATE_NAME;
-            }
-            break;
-        case PARSE_STATE_DASH2:
-            if(is_separator(c)) {
-                /* We just found a double dash by itself. We are done. The
-                 * options that follow aren't ours. */
-                state = PARSE_STATE_DONE;
-            }
-            else {
-                /* We are at the start of an option that starts with two dashes,
-                 * right after the second dash. name.start has already been set
-                 * in PARSE_STATE_START. */
-                state = PARSE_STATE_START;
-            }
-            break;
-        case PARSE_STATE_OPTION_START_QUOTE:
-            if(c == '"') {
-                /* empty option in quotes */
-                state   = PARSE_STATE_END_QUOTE;
-            }
-            else {
-                state   = PARSE_STATE_QUOTED_OPTION;
-            }
-            break;
-        case PARSE_STATE_QUOTED_OPTION:
-            if(c == '"') {
-                state = PARSE_STATE_END_QUOTE;
-            }
-            break;
-        case PARSE_STATE_DONE:
-            /* Make compiler happy by having a case for PARSE_STATE_DONE in this
-             * switch statement even though it does nothing. */
-            break;
-        }
-
-        /* Make sure we are not creating an infinite loop.
-         *
-         * Some states need to handle the NUL character specifically to make
-         * sure the last option on the command line is handled correctly.
-         * However, in any state, once we encounter the terminating NUL, we are
-         * done. */
-        if(c == '\0' || state == PARSE_STATE_DONE) {
-            break;
-        }
-
-        ++pos;
-    }
+    cmdline_errors = context.errors;
 }
 
 /**
@@ -697,7 +935,7 @@ void cmdline_parse_options(const char *cmdline) {
  * If called before cmdline_parse_options(), the returned options structure
  * contains the defaults.
  *
- * @return kernel command line options
+ * @return options parsed from kernel command line
  *
  * */
 const cmdline_opts_t *cmdline_get_options(void) {
@@ -760,7 +998,167 @@ void cmdline_report_parsing_errors(void) {
         printk("    Invalid character after closing quote, separator (e.g. space) expected\n");
     }
 
+    if(cmdline_errors & CMDLINE_ERROR_UNCLOSED_QUOTES) {
+        printk("    Unclosed quotes at end of input. Is closing quote missing?\n");
+    }
+
     if(cmdline_errors != 0) {
         panic("Invalid kernel command line");
     }
+}
+
+/**
+ * Write a character into buffer
+ *
+ * @param buffer address where writing starts
+ * @param c character to write
+ * @return pointer to first byte after written data
+ *
+ * */
+static char *write_character(char *buffer, int c) {
+    *buffer = c;
+    return buffer + 1;
+}
+
+/**
+ * Write a token into buffer
+ *
+ * @param buffer address where writing starts
+ * @param token token describing data to write
+ * @return pointer to first byte after written data
+ *
+ * */
+static char *write_token(char *buffer, const token_t *token) {
+    memcpy(buffer, token->start, token->length);
+    return buffer + token->length;
+}
+
+/**
+ * Write arguments parsed from the kernel command line into buffer
+ *
+ * This function assumes the command line is valid, i.e. that it has been
+ * checked by earlier calls to cmdline_parse_options() and
+ * cmdline_report_parsing_errors().
+ *
+ * @param buffer buffer where arguments are written
+ * @param cmdline command line string
+ * @return pointer to first byte after written data
+ *
+ * */
+char *cmdline_write_arguments(char *buffer, const char *cmdline) {
+    parse_context_t context;
+
+    initialize_context(&context, cmdline);
+
+    do {
+        mutate_context(&context);
+
+        if(context.has_argument) {
+            buffer = write_token(buffer, &context.option);
+            buffer = write_character(buffer, '\0');
+        }
+    } while (!context.done);
+
+    return buffer;
+}
+
+/**
+ * Filter user space environment variables
+ *
+ * Kernel options are filtered out from user space environment variables.
+ *
+ * @param name name of the option
+ * @return true if variable belongs in the user space environment, false otherwise
+ *
+ * */
+static bool filter_userspace_environ(const token_t *name) {
+    /* Filter out kernel options from user space environment variables. */
+    return get_enum_entry_by_token(kernel_option_names, name) == NULL;
+}
+
+/**
+ * Write environment variables parsed from the kernel command line into buffer
+ *
+ * This function assumes the command line is valid, i.e. that it has been
+ * checked by earlier calls to cmdline_parse_options() and
+ * cmdline_report_parsing_errors().
+ *
+ * @param buffer buffer where the environment variables are written
+ * @param cmdline command line string
+ * @return pointer to first byte after written data
+ *
+ * */
+char *cmdline_write_environ(char *buffer, const char *cmdline) {
+    parse_context_t context;
+
+    initialize_context(&context, cmdline);
+
+    do {
+        mutate_context(&context);
+
+        if(context.has_option && filter_userspace_environ(&context.option)) {
+            buffer = write_token(buffer, &context.option);
+            buffer = write_character(buffer, '=');
+            buffer = write_token(buffer, &context.value);
+            buffer = write_character(buffer, '\0');
+        }
+    } while (!context.done);
+
+    return buffer;
+}
+
+/**
+ * Count arguments parsed from the kernel command line
+ *
+ * This function assumes the command line is valid, i.e. that it has been
+ * checked by earlier calls to cmdline_parse_options() and
+ * cmdline_report_parsing_errors().
+ *
+ * @param cmdline command line string
+ * @return number of arguments
+ *
+ * */
+size_t cmdline_count_arguments(const char *cmdline) {
+    parse_context_t context;
+
+    size_t count = 0;
+    initialize_context(&context, cmdline);
+
+    do {
+        mutate_context(&context);
+
+        if(context.has_argument) {
+            ++count;
+        }
+    } while (!context.done);
+
+    return count;
+}
+
+/**
+ * Count environment variables parsed from the kernel command line
+ *
+ * This function assumes the command line is valid, i.e. that it has been
+ * checked by earlier calls to cmdline_parse_options() and
+ * cmdline_report_parsing_errors().
+ *
+ * @param cmdline command line string
+ * @return number of environment variables
+ *
+ * */
+size_t cmdline_count_environ(const char *cmdline) {
+    parse_context_t context;
+
+    size_t count = 0;
+    initialize_context(&context, cmdline);
+
+    do {
+        mutate_context(&context);
+
+        if(context.has_option && filter_userspace_environ(&context.option)) {
+            ++count;
+        }
+    } while (!context.done);
+
+    return count;
 }

@@ -31,6 +31,7 @@
 
 #include <jinue/elf.h>
 #include <jinue/errno.h>
+#include <jinue/getenv.h>
 #include <jinue/ipc.h>
 #include <jinue/memory.h>
 #include <jinue/syscall.h>
@@ -49,12 +50,13 @@
 
 int errno;
 
-Elf32_auxv_t *auxvp;
-
 int fd;
 
 char thread_a_stack[THREAD_STACK_SIZE];
 
+extern char **jinue_environ;
+
+extern const Elf32_auxv_t *jinue_auxvp;
 
 void thread_a(void) {
     int errno;
@@ -90,12 +92,25 @@ void thread_a(void) {
     jinue_thread_exit();
 }
 
+static bool bool_getenv(const char *name) {
+    const char *value = jinue_getenv(name);
+
+    if(value == NULL) {
+        return false;
+    }
+
+    /* TODO we need a strcmp() implementation */
+    return value[0] == '1' && value[1] == '\0';
+}
+
 static void dump_phys_memory_map(const jinue_mem_map_t *map, bool ram_only) {
-    unsigned int idx;
+    if(! bool_getenv("DEBUG_DUMP_MEMORY_MAP")) {
+        return;
+    }
 
     printk("Dump of the BIOS memory map:\n");
 
-    for(idx = 0; idx < map->num_entries; ++idx) {
+    for(int idx = 0; idx < map->num_entries; ++idx) {
         const jinue_mem_entry_t *entry = &map->entry[idx];
 
         if(entry->type == E820_RAM || !ram_only) {
@@ -110,12 +125,96 @@ static void dump_phys_memory_map(const jinue_mem_map_t *map, bool ram_only) {
     }
 }
 
-int main(int argc, char *argv[], char *envp[]) {
+static void dump_cmdline_arguments(int argc, char *argv[]) {
+    if(! bool_getenv("DEBUG_DUMP_CMDLINE_ARGS")) {
+        return;
+    }
+
+    printk("Command line arguments:\n");
+
+    for(int idx = 0; idx < argc; ++idx) {
+        printk("    %s\n", argv[idx]);
+    }
+}
+
+static void dump_environ(void) {
+    if(! bool_getenv("DEBUG_DUMP_ENVIRON")) {
+        return;
+    }
+
+    printk("Environment variables:\n");
+
+    for(char **envvar = jinue_environ; *envvar != NULL; ++envvar) {
+        printk("    %s\n", *envvar);
+    }
+}
+
+static const char *auxv_type_name(int type) {
+    /* TODO this mapping should be in a library somewhere for reuse */
+    const struct {
+        const char  *name;
+        int          type;
+    } *entry, mapping[] = {
+            {"AT_NULL",         AT_NULL},
+            {"AT_IGNORE",       AT_IGNORE},
+            {"AT_EXECFD",       AT_EXECFD},
+            {"AT_PHDR",         AT_PHDR},
+            {"AT_PHENT",        AT_PHENT},
+            {"AT_PHNUM",        AT_PHNUM},
+            {"AT_PAGESZ",       AT_PAGESZ},
+            {"AT_BASE",         AT_BASE},
+            {"AT_FLAGS",        AT_FLAGS},
+            {"AT_ENTRY",        AT_ENTRY},
+            {"AT_DCACHEBSIZE",  AT_DCACHEBSIZE},
+            {"AT_ICACHEBSIZE",  AT_ICACHEBSIZE},
+            {"AT_UCACHEBSIZE",  AT_UCACHEBSIZE},
+            {"AT_STACKBASE",    AT_STACKBASE},
+            {"AT_HWCAP",        AT_HWCAP},
+            {"AT_HWCAP2",       AT_HWCAP2},
+            {"AT_SYSINFO_EHDR", AT_SYSINFO_EHDR},
+            {NULL, 0}
+    };
+
+    for(entry = mapping; entry->name != NULL; ++entry) {
+        if(entry->type == type) {
+            return entry->name;
+        }
+    }
+
+    return NULL;
+}
+
+static void dump_auxvec(void) {
+
+
+    if(! bool_getenv("DEBUG_DUMP_AUXV")) {
+        return;
+    }
+
+    printk("Auxiliary vectors:\n");
+
+    for(const Elf32_auxv_t *entry = jinue_auxvp; entry->a_type != AT_NULL; ++entry) {
+        const char *name = auxv_type_name(entry->a_type);
+
+        if(name != NULL) {
+            printk("    %s: %u/0x%x\n", name, entry->a_un.a_val, entry->a_un.a_val);
+        }
+        else {
+            printk("    (%u): %u/0x%x\n", entry->a_type, entry->a_un.a_val, entry->a_un.a_val);
+        }
+    }
+}
+
+int main(int argc, char *argv[]) {
     char call_buffer[CALL_BUFFER_SIZE];
     int status;
     
     /* say hello */
     printk("Process manager (%s) started.\n", argv[0]);
+
+    dump_cmdline_arguments(argc, argv);
+    dump_environ();
+    dump_auxvec();
 
     /* get system call implementation so we can use something faster than the
      * interrupt-based one if available */

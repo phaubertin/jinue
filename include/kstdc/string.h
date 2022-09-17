@@ -36,8 +36,10 @@
 
 void *memset(void *s, int c, size_t n);
 
-void *memcpy(void *dest, const void *src, size_t n);
+void *memcpy(void *restrict dest, const void *restrict src, size_t n);
 
 size_t strlen(const char *s);
+
+char *strcpy(char *restrict dest, const char *restrict src);
 
 #endif
