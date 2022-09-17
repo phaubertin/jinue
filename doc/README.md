@@ -2,7 +2,11 @@
 
 This directory contains documentation.
 
-## Design Documents
+## User Documents
+
+* [Kernel Command Line](cmdline.md)
+
+## Design/Developer Documents
 
 * [Memory Layout](layout.md)
 
