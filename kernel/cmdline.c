@@ -81,17 +81,17 @@ typedef enum {
     PARSE_STATE_END_QUOTE,
     PARSE_STATE_DASH1,
     PARSE_STATE_DASH2,
-    PARSE_STATE_OPTION_START_QUOTE,
-    PARSE_STATE_QUOTED_OPTION,
-    PARSE_STATE_ARG_START,
-    PARSE_STATE_ARG,
-    PARSE_STATE_ARG_EQUAL,
-    PARSE_STATE_ARG_VALUE,
-    PARSE_STATE_ARG_QUOTED_VALUE,
-    PARSE_STATE_ARG_VALUE_END_QUOTE,
-    PARSE_STATE_ARG_START_QUOTE,
-    PARSE_STATE_QUOTED_ARG,
-    PARSE_STATE_ARG_END_QUOTE,
+    PARSE_STATE_ARGUMENT_START_QUOTE,
+    PARSE_STATE_QUOTED_ARGUMENT,
+    PARSE_STATE_AFTER2DASH_START,
+    PARSE_STATE_AFTER2DASH_ARGUMENT,
+    PARSE_STATE_AFTER2DASH_EQUAL,
+    PARSE_STATE_AFTER2DASH_VALUE,
+    PARSE_STATE_AFTER2DASH_QUOTED_VALUE,
+    PARSE_STATE_AFTER2DASH_VALUE_END_QUOTE,
+    PARSE_STATE_AFTER2DASH_START_QUOTE,
+    PARSE_STATE_AFTER2DASH_QUOTED_ARGUMENT,
+    PARSE_STATE_AFTER2DASH_END_QUOTE,
 } parse_state_t;
 
 typedef struct {
@@ -274,7 +274,7 @@ static void mutate_context(parse_context_t *context) {
         case PARSE_STATE_START:
             if(c == '"') {
                 /* This is the opening quote of a quoted argument. */
-                context->state = PARSE_STATE_OPTION_START_QUOTE;
+                context->state = PARSE_STATE_ARGUMENT_START_QUOTE;
             }
             else if(c == '-') {
                 /* We might be at the start of an option that starts with one or
@@ -393,7 +393,7 @@ static void mutate_context(parse_context_t *context) {
                 /* The following is the same logic as the PARSE_STATE_START
                  * state. */
                 if(c == '"') {
-                    context->state          = PARSE_STATE_OPTION_START_QUOTE;
+                    context->state          = PARSE_STATE_ARGUMENT_START_QUOTE;
                 }
                 else if(c == '-') {
                     context->option.start   = current;
@@ -424,7 +424,7 @@ static void mutate_context(parse_context_t *context) {
                 /* We just found a double dash by itself. We are done with
                  * kernel options. Everything that follows is arguments for
                  * user space. */
-                context->state = PARSE_STATE_ARG_START;
+                context->state = PARSE_STATE_AFTER2DASH_START;
             }
             else {
                 /* We are at the start of an option that starts with two dashes,
@@ -433,7 +433,7 @@ static void mutate_context(parse_context_t *context) {
                 context->state = PARSE_STATE_START;
             }
             break;
-        case PARSE_STATE_OPTION_START_QUOTE:
+        case PARSE_STATE_ARGUMENT_START_QUOTE:
             if(c == '"') {
                 /* empty argument in quotes */
                 context->state          = PARSE_STATE_END_QUOTE;
@@ -446,11 +446,11 @@ static void mutate_context(parse_context_t *context) {
                 context->errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
             }
             else {
-                context->state          = PARSE_STATE_QUOTED_OPTION;
+                context->state          = PARSE_STATE_QUOTED_ARGUMENT;
                 context->option.start   = current;
             }
             break;
-        case PARSE_STATE_QUOTED_OPTION:
+        case PARSE_STATE_QUOTED_ARGUMENT:
             if(c == '"') {
                 context->state          = PARSE_STATE_END_QUOTE;
                 context->option.length  = current - context->option.start;
@@ -461,35 +461,35 @@ static void mutate_context(parse_context_t *context) {
                 context->errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
             }
             break;
-        case PARSE_STATE_ARG_START:
+        case PARSE_STATE_AFTER2DASH_START:
             if(c == '"') {
                 /* This is the opening quote of a quoted argument. */
-                context->state = PARSE_STATE_ARG_START_QUOTE;
+                context->state = PARSE_STATE_AFTER2DASH_START_QUOTE;
             }
             else if(!is_separator(c)) {
                 context->option.start   = current;
-                context->state          = PARSE_STATE_ARG;
+                context->state          = PARSE_STATE_AFTER2DASH_ARGUMENT;
             }
             break;
-        case PARSE_STATE_ARG:
+        case PARSE_STATE_AFTER2DASH_ARGUMENT:
             if(c == '=') {
                 /* Event though this is an argument for user space, we still
                  * treat the equal sign specially since the value that follows
                  * might be in quotes. */
-                context->state = PARSE_STATE_ARG_EQUAL;
+                context->state = PARSE_STATE_AFTER2DASH_EQUAL;
             }
             else if(is_separator(c)) {
                 /* We did not encounter an equal sign, so this is an argument. */
-                context->state          = PARSE_STATE_ARG_START;
+                context->state          = PARSE_STATE_AFTER2DASH_START;
                 context->option.length  = current - context->option.start;
                 context->has_argument   = true;
                 has_action              = true;
             }
             break;
-        case PARSE_STATE_ARG_EQUAL:
+        case PARSE_STATE_AFTER2DASH_EQUAL:
             if(is_separator(c)) {
                 /* The argument ends with an equal sign. */
-                context->state          = PARSE_STATE_ARG_START;
+                context->state          = PARSE_STATE_AFTER2DASH_START;
                 context->option.length  = current - context->option.start;
                 context->has_argument   = true;
                 has_action              = true;
@@ -498,35 +498,35 @@ static void mutate_context(parse_context_t *context) {
                 /* Looks like this is going to be a value in quotes. The value
                  * will end with a closing quote, not with the next separator
                  * (i.e. space) or the end of the command line. */
-                context->state = PARSE_STATE_ARG_QUOTED_VALUE;
+                context->state = PARSE_STATE_AFTER2DASH_QUOTED_VALUE;
             }
             else {
                 /* The argument just continues after the equal sign.*/
-                context->state = PARSE_STATE_ARG_VALUE;
+                context->state = PARSE_STATE_AFTER2DASH_VALUE;
             }
             break;
-        case PARSE_STATE_ARG_VALUE:
+        case PARSE_STATE_AFTER2DASH_VALUE:
             if(is_separator(c)) {
                 /* End of unquoted argument. */
-                context->state          = PARSE_STATE_ARG_START;
+                context->state          = PARSE_STATE_AFTER2DASH_START;
                 context->option.length  = current - context->option.start;
                 context->has_argument   = true;
                 has_action              = true;
             }
             break;
-        case PARSE_STATE_ARG_QUOTED_VALUE:
+        case PARSE_STATE_AFTER2DASH_QUOTED_VALUE:
             if(c == '"') {
                 /* We are at the end of an argument with a quoted value after
                  * the equal sign. Unlike other cases of quoted options or
                  * arguments, here, we want to include the closing quote as part
                  * of the argument. */
-                context->state  = PARSE_STATE_ARG_VALUE_END_QUOTE;
+                context->state  = PARSE_STATE_AFTER2DASH_VALUE_END_QUOTE;
             }
             else if(c == '\0') {
                 context->errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
             }
             break;
-        case PARSE_STATE_ARG_VALUE_END_QUOTE:
+        case PARSE_STATE_AFTER2DASH_VALUE_END_QUOTE:
             /* Process the argument, including the closing quote. */
             context->option.length  = current - context->option.start;
             context->has_argument   = true;
@@ -535,7 +535,7 @@ static void mutate_context(parse_context_t *context) {
             if(is_separator(c)) {
                 /* We are at a separator that follows an argument with a quoted
                  * value. */
-                context->state = PARSE_STATE_ARG_START;
+                context->state = PARSE_STATE_AFTER2DASH_START;
             }
             else {
                 /* We found random junk after the quoted argument. Let's flag
@@ -546,10 +546,10 @@ static void mutate_context(parse_context_t *context) {
                 context->done   = true;
             }
             break;
-        case PARSE_STATE_ARG_START_QUOTE:
+        case PARSE_STATE_AFTER2DASH_START_QUOTE:
             if(c == '"') {
                 /* empty argument in quotes */
-                context->state          = PARSE_STATE_ARG_END_QUOTE;
+                context->state          = PARSE_STATE_AFTER2DASH_END_QUOTE;
                 context->option.start   = current;
                 context->option.length  = 0;
                 context->has_argument   = true;
@@ -559,14 +559,14 @@ static void mutate_context(parse_context_t *context) {
                 context->errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
             }
             else {
-                context->state          = PARSE_STATE_QUOTED_ARG;
+                context->state          = PARSE_STATE_AFTER2DASH_QUOTED_ARGUMENT;
                 context->option.start   = current;
             }
             break;
-        case PARSE_STATE_QUOTED_ARG:
+        case PARSE_STATE_AFTER2DASH_QUOTED_ARGUMENT:
             if(c == '"') {
                 /* We are at the end of a quoted argument. */
-                context->state          = PARSE_STATE_ARG_END_QUOTE;
+                context->state          = PARSE_STATE_AFTER2DASH_END_QUOTE;
                 context->option.length  = current - context->option.start;
                 context->has_argument   = true;
                 has_action              = true;
@@ -575,10 +575,10 @@ static void mutate_context(parse_context_t *context) {
                 context->errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
             }
             break;
-        case PARSE_STATE_ARG_END_QUOTE:
+        case PARSE_STATE_AFTER2DASH_END_QUOTE:
             if(is_separator(c)) {
                 /* We are at a separator that follows a quoted argument. */
-                context->state = PARSE_STATE_ARG_START;
+                context->state = PARSE_STATE_AFTER2DASH_START;
             }
             else {
                 /* We found random junk after the quoted argument. Let's flag
