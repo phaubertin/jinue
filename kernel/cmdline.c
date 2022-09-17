@@ -125,7 +125,7 @@ typedef enum {
     CMDLINE_OPT_NAME_VGA_ENABLE,
 } cmdline_opt_names_t;
 
-static const enum_def_t opt_names[] = {
+static const enum_def_t kernel_option_names[] = {
     {"pae",                 CMDLINE_OPT_NAME_PAE},
     {"serial_enable",       CMDLINE_OPT_NAME_SERIAL_ENABLE},
     {"serial_baud_rate",    CMDLINE_OPT_NAME_SERIAL_BAUD_RATE},
@@ -606,25 +606,24 @@ static void mutate_context(parse_context_t *context) {
 }
 
 /**
- * Attempt to match an enum value
+ * Retrieve enum definition entry by name represented by a token
  *
- * @param value set to numeric value of the enum only if there is a match
  * @param def enum definition
- * @param token potential name representing an enum value
- * @return true if an enum value was successfully matched, false otherwise
+ * @param token name to search in enum definition
+ * @return enum definition entry if found, NULL otherwise
  *
  * */
-static bool match_enum(int *value, const enum_def_t *def, const token_t *token) {
+static const enum_def_t *get_enum_entry_by_token(const enum_def_t *def, const token_t *token) {
     for(int def_index = 0; def[def_index].name != NULL; ++def_index) {
         int token_index;
 
-        const enum_def_t *this_def = &def[def_index];
+        const enum_def_t *def_entry = &def[def_index];
 
         /* Optimism, captain! */
         bool match = true;
 
         for(token_index = 0; token_index < token->length; ++token_index) {
-            int name_c  = this_def->name[token_index];
+            int name_c  = def_entry->name[token_index];
             int token_c = token->start[token_index];
 
             /* Corner case: if the name from the enum definition is a prefix of
@@ -645,15 +644,34 @@ static bool match_enum(int *value, const enum_def_t *def, const token_t *token) 
              * Corner case: both strings might be empty, which is why we don't
              * use name_c here. (Its scope could have been outside the loop
              * instead of token_index.) */
-            if(this_def->name[token_index] == '\0') {
-                *value = this_def->enum_value;
-                return true;
+            if(def_entry->name[token_index] == '\0') {
+                return def_entry;
             }
         }
     }
 
     /* No match */
-    return false;
+    return NULL;
+}
+
+/**
+ * Attempt to match an enum value
+ *
+ * @param value set to numeric value of the enum only if there is a match
+ * @param def enum definition
+ * @param token potential name representing an enum value
+ * @return true if an enum value was successfully matched, false otherwise
+ *
+ * */
+static bool match_enum(int *value, const enum_def_t *def, const token_t *token) {
+    const enum_def_t *entry = get_enum_entry_by_token(def, token);
+
+    if(entry == NULL) {
+        return false;
+    }
+
+    *value = entry->enum_value;
+    return true;
 }
 
 /**
@@ -790,7 +808,7 @@ static void process_name_value_pair(parse_context_t *context) {
     int opt_name;
     int opt_value;
 
-    if(! match_enum(&opt_name, opt_names, &context->option)) {
+    if(! match_enum(&opt_name, kernel_option_names, &context->option)) {
         /* Unknown option - ignore */
         return;
     }
@@ -980,7 +998,8 @@ void cmdline_report_parsing_errors(void) {
     }
 }
 
-/* Write a character into buffer
+/**
+ * Write a character into buffer
  *
  * @param buffer address where writing starts
  * @param c character to write
@@ -992,7 +1011,8 @@ static char *write_character(char *buffer, int c) {
     return buffer + 1;
 }
 
-/* Write a token into buffer
+/**
+ * Write a token into buffer
  *
  * @param buffer address where writing starts
  * @param token token describing data to write
@@ -1004,7 +1024,8 @@ static char *write_token(char *buffer, const token_t *token) {
     return buffer + token->length;
 }
 
-/* Write arguments parsed from the kernel command line into buffer
+/**
+ * Write arguments parsed from the kernel command line into buffer
  *
  * This function assumes the command line is valid, i.e. that it has been
  * checked by earlier calls to cmdline_parse_options() and
@@ -1032,7 +1053,22 @@ char *cmdline_write_arguments(char *buffer, const char *cmdline) {
     return buffer;
 }
 
-/* Write environment variables parsed from the kernel command line into buffer
+/**
+ * Filter user space environment variables
+ *
+ * Kernel options are filtered out from user space environment variables.
+ *
+ * @param name name of the option
+ * @return true if variable belongs in the user space environment, false otherwise
+ *
+ * */
+static bool filter_userspace_environ(const token_t *name) {
+    /* Filter out kernel options from user space environment variables. */
+    return get_enum_entry_by_token(kernel_option_names, name) == NULL;
+}
+
+/**
+ * Write environment variables parsed from the kernel command line into buffer
  *
  * This function assumes the command line is valid, i.e. that it has been
  * checked by earlier calls to cmdline_parse_options() and
@@ -1051,7 +1087,7 @@ char *cmdline_write_environ(char *buffer, const char *cmdline) {
     do {
         mutate_context(&context);
 
-        if(context.has_option) {
+        if(context.has_option && filter_userspace_environ(&context.option)) {
             buffer = write_token(buffer, &context.option);
             buffer = write_character(buffer, '=');
             buffer = write_token(buffer, &context.value);
@@ -1062,7 +1098,8 @@ char *cmdline_write_environ(char *buffer, const char *cmdline) {
     return buffer;
 }
 
-/* Count arguments parsed from the kernel command line
+/**
+ * Count arguments parsed from the kernel command line
  *
  * This function assumes the command line is valid, i.e. that it has been
  * checked by earlier calls to cmdline_parse_options() and
@@ -1089,7 +1126,8 @@ size_t cmdline_count_arguments(const char *cmdline) {
     return count;
 }
 
-/* Count environment variables parsed from the kernel command line
+/**
+ * Count environment variables parsed from the kernel command line
  *
  * This function assumes the command line is valid, i.e. that it has been
  * checked by earlier calls to cmdline_parse_options() and
@@ -1108,7 +1146,7 @@ size_t cmdline_count_environ(const char *cmdline) {
     do {
         mutate_context(&context);
 
-        if(context.has_option) {
+        if(context.has_option && filter_userspace_environ(&context.option)) {
             ++count;
         }
     } while (!context.done);
