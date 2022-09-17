@@ -133,7 +133,7 @@ void kmain(void) {
     elf_load(
             &elf_info,
             elf,
-            "userload",
+            "jinue-userspace-loader",
             boot_info->cmdline,
             &process->addr_space,
             &boot_alloc);
