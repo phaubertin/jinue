@@ -41,7 +41,12 @@
 #include <string.h>
 #include <util.h>
 
-
+/**
+ * Check the validity of an ELF binary
+ *
+ * @param elf ELF header, which is at the very beginning of the ELF binary
+ *
+ * */
 void elf_check(Elf32_Ehdr *elf) {
     /* check: valid ELF binary magic number */
     if(     elf->e_ident[EI_MAG0] != ELF_MAGIC0 ||
@@ -97,17 +102,49 @@ void elf_check(Elf32_Ehdr *elf) {
     }
 }
 
+/**
+ * Map a user space page
+ *
+ * This function leads to a kernel panic if the mapping fails because a
+ * translation table could not be allocated.
+ *
+ * @param addr_space address space for mapping
+ * @param vadds virtual address of page
+ * @param padds physical address of page frame
+ * @param flags mapping flags
+ *
+ * */
 static void checked_map_userspace(
         addr_space_t    *addr_space,
         void            *vaddr,
         user_paddr_t     paddr,
         int              flags) {
 
+    /* TODO check user space pointers
+     *
+     * This should not be necessary because we control the user loader binary,
+     * but let's check anyway in case the build process breaks somehow. */
     if(! vm_map_userspace(addr_space, vaddr, paddr, flags)) {
         panic("Page table allocation error when loading ELF file");
     }
 }
 
+/**
+ * Load ELF binary
+ *
+ * This function is intended to be used to load the user space loader binary,
+ * not arbitrary user binaries. It loads the loadable segments, sets up the
+ * stack and fills an ELF information structure with information about the
+ * binary.
+ *
+ * @param info ELF information structure (output)
+ * @param elf ELF file header
+ * @param argv0 name of binary
+ * @param cmdline full kernel command line
+ * @param addr_space address space
+ * @param boot_alloc boot-time page allocator
+ *
+ * */
 void elf_load(
         elf_info_t      *info,
         Elf32_Ehdr      *elf,
@@ -225,6 +262,13 @@ void elf_load(
     printk("ELF binary loaded.\n");
 }
 
+/**
+ * Allocate the stack for ELF binary
+ *
+ * @param info ELF information structure (output)
+ * @param boot_alloc boot-time page allocator
+ *
+ * */
 void elf_allocate_stack(elf_info_t *info, boot_alloc_t *boot_alloc) {
     /** TODO: check for overlap of stack with loaded segments */
 
@@ -245,6 +289,21 @@ void elf_allocate_stack(elf_info_t *info, boot_alloc_t *boot_alloc) {
     }
 }
 
+/**
+ * Initialize the arguments (argv) and environment variables string arrays
+ *
+ * This function is intended to initialize the string arrays for the command
+ * line arguments (argv) and environment variables. It does not initialize the
+ * terminating NULL entry, which needs to be intialized separately.
+ *
+ * This function intializes a fixed number of entries and assumes the
+ * NUL-terminated strings are concatenated.
+ *
+ * @param array array to initialize
+ * @param str pointer to the first string
+ * @param n number of entries to initialize
+ *
+ * */
 static void initialize_string_array(const char *array[], const char *str, size_t n) {
     for(int idx = 0; idx < n; ++idx) {
         /* Write address of current string. */
@@ -260,6 +319,16 @@ static void initialize_string_array(const char *array[], const char *str, size_t
     }
 }
 
+/**
+ * Initialize stack for ELF binary
+ *
+ * Initializes the command line arguments, the environment variables and the
+ * auxiliary vectors.
+ *
+ * @param info ELF information structure (output)
+ * @param cmdline full kernel command line
+ *
+ * */
 void elf_initialize_stack(elf_info_t *info, const char *cmdline) {
     uintptr_t *sp       = (uintptr_t *)(STACK_BASE - RESERVED_STACK_SIZE);
     info->stack_addr    = sp;
@@ -323,6 +392,19 @@ void elf_initialize_stack(elf_info_t *info, const char *cmdline) {
     initialize_string_array(envp, envs, nenv);
 }
 
+/**
+ * Look up a symbol in the ELF binary's symbol table by address
+ *
+ * Input is an address and a symbol type. The result contains the start address
+ * and length of the symbol.
+ *
+ * @param elf_header ELF header of ELF binary
+ * @param addr address to look up
+ * @param type type of the symbol
+ * @param result result variable, written only if found
+ * @return 0 if symbol is found, -1 otherwise
+ *
+ * */
 int elf_lookup_symbol(
         const Elf32_Ehdr    *elf_header,
         Elf32_Addr           addr,
