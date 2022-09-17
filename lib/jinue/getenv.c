@@ -29,37 +29,35 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_CMDLINE_H
-#define JINUE_KERNEL_CMDLINE_H
+#include <jinue/getenv.h>
+#include <stdbool.h>
+#include <stddef.h>
 
-#include <types.h>
+/* This is set by crt.asm. */
+char **jinue_environ = NULL;
 
-typedef enum {
-    CMDLINE_OPT_PAE_AUTO,
-    CMDLINE_OPT_PAE_DISABLE,
-    CMDLINE_OPT_PAE_REQUIRE
-} cmdline_opt_pae_t;
+const char *jinue_getenv(const char *name) {
+    if(jinue_environ == NULL) {
+        return NULL;
+    }
 
-typedef struct {
-    cmdline_opt_pae_t    pae;
-    bool                 serial_enable;
-    int                  serial_baud_rate;
-    int                  serial_ioport;
-    bool                 vga_enable;
-} cmdline_opts_t;
+    for(char **envvar = jinue_environ; *envvar != NULL; ++envvar) {
+        int idx;
+        bool match = true;
 
-void cmdline_parse_options(const char *cmdline);
+        for(idx = 0; name[idx] != '\0'; ++idx) {
+            /* Special case handled here with the general case: the environment
+             * variable string is shorter than name. */
+            if((*envvar)[idx] != name[idx]) {
+                match = false;
+                break;
+            }
+        }
 
-const cmdline_opts_t *cmdline_get_options(void);
+        if(match && (*envvar)[idx] == '=') {
+            return &(*envvar)[idx + 1];
+        }
+    }
 
-void cmdline_report_parsing_errors(void);
-
-char *cmdline_write_arguments(char *buffer, const char *cmdline);
-
-char *cmdline_write_environ(char *buffer, const char *cmdline);
-
-size_t cmdline_count_arguments(const char *cmdline);
-
-size_t cmdline_count_environ(const char *cmdline);
-
-#endif
+    return NULL;
+}

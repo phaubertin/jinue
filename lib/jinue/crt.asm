@@ -30,8 +30,8 @@
     bits 32
     
     extern main
-    extern exit
-    extern auxvp
+    extern jinue_auxvp
+    extern jinue_environ
 
 ; ------------------------------------------------------------------------------
 ; ELF binary entry point
@@ -59,19 +59,23 @@ _start:
     ; Skip whole argv array (eax entries) as well as the following NULL pointer
     lea esi, [esi + 4 * eax + 4]
     
-    ; Store envp as third argument to main
+    ; Store envp as third argument to main and keep a copy in jinue_environ.
     mov dword [ebp-4], esi
+    mov dword [jinue_environ], esi
     
     ; Increment esi (by 4 each time) until we find the NULL pointer which marks
-    ; the end of the environment variables. Since esi is post-incremented, it
+    ; the end of the environment variables. Since edi is post-incremented, it
     ; will point at the address past the NULL pointer at the end of the loop,
     ; which is the start of the auxiliary vectors.
     xor eax, eax
     mov edi, esi
-    repnz scasd
+
+.skip_environ:
+    scasd
+    jne .skip_environ
     
     ; Set address of auxiliary vectors
-    mov dword [auxvp], edi
+    mov dword [jinue_auxvp], edi
     
     ; Now that all arguments are where they should be, call main()
     call main

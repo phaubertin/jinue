@@ -29,37 +29,23 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_CMDLINE_H
-#define JINUE_KERNEL_CMDLINE_H
+#include <jinue-common/elf.h>
+#include <jinue/getauxval.h>
+#include <stddef.h>
 
-#include <types.h>
+/* This is set by crt.asm. */
+const Elf32_auxv_t *jinue_auxvp = NULL;
 
-typedef enum {
-    CMDLINE_OPT_PAE_AUTO,
-    CMDLINE_OPT_PAE_DISABLE,
-    CMDLINE_OPT_PAE_REQUIRE
-} cmdline_opt_pae_t;
+uint32_t jinue_getauxval(int type) {
+    if(jinue_auxvp == NULL) {
+        return 0;
+    }
 
-typedef struct {
-    cmdline_opt_pae_t    pae;
-    bool                 serial_enable;
-    int                  serial_baud_rate;
-    int                  serial_ioport;
-    bool                 vga_enable;
-} cmdline_opts_t;
+    for(const Elf32_auxv_t *entry = jinue_auxvp; entry->a_type != AT_NULL; ++entry) {
+        if(entry->a_type == type) {
+            return entry->a_un.a_val;
+        }
+    }
 
-void cmdline_parse_options(const char *cmdline);
-
-const cmdline_opts_t *cmdline_get_options(void);
-
-void cmdline_report_parsing_errors(void);
-
-char *cmdline_write_arguments(char *buffer, const char *cmdline);
-
-char *cmdline_write_environ(char *buffer, const char *cmdline);
-
-size_t cmdline_count_arguments(const char *cmdline);
-
-size_t cmdline_count_environ(const char *cmdline);
-
-#endif
+    return 0;
+}

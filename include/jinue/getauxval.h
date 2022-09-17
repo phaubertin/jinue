@@ -29,37 +29,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_CMDLINE_H
-#define JINUE_KERNEL_CMDLINE_H
+#ifndef _JINUE_GETAUXVAL_H_
+#define _JINUE_GETAUXVAL_H_
 
-#include <types.h>
+#include <stdint.h>
 
-typedef enum {
-    CMDLINE_OPT_PAE_AUTO,
-    CMDLINE_OPT_PAE_DISABLE,
-    CMDLINE_OPT_PAE_REQUIRE
-} cmdline_opt_pae_t;
-
-typedef struct {
-    cmdline_opt_pae_t    pae;
-    bool                 serial_enable;
-    int                  serial_baud_rate;
-    int                  serial_ioport;
-    bool                 vga_enable;
-} cmdline_opts_t;
-
-void cmdline_parse_options(const char *cmdline);
-
-const cmdline_opts_t *cmdline_get_options(void);
-
-void cmdline_report_parsing_errors(void);
-
-char *cmdline_write_arguments(char *buffer, const char *cmdline);
-
-char *cmdline_write_environ(char *buffer, const char *cmdline);
-
-size_t cmdline_count_arguments(const char *cmdline);
-
-size_t cmdline_count_environ(const char *cmdline);
+uint32_t jinue_getauxval(int type);
 
 #endif
