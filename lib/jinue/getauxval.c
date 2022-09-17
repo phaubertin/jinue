@@ -29,13 +29,23 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <jinue-common/elf.h>
 #include <jinue/getauxval.h>
 #include <stddef.h>
 
 /* This is set by crt.asm. */
-char **jinue_auxvp = NULL;
+const Elf32_auxv_t *jinue_auxvp = NULL;
 
 uint32_t jinue_getauxval(int type) {
-    /* TODO*/
-    return NULL;
+    if(jinue_auxvp == NULL) {
+        return 0;
+    }
+
+    for(const Elf32_auxv_t *entry = jinue_auxvp; entry->a_type != AT_NULL; ++entry) {
+        if(entry->a_type == type) {
+            return entry->a_un.a_val;
+        }
+    }
+
+    return 0;
 }

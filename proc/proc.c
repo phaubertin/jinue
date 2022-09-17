@@ -56,6 +56,8 @@ char thread_a_stack[THREAD_STACK_SIZE];
 
 extern char **jinue_environ;
 
+extern const Elf32_auxv_t *jinue_auxvp;
+
 void thread_a(void) {
     int errno;
     char message[] = "Hello World!";
@@ -147,6 +149,62 @@ static void dump_environ(void) {
     }
 }
 
+static const char *auxv_type_name(int type) {
+    /* TODO this mapping should be in a library somewhere for reuse */
+    const struct {
+        const char  *name;
+        int          type;
+    } *entry, mapping[] = {
+            {"AT_NULL",         AT_NULL},
+            {"AT_IGNORE",       AT_IGNORE},
+            {"AT_EXECFD",       AT_EXECFD},
+            {"AT_PHDR",         AT_PHDR},
+            {"AT_PHENT",        AT_PHENT},
+            {"AT_PHNUM",        AT_PHNUM},
+            {"AT_PAGESZ",       AT_PAGESZ},
+            {"AT_BASE",         AT_BASE},
+            {"AT_FLAGS",        AT_FLAGS},
+            {"AT_ENTRY",        AT_ENTRY},
+            {"AT_DCACHEBSIZE",  AT_DCACHEBSIZE},
+            {"AT_ICACHEBSIZE",  AT_ICACHEBSIZE},
+            {"AT_UCACHEBSIZE",  AT_UCACHEBSIZE},
+            {"AT_STACKBASE",    AT_STACKBASE},
+            {"AT_HWCAP",        AT_HWCAP},
+            {"AT_HWCAP2",       AT_HWCAP2},
+            {"AT_SYSINFO_EHDR", AT_SYSINFO_EHDR},
+            {NULL, 0}
+    };
+
+    for(entry = mapping; entry->name != NULL; ++entry) {
+        if(entry->type == type) {
+            return entry->name;
+        }
+    }
+
+    return NULL;
+}
+
+static void dump_auxvec(void) {
+
+
+    if(! bool_getenv("DEBUG_DUMP_AUXV")) {
+        return;
+    }
+
+    printk("Auxiliary vectors:\n");
+
+    for(const Elf32_auxv_t *entry = jinue_auxvp; entry->a_type != AT_NULL; ++entry) {
+        const char *name = auxv_type_name(entry->a_type);
+
+        if(name != NULL) {
+            printk("    %s: %u/0x%x\n", name, entry->a_un.a_val, entry->a_un.a_val);
+        }
+        else {
+            printk("    (%u): %u/0x%x\n", entry->a_type, entry->a_un.a_val, entry->a_un.a_val);
+        }
+    }
+}
+
 int main(int argc, char *argv[]) {
     char call_buffer[CALL_BUFFER_SIZE];
     int status;
@@ -156,6 +214,7 @@ int main(int argc, char *argv[]) {
 
     dump_cmdline_arguments(argc, argv);
     dump_environ();
+    dump_auxvec();
 
     /* get system call implementation so we can use something faster than the
      * interrupt-based one if available */
