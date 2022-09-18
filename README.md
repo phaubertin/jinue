@@ -45,15 +45,23 @@ make vbox
 ```
 This builds the `bin/jinue.iso` ISO file inside the source tree.
 
-Now, in VirtualBox, create a new virtual machine. Use the Other machine type and
-Other/Unknown in the version field. Do not specify a virtual hard disk. Then,
-open the configuration for your new virtual machine, choose Storage in the
-side bar. In the IDE controller section, add a CDROM drive if there isn't
-already one and specify the `bin/jinue.iso` ISO file inside the source tree as
-the file for this CDROM drive.
+Now, in VirtualBox, create a new virtual machine called `Jinue`. Use the Other
+machine type and Other/Unknown in the version field. Do not specify a virtual
+hard disk. Then, open the configuration for your new virtual machine, choose
+Storage in the side bar. In the IDE controller section, add a CDROM drive if
+there isn't already one and specify the `bin/jinue.iso` ISO file inside the
+source tree as the file for this CDROM drive.
 
 Optionally, you can also configure the virtual machine to redirect the first
 COM port (COM1) to a file. The kernel logs messages to COM1.
+
+Once the virtual machine has been created, you can re-build the ISO image and
+then start the virtual machine with the VirtualBox debugger enabled by using the
+`vbox-debug` make target:
+
+```
+make vbox-debug
+```
 
 How to Install
 --------------
