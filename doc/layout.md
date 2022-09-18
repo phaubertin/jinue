@@ -58,16 +58,17 @@ refer to as the kernel image.
 
 The kernel image is composed of three parts:
 
-* The 32-bit setup code.
+* The 32-bit setup code (a single page).
 * The microkernel ELF binary. This is the microkernel proper and runs in
 kernel mode.
 * The user space loader ELF binary. At the end of its initialization, the kernel
 loads this binary in user space and gives control to it. This program is
 responsible for decompressing the initial RAM disk image, finding the initial
-process, loading it and running it. (TODO the user space loader is not yet
+user program, loading it and running it. (TODO the user space loader is not yet
 implemented. For now, this binary simply runs some basic functional tests and
 prints debugging information. It is still referred to in some places in the
-documentation as the "process manager".)
+code and documentation as the "process manager", a legacy name that no longer
+has any meaning.)
 
 ## 32-bit Setup Code
 
@@ -81,9 +82,10 @@ environment it needs. These tasks include:
 * Loading the kernel's data segment; and
 * Allocating and initializing the initial page tables, and then enabling paging.
 
-As it runs, the 32-bit setup code allocates memory right after the kernel image.
-Once it completes and passes control to the kernel binary's entry point, the
-physical memory starting at address 0x100000 (1MB) looks like this:
+As it runs, the 32-bit setup code allocates memory pages sequentially right
+after the kernel image. Once it completes and passes control to the kernel
+binary's entry point, the physical memory starting at address 0x100000 (1MB)
+looks like this:
 
 ```
   +=======================================+ boot_info.boot_end          -+-
@@ -138,7 +140,7 @@ set up by the bootloader as well as the VGA text video memory. The kernel image
 is mapped read only while the rest of the memory is mapped read/write.
 2. Starting at address 0x1000000 (i.e. 16MB), a few megabytes of memory
 (size [BOOT_SIZE_AT_16MB](../include/hal/asm/boot.h)) are also identity mapped.
-Early in its initialization process, the kernel move its own image there. This
+Early in the initialization process, the kernel move its own image there. This
 region is mapped read/write.
 3. The kernel image as well as some of the initial memory allocations, up to but
 excluding the initial page tables, are mapped at address 0xc000000 (3GB,
@@ -159,7 +161,8 @@ it. The rest of the kernel image is mapped read only and the rest of the region
         |                                       |
         +=======================================+
     (3) |                                       |
- +------|   kernel image + initial allocations  |
+        |   kernel image + initial allocations  |
+ +------|                                       |
  |      +=======================================+ 0xc0000000 (KLIMIT)
  |      |                                       |
  |      |                                       |
@@ -176,7 +179,8 @@ it. The rest of the kernel image is mapped read only and the rest of the region
  |      |                                       |
  |      +=======================================+ 0x200000 (2MB)
  |      |                                       |
- +----->|   kernel image + initial allocations  |
+ |      |   kernel image + initial allocations  |
+ +----->|                                       |
     (1) +---------------------------------------+ 0x100000 (1MB)
         | physical memory starting at address 0 |
         |  text video memory, boot loader data  |        
@@ -211,16 +215,22 @@ ISA DMA limit.
  |      |                                       |
  |      |                                       |
  |      +=======================================+ 0x1c00000 (16MB + BOOT_SIZE_AT_16MB)
+ |      |    Memory available for allocation    |
+ |      +---------------------------------------+
  |      |                                       |
- |      | physical memory starting at 0x1000000 |
- +----->|                                       |
+ +----->|  kernel image + initial allocations   |
+        |                                       |
         +=======================================+ 0x1000000 (16MB)
         |                                       |
         |               unmapped                |
         |                                       |
         +=======================================+ 0x200000 (2MB)
-        |                                       |
-        |   kernel image + initial allocations  |
+        |    Memory available for allocation    |
+        +---------------------------------------+ boot_info.boot_end
+        | Initial page tables/page directory    |
+        +---------------------------------------+ boot_info.page_table_1mb
+        |               Unused                  |
+        |  (moved to address 0x1000000, 16MB)   |
         +---------------------------------------+ 0x100000 (1MB)
         | physical memory starting at address 0 |
         |       (text video memory, etc.)       |        
@@ -234,11 +244,11 @@ initial page table are then discarded.
 ## Enabling Physical Address Extension (PAE)
 
 After the kernel image is moved and remapped, PAE is enabled if supported by the
-CPU unless disabled by options on the kernel command line. (TODO support for
-the kernel command line is not yet implemented.) In order to enable PAE, a new
-set of page tables and page directories with the right format must first be
-allocated and initialized. These new page tables implement the same mappings
-as the existing, non-PAE ones.
+CPU, unless disabled by options on the [kernel command line](cmdline.md). In
+order to enable PAE, a new set of page tables and page directories with the
+right format must first be allocated and initialized. These new page tables
+implement the same mappings as the existing, non-PAE ones (different page table
+format, same content).
 
 The new page tables are allocated right after the existing page tables and page
 directory, i.e. in the 0-2MB region rather than in the region starting at
@@ -276,85 +286,49 @@ address 0x1000000 (16MB).
                                             0x100000 (1MB)
 ```
 
-## TODO
+## Initial Address Space
 
-Once it is loaded in memory by the boot loader and all the setup, startup and
-initialization code has run, the layout in memory is as shown below. boot_info
-is a data structure allocated on the boot heap by the 32-bit setup code.
+As part of it initialization, the kernel allocates further memory for its own
+use and eventually creates the initial process address space. In this
+address space, all the virtual memory under KLIMIT belongs to user space. For
+this reason, the kernel also remaps video memory in its own region so it can
+continue to use it for logging.
+
+Once kernel initialization completes and the kernel passes control to the user
+space loader, the memory layout looks like this:
 
 ```
-  +---------------------------------------+
-  |   more initial allocations by kernel  |
-  |      (1:1 virtual memory mapping)     |
-  +---------------------------------------+
-  |          VGA text video buffer        |
-  |             (maps 0xb8000)            |
-  +---------------------------------------+
-  |   initial page allocations by kernel  |
-  |      (1:1 virtual memory mapping)     |
-  +=======================================+ boot_info.boot_end          -+-
-  |        initial page directory         |                              | 
-  +---------------------------------------+ boot_info.page_directory     |
-  |         initial page tables           |                              |
-  |           (PAE disabled)              |                              |
-  +---------------------------------------+ boot_info.page_table         | setup code
-  |         kernel command line           |                              | allocations
-  +---------------------------------------+ boot_info.cmdline            |
-  |       BIOS physical memory map        |                              |
-  +---------------------------------------+ boot_info.e820_map           |    
-  |         kernel data segment           |                              |                ^
-  |       (copied from ELF binary)        |                              |                |
-  +---------------------------------------+ boot_info.data_physaddr     -+-       address |
-  |          kernel stack (boot)          |                              |      increases |
-  +-----v---------------------------v-----+ (stack pointer)              |                |
-  |                                       |                              |                |
-  |                . . .                  |                              |
-  |                                       |                              | kernel boot
-  +-----^---------------------------^-----+ boot_heap                    | stack/heap
-  |     kernel heap allocations (boot)    |                              |
-  |      kernel physical memory map       |                              |
-  +---------------------------------------+ boot_info.boot_heap          |
-  |              boot_info                |                              |
-  +=======================================+ boot_info.image_top         -+-
+  +---------------------------------------+ 0x100000000 = 4GB           -+-
   |                                       |                              |
-  |        user space loader (ELF)        |                              |
+  |               Unmapped                |                              |
   |                                       |                              |
-  +---------------------------------------+ boot_info.proc_start         |
-  |                                       |                              | kernel image
-  |           microkernel (ELF)           |                              |
+  |  Available for mapping page frames    |                              |
+  |      given back by user space         |                              |
+  +=======================================+ KLIMIT + BOOT_SIZE_AT_16MB   |
   |                                       |                              |
-  +---------------------------------------+ boot_info.kernel_start       |
-  |           32-bit setup code           |                              |
-  +---------------------------------------+ boot_info.image_start       -+-
+  | Available for runtime page allocation |                              | kernel
+  |                                       |                              |
+  +---------------------------------------+                              |
+  |         VGA text video buffer         |                              |
+  |            (maps 0xb8000)             |                              |
+  +---------------------------------------+                              |
+  |                                       |                              |
+  |   kernel image + initial allocations  |                              |                ^
+  |                                       |                              |                |  
+  +=======================================+ KLIMIT (0xc0000000 = 3GB)   -+-       address |
+  | (Program arguments, environment, etc.)|                              |      increases |
+  |      User space loader stack          |                              |                |
+  +---------------------------------------+                              |                |
+  |                                       |                              |
+  |               Unmapped                |                              |
+  |                                       |                              | user
+  +---------------------------------------+                              | space
+  |                                       |                              |
+  |  User space loader binary code + data |                              |
+  |                                       |                              |
+  +---------------------------------------+                              |
+  |                                       |                              |
+  |               Unmapped                |                              |
+  |                                       |                              |
+  +---------------------------------------+ 0                           -+-
 ```
-  
-The boot kernel stack is used only during initialization. Once the first thread
-context is created, per-thread kernel stacks are used instead.
-
-
-----
-
-The initial page tables set up by the setup code are replaced during the kernel
-initialization process. Ultimately, the whole process address space looks like
-this:
-
-```
-  +---------------------------------------+ 0x100000000 = 4GB
-  |                                       |
-  |     available for global mappings     |
-  |                                       |
-  +---------------------------------------+ kernel_vm_top
-  | microkernel, user space loader, etc.  |
-  |              (see above)              |  
-  +=======================================+ KLIMIT (0xc0000000 = 3GB)
-  |                                       |
-  |                                       |
-  |          User memory space            |
-  |                                       |
-  |                                       |
-  |                                       |
-  +---------------------------------------+ 0
-```
-
-All memory mappings from 0 to KLIMIT are user mappings which belong to the
-currently running process. Mappings above KLIMIT are global kernel mappings.
