@@ -29,38 +29,21 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_CMDLINE_H
-#define JINUE_KERNEL_CMDLINE_H
+#ifndef JINUE_KERNEL_ASM_CMDLINE_H
+#define JINUE_KERNEL_ASM_CMDLINE_H
 
-#include <asm/cmdline.h>
-#include <types.h>
+/** Maximum valid command line length
+ *
+ * Here, the limiting factor is the size of the user loader's stack since these
+ * options will end up on its command line or its environment.
+ *
+ * TODO we need to upgrade to boot protocol 2.06+ before we can increase this. */
+#define CMDLINE_MAX_VALID_LENGTH    255
 
-typedef enum {
-    CMDLINE_OPT_PAE_AUTO,
-    CMDLINE_OPT_PAE_DISABLE,
-    CMDLINE_OPT_PAE_REQUIRE
-} cmdline_opt_pae_t;
-
-typedef struct {
-    cmdline_opt_pae_t    pae;
-    bool                 serial_enable;
-    int                  serial_baud_rate;
-    int                  serial_ioport;
-    bool                 vga_enable;
-} cmdline_opts_t;
-
-void cmdline_parse_options(const char *cmdline);
-
-const cmdline_opts_t *cmdline_get_options(void);
-
-void cmdline_report_parsing_errors(void);
-
-char *cmdline_write_arguments(char *buffer, const char *cmdline);
-
-char *cmdline_write_environ(char *buffer, const char *cmdline);
-
-size_t cmdline_count_arguments(const char *cmdline);
-
-size_t cmdline_count_environ(const char *cmdline);
+/** Maximum command line length that cmdline_parse_options() will attempt to parse
+ *
+ * cmdline_parse_options() can really parse any length. The intent here is to
+ * attempt to detect a missing NUL terminator. */
+#define CMDLINE_MAX_PARSE_LENGTH    (1000 * 1000)
 
 #endif

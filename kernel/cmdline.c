@@ -37,20 +37,6 @@
 #include <printk.h>
 #include <string.h>
 
-/** Maximum valid command line length
- *
- * Here, the limiting factor is the size of the user loader's stack since these
- * options will end up on its command line or its environment.
- *
- * TODO we need to upgrade to boot protocol 2.06+ before we can increase this. */
-#define CMDLINE_MAX_VALID_LENGTH    255
-
-/** Maximum command line length that cmdline_parse_options() will attempt to parse
- *
- * cmdline_parse_options() can really parse any length. The intent here is to
- * attempt to detect a missing NUL terminator. */
-#define CMDLINE_MAX_PARSE_LENGTH    (1000 * 1000)
-
 #define CMDLINE_ERROR_TOO_LONG                  (1<<0)
 
 #define CMDLINE_ERROR_IS_NULL                   (1<<1)
