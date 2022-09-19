@@ -236,21 +236,26 @@ static void mutate_context(parse_context_t *context) {
         const char *current = &context->cmdline[context->position];
         char c              = *current;
 
-        /* TODO check how the 32-bit setup code behaves when it copies the command line. */
         if(context->position >= CMDLINE_MAX_VALID_LENGTH) {
-            /* Command line is too long. The limiting factor here is the stack
-             * size of the user loader and of the initial process, since we intend
-             * to copy the options from this command line to their command line
-             * and environment.
+            /* Command line is too long. The limiting factor here is space on
+             * the user stack for command line arguments, environment variables
+             * and associated indexing string arrays.
              *
-             * Let's still continue parsing though so we have better chances to
-             * have the right VGA and serial port options when we report this
-             * error. */
+             * Let's still continue parsing though. We will report the command
+             * line as being too long and panic, but let's improve our chances
+             * to have the right logging options when we do. */
             context->errors |= CMDLINE_ERROR_TOO_LONG;
 
             if(context->position >= CMDLINE_MAX_PARSE_LENGTH) {
                 /* The command line is *way* too long, probably because the
-                 * terminating NUL character is missing. Let's give up. */
+                 * terminating NUL character is missing. Let's give up.
+                 *
+                 * The setup code is supposed to do the right thing and crop
+                 * and NUL terminate the string if it gets to this length.
+                 * However, this is called very early during the initialization
+                 * process, before the boot information structure from which the
+                 * command line pointer is read has been validated, so let's not
+                 * take any chances. */
                 context->done = true;
                 break;
             }
