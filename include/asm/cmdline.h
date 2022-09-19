@@ -32,18 +32,24 @@
 #ifndef JINUE_KERNEL_ASM_CMDLINE_H
 #define JINUE_KERNEL_ASM_CMDLINE_H
 
+#include <jinue-common/asm/types.h>
+
 /** Maximum valid command line length
  *
- * Here, the limiting factor is the size of the user loader's stack since these
- * options will end up on its command line or its environment.
+ * Here, the limiting factor is space on the user stack for command line
+ * arguments, environment variables and associated indexing string arrays.
  *
  * TODO we need to upgrade to boot protocol 2.06+ before we can increase this. */
 #define CMDLINE_MAX_VALID_LENGTH    255
 
-/** Maximum command line length that cmdline_parse_options() will attempt to parse
+/** Maximum command line length that the kernel will copy and attempt to parse
  *
- * cmdline_parse_options() can really parse any length. The intent here is to
- * attempt to detect a missing NUL terminator. */
-#define CMDLINE_MAX_PARSE_LENGTH    (1000 * 1000)
+ * The real maximum length for the command line is CMDLINE_MAX_VALID_LENGTH, and
+ * the limiting factor is space on the user stack for command line arguments,
+ * environment variables and associated indexing string arrays. The kernel
+ * will actually attempt to parse more than this to maximize chances it gets
+ * the options that affect logging right when it logs the "kernel command line
+ * is too long" error message, up to the length specified here. */
+#define CMDLINE_MAX_PARSE_LENGTH    (64 * KB)
 
 #endif
