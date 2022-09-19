@@ -33,11 +33,11 @@ subdirs              = boot doc kernel proc $(libjinue) $(scripts)
 
 kernel               = kernel/kernel
 setup16              = boot/setup16.o
-setup32				 = boot/setup32.o
-vbox_initrd			 = boot/vbox-initrd.gz
+setup32              = boot/setup32.o
+vbox_initrd          = boot/vbox-initrd.gz
 kernel_img           = bin/jinue
 jinue_iso            = bin/jinue.iso
-vbox_vm_name		 = Jinue
+vbox_vm_name         = Jinue
 
 image_ldscript	 	 = $(scripts)/image.ld
 
