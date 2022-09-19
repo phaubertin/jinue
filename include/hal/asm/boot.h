@@ -79,10 +79,81 @@
 
 #define BOOT_SIZE_AT_1MB        (1 * MB)
 
+/* must be a multiple of 4MB (full page tables) */
 #define BOOT_SIZE_AT_16MB       (8 * MB)
 
 #define BOOT_PTES_AT_16MB       (BOOT_SIZE_AT_16MB / PAGE_SIZE)
 
 #define BOOT_RAMDISK_LIMIT      0xc0000000
+
+/* The following definitions must match the offsets of the members of the
+ * boot_info_t struct defined in hal/types.h. They are used by the setup code,
+ * which is written in assembly language. */
+
+/** Offset of the kernel_start boot_info_t member */
+#define BOOT_INFO_KERNEL_START      0
+
+/** Offset of the kernel_size boot_info_t member */
+#define BOOT_INFO_KERNEL_SIZE       4
+
+/** Offset of the proc_start boot_info_t member */
+#define BOOT_INFO_PROC_START        8
+
+/** Offset of the proc_size boot_info_t member */
+#define BOOT_INFO_PROC_SIZE         12
+
+/** Offset of the image_start boot_info_t member */
+#define BOOT_INFO_IMAGE_START       16
+
+/** Offset of the image_top boot_info_t member */
+#define BOOT_INFO_IMAGE_TOP         20
+
+/** Offset of the ramdisk_start boot_info_t member */
+#define BOOT_INFO_RAMDISK_START     24
+
+/** Offset of the ramdisk_size boot_info_t member */
+#define BOOT_INFO_RAMDISK_SIZE      28
+
+/** Offset of the e820_entries boot_info_t member */
+#define BOOT_INFO_E820_ENTRIES      32
+
+/** Offset of the e820_map boot_info_t member */
+#define BOOT_INFO_E820_MAP          36
+
+/** Offset of the cmdline boot_info_t member */
+#define BOOT_INFO_CMDLINE           40
+
+/** Offset of the boot_heap boot_info_t member */
+#define BOOT_INFO_BOOT_HEAP         44
+
+/** Offset of the boot_end boot_info_t member */
+#define BOOT_INFO_BOOT_END          48
+
+/** Offset of the page_table_1mb boot_info_t member */
+#define BOOT_INFO_PAGE_TABLE_1MB    52
+
+/** Offset of the page_table_16mb boot_info_t member */
+#define BOOT_INFO_PAGE_TABLE_16MB   56
+
+/** Offset of the page_table_klimit boot_info_t member */
+#define BOOT_INFO_PAGE_TABLE_KLIMIT 60
+
+/** Offset of the page_directory boot_info_t member */
+#define BOOT_INFO_PAGE_DIRECTORY    64
+
+/** Offset of the setup_signature boot_info_t member */
+#define BOOT_INFO_SETUP_SIGNATURE   68
+
+/** Offset of the data_start boot_info_t member */
+#define BOOT_INFO_DATA_START        72
+
+/** Offset of the data_size boot_info_t member */
+#define BOOT_INFO_DATA_SIZE         76
+
+/** Offset of the data_physaddr boot_info_t member */
+#define BOOT_INFO_DATA_PHYSADDR     80
+
+/** Size of boot_info_t */
+#define BOOT_INFO_SIZE              84
 
 #endif

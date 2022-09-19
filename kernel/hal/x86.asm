@@ -331,8 +331,8 @@ rdtsc:
     ret
 
 ; ------------------------------------------------------------------------------
-; FUNCTION: enable_pae
-; C PROTOTYPE: void enable_pae(uint32_t cr3_value)
+; FUNCTION: x86_enable_pae
+; C PROTOTYPE: void x86_enable_pae(uint32_t cr3_value)
 ; ------------------------------------------------------------------------------
     global x86_enable_pae
 x86_enable_pae:
@@ -355,8 +355,8 @@ just_here:
     or eax, X86_CR4_PAE
     mov cr4, eax
 
-    ; Re-enable paging.
-    or ecx, X86_CR0_PG
+    ; Re-enable paging (PG), prevent kernel from writing to read-only pages (WP).
+    or ecx, X86_CR0_PG | X86_CR0_WP
     mov cr0, ecx
 
     ; No need to jump back to high alias. The ret instruction will take care

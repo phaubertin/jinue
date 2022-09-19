@@ -52,17 +52,22 @@
 /** page directory entry offset of virtual (linear address) */
 #define PAGE_DIRECTORY_OFFSET_OF(x) ( ((uint32_t)(x) / (PAGE_SIZE * PAGE_TABLE_ENTRIES)) & PAGE_TABLE_MASK )
 
+/** page is mapped but inaccessible (mprotect() PROT_NONE)
+ *
+ * This flag can be mixed with X86_PTE_xxx architectural page flags. Bit 11 is
+ * documented as "ignored" by architecture manual. */
+#define VM_PTE_PROT_NONE        (1<<11)
 
 extern pte_t *kernel_page_tables;
 
-extern size_t page_table_entries;
+extern size_t entries_per_page_table;
 
 extern bool pgtable_format_pae;
 
-void vm_initialize_page_table_linear(
+pte_t *vm_initialize_page_table_linear(
         pte_t       *page_table,
         uint64_t     start_paddr,
-        int          flags,
+        uint64_t     flags,
         int          num_entries);
 
 kern_paddr_t vm_clone_page_directory(

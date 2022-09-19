@@ -90,12 +90,13 @@ void cpu_init_data(cpu_data_t *data) {
      *   segment limit, there is no I/O permission map, and all I/O instructions
      *   generate exceptions when the CPL is greater than the current IOPL. " */
     tss->iomap = TSS_LIMIT;
-}    
+}
 
 void cpu_detect_features(void) {
     uint32_t temp_eflags;
     
     /* default values */
+    cpu_info.maxphyaddr         = 32;
     cpu_info.dcache_alignment   = 32;
     cpu_info.features           = 0;
     cpu_info.vendor             = CPU_VENDOR_GENERIC;
@@ -211,17 +212,33 @@ void cpu_detect_features(void) {
             }
         }
 
-        /* support for local APIC */
         if(cpu_info.vendor == CPU_VENDOR_AMD || cpu_info.vendor == CPU_VENDOR_INTEL) {
+            /* support for local APIC */
             if(flags & CPUID_FEATURE_APIC) {
                 cpu_info.features |= CPU_FEATURE_LOCAL_APIC;
             }
-        }
 
-        /* support for physical address extension (PAE) */
-        if(cpu_info.vendor == CPU_VENDOR_AMD || cpu_info.vendor == CPU_VENDOR_INTEL) {
+            /* large 4MB pages in 32-bit (non-PAE) paging mode */
+            if(flags & CPUID_FEATURE_PSE) {
+                cpu_info.features |= CPU_FEATURE_PSE;
+            }
+
+            /* support for physical address extension (PAE) */
             if(flags & CPUID_FEATURE_PAE) {
                 cpu_info.features |= CPU_FEATURE_PAE;
+
+                /* NX (No-eXec) bit in page table entries  */
+                if(flags & CPUID_FEATURE_NXE) {
+                    cpu_info.features |= CPU_FEATURE_NOEXEC;
+                }
+
+                /* max physical memory size */
+                if(cpuid_ext_max >= 0x80000008) {
+                    regs.eax = 0x80000008;
+                    (void)cpuid(&regs);
+
+                    cpu_info.maxphyaddr = regs.eax & 0xff;
+                }
             }
         }
     }

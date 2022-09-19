@@ -59,11 +59,31 @@
 /** Specifies the entry point to use for system calls */
 int syscall_method;
 
+static void check_data_segment(const boot_info_t *boot_info) {
+    if(     boot_info->data_start == 0 ||
+            boot_info->data_size == 0 ||
+            boot_info->data_physaddr == 0) {
+        panic("Setup code wasn't able to load kernel data segment");
+    }
+}
+
+static void check_alignment(const boot_info_t *boot_info) {
+    if(page_offset_of(boot_info->image_start) != 0) {
+        panic("Kernel image start is not aligned on a page boundary");
+    }
+
+    if(page_offset_of(boot_info->image_top) != 0) {
+        panic("Top of kernel image is not aligned on a page boundary");
+    }
+}
+
 static void move_kernel_at_16mb(const boot_info_t *boot_info) {
     move_and_remap_kernel(
             (addr_t)boot_info->page_table_1mb,
             (addr_t)boot_info->page_table_klimit,
             (uint32_t)boot_info->page_directory);
+
+    vm_write_protect_kernel_image(boot_info);
 }
 
 static bool maybe_enable_pae(
@@ -229,6 +249,10 @@ void hal_init(
         const cmdline_opts_t    *cmdline_opts) {
     cpu_detect_features();
 
+    check_data_segment(boot_info);
+
+    check_alignment(boot_info);
+
     check_memory(boot_info);
 
     move_kernel_at_16mb(boot_info);
@@ -264,7 +288,7 @@ void hal_init(
     /* Initialize programmable interrupt_controller. */
     pic8259_init(IDT_PIC8259_BASE);
 
-    addr_space_t *addr_space = vm_create_initial_addr_space(boot_alloc);
+    addr_space_t *addr_space = vm_create_initial_addr_space(boot_alloc, boot_info);
 
     memory_initialize_array(boot_alloc, boot_info);
 
@@ -283,7 +307,6 @@ void hal_init(
      * don't need to allocate any more pages from the boot allocator. Transfer
      * the remaining pages to the run-time page allocator. */
     boot_reinit_at_klimit(boot_alloc);
-
     initialize_page_allocator(boot_alloc);
 
     /* Initialize GDT and TSS */

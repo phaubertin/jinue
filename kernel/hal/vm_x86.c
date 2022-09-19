@@ -30,6 +30,7 @@
  */
 
 #include <hal/vm_private.h>
+#include <assert.h>
 #include <boot.h>
 #include <vmalloc.h>
 
@@ -91,16 +92,22 @@ pte_t *vm_x86_get_pte_with_offset(pte_t *pte, unsigned int offset) {
     return &pte[offset];
 }
 
-void vm_x86_set_pte(pte_t *pte, uint32_t paddr, int flags) {
-    pte->entry = paddr | flags;
+bool vm_x86_pte_is_present(const pte_t *pte) {
+    return !!( pte->entry & (X86_PTE_PRESENT | VM_PTE_PROT_NONE));
 }
 
-void vm_x86_set_pte_flags(pte_t *pte, int flags) {
-    pte->entry = (pte->entry & ~PAGE_MASK) | flags;
+static uint32_t filter_pte_flags(uint64_t flags) {
+    uint32_t mask = PAGE_MASK;
+    return (flags & mask);
 }
 
-int vm_x86_get_pte_flags(const pte_t *pte) {
-    return pte->entry & PAGE_MASK;
+void vm_x86_set_pte(pte_t *pte, uint32_t paddr, uint64_t flags) {
+    assert((paddr & PAGE_MASK) == 0);
+    pte->entry = paddr | filter_pte_flags(flags);
+}
+
+void vm_x86_set_pte_flags(pte_t *pte, uint64_t flags) {
+    pte->entry = (pte->entry & ~PAGE_MASK) | filter_pte_flags(flags);
 }
 
 uint32_t vm_x86_get_pte_paddr(const pte_t *pte) {

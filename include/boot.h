@@ -43,6 +43,8 @@ void boot_reinit_at_klimit(boot_alloc_t *boot_alloc);
 /**
  * Allocate an object on the boot heap.
  *
+ * The object returned by the allocator is cleared (i.e. all bytes set to zero).
+ *
  * This macro is a wrapper for boot_heap_alloc_size that takes a type as the
  * second argument instead of an object size.
  *
