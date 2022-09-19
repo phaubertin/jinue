@@ -98,6 +98,8 @@ void boot_reinit_at_klimit(boot_alloc_t *boot_alloc) {
 /**
  * Allocate an object on the boot heap.
  *
+ * The object returned by the allocator is cleared (i.e. all bytes set to zero).
+ *
  * Callers do not call this function directly but instead use the boot_heap_alloc()
  * macro that takes a type as the second argument instead of an object size.
  *
@@ -114,6 +116,10 @@ void *boot_heap_alloc_size(boot_alloc_t *boot_alloc, size_t size, size_t align) 
 
     void *object            = boot_alloc->heap_ptr;
     boot_alloc->heap_ptr    = (char *)boot_alloc->heap_ptr + size;
+
+    if(size > 0) {
+        memset(object, 0, size);
+    }
 
     return object;
 }
@@ -158,17 +164,14 @@ void boot_heap_pop(boot_alloc_t *boot_alloc) {
 /**
  * Early page allocation.
  *
- * When the kernel is first entered, the setup code has set up temporary page
- * tables that map a contiguous region of physical memory (RAM) that contains
- * the kernel image at KLIMIT. The setup code itself allocates a few pages,
- * notably for the temporary page tables and for the boot stack and heap. These
- * pages are allocated sequentially just after the kernel image.
- *
  * This function allocates pages sequentially following the kernel image and the
  * setup code allocations. It is meant to be called early in the initialization
  * process, while the temporary page tables set up by the setup code are still
  * being used, which means before the kernel switches to the initial address
  * space it sets up.
+ *
+ * Returned pages are cleared (i.e. all bytes are set to zero). Calling this
+ * function when no more pages are available leads to a kernel panic.
  *
  * This function must not be called once the kernel has switched away from the
  * page tables set up by the setup code to the initial address space it has set
@@ -208,6 +211,18 @@ void *boot_page_alloc_n(boot_alloc_t *boot_alloc, int num_pages) {
     return allocation_start;
 }
 
+/**
+ * Whether or not the boot-time page allocator is empty
+ *
+ * The kernel panics if an attempt is made to allocate one or more pages with
+ * boot_page_alloc() or boot_page_alloc_n() once the boot-time page allocator
+ * is empty. This function allows that situation to be detected before
+ * attempting the allocation.
+ *
+ * @param boot_alloc the boot allocator state
+ * @return whether or not the boot-time page allocator is empty
+ *
+ * */
 bool boot_page_alloc_is_empty(boot_alloc_t *boot_alloc) {
     return boot_alloc->current_page >= boot_alloc->page_limit;
 }

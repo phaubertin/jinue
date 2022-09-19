@@ -47,8 +47,8 @@
 ;       1. Copy the kernel image and a few allocated pages that immediately
 ;          follow the kernel image and contain the boot stack and heap from
 ;          0x100000 (1MB) to 0x1000000 (16MB). (The initial page tables, which
-;          are also allocated following the kernel image, are *not* part of the
-;          contiguous range that is copied.
+;          are also allocated following the kernel image, are *excluded* from
+;          the contiguous range that is copied.
 ;       2. Modify the initial page tables so the virtual memory range at KLIMIT
 ;          points to the copy, not the original.
 ;       3. Reload CR3 to flush the TLB.
@@ -59,17 +59,20 @@
 ;   |         initial page tables           |
 ;   |           (PAE disabled)              |             This range is copied.
 ;   +---------------------------------------+                             <--+-
+;   |         kernel command line           |                                |
+;   +---------------------------------------+                                |
+;   |       BIOS physical memory map        |                                |
+;   +---------------------------------------+                                |
+;   |         kernel data segment           |                                |
+;   |       (copied from ELF binary)        |                                |
+;   +---------------------------------------+                                |
 ;   |          kernel stack (boot)          |                                |
 ;   +-----v---------------------------v-----+ <<< Stack pointer              |
 ;   |                                       |                                |
 ;   |                . . .                  |                                |
 ;   |                                       |                                |
 ;   +-----^---------------------------^-----+                                |
-;   |     kernel heap allocations (boot)    |                                |
-;   |      kernel physical memory map       |                                |
-;   +---------------------------------------+                                |
-;   |         kernel command line           |                                |
-;   |       BIOS physical memory map        | Start of page allocations      |
+;   |     kernel heap allocations (boot)    | Start of page allocations      |
 ;   +=======================================+ End of kernel image            |
 ;   |                                       |                                |
 ;   |         process manager (ELF)         |                                |
@@ -106,7 +109,7 @@ move_and_remap_kernel:
     mov esi, MEMORY_ADDR_1MB    ; start address
     mov edi, MEMORY_ADDR_16MB   ; destination address
 
-    mov ecx, [esp+12]            ; first argument: end_addr
+    mov ecx, [esp+12]           ; first argument: end_addr
     sub ecx, MEMORY_ADDR_1MB    ; compute size to copy
     mov edx, ecx                ; remember copied size for later (edx)
     shr ecx, 2                  ; divide by 4 for number of DWORDs
@@ -118,18 +121,15 @@ move_and_remap_kernel:
     ; --------------------------------------------------------------------------
     mov edi, [esp+16]           ; second argument: address of first PTE
     mov ecx, edx                ; copied size
-    shr ecx, 12                 ; divide by 4096 for number of pages and PTEs
-
-    ; value for first page table entry (PTE)
-    mov eax, MEMORY_ADDR_16MB | VM_FLAG_READ_WRITE | VM_FLAG_PRESENT
+    shr ecx, PAGE_BITS          ; divide by 4096 for number of pages and PTEs
 
 .loop:
+    mov eax,[edi]
+    add eax, MEMORY_ADDR_16MB - MEMORY_ADDR_1MB
+
     ; store eax in PTE pointed to by edi, then add 4 to edi to point to the next
     ; entry
     stosd
-
-    ; update physical address
-    add eax, PAGE_SIZE
 
     ; decrement ecx, we are done when it reaches 0, otherwise loop
     loop .loop

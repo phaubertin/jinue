@@ -33,10 +33,11 @@ subdirs              = boot doc kernel proc $(libjinue) $(scripts)
 
 kernel               = kernel/kernel
 setup16              = boot/setup16.o
-setup32				 = boot/setup32.o
-vbox_initrd			 = boot/vbox-initrd.gz
+setup32              = boot/setup32.o
+vbox_initrd          = boot/vbox-initrd.gz
 kernel_img           = bin/jinue
 jinue_iso            = bin/jinue.iso
+vbox_vm_name         = Jinue
 
 image_ldscript	 	 = $(scripts)/image.ld
 
@@ -59,6 +60,14 @@ install: $(kernel_img)
 
 .PHONY: vbox
 vbox: $(jinue_iso) $(vbox_initrd)
+
+.PHONY: vbox-debug
+vbox-debug: vbox
+	vboxmanage startvm $(vbox_vm_name) -E VBOX_GUI_DBG_AUTO_SHOW=true -E VBOX_GUI_DBG_ENABLED=true
+	
+.PHONY: vbox-run
+vbox-run: vbox
+	vboxmanage startvm $(vbox_vm_name)
 
 # ----- documentation
 .PHONY: doc

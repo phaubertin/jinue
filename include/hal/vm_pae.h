@@ -63,11 +63,11 @@ unsigned int vm_pae_page_directory_offset_of(void *addr);
 
 pte_t *vm_pae_get_pte_with_offset(pte_t *pte, unsigned int offset);
 
-void vm_pae_set_pte(pte_t *pte, uint64_t paddr, int flags);
+bool vm_pae_pte_is_present(const pte_t *pte);
 
-void vm_pae_set_pte_flags(pte_t *pte, int flags);
+void vm_pae_set_pte(pte_t *pte, uint64_t paddr, uint64_t flags);
 
-int vm_pae_get_pte_flags(const pte_t *pte);
+void vm_pae_set_pte_flags(pte_t *pte, uint64_t flags);
 
 uint64_t vm_pae_get_pte_paddr(const pte_t *pte);
 

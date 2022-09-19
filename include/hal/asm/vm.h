@@ -35,26 +35,17 @@
 #include <jinue-common/asm/vm.h>
 #include <hal/asm/x86.h>
 
-/** page is present in memory */
-#define VM_FLAG_PRESENT         X86_PTE_PRESENT
+/** map page with no permission */
+#define VM_MAP_NONE             0
 
-/** page is read only */
-#define VM_FLAG_READ_ONLY       0
+/** map page with read permission */
+#define VM_MAP_READ             (1<<0)
 
-/** page is read/write accessible */
-#define VM_FLAG_READ_WRITE      X86_PTE_READ_WRITE
+/** map page with write permission */
+#define VM_MAP_WRITE            (1<<1)
 
-/** kernel mode page */
-#define VM_FLAG_KERNEL          X86_PTE_GLOBAL
-
-/** user mode page */
-#define VM_FLAG_USER            X86_PTE_USER
-
-/** page was accessed (read) */
-#define VM_FLAG_ACCESSED        X86_PTE_ACCESSED
-
-/** page was written to */
-#define VM_FLAG_DIRTY           X86_PTE_DIRTY
+/** map page with execution permission */
+#define VM_MAP_EXEC             (1<<2)
 
 /** Number of entries per page table/directory, PAE disabled */
 #define VM_X86_PAGE_TABLE_PTES  1024

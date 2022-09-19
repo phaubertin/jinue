@@ -61,11 +61,17 @@
 
 #define CPU_FEATURE_PGE             (1<<5)
 
+#define CPU_FEATURE_PSE             (1<<6)
+
+#define CPU_FEATURE_NOEXEC          (1<<7)
+
 
 #define CPU_EFLAGS_ID               (1<<21)
 
 
 #define CPUID_FEATURE_FPU           (1<<0)
+
+#define CPUID_FEATURE_PSE           (1<<3)
 
 #define CPUID_FEATURE_PAE           (1<<6)
 
@@ -76,6 +82,8 @@
 #define CPUID_FEATURE_PGE           (1<<13)
 
 #define CPUID_FEATURE_CLFLUSH       (1<<19)
+
+#define CPUID_FEATURE_NXE           (1<<20)
 
 #define CPUID_FEATURE_HTT           (1<<28)
 
@@ -99,6 +107,7 @@
 #define CPU_VENDOR_INTEL_DW2        0x6c65746e    /* ntel */
 
 typedef struct {
+    unsigned int     maxphyaddr;
     unsigned int     dcache_alignment;
     uint32_t         features;
     int              vendor;

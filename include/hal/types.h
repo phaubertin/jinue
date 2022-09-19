@@ -91,8 +91,12 @@ typedef struct {
     uint32_t type;
 } e820_t;
 
-/* The declaration below must match the structure defined at the start of the
- * 32-bit setup code. See boot_info_struct in boot/setup32.asm. */
+/* This structure is used by the assembly language setup code to pass
+ * information to the kernel. Whenever changes are made to this structure
+ * declaration, the constants in the hal/asm/boot.h must be updated (member
+ * offsets and structure size).
+ *
+ * See also the setup code, i.e. boot/setup32.asm. */
 typedef struct {
     Elf32_Ehdr      *kernel_start;
     uint32_t         kernel_size;
@@ -112,6 +116,9 @@ typedef struct {
     pte_t           *page_table_klimit;
     pte_t           *page_directory;
     uint32_t         setup_signature;
+    void            *data_start;
+    size_t           data_size;
+    size_t           data_physaddr;
 } boot_info_t;
 
 typedef uint64_t seg_descriptor_t;
