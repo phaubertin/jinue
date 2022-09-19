@@ -64,6 +64,10 @@ vbox: $(jinue_iso) $(vbox_initrd)
 .PHONY: vbox-debug
 vbox-debug: vbox
 	vboxmanage startvm $(vbox_vm_name) -E VBOX_GUI_DBG_AUTO_SHOW=true -E VBOX_GUI_DBG_ENABLED=true
+	
+.PHONY: vbox-run
+vbox-run: vbox
+	vboxmanage startvm $(vbox_vm_name)
 
 # ----- documentation
 .PHONY: doc

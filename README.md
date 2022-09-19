@@ -56,9 +56,12 @@ Optionally, you can also configure the virtual machine to redirect the first
 COM port (COM1) to a file. The kernel logs messages to COM1.
 
 Once the virtual machine has been created, you can re-build the ISO image and
-then start the virtual machine with the VirtualBox debugger enabled by using the
-`vbox-debug` make target:
-
+then start the virtual machine by using the `vbox-run` make target:
+```
+make vbox-run
+```
+The `vbox-debug` make target does the same except it enables the VirtualBox
+debugger:
 ```
 make vbox-debug
 ```
