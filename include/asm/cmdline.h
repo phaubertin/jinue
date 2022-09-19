@@ -37,10 +37,8 @@
 /** Maximum valid command line length
  *
  * Here, the limiting factor is space on the user stack for command line
- * arguments, environment variables and associated indexing string arrays.
- *
- * TODO we need to upgrade to boot protocol 2.06+ before we can increase this. */
-#define CMDLINE_MAX_VALID_LENGTH    255
+ * arguments, environment variables and associated indexing string arrays. */
+#define CMDLINE_MAX_VALID_LENGTH    4096
 
 /** Maximum command line length that the kernel will copy and attempt to parse
  *
