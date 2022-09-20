@@ -29,38 +29,25 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_CMDLINE_H
-#define JINUE_KERNEL_CMDLINE_H
+#ifndef JINUE_KERNEL_ASM_CMDLINE_H
+#define JINUE_KERNEL_ASM_CMDLINE_H
 
-#include <asm/cmdline.h>
-#include <types.h>
+#include <jinue-common/asm/types.h>
 
-typedef enum {
-    CMDLINE_OPT_PAE_AUTO,
-    CMDLINE_OPT_PAE_DISABLE,
-    CMDLINE_OPT_PAE_REQUIRE
-} cmdline_opt_pae_t;
+/** Maximum valid command line length
+ *
+ * Here, the limiting factor is space on the user stack for command line
+ * arguments, environment variables and associated indexing string arrays. */
+#define CMDLINE_MAX_VALID_LENGTH    4096
 
-typedef struct {
-    cmdline_opt_pae_t    pae;
-    bool                 serial_enable;
-    int                  serial_baud_rate;
-    int                  serial_ioport;
-    bool                 vga_enable;
-} cmdline_opts_t;
-
-void cmdline_parse_options(const char *cmdline);
-
-const cmdline_opts_t *cmdline_get_options(void);
-
-void cmdline_report_parsing_errors(void);
-
-char *cmdline_write_arguments(char *buffer, const char *cmdline);
-
-char *cmdline_write_environ(char *buffer, const char *cmdline);
-
-size_t cmdline_count_arguments(const char *cmdline);
-
-size_t cmdline_count_environ(const char *cmdline);
+/** Maximum command line length that the kernel will copy and attempt to parse
+ *
+ * The real maximum length for the command line is CMDLINE_MAX_VALID_LENGTH, and
+ * the limiting factor is space on the user stack for command line arguments,
+ * environment variables and associated indexing string arrays. The kernel
+ * will actually attempt to parse more than this to maximize chances it gets
+ * the options that affect logging right when it logs the "kernel command line
+ * is too long" error message, up to the length specified here. */
+#define CMDLINE_MAX_PARSE_LENGTH    (64 * KB)
 
 #endif
