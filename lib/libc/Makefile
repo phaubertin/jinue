@@ -30,14 +30,24 @@
 jinue_root = ../..
 include $(jinue_root)/header.mk
 
-sources.c 		= \
+sources.c        = \
+	getauxval.c \
+	getenv.c \
 	string.c
+sources.nasm     = crt.asm
 
-target			= libc.a
+target.user      = libc.a
+target.kernel    = libc-kernel.a
+targets          = $(target.user) $(target.kernel)
+
+objects.generic  = string.o
+objects.user     = crt.o getauxval.o getenv.o 
 
 include $(common)
 
-$(target): $(objects)
+$(target.user): $(objects.generic) $(objects.user)
+
+$(target.kernel): $(objects.generic)
 
 %.a:
 	ar rcs $@ $^

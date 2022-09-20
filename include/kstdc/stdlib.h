@@ -38,4 +38,6 @@
 
 #define EXIT_FAILURE 1
 
+char *getenv(const char *name);
+
 #endif

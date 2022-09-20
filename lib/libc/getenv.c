@@ -29,23 +29,34 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue-common/elf.h>
-#include <jinue/getauxval.h>
-#include <stddef.h>
+#include <stdbool.h>
+#include <stdlib.h>
 
 /* This is set by crt.asm. */
-const Elf32_auxv_t *jinue_auxvp = NULL;
+char **environ = NULL;
 
-uint32_t jinue_getauxval(int type) {
-    if(jinue_auxvp == NULL) {
-        return 0;
+char *getenv(const char *name) {
+    if(environ == NULL) {
+        return NULL;
     }
 
-    for(const Elf32_auxv_t *entry = jinue_auxvp; entry->a_type != AT_NULL; ++entry) {
-        if(entry->a_type == type) {
-            return entry->a_un.a_val;
+    for(char **envvar = environ; *envvar != NULL; ++envvar) {
+        int idx;
+        bool match = true;
+
+        for(idx = 0; name[idx] != '\0'; ++idx) {
+            /* Special case handled here with the general case: the environment
+             * variable string is shorter than name. */
+            if((*envvar)[idx] != name[idx]) {
+                match = false;
+                break;
+            }
+        }
+
+        if(match && (*envvar)[idx] == '=') {
+            return &(*envvar)[idx + 1];
         }
     }
 
-    return 0;
+    return NULL;
 }
