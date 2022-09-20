@@ -32,6 +32,7 @@
 #include <hal/asm/boot.h>
 #include <hal/asm/descriptors.h>
 #include <hal/asm/pic8259.h>
+#include <asm/cmdline.h>
 
 %define CODE_SEG        1
 %define DATA_SEG        2
@@ -62,7 +63,7 @@ signature:          dw BOOT_MAGIC
     jmp short start
 
 header:             db "HdrS"
-version:            dw 0x0204
+version:            dw 0x0206
 realmode_swtch:     dd 0
 start_sys:          dw 0x1000
 kernel_version:     dw str_version
@@ -78,6 +79,11 @@ pad1:               dw 0
 cmd_line_ptr:       dd 0
 initrd_addr_max:
 ramdisk_max:        dd BOOT_RAMDISK_LIMIT - 1
+kernel_alignment:   dd 0    ; Not relevant because kernel is not relocatable...
+relocatable_kernel: db 0    ; ... as indicated here
+min_alignment:      db 0    ; not relevant, protocol 2.10+
+xloadflags:         dw 0    ; not relevant, protocol 2.12+
+cmdline_size:       dd CMDLINE_MAX_VALID_LENGTH
 
 start:
     ; Setup the segment registers

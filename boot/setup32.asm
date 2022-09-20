@@ -168,6 +168,7 @@
 #include <hal/asm/memory.h>
 #include <hal/asm/vm.h>
 #include <hal/asm/x86.h>
+#include <asm/cmdline.h>
 
 ; Stack frame variables and size
 #define VAR_ZERO_PAGE       0
@@ -372,7 +373,7 @@ copy_e820_memory_map:
     ;
     ; Returns:
     ;       edi end of kernel command line
-    ;       eax, esi are caller saved
+    ;       eax, ecx, esi are caller saved
 copy_cmdline:
     mov dword [ebp + BOOT_INFO_CMDLINE], empty_string
 
@@ -380,16 +381,24 @@ copy_cmdline:
     or esi, esi                     ; if command line pointer is NULL...
     jz .skip                        ; ... skip copy and keep empty string
 
-    ; Following the e820 memory map copy above, edi is already where we
-    ; want it to be.
     mov dword [ebp + BOOT_INFO_CMDLINE], edi
+    mov ecx, CMDLINE_MAX_PARSE_LENGTH
 .copy:
     lodsb                           ; load next character
     stosb                           ; store character in destination
+
+    dec ecx                         ; decrement max length counter
+    jz .too_long                    ; check if maximum length was reached
+
     or al, al                       ; if character is not terminating NUL...
     jnz .copy                       ; ... continue with next character
 
 .skip:
+    ret
+
+.too_long:
+    mov al, 0                       ; NUL terminate cropped command line
+    stosb
     ret
 
     ; --------------------------------------------------------------------------
