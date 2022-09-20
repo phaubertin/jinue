@@ -59,8 +59,9 @@ lib                  = $(jinue_root)/lib
 scripts              = $(jinue_root)/scripts
 
 hal_includes         = $(includes)/hal
-kstdc_includes         = $(includes)/kstdc
+kstdc_includes       = $(includes)/kstdc
 libjinue             = $(lib)/jinue
+libc             	 = $(lib)/libc
 
 # object files
 objects.c            = $(sources.c:%.c=%.o)
