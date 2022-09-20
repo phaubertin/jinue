@@ -385,17 +385,20 @@ copy_cmdline:
     mov ecx, CMDLINE_MAX_PARSE_LENGTH
 .copy:
     lodsb                           ; load next character
+    stosb                           ; store character in destination
 
     dec ecx                         ; decrement max length counter
-    jnz .continue_copy              ; if we reached maximum length...
-    xor al, al                      ; ... NUL terminate string and stop
+    jz .too_long                    ; check if maximum length was reached
 
-.continue_copy
-    stosb                           ; store character in destination
     or al, al                       ; if character is not terminating NUL...
     jnz .copy                       ; ... continue with next character
 
 .skip:
+    ret
+
+.too_long:
+    mov al, 0                       ; NUL terminate cropped command line
+    stosb
     ret
 
     ; --------------------------------------------------------------------------
