@@ -387,8 +387,8 @@ copy_cmdline:
     lodsb                           ; load next character
 
     dec ecx                         ; decrement max length counter
-    jnz .continue_copy               ; if we reached maximum length...
-    xor al, 0                       ; ... NUL terminate string and stop
+    jnz .continue_copy              ; if we reached maximum length...
+    xor al, al                      ; ... NUL terminate string and stop
 
 .continue_copy
     stosb                           ; store character in destination
