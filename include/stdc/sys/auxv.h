@@ -32,6 +32,8 @@
 #ifndef _JINUE_KSTDC_SYS_AUXV_H
 #define _JINUE_KSTDC_SYS_AUXV_H
 
+#include <jinue-common/asm/elf.h>
+
 uint32_t getauxval(int type);
 
 #endif
