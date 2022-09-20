@@ -40,6 +40,7 @@
 #include <printk.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 
 #define THREAD_STACK_SIZE   4096
@@ -99,8 +100,10 @@ static bool bool_getenv(const char *name) {
         return false;
     }
 
-    /* TODO we need a strcmp() implementation */
-    return value[0] == '1' && value[1] == '\0';
+    return  strcmp(value, "enable") == 0 ||
+            strcmp(value, "true") == 0 ||
+            strcmp(value, "yes") == 0 ||
+            strcmp(value, "1") == 0;
 }
 
 static void dump_phys_memory_map(const jinue_mem_map_t *map, bool ram_only) {

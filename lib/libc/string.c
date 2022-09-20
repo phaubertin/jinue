@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2022 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,6 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <stdbool.h>
 #include <stddef.h>
 
 void *memset(void *s, int c, size_t n) {
@@ -54,15 +55,20 @@ void *memcpy(void *restrict dest, const void *restrict src, size_t n) {
     return dest;
 }
 
-size_t strlen(const char *s) {
-    size_t count = 0;
-
-    while(*s != 0) {
-        ++s;
-        ++count;
+int strcmp(const char *s1, const char *s2) {
+    while(true) {
+        if(*s1 > *s2) {
+            return 1;
+        }
+        if(*s1 < *s2) {
+            return -1;
+        }
+        if(*s1 == '\0') {
+            return 0;
+        }
+        ++s1;
+        ++s2;
     }
-    
-    return count;
 }
 
 char *strcpy(char *restrict dest, const char *restrict src) {
@@ -75,4 +81,15 @@ char *strcpy(char *restrict dest, const char *restrict src) {
     }
 
     return dest;
+}
+
+size_t strlen(const char *s) {
+    size_t count = 0;
+
+    while(*s != 0) {
+        ++s;
+        ++count;
+    }
+    
+    return count;
 }
