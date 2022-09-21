@@ -39,7 +39,7 @@ LDFLAGS         += -T $(kernel_ldscript)
 
 kernel.hal    	 = hal/kern-hal.o
 kernel.lib    	 = $(libjinue)/libjinue-kernel.a
-c.lib			 = $(libc)/libc-kernel.a
+c.lib            = $(libc)/libc-kernel.a
 
 target	 		 = kernel-stripped
 unclean.extra    = kernel $(build_info_h)
