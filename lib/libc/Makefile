@@ -31,6 +31,7 @@ jinue_root = ../..
 include $(jinue_root)/header.mk
 
 sources.c        = \
+	assert-kernel.c \
 	getauxval.c \
 	getenv.c \
 	string.c
@@ -42,12 +43,13 @@ targets          = $(target.user) $(target.kernel)
 
 objects.generic  = string.o
 objects.user     = crt.o getauxval.o getenv.o 
+objects.kernel   = assert-kernel.o
 
 include $(common)
 
 $(target.user): $(objects.generic) $(objects.user)
 
-$(target.kernel): $(objects.generic)
+$(target.kernel): $(objects.generic) $(objects.kernel)
 
 %.a:
 	ar rcs $@ $^

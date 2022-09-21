@@ -45,7 +45,6 @@ target	 		 = kernel-stripped
 unclean.extra    = kernel $(build_info_h)
 sources.c		 = \
 	boot.c \
-	c-assert.c \
 	cmdline.c \
 	console.c \
 	debug.c \
