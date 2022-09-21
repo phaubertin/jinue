@@ -29,13 +29,33 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_STDC_STDBOOL_H
-#define _JINUE_STDC_STDBOOL_H
+#ifndef _JINUE_LIBC_STDINT_H
+#define _JINUE_LIBC_STDINT_H
 
-#define bool    _Bool
-#define true    1
-#define false   0
+#define INT64_C(x)              (x##LL)
 
-#define __bool_true_false_are_defined    1
+#define UINT64_C(x)             (x##ULL)
+
+typedef signed char             int8_t;
+
+typedef short int               int16_t;
+
+typedef int                     int32_t;
+
+typedef long long int           int64_t;
+
+
+typedef unsigned char           uint8_t;
+
+typedef unsigned short int      uint16_t;
+
+typedef unsigned int            uint32_t;
+
+typedef unsigned long long int  uint64_t;
+
+
+typedef int                     intptr_t;
+
+typedef unsigned int            uintptr_t;
 
 #endif

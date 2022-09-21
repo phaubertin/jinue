@@ -29,14 +29,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_STDC_STDARG_H
-#define _JINUE_STDC_STDARG_H
+#ifndef _JINUE_LIBC_STDDEF_H
+#define _JINUE_LIBC_STDDEF_H
 
-typedef    __builtin_va_list    va_list;
+typedef signed long     ptrdiff_t;
+typedef unsigned long   size_t;
+typedef int             wchar_t;
 
-#define va_start(ap, parmN)     __builtin_va_start((ap), (parmN))
-#define va_arg                  __builtin_va_arg
-#define va_end                  __builtin_va_end
-#define va_copy(dest, src)      __builtin_va_copy((dest), (src))
+#ifndef NULL
+#define NULL 0
+#endif
+
+#define offsetof(type, member) ( (size_t) &( ((type *)0)->member ) )
 
 #endif
+

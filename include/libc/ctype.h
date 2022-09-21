@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2022 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,24 +29,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_STDC_ASSERT_H
-#define _JINUE_STDC_ASSERT_H
+#ifndef _JINUE_LIBC_CTYPE_H
+#define _JINUE_LIBC_CTYPE_H
 
-#undef assert
+static inline int isdigit(int c) {
+    return c >= '0' && c <= '9';
+}
 
-#ifdef NDEBUG
-#define assert(ignore) ((void)0)
-#else
-    void __assert_failed(
-        const char *expr, 
-        const char *file, 
-        unsigned int line, 
-        const char *func );
-    
-#define assert(expr) \
-    ( \
-        (expr)?(void)0:( __assert_failed(#expr, __FILE__, __LINE__, __func__) ) \
-    )
-#endif
+static inline int isxdigit(int c) {
+    return isdigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+}
 
 #endif

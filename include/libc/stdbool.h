@@ -29,18 +29,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_STDC_STDDEF_H
-#define _JINUE_STDC_STDDEF_H
+#ifndef _JINUE_LIBC_STDBOOL_H
+#define _JINUE_LIBC_STDBOOL_H
 
-typedef signed long     ptrdiff_t;
-typedef unsigned long   size_t;
-typedef int             wchar_t;
+#define bool    _Bool
+#define true    1
+#define false   0
 
-#ifndef NULL
-#define NULL 0
-#endif
-
-#define offsetof(type, member) ( (size_t) &( ((type *)0)->member ) )
+#define __bool_true_false_are_defined    1
 
 #endif
-

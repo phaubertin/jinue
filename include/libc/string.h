@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Philippe Aubertin.
+ * Copyright (C) 2019 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,11 +29,19 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_STDC_SYS_AUXV_H
-#define _JINUE_STDC_SYS_AUXV_H
+#ifndef _JINUE_LIBC_STRING_H
+#define _JINUE_LIBC_STRING_H
 
-#include <jinue-common/asm/elf.h>
+#include <stddef.h>
 
-uint32_t getauxval(int type);
+void *memset(void *s, int c, size_t n);
+
+void *memcpy(void *restrict dest, const void *restrict src, size_t n);
+
+int strcmp(const char *s1, const char *s2);
+
+char *strcpy(char *restrict dest, const char *restrict src);
+
+size_t strlen(const char *s);
 
 #endif
