@@ -32,7 +32,8 @@
 #ifndef _JINUE_LIBC_SYS_AUXV_H
 #define _JINUE_LIBC_SYS_AUXV_H
 
-#include <jinue-common/asm/elf.h>
+#include <jinue-common/asm/auxv.h>
+#include <stdint.h>
 
 uint32_t getauxval(int type);
 

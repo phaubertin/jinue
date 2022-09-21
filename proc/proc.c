@@ -29,7 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/elf.h>
+#include <sys/elf.h>
 #include <jinue/errno.h>
 #include <jinue/ipc.h>
 #include <jinue/memory.h>

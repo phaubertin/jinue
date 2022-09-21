@@ -29,8 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue-common/elf.h>
-#include <sys/auxv.h>
+#include <sys/elf.h>
 #include <stddef.h>
 
 /* This is set by crt.asm. */

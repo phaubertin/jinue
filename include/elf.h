@@ -32,7 +32,7 @@
 #ifndef JINUE_KERNEL_ELF_H
 #define JINUE_KERNEL_ELF_H
 
-#include <jinue-common/elf.h>
+#include <sys/elf.h>
 #include <types.h>
 
 
