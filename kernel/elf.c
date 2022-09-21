@@ -29,7 +29,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue-common/asm/auxv.h>
 #include <hal/vm.h>
 #include <assert.h>
 #include <boot.h>
