@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_KSTDC_CTYPE_H
-#define _JINUE_KSTDC_CTYPE_H
+#ifndef _JINUE_STDC_CTYPE_H
+#define _JINUE_STDC_CTYPE_H
 
 static inline int isdigit(int c) {
     return c >= '0' && c <= '9';

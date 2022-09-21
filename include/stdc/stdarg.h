@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_KSTDC_STDARG_H
-#define _JINUE_KSTDC_STDARG_H
+#ifndef _JINUE_STDC_STDARG_H
+#define _JINUE_STDC_STDARG_H
 
 typedef    __builtin_va_list    va_list;
 

@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_KSTDC_STDBOOL_H
-#define _JINUE_KSTDC_STDBOOL_H
+#ifndef _JINUE_STDC_STDBOOL_H
+#define _JINUE_STDC_STDBOOL_H
 
 #define bool    _Bool
 #define true    1

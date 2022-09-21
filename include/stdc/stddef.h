@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_KSTDC_STDDEF_H
-#define _JINUE_KSTDC_STDDEF_H
+#ifndef _JINUE_STDC_STDDEF_H
+#define _JINUE_STDC_STDDEF_H
 
 typedef signed long     ptrdiff_t;
 typedef unsigned long   size_t;

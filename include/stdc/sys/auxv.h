@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_KSTDC_SYS_AUXV_H
-#define _JINUE_KSTDC_SYS_AUXV_H
+#ifndef _JINUE_STDC_SYS_AUXV_H
+#define _JINUE_STDC_SYS_AUXV_H
 
 #include <jinue-common/asm/elf.h>
 
