@@ -29,7 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue-common/asm/vm.h>
+#include <jinue/shared/asm/vm.h>
 #include <hal/asm/boot.h>
 
 OUTPUT_FORMAT("elf32-i386", "elf32-i386", "elf32-i386")

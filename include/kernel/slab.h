@@ -32,7 +32,7 @@
 #ifndef JINUE_KERNEL_SLAB_H
 #define JINUE_KERNEL_SLAB_H
 
-#include <jinue-common/vm.h>
+#include <jinue/shared/vm.h>
 #include <stddef.h>
 
 #define SLAB_SIZE                   PAGE_SIZE

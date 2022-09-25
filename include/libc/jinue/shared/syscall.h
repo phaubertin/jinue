@@ -29,21 +29,34 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_COMMON_TYPES_H
-#define _JINUE_COMMON_TYPES_H
+#ifndef _JINUE_COMMON_SYSCALL_H
+#define _JINUE_COMMON_SYSCALL_H
 
-#include <jinue-common/asm/types.h>
+#include <jinue/shared/asm/syscall.h>
+
 #include <stdint.h>
 
 typedef struct {
-	uint64_t	addr;
-	uint64_t	size;
-	uint32_t 	type;
-} jinue_mem_entry_t;
+    uintptr_t arg0;
+    uintptr_t arg1;
+    uintptr_t arg2;
+    uintptr_t arg3;
+} jinue_syscall_args_t;
 
-typedef struct {
-	uint32_t			num_entries;
-	jinue_mem_entry_t	entry[];
-} jinue_mem_map_t;
+static inline uintptr_t jinue_get_return_uintptr(const jinue_syscall_args_t *args) {
+    return args->arg0;
+}
+
+static inline int jinue_get_return(const jinue_syscall_args_t *args) {
+    return (int)jinue_get_return_uintptr(args);
+}
+
+static inline void *jinue_get_return_ptr(const jinue_syscall_args_t *args) {
+    return (void *)jinue_get_return_uintptr(args);
+}
+
+static inline int jinue_get_error(const jinue_syscall_args_t *args) {
+    return (int)args->arg1;
+}
 
 #endif

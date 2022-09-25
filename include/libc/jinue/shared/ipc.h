@@ -29,34 +29,51 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_COMMON_SYSCALL_H
-#define _JINUE_COMMON_SYSCALL_H
+#ifndef _JINUE_COMMON_IPC_H_
+#define _JINUE_COMMON_IPC_H_
 
-#include <jinue-common/asm/syscall.h>
+#include <jinue/shared/asm/ipc.h>
 
+#include <jinue/shared/syscall.h>
+#include <stddef.h>
 #include <stdint.h>
 
-typedef struct {
-    uintptr_t arg0;
-    uintptr_t arg1;
-    uintptr_t arg2;
-    uintptr_t arg3;
-} jinue_syscall_args_t;
+#define JINUE_IPC_NONE      0
 
-static inline uintptr_t jinue_get_return_uintptr(const jinue_syscall_args_t *args) {
-    return args->arg0;
+#define JINUE_IPC_SYSTEM    (1<<0)
+
+#define JINUE_IPC_PROC      (1<<1)
+
+/* TBD */
+typedef int jinue_ipc_descriptor_t;
+
+
+static inline uintptr_t jinue_args_pack_buffer_size(size_t buffer_size) {
+    return JINUE_ARGS_PACK_BUFFER_SIZE((uintptr_t)buffer_size);
 }
 
-static inline int jinue_get_return(const jinue_syscall_args_t *args) {
-    return (int)jinue_get_return_uintptr(args);
+static inline uintptr_t jinue_args_pack_data_size(size_t data_size) {
+    return JINUE_ARGS_PACK_DATA_SIZE((uintptr_t)data_size);
 }
 
-static inline void *jinue_get_return_ptr(const jinue_syscall_args_t *args) {
-    return (void *)jinue_get_return_uintptr(args);
+static inline uintptr_t jinue_args_pack_n_desc(unsigned int n_desc) {
+    return JINUE_ARGS_PACK_N_DESC((uintptr_t)n_desc);
 }
 
-static inline int jinue_get_error(const jinue_syscall_args_t *args) {
-    return (int)args->arg1;
+static inline char *jinue_args_get_buffer_ptr(const jinue_syscall_args_t *args) {
+    return (char *)(args->arg2);
+}
+
+static inline size_t jinue_args_get_buffer_size(const jinue_syscall_args_t *args) {
+    return ((size_t)(args->arg3) >> JINUE_SEND_BUFFER_SIZE_OFFSET) & JINUE_SEND_SIZE_MASK;
+}
+
+static inline size_t jinue_args_get_data_size(const jinue_syscall_args_t *args) {
+    return ((size_t)(args->arg3) >> JINUE_SEND_DATA_SIZE_OFFSET) & JINUE_SEND_SIZE_MASK;
+}
+
+static inline unsigned int jinue_args_get_n_desc(const jinue_syscall_args_t *args) {
+    return ((unsigned int)(args->arg3) >> JINUE_SEND_N_DESC_OFFSET) & JINUE_SEND_N_DESC_MASK;
 }
 
 #endif

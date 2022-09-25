@@ -29,9 +29,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_ERRNO_H
-#define _JINUE_ERRNO_H
+#ifndef JINUE_HAL_ASM_THREAD_H
+#define JINUE_HAL_ASM_THREAD_H
 
-#include <jinue-common/errno.h>
+#include <jinue/shared/asm/vm.h>
+
+
+#define THREAD_CONTEXT_SIZE     PAGE_SIZE
+
+#define THREAD_CONTEXT_MASK     (~(THREAD_CONTEXT_SIZE - 1))
 
 #endif

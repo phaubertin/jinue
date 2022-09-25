@@ -29,7 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue-common/asm/e820.h>
+#include <jinue/shared/asm/e820.h>
 #include <hal/memory.h>
 #include <hal/vm.h>
 #include <assert.h>

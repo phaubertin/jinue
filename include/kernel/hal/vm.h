@@ -35,7 +35,7 @@
 /** This header file contains the public interface of the low-level page table
  * management code located in hal/vm.c and hal/vm_pae.c. */
 
-#include <jinue-common/vm.h>
+#include <jinue/shared/vm.h>
 #include <hal/asm/boot.h>
 #include <hal/asm/vm.h>
 #include <types.h>

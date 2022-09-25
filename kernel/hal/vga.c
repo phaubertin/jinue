@@ -29,7 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue-common/vm.h>
+#include <jinue/shared/vm.h>
 #include <ascii.h>
 #include <hal/io.h>
 #include <hal/vga.h>

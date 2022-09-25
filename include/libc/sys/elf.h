@@ -32,7 +32,7 @@
 #ifndef _JINUE_LIBC_SYS_ELF_H
 #define _JINUE_LIBC_SYS_ELF_H
 
-#include <jinue-common/asm/auxv.h>
+#include <jinue/shared/asm/auxv.h>
 #include <sys/asm/elf.h>
 #include <stdint.h>
 

@@ -32,8 +32,8 @@
 #ifndef JINUE_HAL_ASM_BOOT_H
 #define JINUE_HAL_ASM_BOOT_H
 
-#include <jinue-common/asm/types.h>
-#include <jinue-common/asm/vm.h>
+#include <jinue/shared/asm/types.h>
+#include <jinue/shared/asm/vm.h>
 #include "memory.h"
 
 

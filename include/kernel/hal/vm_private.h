@@ -35,7 +35,7 @@
 /** This header file contains private definitions shared by hal/vm.c, hal/vm_pae.c
  * and hal/vm_x86.c. There should be no reason to include it anywhere else. */
 
-#include <jinue-common/vm.h>
+#include <jinue/shared/vm.h>
 #include <hal/vm.h>
 #include <hal/vm_pae.h>
 #include <hal/vm_x86.h>

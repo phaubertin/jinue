@@ -29,35 +29,28 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_COMMON_ASM_VM_H
-#define _JINUE_COMMON_ASM_VM_H
+#ifndef JINUE_HAL_ASM_VM_H
+#define JINUE_HAL_ASM_VM_H
 
-#include <jinue-common/asm/types.h>
+#include <jinue/shared/asm/vm.h>
+#include <hal/asm/x86.h>
 
-/** number of bits in virtual address for offset inside page */
-#define PAGE_BITS               12
+/** map page with no permission */
+#define VM_MAP_NONE             0
 
-/** size of page */
-#define PAGE_SIZE               (1<<PAGE_BITS) /* 4096 */
+/** map page with read permission */
+#define VM_MAP_READ             (1<<0)
 
-/** bit mask for offset in page */
-#define PAGE_MASK               (PAGE_SIZE - 1)
+/** map page with write permission */
+#define VM_MAP_WRITE            (1<<1)
 
-/** The virtual address range starting at KLIMIT is reserved by the kernel. The
-    region above KLIMIT has the same mapping in all address spaces. KLIMIT must
-    be aligned on a page directory boundary in PAE mode. */
-#define KLIMIT                  0xc0000000
+/** map page with execution permission */
+#define VM_MAP_EXEC             (1<<2)
 
-/** stack base address (stack top) */
-#define STACK_BASE              KLIMIT
+/** Number of entries per page table/directory, PAE disabled */
+#define VM_X86_PAGE_TABLE_PTES  1024
 
-/** initial stack size */
-#define STACK_SIZE              (128 * KB)
-
-/** stack portion reserved for environment, arguments and auxiliary vectors */
-#define RESERVED_STACK_SIZE     (32 * KB)
-
-/** initial stack lower address */
-#define STACK_START             (STACK_BASE - STACK_SIZE)
+/** Number of entries per page table/directory, PAE enabled */
+#define VM_PAE_PAGE_TABLE_PTES  512
 
 #endif

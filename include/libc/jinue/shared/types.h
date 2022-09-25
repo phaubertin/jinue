@@ -29,9 +29,21 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_CONSOLE_H
-#define _JINUE_CONSOLE_H
+#ifndef _JINUE_COMMON_TYPES_H
+#define _JINUE_COMMON_TYPES_H
 
-#include <jinue-common/console.h>
+#include <jinue/shared/asm/types.h>
+#include <stdint.h>
+
+typedef struct {
+	uint64_t	addr;
+	uint64_t	size;
+	uint32_t 	type;
+} jinue_mem_entry_t;
+
+typedef struct {
+	uint32_t			num_entries;
+	jinue_mem_entry_t	entry[];
+} jinue_mem_map_t;
 
 #endif

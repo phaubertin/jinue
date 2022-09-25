@@ -32,7 +32,7 @@
 #ifndef JINUE_KERNEL_CONSOLE_H
 #define JINUE_KERNEL_CONSOLE_H
 
-#include <jinue-common/console.h>
+#include <jinue/shared/console.h>
 #include <cmdline.h>
 
 void console_init(const cmdline_opts_t *cmdline_opts);

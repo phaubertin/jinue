@@ -129,8 +129,8 @@ proc comment {str} {
 # Emit a node declaration for the specified header file in Graphviz syntax
 proc node_decl {file_name} {
     switch -glob $file_name {
+        "jinue/shared/*"    {set shape octagon}
         "jinue/*"           {set shape box}
-        "jinue-common/*"    {set shape octagon}
         default             {set shape ellipse}
     }
     
