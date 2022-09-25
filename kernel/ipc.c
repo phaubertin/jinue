@@ -72,7 +72,7 @@ void ipc_boot_init(void) {
     }
 }
 
-ipc_t *ipc_object_create(int flags) {
+static ipc_t *ipc_object_create(int flags) {
     ipc_t *ipc = slab_cache_alloc(&ipc_object_cache);
     
     if(ipc != NULL) {
@@ -82,85 +82,87 @@ ipc_t *ipc_object_create(int flags) {
     return ipc;
 }
 
-ipc_t *ipc_get_proc_object(void) {
+static ipc_t *ipc_get_proc_object(void) {
     return proc_ipc;
 }
 
-void ipc_send(jinue_syscall_args_t *args) {
+int ipc_create_for_current_process(int flags) {
+    ipc_t *ipc;
+
     thread_t *thread = get_current_thread();
 
-    message_info_t *message_info = &thread->message_info;
+    int fd = process_unused_descriptor(thread->process);
 
-    message_info->function      = args->arg0;
-    message_info->buffer_size   = jinue_args_get_buffer_size(args);
-    message_info->data_size     = jinue_args_get_data_size(args);
-    message_info->desc_n        = jinue_args_get_n_desc(args);
-    message_info->total_size    =
-            message_info->data_size +
-            message_info->desc_n * sizeof(jinue_ipc_descriptor_t);
-
-    if(message_info->buffer_size > JINUE_SEND_MAX_SIZE) {
-        syscall_args_set_error(args, JINUE_EINVAL);
-        return;
+    if(fd < 0) {
+        return -JINUE_EAGAIN;
     }
 
-    if(message_info->total_size > message_info->buffer_size) {
-        syscall_args_set_error(args, JINUE_EINVAL);
-        return;
+    if(flags & JINUE_IPC_PROC) {
+        ipc = ipc_get_proc_object();
     }
-    
-    if(message_info->desc_n > JINUE_SEND_MAX_N_DESC) {
-        syscall_args_set_error(args, JINUE_EINVAL);
-        return;
+    else {
+        int ipc_flags = IPC_FLAG_NONE;
+
+        if(flags & JINUE_IPC_SYSTEM) {
+            ipc_flags |= IPC_FLAG_SYSTEM;
+        }
+
+        ipc = ipc_object_create(ipc_flags);
+
+        if(ipc == NULL) {
+            return -JINUE_EAGAIN;
+        }
     }
+
+    object_ref_t *ref = process_get_descriptor(thread->process, fd);
+
+    object_addref(&ipc->header);
+
+    ref->object = &ipc->header;
+    ref->flags  = OBJECT_REF_FLAG_VALID | OBJECT_REF_FLAG_OWNER;
+    ref->cookie = 0;
+
+    return fd;
+}
+
+int ipc_send(
+        int                              fd,
+        int                              function,
+        const syscall_input_buffer_t    *buffer,
+        jinue_syscall_args_t            *args) {
+
+    thread_t *thread = get_current_thread();
 
     /** TODO remove this check when descriptor passing is implemented */
-    if(message_info->desc_n > 0) {
-        syscall_args_set_error(args, JINUE_ENOSYS);
-        return;
+    if(buffer->desc_n > 0) {
+        return -JINUE_ENOSYS;
     }
-
-    int fd = (int)args->arg1;
 
     object_ref_t *ref = process_get_descriptor(thread->process, fd);
 
     if(! object_ref_is_valid(ref)) {
-        syscall_args_set_error(args, JINUE_EBADF);
-        return;
+        return -JINUE_EBADF;
     }
 
     if(object_ref_is_closed(ref)) {
-        syscall_args_set_error(args, JINUE_EIO);
-        return;
+        return -JINUE_EIO;
     }
-
-    message_info->cookie = ref->cookie;
 
     object_header_t *header = ref->object;
 
     if(object_is_destroyed(header)) {
         ref->flags |= OBJECT_REF_FLAG_CLOSED;
         object_subref(header);
-
-        syscall_args_set_error(args, JINUE_EIO);
-        return;
+        return -JINUE_EIO;
     }
 
     if(header->type != OBJECT_TYPE_IPC) {
-        syscall_args_set_error(args, JINUE_EBADF);
-        return;
+        return -JINUE_EBADF;
     }
 
     ipc_t *ipc = (ipc_t *)header;
-
-    char *user_ptr = (char *)args->arg2;
     
-    if(! check_userspace_buffer(user_ptr, message_info->buffer_size)) {
-        syscall_args_set_error(args, JINUE_EINVAL);
-        return;
-    }
-
-    memcpy(&thread->message_buffer, user_ptr, message_info->data_size);
+    memcpy(&thread->message_buffer, buffer->user_ptr, buffer->data_size);
 
     /** TODO copy descriptors */
 
@@ -196,31 +198,32 @@ void ipc_send(jinue_syscall_args_t *args) {
     }
     
     /* copy reply to user space buffer */
-    memcpy(user_ptr, &thread->message_buffer, message_info->data_size);
+    size_t reply_size = jinue_args_get_data_size(args);
+    memcpy(buffer->user_ptr, &thread->message_buffer, reply_size);
 
     /** TODO copy descriptors */
+
+    return 0;
 }
 
-void ipc_receive(jinue_syscall_args_t *args) {
-    thread_t *thread = get_current_thread();
+int ipc_receive(
+        int                              fd,
+        const syscall_output_buffer_t   *buffer,
+        jinue_syscall_args_t            *args) {
 
-    int fd = (int)args->arg1;
-
-    object_ref_t *ref = process_get_descriptor(thread->process, fd);
+    thread_t *thread    = get_current_thread();
+    object_ref_t *ref   = process_get_descriptor(thread->process, fd);
 
     if(! object_ref_is_valid(ref)) {
-        syscall_args_set_error(args, JINUE_EBADF);
-        return;
+        return -JINUE_EBADF;
     }
 
     if(object_ref_is_closed(ref)) {
-        syscall_args_set_error(args, JINUE_EIO);
-        return;
+        return -JINUE_EIO;
     }
 
     if(! object_ref_is_owner(ref)) {
-        syscall_args_set_error(args, JINUE_EPERM);
-        return;
+        return -JINUE_EPERM;
     }
 
     object_header_t *header = ref->object;
@@ -228,25 +231,14 @@ void ipc_receive(jinue_syscall_args_t *args) {
     if(object_is_destroyed(header)) {
         ref->flags |= OBJECT_REF_FLAG_CLOSED;
         object_subref(header);
-
-        syscall_args_set_error(args, JINUE_EIO);
-        return;
+        return -JINUE_EIO;
     }
 
     if(header->type != OBJECT_TYPE_IPC) {
-        syscall_args_set_error(args, JINUE_EBADF);
-        return;
+        return -JINUE_EBADF;
     }
 
     ipc_t *ipc = (ipc_t *)header;
-    
-    char *user_ptr = (char *)args->arg2;
-    size_t buffer_size = jinue_args_get_buffer_size(args);
-    
-    if(! check_userspace_buffer(user_ptr, buffer_size)) {
-        syscall_args_set_error(args, JINUE_EINVAL);
-        return;
-    }
     
     thread_t *send_thread = jinue_node_entry(
         jinue_list_dequeue(&ipc->send_list),
@@ -271,13 +263,18 @@ void ipc_receive(jinue_syscall_args_t *args) {
         thread->sender = send_thread;
     }
     
-    if(send_thread->message_info.total_size > buffer_size) {
+    size_t sender_data_size = jinue_args_get_data_size(send_thread->message_args);
+    size_t sender_desc_n    = jinue_args_get_n_desc(send_thread->message_args);
+    /* TODO aren't we missing padding size here? */
+    size_t total_size       =
+            sender_data_size + sender_desc_n * sizeof(jinue_ipc_descriptor_t);
+
+    if(total_size > buffer->buffer_size) {
         /* message is too big for receive buffer */
         object_subref(&send_thread->header);
         thread->sender = NULL;
         
         syscall_args_set_error(send_thread->message_args, JINUE_E2BIG);
-        syscall_args_set_error(args, JINUE_E2BIG);
         
         /* switch back to sender thread to return from call immediately */
         thread_switch(
@@ -286,87 +283,54 @@ void ipc_receive(jinue_syscall_args_t *args) {
                 false,      /* don't block (put this thread back in ready queue) */
                 false);     /* don't destroy */
                 
-        return;
+        return -JINUE_E2BIG;
     }
     
     memcpy(
-        user_ptr,
+        buffer->user_ptr,
         send_thread->message_buffer,
-        send_thread->message_info.data_size);
+        sender_data_size);
     
-    args->arg0 = send_thread->message_args->arg0;
+    args->arg0 = send_thread->message_args->arg0;   /* Function number */
     args->arg1 = ref->cookie;
     /* argument 2 is left intact (buffer pointer) */
-    args->arg3 = send_thread->message_args->arg3;
+    args->arg3 = send_thread->message_args->arg3;   /* Packed sized */
+
+    return 0;
 }
 
-void ipc_reply(jinue_syscall_args_t *args) {
+int ipc_reply(const syscall_input_buffer_t *buffer) {
     thread_t *thread        = get_current_thread();
     thread_t *send_thread   = thread->sender;
 
     if(send_thread == NULL) {
-        /** TODO is there a better error number for this situation? */
-        syscall_args_set_error(args, JINUE_EINVAL);
-        return;
-    }
-
-    size_t buffer_size   = jinue_args_get_buffer_size(args);
-    size_t data_size     = jinue_args_get_data_size(args);
-    size_t desc_n        = jinue_args_get_n_desc(args);
-    size_t total_size    =
-            data_size +
-            desc_n * sizeof(jinue_ipc_descriptor_t);
-
-    if(buffer_size > JINUE_SEND_MAX_SIZE) {
-        syscall_args_set_error(args, JINUE_EINVAL);
-        return;
-    }
-    
-    if(total_size > buffer_size) {
-        syscall_args_set_error(args, JINUE_EINVAL);
-        return;
-    }
-
-    if(desc_n > JINUE_SEND_MAX_N_DESC) {
-        syscall_args_set_error(args, JINUE_EINVAL);
-        return;
+        return -JINUE_ENOMSG;
     }
 
     /* the reply must fit in the sender's buffer */
-    if(total_size > send_thread->message_info.buffer_size) {
-        syscall_args_set_error(args, JINUE_EINVAL);
-        return;
+    size_t sender_buffer_size = jinue_args_get_buffer_size(send_thread->message_args);
+
+    if(buffer->total_size > sender_buffer_size) {
+        return -JINUE_E2BIG;
     }
 
     /** TODO remove this check when descriptor passing is implemented */
-    if(desc_n > 0) {
-        syscall_args_set_error(args, JINUE_ENOSYS);
-        return;
+    if(buffer->desc_n > 0) {
+        return -JINUE_ENOSYS;
     }
 
-    const char *user_ptr = (const char *)args->arg2;
-
-    if(! check_userspace_buffer(user_ptr, buffer_size)) {
-        syscall_args_set_error(args, JINUE_EINVAL);
-        return;
-    }
-
-    memcpy(&send_thread->message_buffer, user_ptr, data_size);
+    memcpy(&send_thread->message_buffer, buffer->user_ptr, buffer->data_size);
 
     /** TODO copy descriptors */
 
     /** TODO set return value and error number  */
     syscall_args_set_return(send_thread->message_args, 0);
     send_thread->message_args->arg3 =
-            args->arg3 & ~(JINUE_SEND_SIZE_MASK << JINUE_SEND_BUFFER_SIZE_OFFSET);
-
-    send_thread->message_info.data_size = data_size;
-    send_thread->message_info.desc_n    = desc_n;
+              jinue_args_pack_data_size(buffer->data_size)
+            | jinue_args_pack_n_desc(buffer->desc_n);
 
     object_subref(&send_thread->header);
     thread->sender = NULL;
-
-    syscall_args_set_return(args, 0);
     
     /* switch back to sender thread to return from call immediately */
     thread_switch(
@@ -374,4 +338,6 @@ void ipc_reply(jinue_syscall_args_t *args) {
             send_thread,
             false,      /* don't block (put this thread back in ready queue) */
             false);     /* don't destroy */
+
+    return 0;
 }

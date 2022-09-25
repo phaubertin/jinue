@@ -30,6 +30,8 @@
  */
 
 #include <jinue/shared/asm/e820.h>
+#include <jinue/shared/errno.h>
+#include <hal/boot.h>
 #include <hal/memory.h>
 #include <hal/vm.h>
 #include <assert.h>
@@ -245,4 +247,27 @@ void *memory_lookup_page(uint64_t paddr) {
     }
 
     return (void *)memory_array[entry_index];
+}
+
+int memory_get_map(const syscall_output_buffer_t *buffer) {
+    unsigned int idx;
+
+    const boot_info_t *boot_info    = get_boot_info();
+    jinue_mem_map_t *map            = buffer->user_ptr;
+    size_t result_size              =
+            sizeof(jinue_mem_map_t) + boot_info->e820_entries * sizeof(jinue_mem_entry_t);
+
+    if(buffer->buffer_size < result_size) {
+        return -JINUE_EINVAL;
+    }
+
+    map->num_entries = boot_info->e820_entries;
+
+    for(idx = 0; idx < map->num_entries; ++idx) {
+        map->entry[idx].addr = boot_info->e820_map[idx].addr;
+        map->entry[idx].size = boot_info->e820_map[idx].size;
+        map->entry[idx].type = boot_info->e820_map[idx].type;
+    }
+
+    return 0;
 }

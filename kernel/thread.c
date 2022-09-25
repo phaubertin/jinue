@@ -145,7 +145,7 @@ static thread_t *reschedule(thread_t *from_thread, bool from_can_run) {
 }
 
 void thread_yield_from(thread_t *from_thread, bool blocked, bool do_destroy) {
-    bool from_can_run = ! (blocked || do_destroy);
+    bool from_can_run = !(blocked || do_destroy);
     
     thread_switch(
             from_thread,

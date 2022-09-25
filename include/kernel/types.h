@@ -74,13 +74,17 @@ typedef struct {
 } process_t;
 
 typedef struct {
-    uintptr_t            function;
-    uintptr_t            cookie;
-    size_t               buffer_size;
-    size_t               data_size;
-    size_t               desc_n;
-    size_t               total_size;
-} message_info_t;
+    void    *user_ptr;
+    size_t   buffer_size;
+    size_t   data_size;
+    size_t   desc_n;
+    size_t   total_size;
+} syscall_input_buffer_t;
+
+typedef struct {
+    void    *user_ptr;
+    size_t   buffer_size;
+} syscall_output_buffer_t;
 
 struct thread_t {
     object_header_t          header;
@@ -89,7 +93,6 @@ struct thread_t {
     process_t               *process;
     struct thread_t         *sender;
     jinue_syscall_args_t    *message_args;
-    message_info_t           message_info;
     char                     message_buffer[JINUE_SEND_MAX_SIZE];
 };
 
