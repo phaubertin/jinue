@@ -91,7 +91,7 @@ thread_context_switch_stack:
     ; We do this before calling thread_destroy(). Otherwise, the frame pointer
     ; still refers to the thread stack for the previous thread, i.e. the one
     ; we are potentially about to destroy, when thread_destroy() is called.
-    ; This is a problem is e.g. we try to dump the call stack from thread_destroy()
+    ; This is a problem if e.g. we try to dump the call stack from thread_destroy()
     ; or one of its callees.
     pop edi
     pop esi

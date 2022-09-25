@@ -68,7 +68,7 @@ void thread_a(void) {
     else {
         printk("Thread A got descriptor %u.\n", fd);
 
-        printk("Thread A is sending message: %s\n", message);
+        printk("Thread A is sending message: \"%s\"\n", message);
 
         int ret = jinue_send(
                 SYSCALL_USER_BASE,  /* function number */
@@ -83,7 +83,7 @@ void thread_a(void) {
             printk("jinue_send() failed with error: %u.\n", errno);
         }
         else {
-            printk("Thread A got reply from main thread: %s\n", message);
+            printk("Thread A got reply from main thread: \"%s\"\n", message);
         }
     }
 
@@ -266,7 +266,7 @@ int main(int argc, char *argv[]) {
         else {
             char reply[] = "OK";
 
-            printk("Main thread received message: %s\n", buffer);
+            printk("Main thread received message:  \"%s\"\n", buffer);
 
             ret = jinue_reply(
                     reply,                      /* buffer address */

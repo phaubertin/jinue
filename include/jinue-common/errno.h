@@ -50,4 +50,6 @@
 
 #define JINUE_E2BIG     9
 
+#define JINUE_ENOMSG    10
+
 #endif
