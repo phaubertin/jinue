@@ -31,8 +31,8 @@
     
     section .text
 ; ------------------------------------------------------------------------------
-; FUNCTION: syscall_fast_intel
-; C PROTOTYPE: void syscall_fast_intel(jinue_syscall_args_t *args);
+; FUNCTION: jinue_syscall_fast_intel
+; C PROTOTYPE: void jinue_syscall_fast_intel(jinue_syscall_args_t *args);
 ; ------------------------------------------------------------------------------
     global jinue_syscall_fast_intel
 jinue_syscall_fast_intel:
@@ -88,8 +88,8 @@ jinue_syscall_fast_intel:
     ret
 
 ; ------------------------------------------------------------------------------
-; FUNCTION: syscall_fast_amd
-; C PROTOTYPE: void syscall_fast_amd(jinue_syscall_args_t *args);
+; FUNCTION: jinue_syscall_fast_amd
+; C PROTOTYPE: void jinue_syscall_fast_amd(jinue_syscall_args_t *args);
 ; ------------------------------------------------------------------------------
     global jinue_syscall_fast_amd
 jinue_syscall_fast_amd:
@@ -144,8 +144,8 @@ jinue_syscall_fast_amd:
     ret
 
 ; ------------------------------------------------------------------------------
-; FUNCTION: syscall_intr
-; C PROTOTYPE: void syscall_intr(jinue_syscall_args_t *args);
+; FUNCTION: jinue_syscall_intr
+; C PROTOTYPE: void jinue_syscall_intr(jinue_syscall_args_t *args);
 ; ------------------------------------------------------------------------------
     global jinue_syscall_intr
 jinue_syscall_intr:
