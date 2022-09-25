@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_COMMON_TYPES_H
-#define _JINUE_COMMON_TYPES_H
+#ifndef _JINUE_SHARED_TYPES_H
+#define _JINUE_SHARED_TYPES_H
 
 #include <jinue/shared/asm/types.h>
 #include <stdint.h>

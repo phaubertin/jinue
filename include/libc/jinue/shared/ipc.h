@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_COMMON_IPC_H_
-#define _JINUE_COMMON_IPC_H_
+#ifndef _JINUE_SHARED_IPC_H_
+#define _JINUE_SHARED_IPC_H_
 
 #include <jinue/shared/asm/ipc.h>
 
