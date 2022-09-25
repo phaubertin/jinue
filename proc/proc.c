@@ -29,9 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/elf.h>
+#include <sys/elf.h>
 #include <jinue/errno.h>
-#include <jinue/getenv.h>
 #include <jinue/ipc.h>
 #include <jinue/memory.h>
 #include <jinue/syscall.h>
@@ -40,6 +39,7 @@
 #include <printk.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 
 #define THREAD_STACK_SIZE   4096
@@ -54,9 +54,9 @@ int fd;
 
 char thread_a_stack[THREAD_STACK_SIZE];
 
-extern char **jinue_environ;
+extern char **environ;
 
-extern const Elf32_auxv_t *jinue_auxvp;
+extern const Elf32_auxv_t *_jinue_libc_auxv;
 
 void thread_a(void) {
     int errno;
@@ -93,14 +93,16 @@ void thread_a(void) {
 }
 
 static bool bool_getenv(const char *name) {
-    const char *value = jinue_getenv(name);
+    const char *value = getenv(name);
 
     if(value == NULL) {
         return false;
     }
 
-    /* TODO we need a strcmp() implementation */
-    return value[0] == '1' && value[1] == '\0';
+    return  strcmp(value, "enable") == 0 ||
+            strcmp(value, "true") == 0 ||
+            strcmp(value, "yes") == 0 ||
+            strcmp(value, "1") == 0;
 }
 
 static void dump_phys_memory_map(const jinue_mem_map_t *map, bool ram_only) {
@@ -144,7 +146,7 @@ static void dump_environ(void) {
 
     printk("Environment variables:\n");
 
-    for(char **envvar = jinue_environ; *envvar != NULL; ++envvar) {
+    for(char **envvar = environ; *envvar != NULL; ++envvar) {
         printk("    %s\n", *envvar);
     }
 }
@@ -193,7 +195,7 @@ static void dump_auxvec(void) {
 
     printk("Auxiliary vectors:\n");
 
-    for(const Elf32_auxv_t *entry = jinue_auxvp; entry->a_type != AT_NULL; ++entry) {
+    for(const Elf32_auxv_t *entry = _jinue_libc_auxv; entry->a_type != AT_NULL; ++entry) {
         const char *name = auxv_type_name(entry->a_type);
 
         if(name != NULL) {

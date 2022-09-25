@@ -29,9 +29,22 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_GETENV_H_
-#define _JINUE_GETENV_H_
+#include <sys/elf.h>
+#include <stddef.h>
 
-const char *jinue_getenv(const char *name);
+/* This is set by crt.asm. */
+const Elf32_auxv_t *_jinue_libc_auxv = NULL;
 
-#endif
+uint32_t jinue_getauxval(int type) {
+    if(_jinue_libc_auxv == NULL) {
+        return 0;
+    }
+
+    for(const Elf32_auxv_t *entry = _jinue_libc_auxv; entry->a_type != AT_NULL; ++entry) {
+        if(entry->a_type == type) {
+            return entry->a_un.a_val;
+        }
+    }
+
+    return 0;
+}

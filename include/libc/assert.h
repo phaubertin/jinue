@@ -29,14 +29,24 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_KSTDC_STDARG_H
-#define _JINUE_KSTDC_STDARG_H
+#ifndef _JINUE_LIBC_ASSERT_H
+#define _JINUE_LIBC_ASSERT_H
 
-typedef    __builtin_va_list    va_list;
+#undef assert
 
-#define va_start(ap, parmN)     __builtin_va_start((ap), (parmN))
-#define va_arg                  __builtin_va_arg
-#define va_end                  __builtin_va_end
-#define va_copy(dest, src)      __builtin_va_copy((dest), (src))
+#ifdef NDEBUG
+#define assert(ignore) ((void)0)
+#else
+    void __assert_failed(
+        const char *expr, 
+        const char *file, 
+        unsigned int line, 
+        const char *func );
+    
+#define assert(expr) \
+    ( \
+        (expr)?(void)0:( __assert_failed(#expr, __FILE__, __LINE__, __func__) ) \
+    )
+#endif
 
 #endif

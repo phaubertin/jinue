@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2022 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,24 +29,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_KSTDC_ASSERT_H
-#define _JINUE_KSTDC_ASSERT_H
+#ifndef _JINUE_LIBC_SYS_AUXV_H
+#define _JINUE_LIBC_SYS_AUXV_H
 
-#undef assert
+#include <jinue-common/asm/auxv.h>
+#include <stdint.h>
 
-#ifdef NDEBUG
-#define assert(ignore) ((void)0)
-#else
-    void __assert_failed(
-        const char *expr, 
-        const char *file, 
-        unsigned int line, 
-        const char *func );
-    
-#define assert(expr) \
-    ( \
-        (expr)?(void)0:( __assert_failed(#expr, __FILE__, __LINE__, __func__) ) \
-    )
-#endif
+uint32_t getauxval(int type);
 
 #endif

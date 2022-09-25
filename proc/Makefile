@@ -34,7 +34,7 @@ sources.c		 = proc.c
 proc			 = proc
 target			 = $(proc)-stripped
 
-LIBS    		 = -L$(libjinue) -ljinue -ljinue-proc
+LIBS    		 = -L$(libjinue) -L$(libc) -lc -ljinue -ljinue-proc
 
 # The linker might not link crt.o from libjinue.a, which is required to
 # provide the _start entry point but otherwise contains no symbol that
@@ -50,7 +50,10 @@ include $(common)
 
 $(libjinue)/libjinue.a $(libjinue)/libjinue-proc.a: FORCE
 	$(MAKE) -C $(libjinue)
+	
+$(libc)/libc.a: FORCE
+	$(MAKE) -C $(libc)
 
-$(proc): $(objects) $(libjinue)/libjinue.a $(libjinue)/libjinue-proc.a
+$(proc): $(objects) $(libc)/libc.a $(libjinue)/libjinue.a $(libjinue)/libjinue-proc.a
 
 $(target): $(proc)

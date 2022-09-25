@@ -30,8 +30,8 @@
     bits 32
     
     extern main
-    extern jinue_auxvp
-    extern jinue_environ
+    extern _jinue_libc_auxv
+    extern environ
 
 ; ------------------------------------------------------------------------------
 ; ELF binary entry point
@@ -61,7 +61,7 @@ _start:
     
     ; Store envp as third argument to main and keep a copy in jinue_environ.
     mov dword [ebp-4], esi
-    mov dword [jinue_environ], esi
+    mov dword [environ], esi
     
     ; Increment esi (by 4 each time) until we find the NULL pointer which marks
     ; the end of the environment variables. Since edi is post-incremented, it
@@ -75,7 +75,7 @@ _start:
     jne .skip_environ
     
     ; Set address of auxiliary vectors
-    mov dword [jinue_auxvp], edi
+    mov dword [_jinue_libc_auxv], edi
     
     ; Now that all arguments are where they should be, call main()
     call main

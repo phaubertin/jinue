@@ -163,7 +163,7 @@
 ;   v   |                                       |
 ;  ===  +=======================================+ 0
 
-#include <jinue-common/asm/elf.h>
+#include <sys/asm/elf.h>
 #include <hal/asm/boot.h>
 #include <hal/asm/memory.h>
 #include <hal/asm/vm.h>

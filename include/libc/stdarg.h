@@ -29,50 +29,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stddef.h>
+#ifndef _JINUE_LIBC_STDARG_H
+#define _JINUE_LIBC_STDARG_H
 
-void *memset(void *s, int c, size_t n) {
-    size_t   idx;
-    char    *cs = s;
+typedef    __builtin_va_list    va_list;
 
-    for(idx = 0; idx < n; ++idx) {
-        cs[idx] = c;
-    }
-    
-    return s;
-}
+#define va_start(ap, parmN)     __builtin_va_start((ap), (parmN))
+#define va_arg                  __builtin_va_arg
+#define va_end                  __builtin_va_end
+#define va_copy(dest, src)      __builtin_va_copy((dest), (src))
 
-void *memcpy(void *restrict dest, const void *restrict src, size_t n) {
-    size_t       idx;
-    char        *cdest  = dest;
-    const char  *csrc   = src;
-
-    for(idx = 0; idx < n; ++idx) {
-        cdest[idx] = csrc[idx];
-    }
-
-    return dest;
-}
-
-size_t strlen(const char *s) {
-    size_t count = 0;
-
-    while(*s != 0) {
-        ++s;
-        ++count;
-    }
-    
-    return count;
-}
-
-char *strcpy(char *restrict dest, const char *restrict src) {
-    size_t       idx;
-    char        *cdest  = dest;
-    const char  *csrc   = src;
-
-    for(idx = 0; csrc[idx] != '\0'; ++idx) {
-        cdest[idx] = csrc[idx];
-    }
-
-    return dest;
-}
+#endif

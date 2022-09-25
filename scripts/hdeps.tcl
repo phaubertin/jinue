@@ -33,7 +33,7 @@
 # This utility script generates a Graphviz visualization of the relations between
 # header files (i.e. which header is included by which other). Standard C header
 # files are excluded (for this purpose, Standard C headers are any header file
-# located in include/kstdc).
+# located in include/libc).
 #
 # This script is not part of the build process.
 #
@@ -43,7 +43,7 @@
 
 set INCLUDES        "../include"
 
-set STD_INCLUDES    "kstdc"
+set STD_INCLUDES    "libc"
 
 set INDENT_STRING   [string repeat " " 4]
 
