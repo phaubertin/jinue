@@ -94,7 +94,7 @@ int jinue_receive(
     args.arg2 = (uintptr_t)buffer;
     args.arg3 = jinue_args_pack_buffer_size(buffer_size);
 
-    jinue_call_raw(&args);
+    jinue_syscall(&args);
 
     if(args.arg0 == (uintptr_t)-1) {
         set_errno(perrno, (int)args.arg1);

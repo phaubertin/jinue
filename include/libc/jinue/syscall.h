@@ -36,7 +36,7 @@
 #include <stddef.h>
 
 
-void jinue_call_raw(jinue_syscall_args_t *args);
+int jinue_syscall(jinue_syscall_args_t *args);
 
 int jinue_call(jinue_syscall_args_t *args, int *perrno);
 
