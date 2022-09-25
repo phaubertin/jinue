@@ -27,7 +27,11 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-getcontext:
+; TODO this file is not being compiled, is not maintained and calls a system
+; call that does not exist. Actually implement the system call and then fix
+; this code.
+
+jinue_getcontext:
     ; setup frame pointer
     push ebp
     mov ebp, esp
@@ -52,7 +56,7 @@ getcontext:
     
     push esp
     
-    call jinue_call_raw
+    call jinue_syscall
     
     pop ecx
     
@@ -60,7 +64,7 @@ getcontext:
     or eax, eax
     jnz .exit
     
-    ; Save the caller-preserved registers. The system call stub retored them 
+    ; Save the caller-preserved registers. The system call stub restored them
     ; before returning to us as required by the ABI but did overwrite them
     ; before doing the system call.
     lea ecx, [ecx+MCONTEXT_OFFSET]
