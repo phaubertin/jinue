@@ -29,7 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue-common/list.h>
+#include <jinue/shared/list.h>
 #include <hal/cpu_data.h>
 #include <hal/thread.h>
 #include <hal/vm.h>

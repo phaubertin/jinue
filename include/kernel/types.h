@@ -29,80 +29,79 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_LIBC_SYS_ELF_H
-#define _JINUE_LIBC_SYS_ELF_H
+#ifndef JINUE_KERNEL_TYPES_H
+#define JINUE_KERNEL_TYPES_H
 
-#include <jinue/shared/asm/auxv.h>
-#include <sys/asm/elf.h>
+#include <jinue/shared/ipc.h>
+#include <jinue/shared/list.h>
+#include <jinue/shared/syscall.h>
+#include <jinue/shared/types.h>
+#include <hal/types.h>
+#include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
 
-typedef uint32_t Elf32_Addr;
-
-typedef uint16_t Elf32_Half;
-
-typedef uint32_t Elf32_Off;
-
-typedef int32_t Elf32_Sword;
-
-typedef uint32_t Elf32_Word;
+struct boot_heap_pushed_state {
+    struct boot_heap_pushed_state   *next;
+};
 
 typedef struct {
-        unsigned char	e_ident[EI_NIDENT];
-        Elf32_Half    	e_type;
-        Elf32_Half    	e_machine;
-        Elf32_Word    	e_version;
-        Elf32_Addr    	e_entry;
-        Elf32_Off     	e_phoff;
-        Elf32_Off     	e_shoff;
-        Elf32_Word    	e_flags;
-        Elf32_Half    	e_ehsize;
-        Elf32_Half    	e_phentsize;
-        Elf32_Half    	e_phnum;
-        Elf32_Half    	e_shentsize;
-        Elf32_Half    	e_shnum;
-        Elf32_Half		e_shstrndx;
-} Elf32_Ehdr;
+    void                            *heap_ptr;
+    struct boot_heap_pushed_state   *heap_pushed_state;
+    void                            *current_page;
+    void                            *page_limit;
+    void                            *first_page_at_16mb;
+} boot_alloc_t;
 
 typedef struct {
-        Elf32_Word 		p_type;
-        Elf32_Off  		p_offset;
-        Elf32_Addr 		p_vaddr;
-        Elf32_Addr 		p_paddr;
-        Elf32_Word 		p_filesz;
-        Elf32_Word 		p_memsz;
-        Elf32_Word 		p_flags;
-        Elf32_Word 		p_align;
-} Elf32_Phdr;
+    int type;
+    int ref_count;
+    int flags;
+} object_header_t;
 
 typedef struct {
-        Elf32_Word 		sh_name;
-        Elf32_Word 		sh_type;
-        Elf32_Word 		sh_flags;
-        Elf32_Addr 		sh_addr;
-        Elf32_Off  		sh_offset;
-        Elf32_Word 		sh_size;
-        Elf32_Word 		sh_link;
-        Elf32_Word 		sh_info;
-        Elf32_Word 		sh_addralign;
-        Elf32_Word 		sh_entsize;
-} Elf32_Shdr;
+    object_header_t *object;
+    uintptr_t        flags;
+    uintptr_t        cookie;
+} object_ref_t;
+
+#define PROCESS_MAX_DESCRIPTORS     12
 
 typedef struct {
-        Elf32_Word 		st_name;
-        Elf32_Addr 		st_value;
-        Elf32_Word 		st_size;
-        unsigned char   st_info;
-        unsigned char   st_other;
-        Elf32_Half      st_shndx;
-} Elf32_Sym;
+    object_header_t header;
+    addr_space_t    addr_space;
+    object_ref_t    descriptors[PROCESS_MAX_DESCRIPTORS];
+} process_t;
 
 typedef struct {
-    int a_type;
-    union {
-        uint32_t a_val;
-    } a_un;
-} Elf32_auxv_t;
+    void    *user_ptr;
+    size_t   buffer_size;
+    size_t   data_size;
+    size_t   desc_n;
+    size_t   total_size;
+} syscall_input_buffer_t;
 
-typedef Elf32_auxv_t auxv_t;
+typedef struct {
+    void    *user_ptr;
+    size_t   buffer_size;
+} syscall_output_buffer_t;
+
+struct thread_t {
+    object_header_t          header;
+    thread_context_t         thread_ctx;
+    jinue_node_t             thread_list;
+    process_t               *process;
+    struct thread_t         *sender;
+    jinue_syscall_args_t    *message_args;
+    char                     message_buffer[JINUE_SEND_MAX_SIZE];
+};
+
+typedef struct thread_t thread_t;
+
+typedef struct {
+    object_header_t header;
+    jinue_list_t    send_list;
+    jinue_list_t    recv_list;
+} ipc_t;
 
 #endif

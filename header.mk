@@ -58,10 +58,10 @@ includes             = $(jinue_root)/include
 lib                  = $(jinue_root)/lib
 scripts              = $(jinue_root)/scripts
 
-hal_includes         = $(includes)/hal
 libc_includes        = $(includes)/libc
+kernel_includes	     = $(includes)/kernel
 libjinue             = $(lib)/jinue
-libc             	 = $(lib)/libc
+libc                 = $(lib)/libc
 
 # object files
 objects.c            = $(sources.c:%.c=%.o)
@@ -75,9 +75,9 @@ targets             ?= $(target)
 targets.all          = $(targets) $(targets.phony)
 
 # files to clean up
-unclean.build		 = $(objects) $(targets) $(objects:%.o=%.d) $(sources.nasm:%.asm=%.nasm)
+unclean.build        = $(objects) $(targets) $(objects:%.o=%.d) $(sources.nasm:%.asm=%.nasm)
 unclean.extra        =
-unclean				 = $(unclean.build) $(unclean.extra)
+unclean              = $(unclean.build) $(unclean.extra)
 unclean_recursive   ?=
 
 # debug/release build
@@ -98,7 +98,7 @@ endif
 # C preprocessor flags
 #
 # These flags are used when preprocessing C and assembly language files.
-CPPFLAGS.includes    = -I$(includes) -I$(libc_includes)
+CPPFLAGS.includes    = -I$(kernel_includes) -I$(libc_includes)
 CPPFLAGS.others      = -nostdinc
 CPPFLAGS             = $(CPPFLAGS.includes) $(CPPFLAGS.debug) $(CPPFLAGS.others) $(CPPFLAGS.extra)
 
@@ -120,10 +120,10 @@ NASMFLAGS.others     =
 NASMFLAGS            = $(NASMFLAGS.arch) $(NASMFLAGS.debug) $(NASMFLAGS.others) $(NASMFLAGS.extra)
 
 # strip utility flags
-STRIPFLAGS			= --strip-debug
+STRIPFLAGS           = --strip-debug
 
 # Automatic dependencies generation flags
-DEPFLAGS			 = -MT $@ -MD -MP -MF $*.d
+DEPFLAGS             = -MT $@ -MD -MP -MF $*.d
 
 # Add dependencies generation flags when compiling object files from C source code
 COMPILE.c = $(CC) $(DEPFLAGS) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c

@@ -29,52 +29,35 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/vm.h>
-#include <hal/asm/boot.h>
+#ifndef _JINUE_SHARED_ASM_VM_H
+#define _JINUE_SHARED_ASM_VM_H
 
-OUTPUT_FORMAT("elf32-i386", "elf32-i386", "elf32-i386")
-OUTPUT_ARCH("i386")
-ENTRY(_start)
+#include <jinue/shared/asm/types.h>
 
-SECTIONS {
-    . = KLIMIT + BOOT_SETUP32_SIZE + SIZEOF_HEADERS;
-    .text : {
-        *(.text)
-        *(.text.*)
-    }
-    
-    .rodata : {
-        *(.rodata)
-        *(.rodata.*)
-        
-        /* The kernel ELF binary file is loaded in memory (i.e. the whole file
-         * is copied as-is) and then executed with the assumption that memory
-         * offsets and file offsets are the same. The build process must ensure
-         * that this assumption holds.
-         * 
-         * For this to work, we must ensure that the end of the text section and
-         * the start of the data section are on different pages. */
-        . = ALIGN(PAGE_SIZE);
-    }
-    
-    .data : {
-        *(.data)
-        *(.data.*)
-        
-        /* Put uninitialized data in the .data section to ensure space is
-         * actually reserved for them in the file. */
-        *(.bss)
-        *(.bss.*)
-        
-        . = ALIGN(16);
-    }
-    
-    /* We must specifically not throw out the symbol table as the kernel uses
-     * it to display a useful call stack dump if it panics. */
-    .eh_frame           : { *(.eh_frame) }
-    .shstrtab           : { *(.shstrtab) }
-    .symtab             : { *(.symtab) }
-    .strtab             : { *(.strtab) }
-    .comment            : { *(.comment) }
-    .note.gnu.build-id  : { *(.note.gnu.build-id)}
-}
+/** number of bits in virtual address for offset inside page */
+#define PAGE_BITS               12
+
+/** size of page */
+#define PAGE_SIZE               (1<<PAGE_BITS) /* 4096 */
+
+/** bit mask for offset in page */
+#define PAGE_MASK               (PAGE_SIZE - 1)
+
+/** The virtual address range starting at KLIMIT is reserved by the kernel. The
+    region above KLIMIT has the same mapping in all address spaces. KLIMIT must
+    be aligned on a page directory boundary in PAE mode. */
+#define KLIMIT                  0xc0000000
+
+/** stack base address (stack top) */
+#define STACK_BASE              KLIMIT
+
+/** initial stack size */
+#define STACK_SIZE              (128 * KB)
+
+/** stack portion reserved for environment, arguments and auxiliary vectors */
+#define RESERVED_STACK_SIZE     (32 * KB)
+
+/** initial stack lower address */
+#define STACK_START             (STACK_BASE - STACK_SIZE)
+
+#endif

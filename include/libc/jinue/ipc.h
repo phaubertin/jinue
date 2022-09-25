@@ -29,52 +29,48 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/vm.h>
-#include <hal/asm/boot.h>
+#ifndef _JINUE_IPC_H_
+#define _JINUE_IPC_H_
 
-OUTPUT_FORMAT("elf32-i386", "elf32-i386", "elf32-i386")
-OUTPUT_ARCH("i386")
-ENTRY(_start)
+#include <jinue/shared/ipc.h>
+#include <stddef.h>
 
-SECTIONS {
-    . = KLIMIT + BOOT_SETUP32_SIZE + SIZEOF_HEADERS;
-    .text : {
-        *(.text)
-        *(.text.*)
-    }
-    
-    .rodata : {
-        *(.rodata)
-        *(.rodata.*)
-        
-        /* The kernel ELF binary file is loaded in memory (i.e. the whole file
-         * is copied as-is) and then executed with the assumption that memory
-         * offsets and file offsets are the same. The build process must ensure
-         * that this assumption holds.
-         * 
-         * For this to work, we must ensure that the end of the text section and
-         * the start of the data section are on different pages. */
-        . = ALIGN(PAGE_SIZE);
-    }
-    
-    .data : {
-        *(.data)
-        *(.data.*)
-        
-        /* Put uninitialized data in the .data section to ensure space is
-         * actually reserved for them in the file. */
-        *(.bss)
-        *(.bss.*)
-        
-        . = ALIGN(16);
-    }
-    
-    /* We must specifically not throw out the symbol table as the kernel uses
-     * it to display a useful call stack dump if it panics. */
-    .eh_frame           : { *(.eh_frame) }
-    .shstrtab           : { *(.shstrtab) }
-    .symtab             : { *(.symtab) }
-    .strtab             : { *(.strtab) }
-    .comment            : { *(.comment) }
-    .note.gnu.build-id  : { *(.note.gnu.build-id)}
-}
+typedef struct {
+    uintptr_t            function;
+    uintptr_t            cookie;
+    size_t               buffer_size;
+    size_t               data_size;
+    size_t               desc_n;
+} jinue_message_t;
+
+typedef struct {
+    size_t               data_size;
+    size_t               desc_n;
+} jinue_reply_t;
+
+int jinue_send(
+        int              function,
+        int              fd,
+        char            *buffer,
+        size_t           buffer_size,
+        size_t           data_size,
+        unsigned int     n_desc,
+        int             *perrno);
+
+int jinue_receive(
+        int              fd,
+        char            *buffer,
+        size_t           buffer_size,
+        jinue_message_t *message,
+        int             *perrno);
+
+int jinue_reply(
+        char            *buffer,
+        size_t           buffer_size,
+        size_t           data_size,
+        unsigned int     n_desc,
+        int             *perrno);
+
+int jinue_create_ipc_endpoint(int flags, int *perrno);
+
+#endif

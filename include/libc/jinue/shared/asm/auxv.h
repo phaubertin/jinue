@@ -29,52 +29,58 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/vm.h>
-#include <hal/asm/boot.h>
+#ifndef _JINUE_SHARED_ASM_AUXV_H
+#define _JINUE_SHARED_ASM_AUXV_H
 
-OUTPUT_FORMAT("elf32-i386", "elf32-i386", "elf32-i386")
-OUTPUT_ARCH("i386")
-ENTRY(_start)
+/** Last entry  */
+#define AT_NULL          0
 
-SECTIONS {
-    . = KLIMIT + BOOT_SETUP32_SIZE + SIZEOF_HEADERS;
-    .text : {
-        *(.text)
-        *(.text.*)
-    }
-    
-    .rodata : {
-        *(.rodata)
-        *(.rodata.*)
-        
-        /* The kernel ELF binary file is loaded in memory (i.e. the whole file
-         * is copied as-is) and then executed with the assumption that memory
-         * offsets and file offsets are the same. The build process must ensure
-         * that this assumption holds.
-         * 
-         * For this to work, we must ensure that the end of the text section and
-         * the start of the data section are on different pages. */
-        . = ALIGN(PAGE_SIZE);
-    }
-    
-    .data : {
-        *(.data)
-        *(.data.*)
-        
-        /* Put uninitialized data in the .data section to ensure space is
-         * actually reserved for them in the file. */
-        *(.bss)
-        *(.bss.*)
-        
-        . = ALIGN(16);
-    }
-    
-    /* We must specifically not throw out the symbol table as the kernel uses
-     * it to display a useful call stack dump if it panics. */
-    .eh_frame           : { *(.eh_frame) }
-    .shstrtab           : { *(.shstrtab) }
-    .symtab             : { *(.symtab) }
-    .strtab             : { *(.strtab) }
-    .comment            : { *(.comment) }
-    .note.gnu.build-id  : { *(.note.gnu.build-id)}
-}
+/** Ignore entry */
+#define AT_IGNORE        1
+
+/** Program file descriptor */
+#define AT_EXECFD        2
+
+/** Program headers address */
+#define AT_PHDR          3
+
+/** Size of program header entry */
+#define AT_PHENT         4
+
+/** Number of program header entries */
+#define AT_PHNUM         5
+
+/** Page size */
+#define AT_PAGESZ        6
+
+/** Base address */
+#define AT_BASE          7
+
+/** Flags */
+#define AT_FLAGS         8
+
+/** Program entry point */
+#define AT_ENTRY         9
+
+/** Data cache block size */
+#define AT_DCACHEBSIZE  10
+
+/** Instruction cache block size */
+#define AT_ICACHEBSIZE  11
+
+/** Unified cache block size */
+#define AT_UCACHEBSIZE  12
+
+/** Stack base address for main thread */
+#define AT_STACKBASE    13
+
+/** Machine-dependent processor feature flags */
+#define AT_HWCAP        16
+
+/** More machine-dependent processor feature flags */
+#define AT_HWCAP2       26
+
+/** Address of vDSO */
+#define AT_SYSINFO_EHDR 33
+
+#endif

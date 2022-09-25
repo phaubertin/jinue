@@ -29,52 +29,51 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/vm.h>
-#include <hal/asm/boot.h>
+#ifndef _JINUE_SHARED_IPC_H_
+#define _JINUE_SHARED_IPC_H_
 
-OUTPUT_FORMAT("elf32-i386", "elf32-i386", "elf32-i386")
-OUTPUT_ARCH("i386")
-ENTRY(_start)
+#include <jinue/shared/asm/ipc.h>
 
-SECTIONS {
-    . = KLIMIT + BOOT_SETUP32_SIZE + SIZEOF_HEADERS;
-    .text : {
-        *(.text)
-        *(.text.*)
-    }
-    
-    .rodata : {
-        *(.rodata)
-        *(.rodata.*)
-        
-        /* The kernel ELF binary file is loaded in memory (i.e. the whole file
-         * is copied as-is) and then executed with the assumption that memory
-         * offsets and file offsets are the same. The build process must ensure
-         * that this assumption holds.
-         * 
-         * For this to work, we must ensure that the end of the text section and
-         * the start of the data section are on different pages. */
-        . = ALIGN(PAGE_SIZE);
-    }
-    
-    .data : {
-        *(.data)
-        *(.data.*)
-        
-        /* Put uninitialized data in the .data section to ensure space is
-         * actually reserved for them in the file. */
-        *(.bss)
-        *(.bss.*)
-        
-        . = ALIGN(16);
-    }
-    
-    /* We must specifically not throw out the symbol table as the kernel uses
-     * it to display a useful call stack dump if it panics. */
-    .eh_frame           : { *(.eh_frame) }
-    .shstrtab           : { *(.shstrtab) }
-    .symtab             : { *(.symtab) }
-    .strtab             : { *(.strtab) }
-    .comment            : { *(.comment) }
-    .note.gnu.build-id  : { *(.note.gnu.build-id)}
+#include <jinue/shared/syscall.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#define JINUE_IPC_NONE      0
+
+#define JINUE_IPC_SYSTEM    (1<<0)
+
+#define JINUE_IPC_PROC      (1<<1)
+
+/* TBD */
+typedef int jinue_ipc_descriptor_t;
+
+
+static inline uintptr_t jinue_args_pack_buffer_size(size_t buffer_size) {
+    return JINUE_ARGS_PACK_BUFFER_SIZE((uintptr_t)buffer_size);
 }
+
+static inline uintptr_t jinue_args_pack_data_size(size_t data_size) {
+    return JINUE_ARGS_PACK_DATA_SIZE((uintptr_t)data_size);
+}
+
+static inline uintptr_t jinue_args_pack_n_desc(unsigned int n_desc) {
+    return JINUE_ARGS_PACK_N_DESC((uintptr_t)n_desc);
+}
+
+static inline char *jinue_args_get_buffer_ptr(const jinue_syscall_args_t *args) {
+    return (char *)(args->arg2);
+}
+
+static inline size_t jinue_args_get_buffer_size(const jinue_syscall_args_t *args) {
+    return ((size_t)(args->arg3) >> JINUE_SEND_BUFFER_SIZE_OFFSET) & JINUE_SEND_SIZE_MASK;
+}
+
+static inline size_t jinue_args_get_data_size(const jinue_syscall_args_t *args) {
+    return ((size_t)(args->arg3) >> JINUE_SEND_DATA_SIZE_OFFSET) & JINUE_SEND_SIZE_MASK;
+}
+
+static inline unsigned int jinue_args_get_n_desc(const jinue_syscall_args_t *args) {
+    return ((unsigned int)(args->arg3) >> JINUE_SEND_N_DESC_OFFSET) & JINUE_SEND_N_DESC_MASK;
+}
+
+#endif

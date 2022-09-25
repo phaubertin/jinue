@@ -29,52 +29,34 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/vm.h>
-#include <hal/asm/boot.h>
+#ifndef _JINUE_SHARED_SYSCALL_H
+#define _JINUE_SHARED_SYSCALL_H
 
-OUTPUT_FORMAT("elf32-i386", "elf32-i386", "elf32-i386")
-OUTPUT_ARCH("i386")
-ENTRY(_start)
+#include <jinue/shared/asm/syscall.h>
 
-SECTIONS {
-    . = KLIMIT + BOOT_SETUP32_SIZE + SIZEOF_HEADERS;
-    .text : {
-        *(.text)
-        *(.text.*)
-    }
-    
-    .rodata : {
-        *(.rodata)
-        *(.rodata.*)
-        
-        /* The kernel ELF binary file is loaded in memory (i.e. the whole file
-         * is copied as-is) and then executed with the assumption that memory
-         * offsets and file offsets are the same. The build process must ensure
-         * that this assumption holds.
-         * 
-         * For this to work, we must ensure that the end of the text section and
-         * the start of the data section are on different pages. */
-        . = ALIGN(PAGE_SIZE);
-    }
-    
-    .data : {
-        *(.data)
-        *(.data.*)
-        
-        /* Put uninitialized data in the .data section to ensure space is
-         * actually reserved for them in the file. */
-        *(.bss)
-        *(.bss.*)
-        
-        . = ALIGN(16);
-    }
-    
-    /* We must specifically not throw out the symbol table as the kernel uses
-     * it to display a useful call stack dump if it panics. */
-    .eh_frame           : { *(.eh_frame) }
-    .shstrtab           : { *(.shstrtab) }
-    .symtab             : { *(.symtab) }
-    .strtab             : { *(.strtab) }
-    .comment            : { *(.comment) }
-    .note.gnu.build-id  : { *(.note.gnu.build-id)}
+#include <stdint.h>
+
+typedef struct {
+    uintptr_t arg0;
+    uintptr_t arg1;
+    uintptr_t arg2;
+    uintptr_t arg3;
+} jinue_syscall_args_t;
+
+static inline uintptr_t jinue_get_return_uintptr(const jinue_syscall_args_t *args) {
+    return args->arg0;
 }
+
+static inline int jinue_get_return(const jinue_syscall_args_t *args) {
+    return (int)jinue_get_return_uintptr(args);
+}
+
+static inline void *jinue_get_return_ptr(const jinue_syscall_args_t *args) {
+    return (void *)jinue_get_return_uintptr(args);
+}
+
+static inline int jinue_get_error(const jinue_syscall_args_t *args) {
+    return (int)args->arg1;
+}
+
+#endif

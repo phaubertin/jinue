@@ -29,7 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue-common/types.h>
+#include <jinue/shared/types.h>
 #include <hal/abi.h>
 #include <hal/boot.h>
 #include <elf.h>

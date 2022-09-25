@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue-common/asm/e820.h>
-#include <jinue-common/errno.h>
+#include <jinue/shared/asm/e820.h>
+#include <jinue/shared/errno.h>
 #include <hal/boot.h>
 #include <hal/memory.h>
 #include <hal/vm.h>

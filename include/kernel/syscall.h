@@ -29,52 +29,35 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/vm.h>
-#include <hal/asm/boot.h>
+#ifndef JINUE_KERNEL_SYSCALL_H
+#define JINUE_KERNEL_SYSCALL_H
 
-OUTPUT_FORMAT("elf32-i386", "elf32-i386", "elf32-i386")
-OUTPUT_ARCH("i386")
-ENTRY(_start)
+#include <jinue/shared/syscall.h>
+#include <hal/types.h>
+#include <stdint.h>
 
-SECTIONS {
-    . = KLIMIT + BOOT_SETUP32_SIZE + SIZEOF_HEADERS;
-    .text : {
-        *(.text)
-        *(.text.*)
-    }
-    
-    .rodata : {
-        *(.rodata)
-        *(.rodata.*)
-        
-        /* The kernel ELF binary file is loaded in memory (i.e. the whole file
-         * is copied as-is) and then executed with the assumption that memory
-         * offsets and file offsets are the same. The build process must ensure
-         * that this assumption holds.
-         * 
-         * For this to work, we must ensure that the end of the text section and
-         * the start of the data section are on different pages. */
-        . = ALIGN(PAGE_SIZE);
-    }
-    
-    .data : {
-        *(.data)
-        *(.data.*)
-        
-        /* Put uninitialized data in the .data section to ensure space is
-         * actually reserved for them in the file. */
-        *(.bss)
-        *(.bss.*)
-        
-        . = ALIGN(16);
-    }
-    
-    /* We must specifically not throw out the symbol table as the kernel uses
-     * it to display a useful call stack dump if it panics. */
-    .eh_frame           : { *(.eh_frame) }
-    .shstrtab           : { *(.shstrtab) }
-    .symtab             : { *(.symtab) }
-    .strtab             : { *(.strtab) }
-    .comment            : { *(.comment) }
-    .note.gnu.build-id  : { *(.note.gnu.build-id)}
+static inline void syscall_args_set_return_uintptr(jinue_syscall_args_t *args, uintptr_t retval) {
+	args->arg0	= retval;
+	args->arg1	= 0;
+	args->arg2	= 0;
+	args->arg3	= 0;
 }
+
+static inline void syscall_args_set_return(jinue_syscall_args_t *args, int retval) {
+	syscall_args_set_return_uintptr(args, (uintptr_t)retval);
+}
+
+static inline void syscall_args_set_return_ptr(jinue_syscall_args_t *args, void *retval) {
+	syscall_args_set_return_uintptr(args, (uintptr_t)retval);
+}
+
+static inline void syscall_args_set_error(jinue_syscall_args_t *args, uintptr_t error) {
+	args->arg0	= (uintptr_t)-1;
+	args->arg1	= error;
+	args->arg2	= 0;
+	args->arg3	= 0;
+}
+
+void dispatch_syscall(trapframe_t *trapframe);
+
+#endif

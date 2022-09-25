@@ -29,52 +29,51 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/vm.h>
-#include <hal/asm/boot.h>
+#ifndef JINUE_HAL_VM_PRIVATE_H
+#define JINUE_HAL_VM_PRIVATE_H
 
-OUTPUT_FORMAT("elf32-i386", "elf32-i386", "elf32-i386")
-OUTPUT_ARCH("i386")
-ENTRY(_start)
+/** This header file contains private definitions shared by hal/vm.c, hal/vm_pae.c
+ * and hal/vm_x86.c. There should be no reason to include it anywhere else. */
 
-SECTIONS {
-    . = KLIMIT + BOOT_SETUP32_SIZE + SIZEOF_HEADERS;
-    .text : {
-        *(.text)
-        *(.text.*)
-    }
-    
-    .rodata : {
-        *(.rodata)
-        *(.rodata.*)
-        
-        /* The kernel ELF binary file is loaded in memory (i.e. the whole file
-         * is copied as-is) and then executed with the assumption that memory
-         * offsets and file offsets are the same. The build process must ensure
-         * that this assumption holds.
-         * 
-         * For this to work, we must ensure that the end of the text section and
-         * the start of the data section are on different pages. */
-        . = ALIGN(PAGE_SIZE);
-    }
-    
-    .data : {
-        *(.data)
-        *(.data.*)
-        
-        /* Put uninitialized data in the .data section to ensure space is
-         * actually reserved for them in the file. */
-        *(.bss)
-        *(.bss.*)
-        
-        . = ALIGN(16);
-    }
-    
-    /* We must specifically not throw out the symbol table as the kernel uses
-     * it to display a useful call stack dump if it panics. */
-    .eh_frame           : { *(.eh_frame) }
-    .shstrtab           : { *(.shstrtab) }
-    .symtab             : { *(.symtab) }
-    .strtab             : { *(.strtab) }
-    .comment            : { *(.comment) }
-    .note.gnu.build-id  : { *(.note.gnu.build-id)}
-}
+#include <jinue/shared/vm.h>
+#include <hal/vm.h>
+#include <hal/vm_pae.h>
+#include <hal/vm_x86.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <types.h>
+
+/** bit mask for page table or page directory offset */
+#define PAGE_TABLE_MASK (PAGE_TABLE_ENTRIES - 1)
+
+/** page table entry offset of virtual (linear) address */
+#define PAGE_TABLE_OFFSET_OF(x)     ( ((uint32_t)(x) / PAGE_SIZE) & PAGE_TABLE_MASK )
+
+/** page directory entry offset of virtual (linear address) */
+#define PAGE_DIRECTORY_OFFSET_OF(x) ( ((uint32_t)(x) / (PAGE_SIZE * PAGE_TABLE_ENTRIES)) & PAGE_TABLE_MASK )
+
+/** page is mapped but inaccessible (mprotect() PROT_NONE)
+ *
+ * This flag can be mixed with X86_PTE_xxx architectural page flags. Bit 11 is
+ * documented as "ignored" by architecture manual. */
+#define VM_PTE_PROT_NONE        (1<<11)
+
+extern pte_t *kernel_page_tables;
+
+extern size_t entries_per_page_table;
+
+extern bool pgtable_format_pae;
+
+pte_t *vm_initialize_page_table_linear(
+        pte_t       *page_table,
+        uint64_t     start_paddr,
+        uint64_t     flags,
+        int          num_entries);
+
+kern_paddr_t vm_clone_page_directory(
+        kern_paddr_t         template_paddr,
+        unsigned int         start_index);
+
+void vm_destroy_page_directory(void *page_directory, unsigned int last_index);
+
+#endif

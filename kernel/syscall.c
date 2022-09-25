@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue-common/errno.h>
-#include <jinue-common/vm.h>
+#include <jinue/shared/errno.h>
+#include <jinue/shared/vm.h>
 #include <hal/cpu_data.h>
 #include <hal/memory.h>
 #include <hal/thread.h>
