@@ -33,23 +33,12 @@
 #include <jinue/ipc.h>
 #include <jinue/syscall.h>
 #include <stdbool.h>
+#include "stubs.h"
 
-
-typedef void (*syscall_stub_t)(jinue_syscall_args_t *args);
-
-/* these are defined in stubs.asm */
-
-void syscall_fast_intel(jinue_syscall_args_t *args);
-
-void syscall_fast_amd(jinue_syscall_args_t *args);
-
-void syscall_intr(jinue_syscall_args_t *args);
-
-
-static syscall_stub_t syscall_stubs[] = {
-        [SYSCALL_METHOD_FAST_INTEL] = syscall_fast_intel,
-        [SYSCALL_METHOD_FAST_AMD]   = syscall_fast_amd,
-        [SYSCALL_METHOD_INTR]       = syscall_intr
+static jinue_syscall_stub_t syscall_stubs[] = {
+        [SYSCALL_METHOD_FAST_INTEL] = jinue_syscall_fast_intel,
+        [SYSCALL_METHOD_FAST_AMD]   = jinue_syscall_fast_amd,
+        [SYSCALL_METHOD_INTR]       = jinue_syscall_intr
 };
 
 static char *syscall_stub_names[] = {
@@ -58,13 +47,10 @@ static char *syscall_stub_names[] = {
         [SYSCALL_METHOD_INTR]       = "interrupt",
 };
 
-static int syscall_stub_index           = SYSCALL_METHOD_INTR;
-
-static syscall_stub_t syscall_stub_ptr  = syscall_intr;
-
+static int syscall_stub_index = SYSCALL_METHOD_INTR;
 
 void jinue_call_raw(jinue_syscall_args_t *args) {
-    syscall_stub_ptr(args);
+	syscall_stubs[syscall_stub_index](args);
 }
 
 int jinue_call(jinue_syscall_args_t *args, int *perrno) {
@@ -89,8 +75,7 @@ void jinue_get_syscall_implementation(void) {
 
     jinue_call_raw(&args);
 
-    syscall_stub_index  = jinue_get_return(&args);
-    syscall_stub_ptr    = syscall_stubs[syscall_stub_index];
+    syscall_stub_index = jinue_get_return(&args);
 }
 
 const char *jinue_get_syscall_implementation_name(void) {

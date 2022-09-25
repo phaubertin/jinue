@@ -34,8 +34,8 @@
 ; FUNCTION: syscall_fast_intel
 ; C PROTOTYPE: void syscall_fast_intel(jinue_syscall_args_t *args);
 ; ------------------------------------------------------------------------------
-    global syscall_fast_intel
-syscall_fast_intel:
+    global jinue_syscall_fast_intel
+jinue_syscall_fast_intel:
     ; System V ABI calling convention: these four registers must be preserved
     push ebx
     push esi
@@ -91,8 +91,8 @@ syscall_fast_intel:
 ; FUNCTION: syscall_fast_amd
 ; C PROTOTYPE: void syscall_fast_amd(jinue_syscall_args_t *args);
 ; ------------------------------------------------------------------------------
-    global syscall_fast_amd
-syscall_fast_amd:
+    global jinue_syscall_fast_amd
+jinue_syscall_fast_amd:
     ; System V ABI calling convention: these four registers must be preserved
     push ebx
     push esi
@@ -147,8 +147,8 @@ syscall_fast_amd:
 ; FUNCTION: syscall_intr
 ; C PROTOTYPE: void syscall_intr(jinue_syscall_args_t *args);
 ; ------------------------------------------------------------------------------
-    global syscall_intr
-syscall_intr:
+    global jinue_syscall_intr
+jinue_syscall_intr:
     ; System V ABI calling convention: these four registers must be preserved.
     push ebx
     push esi
