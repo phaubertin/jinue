@@ -1,4 +1,4 @@
-# Copyright (C) 2019 Philippe Aubertin.
+# Copyright (C) 2022 Philippe Aubertin.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,66 +27,29 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-jinue_root = ..
+jinue_root = ../..
 include $(jinue_root)/header.mk
 
-subdirs			 = hal
+sources.c        = \
+	assert-kernel.c \
+	getauxval.c \
+	getenv.c \
+	string.c
+sources.nasm     = crt.asm
 
-kernel_ldscript	 = $(scripts)/kernel.ld
-build_info_h     = build-info.gen.h
+target.user      = libc.a
+target.kernel    = libc-kernel.a
+targets          = $(target.user) $(target.kernel)
 
-LDFLAGS         += -T $(kernel_ldscript)
-
-kernel.hal    	 = hal/kern-hal.o
-kernel.lib    	 = $(libjinue)/libjinue-kernel.a
-c.lib            = $(libc)/libc-kernel.a
-
-target	 		 = kernel-stripped
-unclean.extra    = kernel $(build_info_h)
-sources.c		 = \
-	boot.c \
-	cmdline.c \
-	console.c \
-	debug.c \
-	elf.c \
-	ipc.c \
-	kbd.c \
-	kmain.c \
-	page_alloc.c \
-	panic.c \
-	process.c \
-	slab.c \
-	syscall.c \
-	thread.c \
-	vmalloc.c
-objects.extra	 = $(c.lib) $(kernel.hal) $(kernel.lib)
+objects.generic  = string.o
+objects.user     = crt.o getauxval.o getenv.o 
+objects.kernel   = assert-kernel.o
 
 include $(common)
 
-$(build_info_h): FORCE
-	$(scripts)/gen_build_info_h.sh > $@
-	
-kmain.o: kmain.c $(build_info_h)
+$(target.user): $(objects.generic) $(objects.user)
 
-kernel: $(objects) $(kernel_ldscript)
-	$(LINK.o) $(objects) $(LOADLIBES) $(LDLIBS) -o $@
+$(target.kernel): $(objects.generic) $(objects.kernel)
 
-$(target): kernel
-
-.PHONY: hal
-hal:
-	$(MAKE) -C $@
-
-.PHONY: libjinue
-libjinue:
-	$(MAKE) -C $(libjinue) all-kernel
-	
-.PHONY: libc
-libc:
-	$(MAKE) -C $(libc)
-
-$(c.lib): libc
-
-$(kernel.hal): hal
-
-$(kernel.lib): libjinue
+%.a:
+	ar rcs $@ $^

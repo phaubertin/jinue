@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2022 Philippe Aubertin.
+ * Copyright (C) 2019 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- *
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- *
+ * 
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- *
+ * 
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,23 +29,33 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue-common/elf.h>
-#include <jinue/getauxval.h>
-#include <stddef.h>
+#ifndef _JINUE_LIBC_STDINT_H
+#define _JINUE_LIBC_STDINT_H
 
-/* This is set by crt.asm. */
-const Elf32_auxv_t *jinue_auxvp = NULL;
+#define INT64_C(x)              (x##LL)
 
-uint32_t jinue_getauxval(int type) {
-    if(jinue_auxvp == NULL) {
-        return 0;
-    }
+#define UINT64_C(x)             (x##ULL)
 
-    for(const Elf32_auxv_t *entry = jinue_auxvp; entry->a_type != AT_NULL; ++entry) {
-        if(entry->a_type == type) {
-            return entry->a_un.a_val;
-        }
-    }
+typedef signed char             int8_t;
 
-    return 0;
-}
+typedef short int               int16_t;
+
+typedef int                     int32_t;
+
+typedef long long int           int64_t;
+
+
+typedef unsigned char           uint8_t;
+
+typedef unsigned short int      uint16_t;
+
+typedef unsigned int            uint32_t;
+
+typedef unsigned long long int  uint64_t;
+
+
+typedef int                     intptr_t;
+
+typedef unsigned int            uintptr_t;
+
+#endif

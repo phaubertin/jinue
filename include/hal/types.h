@@ -32,7 +32,7 @@
 #ifndef JINUE_HAL_TYPES_H
 #define JINUE_HAL_TYPES_H
 
-#include <jinue-common/elf.h>
+#include <sys/elf.h>
 #include <hal/asm/descriptors.h>
 #include <stdbool.h>
 #include <stddef.h>

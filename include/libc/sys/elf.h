@@ -29,10 +29,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_COMMON_ELF_H
-#define _JINUE_COMMON_ELF_H
+#ifndef _JINUE_LIBC_SYS_ELF_H
+#define _JINUE_LIBC_SYS_ELF_H
 
-#include <jinue-common/asm/elf.h>
+#include <jinue-common/asm/auxv.h>
+#include <sys/asm/elf.h>
 #include <stdint.h>
 
 typedef uint32_t Elf32_Addr;

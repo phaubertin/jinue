@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Philippe Aubertin.
+ * Copyright (C) 2019 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,15 +29,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_KSTDC_CTYPE_H
-#define _JINUE_KSTDC_CTYPE_H
+#ifndef _JINUE_LIBC_STDDEF_H
+#define _JINUE_LIBC_STDDEF_H
 
-static inline int isdigit(int c) {
-    return c >= '0' && c <= '9';
-}
+typedef signed long     ptrdiff_t;
+typedef unsigned long   size_t;
+typedef int             wchar_t;
 
-static inline int isxdigit(int c) {
-    return isdigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
-}
+#ifndef NULL
+#define NULL 0
+#endif
+
+#define offsetof(type, member) ( (size_t) &( ((type *)0)->member ) )
 
 #endif
+

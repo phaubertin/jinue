@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_COMMON_ASM_ELF_H
-#define JINUE_COMMON_ASM_ELF_H
+#ifndef _JINUE_LIBC_SYS_ASM_ELF_H
+#define _JINUE_LIBC_SYS_ASM_ELF_H
 
 /** Index of file identification - byte 0 */
 #define EI_MAG0          0
@@ -242,58 +242,6 @@
 #define PF_W            (1 << 1)
 
 #define PF_X            (1 << 0)
-
-
-/** Last entry  */
-#define AT_NULL          0
-
-/** Ignore entry */
-#define AT_IGNORE        1
-
-/** Program file descriptor */
-#define AT_EXECFD        2
-
-/** Program headers address */
-#define AT_PHDR          3
-
-/** Size of program header entry */
-#define AT_PHENT         4
-
-/** Number of program header entries */
-#define AT_PHNUM         5
-
-/** Page size */
-#define AT_PAGESZ        6
-
-/** Base address */
-#define AT_BASE          7
-
-/** Flags */
-#define AT_FLAGS         8
-
-/** Program entry point */
-#define AT_ENTRY         9
-
-/** Data cache block size */
-#define AT_DCACHEBSIZE  10
-
-/** Instruction cache block size */
-#define AT_ICACHEBSIZE  11
-
-/** Unified cache block size */
-#define AT_UCACHEBSIZE  12
-
-/** Stack base address for main thread */
-#define AT_STACKBASE    13
-
-/** Machine-dependent processor feature flags */
-#define AT_HWCAP        16
-
-/** More machine-dependent processor feature flags */
-#define AT_HWCAP2       26
-
-/** Address of vDSO */
-#define AT_SYSINFO_EHDR 33
 
 
 /** Offset of e_entry field in Elf32_Ehdr */

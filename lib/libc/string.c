@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2022 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,33 +29,67 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_KSTDC_STDINT_H
-#define _JINUE_KSTDC_STDINT_H
+#include <stdbool.h>
+#include <stddef.h>
 
-#define INT64_C(x)              (x##LL)
+void *memset(void *s, int c, size_t n) {
+    size_t   idx;
+    char    *cs = s;
 
-#define UINT64_C(x)             (x##ULL)
+    for(idx = 0; idx < n; ++idx) {
+        cs[idx] = c;
+    }
+    
+    return s;
+}
 
-typedef signed char             int8_t;
+void *memcpy(void *restrict dest, const void *restrict src, size_t n) {
+    size_t       idx;
+    char        *cdest  = dest;
+    const char  *csrc   = src;
 
-typedef short int               int16_t;
+    for(idx = 0; idx < n; ++idx) {
+        cdest[idx] = csrc[idx];
+    }
 
-typedef int                     int32_t;
+    return dest;
+}
 
-typedef long long int           int64_t;
+int strcmp(const char *s1, const char *s2) {
+    while(true) {
+        if(*s1 > *s2) {
+            return 1;
+        }
+        if(*s1 < *s2) {
+            return -1;
+        }
+        if(*s1 == '\0') {
+            return 0;
+        }
+        ++s1;
+        ++s2;
+    }
+}
 
+char *strcpy(char *restrict dest, const char *restrict src) {
+    size_t       idx;
+    char        *cdest  = dest;
+    const char  *csrc   = src;
 
-typedef unsigned char           uint8_t;
+    for(idx = 0; csrc[idx] != '\0'; ++idx) {
+        cdest[idx] = csrc[idx];
+    }
 
-typedef unsigned short int      uint16_t;
+    return dest;
+}
 
-typedef unsigned int            uint32_t;
+size_t strlen(const char *s) {
+    size_t count = 0;
 
-typedef unsigned long long int  uint64_t;
-
-
-typedef int                     intptr_t;
-
-typedef unsigned int            uintptr_t;
-
-#endif
+    while(*s != 0) {
+        ++s;
+        ++count;
+    }
+    
+    return count;
+}

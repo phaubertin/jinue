@@ -29,13 +29,19 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_KSTDC_STDBOOL_H
-#define _JINUE_KSTDC_STDBOOL_H
+#ifndef _JINUE_LIBC_STRING_H
+#define _JINUE_LIBC_STRING_H
 
-#define bool    _Bool
-#define true    1
-#define false   0
+#include <stddef.h>
 
-#define __bool_true_false_are_defined    1
+void *memset(void *s, int c, size_t n);
+
+void *memcpy(void *restrict dest, const void *restrict src, size_t n);
+
+int strcmp(const char *s1, const char *s2);
+
+char *strcpy(char *restrict dest, const char *restrict src);
+
+size_t strlen(const char *s);
 
 #endif

@@ -5,18 +5,18 @@
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,18 +29,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_KSTDC_STDDEF_H
-#define _JINUE_KSTDC_STDDEF_H
+#ifndef _JINUE_LIBC_STDLIB_H_
+#define _JINUE_LIBC_STDLIB_H_
 
-typedef signed long     ptrdiff_t;
-typedef unsigned long   size_t;
-typedef int             wchar_t;
+#include <stddef.h>
 
-#ifndef NULL
-#define NULL 0
-#endif
+#define EXIT_SUCCESS 0
 
-#define offsetof(type, member) ( (size_t) &( ((type *)0)->member ) )
+#define EXIT_FAILURE 1
+
+char *getenv(const char *name);
 
 #endif
-

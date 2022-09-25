@@ -29,7 +29,7 @@
 
 include header.mk
 
-subdirs              = boot doc kernel proc $(libjinue) $(scripts)
+subdirs              = boot doc kernel proc $(libc) $(libjinue) $(scripts)
 
 kernel               = kernel/kernel
 setup16              = boot/setup16.o

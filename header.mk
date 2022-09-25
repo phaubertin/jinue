@@ -59,8 +59,9 @@ lib                  = $(jinue_root)/lib
 scripts              = $(jinue_root)/scripts
 
 hal_includes         = $(includes)/hal
-kstdc_includes         = $(includes)/kstdc
+libc_includes        = $(includes)/libc
 libjinue             = $(lib)/jinue
+libc             	 = $(lib)/libc
 
 # object files
 objects.c            = $(sources.c:%.c=%.o)
@@ -97,7 +98,7 @@ endif
 # C preprocessor flags
 #
 # These flags are used when preprocessing C and assembly language files.
-CPPFLAGS.includes    = -I$(includes) -I$(includes)/kstdc
+CPPFLAGS.includes    = -I$(includes) -I$(libc_includes)
 CPPFLAGS.others      = -nostdinc
 CPPFLAGS             = $(CPPFLAGS.includes) $(CPPFLAGS.debug) $(CPPFLAGS.others) $(CPPFLAGS.extra)
 
