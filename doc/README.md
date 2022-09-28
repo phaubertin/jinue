@@ -5,6 +5,7 @@ This directory contains documentation.
 ## User Documents
 
 * [Kernel Command Line](cmdline.md)
+* [System Call Interface](syscall.md)
 
 ## Design/Developer Documents
 
