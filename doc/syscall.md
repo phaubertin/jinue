@@ -3,20 +3,20 @@
 ## Argument Registers
 
 During a system call, information is passed back and forth between user space
-and the microkernel through four pointer-sized logical registers called `arg0`
-to `arg3`.
+and the microkernel through the four pointer-sized logical registers `arg0` to
+`arg3`.
 
-When invoking a system call, `arg0` contains the system call number and `arg1`
-to `arg3` contain arguments for the call:
+When invoking a system call, `arg0` contains a function number that identifies
+the specific function being called. `arg1` to `arg3` contain arguments for the
+call. 
 
-* System call numbers 0 to 4095 included are reserved by the microkernel.
-* System call numbers 4096 and up all identify the Send Message system call. The
-system call number is passed to the recipient as part of the message.
-
-TODO arguments are not necessarily in arg1, then arg2, then arg3
+Function numbers 0 to 4095 inclusive are reserved by the microkernel for the
+functions it implements. Function numbers 4096 and up identify the Send Message
+system call. The function number is passed to the recipient as part of the
+message.
 
 On return from a system call, the contents of arg0 to arg3 depends on the
-system call number. Most *but not all* system calls follow the following
+function number. Most *but not all* system calls follow the following
 convention:
 
 * `arg0` contains a return value, which should be cast as a signed integer (C
@@ -94,7 +94,7 @@ This system call is not supported by all CPUs. It should only be used if the
 
 ### Get System Call Mechanism
 
-System call number: 1
+Function number: 1
 
 TODO
 
@@ -102,7 +102,7 @@ TODO
 
 ```
     +----------------------------------------------------------------+
-    |                        msgFunction = 1                         |  arg0
+    |                         function = 1                           |  arg0
     +----------------------------------------------------------------+
     31                                                               0
     
@@ -154,7 +154,7 @@ System call mechanism number:
 
 ### Write Character to Console
 
-System call number: 2
+Function number: 2
 
 TODO
 
@@ -162,7 +162,7 @@ TODO
 
 ```
     +----------------------------------------------------------------+
-    |                        msgFunction = 2                         |  arg0
+    |                         function = 2                           |  arg0
     +----------------------------------------------------------------+
     31                                                               0
     
@@ -208,7 +208,7 @@ TODO
 
 ### Write String to Console
 
-System call number: 3
+Function number: 3
 
 TODO
 
@@ -216,7 +216,7 @@ TODO
 
 ```
     +----------------------------------------------------------------+
-    |                        msgFunction = 3                         |  arg0
+    |                         function = 3                           |  arg0
     +----------------------------------------------------------------+
     31                                                               0
     
@@ -262,7 +262,7 @@ TODO
 
 ### Create a Thread
 
-System call number: 4
+Function number: 4
 
 TODO
 
@@ -270,7 +270,7 @@ TODO
 
 ```
     +----------------------------------------------------------------+
-    |                        msgFunction = 4                         |  arg0
+    |                         function = 4                           |  arg0
     +----------------------------------------------------------------+
     31                                                               0
     
@@ -316,7 +316,7 @@ TODO
 
 ### Yield From or Destroy Current Thread
 
-System call number: 5
+Function number: 5
 
 TODO
 
@@ -324,7 +324,7 @@ TODO
 
 ```
     +----------------------------------------------------------------+
-    |                        msgFunction = 5                         |  arg0
+    |                         function = 5                           |  arg0
     +----------------------------------------------------------------+
     31                                                               0
     
@@ -372,7 +372,7 @@ D: destroy or not
 
 ### Set Thread Local Storage Address
 
-System call number: 6
+Function number: 6
 
 TODO
 
@@ -380,7 +380,7 @@ TODO
 
 ```
     +----------------------------------------------------------------+
-    |                        msgFunction = 6                         |  arg0
+    |                         function = 6                           |  arg0
     +----------------------------------------------------------------+
     31                                                               0
     
@@ -426,7 +426,7 @@ TODO
 
 ### Get Thread Local Storage Address
 
-System call number: 7
+Function number: 7
 
 TODO
 
@@ -434,7 +434,7 @@ TODO
 
 ```
     +----------------------------------------------------------------+
-    |                        msgFunction = 7                         |  arg0
+    |                         function = 7                           |  arg0
     +----------------------------------------------------------------+
     31                                                               0
     
@@ -480,7 +480,7 @@ TODO
 
 ### Get Memory Map
 
-System call number: 8
+Function number: 8
 
 TODO
 
@@ -488,7 +488,7 @@ TODO
 
 ```
     +----------------------------------------------------------------+
-    |                        msgFunction = 8                         |  arg0
+    |                         function = 8                           |  arg0
     +----------------------------------------------------------------+
     31                                                               0
     
@@ -534,7 +534,7 @@ TODO
 
 ### Create IPC Endpoint
 
-System call number: 9
+Function number: 9
 
 TODO
 
@@ -542,7 +542,7 @@ TODO
 
 ```
     +----------------------------------------------------------------+
-    |                        msgFunction = 9                         |  arg0
+    |                         function = 9                           |  arg0
     +----------------------------------------------------------------+
     31                                                               0
     
@@ -588,7 +588,7 @@ TODO
 
 ### Receive Message
 
-System call number: 10
+Function number: 10
 
 TODO
 
@@ -598,7 +598,7 @@ Receive system call arguments (passed in registers):
 
 ```
     +----------------------------------------------------------------+
-    |                         msgFunction = 10                       |  arg0
+    |                          function = 10                         |  arg0
     +----------------------------------------------------------------+
     31                                                               0
     
@@ -620,7 +620,7 @@ Receive system call arguments (passed in registers):
 
 Where:
 
-    msgFunction     is the system call number for RECEIVE.
+    msgFunction     is the function number for RECEIVE.
     msgRecvDesc     is the descriptor for the door from which to receive a
                     message. It must be the owning descriptor for this door.
     msgPtr          is address of the start of the buffer in which to receive
@@ -673,7 +673,7 @@ Where:
 
 ### Reply to Message
 
-System call number: 11
+Function number: 11
 
 TODO
 
@@ -683,7 +683,7 @@ When replying, the receiver sets the message arguments as follow:
 
 ```
     +----------------------------------------------------------------+
-    |                       msgFunction = 11                         |  arg0
+    |                        function = 11                           |  arg0
     +----------------------------------------------------------------+
     31                                                               0
     
@@ -705,7 +705,7 @@ When replying, the receiver sets the message arguments as follow:
 
 Where:
 
-    msgFunction     is the system call number for REPLY or REPLY/RECEIVE
+    msgFunction     is the function number for REPLY or REPLY/RECEIVE
     msgPtr          is the address of the start of the reply message buffer. It
                     may or may not be the buffer where the message being replied
                     to was received. For a combined REPLY/RECEIVE, this is also
@@ -721,7 +721,7 @@ TODO
 
 ### Send Message
 
-System call number: 4096 and up
+Function number: 4096 and up
 
 TODO
 
@@ -753,7 +753,7 @@ Send message arguments (passed in registers):
 
 Where:
     
-    msgFunction     is the function or system call number.
+    msgFunction     is the function number.
     msgTargetDesc   is the descriptor for the target of the call (door, thread).
     msgPtr          is address of the start of the message buffer.
     msgTotalSize    is the total size of the buffer, in bytes.
