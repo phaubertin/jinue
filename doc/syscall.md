@@ -98,6 +98,8 @@ System call number: 1
 
 TODO
 
+#### Arguments
+
 ```
     +----------------------------------------------------------------+
     |                        msgFunction = 1                         |  arg0
@@ -119,6 +121,8 @@ TODO
     +----------------------------------------------------------------+
     31                                                               0
 ```
+
+#### Return Value
 
 ```
     +----------------------------------------------------------------+
@@ -154,6 +158,8 @@ System call number: 2
 
 TODO
 
+#### Arguments
+
 ```
     +----------------------------------------------------------------+
     |                        msgFunction = 2                         |  arg0
@@ -175,6 +181,8 @@ TODO
     +----------------------------------------------------------------+
     31                                                               0
 ```
+
+#### Return Value
 
 ```
     +----------------------------------------------------------------+
@@ -204,6 +212,8 @@ System call number: 3
 
 TODO
 
+#### Arguments
+
 ```
     +----------------------------------------------------------------+
     |                        msgFunction = 3                         |  arg0
@@ -225,6 +235,8 @@ TODO
     +-----------------------+------------------------+---------------+
     31                    20 19                     8 7              0
 ```
+
+#### Return Value
 
 ```
     +----------------------------------------------------------------+
@@ -254,6 +266,8 @@ System call number: 4
 
 TODO
 
+#### Arguments
+
 ```
     +----------------------------------------------------------------+
     |                        msgFunction = 4                         |  arg0
@@ -275,6 +289,8 @@ TODO
     +----------------------------------------------------------------+
     31                                                               0
 ```
+
+#### Return Value
 
 ```
     +----------------------------------------------------------------+
@@ -304,6 +320,8 @@ System call number: 5
 
 TODO
 
+#### Arguments
+
 ```
     +----------------------------------------------------------------+
     |                        msgFunction = 5                         |  arg0
@@ -325,6 +343,8 @@ TODO
     +----------------------------------------------------------------+
     31                                                               0
 ```
+
+#### Return Value
 
 ```
     +----------------------------------------------------------------+
@@ -356,6 +376,8 @@ System call number: 6
 
 TODO
 
+#### Arguments
+
 ```
     +----------------------------------------------------------------+
     |                        msgFunction = 6                         |  arg0
@@ -377,6 +399,8 @@ TODO
     +----------------------------------------------------------------+
     31                                                               0
 ```
+
+#### Return Value
 
 ```
     +----------------------------------------------------------------+
@@ -406,6 +430,8 @@ System call number: 7
 
 TODO
 
+#### Arguments
+
 ```
     +----------------------------------------------------------------+
     |                        msgFunction = 7                         |  arg0
@@ -427,6 +453,8 @@ TODO
     +----------------------------------------------------------------+
     31                                                               0
 ```
+
+#### Return Value
 
 ```
     +----------------------------------------------------------------+
@@ -456,6 +484,8 @@ System call number: 8
 
 TODO
 
+#### Arguments
+
 ```
     +----------------------------------------------------------------+
     |                        msgFunction = 8                         |  arg0
@@ -477,6 +507,8 @@ TODO
     +-----------------------+----------------------------------------+
     31                    20 19                                      0
 ```
+
+#### Return Value
 
 ```
     +----------------------------------------------------------------+
@@ -506,6 +538,8 @@ System call number: 9
 
 TODO
 
+#### Arguments
+
 ```
     +----------------------------------------------------------------+
     |                        msgFunction = 9                         |  arg0
@@ -527,6 +561,8 @@ TODO
     +----------------------------------------------------------------+
     31                                                               0
 ```
+
+#### Return Value
 
 ```
     +----------------------------------------------------------------+
@@ -555,6 +591,8 @@ TODO
 System call number: 10
 
 TODO
+
+#### Arguments
 
 Receive system call arguments (passed in registers):
 
@@ -590,7 +628,9 @@ Where:
     msgTotalSize    is the total size of the receive buffer, in bytes.
     msgDescN        is the number of descriptors. All descriptor must be
                     specified with the JINUE_DESC_RECEIVE attribute flag.
-                    
+
+#### Return Value
+             
 When the RECEIVE or REPLY/RECEIVE system call returns, the arguments provided by
 the microkernel are as follow:
 
@@ -637,6 +677,8 @@ System call number: 11
 
 TODO
 
+#### Arguments
+
 When replying, the receiver sets the message arguments as follow:
 
 ```
@@ -673,11 +715,17 @@ Where:
     msgDataSize     is the size of the message data, in bytes.
     msgDescN        is the number of descriptors.
 
+#### Return Value
+
+TODO
+
 ### Send Message
 
 System call number: 4096 and up
 
 TODO
+
+#### Arguments
 
 Send message arguments (passed in registers):
 
@@ -711,6 +759,8 @@ Where:
     msgTotalSize    is the total size of the buffer, in bytes.
     msgDataSize     is the size of the message data, in bytes.
     msgDescN        is the number of descriptors.
+
+#### Return Value
     
 When the send primitive returns to the original caller, the arguments provided
 by the microkernel are as follow:
