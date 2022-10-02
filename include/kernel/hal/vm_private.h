@@ -32,9 +32,6 @@
 #ifndef JINUE_HAL_VM_PRIVATE_H
 #define JINUE_HAL_VM_PRIVATE_H
 
-/** This header file contains private definitions shared by hal/vm.c, hal/vm_pae.c
- * and hal/vm_x86.c. There should be no reason to include it anywhere else. */
-
 #include <jinue/shared/vm.h>
 #include <hal/vm.h>
 #include <hal/vm_pae.h>
@@ -43,14 +40,17 @@
 #include <stdint.h>
 #include <types.h>
 
+/** This header file contains private definitions shared by hal/vm.c, hal/vm_pae.c
+ *  and hal/vm_x86.c. There should be no reason to include it anywhere else. */
+
 /** bit mask for page table or page directory offset */
 #define PAGE_TABLE_MASK (PAGE_TABLE_ENTRIES - 1)
 
 /** page table entry offset of virtual (linear) address */
-#define PAGE_TABLE_OFFSET_OF(x)     ( ((uint32_t)(x) / PAGE_SIZE) & PAGE_TABLE_MASK )
+#define PAGE_TABLE_OFFSET_OF(x)     ( ((uintptr_t)(x) / PAGE_SIZE) & PAGE_TABLE_MASK )
 
 /** page directory entry offset of virtual (linear address) */
-#define PAGE_DIRECTORY_OFFSET_OF(x) ( ((uint32_t)(x) / (PAGE_SIZE * PAGE_TABLE_ENTRIES)) & PAGE_TABLE_MASK )
+#define PAGE_DIRECTORY_OFFSET_OF(x) ( ((uintptr_t)(x) / (PAGE_SIZE * PAGE_TABLE_ENTRIES)) & PAGE_TABLE_MASK )
 
 extern pte_t *kernel_page_tables;
 

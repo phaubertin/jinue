@@ -87,7 +87,10 @@
  * The architecture manual documents this bit as ignored. The kernel uses it to
  * represent a present entry that cannot be read, which cannot be represented
  * otherwise. When this bit is set, X86_PTE_PRESENT is not, which ensures the
- * page cannot be read. */
+ * page cannot be read.
+ *
+ * This flag is only used for page table entries. Some code assumes this bit is
+ * not set in page directory entries. See pte_is_present(). */
 #define X86_PTE_PROT_NONE        	(1<<11)
 
 /** do not execute bit */

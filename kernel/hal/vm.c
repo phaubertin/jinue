@@ -45,17 +45,46 @@
 #include <util.h>
 #include <vmalloc.h>
 
+/* This file contains memory management code that is independent of whether
+ * Physical Address Extension (PAE) is enabled or not. The PAE code is in the
+ * vm_pae.c file. Non-PAE code is in the vm_x86.c file.
+ *
+ * Type "pte_t *" is a pointer on a page table or page directory entry. Such
+ * pointers might point to a 32-bit (non-PAE) entry or a 64-bit (PAE) entry and,
+ * for this reason, should not be referenced in this file. Page table/page
+ * directory entries should only be manipulated through the PAE or non-PAE
+ * functions, as appropriate depending on whether PAE is enabled or not. */
 
+/** Kernel page tables
+ *
+ * During kernel initialization, kernel page tables are pre-allocated
+ * sequentially so, in essence, this pointer points to one big page table that
+ * covers the whole part of the address space that belongs to the kernel. */
 pte_t *kernel_page_tables;
 
-pte_t *kernel_page_directories;
-
+/** Number of entries per page tables
+ *
+ * 1024 (4kB / 4 bytes per entry) if PAE is disabled.
+ *  512 (4kB / 8 bytes per entry) if PAE is enabled. */
 size_t entries_per_page_table;
 
+/** true if PAE is enabled, false otherwise */
 bool pgtable_format_pae;
 
+/** First address space created during kernel initialization.
+ *
+ * This address space is used as a template for kernel page tables/directories
+ * when creating new address spaces. */
 static addr_space_t initial_addr_space;
 
+/**
+ * Get page table entry (PTE) at specified entry offset from specified PTE
+ *
+ * @param pte base page table entry (e.g. the beginning of a page table)
+ * @param offset entry offset
+ * @return PTE at specified offset
+ *
+ */
 static pte_t *get_pte_with_offset(pte_t *pte, unsigned int offset) {
     if(pgtable_format_pae) {
         return vm_pae_get_pte_with_offset(pte, offset);
@@ -65,6 +94,17 @@ static pte_t *get_pte_with_offset(pte_t *pte, unsigned int offset) {
     }
 }
 
+/**
+ * Get page table entry (PTE) at specified entry offset from specified PTE
+ *
+ * This function does the same thing as get_pte_with_offset() except it expects
+ * and returns a const pointer.
+ *
+ * @param pte base page table entry (e.g. the beginning of a page table)
+ * @param offset entry offset
+ * @return PTE at specified offset
+ *
+ */
 static inline const pte_t *get_pte_with_offset_const(
         const pte_t     *pte,
         unsigned int     offset) {
@@ -72,6 +112,13 @@ static inline const pte_t *get_pte_with_offset_const(
     return get_pte_with_offset((pte_t *)pte, offset);
 }
 
+/**
+ * Get entry offset of specified virtual address within page table
+ *
+ * @param addr virtual address
+ * @return entry offset of address within page table
+ *
+ */
 static unsigned int page_table_offset_of(void *addr) {
     if(pgtable_format_pae) {
         return vm_pae_page_table_offset_of(addr);
@@ -81,6 +128,13 @@ static unsigned int page_table_offset_of(void *addr) {
     }
 }
 
+/**
+ * Get entry offset of specified virtual address within page directory
+ *
+ * @param addr virtual address
+ * @return entry offset of address within page directory
+ *
+ */
 static unsigned int page_directory_offset_of(void *addr) {
     if(pgtable_format_pae) {
         return vm_pae_page_directory_offset_of(addr);
@@ -90,7 +144,18 @@ static unsigned int page_directory_offset_of(void *addr) {
     }
 }
 
-static void set_pte_flags(pte_t *pte, int flags) {
+/**
+ * Set protection and other flags on specified page table entry
+ *
+ * The appropriate flags for this function are the architecture-dependent flags,
+ * i.e. those defined by the X86_PTE_... constants. See map_page_access_flags()
+ * for additional context.
+ *
+ * @param pte page table entry
+ * @param pte flags flags
+ *
+ */
+static void set_pte_flags(pte_t *pte, uint64_t flags) {
     if(pgtable_format_pae) {
         vm_pae_set_pte_flags(pte, flags);
     }
@@ -99,6 +164,13 @@ static void set_pte_flags(pte_t *pte, int flags) {
     }
 }
 
+/**
+ * Copy a page table or page directory entry
+ *
+ * @param dest destination page table/directory entry
+ * @param src source page table/directory entry
+ *
+ */
 static void copy_pte(pte_t *dest, const pte_t *src) {
     if(pgtable_format_pae) {
         vm_pae_copy_pte(dest, src);
@@ -108,6 +180,14 @@ static void copy_pte(pte_t *dest, const pte_t *src) {
     }
 }
 
+/**
+ * Copy an array of page table or page directory entries
+ *
+ * @param dest destination array
+ * @param src source array
+ * @param n number of entries to copy
+ *
+ */
 void copy_ptes(pte_t *dest, const pte_t *src, int n) {
     for(int idx = 0; idx < n; ++idx) {
         copy_pte(
@@ -116,7 +196,16 @@ void copy_ptes(pte_t *dest, const pte_t *src, int n) {
     }
 }
 
+/**
+ * Whether the specified page table or directory entry maps a page present in memory
+ *
+ * @param pte page table or page directory entry
+ * @return true if page is present in memory, false otherwise
+ *
+ */
 static bool pte_is_present(const pte_t *pte) {
+	/* TODO performance micro-optimization: we don't need this here because X86
+	 * is little endian. */
     if(pgtable_format_pae) {
         return vm_pae_pte_is_present(pte);
     }
@@ -125,6 +214,18 @@ static bool pte_is_present(const pte_t *pte) {
     }
 }
 
+/**
+ * Set page frame address and flags of the specified page table/directory entry
+ *
+ * The appropriate flags for this function are the architecture-dependent flags,
+ * i.e. those defined by the X86_PTE_... constants. See map_page_access_flags()
+ * for additional context.
+ *
+ * @param pte page table or page directory entry
+ * @param paddr physical address of page frame
+ * @param flags flags
+ *
+ */
 static void set_pte(pte_t *pte, user_paddr_t paddr, uint64_t flags) {
     if(pgtable_format_pae) {
         vm_pae_set_pte(pte, paddr, flags);
@@ -134,6 +235,15 @@ static void set_pte(pte_t *pte, user_paddr_t paddr, uint64_t flags) {
     }
 }
 
+/**
+ * Clear page table or page directory entry
+ *
+ * Once clear, the entry no longer refers to anything and is not considered
+ * present in memory.
+ *
+ * @param pte page table or page directory entry
+ *
+ */
 static void clear_pte(pte_t *pte) {
     if(pgtable_format_pae) {
         vm_pae_clear_pte(pte);
@@ -143,12 +253,29 @@ static void clear_pte(pte_t *pte) {
     }
 }
 
+/**
+ * Clear and array of page table or page directory entries
+ *
+ * Once clear, the entries no longer refer to anything and are not considered
+ * present in memory.
+ *
+ * @param pte page table or page directory entry array
+ * @param n number of entries to clear
+ *
+ */
 void clear_ptes(pte_t *pte, int n) {
     for(int idx = 0; idx < n; ++idx) {
         clear_pte(get_pte_with_offset(pte, idx));
     }
 }
 
+/**
+ * Get the physical address set in a page table or page directory entry
+ *
+ * @param pte page table or page directory entry array
+ * @return physical address
+ *
+ */
 static user_paddr_t get_pte_paddr(const pte_t *pte) {
     if(pgtable_format_pae) {
         return vm_pae_get_pte_paddr(pte);
@@ -158,6 +285,13 @@ static user_paddr_t get_pte_paddr(const pte_t *pte) {
     }
 }
 
+/**
+ * Initialize virtual memory management to not use PAE
+ *
+ * During initialization, the kernel either calls this function or calls
+ * vm_pae_enable() to enable PAE.
+ *
+ */
 void vm_set_no_pae(void) {
     pgtable_format_pae      = false;
     entries_per_page_table  = VM_X86_PAGE_TABLE_PTES;
@@ -281,7 +415,6 @@ addr_space_t *vm_create_initial_addr_space(
     initialize_initial_page_directories(page_directories, page_tables, num_page_tables);
 
     kernel_page_tables      = (pte_t *)PHYS_TO_VIRT_AT_16MB(page_tables);
-    kernel_page_directories = (pte_t *)PHYS_TO_VIRT_AT_16MB(page_directories);
 
     if(pgtable_format_pae) {
         vm_pae_create_initial_addr_space(
@@ -557,6 +690,19 @@ static void invalidate_mapping(
     }
 }
 
+/**
+ * Translate architecture-independent protection flags to architecture-dependent flags
+ *
+ * Argument should be either VM_MAP_NONE (no access) or any combination of
+ * VM_MAP_READ, VM_MAP_WRITE and/or VM_MAP_EXEC.
+ *
+ * Return value is a combination of architecture-dependent flags appropriate to
+ * be set directly in a page table entry (i.e. the X86_PTE_... constants).
+ *
+ * @param pte flags architecture-independent protection flags
+ * @return architecture-dependent flags
+ *
+ */
 static uint64_t map_page_access_flags(int flags) {
     const int rwe_mask = VM_MAP_READ | VM_MAP_WRITE | VM_MAP_EXEC;
 

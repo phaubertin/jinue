@@ -43,6 +43,10 @@
 #include <util.h>
 #include <vmalloc.h>
 
+/* This file contains Physical Address Extension (PAE) memory management code.
+ * Non-PAE code is located in vm_x86.c. Virtual memory management code
+ * independent of PAE is located in vm.c. */
+
 /** number of address bits that encode the PDPT offset */
 #define PDPT_BITS               2
 
@@ -469,39 +473,118 @@ pte_t *vm_pae_lookup_page_directory(
     return page_directory;
 }
 
+/**
+ * Get entry offset of specified virtual address within page table
+ *
+ * @param addr virtual address
+ * @return entry offset of address within page table
+ *
+ */
 unsigned int vm_pae_page_table_offset_of(void *addr) {
     return PAGE_TABLE_OFFSET_OF(addr);
 }
 
+/**
+ * Get entry offset of specified virtual address within page directory
+ *
+ * @param addr virtual address
+ * @return entry offset of address within page directory
+ *
+ */
 unsigned int vm_pae_page_directory_offset_of(void *addr) {
     return PAGE_DIRECTORY_OFFSET_OF(addr);
 }
 
+/**
+ * Get page table entry (PTE) at specified entry offset from specified PTE
+ *
+ * @param pte base page table entry (e.g. the beginning of a page table)
+ * @param offset entry offset
+ * @return PTE at specified offset
+ *
+ */
 pte_t *vm_pae_get_pte_with_offset(pte_t *pte, unsigned int offset) {
     return &pte[offset];
 }
 
+/**
+ * Whether the specified page table or directory entry maps a page present in memory
+ *
+ * @param pte page table or page directory entry
+ * @return true if page is present in memory, false otherwise
+ *
+ */
 bool vm_pae_pte_is_present(const pte_t *pte) {
+	/* Warning: this function will break for page directory entries if bit 11 is
+	 * ever assigned. Currently, bit 11 is used for X86_PTE_PROT_NONE in page
+	 * table entries and is unused and assumed to be zero in page directory
+	 * entries. */
     return !!( pte->entry & (X86_PTE_PRESENT | X86_PTE_PROT_NONE));
 }
 
+/**
+ * Set page frame address and flags of the specified page table/directory entry
+ *
+ * The appropriate flags for this function are the architecture-dependent flags,
+ * i.e. those defined by the X86_PTE_... constants. See map_page_access_flags()
+ * for additional context.
+ *
+ * @param pte page table or page directory entry
+ * @param paddr physical address of page frame
+ * @param flags flags
+ *
+ */
 void vm_pae_set_pte(pte_t *pte, uint64_t paddr, uint64_t flags) {
     assert((paddr & ~page_frame_number_mask) == 0);
     pte->entry = paddr | flags;
 }
 
+/**
+ * Set protection and other flags on specified page table entry
+ *
+ * The appropriate flags for this function are the architecture-dependent flags,
+ * i.e. those defined by the X86_PTE_... constants. See map_page_access_flags()
+ * for additional context.
+ *
+ * @param pte page table entry
+ * @param pte flags flags
+ *
+ */
 void vm_pae_set_pte_flags(pte_t *pte, uint64_t flags) {
     pte->entry = (pte->entry & page_frame_number_mask) | flags;
 }
 
+/**
+ * Get the physical address set in a page table or page directory entry
+ *
+ * @param pte page table or page directory entry array
+ * @return physical address
+ *
+ */
 uint64_t vm_pae_get_pte_paddr(const pte_t *pte) {
     return (pte->entry & page_frame_number_mask);
 }
 
+/**
+ * Clear page table or page directory entry
+ *
+ * Once clear, the entry no longer refers to anything and is not considered
+ * present in memory.
+ *
+ * @param pte page table or page directory entry
+ *
+ */
 void vm_pae_clear_pte(pte_t *pte) {
     pte->entry = 0;
 }
 
+/**
+ * Copy a page table or page directory entry
+ *
+ * @param dest destination page table/directory entry
+ * @param src source page table/directory entry
+ *
+ */
 void vm_pae_copy_pte(pte_t *dest, const pte_t *src) {
     dest->entry = src->entry;
 }
