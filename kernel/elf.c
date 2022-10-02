@@ -42,8 +42,8 @@
 #include <util.h>
 
 static bool check_failed(const char *message) {
-	printk("Invalid ELF binary: %s", message);
-	return false;
+    printk("Invalid ELF binary: %s", message);
+    return false;
 }
 
 /**
@@ -63,47 +63,47 @@ bool elf_check(Elf32_Ehdr *elf) {
     
     /* check: 32-bit objects */
     if(elf->e_ident[EI_CLASS] != ELFCLASS32) {
-    	return check_failed("bad file class");
+        return check_failed("bad file class");
     }
     
     /* check: endianess */
     if(elf->e_ident[EI_DATA] != ELFDATA2LSB) {
-    	return check_failed("bad endianess");
+        return check_failed("bad endianess");
     }
     
     /* check: version */
     if(elf->e_version != 1 || elf->e_ident[EI_VERSION] != 1) {
-    	return check_failed("not ELF version 1");
+        return check_failed("not ELF version 1");
     }
     
     /* check: machine */
     if(elf->e_machine != EM_386) {
-    	return check_failed("not for x86 architecture");
+        return check_failed("not for x86 architecture");
     }
     
     /* check: the 32-bit Intel architecture defines no flags */
     if(elf->e_flags != 0) {
-    	return check_failed("invalid flags");
+        return check_failed("invalid flags");
     }
     
     /* check: file type is executable */
     if(elf->e_type != ET_EXEC) {
-    	return check_failed("not an an executable");
+        return check_failed("not an an executable");
     }
     
     /* check: must have a program header */
     if(elf->e_phoff == 0 || elf->e_phnum == 0) {
-    	return check_failed("no program headers");
+        return check_failed("no program headers");
     }
     
     /* check: must have an entry point */
     if(elf->e_entry == 0) {
-    	return check_failed("no entry point");
+        return check_failed("no entry point");
     }
     
     /* check: program header entry size */
     if(elf->e_phentsize != sizeof(Elf32_Phdr)) {
-    	return check_failed("unsupported program header size");
+        return check_failed("unsupported program header size");
     }
 
     return true;
@@ -161,7 +161,7 @@ void elf_load(
         boot_alloc_t    *boot_alloc) {
     
     /* get the program header table */
-    Elf32_Phdr *phdr    = (Elf32_Phdr *)((char *)elf + elf->e_phoff);
+    Elf32_Phdr *phdr = (Elf32_Phdr *)((char *)elf + elf->e_phoff);
     
     info->at_phdr       = (addr_t)phdr;
     info->at_phnum      = elf->e_phnum;

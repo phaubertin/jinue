@@ -51,7 +51,7 @@
 
 static Elf32_Ehdr *get_kernel_elf_header(const boot_info_t *boot_info) {
     if(boot_info->kernel_start == NULL) {
-    	panic("malformed boot image: no kernel ELF binary");
+        panic("malformed boot image: no kernel ELF binary");
     }
 
     if(boot_info->kernel_size < sizeof(Elf32_Ehdr)) {
@@ -59,7 +59,7 @@ static Elf32_Ehdr *get_kernel_elf_header(const boot_info_t *boot_info) {
     }
 
     if(! elf_check(boot_info->kernel_start)) {
-    	panic("kernel ELF binary is invalid");
+        panic("kernel ELF binary is invalid");
     }
 
     return boot_info->kernel_start;
@@ -77,7 +77,7 @@ static Elf32_Ehdr *get_userspace_loader_elf_header(const boot_info_t *boot_info)
     printk("Found user space loader with size %u bytes.\n", boot_info->proc_size);
 
     if(! elf_check(boot_info->proc_start)) {
-    	panic("user space loader ELF binary is invalid");
+        panic("user space loader ELF binary is invalid");
     }
 
     return boot_info->proc_start;
