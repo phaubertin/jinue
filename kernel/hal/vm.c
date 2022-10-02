@@ -352,14 +352,14 @@ static void initialize_initial_page_tables(
     vm_initialize_page_table_linear(
             vm_pae_get_pte_with_offset(page_tables, offset),
             boot_info->data_physaddr + MEMORY_ADDR_16MB - MEMORY_ADDR_1MB,
-            X86_PTE_READ_WRITE | X86_PTE_GLOBAL,
+            X86_PTE_GLOBAL | X86_PTE_READ_WRITE,
             boot_info->data_size / PAGE_SIZE);
 
     /* map rest of region read/write */
     vm_initialize_page_table_linear(
             next_pte_after_image,
             MEMORY_ADDR_16MB + image_size,
-            X86_PTE_READ_WRITE | X86_PTE_GLOBAL,
+            X86_PTE_GLOBAL | X86_PTE_READ_WRITE,
             BOOT_SIZE_AT_16MB / PAGE_SIZE - image_pages);
 }
 
