@@ -135,7 +135,7 @@ void kmain(void) {
     Elf32_Ehdr *kernel = get_kernel_elf_header(boot_info);
 
     /* initialize the hardware abstraction layer */
-    hal_init(&boot_alloc, boot_info, kernel, cmdline_opts);
+    hal_init(kernel, cmdline_opts, &boot_alloc, boot_info);
 
     /* initialize caches */
     ipc_boot_init();

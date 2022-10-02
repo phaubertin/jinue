@@ -244,10 +244,10 @@ static void select_syscall_method(void) {
 }
 
 void hal_init(
-        boot_alloc_t            *boot_alloc,
-        const boot_info_t       *boot_info,
         Elf32_Ehdr              *kernel_elf,
-        const cmdline_opts_t    *cmdline_opts) {
+        const cmdline_opts_t    *cmdline_opts,
+        boot_alloc_t            *boot_alloc,
+        const boot_info_t       *boot_info) {
 
     cpu_detect_features();
 
