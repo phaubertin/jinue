@@ -41,6 +41,17 @@
 #include <string.h>
 #include <util.h>
 
+/**
+ * Print validation error message and return false
+ *
+ * Utility function used by elf_check(). Prints an error message. Returns false
+ * so it can be used by the caller to print the message and return false in
+ * one statement.
+ *
+ * @param elf ELF header, which is at the very beginning of the ELF binary
+ * @return always false
+ *
+ * */
 static bool check_failed(const char *message) {
     printk("Invalid ELF binary: %s", message);
     return false;
@@ -50,6 +61,7 @@ static bool check_failed(const char *message) {
  * Check the validity of an ELF binary
  *
  * @param elf ELF header, which is at the very beginning of the ELF binary
+ * @return true if ELF binary is valid, false otherwise
  *
  * */
 bool elf_check(Elf32_Ehdr *elf) {
@@ -134,6 +146,33 @@ static void checked_map_userspace(
     if(! vm_map_userspace(addr_space, vaddr, paddr, flags)) {
         panic("Page table allocation error when loading ELF file");
     }
+}
+
+/**
+ * Get program header for executable segment
+ *
+ * This function leads to a kernel panic if the mapping fails because a
+ * translation table could not be allocated.
+ *
+ * @param elf ELF header
+ * @return program header if found, NULL otherwise
+ *
+ * */
+const Elf32_Phdr *elf_executable_program_header(const Elf32_Ehdr *elf) {
+    /* get the program header table */
+    Elf32_Phdr *phdr = (Elf32_Phdr *)((char *)elf + elf->e_phoff);
+
+    for(int idx = 0; idx < elf->e_phnum; ++idx) {
+        if(phdr[idx].p_type != PT_LOAD) {
+            continue;
+        }
+
+        if(phdr[idx].p_flags & PF_X) {
+            return &phdr[idx];
+        }
+    }
+
+    return NULL;
 }
 
 /**

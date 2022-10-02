@@ -259,7 +259,10 @@ void hal_init(
 
     move_kernel_at_16mb(boot_info);
 
-    bool pae_enabled = maybe_enable_pae(boot_alloc, boot_info, cmdline_opts);
+    bool pae_enabled = maybe_enable_pae(
+            boot_alloc,
+            boot_info,
+            cmdline_opts);
 
     /* Re-initialize the boot page allocator to allocate following the kernel
      * image at 16MB rather than at 1MB, now that the kernel has been moved
@@ -275,7 +278,9 @@ void hal_init(
      * We need to ensure that the Task State Segment (TSS) contained in this
      * memory block does not cross a page boundary. */
     assert(sizeof(cpu_data_t) < CPU_DATA_ALIGNMENT);
-    cpu_data_t *cpu_data = boot_heap_alloc(boot_alloc, cpu_data_t, CPU_DATA_ALIGNMENT);
+    cpu_data_t *cpu_data = boot_heap_alloc(
+            boot_alloc,
+            cpu_data_t, CPU_DATA_ALIGNMENT);
     
     /* initialize per-CPU data */
     cpu_init_data(cpu_data);
@@ -290,7 +295,10 @@ void hal_init(
     /* Initialize programmable interrupt_controller. */
     pic8259_init(IDT_PIC8259_BASE);
 
-    addr_space_t *addr_space = vm_create_initial_addr_space(boot_alloc, boot_info);
+    addr_space_t *addr_space = vm_create_initial_addr_space(
+            kernel_elf,
+            boot_alloc,
+            boot_info);
 
     memory_initialize_array(boot_alloc, boot_info);
 

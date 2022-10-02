@@ -38,7 +38,10 @@
 #include <hal/x86.h>
 #include <assert.h>
 #include <boot.h>
+#include <elf.h>
 #include <page_alloc.h>
+#include <panic.h>
+#include <printk.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -334,32 +337,56 @@ void vm_write_protect_kernel_image(const boot_info_t *boot_info) {
 
 static void initialize_initial_page_tables(
         pte_t               *page_tables,
+        Elf32_Ehdr          *kernel_elf,
         const boot_info_t   *boot_info) {
 
     size_t image_size  = (char *)boot_info->image_top - (char *)boot_info->image_start;
     size_t image_pages = image_size / PAGE_SIZE;
 
-    /* map kernel image read only */
+    /* TODO this won't work.
+     *
+     * "If IA32_EFER.NXE = 0 and the P flag of a PDE or a PTE is 1, the XD flag
+     * (bit 63) is reserved"
+     *
+     * Arch manual volume 2, section 4.4.2.
+     * */
+
+    /* map kernel image read only, not executable */
     pte_t *next_pte_after_image = vm_initialize_page_table_linear(
             page_tables,
             MEMORY_ADDR_16MB,
-            X86_PTE_GLOBAL,
+            X86_PTE_GLOBAL /*| X86_PTE_NX*/,
             image_pages);
 
+    /* Map kernel data segment executable */
+    const Elf32_Phdr *phdr = elf_executable_program_header(kernel_elf);
+
+    if(phdr == NULL) {
+        panic("could not find kernel executable segment");
+    }
+
+    size_t code_offset = ((uintptr_t)phdr->p_vaddr - KLIMIT) / PAGE_SIZE;
+
+    /*vm_initialize_page_table_linear(
+            vm_pae_get_pte_with_offset(page_tables, code_offset),
+            phdr->p_vaddr + MEMORY_ADDR_16MB - KLIMIT,
+            X86_PTE_GLOBAL,
+            phdr->p_memsz / PAGE_SIZE);*/
+
     /* map kernel data segment */
-    size_t offset = ((uintptr_t)boot_info->data_start - KLIMIT) / PAGE_SIZE;
+    size_t data_offset = ((uintptr_t)boot_info->data_start - KLIMIT) / PAGE_SIZE;
 
     vm_initialize_page_table_linear(
-            vm_pae_get_pte_with_offset(page_tables, offset),
+            vm_pae_get_pte_with_offset(page_tables, data_offset),
             boot_info->data_physaddr + MEMORY_ADDR_16MB - MEMORY_ADDR_1MB,
-            X86_PTE_GLOBAL | X86_PTE_READ_WRITE,
+            X86_PTE_GLOBAL | X86_PTE_READ_WRITE /* | X86_PTE_NX */,
             boot_info->data_size / PAGE_SIZE);
 
     /* map rest of region read/write */
     vm_initialize_page_table_linear(
             next_pte_after_image,
             MEMORY_ADDR_16MB + image_size,
-            X86_PTE_GLOBAL | X86_PTE_READ_WRITE,
+            X86_PTE_GLOBAL | X86_PTE_READ_WRITE /*| X86_PTE_NX*/,
             BOOT_SIZE_AT_16MB / PAGE_SIZE - image_pages);
 }
 
@@ -378,6 +405,7 @@ static void initialize_initial_page_directories(
 }
 
 addr_space_t *vm_create_initial_addr_space(
+        Elf32_Ehdr          *kernel_elf,
         boot_alloc_t        *boot_alloc,
         const boot_info_t   *boot_info) {
 
@@ -393,7 +421,7 @@ addr_space_t *vm_create_initial_addr_space(
     pte_t *page_tables      = boot_page_alloc_n(boot_alloc, num_page_tables);
     pte_t *page_directories = boot_page_alloc_n(boot_alloc, num_page_dirs);
 
-    initialize_initial_page_tables(page_tables, boot_info);
+    initialize_initial_page_tables(page_tables, kernel_elf, boot_info);
     initialize_initial_page_directories(page_directories, page_tables, num_page_tables);
 
     kernel_page_tables      = (pte_t *)PHYS_TO_VIRT_AT_16MB(page_tables);
