@@ -119,21 +119,6 @@ pte_t *vm_x86_get_pte_with_offset(pte_t *pte, unsigned int offset) {
 }
 
 /**
- * Whether the specified page table or directory entry maps a page present in memory
- *
- * @param pte page table or page directory entry
- * @return true if page is present in memory, false otherwise
- *
- */
-bool vm_x86_pte_is_present(const pte_t *pte) {
-	/* Warning: this function will break for page directory entries if bit 11 is
-	 * ever assigned. Currently, bit 11 is used for X86_PTE_PROT_NONE in page
-	 * table entries and is unused and assumed to be zero in page directory
-	 * entries. */
-    return !!( pte->entry & (X86_PTE_PRESENT | X86_PTE_PROT_NONE));
-}
-
-/**
  * Filter out architecture-dependent flags
  *
  * This function filters out flags that are only relevant for PAE entries

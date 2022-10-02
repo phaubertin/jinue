@@ -197,24 +197,6 @@ void copy_ptes(pte_t *dest, const pte_t *src, int n) {
 }
 
 /**
- * Whether the specified page table or directory entry maps a page present in memory
- *
- * @param pte page table or page directory entry
- * @return true if page is present in memory, false otherwise
- *
- */
-static bool pte_is_present(const pte_t *pte) {
-	/* TODO performance micro-optimization: we don't need this here because X86
-	 * is little endian. */
-    if(pgtable_format_pae) {
-        return vm_pae_pte_is_present(pte);
-    }
-    else {
-        return vm_x86_pte_is_present(pte);
-    }
-}
-
-/**
  * Set page frame address and flags of the specified page table/directory entry
  *
  * The appropriate flags for this function are the architecture-dependent flags,

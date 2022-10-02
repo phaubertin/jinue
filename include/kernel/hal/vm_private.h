@@ -70,4 +70,24 @@ kern_paddr_t vm_clone_page_directory(
 
 void vm_destroy_page_directory(void *page_directory, unsigned int last_index);
 
+/**
+ * Whether the specified page table/directory entry maps a page present in memory
+ *
+ * @param pte page table or page directory entry
+ * @return true if page is present in memory, false otherwise
+ *
+ */
+static inline bool pte_is_present(const pte_t *pte) {
+	/* Micro-optimization: both flags we are interested in are in the lower four
+	 * bytes of the page table entry and at the same position whether this is
+	 * a PAE or non-PAE entry. Since x86 is little-endian, we don't need to care
+	 * whether the full entry is 4 or 8 bytes.
+	 *
+	 * Warning: this function will break for page directory entries if bit 11 is
+	 * ever assigned. Currently, bit 11 is used for X86_PTE_PROT_NONE in page
+	 * table entries and is unused and assumed to be zero in page directory
+	 * entries. */
+    return !!( *(const uint32_t *)pte & (X86_PTE_PRESENT | X86_PTE_PROT_NONE));
+}
+
 #endif

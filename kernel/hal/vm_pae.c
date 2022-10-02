@@ -387,7 +387,7 @@ void vm_pae_destroy_addr_space(addr_space_t *addr_space) {
     for(unsigned int idx = 0; idx < pdpt_offset_of((void *)KLIMIT); ++idx) {
         pte_t *pdpte = &pdpt->pd[idx];
 
-        if(vm_pae_pte_is_present(pdpte)) {
+        if(pte_is_present(pdpte)) {
             vm_destroy_page_directory(
                     memory_lookup_page(vm_pae_get_pte_paddr(pdpte)),
                     entries_per_page_table);
@@ -414,7 +414,7 @@ void vm_pae_destroy_addr_space(addr_space_t *addr_space) {
     if(klimit_offset > 0) {
         pte_t *pdpte = &pdpt->pd[pdpt_offset_of((void *)KLIMIT)];
 
-        assert(vm_pae_pte_is_present(pdpte));
+        assert(pte_is_present(pdpte));
 
         vm_destroy_page_directory(
                 memory_lookup_page(vm_pae_get_pte_paddr(pdpte)),
@@ -446,7 +446,7 @@ pte_t *vm_pae_lookup_page_directory(
     pdpt_t *pdpt    = addr_space->top_level.pdpt;
     pte_t  *pdpte   = &pdpt->pd[pdpt_offset_of(addr)];
     
-    if(vm_pae_pte_is_present(pdpte)) {
+    if(pte_is_present(pdpte)) {
         return memory_lookup_page(vm_pae_get_pte_paddr(pdpte));
     }
 
@@ -505,21 +505,6 @@ unsigned int vm_pae_page_directory_offset_of(void *addr) {
  */
 pte_t *vm_pae_get_pte_with_offset(pte_t *pte, unsigned int offset) {
     return &pte[offset];
-}
-
-/**
- * Whether the specified page table or directory entry maps a page present in memory
- *
- * @param pte page table or page directory entry
- * @return true if page is present in memory, false otherwise
- *
- */
-bool vm_pae_pte_is_present(const pte_t *pte) {
-	/* Warning: this function will break for page directory entries if bit 11 is
-	 * ever assigned. Currently, bit 11 is used for X86_PTE_PROT_NONE in page
-	 * table entries and is unused and assumed to be zero in page directory
-	 * entries. */
-    return !!( pte->entry & (X86_PTE_PRESENT | X86_PTE_PROT_NONE));
 }
 
 /**
