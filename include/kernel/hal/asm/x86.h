@@ -53,7 +53,9 @@
 #define X86_CR4_PGE                 (1<<7)
 
 
-/** page is present in memory */
+/** page is present in memory and readable
+ *
+ * See also X86_PTE_PROT_NONE. */
 #define X86_PTE_PRESENT             (1<< 0)
 
 /** page is read/write accessible */
@@ -79,6 +81,14 @@
 
 /** page is global (mapped in every address space) */
 #define X86_PTE_GLOBAL              (1<< 8)
+
+/** page is mapped but inaccessible (i.e. mmap()/mprotect() with PROT_NONE)
+ *
+ * The architecture manual documents this bit as ignored. The kernel uses it to
+ * represent a present entry that cannot be read, which cannot be represented
+ * otherwise. When this bit is set, X86_PTE_PRESENT is not, which ensures the
+ * page cannot be read. */
+#define X86_PTE_PROT_NONE        	(1<<11)
 
 /** do not execute bit */
 #define X86_PTE_NX                  (UINT64_C(1)<< 63)

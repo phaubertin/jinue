@@ -482,7 +482,7 @@ pte_t *vm_pae_get_pte_with_offset(pte_t *pte, unsigned int offset) {
 }
 
 bool vm_pae_pte_is_present(const pte_t *pte) {
-    return !!( pte->entry & (X86_PTE_PRESENT | VM_PTE_PROT_NONE));
+    return !!( pte->entry & (X86_PTE_PRESENT | X86_PTE_PROT_NONE));
 }
 
 void vm_pae_set_pte(pte_t *pte, uint64_t paddr, uint64_t flags) {

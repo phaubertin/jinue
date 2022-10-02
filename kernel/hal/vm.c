@@ -561,7 +561,7 @@ static uint64_t map_page_access_flags(int flags) {
     const int rwe_mask = VM_MAP_READ | VM_MAP_WRITE | VM_MAP_EXEC;
 
     if(! (flags & rwe_mask)) {
-        return VM_PTE_PROT_NONE;
+        return X86_PTE_PROT_NONE;
     }
 
     int mapped_flags = X86_PTE_PRESENT;

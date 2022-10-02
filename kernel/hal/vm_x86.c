@@ -93,7 +93,7 @@ pte_t *vm_x86_get_pte_with_offset(pte_t *pte, unsigned int offset) {
 }
 
 bool vm_x86_pte_is_present(const pte_t *pte) {
-    return !!( pte->entry & (X86_PTE_PRESENT | VM_PTE_PROT_NONE));
+    return !!( pte->entry & (X86_PTE_PRESENT | X86_PTE_PROT_NONE));
 }
 
 static uint32_t filter_pte_flags(uint64_t flags) {
