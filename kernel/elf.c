@@ -41,65 +41,72 @@
 #include <string.h>
 #include <util.h>
 
+static bool check_failed(const char *message) {
+	printk("Invalid ELF binary: %s", message);
+	return false;
+}
+
 /**
  * Check the validity of an ELF binary
  *
  * @param elf ELF header, which is at the very beginning of the ELF binary
  *
  * */
-void elf_check(Elf32_Ehdr *elf) {
+bool elf_check(Elf32_Ehdr *elf) {
     /* check: valid ELF binary magic number */
     if(     elf->e_ident[EI_MAG0] != ELF_MAGIC0 ||
             elf->e_ident[EI_MAG1] != ELF_MAGIC1 ||
             elf->e_ident[EI_MAG2] != ELF_MAGIC2 ||
             elf->e_ident[EI_MAG3] != ELF_MAGIC3 ) {
-        panic("Not an ELF binary");
+        return check_failed("not an ELF binary (ELF identification/magic check)");
     }
     
     /* check: 32-bit objects */
     if(elf->e_ident[EI_CLASS] != ELFCLASS32) {
-        panic("Bad file class");
+    	return check_failed("bad file class");
     }
     
     /* check: endianess */
     if(elf->e_ident[EI_DATA] != ELFDATA2LSB) {
-        panic("Bad endianess");
+    	return check_failed("bad endianess");
     }
     
     /* check: version */
     if(elf->e_version != 1 || elf->e_ident[EI_VERSION] != 1) {
-        panic("Not ELF version 1");
+    	return check_failed("not ELF version 1");
     }
     
     /* check: machine */
     if(elf->e_machine != EM_386) {
-        panic("This process manager binary does not target the x86 architecture");
+    	return check_failed("not for x86 architecture");
     }
     
     /* check: the 32-bit Intel architecture defines no flags */
     if(elf->e_flags != 0) {
-        panic("Invalid flags specified");
+    	return check_failed("invalid flags");
     }
     
     /* check: file type is executable */
     if(elf->e_type != ET_EXEC) {
-        panic("process manager binary is not an an executable");
+    	return check_failed("not an an executable");
     }
     
     /* check: must have a program header */
     if(elf->e_phoff == 0 || elf->e_phnum == 0) {
-        panic("No program headers");
+    	return check_failed("no program headers");
     }
     
     /* check: must have an entry point */
     if(elf->e_entry == 0) {
-        panic("No entry point for process manager");
+    	return check_failed("no entry point");
     }
     
     /* check: program header entry size */
     if(elf->e_phentsize != sizeof(Elf32_Phdr)) {
-        panic("Unsupported program header size");
+    	return check_failed("unsupported program header size");
     }
+
+    return true;
 }
 
 /**
@@ -153,11 +160,8 @@ void elf_load(
         addr_space_t    *addr_space,
         boot_alloc_t    *boot_alloc) {
     
-    /* check that ELF binary is valid */
-    elf_check(elf);
-    
     /* get the program header table */
-    Elf32_Phdr * phdr   = (Elf32_Phdr *)((char *)elf + elf->e_phoff);
+    Elf32_Phdr *phdr    = (Elf32_Phdr *)((char *)elf + elf->e_phoff);
     
     info->at_phdr       = (addr_t)phdr;
     info->at_phnum      = elf->e_phnum;

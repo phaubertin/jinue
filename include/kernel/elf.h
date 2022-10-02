@@ -64,7 +64,7 @@ static inline const Elf32_Shdr *elf_get_section_header(const Elf32_Ehdr *elf_hea
 }
 
 
-void elf_check(Elf32_Ehdr *elf);
+bool elf_check(Elf32_Ehdr *elf);
 
 void elf_load(
         elf_info_t      *info,
