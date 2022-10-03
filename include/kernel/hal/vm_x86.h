@@ -56,8 +56,6 @@ pte_t *vm_x86_lookup_page_directory(addr_space_t *addr_space);
 
 pte_t *vm_x86_get_pte_with_offset(pte_t *pte, unsigned int offset);
 
-bool vm_x86_pte_is_present(const pte_t *pte);
-
 void vm_x86_set_pte(pte_t *pte, uint32_t paddr, uint64_t flags);
 
 void vm_x86_set_pte_flags(pte_t *pte, uint64_t flags);
