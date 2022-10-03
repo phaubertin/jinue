@@ -220,7 +220,7 @@ static void select_syscall_method(void) {
         syscall_method = SYSCALL_METHOD_FAST_AMD;
 
         msrval  = rdmsr(MSR_EFER);
-        msrval |= MSR_FLAG_STAR_SCE;
+        msrval |= MSR_FLAG_EFER_SCE;
         wrmsr(MSR_EFER, msrval);
 
         msrval  = (uint64_t)(uintptr_t)fast_amd_entry;
@@ -244,9 +244,11 @@ static void select_syscall_method(void) {
 }
 
 void hal_init(
+        Elf32_Ehdr              *kernel_elf,
+        const cmdline_opts_t    *cmdline_opts,
         boot_alloc_t            *boot_alloc,
-        const boot_info_t       *boot_info,
-        const cmdline_opts_t    *cmdline_opts) {
+        const boot_info_t       *boot_info) {
+
     cpu_detect_features();
 
     check_data_segment(boot_info);
@@ -257,7 +259,10 @@ void hal_init(
 
     move_kernel_at_16mb(boot_info);
 
-    bool pae_enabled = maybe_enable_pae(boot_alloc, boot_info, cmdline_opts);
+    bool pae_enabled = maybe_enable_pae(
+            boot_alloc,
+            boot_info,
+            cmdline_opts);
 
     /* Re-initialize the boot page allocator to allocate following the kernel
      * image at 16MB rather than at 1MB, now that the kernel has been moved
@@ -273,7 +278,9 @@ void hal_init(
      * We need to ensure that the Task State Segment (TSS) contained in this
      * memory block does not cross a page boundary. */
     assert(sizeof(cpu_data_t) < CPU_DATA_ALIGNMENT);
-    cpu_data_t *cpu_data = boot_heap_alloc(boot_alloc, cpu_data_t, CPU_DATA_ALIGNMENT);
+    cpu_data_t *cpu_data = boot_heap_alloc(
+            boot_alloc,
+            cpu_data_t, CPU_DATA_ALIGNMENT);
     
     /* initialize per-CPU data */
     cpu_init_data(cpu_data);
@@ -288,7 +295,10 @@ void hal_init(
     /* Initialize programmable interrupt_controller. */
     pic8259_init(IDT_PIC8259_BASE);
 
-    addr_space_t *addr_space = vm_create_initial_addr_space(boot_alloc, boot_info);
+    addr_space_t *addr_space = vm_create_initial_addr_space(
+            kernel_elf,
+            boot_alloc,
+            boot_info);
 
     memory_initialize_array(boot_alloc, boot_info);
 

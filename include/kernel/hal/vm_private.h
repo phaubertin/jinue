@@ -32,9 +32,6 @@
 #ifndef JINUE_HAL_VM_PRIVATE_H
 #define JINUE_HAL_VM_PRIVATE_H
 
-/** This header file contains private definitions shared by hal/vm.c, hal/vm_pae.c
- * and hal/vm_x86.c. There should be no reason to include it anywhere else. */
-
 #include <jinue/shared/vm.h>
 #include <hal/vm.h>
 #include <hal/vm_pae.h>
@@ -43,20 +40,17 @@
 #include <stdint.h>
 #include <types.h>
 
+/** This header file contains private definitions shared by hal/vm.c, hal/vm_pae.c
+ *  and hal/vm_x86.c. There should be no reason to include it anywhere else. */
+
 /** bit mask for page table or page directory offset */
 #define PAGE_TABLE_MASK (PAGE_TABLE_ENTRIES - 1)
 
 /** page table entry offset of virtual (linear) address */
-#define PAGE_TABLE_OFFSET_OF(x)     ( ((uint32_t)(x) / PAGE_SIZE) & PAGE_TABLE_MASK )
+#define PAGE_TABLE_OFFSET_OF(x)     ( ((uintptr_t)(x) / PAGE_SIZE) & PAGE_TABLE_MASK )
 
 /** page directory entry offset of virtual (linear address) */
-#define PAGE_DIRECTORY_OFFSET_OF(x) ( ((uint32_t)(x) / (PAGE_SIZE * PAGE_TABLE_ENTRIES)) & PAGE_TABLE_MASK )
-
-/** page is mapped but inaccessible (mprotect() PROT_NONE)
- *
- * This flag can be mixed with X86_PTE_xxx architectural page flags. Bit 11 is
- * documented as "ignored" by architecture manual. */
-#define VM_PTE_PROT_NONE        (1<<11)
+#define PAGE_DIRECTORY_OFFSET_OF(x) ( ((uintptr_t)(x) / (PAGE_SIZE * PAGE_TABLE_ENTRIES)) & PAGE_TABLE_MASK )
 
 extern pte_t *kernel_page_tables;
 
@@ -75,5 +69,25 @@ kern_paddr_t vm_clone_page_directory(
         unsigned int         start_index);
 
 void vm_destroy_page_directory(void *page_directory, unsigned int last_index);
+
+/**
+ * Whether the specified page table/directory entry maps a page present in memory
+ *
+ * @param pte page table or page directory entry
+ * @return true if page is present in memory, false otherwise
+ *
+ */
+static inline bool pte_is_present(const pte_t *pte) {
+    /* Micro-optimization: both flags we are interested in are in the lower four
+     * bytes of the page table entry and at the same position whether this is
+     * a PAE or non-PAE entry. Since x86 is little-endian, we don't need to care
+     * whether the full entry is 4 or 8 bytes.
+     *
+     * Warning: this function will break for page directory entries if bit 11 is
+     * ever assigned. Currently, bit 11 is used for X86_PTE_PROT_NONE in page
+     * table entries and is unused and assumed to be zero in page directory
+     * entries. */
+    return !!( *(const uint32_t *)pte & (X86_PTE_PRESENT | X86_PTE_PROT_NONE));
+}
 
 #endif
