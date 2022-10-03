@@ -343,22 +343,21 @@ static void initialize_initial_page_tables(
     size_t image_size  = (char *)boot_info->image_top - (char *)boot_info->image_start;
     size_t image_pages = image_size / PAGE_SIZE;
 
-    /* TODO this won't work.
-     *
-     * "If IA32_EFER.NXE = 0 and the P flag of a PDE or a PTE is 1, the XD flag
-     * (bit 63) is reserved"
-     *
-     * Arch manual volume 2, section 4.4.2.
-     * */
-
     /* map kernel image read only, not executable */
     pte_t *next_pte_after_image = vm_initialize_page_table_linear(
             page_tables,
             MEMORY_ADDR_16MB,
-            X86_PTE_GLOBAL /*| X86_PTE_NX*/,
+            X86_PTE_GLOBAL | X86_PTE_NX,
             image_pages);
 
-    /* Map kernel data segment executable */
+    /* map rest of region read/write */
+    vm_initialize_page_table_linear(
+            next_pte_after_image,
+            MEMORY_ADDR_16MB + image_size,
+            X86_PTE_GLOBAL | X86_PTE_READ_WRITE | X86_PTE_NX,
+            BOOT_SIZE_AT_16MB / PAGE_SIZE - image_pages);
+
+    /* make kernel code segment executable */
     const Elf32_Phdr *phdr = elf_executable_program_header(kernel_elf);
 
     if(phdr == NULL) {
@@ -367,11 +366,11 @@ static void initialize_initial_page_tables(
 
     size_t code_offset = ((uintptr_t)phdr->p_vaddr - KLIMIT) / PAGE_SIZE;
 
-    /*vm_initialize_page_table_linear(
+    vm_initialize_page_table_linear(
             vm_pae_get_pte_with_offset(page_tables, code_offset),
             phdr->p_vaddr + MEMORY_ADDR_16MB - KLIMIT,
             X86_PTE_GLOBAL,
-            phdr->p_memsz / PAGE_SIZE);*/
+            phdr->p_memsz / PAGE_SIZE);
 
     /* map kernel data segment */
     size_t data_offset = ((uintptr_t)boot_info->data_start - KLIMIT) / PAGE_SIZE;
@@ -379,15 +378,8 @@ static void initialize_initial_page_tables(
     vm_initialize_page_table_linear(
             vm_pae_get_pte_with_offset(page_tables, data_offset),
             boot_info->data_physaddr + MEMORY_ADDR_16MB - MEMORY_ADDR_1MB,
-            X86_PTE_GLOBAL | X86_PTE_READ_WRITE /* | X86_PTE_NX */,
+            X86_PTE_GLOBAL | X86_PTE_READ_WRITE | X86_PTE_NX,
             boot_info->data_size / PAGE_SIZE);
-
-    /* map rest of region read/write */
-    vm_initialize_page_table_linear(
-            next_pte_after_image,
-            MEMORY_ADDR_16MB + image_size,
-            X86_PTE_GLOBAL | X86_PTE_READ_WRITE /*| X86_PTE_NX*/,
-            BOOT_SIZE_AT_16MB / PAGE_SIZE - image_pages);
 }
 
 static void initialize_initial_page_directories(
