@@ -35,6 +35,7 @@
 /** This header file contains the public interface of the low-level page table
  * management code located in hal/vm.c and hal/vm_pae.c. */
 
+#include <sys/elf.h>
 #include <jinue/shared/vm.h>
 #include <hal/asm/boot.h>
 #include <hal/asm/vm.h>
@@ -65,6 +66,7 @@ void vm_set_no_pae(void);
 void vm_write_protect_kernel_image(const boot_info_t *boot_info);
 
 addr_space_t *vm_create_initial_addr_space(
+        Elf32_Ehdr          *kernel_elf,
         boot_alloc_t        *boot_alloc,
         const boot_info_t   *boot_info);
 

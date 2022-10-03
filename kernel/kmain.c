@@ -49,16 +49,36 @@
 #include "build-info.gen.h"
 
 
-static Elf32_Ehdr *find_process_manager(const boot_info_t *boot_info) {
+static Elf32_Ehdr *get_kernel_elf_header(const boot_info_t *boot_info) {
+    if(boot_info->kernel_start == NULL) {
+        panic("malformed boot image: no kernel ELF binary");
+    }
+
+    if(boot_info->kernel_size < sizeof(Elf32_Ehdr)) {
+        panic("kernel too small to be an ELF binary");
+    }
+
+    if(! elf_check(boot_info->kernel_start)) {
+        panic("kernel ELF binary is invalid");
+    }
+
+    return boot_info->kernel_start;
+}
+
+static Elf32_Ehdr *get_userspace_loader_elf_header(const boot_info_t *boot_info) {
     if(boot_info->proc_start == NULL) {
-        panic("Malformed boot image");
+        panic("malformed boot image: no user space loader ELF binary");
     }
 
     if(boot_info->proc_size < sizeof(Elf32_Ehdr)) {
-        panic("Too small to be an ELF binary");
+        panic("user space loader too small to be an ELF binary");
     }
 
-    printk("Found process manager binary with size %u bytes.\n", boot_info->proc_size);
+    printk("Found user space loader with size %u bytes.\n", boot_info->proc_size);
+
+    if(! elf_check(boot_info->proc_start)) {
+        panic("user space loader ELF binary is invalid");
+    }
 
     return boot_info->proc_start;
 }
@@ -111,8 +131,11 @@ void kmain(void) {
     boot_alloc_t boot_alloc;
     boot_alloc_init(&boot_alloc, boot_info);
 
+    /* Check and get kernel ELF header */
+    Elf32_Ehdr *kernel = get_kernel_elf_header(boot_info);
+
     /* initialize the hardware abstraction layer */
-    hal_init(&boot_alloc, boot_info, cmdline_opts);
+    hal_init(kernel, cmdline_opts, &boot_alloc, boot_info);
 
     /* initialize caches */
     ipc_boot_init();
@@ -127,12 +150,12 @@ void kmain(void) {
 
     process_switch_to(process);
 
-    /* load process manager binary */
-    Elf32_Ehdr *elf = find_process_manager(boot_info);
+    /* load user space loader binary */
+    Elf32_Ehdr *loader = get_userspace_loader_elf_header(boot_info);
 
     elf_load(
             &elf_info,
-            elf,
+            loader,
             "jinue-userspace-loader",
             boot_info->cmdline,
             &process->addr_space,

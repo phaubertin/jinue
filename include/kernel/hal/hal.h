@@ -32,13 +32,15 @@
 #ifndef JINUE_HAL_H
 #define JINUE_HAL_H
 
+#include <sys/elf.h>
 #include <cmdline.h>
 #include <types.h>
 
 void hal_init(
+        Elf32_Ehdr              *kernel_elf,
+        const cmdline_opts_t    *cmdline_opts,
         boot_alloc_t            *boot_alloc,
-        const boot_info_t       *boot_info,
-        const cmdline_opts_t    *cmdline_opts);
+        const boot_info_t       *boot_info);
 
 #endif
 
