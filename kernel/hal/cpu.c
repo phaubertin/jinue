@@ -32,12 +32,11 @@
 #include <hal/cpu.h>
 #include <hal/descriptors.h>
 #include <hal/x86.h>
+#include <printk.h>
 #include <stdint.h>
 #include <string.h>
 
-
 cpu_info_t cpu_info;
-
 
 void cpu_init_data(cpu_data_t *data) {
     tss_t *tss;
@@ -224,13 +223,8 @@ void cpu_detect_features(void) {
             }
 
             /* support for physical address extension (PAE) */
-            if(flags & CPUID_FEATURE_PAE) {
+            if((flags & CPUID_FEATURE_PAE) && (ext_flags & CPUID_FEATURE_NXE)) {
                 cpu_info.features |= CPU_FEATURE_PAE;
-
-                /* NX (No-eXec) bit in page table entries  */
-                if(flags & CPUID_FEATURE_NXE) {
-                    cpu_info.features |= CPU_FEATURE_NOEXEC;
-                }
 
                 /* max physical memory size */
                 if(cpuid_ext_max >= 0x80000008) {
