@@ -41,7 +41,6 @@
 #include <elf.h>
 #include <page_alloc.h>
 #include <panic.h>
-#include <printk.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>

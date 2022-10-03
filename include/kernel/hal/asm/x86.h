@@ -91,7 +91,7 @@
  *
  * This flag is only used for page table entries. Some code assumes this bit is
  * not set in page directory entries. See pte_is_present(). */
-#define X86_PTE_PROT_NONE        	(1<<11)
+#define X86_PTE_PROT_NONE           (1<<11)
 
 /** do not execute bit */
 #define X86_PTE_NX                  (UINT64_C(1)<< 63)
