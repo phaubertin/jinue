@@ -324,6 +324,11 @@ void vm_pae_enable(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
     pdpt_t *pdpt = initialize_boot_page_tables(boot_alloc, boot_info);
 
     x86_enable_pae(PTR_TO_PHYS_ADDR_AT_16MB(pdpt));
+
+    /* Enable support for NX/XD bit */
+    uint64_t msrval  = rdmsr(MSR_EFER);
+    msrval |= MSR_FLAG_EFER_NXE;
+    wrmsr(MSR_EFER, msrval);
 }
 
 void vm_pae_create_initial_addr_space(

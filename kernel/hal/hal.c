@@ -220,7 +220,7 @@ static void select_syscall_method(void) {
         syscall_method = SYSCALL_METHOD_FAST_AMD;
 
         msrval  = rdmsr(MSR_EFER);
-        msrval |= MSR_FLAG_STAR_SCE;
+        msrval |= MSR_FLAG_EFER_SCE;
         wrmsr(MSR_EFER, msrval);
 
         msrval  = (uint64_t)(uintptr_t)fast_amd_entry;

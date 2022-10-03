@@ -46,7 +46,9 @@
 #define MSR_STAR                    0xC0000081
 
 
-#define MSR_FLAG_STAR_SCE           (1<<0)
+#define MSR_FLAG_EFER_SCE           (1<<0)
+
+#define MSR_FLAG_EFER_NXE           (1<<11)
 
 
 #define CPU_FEATURE_CPUID           (1<<0)
