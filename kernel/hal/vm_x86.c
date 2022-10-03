@@ -134,7 +134,7 @@ pte_t *vm_x86_get_pte_with_offset(pte_t *pte, unsigned int offset) {
  * @return flags
  *
  */
-static uint32_t filter_pte__flags(uint64_t flags) {
+static uint32_t filter_pte_flags(uint64_t flags) {
     uint32_t mask = PAGE_MASK;
     return (flags & mask);
 }
@@ -153,7 +153,7 @@ static uint32_t filter_pte__flags(uint64_t flags) {
  */
 void vm_x86_set_pte(pte_t *pte, uint32_t paddr, uint64_t flags) {
     assert((paddr & PAGE_MASK) == 0);
-    pte->entry = paddr | filter_pte__flags(flags);
+    pte->entry = paddr | filter_pte_flags(flags);
 }
 
 /**
@@ -168,7 +168,7 @@ void vm_x86_set_pte(pte_t *pte, uint32_t paddr, uint64_t flags) {
  *
  */
 void vm_x86_set_pte_flags(pte_t *pte, uint64_t flags) {
-    pte->entry = (pte->entry & ~PAGE_MASK) | filter_pte__flags(flags);
+    pte->entry = (pte->entry & ~PAGE_MASK) | filter_pte_flags(flags);
 }
 
 /**
