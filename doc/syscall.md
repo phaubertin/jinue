@@ -36,8 +36,6 @@ the "Get System Call Mechanism" system call should be done using the
 interrupt-based mechanism, which is the only one garanteed to be supported by
 all CPUs.
 
-(TODO should we pass this through the auxiliary vectors instead?)
-
 ### Interrupt-Based Mechanism
 
 A system call can be invoked by generating a software interrupt to interrupt
@@ -79,6 +77,8 @@ This system call is not supported by all CPUs. It should only be used if the
 
 ## Error Numbers
 
+(TODO bla bla bla)
+
 * JINUE_EMORE 1
 * JINUE_ENOMEM 2
 * JINUE_ENOSYS 3
@@ -92,73 +92,46 @@ This system call is not supported by all CPUs. It should only be used if the
 
 ## System Call Reference
 
+(TODO add a summary table)
+
 ### Get System Call Mechanism
 
-Function number: 1
+#### Description
 
-TODO
+Get the best supported system call mechanism.
 
 #### Arguments
 
-```
-    +----------------------------------------------------------------+
-    |                         function = 1                           |  arg0
-    +----------------------------------------------------------------+
-    31                                                               0
-    
-    +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg1
-    +----------------------------------------------------------------+
-    31                                                               0
-
-    +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg2
-    +----------------------------------------------------------------+
-    31                                                               0
-
-    +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg3
-    +----------------------------------------------------------------+
-    31                                                               0
-```
+Function number (`arg0`) is 1.
 
 #### Return Value
 
-```
-    +----------------------------------------------------------------+
-    |                  System call mechanism number                  |  arg0
-    +----------------------------------------------------------------+
-    31                                                               0
-    
-    +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg1
-    +----------------------------------------------------------------+
-    31                                                               0
+Return value (`arg0`) identifies the system call mechanism:
 
-    +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg2
-    +----------------------------------------------------------------+
-    31                                                               0
+* 0 for SYSENTER/SYSEXIT (Fast Intel) Mechanism
+* 1 for SYSCALL/SYSRET (Fast AMD) Mechanism
+* 2 for Interrupt-Based Mechanism
 
-    +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg3
-    +----------------------------------------------------------------+
-    31                                                               0
-```
+#### Errors
 
-System call mechanism number:
+This function always succeeds.
 
-* 0 Fast Intel
-* 1 Fast AMD
-* 2 Interrupt-based
+#### Future Direction
+
+This system call may be removed in the future, with the value it returns passed
+in auxiliary vectors instead.
 
 ### Write Character to Console
 
-Function number: 2
+#### Description
 
-TODO
+Write a single character to the console.
 
 #### Arguments
+
+Function number (`arg0`) is 2.
+
+The character is passed in the lower eight bits of arg1.
 
 ```
     +----------------------------------------------------------------+
@@ -182,37 +155,36 @@ TODO
     31                                                               0
 ```
 
+
+
 #### Return Value
 
-```
-    +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg0
-    +----------------------------------------------------------------+
-    31                                                               0
-    
-    +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg1
-    +----------------------------------------------------------------+
-    31                                                               0
+No return value.
 
-    +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg2
-    +----------------------------------------------------------------+
-    31                                                               0
+#### Errors
 
-    +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg3
-    +----------------------------------------------------------------+
-    31                                                               0
-```
+This function always succeeds.
+
+#### Future Direction
+
+A proper logging system call with log levels and a ring buffer in the kernel
+will be implemented. Once this happens, this system call will be removed and
+replaced.
 
 ### Write String to Console
 
-Function number: 3
+#### Description
 
-TODO
+Write a character string to the console.
 
 #### Arguments
+
+Function number (`arg0`) is 3.
+
+The pointer to the string is set in `arg1`.
+
+The length of the string is passed in bits 19..8 of `arg3`. The string does not
+have to be NUL-terminated.
 
 ```
     +----------------------------------------------------------------+
@@ -231,42 +203,38 @@ TODO
     31                                                               0
 
     +-----------------------+------------------------+---------------+
-    |     Reserved (0)      |      msgDataSize       |  Reserved (0) |  arg3
+    |     Reserved (0)      |         length         |  Reserved (0) |  arg3
     +-----------------------+------------------------+---------------+
     31                    20 19                     8 7              0
 ```
 
 #### Return Value
 
-```
-    +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg0
-    +----------------------------------------------------------------+
-    31                                                               0
-    
-    +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg1
-    +----------------------------------------------------------------+
-    31                                                               0
+No return value.
 
-    +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg2
-    +----------------------------------------------------------------+
-    31                                                               0
+#### Errors
 
-    +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg3
-    +----------------------------------------------------------------+
-    31                                                               0
-```
+This function always succeeds.
+
+#### Future Direction
+
+A proper logging system call with log levels and a ring buffer in the kernel
+will be implemented. Once this happens, this system call will be removed and/or
+replaced.
 
 ### Create a Thread
 
-Function number: 4
+#### Description
 
-TODO
+Create a new thread in the current process.
 
 #### Arguments
+
+Function number (`arg0`) is 4.
+
+The address where code execution will start is set in `arg1`.
+
+The value of the initial stack pointe is set in `arg2`.
 
 ```
     +----------------------------------------------------------------+
@@ -275,12 +243,12 @@ TODO
     31                                                               0
     
     +----------------------------------------------------------------+
-    |                   Code entry point address                     |  arg1
+    |                   code entry point address                     |  arg1
     +----------------------------------------------------------------+
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                      User stack address                        |  arg2
+    |                      user stack address                        |  arg2
     +----------------------------------------------------------------+
     31                                                               0
 
@@ -292,35 +260,37 @@ TODO
 
 #### Return Value
 
-```
-    +----------------------------------------------------------------+
-    |                           0 (or -1)                            |  arg0
-    +----------------------------------------------------------------+
-    31                                                               0
-    
-    +----------------------------------------------------------------+
-    |                      0 (or error number)                       |  arg1
-    +----------------------------------------------------------------+
-    31                                                               0
+On success, this function returns 0 (in `arg0`). On failure, this function
+returns -1 (i.e. 0xffffffff) and an error number is set (in `arg1`).
 
-    +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg2
-    +----------------------------------------------------------------+
-    31                                                               0
+#### Errors
 
-    +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg3
-    +----------------------------------------------------------------+
-    31                                                               0
-```
+* JINUE_EINVAL the code entry point is set to a kernel address.
+* JINUE_EINVAL the user stack address is set to a kernel address.
+* JINUE_EAGAIN the thread could not be created because of needed resources.
+
+#### Future Direction
+
+Currently, this system call can only create a thread in the current process.
+This will be changed so a thread can be created in another process, referred to
+by a descriptor.
+
+This system call will also be modified to bind the new thread to a descriptor
+so other system call can refer to it e.g. to destroy it, join it, etc.
 
 ### Yield From or Destroy Current Thread
 
-Function number: 5
+#### Description
 
-TODO
+Yield or destroy the current thread. Yielding relinquishes the CPU and allow
+other ready threads to run.
 
 #### Arguments
+
+Function number (`arg0`) is 5.
+
+If any bit in `arg1` is set (i.e. one), then the current thread is destroyed.
+Otherwise, the current thread yields.
 
 ```
     +----------------------------------------------------------------+
@@ -346,29 +316,22 @@ TODO
 
 #### Return Value
 
-```
-    +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg0
-    +----------------------------------------------------------------+
-    31                                                               0
-    
-    +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg1
-    +----------------------------------------------------------------+
-    31                                                               0
+No return value.
 
-    +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg2
-    +----------------------------------------------------------------+
-    31                                                               0
+If destroying the current thread, this function does not return.
 
-    +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg3
-    +----------------------------------------------------------------+
-    31                                                               0
-```
+#### Errors
 
-D: destroy or not
+This function always succeeds.
+
+#### Future Direction
+
+This system call will be split into two system calls, one that yields and one
+that destroys the current thread.
+
+The current system call only affects the current thread. This may be changed to
+allow another thread to be destroyed, in which case the thread would be
+specified using a descriptor.
 
 ### Set Thread Local Storage Address
 
