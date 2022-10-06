@@ -26,6 +26,16 @@ successful. A non-zero negative value indicates an error has occurred.
 error number. Otherwise, it is set to zero.
 * `arg2` and `arg3` are reserved and should be ignored.
 
+## Descriptors
+
+The system call interface uses descriptors to refer to kernel resources such as
+threads, processes and Inter-Process Communication (IPC) endpoints. Descriptors,
+similar to Unix
+[file descriptors](https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html#tag_03_166),
+are per-process unique, non-negative integer. They can be specified as arguments
+to or returned by system calls. (TODO not yet implemented: They can also be
+passed to another process through an IPC.)
+
 ## System Call Mechanisms
 
 The microkernel supports the following mechanisms to invoke system calls. Not
