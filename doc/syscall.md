@@ -271,7 +271,7 @@ The value of the initial stack pointe is set in `arg2`.
 #### Return Value
 
 On success, this function returns 0 (in `arg0`). On failure, this function
-returns -1 (i.e. 0xffffffff) and an error number is set (in `arg1`).
+returns -1 and an error number is set (in `arg1`).
 
 #### Errors
 
@@ -343,13 +343,22 @@ The current system call only affects the current thread. This may be changed to
 allow another thread to be destroyed, in which case the thread would be
 specified using a descriptor.
 
-### Set Thread Local Storage Address
+### Set Thread-Local Storage
 
-Function number: 6
+#### Description
 
-TODO
+Set the address and size of the thread-local storage for the current thread.
+
+A thread can then retrieve the address of the thead-local storage by calling the
+Get Thread Local Storage Address system call.
 
 #### Arguments
+
+Function number (`arg0`) is 6.
+
+The address of (i.e. pointer to) the thread-local storage is set in `arg1`.
+
+The size, in bytes, of the thread-local storage is set in `arg2`.
 
 ```
     +----------------------------------------------------------------+
@@ -375,81 +384,59 @@ TODO
 
 #### Return Value
 
-```
-    +----------------------------------------------------------------+
-    |                           0 (or -1)                            |  arg0
-    +----------------------------------------------------------------+
-    31                                                               0
-    
-    +----------------------------------------------------------------+
-    |                      0 (or error number)                       |  arg1
-    +----------------------------------------------------------------+
-    31                                                               0
+On success, this function returns 0 (in `arg0`). On failure, this function
+returns -1 and an error number is set (in `arg1`).
 
-    +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg2
-    +----------------------------------------------------------------+
-    31                                                               0
+#### Errors
 
-    +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg3
-    +----------------------------------------------------------------+
-    31                                                               0
-```
+* JINUE_EINVAL if any part of the region set with this function belongs to the
+kernel.
+
+#### Future Direction
+
+The current system call can only set the thread-local storage for the current
+thread. This may be changed to allow setting the thread-local storage for
+another thread, which would be specified using a descriptor.
+
+Support will also be implemented in the kernel for an architecture-dependent
+mechanism to access thread-local storage that is faster than calling the
+Get Thread Local Storage Address system call. On x86, this will likely mean
+dedicating an entry to thread-local storage in the GDT.
 
 ### Get Thread Local Storage Address
 
-Function number: 7
+#### Description
 
-TODO
+Get the address of the thread-local storage for the current thread.
+
+A thread can set the address and size of its thread-local storage by calling the
+Set Thread-Local Storage system call.
 
 #### Arguments
 
-```
-    +----------------------------------------------------------------+
-    |                         function = 7                           |  arg0
-    +----------------------------------------------------------------+
-    31                                                               0
-    
-    +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg1
-    +----------------------------------------------------------------+
-    31                                                               0
-
-    +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg2
-    +----------------------------------------------------------------+
-    31                                                               0
-
-    +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg3
-    +----------------------------------------------------------------+
-    31                                                               0
-```
+Function number (`arg0`) is 7.
 
 #### Return Value
 
-```
-    +----------------------------------------------------------------+
-    |                 Thread local storage address                   |  arg0
-    +----------------------------------------------------------------+
-    31                                                               0
-    
-    +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg1
-    +----------------------------------------------------------------+
-    31                                                               0
+This function returns the address of the thread-local storage in `arg0`. If this
+has not been set for the current thread by a previous call to the Set
+Thread-Local Storage system call, then the return value is zero (i.e. the NULL
+pointer in C).
 
-    +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg2
-    +----------------------------------------------------------------+
-    31                                                               0
+Note that, since this function returns a pointer, it does not follow the usual
+convention whereby a negative return value indicates a failure.
 
-    +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg3
-    +----------------------------------------------------------------+
-    31                                                               0
-```
+#### Errors
+
+This function always succeeds.
+
+#### Future Direction
+
+Support will be implemented in the kernel for an architecture-dependent
+mechanism to access thread-local storage that is faster than calling this
+function. On x86, this will likely mean dedicating an entry to thread-local
+storage in the GDT. Once this happens, this function may or may not be
+deprecated.
 
 ### Get Memory Map
 
