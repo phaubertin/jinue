@@ -97,7 +97,6 @@ static int check_output_buffer(
         return -JINUE_EINVAL;
     }
 
-    /* TODO should we accept NULL if buffer size is zero? */
     if(! check_userspace_buffer(buffer->user_ptr, buffer->buffer_size)) {
         return -JINUE_EINVAL;
     }
