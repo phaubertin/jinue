@@ -150,17 +150,17 @@ The character is passed in the lower eight bits of arg1.
     31                                                               0
     
     +------------------------------------------------+---------------+
-    |                    Reserved (0)                |   character   |  arg1
+    |                    reserved (0)                |   character   |  arg1
     +------------------------------------------------+---------------+
     31                                              8 7              0
 
     +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg2
+    |                         reserved (0)                           |  arg2
     +----------------------------------------------------------------+
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg3
+    |                         reserved (0)                           |  arg3
     +----------------------------------------------------------------+
     31                                                               0
 ```
@@ -200,17 +200,17 @@ have to be NUL-terminated.
     31                                                               0
     
     +----------------------------------------------------------------+
-    |                       Pointer on string                        |  arg1
+    |                       address of string                        |  arg1
     +----------------------------------------------------------------+
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg2
+    |                         reserved (0)                           |  arg2
     +----------------------------------------------------------------+
     31                                                               0
 
     +-----------------------+------------------------+---------------+
-    |     Reserved (0)      |         length         |  Reserved (0) |  arg3
+    |     reserved (0)      |         length         |  reserved (0) |  arg3
     +-----------------------+------------------------+---------------+
     31                    20 19                     8 7              0
 ```
@@ -260,7 +260,7 @@ The value of the initial stack pointe is set in `arg2`.
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg3
+    |                         reserved (0)                           |  arg3
     +----------------------------------------------------------------+
     31                                                               0
 ```
@@ -306,17 +306,17 @@ Otherwise, the current thread yields.
     31                                                               0
     
     +------------------------------------------------------------+---+
-    |                         Reserved (0)                       | D |  arg1
+    |                         reserved (0)                       | D |  arg1
     +------------------------------------------------------------+---+
     31                                                          2 1  0
 
     +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg2
+    |                         reserved (0)                           |  arg2
     +----------------------------------------------------------------+
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg3
+    |                         reserved (0)                           |  arg3
     +----------------------------------------------------------------+
     31                                                               0
 ```
@@ -364,17 +364,17 @@ The size, in bytes, of the thread-local storage is set in `arg2`.
     31                                                               0
     
     +----------------------------------------------------------------+
-    |                 Thread local storage address                   |  arg1
+    |                 thread-local storage address                   |  arg1
     +----------------------------------------------------------------+
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                   Thread local storage size                    |  arg2
+    |                   thread-local storage size                    |  arg2
     +----------------------------------------------------------------+
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg3
+    |                         reserved (0)                           |  arg3
     +----------------------------------------------------------------+
     31                                                               0
 ```
@@ -458,17 +458,17 @@ set in bits 31..20 of `arg3`.
     31                                                               0
     
     +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg1
+    |                         reserved (0)                           |  arg1
     +----------------------------------------------------------------+
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                        Buffer pointer                          |  arg2
+    |                        buffer address                          |  arg2
     +----------------------------------------------------------------+
     31                                                               0
 
     +-----------------------+----------------------------------------+
-    |     Buffer size       |              Reserved (0)              |  arg3
+    |     buffer size       |              reserved (0)              |  arg3
     +-----------------------+----------------------------------------+
     31                    20 19                                      0
 ```
@@ -481,7 +481,8 @@ an error number is set (in `arg1`).
 #### Errors
 
 * JINUE_EINVAL if any part of the destination buffer belongs to the kernel.
-* JINUE_E2BIG if the buffer is too small to fit the result.
+* JINUE_EINVAL if the output buffer is larger that 2048 bytes.
+* JINUE_E2BIG if the output buffer is too small to fit the result.
 
 #### Future Direction
 
@@ -495,7 +496,13 @@ Mapping of the argument may be changed to something more intuitive. (The
 rationale behind the current layout is that is is consistent with argument
 mapping for the IPC system calls.)
 
+The 2048 bytes restriction on the output buffer size will be eliminated.
+
 ### Create IPC Endpoint
+
+#### Description
+
+Create a new IPC endpoint.
 
 #### Arguments
 
@@ -516,17 +523,17 @@ creating parent. This is useful for service discovery.
     31                                                               0
     
     +----------------------------------------------------------------+
-    |                            Flags                               |  arg1
+    |                            flags                               |  arg1
     +----------------------------------------------------------------+
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg2
+    |                         reserved (0)                           |  arg2
     +----------------------------------------------------------------+
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg3
+    |                         reserved (0)                           |  arg3
     +----------------------------------------------------------------+
     31                                                               0
 ```
@@ -554,13 +561,19 @@ deprecated instead.
 
 ### Receive Message
 
-Function number: 10
+#### Description
 
-TODO
+Receive a message from an IPC endpoint. If no message is available, this call
+blocks until one becomes available.
 
 #### Arguments
 
-Receive system call arguments (passed in registers):
+Function number (`arg0`) is 10.
+
+The descriptor that references the IPC endpoint is passed in `arg1`.
+
+A pointer to the receive buffer is passed in `arg2` and the size, in bytes, of
+the receive buffer is passed in bits 31..20 of `arg3`.
 
 ```
     +----------------------------------------------------------------+
@@ -568,74 +581,87 @@ Receive system call arguments (passed in registers):
     +----------------------------------------------------------------+
     31                                                               0
     
-    +-------------------------------+--------------------------------+
-    |         Reserved (0)          |          msgRecvDesc           |  arg1
-    +-------------------------------+--------------------------------+
-    31                             ? ?                                0
-
     +----------------------------------------------------------------+
-    |                            msgPtr                              |  arg2
+    |                    IPC endpoint descriptor                     |  arg1
     +----------------------------------------------------------------+
     31                                                               0
 
-    +-----------------------+------------------------+---------------+
-    |     msgTotalSize      |       Reserved (0)     |   msgDescN    |  arg3
-    +-----------------------+------------------------+---------------+
-    31                    20 19                     8 7              0
+    +----------------------------------------------------------------+
+    |                        buffer address                          |  arg2
+    +----------------------------------------------------------------+
+    31                                                               0
+
+    +-----------------------+----------------------------------------+
+    |     buffer size       |              reserved (0)              |  arg3
+    +-----------------------+----------------------------------------+
+    31                    20 19                                      0
 ```
-
-Where:
-
-    msgFunction     is the function number for RECEIVE.
-    msgRecvDesc     is the descriptor for the door from which to receive a
-                    message. It must be the owning descriptor for this door.
-    msgPtr          is address of the start of the buffer in which to receive
-                    the message.
-    msgTotalSize    is the total size of the receive buffer, in bytes.
-    msgDescN        is the number of descriptors. All descriptor must be
-                    specified with the JINUE_DESC_RECEIVE attribute flag.
 
 #### Return Value
-             
-When the RECEIVE or REPLY/RECEIVE system call returns, the arguments provided by
-the microkernel are as follow:
+
+On success:
+
+* `arg0` is set to the function number specified by the sender. This function
+number is guaranteed to be positive.
+* `arg1` contains the cookie set on the descriptor used by the sender to send
+the message.
+* `arg2` contains the adress of the receive buffer (i.e. `arg2` is preserved by
+this system call).
+* Bits 31..20 of `arg3` contains the *sender's* message buffer size. The reply
+message must fit within this size.
+* Bits 19..8 of `arg3` is the size of the message, in bytes.
+
+On failure, this function sets `arg0` to -1 and an error number in `arg1`.
 
 ```
     +----------------------------------------------------------------+
-    |                        msgFunction (or -1)                     |  arg0
+    |                         function (or -1)                       |  arg0
     +----------------------------------------------------------------+
     31                                                               0
     
     +----------------------------------------------------------------+
-    |                         msgCookie (or error)                   |  arg1
+    |                    descriptor cookie (or error)                |  arg1
     +----------------------------------------------------------------+
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                            msgPtr                              |  arg2
+    |                        buffer address                          |  arg2
     +----------------------------------------------------------------+
     31                                                               0
     
     +-----------------------+------------------------+---------------+
-    |     msgTotalSize      |      msgDataSize       |   msgDescN    |  arg3
+    |  sender buffer size   |    message data size   |  reserved (0) |  arg3
     +-----------------------+------------------------+---------------+
     31                    20 19                     8 7              0
 ```
-    
-Where:
 
-    msgFunction     is the function number (or -1 if the call to the receive
-                    system call fails).
-    msgCookie       is the message cookie, as stored by the recipient into the
-                    sender's descriptor (or the error number if the call to the
-                    receive system call fails).
-    msgPtr          is the address of the start of the message buffer (in the
-                    recipient's address space).
-    msgTotalSize    is the total size of the *sender's* buffer, in bytes. This
-                    allows the receiver to know the maximum size allowed for the
-                    reply message (and to return an error if it is insufficient).
-    msgDataSize     is the size of the message data, in bytes.
-    msgDescN        is the number of descriptors.
+#### Errors
+
+* JINUE_EBADF if the specified descriptor is invalid or doed not refer to an
+IPC endpoint.
+* JINUE_EIO if the specified descriptor is closed or the IPC endpoint no longer
+exists.
+* JINUE_EINVAL if any part of the receiver buffer belongs to the kernel.
+* JINUE_EINVAL if the receive buffer is larger that 2048 bytes.
+* JINUE_E2BIG is a message was available but it was too big for the receive
+buffer.
+* JINUE_EPERM if the process to which the calling thread belongs is not the
+owner of the IPC endpoint.
+
+#### Future Direction
+
+This function will be modified to allow receiving descriptors from the sender.
+
+A combined reply/receive system call will be added to allow the receiver thread
+to atomically send a reply to the current message and wait for the next one.
+
+A non-blocking version of this system call that would return immediately if no
+message is available may also be added.
+
+The 2048 bytes restriction on the receive buffer size may be eliminated.
+
+Ownership of an IPC endpoint by a process may be replaced by a receive
+permission that can be delegated to another process.
 
 ### Reply to Message
 
@@ -654,7 +680,7 @@ When replying, the receiver sets the message arguments as follow:
     31                                                               0
     
     +----------------------------------------------------------------+
-    |                         Reserved (0)                           |  arg1
+    |                         reserved (0)                           |  arg1
     +----------------------------------------------------------------+
     31                                                               0
 
