@@ -1,5 +1,27 @@
 # System Call Interface
 
+## System Call Reference
+
+| Number  | Name                                    | Description                          |
+|---------|-----------------------------------------|--------------------------------------|
+| 0       | -                                       | Reserved                             |
+| 1       | [GET_SYSCALL](get-syscall.md)           | Get System Call Mechanism            |
+| 2       | [PUTC](putc.md)                         | Write Character to Console           |
+| 3       | [PUTS](puts.md)                         | Write String to Console              |
+| 4       | [CREATE_THREAD](create-thread.md)       | Create a thread                      |
+| 5       | [YIELD_THREAD](yield-thread.md)         | Yield From or Destroy Current Thread |
+| 6       | [SET_THREAD_LOCAL](set-thread-local.md) | Set Thread-Local Storage             |
+| 7       | [GET_THREAD_LOCAL](get-thread-local.md) | Get Thread-Local Storage Address     |
+| 8       | [GET_USER_MEMORY](get-user-memory.md)   | Get User Memory Map                  |
+| 9       | [CREATE_IPC](create-ipc.md)             | Create IPC Endpoint                  |
+| 10      | [RECEIVE](receive.md)                   | Receive Message                      |
+| 11      | [REPLY](reply.md)                       | Reply to Message                     |
+| 12-4095 | -                                       | Reserved                             |
+| 4096+   | [SEND](send.md)                         | Send Message                         |
+
+Any function marked as reserved returns -1 (in `arg0`) and sets error number
+JINUE_ENOSYS (in `arg1`).
+
 ## Argument Registers
 
 During a system call, information is passed back and forth between user space
@@ -99,27 +121,3 @@ This system call is not supported by all CPUs. It should only be used if the
 * JINUE_EPERM 8
 * JINUE_E2BIG 9
 * JINUE_ENOMSG 10
-
-## System Call Reference
-
-| Number  | Name                                    | Description                          |
-|---------|-----------------------------------------|--------------------------------------|
-| 0       | -                                       | Reserved                             |
-| 1       | [GET_SYSCALL](get-syscall.md)           | Get System Call Mechanism            |
-| 2       | [PUTC](putc.md)                         | Write Character to Console           |
-| 3       | [PUTS](puts.md)                         | Write String to Console              |
-| 4       | [CREATE_THREAD](create-thread.md)       | Create a thread                      |
-| 5       | [YIELD_THREAD](yield-thread.md)         | Yield From or Destroy Current Thread |
-| 6       | [SET_THREAD_LOCAL](set-thread-local.md) | Set Thread-Local Storage             |
-| 7       | [GET_THREAD_LOCAL](get-thread-local.md) | Get Thread-Local Storage Address     |
-| 8       | [GET_USER_MEMORY](get-user-memory.md)   | Get User Memory Map                  |
-| 9       | [CREATE_IPC](create-ipc.md)             | Create IPC Endpoint                  |
-| 10      | [RECEIVE](receive.md)                   | Receive Message                      |
-| 11      | [REPLY](reply.md)                       | Reply to Message                     |
-| 12-4095 | -                                       | Reserved                             |
-| 4096+   | [SEND](send.md)                         | Send Message                         |
-
-### Reserved Function Numbers
-
-Any function marked as reserved returns -1 (in `arg0`) and sets error number
-JINUE_ENOSYS (in `arg1`).
