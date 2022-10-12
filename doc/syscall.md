@@ -102,9 +102,29 @@ This system call is not supported by all CPUs. It should only be used if the
 
 ## System Call Reference
 
-(TODO add a summary table)
+| Number  | Name             | Description                          |
+|---------|------------------|--------------------------------------|
+| 0       | -                | Reserved                             |
+| 1       | GET_SYSCALL      | Get System Call Mechanism            |
+| 2       | PUTC             | Write Character to Console           |
+| 3       | PUTS             | Write String to Console              |
+| 4       | CREATE_THREAD    | Create a thread                      |
+| 5       | YIELD_THREAD     | Yield From or Destroy Current Thread |
+| 6       | SET_THREAD_LOCAL | Set Thread-Local Storage             |
+| 7       | GET_THREAD_LOCAL | Get Thread-Local Storage Address     |
+| 8       | GET_USER_MEMORY  | Get User Memory Map                  |
+| 9       | CREATE_IPC       | Create IPC Endpoint                  |
+| 10      | RECEIVE          | Receive Message                      |
+| 11      | REPLY            | Reply to Message                     |
+| 12-4095 | -                | Reserved                             |
+| 4096+   | SEND             | Send Message                         |
 
-### Get System Call Mechanism
+### Reserved Function Numbers
+
+Any function marked as reserved returns -1 (in `arg0`) and sets error number
+JINUE_ENOSYS (in `arg1`).
+
+### GET_SYSCALL - Get System Call Mechanism
 
 #### Description
 
@@ -131,7 +151,7 @@ This function always succeeds.
 This system call may be removed in the future, with the value it returns passed
 in auxiliary vectors instead.
 
-### Write Character to Console
+### PUTC - Write Character to Console
 
 #### Description
 
@@ -178,7 +198,7 @@ A proper logging system call with log levels and a ring buffer in the kernel
 will be implemented. Once this happens, this system call will be removed and
 replaced.
 
-### Write String to Console
+### PUTS - Write String to Console
 
 #### Description
 
@@ -229,7 +249,7 @@ A proper logging system call with log levels and a ring buffer in the kernel
 will be implemented. Once this happens, this system call will be removed and/or
 replaced.
 
-### Create a Thread
+### CREATE_THREAD - Create a Thread
 
 #### Description
 
@@ -285,7 +305,7 @@ by a descriptor.
 This system call will also be modified to bind the new thread to a descriptor
 so other system call can refer to it e.g. to destroy it, join it, etc.
 
-### Yield From or Destroy Current Thread
+### YIELD_THREAD - Yield From or Destroy Current Thread
 
 #### Description
 
@@ -340,7 +360,7 @@ The current system call only affects the current thread. This may be changed to
 allow another thread to be destroyed, in which case the thread would be
 specified using a descriptor.
 
-### Set Thread-Local Storage
+### SET_THREAD_LOCAL - Set Thread-Local Storage
 
 #### Description
 
@@ -400,7 +420,7 @@ mechanism to access thread-local storage that is faster than calling the
 Get Thread Local Storage Address system call. On x86, this will likely mean
 dedicating an entry to thread-local storage in the GDT.
 
-### Get Thread Local Storage Address
+### GET_THREAD_LOCAL - Get Thread Local Storage Address
 
 #### Description
 
@@ -435,7 +455,7 @@ function. On x86, this will likely mean dedicating an entry to thread-local
 storage in the GDT. Once this happens, this function may or may not be
 deprecated.
 
-### Get Memory Map
+### GET_USER_MEMORY - Get User Memory Map
 
 #### Description
 
@@ -498,7 +518,7 @@ mapping for the IPC system calls.)
 
 The 2048 bytes restriction on the output buffer size will be eliminated.
 
-### Create IPC Endpoint
+### CREATE_IPC - Create IPC Endpoint
 
 #### Description
 
@@ -559,7 +579,7 @@ The original intent behind the system flag in arguments was to enforce special
 access control rules for "system" endpoints. However, the flag will likely be
 deprecated instead.
 
-### Receive Message
+### RECEIVE - Receive Message
 
 #### Description
 
@@ -663,7 +683,7 @@ The 2048 bytes restriction on the receive buffer size may be eliminated.
 Ownership of an IPC endpoint by a process may be replaced by a receive
 permission that can be delegated to another process.
 
-### Reply to Message
+### REPLY - Reply to Message
 
 #### Description
 
@@ -730,7 +750,7 @@ the reply data length.)
 A combined reply/receive system call will be added to allow the receiver thread
 to atomically send a reply to the current message and wait for the next one.
 
-### Send Message
+### SEND - Send Message
 
 #### Description
 
