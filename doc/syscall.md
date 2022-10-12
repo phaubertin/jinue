@@ -637,13 +637,13 @@ On failure, this function sets `arg0` to -1 and an error number in `arg1`.
 
 #### Errors
 
-* JINUE_EBADF if the specified descriptor is invalid or doed not refer to an
+* JINUE_EBADF if the specified descriptor is invalid or does not refer to an
 IPC endpoint.
 * JINUE_EIO if the specified descriptor is closed or the IPC endpoint no longer
 exists.
 * JINUE_EINVAL if any part of the receiver buffer belongs to the kernel.
-* JINUE_EINVAL if the receive buffer is larger that 2048 bytes.
-* JINUE_E2BIG is a message was available but it was too big for the receive
+* JINUE_EINVAL if the receive buffer is larger than 2048 bytes.
+* JINUE_E2BIG if a message was available but it was too big for the receive
 buffer.
 * JINUE_EPERM if the process to which the calling thread belongs is not the
 owner of the IPC endpoint.
@@ -665,13 +665,23 @@ permission that can be delegated to another process.
 
 ### Reply to Message
 
-Function number: 11
+#### Description
 
-TODO
+Reply to the current message. This function should be called after calling the
+Receive Message system call in order to send the reply and complete processing
+of the message.
 
 #### Arguments
 
-When replying, the receiver sets the message arguments as follow:
+Function number (`arg0`) is 11.
+
+The descriptor that references the IPC endpoint is passed in `arg1`.
+
+A pointer to the buffer containing the reply message is passed in `arg2` and the
+size, in bytes, of the buffer is passed in bits 31..20 of `arg3`.
+
+The length of the reply data length is set in bits 19..8 of `arg3` (see Future
+Direction).
 
 ```
     +----------------------------------------------------------------+
@@ -685,108 +695,132 @@ When replying, the receiver sets the message arguments as follow:
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                           msgPtr                               |  arg2
+    |                        buffer address                          |  arg2
     +----------------------------------------------------------------+
     31                                                               0
 
     +-----------------------+------------------------+---------------+
-    |     msgTotalSize      |      msgDataSize       |   msgDescN    |  arg3
+    |     buffer size       |     reply data size    |  reserved (0) |  arg3
     +-----------------------+------------------------+---------------+
     31                    20 19                     8 7              0
 ```
 
-Where:
-
-    msgFunction     is the function number for REPLY or REPLY/RECEIVE
-    msgPtr          is the address of the start of the reply message buffer. It
-                    may or may not be the buffer where the message being replied
-                    to was received. For a combined REPLY/RECEIVE, this is also
-                    the buffer in which to receive the next message.
-    msgTotalSize    is the total size of the receive buffer, in bytes. This
-                    field is only relevant for a combined REPLY/RECEIVE).
-    msgDataSize     is the size of the message data, in bytes.
-    msgDescN        is the number of descriptors.
-
 #### Return Value
 
-TODO
+On success, this function returns 0 (in `arg0`). On failure, it returns -1 and
+an error number is set (in `arg1`).
+
+#### Errors
+
+* JINUE_ENOMSG if there is no current message, i.e. if no message was received
+using the Receive Message system call.
+* JINUE_EINVAL if the reply buffer is larger than 2048 bytes.
+* JINUE_EINVAL if the reply data length is larger than the reply buffer size.
+* JINUE_EINVAL if any part of the reply buffer belongs to the kernel.
+* JINUE_E2BIG if the reply message is too big for the peer's buffer size. (This
+buffer size is available in bits 31..20 of `arg3` in the return value of the
+Receive Message system call.)
+
+#### Future Direction
+
+This function will be modified to allow sending descriptors as part of the
+reply message. (This is why there are separate arguments for the buffer size and
+the reply data length.)
+
+A combined reply/receive system call will be added to allow the receiver thread
+to atomically send a reply to the current message and wait for the next one.
 
 ### Send Message
 
-Function number: 4096 and up
+#### Description
 
-TODO
+Send a message to an IPC endpoint. This call blocks until the message is
+received and replied to.
 
 #### Arguments
 
-Send message arguments (passed in registers):
+The function number, which must be at least 4096, is set in `arg0`. The function
+number is passed to the receiving thread along with the message.
+
+The descriptor that references the IPC endpoint is passed in `arg1`.
+
+A pointer to the message buffer is passed in `arg2` and the size, in bytes, of
+that buffer is passed in bits 31..20 of `arg3`. The same buffer is used for the
+message being sent and for receiving the reply, and it must be large enough for
+both.
+
+The data length of the message is set in bits 19..8 of `arg3`.
 
 ```
     +----------------------------------------------------------------+
-    |                          msgFunction                           |  arg0
+    |                        function number                         |  arg0
     +----------------------------------------------------------------+
     31                                                               0
     
-    +-------------------------------+--------------------------------+
-    |           Reserved            |        msgTargetDesc           |  arg1
-    +-------------------------------+--------------------------------+
-    31                             ? ?                                0
+    +----------------------------------------------------------------+
+    |                    IPC endpoint descriptor                     |  arg1
+    +----------------------------------------------------------------+
+    31                                                               0
 
     +----------------------------------------------------------------+
-    |                            msgPtr                              |  arg2
+    |                        buffer address                          |  arg2
     +----------------------------------------------------------------+
     31                                                               0
 
     +-----------------------+------------------------+---------------+
-    |     msgTotalSize      |      msgDataSize       |   msgDescN    |  arg3
+    |     buffer size       |   message data size    |  reserved (0) |  arg3
     +-----------------------+------------------------+---------------+
     31                    20 19                     8 7              0
 ```
-
-Where:
-    
-    msgFunction     is the function number.
-    msgTargetDesc   is the descriptor for the target of the call (door, thread).
-    msgPtr          is address of the start of the message buffer.
-    msgTotalSize    is the total size of the buffer, in bytes.
-    msgDataSize     is the size of the message data, in bytes.
-    msgDescN        is the number of descriptors.
 
 #### Return Value
-    
-When the send primitive returns to the original caller, the arguments provided
-by the microkernel are as follow:
 
+On success, the return value set in `arg0` is zero and the size of the reply
+message is set in bits 19..8 of `arg3`.
+
+On failure, the return value set in `arg0` is -1 and an error number is set in
+`arg1`.
+    
 ```
     +----------------------------------------------------------------+
-    |                            msgRetVal                           |  arg0
+    |                            0 (or -1)                           |  arg0
     +----------------------------------------------------------------+
     31                                                               0
     
     +----------------------------------------------------------------+
-    |                            msgErrno                            |  arg1
+    |                          0 (or error)                          |  arg1
     +----------------------------------------------------------------+
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                            Reserved                            |  arg2
+    |                          reserved (0)                          |  arg2
     +----------------------------------------------------------------+
     31                                                               0
     
     +-----------------------+------------------------+---------------+
-    |       Reserved        |      msgDataSize       |   msgDescN    |  arg3
+    |      reserved (0)     |    reply data size     |  reserved (0) |  arg3
     +-----------------------+------------------------+---------------+
     31                    20 19                     8 7              0
-```    
+```
 
-Where:
+#### Errors
 
-    msgRetVal       is the first 32-bit value at the start of the message buffer
-                    if msgDataSize is at least 4 bytes, and zero otherwise. By
-                    convention, this is typically used to provide a return value.
-    msgErrno        is the second 32-bit value from the start of the message
-                    buffer if msgDataSize is at least 8 bytes, and zero
-                    otherwise. By convention, this is typically used to provide
-                    an error code (or zero if the call was successful).
-    msgDataSize     is the size of the reply message data, in bytes.
-    msgDescN        is the number of descriptors in the reply.
+* JINUE_EBADF if the specified descriptor is invalid or does not refer to an
+IPC endpoint.
+* JINUE_EIO if the specified descriptor is closed or the IPC endpoint no longer
+exists.
+* JINUE_EINVAL if the buffer is larger than 2048 bytes.
+* JINUE_EINVAL if the message data length is larger than the buffer size.
+* JINUE_EINVAL if any part of the message buffer belongs to the kernel.
+* JINUE_E2BIG if the receiving thread attempted to send a reply that was too big
+for the buffer size.
+
+#### Future Direction
+
+This function will be modified to allow sending descriptors as part of the
+message.
+
+A non-blocking version of this system call that would return immediately if no
+thread is waiting to receive the message may also be added.
+
+The 2048 bytes restriction on the buffer size may be eliminated.

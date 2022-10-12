@@ -78,7 +78,6 @@ static int check_input_buffer(
         return -JINUE_EINVAL;
     }
 
-    /* TODO should we accept NULL if buffer size is zero? */
     if(! check_userspace_buffer(buffer->user_ptr, buffer->buffer_size)) {
         return -JINUE_EINVAL;
     }
@@ -223,7 +222,10 @@ static void sys_send(jinue_syscall_args_t *args) {
     /* We need to pass the full args here so the receiver thread can set the
      * return values in ipc_reply(). */
     int retval = ipc_send(fd, function, &buffer, args);
-    set_return_value_or_error(args, retval);
+
+    if(retval < 0) {
+        set_return_value_or_error(args, retval);
+    }
 }
 
 static void sys_receive(jinue_syscall_args_t *args) {
