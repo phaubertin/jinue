@@ -33,44 +33,44 @@
 #define _JINUE_SHARED_ASM_SYSCALL_H
 
 /** interrupt vector for system call software interrupt */
-#define SYSCALL_IRQ    0x80
+#define SYSCALL_IRQ                     0x80
 
 /** get best system call implementation number based on CPU features */
-#define SYSCALL_FUNC_GET_SYSCALL_METHOD          1
+#define SYSCALL_FUNC_GET_SYSCALL        1
 
 /** send a character to in-kernel console driver */
-#define SYSCALL_FUNC_CONSOLE_PUTC                2
+#define SYSCALL_FUNC_PUTC               2
 
 /** send a fixed-length string to in-kernel console driver */
-#define SYSCALL_FUNC_CONSOLE_PUTS                3
+#define SYSCALL_FUNC_PUTS               3
 
 /** create a new thread */
-#define SYSCALL_FUNC_THREAD_CREATE               4
+#define SYSCALL_FUNC_CREATE_THREAD      4
 
 /** relinquish the CPU and allow the next thread to run */
-#define SYSCALL_FUNC_THREAD_YIELD                5
+#define SYSCALL_FUNC_YIELD_THREAD       5
 
 /** set address and size of thread local storage for current thread */
-#define SYSCALL_FUNC_SET_THREAD_LOCAL_ADDR       6
+#define SYSCALL_FUNC_SET_THREAD_LOCAL   6
 
 /** get address of thread local storage for current thread */
-#define SYSCALL_FUNC_GET_THREAD_LOCAL_ADDR       7
+#define SYSCALL_FUNC_GET_THREAD_LOCAL   7
 
 /** get free memory block list for management by user space */
-#define SYSCALL_FUNC_GET_USER_MEMORY             8
+#define SYSCALL_FUNC_GET_USER_MEMORY    8
 
 /** create an IPC object to receive messages */
-#define SYSCALL_FUNC_CREATE_IPC_ENDPOINT         9
+#define SYSCALL_FUNC_CREATE_IPC         9
 
 /** receive a message on an IPC object */
-#define SYSCALL_FUNC_RECEIVE                    10
+#define SYSCALL_FUNC_RECEIVE            10
 
 /** reply to current message */
-#define SYSCALL_FUNC_REPLY                      11
+#define SYSCALL_FUNC_REPLY              11
 
 
 /** start of function numbers for user space messages */
-#define SYSCALL_USER_BASE                       0x1000
+#define SYSCALL_USER_BASE               4096
 
 
 /** Intel's fast system call method (SYSENTER/SYSEXIT) */

@@ -258,7 +258,7 @@ int memory_get_map(const syscall_output_buffer_t *buffer) {
             sizeof(jinue_mem_map_t) + boot_info->e820_entries * sizeof(jinue_mem_entry_t);
 
     if(buffer->buffer_size < result_size) {
-        return -JINUE_EINVAL;
+        return -JINUE_E2BIG;
     }
 
     map->num_entries = boot_info->e820_entries;
