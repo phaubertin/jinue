@@ -84,10 +84,10 @@ void thread_ready(thread_t *thread) {
 }
 
 void thread_switch(
-        thread_t *from_thread,
-        thread_t *to_thread,
-        bool blocked,
-        bool do_destroy) {
+        thread_t    *from_thread,
+        thread_t    *to_thread,
+        bool         blocked,
+        bool         do_destroy) {
 
     if(to_thread != from_thread) {
         thread_context_t    *from_context;
