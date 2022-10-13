@@ -149,37 +149,33 @@ void thread_switch_to(thread_t *thread, bool blocked) {
             get_current_thread(),
             thread,
             blocked,
-            false);     /* do not destroy current thread */
+            false);             /* don't destroy current thread */
 }
 
 void thread_start_first(void) {
     thread_switch(
             NULL,
             reschedule(false),
-            true,       /* do block (there is no current thread) */
-            false);     /* don't destroy current thread */
+            true,               /* do block (there is no current thread) */
+            false);             /* don't destroy current thread */
 }
 
 void thread_yield(void) {
-    thread_switch(
-            get_current_thread(),
-            reschedule(true),
-            false,      /* don't block */
-            false);     /* don't destroy current thread */
+    thread_switch_to(
+            reschedule(true),   /* current thread can run */
+            false);             /* don't block current thread */
 }
 
 void thread_block(void) {
-    thread_switch(
-            get_current_thread(),
-            reschedule(false),
-            true,       /* do block current thread */
-            false);     /* don't destroy current thread */
+    thread_switch_to(
+            reschedule(false),  /* current thread cannot run */
+            true);              /* do block current thread */
 }
 
 void thread_exit(void) {
     thread_switch(
             get_current_thread(),
             reschedule(false),
-            false,      /* don't block */
-            true);      /* do destroy the thread */
+            false,              /* don't block */
+            true);              /* do destroy the thread */
 }
