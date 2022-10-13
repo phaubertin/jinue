@@ -51,4 +51,8 @@ void thread_switch(
 
 void thread_yield_from(thread_t *from_thread, bool blocked, bool do_destroy);
 
+void thread_yield(void);
+
+void thread_exit(void);
+
 #endif

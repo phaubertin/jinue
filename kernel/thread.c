@@ -153,3 +153,17 @@ void thread_yield_from(thread_t *from_thread, bool blocked, bool do_destroy) {
             blocked,
             do_destroy);
 }
+
+void thread_yield(void) {
+    thread_yield_from(
+            get_current_thread(),
+            false,      /* don't block */
+            false);     /* don't destroy the thread */
+}
+
+void thread_exit(void) {
+    thread_yield_from(
+            get_current_thread(),
+            false,      /* don't block */
+            true);      /* do destroy the thread */
+}

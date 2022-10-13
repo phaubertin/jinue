@@ -11,14 +11,15 @@
 | 2       | [PUTC](putc.md)                         | Write Character to Console           |
 | 3       | [PUTS](puts.md)                         | Write String to Console              |
 | 4       | [CREATE_THREAD](create-thread.md)       | Create a thread                      |
-| 5       | [YIELD_THREAD](yield-thread.md)         | Yield From or Destroy Current Thread |
+| 5       | [YIELD_THREAD](yield-thread.md)         | Yield the Current Thread             |
 | 6       | [SET_THREAD_LOCAL](set-thread-local.md) | Set Thread-Local Storage             |
 | 7       | [GET_THREAD_LOCAL](get-thread-local.md) | Get Thread-Local Storage Address     |
 | 8       | [GET_USER_MEMORY](get-user-memory.md)   | Get User Memory Map                  |
 | 9       | [CREATE_IPC](create-ipc.md)             | Create IPC Endpoint                  |
 | 10      | [RECEIVE](receive.md)                   | Receive Message                      |
 | 11      | [REPLY](reply.md)                       | Reply to Message                     |
-| 12-4095 | -                                       | Reserved                             |
+| 12      | [EXIT_THREAD](exit-thread.md)           | Exit the Current Thread              |
+| 13-4095 | -                                       | Reserved                             |
 | 4096+   | [SEND](send.md)                         | Send Message                         |
 
 #### Reserved Function Numbers

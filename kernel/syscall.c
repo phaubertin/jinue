@@ -157,13 +157,13 @@ static void sys_thread_create(jinue_syscall_args_t *args) {
     }
 }
 
-static void sys_thread_yield(jinue_syscall_args_t *args) {
-    /* TODO this system call yields or destroy depending on arg1. This shouldn't
-     * be done by the same system call. */
-    thread_yield_from(
-            get_current_thread(),
-            false,          /* don't block */
-            args->arg1);    /* destroy (aka. exit) thread if true */
+static void sys_yield_thread(jinue_syscall_args_t *args) {
+    thread_yield();
+    syscall_args_set_return(args, 0);
+}
+
+static void sys_exit_thread(jinue_syscall_args_t *args) {
+    thread_exit();
     syscall_args_set_return(args, 0);
 }
 
@@ -293,7 +293,7 @@ void dispatch_syscall(trapframe_t *trapframe) {
             sys_thread_create(args);
             break;
         case SYSCALL_FUNC_YIELD_THREAD:
-            sys_thread_yield(args);
+            sys_yield_thread(args);
             break;
         case SYSCALL_FUNC_SET_THREAD_LOCAL:
             sys_set_thread_local_address(args);
@@ -312,6 +312,9 @@ void dispatch_syscall(trapframe_t *trapframe) {
             break;
         case SYSCALL_FUNC_REPLY:
             sys_reply(args);
+            break;
+        case SYSCALL_FUNC_EXIT_THREAD:
+            sys_exit_thread(args);
             break;
         default:
             sys_nosys(args);
