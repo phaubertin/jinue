@@ -1,6 +1,8 @@
 # System Call Interface
 
-## System Call Reference
+## Quick Reference
+
+### System Call Reference
 
 | Number  | Name                                    | Description                          |
 |---------|-----------------------------------------|--------------------------------------|
@@ -19,105 +21,77 @@
 | 12-4095 | -                                       | Reserved                             |
 | 4096+   | [SEND](send.md)                         | Send Message                         |
 
+#### Reserved Function Numbers
+
 Any function marked as reserved returns -1 (in `arg0`) and sets error number
 JINUE_ENOSYS (in `arg1`).
 
-## Argument Registers
+### Error Reference
+
+| Number | Name         | Description                            |
+|--------|--------------|----------------------------------------|
+| 1      | JINUE_ENOMEM | Not enough memory                      |
+| 2      | JINUE_ENOSYS | Not supported                          |
+| 3      | JINUE_EINVAL | Invalid argument                       |
+| 4      | JINUE_EAGAIN | Currently unavailable, try again later |
+| 5      | JINUE_EBADF  | Bad/invalid descriptor                 |
+| 6      | JINUE_EIO    | Input/output error                     |
+| 7      | JINUE_EPERM  | Operation not permitted                |
+| 8      | JINUE_E2BIG  | Not enough space in output buffer      |
+| 9      | JINUE_ENOMSG | No message                             |
+
+## Overview
+
+### System Call Registers
 
 During a system call, information is passed back and forth between user space
-and the microkernel through the four pointer-sized logical registers `arg0` to
+and the microkernel through four pointer-sized logical registers named `arg0` to
 `arg3`.
 
-When invoking a system call, `arg0` contains a function number that identifies
-the specific function being called. `arg1` to `arg3` contain arguments for the
-call. 
+### System Call Mechanisms
 
-Function numbers 0 to 4095 inclusive are reserved by the microkernel for the
-functions it implements. Function numbers 4096 and up identify the Send Message
-system call. The function number is passed to the recipient as part of the
-message.
+The architecture-dependent mechanisms for invoking a system call and the mapping
+of system call registers to actual architectural registers is described in
+[System Call Mechanisms](mechanisms.md)
+
+### Function Number and Arguments
+
+When invoking a system call, `arg0` must be set to a function number that
+identifies the specific function being called. Arguments for the call are passed
+in `arg1` to `arg3`.
+
+### Return Value
 
 On return from a system call, the contents of arg0 to arg3 depends on the
-function number. Most *but not all* system calls follow the following
-convention:
+function number.
 
-* `arg0` contains a return value, which should be cast as a signed integer (C
+Most *but not all* system calls follow the following convention:
+
+* `arg0` contains a return value, which should be cast to a signed integer (C
 type `int`). If the value is positive (including zero), then the call was
 successful. A non-zero negative value indicates an error has occurred.
-* If the call failed, as indicated by the value in `arg0`, `arg1` contains the
-error number. Otherwise, it is set to zero.
+* If the call failed, as indicated by a negative value in `arg0`, `arg1`
+contains an [error number](#error-reference). Otherwise, `arg1` is set to zero.
 * `arg2` and `arg3` are reserved and should be ignored.
 
-## Descriptors
+### Inter-Process Communication (IPC)
 
-The system call interface uses descriptors to refer to kernel resources such as
-threads, processes and Inter-Process Communication (IPC) endpoints. Descriptors,
-similar to Unix
+The Jinue microkernel implements a synchronous message-passing mechanism for
+inter-process communication. The client thread uses the [SEND](send.md) system
+call to send a message to an IPC endpoint, which serves as a rendez-vous point
+for IPC. The server thread uses the [RECEIVE](receive.md) system call to receive
+a message from the IPC  endpoint, and then the [REPLY](reply.md) call to send
+the reply.
+
+System call function numbers 0 to 4095 inclusive are reserved by the microkernel
+for the functions it implements. Function numbers 4096 and up all invoke the
+[SEND](send.md) system call. The function number is passed as part of the
+message, which allows a server thread to make use of it.
+
+### Descriptors
+
+The system call interface uses descriptors to refer to kernel resources, such as
+threads, processes and IPC endpoints. A descriptor, similar to a Unix
 [file descriptors](https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html#tag_03_166),
-are per-process unique, non-negative integer. They can be specified as arguments
-to or returned by system calls. (TODO not yet implemented: They can also be
-passed to another process through an IPC.)
-
-## System Call Mechanisms
-
-The microkernel supports the following mechanisms to invoke system calls. Not
-all mechanisms are available on all CPUs. On initialization, before invoking any
-other system call, an application should call the "Get System Call Mechanism"
-system call to determine the best supported system call mechanism. This call of
-the "Get System Call Mechanism" system call should be done using the
-interrupt-based mechanism, which is the only one garanteed to be supported by
-all CPUs.
-
-### Interrupt-Based Mechanism
-
-A system call can be invoked by generating a software interrupt to interrupt
-vector 128 (80h). The argument registers are mapped as follow:
-
-* `arg0` maps to CPU register `eax`.
-* `arg1` maps to CPU register `ebx`.
-* `arg2` maps to CPU register `esi`.
-* `arg3` maps to CPU register `edi`.
-
-This system call is always available. However, it is also the slowest, so it is
-best to use another one if support is available.
-
-### SYSCALL/SYSRET (Fast AMD) Mechanism
-
-A system call can be invoked by executing the `SYSCALL` CPU instruction.
-
-* `arg0` maps to CPU register `eax`.
-* `arg1` maps to CPU register `ebx`.
-* `arg2` maps to CPU register `esi`.
-* `arg3` maps to CPU register `edi`.
-
-This system call is not supported by all CPUs. It should only be used if the
-"Get System Call Mechanism" system call indicates this is the right one to use.
-
-### SYSENTER/SYSEXIT (Fast Intel) Mechanism
-
-A system call can be invoked by executing the `SYSENTER` CPU instruction.
-
-* `arg0` maps to CPU register `eax`.
-* `arg1` maps to CPU register `ebx`.
-* `arg2` maps to CPU register `esi`.
-* `arg3` maps to CPU register `edi`.
-* The return address must be set in the `ecx` CPU register.
-* The user stack pointer must be set in the `ebp` CPU register.
-
-This system call is not supported by all CPUs. It should only be used if the
-"Get System Call Mechanism" system call indicates this is the right one to use.
-
-## Error Numbers
-
-(TODO bla bla bla)
-
-* JINUE_EMORE 1
-* JINUE_ENOMEM 2
-* JINUE_ENOSYS 3
-* JINUE_EINVAL 4
-* JINUE_EAGAIN 5
-* JINUE_EBADF 6
-* JINUE_EIO 7
-* JINUE_EPERM 8
-* JINUE_E2BIG 9
-* JINUE_ENOMSG 10
+is a per-process unique, non-negative integer. It can be specified as an
+argument to or be returned by system calls.
