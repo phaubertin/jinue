@@ -149,7 +149,7 @@ void thread_switch_to(thread_t *thread, bool blocked) {
             get_current_thread(),
             thread,
             blocked,
-            false); /* do not destroy current thread */
+            false);     /* do not destroy current thread */
 }
 
 void thread_start_first(void) {
