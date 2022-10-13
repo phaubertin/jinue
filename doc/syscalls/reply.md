@@ -15,8 +15,8 @@ The descriptor that references the IPC endpoint is passed in `arg1`.
 A pointer to the buffer containing the reply message is passed in `arg2` and the
 size, in bytes, of the buffer is passed in bits 31..20 of `arg3`.
 
-The length of the reply data length is set in bits 19..8 of `arg3` (see Future
-Direction).
+The length of the reply data length is set in bits 19..8 of `arg3` (see
+[Future Direction](#future-direction)).
 
 ```
     +----------------------------------------------------------------+

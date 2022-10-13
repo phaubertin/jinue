@@ -10,7 +10,7 @@ Function number (`arg0`) is 1.
 
 ## Return Value
 
-Return value (`arg0`) identifies the system call mechanism:
+Return value (`arg0`) identifies the [system call mechanism](mechanisms.md):
 
 * 0 for SYSENTER/SYSEXIT (Fast Intel) Mechanism
 * 1 for SYSCALL/SYSRET (Fast AMD) Mechanism

@@ -10,8 +10,8 @@ Function number (`arg0`) is 9.
 
 Flags are set in `arg1` as follow:
 
-* If bit 0 is set, then the created IPC endpoint is a "system" endpoint. (See
-Future Direction).
+* If bit 0 is set, then the created IPC endpoint is a "system" endpoint (see
+[Future Direction](#future-direction)).
 * If bit 1 is set, then, instead if creating a new IPC endpoint, it retrieves
 the special-purpose endpoint that allows the process to communicate with its
 creating parent. This is useful for service discovery.

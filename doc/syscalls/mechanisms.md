@@ -2,11 +2,10 @@
 
 The microkernel supports the following mechanisms to invoke system calls. Not
 all mechanisms are available on all CPUs. On initialization, before invoking any
-other system call, an application should call the "Get System Call Mechanism"
-system call to determine the best supported system call mechanism. This call of
-the "Get System Call Mechanism" system call should be done using the
-interrupt-based mechanism, which is the only one garanteed to be supported by
-all CPUs.
+other system call, an application should call the [GET_SYSCALL](get-syscall.md)
+system call to determine the best supported system call mechanism. This should
+be done with the interrupt-based mechanism, which is the only one garanteed to
+be supported by all CPUs.
 
 ## Interrupt-Based Mechanism
 
