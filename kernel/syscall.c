@@ -78,7 +78,6 @@ static int check_input_buffer(
         return -JINUE_EINVAL;
     }
 
-    /* TODO should we accept NULL if buffer size is zero? */
     if(! check_userspace_buffer(buffer->user_ptr, buffer->buffer_size)) {
         return -JINUE_EINVAL;
     }
@@ -97,7 +96,6 @@ static int check_output_buffer(
         return -JINUE_EINVAL;
     }
 
-    /* TODO should we accept NULL if buffer size is zero? */
     if(! check_userspace_buffer(buffer->user_ptr, buffer->buffer_size)) {
         return -JINUE_EINVAL;
     }
@@ -224,7 +222,10 @@ static void sys_send(jinue_syscall_args_t *args) {
     /* We need to pass the full args here so the receiver thread can set the
      * return values in ipc_reply(). */
     int retval = ipc_send(fd, function, &buffer, args);
-    set_return_value_or_error(args, retval);
+
+    if(retval < 0) {
+        set_return_value_or_error(args, retval);
+    }
 }
 
 static void sys_receive(jinue_syscall_args_t *args) {
@@ -279,31 +280,31 @@ void dispatch_syscall(trapframe_t *trapframe) {
     else if(function < SYSCALL_USER_BASE) {
         /* microkernel system calls */
         switch(function) {
-        case SYSCALL_FUNC_GET_SYSCALL_METHOD:
+        case SYSCALL_FUNC_GET_SYSCALL:
             sys_get_syscall_method(args);
             break;
-        case SYSCALL_FUNC_CONSOLE_PUTC:
+        case SYSCALL_FUNC_PUTC:
             sys_console_putc(args);
             break;
-        case SYSCALL_FUNC_CONSOLE_PUTS:
+        case SYSCALL_FUNC_PUTS:
             sys_console_puts(args);
             break;
-        case SYSCALL_FUNC_THREAD_CREATE:
+        case SYSCALL_FUNC_CREATE_THREAD:
             sys_thread_create(args);
             break;
-        case SYSCALL_FUNC_THREAD_YIELD:
+        case SYSCALL_FUNC_YIELD_THREAD:
             sys_thread_yield(args);
             break;
-        case SYSCALL_FUNC_SET_THREAD_LOCAL_ADDR:
+        case SYSCALL_FUNC_SET_THREAD_LOCAL:
             sys_set_thread_local_address(args);
             break;
-        case SYSCALL_FUNC_GET_THREAD_LOCAL_ADDR:
+        case SYSCALL_FUNC_GET_THREAD_LOCAL:
             sys_get_thread_local_address(args);
             break;
         case SYSCALL_FUNC_GET_USER_MEMORY:
             sys_get_user_memory(args);
             break;
-        case SYSCALL_FUNC_CREATE_IPC_ENDPOINT:
+        case SYSCALL_FUNC_CREATE_IPC:
             sys_create_ipc_endpoint(args);
             break;
         case SYSCALL_FUNC_RECEIVE:
