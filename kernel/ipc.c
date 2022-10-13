@@ -186,11 +186,7 @@ int ipc_send(
         recv_thread->sender = thread;
 
         /* switch to receiver thread, which will resume inside syscall_receive() */
-        thread_switch(
-                thread,
-                recv_thread,
-                true,       /* block sender thread */
-                false);     /* don't destroy sender */
+        thread_switch_to(recv_thread, true);
     }
     
     /* copy reply to user space buffer */
@@ -269,11 +265,7 @@ int ipc_receive(
         syscall_args_set_error(send_thread->message_args, JINUE_E2BIG);
         
         /* switch back to sender thread to return from call immediately */
-        thread_switch(
-                thread,
-                send_thread,
-                false,      /* don't block (put this thread back in ready queue) */
-                false);     /* don't destroy */
+        thread_switch_to(send_thread, false);
                 
         return -JINUE_E2BIG;
     }
@@ -325,11 +317,7 @@ int ipc_reply(const syscall_input_buffer_t *buffer) {
     thread->sender = NULL;
     
     /* switch back to sender thread to return from call immediately */
-    thread_switch(
-            thread,
-            send_thread,
-            false,      /* don't block (put this thread back in ready queue) */
-            false);     /* don't destroy */
+    thread_switch_to(send_thread, false);
 
     return 0;
 }

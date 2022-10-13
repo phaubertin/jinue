@@ -83,7 +83,7 @@ void thread_ready(thread_t *thread) {
     jinue_list_enqueue(&ready_list, &thread->thread_list);
 }
 
-void thread_switch(
+static void thread_switch(
         thread_t    *from_thread,
         thread_t    *to_thread,
         bool         blocked,
@@ -156,6 +156,14 @@ static void thread_yield_from(
             reschedule(from_thread, from_can_run),
             blocked,
             do_destroy);
+}
+
+void thread_switch_to(thread_t *thread, bool blocked) {
+    thread_switch(
+            get_current_thread(),
+            thread,
+            blocked,
+            false); /* do not destroy current thread */
 }
 
 void thread_start_first(void) {
