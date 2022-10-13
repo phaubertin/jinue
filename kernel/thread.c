@@ -120,42 +120,28 @@ static void thread_switch(
     }
 }
 
-static thread_t *reschedule(thread_t *from_thread, bool from_can_run) {
+static thread_t *reschedule(bool current_can_run) {
     thread_t *to_thread = jinue_node_entry(
             jinue_list_dequeue(&ready_list),
             thread_t,
             thread_list );
     
     if(to_thread == NULL) {
-        if(from_thread != NULL && from_can_run) {
-            /* We just let the current thread run because there are no other
-             * threads to run. */
-            return from_thread;
+        /* Special case to take into account: when scheduling the first thread,
+         * there is no current thread. We should not call get_current_thread()
+         * in that case. */
+        if(current_can_run) {
+            return get_current_thread();
         }
-        else {
-            /* Currently, scheduling is purely cooperative and only one CPU is
-             * supported (so, there are no threads currently running on other
-             * CPUs). What this means is that, once there are no more threads
-             * running or ready to run, this situation will never change. */
-            panic("No more thread to schedule");
-        }
+
+        /* Currently, scheduling is purely cooperative and only one CPU is
+         * supported (so, there are no threads currently running on other
+         * CPUs). What this means is that, once there are no more threads
+         * running or ready to run, this situation will never change. */
+        panic("No thread to schedule");
     }
 
     return to_thread;
-}
-
-static void thread_yield_from(
-        thread_t    *from_thread,
-        bool         blocked,
-        bool         do_destroy) {
-
-    bool from_can_run = !(blocked || do_destroy);
-    
-    thread_switch(
-            from_thread,
-            reschedule(from_thread, from_can_run),
-            blocked,
-            do_destroy);
 }
 
 void thread_switch_to(thread_t *thread, bool blocked) {
@@ -167,29 +153,33 @@ void thread_switch_to(thread_t *thread, bool blocked) {
 }
 
 void thread_start_first(void) {
-    thread_yield_from(
+    thread_switch(
             NULL,
-            false,      /* don't block */
-            false);     /* don't destroy */
+            reschedule(false),
+            true,       /* do block (there is no current thread) */
+            false);     /* don't destroy current thread */
 }
 
 void thread_yield(void) {
-    thread_yield_from(
+    thread_switch(
             get_current_thread(),
+            reschedule(true),
             false,      /* don't block */
-            false);     /* don't destroy the thread */
+            false);     /* don't destroy current thread */
 }
 
 void thread_block(void) {
-    thread_yield_from(
+    thread_switch(
             get_current_thread(),
-            true,       /* do block */
-            false);     /* don't destroy the thread */
+            reschedule(false),
+            true,       /* do block current thread */
+            false);     /* don't destroy current thread */
 }
 
 void thread_exit(void) {
-    thread_yield_from(
+    thread_switch(
             get_current_thread(),
+            reschedule(false),
             false,      /* don't block */
             true);      /* do destroy the thread */
 }
