@@ -49,9 +49,11 @@ void thread_switch(
         bool         blocked,
         bool         do_destroy);
 
-void thread_yield_from(thread_t *from_thread, bool blocked, bool do_destroy);
+void thread_start_first(void);
 
 void thread_yield(void);
+
+void thread_block(void);
 
 void thread_exit(void);
 

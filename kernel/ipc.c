@@ -179,11 +179,7 @@ int ipc_send(
         /* No thread is waiting to receive this message, so we must wait on the
          * sender list. */
         jinue_list_enqueue(&ipc->send_list, &thread->thread_list);
-
-        thread_yield_from(
-                thread,
-                true,       /* make thread block */
-                false);     /* don't destroy */
+        thread_block();
     }
     else {
         object_addref(&thread->header);
@@ -249,11 +245,7 @@ int ipc_receive(
         /* No thread is waiting to send a message, so we must wait on the receive
          * list. */
         jinue_list_enqueue(&ipc->recv_list, &thread->thread_list);
-
-        thread_yield_from(
-                thread,
-                true,       /* make thread block */
-                false);     /* don't destroy */
+        thread_block();
         
         /* set by sending thread */
         send_thread = thread->sender;

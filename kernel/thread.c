@@ -144,7 +144,11 @@ static thread_t *reschedule(thread_t *from_thread, bool from_can_run) {
     return to_thread;
 }
 
-void thread_yield_from(thread_t *from_thread, bool blocked, bool do_destroy) {
+static void thread_yield_from(
+        thread_t    *from_thread,
+        bool         blocked,
+        bool         do_destroy) {
+
     bool from_can_run = !(blocked || do_destroy);
     
     thread_switch(
@@ -154,10 +158,24 @@ void thread_yield_from(thread_t *from_thread, bool blocked, bool do_destroy) {
             do_destroy);
 }
 
+void thread_start_first(void) {
+    thread_yield_from(
+            NULL,
+            false,      /* don't block */
+            false);     /* don't destroy */
+}
+
 void thread_yield(void) {
     thread_yield_from(
             get_current_thread(),
             false,      /* don't block */
+            false);     /* don't destroy the thread */
+}
+
+void thread_block(void) {
+    thread_yield_from(
+            get_current_thread(),
+            true,       /* do block */
             false);     /* don't destroy the thread */
 }
 
