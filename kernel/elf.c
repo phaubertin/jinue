@@ -487,6 +487,32 @@ static const Elf32_Shdr *elf_find_symtab_section_header(const Elf32_Ehdr *elf_he
 }
 
 /**
+ * Look up the name of a symbol
+ *
+ * @param elf_header ELF header of ELF binary
+ * @param symbol_header ELF symbol header
+ * @return symbol name as a NUL-terminated string
+ *
+ * */
+static const char *elf_get_symbol_name(
+        const Elf32_Ehdr    *elf_header,
+        const Elf32_Sym     *symbol_header) {
+
+    /* Here, we can safely assume the symbol table exists (NULL is not returned)
+     * because the symbol header passed as argument had to be looked up there. */
+    const Elf32_Shdr *symbtab_section_header = elf_find_symtab_section_header(elf_header);
+
+    const Elf32_Shdr *string_section_header = elf_get_section_header(
+            elf_header,
+            symbtab_section_header->sh_link);
+
+    const char *elf_file        = elf_file_bytes(elf_header);
+    const char *string_table    = &elf_file[string_section_header->sh_offset];
+
+    return &string_table[symbol_header->st_name];
+}
+
+/**
  * Look up a symbol in the ELF binary's symbol table by address and type
  *
  * Input is an address and a symbol type. The result contains the start address
@@ -505,25 +531,19 @@ int elf_find_symbol_by_address_and_type(
         Elf32_Addr           addr,
         int                  type) {
 
-    const Elf32_Shdr *symbtab_section_header = elf_find_symtab_section_header(elf_header);
+    const Elf32_Shdr *section_header = elf_find_symtab_section_header(elf_header);
 
-    if(symbtab_section_header == NULL) {
+    if(section_header == NULL) {
         /* no symbol table */
         return -1;
     }
 
     const char *elf_file  = elf_file_bytes(elf_header);
 
-    const char *symbols_table       = &elf_file[symbtab_section_header->sh_offset];
-    Elf32_Word symbol_entry_size    = symbtab_section_header->sh_entsize;
-    Elf32_Word symbol_table_size    = symbtab_section_header->sh_size;
+    const char *symbols_table       = &elf_file[section_header->sh_offset];
+    Elf32_Word symbol_entry_size    = section_header->sh_entsize;
+    Elf32_Word symbol_table_size    = section_header->sh_size;
 
-    const Elf32_Shdr *string_section_header = elf_get_section_header(
-            elf_header,
-            symbtab_section_header->sh_link);
-
-    const char *string_table = &elf_file[string_section_header->sh_offset];
-    
     const char *symbol = symbols_table;
     
     while(symbol < symbols_table + symbol_table_size) {
@@ -537,7 +557,7 @@ int elf_find_symbol_by_address_and_type(
             if(lookup_addr >= start && lookup_addr < end) {
                 result->addr = symbol_header->st_value;
                 result->size = symbol_header->st_size;
-                result->name = &string_table[symbol_header->st_name];
+                result->name = elf_get_symbol_name(elf_header, symbol_header);
                 
                 return 0;
             }
