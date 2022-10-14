@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2022 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -43,12 +43,21 @@ void thread_destroy(thread_t *thread);
         
 void thread_ready(thread_t *thread);
 
-void thread_switch(
-        thread_t *from_thread,
-        thread_t *to_thread,
-        bool blocked,
-        bool do_destroy);
+void thread_switch_to(thread_t *thread, bool blocked);
 
-void thread_yield_from(thread_t *from_thread, bool blocked, bool do_destroy);
+void thread_start_first(void);
+
+void thread_yield(void);
+
+void thread_block(void);
+
+void thread_exit(void);
+
+void thread_set_local_storage(
+        thread_t    *thread,
+        addr_t       addr,
+        size_t       size);
+
+addr_t thread_get_local_storage(const thread_t *thread);
 
 #endif
