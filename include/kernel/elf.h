@@ -46,12 +46,6 @@ typedef struct {
     const char      *argv0;
 } elf_info_t;
 
-typedef struct {
-    Elf32_Addr  addr;
-    const char *name;
-} elf_symbol_t;
-
-
 static inline const char *elf_file_bytes(const Elf32_Ehdr *elf_header) {
     return (const char *)elf_header;
 }
@@ -80,10 +74,17 @@ void elf_allocate_stack(elf_info_t *info, boot_alloc_t *boot_alloc);
 
 void elf_initialize_stack(elf_info_t *info, const char *cmdline);
 
-int elf_lookup_symbol(
+const char *elf_symbol_name(
+        const Elf32_Ehdr    *elf_header,
+        const Elf32_Sym     *symbol_header);
+
+const Elf32_Sym *elf_find_symbol_by_address_and_type(
         const Elf32_Ehdr    *elf_header,
         Elf32_Addr           addr,
-        int                  type,
-        elf_symbol_t        *result);
+        int                  type);
+
+const Elf32_Sym *elf_find_function_symbol_by_address(
+        const Elf32_Ehdr    *elf_header,
+        Elf32_Addr           addr);
 
 #endif

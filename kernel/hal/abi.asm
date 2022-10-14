@@ -33,18 +33,19 @@
 ; FUNCTION: get_fpointer
 ; C PROTOTYPE: addr_t get_fpointer(void)
 ; ------------------------------------------------------------------------------
-    global get_fpointer
+    global get_fpointer:function (get_fpointer.end - get_fpointer)
 get_fpointer:
     mov eax, ebp
     
     ret
 
+.end:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: get_caller_fpointer
 ; C PROTOTYPE: get_caller_fpointer(addr_t fptr)
 ; ------------------------------------------------------------------------------
-    global get_caller_fpointer
+    global get_caller_fpointer:function (get_caller_fpointer.end - get_caller_fpointer)
 get_caller_fpointer:
     push ebp                ; Save ebp
     
@@ -54,12 +55,13 @@ get_caller_fpointer:
     pop ebp                 ; Restore ebp
     ret
 
+.end:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: get_ret_addr
 ; C PROTOTYPE: addr_t get_ret_addr(addr_t fptr)
 ; ------------------------------------------------------------------------------
-    global get_ret_addr
+    global get_ret_addr:function (get_ret_addr.end - get_ret_addr)
 get_ret_addr:
     push ebp                ; Save ebp
     
@@ -69,13 +71,16 @@ get_ret_addr:
     
     ret
 
+.end:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: get_program_counter
 ; C PROTOTYPE: addr_t get_program_counter(void)
 ; ------------------------------------------------------------------------------
-    global get_program_counter
+    global get_program_counter:function (get_program_counter.end - get_program_counter)
 get_program_counter:
     mov eax, [esp]
     
     ret
+
+.end:

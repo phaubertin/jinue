@@ -29,82 +29,90 @@
 
     bits 32
 
-
 ; ------------------------------------------------------------------------------
 ; FUNCTION: inb
 ; C PROTOTYPE: uint8_t inb(uint16_t port)
 ; ------------------------------------------------------------------------------
-    global inb
+    global inb:function (inb.end - inb)
 inb:
     mov edx, [esp+4]    ; first argument: port
     in al, dx
     movsx eax, al
     ret
 
+.end:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: inw
 ; C PROTOTYPE: uint16_t inw(uint16_t port)
 ; ------------------------------------------------------------------------------
-    global inw
+    global inw:function (inw.end - inw)
 inw:
     mov edx, [esp+4]    ; first argument: port
     in ax, dx
     movsx eax, ax
     ret
 
+.end:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: inl
 ; C PROTOTYPE: uint32_t inl(uint16_t port)
 ; ------------------------------------------------------------------------------
-    global inl
+    global inl:function (inl.end - inl)
 inl:
     mov edx, [esp+4]    ; first argument: port
     in eax, dx
     ret
 
+.end:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: outb
 ; C PROTOTYPE: void outb(uint16_t port, uint8_t value)
 ; ------------------------------------------------------------------------------
-    global outb
+    global outb:function (outb.end - outb)
 outb:
     mov eax, [esp+8]    ; second argument: value
     mov edx, [esp+4]    ; first argument:  port
     out dx, al
     ret
 
+.end:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: outw
 ; C PROTOTYPE: void outw(uint16_t port, uint16_t value)
 ; ------------------------------------------------------------------------------
-    global outw
+    global outw:function (outw.end - outw)
 outw:
     mov eax, [esp+8]    ; second argument: value
     mov edx, [esp+4]    ; first argument:  port
     out dx, ax
     ret
 
+.end:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: outl
 ; C PROTOTYPE: void outl(uint16_t port, uint32_t value)
 ; ------------------------------------------------------------------------------
-    global outl
+    global outl:function (outl.end - outl)
 outl:
     mov eax, [esp+8]    ; second argument: value
     mov edx, [esp+4]    ; first argument:  port
     out dx, eax
     ret
 
+.end:
+
 ;------------------------------------------------------------------------
 ; FUNCTION:    iodelay
 ; C PROTOTYPE: void iodelay(void)
 ;------------------------------------------------------------------------
-    global iodelay
+    global iodelay:function (iodelay.end - iodelay)
 iodelay:
     out 0x80, al
     ret
+
+.end:

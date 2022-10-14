@@ -37,35 +37,41 @@
 ; FUNCTION: cli
 ; C PROTOTYPE: void cli(void);
 ; ------------------------------------------------------------------------------
-    global cli
+    global cli:function (cli.end - cli)
 cli:
     cli
     ret
+
+.end:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: sti
 ; C PROTOTYPE: void sti(void);
 ; ------------------------------------------------------------------------------
-    global sti
+    global sti:function (sti.end - sti)
 sti:
     sti
     ret
+
+.end:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: invalidate_tlb
 ; C PROTOTYPE: void invalidate_tlb(void *vaddr)
 ; ------------------------------------------------------------------------------
-    global invalidate_tlb
+    global invalidate_tlb:function (invalidate_tlb.end - invalidate_tlb)
 invalidate_tlb:
     mov eax, [esp+4]    ; First param: vaddr
     invlpg [eax]
     ret
 
+.end:
+
 ; ------------------------------------------------------------------------------
 ; FUNCTION: lgdt
 ; C PROTOTYPE: void lgdt(x86_pseudo_descriptor_t *gdt_desc)
 ; ------------------------------------------------------------------------------
-    global lgdt
+    global lgdt:function (lgdt.end - lgdt)
 lgdt:
     mov eax, [esp+4]    ; First param: gdt_info
     add eax, 2          ; gdt_info_t structure contains two bytes of
@@ -73,11 +79,13 @@ lgdt:
     lgdt [eax]
     ret
 
+.end:
+
 ; ------------------------------------------------------------------------------
 ; FUNCTION: lidt
 ; C PROTOTYPE: void lidt(x86_pseudo_descriptor_t *idt_desc)
 ; ------------------------------------------------------------------------------
-    global lidt
+    global lidt:function (lidt.end - lidt)
 lidt:
     mov eax, [esp+4]    ; First param: idt_info
     add eax, 2          ; idt_info_t structure contains two bytes of
@@ -85,21 +93,25 @@ lidt:
     lidt [eax]
     ret
 
+.end:
+
 ; ------------------------------------------------------------------------------
 ; FUNCTION: ltr
 ; C PROTOTYPE: void ltr(seg_selector_t sel)
 ; ------------------------------------------------------------------------------
-    global ltr
+    global ltr:function (ltr.end - ltr)
 ltr:
     mov eax, [esp+4]    ; First param: sel
     ltr ax
     ret
 
+.end:
+
 ; ------------------------------------------------------------------------------
 ; FUNCTION: cpuid
 ; C PROTOTYPE: uint32_t cpuid(x86_regs_t *regs)
 ; ------------------------------------------------------------------------------
-    global cpuid
+    global cpuid:function (cpuid.end - cpuid)
 cpuid:
     ; save registers
     push ebx
@@ -127,56 +139,68 @@ cpuid:
         
     ret
 
+.end:
+
 ; ------------------------------------------------------------------------------
 ; FUNCTION: get_esp
 ; C PROTOTYPE: uint32_t get_esp(void)
 ; ------------------------------------------------------------------------------
-    global get_esp
+    global get_esp:function (get_esp.end - get_esp)
 get_esp:
     mov eax, esp
     ret
+
+.end:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: get_cr0
 ; C PROTOTYPE: uint32_t get_cr0(void)
 ; ------------------------------------------------------------------------------
-    global get_cr0
+    global get_cr0:function (get_cr0.end - get_cr0)
 get_cr0:
     mov eax, cr0
     ret
+
+.end:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: get_cr2
 ; C PROTOTYPE: uint32_t get_cr2(void)
 ; ------------------------------------------------------------------------------
-    global get_cr2
+    global get_cr2:function (get_cr2.end - get_cr2)
 get_cr2:
     mov eax, cr2
     ret
+
+.end:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: get_cr3
 ; C PROTOTYPE: uint32_t get_cr3(void)
 ; ------------------------------------------------------------------------------
-    global get_cr3
+    global get_cr3:function (get_cr3.end - get_cr3)
 get_cr3:
     mov eax, cr3
     ret
+
+.end:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: get_cr4
 ; C PROTOTYPE: uint32_t get_cr4(void)
 ; ------------------------------------------------------------------------------
-    global get_cr4
+    global get_cr4:function (get_cr4.end - get_cr4)
 get_cr4:
     mov eax, cr4
     ret
+
+.end:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: set_cr0
 ; C PROTOTYPE: void set_cr0(uint32_t val)
 ; ------------------------------------------------------------------------------
-    global set_cr0
+    global set_cr0:function (set_cr0.end - set_cr0)
 set_cr0:
     mov eax, [esp+4]    ; First param: val
     mov cr0, eax
@@ -185,52 +209,62 @@ set_cr0:
 .do_ret:
     ret
 
+.end:
+
 ; ------------------------------------------------------------------------------
 ; FUNCTION: set_cr3
 ; C PROTOTYPE: void set_cr3(uint32_t val)
 ; ------------------------------------------------------------------------------
-    global set_cr3
+    global set_cr3:function (set_cr3.end - set_cr3)
 set_cr3:
     mov eax, [esp+4]    ; First param: val
     mov cr3, eax
     ret
 
+.end:
+
 ; ------------------------------------------------------------------------------
 ; FUNCTION: set_cr4
 ; C PROTOTYPE: void set_cr4(uint32_t val)
 ; ------------------------------------------------------------------------------
-    global set_cr4
+    global set_cr4:function (set_cr4.end - set_cr4)
 set_cr4:
     mov eax, [esp+4]    ; First param: val
     mov cr4, eax
     ret
 
+.end:
+
 ; ------------------------------------------------------------------------------
 ; FUNCTION: get_eflags
 ; C PROTOTYPE: uint32_t get_eflags(void)
 ; ------------------------------------------------------------------------------
-    global get_eflags
+    global get_eflags:function (get_eflags.end - get_eflags)
 get_eflags:
     pushfd
     pop eax
     ret
 
+.end:
+
 ; ------------------------------------------------------------------------------
 ; FUNCTION: set_eflags
 ; C PROTOTYPE: void set_eflags(uint32_t val)
 ; ------------------------------------------------------------------------------
-    global set_eflags
+    global set_eflags:function (set_eflags.end - set_eflags)
 set_eflags:
     mov eax, [esp+4]    ; First param: val
     push eax
     popfd
     ret
 
+.end:
+
 ; ------------------------------------------------------------------------------
 ; FUNCTION: set_cs
 ; C PROTOTYPE: void set_cs(uint32_t val)
 ; ------------------------------------------------------------------------------
-    global set_cs
+    global set_cs:function (set_cs.end - set_cs)
 set_cs:
     mov eax, [esp+4]    ; First param: val
     pop edx             ; return address
@@ -238,72 +272,86 @@ set_cs:
     push edx 
     retf
 
+.end:
+
 ; ------------------------------------------------------------------------------
 ; FUNCTION: set_ds
 ; C PROTOTYPE: void set_ds(uint32_t val)
 ; ------------------------------------------------------------------------------
-    global set_ds
+    global set_ds:function (set_ds.end - set_ds)
 set_ds:
     mov eax, [esp+4]    ; First param: val
     mov ds, eax
     ret
 
+.end:
+
 ; ------------------------------------------------------------------------------
 ; FUNCTION: set_es
 ; C PROTOTYPE: void set_es(uint32_t val)
 ; ------------------------------------------------------------------------------
-    global set_es
+    global set_es:function (set_es.end - set_es)
 set_es:
     mov eax, [esp+4]    ; First param: val
     mov es, eax
     ret
 
+.end:
+
 ; ------------------------------------------------------------------------------
 ; FUNCTION: set_fs
 ; C PROTOTYPE: void set_fs(uint32_t val)
 ; ------------------------------------------------------------------------------
-    global set_fs
+    global set_fs:function (set_fs.end - set_fs)
 set_fs:
     mov eax, [esp+4]    ; First param: val
     mov fs, eax
     ret
 
+.end:
+
 ; ------------------------------------------------------------------------------
 ; FUNCTION: set_gs
 ; C PROTOTYPE: void set_gs(uint32_t val)
 ; ------------------------------------------------------------------------------
-    global set_gs
+    global set_gs:function (set_gs.end - set_gs)
 set_gs:
     mov eax, [esp+4]    ; First param: val
     mov gs, eax
     ret
 
+.end:
+
 ; ------------------------------------------------------------------------------
 ; FUNCTION: set_ss
 ; C PROTOTYPE: void set_ss(uint32_t val)
 ; ------------------------------------------------------------------------------
-    global set_ss
+    global set_ss:function (set_ss.end - set_ss)
 set_ss:
     mov eax, [esp+4]    ; First param: val
     mov ss, eax
     ret
 
+.end:
+
 ; ------------------------------------------------------------------------------
 ; FUNCTION: rdmsr
 ; C PROTOTYPE: uint64_t rdmsr(msr_addr_t addr)
 ; ------------------------------------------------------------------------------
-    global rdmsr
+    global rdmsr:function (rdmsr.end - rdmsr)
 rdmsr:
     mov ecx, [esp+ 4]    ; First param:  addr
     
     rdmsr
     ret
 
+.end:
+
 ; ------------------------------------------------------------------------------
 ; FUNCTION: wrmsr
 ; C PROTOTYPE: void wrmsr(msr_addr_t addr, uint64_t val)
 ; ------------------------------------------------------------------------------
-    global wrmsr
+    global wrmsr:function (wrmsr.end - wrmsr)
 wrmsr:
     mov ecx, [esp+ 4]   ; First param:  addr
     mov eax, [esp+ 8]   ; Second param: val (low dword)
@@ -311,36 +359,43 @@ wrmsr:
     
     wrmsr
     ret
+
+.end:
+
 ; ------------------------------------------------------------------------------
 ; FUNCTION: get_gs_ptr
 ; C PROTOTYPE: uint32_t get_gs_ptr(uint32_t *ptr)
 ; ------------------------------------------------------------------------------
-    global get_gs_ptr
+    global get_gs_ptr:function (get_gs_ptr.end - get_gs_ptr)
 get_gs_ptr:
     mov ecx, [esp+ 4]   ; First param:  ptr
     mov eax, [gs:ecx]
     ret
 
+.end:
+
 ; ------------------------------------------------------------------------------
 ; FUNCTION: rdtsc
 ; C PROTOTYPE: uint64_t rdtsc(void)
 ; ------------------------------------------------------------------------------
-    global rdtsc
+    global rdtsc:function (rdtsc.end - rdtsc)
 rdtsc:
     rdtsc
     ret
+
+.end:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: x86_enable_pae
 ; C PROTOTYPE: void x86_enable_pae(uint32_t cr3_value)
 ; ------------------------------------------------------------------------------
-    global x86_enable_pae
+    global x86_enable_pae:function (x86_enable_pae.end - x86_enable_pae)
 x86_enable_pae:
     mov eax, [esp+ 4]   ; First argument: pdpt
 
     ; Jump to low-address alias
-    jmp just_here - BOOT_OFFSET_FROM_16MB
-just_here:
+    jmp .just_here - BOOT_OFFSET_FROM_16MB
+.just_here:
 
     ; Disable paging.
     mov ecx, cr0
@@ -362,3 +417,5 @@ just_here:
     ; No need to jump back to high alias. The ret instruction will take care
     ; of it because this is where the return address is.
     ret
+
+.end:
