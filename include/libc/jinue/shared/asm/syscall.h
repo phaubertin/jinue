@@ -68,6 +68,9 @@
 /** reply to current message */
 #define SYSCALL_FUNC_REPLY              11
 
+/** destroy the current thread */
+#define SYSCALL_FUNC_EXIT_THREAD        12
+
 
 /** start of function numbers for user space messages */
 #define SYSCALL_USER_BASE               4096

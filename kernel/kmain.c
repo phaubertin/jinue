@@ -175,15 +175,9 @@ void kmain(void) {
      * to the user space loader. */
     printk("---\n");
 
-    /* start process manager
-     *
-     * We switch from NULL since this is the first thread. */
-    thread_yield_from(
-            NULL,
-            false,      /* don't block */
-            false);     /* don't destroy */
-                        /* just be nice */
+    /* Start first thread */
+    thread_start_first();
 
     /* should never happen */
-    panic("thread_yield_from() returned in kmain()");
+    panic("thread_start_first() returned in kmain()");
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2022 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -48,8 +48,10 @@ static void thread_init(thread_t *thread, process_t *process) {
 
     jinue_node_init(&thread->thread_list);
 
-    thread->process     = process;
-    thread->sender      = NULL;
+    thread->process             = process;
+    thread->sender              = NULL;
+    thread->local_storage_addr  = NULL;
+    thread->local_storage_size  = 0;
 
     thread_ready(thread);
 }
@@ -83,11 +85,10 @@ void thread_ready(thread_t *thread) {
     jinue_list_enqueue(&ready_list, &thread->thread_list);
 }
 
-void thread_switch(
-        thread_t *from_thread,
-        thread_t *to_thread,
-        bool blocked,
-        bool do_destroy) {
+static void switch_thread(
+        thread_t    *from_thread,
+        thread_t    *to_thread,
+        bool         do_destroy) {
 
     if(to_thread != from_thread) {
         thread_context_t    *from_context;
@@ -100,13 +101,6 @@ void thread_switch(
         else {
             from_context = &from_thread->thread_ctx;
             from_process = from_thread->process;
-
-            /* Put the the thread we are switching away from (the current thread)
-             * back into the ready list, unless it just blocked or it is being
-             * destroyed. */
-            if(! (do_destroy || blocked)) {
-                thread_ready(from_thread);
-            }
         }
 
         if(from_process != to_thread->process) {
@@ -120,36 +114,78 @@ void thread_switch(
     }
 }
 
-static thread_t *reschedule(thread_t *from_thread, bool from_can_run) {
+static thread_t *reschedule(bool current_can_run) {
     thread_t *to_thread = jinue_node_entry(
             jinue_list_dequeue(&ready_list),
             thread_t,
             thread_list );
     
     if(to_thread == NULL) {
-        if(from_thread != NULL && from_can_run) {
-            /* We just let the current thread run because there are no other
-             * threads to run. */
-            return from_thread;
+        /* Special case to take into account: when scheduling the first thread,
+         * there is no current thread. We should not call get_current_thread()
+         * in that case. */
+        if(current_can_run) {
+            return get_current_thread();
         }
-        else {
-            /* Currently, scheduling is purely cooperative and only one CPU is
-             * supported (so, there are no threads currently running on other
-             * CPUs). What this means is that, once there are no more threads
-             * running or ready to run, this situation will never change. */
-            panic("No more thread to schedule");
-        }
+
+        /* Currently, scheduling is purely cooperative and only one CPU is
+         * supported (so, there are no threads currently running on other
+         * CPUs). What this means is that, once there are no more threads
+         * running or ready to run, this situation will never change. */
+        panic("No thread to schedule");
     }
 
     return to_thread;
 }
 
-void thread_yield_from(thread_t *from_thread, bool blocked, bool do_destroy) {
-    bool from_can_run = !(blocked || do_destroy);
-    
-    thread_switch(
-            from_thread,
-            reschedule(from_thread, from_can_run),
-            blocked,
-            do_destroy);
+void thread_switch_to(thread_t *thread, bool blocked) {
+    thread_t *current = get_current_thread();
+
+    if (!blocked) {
+        thread_ready(current);
+    }
+
+    switch_thread(
+            current,
+            thread,
+            false);             /* don't destroy current thread */
+}
+
+void thread_start_first(void) {
+    switch_thread(
+            NULL,
+            reschedule(false),
+            false);             /* don't destroy current thread */
+}
+
+void thread_yield(void) {
+    thread_switch_to(
+            reschedule(true),   /* current thread can run */
+            false);             /* don't block current thread */
+}
+
+void thread_block(void) {
+    thread_switch_to(
+            reschedule(false),  /* current thread cannot run */
+            true);              /* do block current thread */
+}
+
+void thread_exit(void) {
+    switch_thread(
+            get_current_thread(),
+            reschedule(false),
+            true);              /* do destroy the thread */
+}
+
+void thread_set_local_storage(
+        thread_t    *thread,
+        addr_t       addr,
+        size_t       size) {
+
+    thread->local_storage_addr  = addr;
+    thread->local_storage_size  = size;
+}
+
+addr_t thread_get_local_storage(const thread_t *thread) {
+    return thread->local_storage_addr;
 }

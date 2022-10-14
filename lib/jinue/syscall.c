@@ -136,7 +136,7 @@ int jinue_yield(void) {
     jinue_syscall_args_t args;
 
     args.arg0 = SYSCALL_FUNC_YIELD_THREAD;
-    args.arg1 = false;
+    args.arg1 = 0;
     args.arg2 = 0;
     args.arg3 = 0;
 
@@ -146,8 +146,8 @@ int jinue_yield(void) {
 void jinue_thread_exit(void) {
     jinue_syscall_args_t args;
 
-    args.arg0 = SYSCALL_FUNC_YIELD_THREAD;
-    args.arg1 = true;
+    args.arg0 = SYSCALL_FUNC_EXIT_THREAD;
+    args.arg1 = 0;
     args.arg2 = 0;
     args.arg3 = 0;
 
