@@ -50,7 +50,7 @@ static char *syscall_stub_names[] = {
 static int syscall_stub_index = SYSCALL_METHOD_INTR;
 
 int jinue_syscall(jinue_syscall_args_t *args) {
-	return (int)syscall_stubs[syscall_stub_index](args);
+    return (int)syscall_stubs[syscall_stub_index](args);
 }
 
 int jinue_call(jinue_syscall_args_t *args, int *perrno) {
@@ -65,7 +65,7 @@ int jinue_call(jinue_syscall_args_t *args, int *perrno) {
     return retval;
 }
 
-void jinue_get_syscall_implementation(void) {
+int jinue_get_syscall_implementation(void) {
     jinue_syscall_args_t args;
 
     args.arg0 = SYSCALL_FUNC_GET_SYSCALL;
@@ -73,9 +73,9 @@ void jinue_get_syscall_implementation(void) {
     args.arg2 = 0;
     args.arg3 = 0;
 
-    jinue_syscall(&args);
+    syscall_stub_index = jinue_syscall(&args);
 
-    syscall_stub_index = jinue_get_return(&args);
+    return syscall_stub_index;
 }
 
 const char *jinue_get_syscall_implementation_name(void) {
@@ -103,7 +103,7 @@ void *jinue_get_thread_local_storage(void) {
 
     jinue_call(&args, NULL);
 
-    return jinue_get_return_ptr(&args);
+    return (void *)args.arg0;
 }
 
 int jinue_thread_create(void (*entry)(), void *stack, int *perrno) {

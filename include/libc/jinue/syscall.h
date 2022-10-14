@@ -40,7 +40,7 @@ int jinue_syscall(jinue_syscall_args_t *args);
 
 int jinue_call(jinue_syscall_args_t *args, int *perrno);
 
-void jinue_get_syscall_implementation(void);
+int jinue_get_syscall_implementation(void);
 
 const char *jinue_get_syscall_implementation_name(void);
 
