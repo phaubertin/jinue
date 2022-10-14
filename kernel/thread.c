@@ -83,10 +83,9 @@ void thread_ready(thread_t *thread) {
     jinue_list_enqueue(&ready_list, &thread->thread_list);
 }
 
-static void thread_switch(
+static void switch_thread(
         thread_t    *from_thread,
         thread_t    *to_thread,
-        bool         blocked,
         bool         do_destroy) {
 
     if(to_thread != from_thread) {
@@ -100,13 +99,6 @@ static void thread_switch(
         else {
             from_context = &from_thread->thread_ctx;
             from_process = from_thread->process;
-
-            /* Put the the thread we are switching away from (the current thread)
-             * back into the ready list, unless it just blocked or it is being
-             * destroyed. */
-            if(! (do_destroy || blocked)) {
-                thread_ready(from_thread);
-            }
         }
 
         if(from_process != to_thread->process) {
@@ -145,18 +137,22 @@ static thread_t *reschedule(bool current_can_run) {
 }
 
 void thread_switch_to(thread_t *thread, bool blocked) {
-    thread_switch(
-            get_current_thread(),
+    thread_t *current = get_current_thread();
+
+    if (!blocked) {
+        thread_ready(current);
+    }
+
+    switch_thread(
+            current,
             thread,
-            blocked,
             false);             /* don't destroy current thread */
 }
 
 void thread_start_first(void) {
-    thread_switch(
+    switch_thread(
             NULL,
             reschedule(false),
-            true,               /* do block (there is no current thread) */
             false);             /* don't destroy current thread */
 }
 
@@ -173,9 +169,8 @@ void thread_block(void) {
 }
 
 void thread_exit(void) {
-    thread_switch(
+    switch_thread(
             get_current_thread(),
             reschedule(false),
-            false,              /* don't block */
             true);              /* do destroy the thread */
 }
