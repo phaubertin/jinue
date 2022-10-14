@@ -35,6 +35,12 @@
 #include <jinue/shared/syscall.h>
 #include <stddef.h>
 
+static inline void jinue_set_errno(int *perrno, int errval) {
+    if(perrno != NULL) {
+        *perrno = errval;
+    }
+}
+
 uintptr_t jinue_syscall(jinue_syscall_args_t *args);
 
 intptr_t jinue_syscall_with_usual_convention(jinue_syscall_args_t *args, int *perrno);

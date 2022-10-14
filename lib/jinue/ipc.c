@@ -33,12 +33,6 @@
 #include <jinue/ipc.h>
 #include <jinue/syscall.h>
 
-static inline void set_errno(int *perrno, int errval) {
-    if(perrno != NULL) {
-        *perrno = errval;
-    }
-}
-
 intptr_t jinue_send(
         int              function,
         int              fd,
@@ -53,7 +47,7 @@ intptr_t jinue_send(
     /* The library has to perform this check and set the appropriate error
      * because the kernel cannot check this once the values have been packed. */
     if(data_size > JINUE_SEND_MAX_SIZE || n_desc > JINUE_SEND_MAX_N_DESC) {
-        set_errno(perrno, JINUE_EINVAL);
+        jinue_set_errno(perrno, JINUE_EINVAL);
         return -1;
     }
 
@@ -121,7 +115,7 @@ intptr_t jinue_reply(
     /* The library has to perform this check and set the appropriate error
      * because the kernel cannot check this once the values have been packed. */
     if(data_size > JINUE_SEND_MAX_SIZE || n_desc > JINUE_SEND_MAX_N_DESC) {
-        set_errno(perrno, JINUE_EINVAL);
+        jinue_set_errno(perrno, JINUE_EINVAL);
         return -1;
     }
 

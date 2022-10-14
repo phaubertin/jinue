@@ -56,10 +56,8 @@ uintptr_t jinue_syscall(jinue_syscall_args_t *args) {
 intptr_t jinue_syscall_with_usual_convention(jinue_syscall_args_t *args, int *perrno) {
     const intptr_t retval = (intptr_t)jinue_syscall(args);
 
-    if(perrno != NULL) {
-        if(retval < 0) {
-            *perrno = args->arg1;
-        }
+    if(retval < 0) {
+        jinue_set_errno(perrno, args->arg1);
     }
 
     return retval;
