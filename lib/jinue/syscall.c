@@ -49,12 +49,12 @@ static char *syscall_stub_names[] = {
 
 static int syscall_stub_index = SYSCALL_METHOD_INTR;
 
-int jinue_syscall(jinue_syscall_args_t *args) {
-    return (int)syscall_stubs[syscall_stub_index](args);
+uintptr_t jinue_syscall(jinue_syscall_args_t *args) {
+    return syscall_stubs[syscall_stub_index](args);
 }
 
-int jinue_call(jinue_syscall_args_t *args, int *perrno) {
-    const int retval = jinue_syscall(args);
+intptr_t jinue_syscall_with_usual_convention(jinue_syscall_args_t *args, int *perrno) {
+    const intptr_t retval = (intptr_t)jinue_syscall(args);
 
     if(perrno != NULL) {
         if(retval < 0) {
@@ -73,7 +73,7 @@ int jinue_get_syscall_implementation(void) {
     args.arg2 = 0;
     args.arg3 = 0;
 
-    syscall_stub_index = jinue_syscall(&args);
+    syscall_stub_index = (intptr_t)jinue_syscall(&args);
 
     return syscall_stub_index;
 }
@@ -90,7 +90,7 @@ void jinue_set_thread_local_storage(void *addr, size_t size) {
     args.arg2 = (uintptr_t)size;
     args.arg3 = 0;
 
-    jinue_call(&args, NULL);
+    jinue_syscall(&args);
 }
 
 void *jinue_get_thread_local_storage(void) {
@@ -101,9 +101,7 @@ void *jinue_get_thread_local_storage(void) {
     args.arg2 = 0;
     args.arg3 = 0;
 
-    jinue_call(&args, NULL);
-
-    return (void *)args.arg0;
+    return (void *)jinue_syscall(&args);
 }
 
 int jinue_thread_create(void (*entry)(), void *stack, int *perrno) {
@@ -114,10 +112,10 @@ int jinue_thread_create(void (*entry)(), void *stack, int *perrno) {
     args.arg2 = (uintptr_t)entry;
     args.arg3 = (uintptr_t)stack;
 
-    return jinue_call(&args, perrno);
+    return jinue_syscall_with_usual_convention(&args, perrno);
 }
 
-int jinue_yield(void) {
+void jinue_yield(void) {
     jinue_syscall_args_t args;
 
     args.arg0 = SYSCALL_FUNC_YIELD_THREAD;
@@ -125,7 +123,7 @@ int jinue_yield(void) {
     args.arg2 = 0;
     args.arg3 = 0;
 
-    return jinue_call(&args, NULL);
+    jinue_syscall(&args);
 }
 
 void jinue_thread_exit(void) {
@@ -136,5 +134,5 @@ void jinue_thread_exit(void) {
     args.arg2 = 0;
     args.arg3 = 0;
 
-    (void)jinue_call(&args, NULL);
+    jinue_syscall(&args);
 }

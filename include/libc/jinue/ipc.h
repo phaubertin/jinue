@@ -34,6 +34,7 @@
 
 #include <jinue/shared/ipc.h>
 #include <stddef.h>
+#include <stdint.h>
 
 typedef struct {
     uintptr_t            function;
@@ -48,7 +49,7 @@ typedef struct {
     size_t               desc_n;
 } jinue_reply_t;
 
-int jinue_send(
+intptr_t jinue_send(
         int              function,
         int              fd,
         char            *buffer,
@@ -57,14 +58,14 @@ int jinue_send(
         unsigned int     n_desc,
         int             *perrno);
 
-int jinue_receive(
+intptr_t jinue_receive(
         int              fd,
         char            *buffer,
         size_t           buffer_size,
         jinue_message_t *message,
         int             *perrno);
 
-int jinue_reply(
+intptr_t jinue_reply(
         char            *buffer,
         size_t           buffer_size,
         size_t           data_size,

@@ -35,10 +35,9 @@
 #include <jinue/shared/syscall.h>
 #include <stddef.h>
 
+uintptr_t jinue_syscall(jinue_syscall_args_t *args);
 
-int jinue_syscall(jinue_syscall_args_t *args);
-
-int jinue_call(jinue_syscall_args_t *args, int *perrno);
+intptr_t jinue_syscall_with_usual_convention(jinue_syscall_args_t *args, int *perrno);
 
 int jinue_get_syscall_implementation(void);
 
@@ -50,9 +49,8 @@ void *jinue_get_thread_local_storage(void);
 
 int jinue_thread_create(void (*entry)(), void *stack, int *perrno);
 
-int jinue_yield(void);
+void jinue_yield(void);
 
 void jinue_thread_exit(void);
-
 
 #endif

@@ -65,7 +65,7 @@ void console_putc(char c, int colour) {
     args.arg2 = 0;
     args.arg3 = 0;
 
-    (void)jinue_call(&args, NULL);
+    jinue_syscall(&args);
 }
 
 void console_print(const char *message, int colour) {

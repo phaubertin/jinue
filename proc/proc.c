@@ -284,7 +284,7 @@ int main(int argc, char *argv[]) {
     printk("Main thread is running.\n");
 
     while (1) {
-        (void)jinue_yield();
+        jinue_yield();
     }
     
     return EXIT_SUCCESS;
