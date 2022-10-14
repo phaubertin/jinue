@@ -37,49 +37,43 @@
 #include <debug.h>
 #include <printk.h>
 
-
+/** Dump the call stack to console */
 void dump_call_stack(void) {
-    addr_t               fptr;
-
     const boot_info_t *boot_info = get_boot_info();
 
     printk("Call stack dump:\n");
 
-    fptr = get_fpointer();
-    
-    while(fptr != NULL) {
+    for(addr_t fptr = get_fpointer(); fptr != NULL; fptr = get_caller_fpointer(fptr)) {
         addr_t return_addr = get_ret_addr(fptr);
+
         if(return_addr == NULL) {
             break;
         }
         
-        /* assume e8 xx xx xx xx for call instruction encoding */
+        /* We assume e8 xx xx xx xx for call instruction encoding.
+         * TODO can we do better than this? */
         return_addr -= 5;
         
-        elf_symbol_t symbol;
-        int retval = elf_find_symbol_by_address_and_type(
-                &symbol,
-                boot_info->kernel_start,
-                (Elf32_Addr)return_addr,
-                STT_FUNCTION);
+        const Elf32_Ehdr *elf_header = boot_info->kernel_start;
+        const Elf32_Sym *symbol = elf_find_function_symbol_by_address(
+                elf_header,
+                (Elf32_Addr)return_addr);
 
-        if(retval < 0) {
+        if(symbol == NULL) {
             printk("\t0x%x (unknown)\n", return_addr);
+            continue;
         }
-        else {
-            const char *name = symbol.name;
 
-            if(name == NULL) {
-                name = "[unknown]";
-            }
+        const char *name = elf_symbol_name(elf_header, symbol);
 
-            printk(
-                    "\t0x%x (%s+%u)\n",
-                    return_addr,
-                    name,
-                    return_addr - symbol.addr);
+        if(name == NULL) {
+            name = "[unknown]";
         }
-        
-        fptr = get_caller_fpointer(fptr);
+
+        printk(
+                "\t0x%x (%s+%u)\n",
+                return_addr,
+                name,
+                return_addr - symbol->st_value);
     }
 }
