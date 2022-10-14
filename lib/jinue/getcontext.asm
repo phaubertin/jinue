@@ -31,6 +31,7 @@
 ; call that does not exist. Actually implement the system call and then fix
 ; this code.
 
+    global jinue_getcontext:function (jinue_getcontext.end - jinue_getcontext)
 jinue_getcontext:
     ; setup frame pointer
     push ebp
@@ -95,3 +96,5 @@ jinue_getcontext:
     
 .exit:
     ret
+
+.end:

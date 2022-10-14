@@ -34,7 +34,7 @@
 ; FUNCTION: jinue_syscall_fast_intel
 ; C PROTOTYPE: void jinue_syscall_fast_intel(jinue_syscall_args_t *args);
 ; ------------------------------------------------------------------------------
-    global jinue_syscall_fast_intel
+    global jinue_syscall_fast_intel:function (jinue_syscall_fast_intel.end - jinue_syscall_fast_intel)
 jinue_syscall_fast_intel:
     ; System V ABI calling convention: these four registers must be preserved
     push ebx
@@ -87,11 +87,13 @@ jinue_syscall_fast_intel:
 
     ret
 
+.end:
+
 ; ------------------------------------------------------------------------------
 ; FUNCTION: jinue_syscall_fast_amd
 ; C PROTOTYPE: void jinue_syscall_fast_amd(jinue_syscall_args_t *args);
 ; ------------------------------------------------------------------------------
-    global jinue_syscall_fast_amd
+    global jinue_syscall_fast_amd:function (jinue_syscall_fast_amd.end - jinue_syscall_fast_amd)
 jinue_syscall_fast_amd:
     ; System V ABI calling convention: these four registers must be preserved
     push ebx
@@ -143,11 +145,13 @@ jinue_syscall_fast_amd:
 
     ret
 
+.end:
+
 ; ------------------------------------------------------------------------------
 ; FUNCTION: jinue_syscall_intr
 ; C PROTOTYPE: void jinue_syscall_intr(jinue_syscall_args_t *args);
 ; ------------------------------------------------------------------------------
-    global jinue_syscall_intr
+    global jinue_syscall_intr:function (jinue_syscall_intr.end - jinue_syscall_intr)
 jinue_syscall_intr:
     ; System V ABI calling convention: these four registers must be preserved.
     push ebx
@@ -191,3 +195,5 @@ jinue_syscall_intr:
     pop ebx
 
     ret
+
+.end:
