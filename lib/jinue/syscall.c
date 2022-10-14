@@ -50,8 +50,7 @@ static char *syscall_stub_names[] = {
 static int syscall_stub_index = SYSCALL_METHOD_INTR;
 
 int jinue_syscall(jinue_syscall_args_t *args) {
-	syscall_stubs[syscall_stub_index](args);
-	return jinue_get_return(args);
+	return (int)syscall_stubs[syscall_stub_index](args);
 }
 
 int jinue_call(jinue_syscall_args_t *args, int *perrno) {

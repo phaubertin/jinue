@@ -32,12 +32,14 @@
 #ifndef STUBS_H_
 #define STUBS_H_
 
-typedef void (*jinue_syscall_stub_t)(jinue_syscall_args_t *args);
+#include <stdint.h>
 
-void jinue_syscall_fast_intel(jinue_syscall_args_t *args);
+typedef uintptr_t (*jinue_syscall_stub_t)(jinue_syscall_args_t *args);
 
-void jinue_syscall_fast_amd(jinue_syscall_args_t *args);
+uintptr_t jinue_syscall_fast_intel(jinue_syscall_args_t *args);
 
-void jinue_syscall_intr(jinue_syscall_args_t *args);
+uintptr_t jinue_syscall_fast_amd(jinue_syscall_args_t *args);
+
+uintptr_t jinue_syscall_intr(jinue_syscall_args_t *args);
 
 #endif
