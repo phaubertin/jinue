@@ -57,7 +57,7 @@ void dump_call_stack(void) {
         return_addr -= 5;
         
         elf_symbol_t symbol;
-        int retval = elf_lookup_symbol(
+        int retval = elf_find_symbol_by_address_and_type(
                 boot_info->kernel_start,
                 (Elf32_Addr)return_addr,
                 STT_FUNCTION,

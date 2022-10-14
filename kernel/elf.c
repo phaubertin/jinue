@@ -450,7 +450,7 @@ void elf_initialize_stack(elf_info_t *info, const char *cmdline) {
 }
 
 /**
- * Look up a symbol in the ELF binary's symbol table by address
+ * Look up a symbol in the ELF binary's symbol table by address and type
  *
  * Input is an address and a symbol type. The result contains the start address
  * and length of the symbol.
@@ -462,7 +462,7 @@ void elf_initialize_stack(elf_info_t *info, const char *cmdline) {
  * @return 0 if symbol is found, -1 otherwise
  *
  * */
-int elf_lookup_symbol(
+int elf_find_symbol_by_address_and_type(
         const Elf32_Ehdr    *elf_header,
         Elf32_Addr           addr,
         int                  type,
