@@ -58,10 +58,10 @@ void dump_call_stack(void) {
         
         elf_symbol_t symbol;
         int retval = elf_find_symbol_by_address_and_type(
+                &symbol,
                 boot_info->kernel_start,
                 (Elf32_Addr)return_addr,
-                STT_FUNCTION,
-                &symbol);
+                STT_FUNCTION);
 
         if(retval < 0) {
             printk("\t0x%x (unknown)\n", return_addr);

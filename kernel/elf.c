@@ -460,7 +460,7 @@ void elf_initialize_stack(elf_info_t *info, const char *cmdline) {
  * @return pointer on section header if found, NULL otherwise
  *
  * */
-const Elf32_Shdr *elf_find_section_header_by_type(
+static const Elf32_Shdr *elf_find_section_header_by_type(
         const Elf32_Ehdr    *elf_header,
         Elf32_Word           type) {
 
@@ -473,6 +473,17 @@ const Elf32_Shdr *elf_find_section_header_by_type(
     }
 
     return NULL;
+}
+
+/**
+ * Find the section header for the symbol table
+ *
+ * @param elf_header ELF header of ELF binary
+ * @return pointer on section header if found, NULL otherwise
+ *
+ * */
+static const Elf32_Shdr *elf_find_symtab_section_header(const Elf32_Ehdr *elf_header) {
+    return elf_find_section_header_by_type(elf_header, SHT_SYMTAB);
 }
 
 /**
@@ -489,14 +500,12 @@ const Elf32_Shdr *elf_find_section_header_by_type(
  *
  * */
 int elf_find_symbol_by_address_and_type(
+        elf_symbol_t        *result,
         const Elf32_Ehdr    *elf_header,
         Elf32_Addr           addr,
-        int                  type,
-        elf_symbol_t        *result) {
+        int                  type) {
 
-    const Elf32_Shdr *symbtab_section_header = elf_find_section_header_by_type(
-            elf_header,
-            SHT_SYMTAB);
+    const Elf32_Shdr *symbtab_section_header = elf_find_symtab_section_header(elf_header);
 
     if(symbtab_section_header == NULL) {
         /* no symbol table */
@@ -527,6 +536,7 @@ int elf_find_symbol_by_address_and_type(
             
             if(lookup_addr >= start && lookup_addr < end) {
                 result->addr = symbol_header->st_value;
+                result->size = symbol_header->st_size;
                 result->name = &string_table[symbol_header->st_name];
                 
                 return 0;

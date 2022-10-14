@@ -48,6 +48,7 @@ typedef struct {
 
 typedef struct {
     Elf32_Addr  addr;
+    Elf32_Word  size;
     const char *name;
 } elf_symbol_t;
 
@@ -80,14 +81,10 @@ void elf_allocate_stack(elf_info_t *info, boot_alloc_t *boot_alloc);
 
 void elf_initialize_stack(elf_info_t *info, const char *cmdline);
 
-const Elf32_Shdr *elf_find_section_header_by_type(
-        const Elf32_Ehdr    *elf_header,
-        Elf32_Word           type);
-
 int elf_find_symbol_by_address_and_type(
+        elf_symbol_t        *result,
         const Elf32_Ehdr    *elf_header,
         Elf32_Addr           addr,
-        int                  type,
-        elf_symbol_t        *result);
+        int                  type);
 
 #endif
