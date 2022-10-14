@@ -36,7 +36,7 @@
 ; ------------------------------------------------------------------------------
 ; ELF binary entry point
 ; ------------------------------------------------------------------------------    
-    global _start
+    global _start:function (_start.end - _start)
 _start:
     ; we are going up
     cld
@@ -81,3 +81,5 @@ _start:
     call main
     
     ; main() must never return
+
+.end:

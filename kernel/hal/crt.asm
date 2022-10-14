@@ -47,7 +47,7 @@ _start:
     ; The halt() function never returns.
     ;
     ; If kmain() ever returns, it will enter halt().
-    global halt:function    (halt.end - halt)
+    global halt:function (halt.end - halt)
 halt:
     cli
     hlt

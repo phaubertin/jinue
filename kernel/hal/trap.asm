@@ -139,7 +139,7 @@ interrupt_entry:
     add esp, 4
 
     ; new threads start here
-    global return_from_interrupt
+    global return_from_interrupt:function (return_from_interrupt.end - return_from_interrupt)
 return_from_interrupt:
     
     pop eax                 ; 0
