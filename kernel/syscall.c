@@ -176,15 +176,12 @@ static void sys_set_thread_local_address(jinue_syscall_args_t *args) {
         return;
     }
 
-    thread_context_set_local_storage(
-            &get_current_thread()->thread_ctx,
-            addr,
-            size);
+    thread_set_local_storage(get_current_thread(), addr, size);
     syscall_args_set_return(args, 0);
 }
 
 static void sys_get_thread_local_address(jinue_syscall_args_t *args) {
-    addr_t tls = thread_context_get_local_storage(&get_current_thread()->thread_ctx);
+    addr_t tls = thread_get_local_storage(get_current_thread());
     syscall_args_set_return_ptr(args, tls);
 }
 

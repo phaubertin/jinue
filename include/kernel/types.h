@@ -91,6 +91,8 @@ struct thread_t {
     thread_context_t         thread_ctx;
     jinue_node_t             thread_list;
     process_t               *process;
+    addr_t                   local_storage_addr;
+    size_t                   local_storage_size;
     struct thread_t         *sender;
     jinue_syscall_args_t    *message_args;
     char                     message_buffer[JINUE_SEND_MAX_SIZE];

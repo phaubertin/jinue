@@ -48,8 +48,10 @@ static void thread_init(thread_t *thread, process_t *process) {
 
     jinue_node_init(&thread->thread_list);
 
-    thread->process     = process;
-    thread->sender      = NULL;
+    thread->process             = process;
+    thread->sender              = NULL;
+    thread->local_storage_addr  = NULL;
+    thread->local_storage_size  = 0;
 
     thread_ready(thread);
 }
@@ -173,4 +175,17 @@ void thread_exit(void) {
             get_current_thread(),
             reschedule(false),
             true);              /* do destroy the thread */
+}
+
+void thread_set_local_storage(
+        thread_t    *thread,
+        addr_t       addr,
+        size_t       size) {
+
+    thread->local_storage_addr  = addr;
+    thread->local_storage_size  = size;
+}
+
+addr_t thread_get_local_storage(const thread_t *thread) {
+    return thread->local_storage_addr;
 }

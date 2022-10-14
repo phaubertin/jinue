@@ -33,26 +33,12 @@
 #define JINUE_HAL_THREAD_H
 
 #include <hal/asm/thread.h>
-
 #include <hal/x86.h>
 #include <types.h>
 
 
 static inline thread_t *get_current_thread(void) {
     return (thread_t *)(get_esp() & THREAD_CONTEXT_MASK);
-}
-
-static inline void thread_context_set_local_storage(
-        thread_context_t    *thread_ctx,
-        addr_t               addr,
-        size_t               size) {
-
-    thread_ctx->local_storage_addr  = addr;
-    thread_ctx->local_storage_size  = size;
-}
-
-static inline addr_t thread_context_get_local_storage(thread_context_t *thread_ctx) {
-    return thread_ctx->local_storage_addr;
 }
 
 static inline addr_t get_kernel_stack_base(thread_context_t *thread_ctx) {

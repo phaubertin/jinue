@@ -87,8 +87,6 @@ thread_t *thread_page_init(
     thread_t *thread                = thread_page;
     thread_context_t *thread_ctx    = &thread->thread_ctx;
 
-    thread_ctx->local_storage_addr  = NULL;
-
     /* setup stack for initial return to user space */
     void *kernel_stack_base = get_kernel_stack_base(thread_ctx);
 

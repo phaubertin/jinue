@@ -53,4 +53,11 @@ void thread_block(void);
 
 void thread_exit(void);
 
+void thread_set_local_storage(
+        thread_t    *thread,
+        addr_t       addr,
+        size_t       size);
+
+addr_t thread_get_local_storage(const thread_t *thread);
+
 #endif
