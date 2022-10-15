@@ -107,11 +107,11 @@ static void sys_nosys(jinue_syscall_args_t *args) {
     syscall_args_set_error(args, JINUE_ENOSYS);
 }
 
-static void sys_get_syscall_method(jinue_syscall_args_t *args) {
+static void sys_get_syscall(jinue_syscall_args_t *args) {
     syscall_args_set_return(args, syscall_method);
 }
 
-static void sys_console_putc(jinue_syscall_args_t *args) {
+static void sys_putc(jinue_syscall_args_t *args) {
     /** TODO: permission check */
     console_putc(
             (char)args->arg1,
@@ -119,7 +119,7 @@ static void sys_console_putc(jinue_syscall_args_t *args) {
     syscall_args_set_return(args, 0);
 }
 
-static void sys_console_puts(jinue_syscall_args_t *args) {
+static void sys_puts(jinue_syscall_args_t *args) {
     /** TODO: permission check, sanity check (data size vs buffer size) */
     console_printn(
             (char *)args->arg2,
@@ -128,7 +128,7 @@ static void sys_console_puts(jinue_syscall_args_t *args) {
     syscall_args_set_return(args, 0);
 }
 
-static void sys_thread_create(jinue_syscall_args_t *args) {
+static void sys_create_thread(jinue_syscall_args_t *args) {
     void *entry         = (void *)args->arg2;
     void *user_stack    = (void *)args->arg3;
 
@@ -167,7 +167,7 @@ static void sys_exit_thread(jinue_syscall_args_t *args) {
     syscall_args_set_return(args, 0);
 }
 
-static void sys_set_thread_local_address(jinue_syscall_args_t *args) {
+static void sys_set_thread_local(jinue_syscall_args_t *args) {
     addr_t addr = (addr_t)args->arg1;
     size_t size = (size_t)args->arg2;
 
@@ -180,7 +180,7 @@ static void sys_set_thread_local_address(jinue_syscall_args_t *args) {
     syscall_args_set_return(args, 0);
 }
 
-static void sys_get_thread_local_address(jinue_syscall_args_t *args) {
+static void sys_get_thread_local(jinue_syscall_args_t *args) {
     addr_t tls = thread_get_local_storage(get_current_thread());
     syscall_args_set_return_ptr(args, tls);
 }
@@ -199,7 +199,7 @@ static void sys_get_user_memory(jinue_syscall_args_t *args) {
     set_return_value_or_error(args, retval);
 }
 
-static void sys_create_ipc_endpoint(jinue_syscall_args_t *args) {
+static void sys_create_ipc(jinue_syscall_args_t *args) {
     int fd = ipc_create_for_current_process((int)args->arg1);
     set_return_value_or_error(args, fd);
 }
@@ -278,31 +278,31 @@ void dispatch_syscall(trapframe_t *trapframe) {
         /* microkernel system calls */
         switch(function) {
         case SYSCALL_FUNC_GET_SYSCALL:
-            sys_get_syscall_method(args);
+            sys_get_syscall(args);
             break;
         case SYSCALL_FUNC_PUTC:
-            sys_console_putc(args);
+            sys_putc(args);
             break;
         case SYSCALL_FUNC_PUTS:
-            sys_console_puts(args);
+            sys_puts(args);
             break;
         case SYSCALL_FUNC_CREATE_THREAD:
-            sys_thread_create(args);
+            sys_create_thread(args);
             break;
         case SYSCALL_FUNC_YIELD_THREAD:
             sys_yield_thread(args);
             break;
         case SYSCALL_FUNC_SET_THREAD_LOCAL:
-            sys_set_thread_local_address(args);
+            sys_set_thread_local(args);
             break;
         case SYSCALL_FUNC_GET_THREAD_LOCAL:
-            sys_get_thread_local_address(args);
+            sys_get_thread_local(args);
             break;
         case SYSCALL_FUNC_GET_USER_MEMORY:
             sys_get_user_memory(args);
             break;
         case SYSCALL_FUNC_CREATE_IPC:
-            sys_create_ipc_endpoint(args);
+            sys_create_ipc(args);
             break;
         case SYSCALL_FUNC_RECEIVE:
             sys_receive(args);

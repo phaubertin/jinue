@@ -134,7 +134,7 @@ intptr_t jinue_reply(
     return jinue_syscall_with_usual_convention(&args, perrno);
 }
 
-int jinue_create_ipc_endpoint(int flags, int *perrno) {
+int jinue_create_ipc(int flags, int *perrno) {
     jinue_syscall_args_t args;
 
     args.arg0 = SYSCALL_FUNC_CREATE_IPC;

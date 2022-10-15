@@ -89,7 +89,7 @@ void thread_a(void) {
 
     printk("Thread A is exiting.\n");
 
-    jinue_thread_exit();
+    jinue_exit_thread();
 }
 
 static bool bool_getenv(const char *name) {
@@ -220,7 +220,7 @@ int main(int argc, char *argv[]) {
 
     /* get system call implementation so we can use something faster than the
      * interrupt-based one if available */
-    jinue_get_syscall_implementation();
+    jinue_get_syscall();
     
     printk("Using system call method '%s'.\n", jinue_get_syscall_implementation_name());
     
@@ -236,7 +236,7 @@ int main(int argc, char *argv[]) {
 
     dump_phys_memory_map((jinue_mem_map_t *)&call_buffer, true);
 
-    int fd = jinue_create_ipc_endpoint(JINUE_IPC_NONE, &errno);
+    int fd = jinue_create_ipc(JINUE_IPC_NONE, &errno);
 
     if(fd < 0) {
         printk("Creating IPC object descriptor.\n");
@@ -248,7 +248,7 @@ int main(int argc, char *argv[]) {
 
         printk("Main thread got descriptor %u.\n", fd);
 
-        (void)jinue_thread_create(thread_a, &thread_a_stack[THREAD_STACK_SIZE], NULL);
+        (void)jinue_create_thread(thread_a, &thread_a_stack[THREAD_STACK_SIZE], NULL);
 
         int ret = jinue_receive(
                 fd,
@@ -284,7 +284,7 @@ int main(int argc, char *argv[]) {
     printk("Main thread is running.\n");
 
     while (1) {
-        jinue_yield();
+        jinue_yield_thread();
     }
     
     return EXIT_SUCCESS;
