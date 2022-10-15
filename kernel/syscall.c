@@ -55,24 +55,6 @@ static void set_return_value_or_error(jinue_syscall_args_t *args, int retval) {
     }
 }
 
-static int check_output_buffer(
-        jinue_buffer_t          *buffer,
-        jinue_syscall_args_t    *args) {
-
-    buffer->addr    = jinue_args_get_buffer_ptr(args);
-    buffer->size    = jinue_args_get_buffer_size(args);
-
-    if(buffer->size > JINUE_SEND_MAX_SIZE) {
-        return -JINUE_EINVAL;
-    }
-
-    if(! check_userspace_buffer(buffer->addr, buffer->size)) {
-        return -JINUE_EINVAL;
-    }
-
-    return 0;
-}
-
 static void sys_nosys(jinue_syscall_args_t *args) {
     syscall_args_set_error(args, JINUE_ENOSYS);
 }
@@ -205,33 +187,40 @@ static void sys_send(jinue_syscall_args_t *args) {
         return;
     }
 
-    /* TODO is this still true?
-     * We need to pass the full args here so the receiver thread can set the
-     * return values in ipc_reply(). */
-    int retval = ipc_send(fd, function, &message, args);
+    int retval = ipc_send(fd, function, &message);
     set_return_value_or_error(args, retval);
 }
 
 static void sys_receive(jinue_syscall_args_t *args) {
-    jinue_buffer_t buffer;
+    jinue_message_t message;
 
-    int fd          = (int)args->arg1;
-    int checkval    = check_output_buffer(&buffer, args);
+    int fd                          = args->arg1;
+    jinue_message_t *user_message   = (jinue_message_t *)args->arg2;
 
-    if(checkval < 0) {
-        syscall_args_set_error(args, -checkval);
+    if(! check_userspace_buffer(user_message, sizeof(jinue_message_t))) {
+        syscall_args_set_error(args, JINUE_EINVAL);
         return;
     }
 
-    /* This function does not set only a return value on success but needs to
-     * be able to set the value of all registers, which is why we pass the
-     * full args here. */
-    int retval = ipc_receive(fd, &buffer, args);
+    /* Let's be careful here: we need to first copy the message structure and
+     * then check it to prevent the user application from modifying the content
+     * after we check. */
+    memcpy(&message, user_message, sizeof(jinue_message_t));
 
-    /* ipc_receive() sets the return values on success so we only need to
-     * handle the error cases here. */
-    if(retval < 0) {
-        syscall_args_set_error(args, -retval);
+    size_t recv_buffers_size = message.recv_buffers_length * sizeof(jinue_buffer_t);
+
+    if(! check_userspace_buffer(message.recv_buffers, recv_buffers_size)) {
+        syscall_args_set_error(args, JINUE_EINVAL);
+        return;
+    }
+
+    int retval = ipc_receive(fd, &message);
+    set_return_value_or_error(args, retval);
+
+    if(retval >= 0) {
+        user_message->recv_function     = message.recv_function;
+        user_message->recv_cookie       = message.recv_cookie;
+        user_message->reply_max_size    = message.reply_max_size;
     }
 }
 

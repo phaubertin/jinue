@@ -36,26 +36,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
-typedef struct {
-    uintptr_t            function;
-    uintptr_t            cookie;
-    size_t               buffer_size;
-    size_t               data_size;
-    size_t               desc_n;
-} old_message_t;
-
 intptr_t jinue_send(
         int                      fd,
         intptr_t                 function,
         const jinue_message_t   *message,
         int                     *perrno);
 
-intptr_t jinue_receive(
-        int              fd,
-        char            *buffer,
-        size_t           buffer_size,
-        old_message_t   *message,
-        int             *perrno);
+intptr_t jinue_receive(int fd, const jinue_message_t *message, int *perrno);
 
 intptr_t jinue_reply(const jinue_message_t *message, int *perrno);
 

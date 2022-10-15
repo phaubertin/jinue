@@ -160,12 +160,7 @@ int gather_message(thread_t *thread, const jinue_message_t *message) {
     return 0;
 }
 
-int ipc_send(
-        int                      fd,
-        int                      function,
-        const jinue_message_t   *message,
-        jinue_syscall_args_t    *args) {
-
+int ipc_send(int fd, int function, const jinue_message_t *message) {
     thread_t *thread = get_current_thread();
 
     /* TODO handle multiple receive buffers */
@@ -235,11 +230,7 @@ int ipc_send(
     return thread->message_size;
 }
 
-int ipc_receive(
-        int                     fd,
-        const jinue_buffer_t    *buffer,
-        jinue_syscall_args_t    *args) {
-
+int ipc_receive(int fd, jinue_message_t *message) {
     thread_t *thread    = get_current_thread();
     object_ref_t *ref   = process_get_descriptor(thread->process, fd);
 
@@ -288,7 +279,10 @@ int ipc_receive(
         thread->sender = send_thread;
     }
 
-    if(send_thread->message_size > buffer->size) {
+    /* TODO handle multiple receive buffers */
+    const jinue_buffer_t *recv_buffer = &message->recv_buffers[0];
+
+    if(send_thread->message_size > recv_buffer->size) {
         /* message is too big for receive buffer */
         send_thread->reply_errno = JINUE_E2BIG;
         object_subref(&send_thread->header);
@@ -301,15 +295,13 @@ int ipc_receive(
     }
     
     memcpy(
-        buffer->addr,
+        recv_buffer->addr,
         send_thread->message_buffer,
         send_thread->message_size);
     
-    args->arg0 = send_thread->message_function;
-    args->arg1 = ref->cookie;
-    /* argument 2 is left intact (buffer pointer) */
-    args->arg3 =  jinue_args_pack_buffer_size(send_thread->recv_buffer_size)
-                | jinue_args_pack_data_size(send_thread->message_size);
+    message->recv_function  = send_thread->message_function;
+    message->recv_cookie    = ref->cookie;
+    message->reply_max_size = send_thread->recv_buffer_size;
 
     return 0;
 }

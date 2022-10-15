@@ -46,7 +46,7 @@
 
 #define CALL_BUFFER_SIZE    512
 
-#define MSG_FUNC_TEST       (SYSCALL_USER_BASE + 0)
+#define MSG_FUNC_TEST       (SYSCALL_USER_BASE + 42)
 
 int errno;
 
@@ -84,11 +84,7 @@ void thread_a(void) {
         message.recv_buffers        = &reply_buffer;
         message.recv_buffers_length = 1;
 
-        intptr_t ret = jinue_send(
-                fd,
-                SYSCALL_USER_BASE,
-                &message,
-                &errno);
+        intptr_t ret = jinue_send(fd, MSG_FUNC_TEST, &message, &errno);
 
         if(ret < 0) {
             printk("jinue_send() failed with error: %u.\n", errno);
@@ -267,24 +263,26 @@ int main(int argc, char *argv[]) {
     }
     else {
         char buffer[128];
-        old_message_t message;
 
         printk("Main thread got descriptor %u.\n", fd);
 
-        (void)jinue_create_thread(thread_a, &thread_a_stack[THREAD_STACK_SIZE], NULL);
+        jinue_create_thread(thread_a, &thread_a_stack[THREAD_STACK_SIZE], NULL);
 
-        intptr_t ret = jinue_receive(
-                fd,
-                buffer,
-                sizeof(buffer),
-                &message,
-                &errno);
+        jinue_buffer_t recv_buffer;
+        recv_buffer.addr = buffer;
+        recv_buffer.size = sizeof(buffer);
+
+        jinue_message_t message;
+        message.recv_buffers        = &recv_buffer;
+        message.recv_buffers_length = 1;
+
+        intptr_t ret = jinue_receive(fd, &message, &errno);
 
         if(ret < 0) {
             printk("jinue_receive() failed with error: %u.\n", errno);
         }
-        else if(message.function != MSG_FUNC_TEST) {
-            printk("jinue_receive() unexpected function number: %u.\n", message.function);
+        else if(message.recv_function != MSG_FUNC_TEST) {
+            printk("jinue_receive() unexpected function number: %u.\n", message.recv_function);
         }
         else {
             printk("Main thread received message:  \"%s\"\n", buffer);
