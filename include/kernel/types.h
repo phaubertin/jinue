@@ -94,7 +94,6 @@ struct thread_t {
     jinue_syscall_args_t    *message_args;
     size_t                   recv_buffer_size;
     size_t                   message_size;
-    size_t                   reply_size;
     int                      reply_errno;
     char                     message_buffer[JINUE_SEND_MAX_SIZE];
 };

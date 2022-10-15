@@ -199,11 +199,11 @@ int ipc_send(
     }
 
     /* copy reply to user space buffer */
-    memcpy(recv_buffer->addr, &thread->message_buffer, thread->reply_size);
+    memcpy(recv_buffer->addr, &thread->message_buffer, thread->message_size);
 
     /** TODO copy descriptors */
 
-    return thread->reply_size;
+    return thread->message_size;
 }
 
 int ipc_receive(
@@ -304,12 +304,10 @@ int ipc_reply(const jinue_message_t *message) {
         return -JINUE_E2BIG;
     }
 
+    send_thread->message_size = reply_buffer->size;
     memcpy(&send_thread->message_buffer, reply_buffer->addr, reply_buffer->size);
 
     /** TODO copy descriptors */
-
-    /** TODO are unused argument registers set to zero somehow, somewhere? */
-    send_thread->reply_size = reply_buffer->size;
 
     object_subref(&send_thread->header);
     thread->sender = NULL;
