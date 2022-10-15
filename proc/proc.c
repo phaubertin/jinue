@@ -105,12 +105,24 @@ static bool bool_getenv(const char *name) {
             strcmp(value, "1") == 0;
 }
 
-static void dump_phys_memory_map(const jinue_mem_map_t *map, bool ram_only) {
-    if(! bool_getenv("DEBUG_DUMP_MEMORY_MAP")) {
+static void dump_phys_memory_map(const jinue_mem_map_t *map) {
+    const char *name    = "DEBUG_DUMP_MEMORY_MAP";
+    const char *value   = getenv(name);
+
+    if(value == NULL) {
         return;
     }
 
-    printk("Dump of the BIOS memory map:\n");
+    bool ram_only = true;
+
+    if(strcmp(value, "all") == 0) {
+        ram_only = false;
+    }
+    else if(! bool_getenv(name)) {
+        return;
+    }
+
+    printk("Dump of the BIOS memory map%s:\n", ram_only?" (showing only available entries)":"");
 
     for(int idx = 0; idx < map->num_entries; ++idx) {
         const jinue_mem_entry_t *entry = &map->entry[idx];
@@ -234,7 +246,7 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    dump_phys_memory_map((jinue_mem_map_t *)&call_buffer, true);
+    dump_phys_memory_map((jinue_mem_map_t *)&call_buffer);
 
     int fd = jinue_create_ipc(JINUE_IPC_NONE, &errno);
 
