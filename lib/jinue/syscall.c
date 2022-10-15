@@ -33,23 +33,12 @@
 #include <jinue/ipc.h>
 #include <jinue/syscall.h>
 #include <stdbool.h>
+#include "stubs.h"
 
-
-typedef void (*syscall_stub_t)(jinue_syscall_args_t *args);
-
-/* these are defined in stubs.asm */
-
-void syscall_fast_intel(jinue_syscall_args_t *args);
-
-void syscall_fast_amd(jinue_syscall_args_t *args);
-
-void syscall_intr(jinue_syscall_args_t *args);
-
-
-static syscall_stub_t syscall_stubs[] = {
-        [SYSCALL_METHOD_FAST_INTEL] = syscall_fast_intel,
-        [SYSCALL_METHOD_FAST_AMD]   = syscall_fast_amd,
-        [SYSCALL_METHOD_INTR]       = syscall_intr
+static jinue_syscall_stub_t syscall_stubs[] = {
+        [SYSCALL_METHOD_FAST_INTEL] = jinue_syscall_fast_intel,
+        [SYSCALL_METHOD_FAST_AMD]   = jinue_syscall_fast_amd,
+        [SYSCALL_METHOD_INTR]       = jinue_syscall_intr
 };
 
 static char *syscall_stub_names[] = {
@@ -58,28 +47,23 @@ static char *syscall_stub_names[] = {
         [SYSCALL_METHOD_INTR]       = "interrupt",
 };
 
-static int syscall_stub_index           = SYSCALL_METHOD_INTR;
+static int syscall_stub_index = SYSCALL_METHOD_INTR;
 
-static syscall_stub_t syscall_stub_ptr  = syscall_intr;
-
-
-void jinue_call_raw(jinue_syscall_args_t *args) {
-    syscall_stub_ptr(args);
+uintptr_t jinue_syscall(jinue_syscall_args_t *args) {
+    return syscall_stubs[syscall_stub_index](args);
 }
 
-int jinue_call(jinue_syscall_args_t *args, int *perrno) {
-    jinue_call_raw(args);
+intptr_t jinue_syscall_with_usual_convention(jinue_syscall_args_t *args, int *perrno) {
+    const intptr_t retval = (intptr_t)jinue_syscall(args);
 
-    if(perrno != NULL) {
-        if(args->arg1 < 0) {
-            *perrno = args->arg1;
-        }
+    if(retval < 0) {
+        jinue_set_errno(perrno, args->arg1);
     }
 
-    return (int)(args->arg0);
+    return retval;
 }
 
-void jinue_get_syscall_implementation(void) {
+int jinue_get_syscall(void) {
     jinue_syscall_args_t args;
 
     args.arg0 = SYSCALL_FUNC_GET_SYSCALL;
@@ -87,17 +71,16 @@ void jinue_get_syscall_implementation(void) {
     args.arg2 = 0;
     args.arg3 = 0;
 
-    jinue_call_raw(&args);
+    syscall_stub_index = (intptr_t)jinue_syscall(&args);
 
-    syscall_stub_index  = jinue_get_return(&args);
-    syscall_stub_ptr    = syscall_stubs[syscall_stub_index];
+    return syscall_stub_index;
 }
 
 const char *jinue_get_syscall_implementation_name(void) {
     return syscall_stub_names[syscall_stub_index];
 }
 
-void jinue_set_thread_local_storage(void *addr, size_t size) {
+void jinue_set_thread_local(void *addr, size_t size) {
     jinue_syscall_args_t args;
 
     args.arg0 = SYSCALL_FUNC_SET_THREAD_LOCAL;
@@ -105,10 +88,10 @@ void jinue_set_thread_local_storage(void *addr, size_t size) {
     args.arg2 = (uintptr_t)size;
     args.arg3 = 0;
 
-    (void)jinue_call(&args, NULL);
+    jinue_syscall(&args);
 }
 
-void *jinue_get_thread_local_storage(void) {
+void *jinue_get_thread_local(void) {
     jinue_syscall_args_t args;
 
     args.arg0 = SYSCALL_FUNC_GET_THREAD_LOCAL;
@@ -116,12 +99,10 @@ void *jinue_get_thread_local_storage(void) {
     args.arg2 = 0;
     args.arg3 = 0;
 
-    (void)jinue_call(&args, NULL);
-
-    return (void *)jinue_get_return_uintptr(&args);
+    return (void *)jinue_syscall(&args);
 }
 
-int jinue_thread_create(void (*entry)(), void *stack, int *perrno) {
+int jinue_create_thread(void (*entry)(), void *stack, int *perrno) {
     jinue_syscall_args_t args;
 
     args.arg0 = SYSCALL_FUNC_CREATE_THREAD;
@@ -129,10 +110,10 @@ int jinue_thread_create(void (*entry)(), void *stack, int *perrno) {
     args.arg2 = (uintptr_t)entry;
     args.arg3 = (uintptr_t)stack;
 
-    return jinue_call(&args, perrno);
+    return jinue_syscall_with_usual_convention(&args, perrno);
 }
 
-int jinue_yield(void) {
+void jinue_yield_thread(void) {
     jinue_syscall_args_t args;
 
     args.arg0 = SYSCALL_FUNC_YIELD_THREAD;
@@ -140,10 +121,10 @@ int jinue_yield(void) {
     args.arg2 = 0;
     args.arg3 = 0;
 
-    return jinue_call(&args, NULL);
+    jinue_syscall(&args);
 }
 
-void jinue_thread_exit(void) {
+void jinue_exit_thread(void) {
     jinue_syscall_args_t args;
 
     args.arg0 = SYSCALL_FUNC_EXIT_THREAD;
@@ -151,5 +132,34 @@ void jinue_thread_exit(void) {
     args.arg2 = 0;
     args.arg3 = 0;
 
-    (void)jinue_call(&args, NULL);
+    jinue_syscall(&args);
+}
+
+void jinue_putc(char c) {
+    jinue_syscall_args_t args;
+
+    args.arg0 = SYSCALL_FUNC_PUTC;
+    args.arg1 = c & 0xff;
+    args.arg2 = 0;
+    args.arg3 = 0;
+
+    jinue_syscall(&args);
+}
+
+int jinue_puts(const char *str, size_t n, int *perrno) {
+    jinue_syscall_args_t args;
+
+    if(n > JINUE_SEND_MAX_SIZE) {
+        jinue_set_errno(perrno, JINUE_EINVAL);
+        return -1;
+    }
+
+    args.arg0 = SYSCALL_FUNC_PUTS;
+    args.arg1 = 0;
+    args.arg2 = (uintptr_t)str;
+    args.arg3 = jinue_args_pack_data_size(n);
+
+    jinue_syscall(&args);
+
+    return 0;
 }

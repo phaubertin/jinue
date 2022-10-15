@@ -31,11 +31,11 @@
     
     section .text
 ; ------------------------------------------------------------------------------
-; FUNCTION: syscall_fast_intel
-; C PROTOTYPE: void syscall_fast_intel(jinue_syscall_args_t *args);
+; FUNCTION: jinue_syscall_fast_intel
+; C PROTOTYPE: void jinue_syscall_fast_intel(jinue_syscall_args_t *args);
 ; ------------------------------------------------------------------------------
-    global syscall_fast_intel
-syscall_fast_intel:
+    global jinue_syscall_fast_intel:function (jinue_syscall_fast_intel.end - jinue_syscall_fast_intel)
+jinue_syscall_fast_intel:
     ; System V ABI calling convention: these four registers must be preserved
     push ebx
     push esi
@@ -87,12 +87,14 @@ syscall_fast_intel:
 
     ret
 
+.end:
+
 ; ------------------------------------------------------------------------------
-; FUNCTION: syscall_fast_amd
-; C PROTOTYPE: void syscall_fast_amd(jinue_syscall_args_t *args);
+; FUNCTION: jinue_syscall_fast_amd
+; C PROTOTYPE: void jinue_syscall_fast_amd(jinue_syscall_args_t *args);
 ; ------------------------------------------------------------------------------
-    global syscall_fast_amd
-syscall_fast_amd:
+    global jinue_syscall_fast_amd:function (jinue_syscall_fast_amd.end - jinue_syscall_fast_amd)
+jinue_syscall_fast_amd:
     ; System V ABI calling convention: these four registers must be preserved
     push ebx
     push esi
@@ -143,12 +145,14 @@ syscall_fast_amd:
 
     ret
 
+.end:
+
 ; ------------------------------------------------------------------------------
-; FUNCTION: syscall_intr
-; C PROTOTYPE: void syscall_intr(jinue_syscall_args_t *args);
+; FUNCTION: jinue_syscall_intr
+; C PROTOTYPE: void jinue_syscall_intr(jinue_syscall_args_t *args);
 ; ------------------------------------------------------------------------------
-    global syscall_intr
-syscall_intr:
+    global jinue_syscall_intr:function (jinue_syscall_intr.end - jinue_syscall_intr)
+jinue_syscall_intr:
     ; System V ABI calling convention: these four registers must be preserved.
     push ebx
     push esi
@@ -191,3 +195,5 @@ syscall_intr:
     pop ebx
 
     ret
+
+.end:

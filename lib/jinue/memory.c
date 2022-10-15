@@ -33,7 +33,7 @@
 #include <jinue/ipc.h>
 #include <jinue/syscall.h>
 
-const char *jinue_pys_mem_type_description(uint32_t type) {
+const char *jinue_phys_mem_type_description(uint32_t type) {
     switch(type) {
 
     case E820_RAM:
@@ -51,12 +51,17 @@ const char *jinue_pys_mem_type_description(uint32_t type) {
 }
 
 int jinue_get_user_memory(jinue_mem_map_t *buffer, size_t buffer_size, int *perrno) {
-    return jinue_send(
-            SYSCALL_FUNC_GET_USER_MEMORY,
-            -1,                 /* target */
-            (char *)buffer,     /* buffer */
-            buffer_size,        /* buffer size */
-            0,                  /* data size */
-            0,                  /* number of descriptors */
-            perrno);            /* perrno */
+    jinue_syscall_args_t args;
+
+    /* Silently crop the buffer size if it is greater than the maximum allowed. */
+    if(buffer_size > JINUE_SEND_MAX_SIZE) {
+        buffer_size = JINUE_SEND_MAX_SIZE;
+    }
+
+    args.arg0 = SYSCALL_FUNC_GET_USER_MEMORY;
+    args.arg1 = 0;
+    args.arg2 = (uintptr_t)buffer;
+    args.arg3 = jinue_args_pack_buffer_size(buffer_size);
+
+    return jinue_syscall_with_usual_convention(&args, perrno);
 }

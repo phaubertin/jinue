@@ -35,24 +35,32 @@
 #include <jinue/shared/syscall.h>
 #include <stddef.h>
 
+static inline void jinue_set_errno(int *perrno, int errval) {
+    if(perrno != NULL) {
+        *perrno = errval;
+    }
+}
 
-void jinue_call_raw(jinue_syscall_args_t *args);
+uintptr_t jinue_syscall(jinue_syscall_args_t *args);
 
-int jinue_call(jinue_syscall_args_t *args, int *perrno);
+intptr_t jinue_syscall_with_usual_convention(jinue_syscall_args_t *args, int *perrno);
 
-void jinue_get_syscall_implementation(void);
+int jinue_get_syscall(void);
 
 const char *jinue_get_syscall_implementation_name(void);
 
-void jinue_set_thread_local_storage(void *addr, size_t size);
+void jinue_set_thread_local(void *addr, size_t size);
 
-void *jinue_get_thread_local_storage(void);
+void *jinue_get_thread_local(void);
 
-int jinue_thread_create(void (*entry)(), void *stack, int *perrno);
+int jinue_create_thread(void (*entry)(), void *stack, int *perrno);
 
-int jinue_yield(void);
+void jinue_yield_thread(void);
 
-void jinue_thread_exit(void);
+void jinue_exit_thread(void);
 
+void jinue_putc(char c);
+
+int jinue_puts(const char *str, size_t length, int *perrno);
 
 #endif

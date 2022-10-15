@@ -33,7 +33,6 @@
 #define _JINUE_SHARED_IPC_H_
 
 #include <jinue/shared/asm/ipc.h>
-
 #include <jinue/shared/syscall.h>
 #include <stddef.h>
 #include <stdint.h>

@@ -68,9 +68,9 @@ function number.
 
 Most *but not all* system calls follow the following convention:
 
-* `arg0` contains a return value, which should be cast to a signed integer (C
-type `int`). If the value is positive (including zero), then the call was
-successful. A non-zero negative value indicates an error has occurred.
+* `arg0` contains a return value, which should be cast to a pointer-sized signed
+integer (C type `intptr_t`). If the value is positive (including zero), then the
+call was successful. A non-zero negative value indicates an error has occurred.
 * If the call failed, as indicated by a negative value in `arg0`, `arg1`
 contains an [error number](#error-reference). Otherwise, `arg1` is set to zero.
 * `arg2` and `arg3` are reserved and should be ignored.

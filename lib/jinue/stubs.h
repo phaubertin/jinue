@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2022 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,49 +29,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_IPC_H_
-#define _JINUE_IPC_H_
+#ifndef STUBS_H_
+#define STUBS_H_
 
-#include <jinue/shared/ipc.h>
-#include <stddef.h>
 #include <stdint.h>
 
-typedef struct {
-    uintptr_t            function;
-    uintptr_t            cookie;
-    size_t               buffer_size;
-    size_t               data_size;
-    size_t               desc_n;
-} jinue_message_t;
+typedef uintptr_t (*jinue_syscall_stub_t)(jinue_syscall_args_t *args);
 
-typedef struct {
-    size_t               data_size;
-    size_t               desc_n;
-} jinue_reply_t;
+uintptr_t jinue_syscall_fast_intel(jinue_syscall_args_t *args);
 
-intptr_t jinue_send(
-        int              function,
-        int              fd,
-        char            *buffer,
-        size_t           buffer_size,
-        size_t           data_size,
-        unsigned int     n_desc,
-        int             *perrno);
+uintptr_t jinue_syscall_fast_amd(jinue_syscall_args_t *args);
 
-intptr_t jinue_receive(
-        int              fd,
-        char            *buffer,
-        size_t           buffer_size,
-        jinue_message_t *message,
-        int             *perrno);
-
-intptr_t jinue_reply(
-        char            *buffer,
-        size_t           buffer_size,
-        size_t           data_size,
-        unsigned int     n_desc,
-        int             *perrno);
-
-int jinue_create_ipc(int flags, int *perrno);
+uintptr_t jinue_syscall_intr(jinue_syscall_args_t *args);
 
 #endif
