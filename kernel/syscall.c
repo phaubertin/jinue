@@ -114,7 +114,7 @@ static void sys_get_syscall(jinue_syscall_args_t *args) {
 static void sys_putc(jinue_syscall_args_t *args) {
     /** TODO: permission check */
     console_putc(
-            (char)args->arg1,
+            args->arg1 & 0xff,
             CONSOLE_DEFAULT_COLOR);
     syscall_args_set_return(args, 0);
 }
