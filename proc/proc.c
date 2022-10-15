@@ -60,30 +60,41 @@ extern const Elf32_auxv_t *_jinue_libc_auxv;
 
 void thread_a(void) {
     int errno;
-    char message[] = "Hello World!";
+    const char message_string[] = "Hello World!";
+    char reply[32];
 
     if(fd < 0) {
         printk("Thread A has invalid descriptor.\n");
     }
     else {
         printk("Thread A got descriptor %u.\n", fd);
+        printk("Thread A is sending message: \"%s\"\n", message_string);
 
-        printk("Thread A is sending message: \"%s\"\n", message);
+        jinue_buffer_t send_buffer;
+        send_buffer.addr = (void *)message_string;
+        send_buffer.size = sizeof(message_string);   /* includes NUL terminator */
 
-        int ret = jinue_send(
-                SYSCALL_USER_BASE,  /* function number */
-                fd,                 /* target descriptor */
-                message,            /* buffer address */
-                sizeof(message),    /* buffer size */
-                sizeof(message),    /* data size */
-                0,                  /* number of descriptors */
-                &errno);            /* error number */
+        jinue_buffer_t reply_buffer;
+        reply_buffer.addr = reply;
+        reply_buffer.size = sizeof(reply);
+
+        jinue_message_t message;
+        message.send_buffers        = &send_buffer;
+        message.send_buffers_length = 1;
+        message.recv_buffers        = &reply_buffer;
+        message.recv_buffers_length = 1;
+
+        intptr_t ret = jinue_send(
+                fd,
+                SYSCALL_USER_BASE,
+                &message,
+                &errno);
 
         if(ret < 0) {
             printk("jinue_send() failed with error: %u.\n", errno);
         }
         else {
-            printk("Thread A got reply from main thread: \"%s\"\n", message);
+            printk("Thread A got reply from main thread: \"%s\"\n", reply);
         }
     }
 

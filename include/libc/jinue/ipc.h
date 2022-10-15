@@ -44,19 +44,11 @@ typedef struct {
     size_t               desc_n;
 } old_message_t;
 
-typedef struct {
-    size_t               data_size;
-    size_t               desc_n;
-} jinue_reply_t;
-
 intptr_t jinue_send(
-        int              function,
-        int              fd,
-        char            *buffer,
-        size_t           buffer_size,
-        size_t           data_size,
-        unsigned int     n_desc,
-        int             *perrno);
+        int                      fd,
+        intptr_t                 function,
+        const jinue_message_t   *message,
+        int                     *perrno);
 
 intptr_t jinue_receive(
         int              fd,

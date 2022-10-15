@@ -87,6 +87,7 @@ typedef struct {
 } jinue_buffer_t;
 
 typedef struct {
+    /* TODO should we have const send buffers? */
     const jinue_buffer_t    *send_buffers;
     size_t                   send_buffers_length;
     const jinue_buffer_t    *recv_buffers;
