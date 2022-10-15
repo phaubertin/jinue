@@ -58,6 +58,6 @@ int ipc_receive(
         const jinue_buffer_t    *buffer,
         jinue_syscall_args_t    *args);
 
-int ipc_reply(const syscall_input_buffer_t *buffer);
+int ipc_reply(const jinue_message_t *message);
 
 #endif

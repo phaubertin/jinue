@@ -94,6 +94,7 @@ typedef struct {
     size_t                   recv_buffers_length;
     uintptr_t                recv_function;
     uintptr_t                recv_cookie;
+    uintptr_t                max_reply_size;
 } jinue_message_t;
 
 #endif

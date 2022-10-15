@@ -286,7 +286,7 @@ int ipc_receive(
     return 0;
 }
 
-int ipc_reply(const syscall_input_buffer_t *buffer) {
+int ipc_reply(const jinue_message_t *message) {
     thread_t *thread        = get_current_thread();
     thread_t *send_thread   = thread->sender;
 
@@ -294,23 +294,22 @@ int ipc_reply(const syscall_input_buffer_t *buffer) {
         return -JINUE_ENOMSG;
     }
 
+    /* TODO validate user pointer */
+    /* TODO validate reply size so we don't overflow message or user space buffer */
+    /* TODO handle multiple buffers */
+    const jinue_buffer_t *reply_buffer = &message->send_buffers[0];
+
     /* the reply must fit in the sender's receive buffer */
-    if(buffer->total_size > send_thread->recv_buffer_size) {
+    if(reply_buffer->size > send_thread->recv_buffer_size) {
         return -JINUE_E2BIG;
     }
 
-    /** TODO remove this check when descriptor passing is implemented */
-    if(buffer->desc_n > 0) {
-        return -JINUE_ENOSYS;
-    }
-
-    memcpy(&send_thread->message_buffer, buffer->user_ptr, buffer->data_size);
+    memcpy(&send_thread->message_buffer, reply_buffer->addr, reply_buffer->size);
 
     /** TODO copy descriptors */
 
-    /** TODO set return value and error number  */
     /** TODO are unused argument registers set to zero somehow, somewhere? */
-    send_thread->reply_size = buffer->data_size;
+    send_thread->reply_size = reply_buffer->size;
 
     object_subref(&send_thread->header);
     thread->sender = NULL;

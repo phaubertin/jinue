@@ -55,37 +55,6 @@ static void set_return_value_or_error(jinue_syscall_args_t *args, int retval) {
     }
 }
 
-static int check_input_buffer(
-        syscall_input_buffer_t  *buffer,
-        jinue_syscall_args_t    *args) {
-
-    buffer->user_ptr    = jinue_args_get_buffer_ptr(args);
-    buffer->buffer_size = jinue_args_get_buffer_size(args);
-    buffer->data_size   = jinue_args_get_data_size(args);
-    buffer->desc_n      = jinue_args_get_n_desc(args);
-    /* TODO aren't we missing padding size here? */
-    buffer->total_size  =
-            buffer->data_size + buffer->desc_n * sizeof(jinue_ipc_descriptor_t);
-
-    if(buffer->buffer_size > JINUE_SEND_MAX_SIZE) {
-        return -JINUE_EINVAL;
-    }
-
-    if(buffer->total_size > buffer->buffer_size) {
-        return -JINUE_EINVAL;
-    }
-
-    if(buffer->desc_n > JINUE_SEND_MAX_N_DESC) {
-        return -JINUE_EINVAL;
-    }
-
-    if(! check_userspace_buffer(buffer->user_ptr, buffer->buffer_size)) {
-        return -JINUE_EINVAL;
-    }
-
-    return 0;
-}
-
 static int check_output_buffer(
         jinue_buffer_t          *buffer,
         jinue_syscall_args_t    *args) {
@@ -267,16 +236,28 @@ static void sys_receive(jinue_syscall_args_t *args) {
 }
 
 static void sys_reply(jinue_syscall_args_t *args) {
-    syscall_input_buffer_t buffer;
+    jinue_message_t message;
 
-    int checkval = check_input_buffer(&buffer, args);
+    void *user_message  = (void *)args->arg2;
 
-    if(checkval < 0) {
-        syscall_args_set_error(args, -checkval);
+    if(! check_userspace_buffer(user_message, sizeof(jinue_message_t))) {
+        syscall_args_set_error(args, JINUE_EINVAL);
         return;
     }
 
-    int retval = ipc_reply(&buffer);
+    /* Let's be careful here: we need to first copy the message structure and
+     * then check it to prevent the user application from modifying the content
+     * after we check. */
+    memcpy(&message, user_message, sizeof(jinue_message_t));
+
+    size_t send_buffers_size = message.send_buffers_length * sizeof(jinue_buffer_t);
+
+    if(! check_userspace_buffer(message.send_buffers, send_buffers_size)) {
+        syscall_args_set_error(args, JINUE_EINVAL);
+        return;
+    }
+
+    int retval = ipc_reply(&message);
     set_return_value_or_error(args, retval);
 }
 

@@ -273,7 +273,7 @@ int main(int argc, char *argv[]) {
 
         (void)jinue_create_thread(thread_a, &thread_a_stack[THREAD_STACK_SIZE], NULL);
 
-        int ret = jinue_receive(
+        intptr_t ret = jinue_receive(
                 fd,
                 buffer,
                 sizeof(buffer),
@@ -287,16 +287,19 @@ int main(int argc, char *argv[]) {
             printk("jinue_receive() unexpected function number: %u.\n", message.function);
         }
         else {
-            char reply[] = "OK";
-
             printk("Main thread received message:  \"%s\"\n", buffer);
 
-            ret = jinue_reply(
-                    reply,                      /* buffer address */
-                    sizeof(reply),              /* buffer size */
-                    sizeof(reply),              /* data size */
-                    0,                          /* number of descriptors */
-                    &errno);                    /* error number */
+            const char reply_string[] = "OK";
+
+            jinue_buffer_t reply_buffer;
+            reply_buffer.addr = (void *)reply_string;
+            reply_buffer.size = sizeof(reply_string);   /* includes NUL terminator */
+
+            jinue_message_t reply;
+            reply.send_buffers          = &reply_buffer;
+            reply.send_buffers_length   = 1;
+
+            ret = jinue_reply(&reply, &errno);
 
             if(ret < 0) {
                 printk("jinue_reply() failed with error: %u.\n", errno);

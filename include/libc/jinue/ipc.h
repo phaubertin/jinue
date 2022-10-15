@@ -57,12 +57,7 @@ intptr_t jinue_receive(
         old_message_t   *message,
         int             *perrno);
 
-intptr_t jinue_reply(
-        char            *buffer,
-        size_t           buffer_size,
-        size_t           data_size,
-        unsigned int     n_desc,
-        int             *perrno);
+intptr_t jinue_reply(const jinue_message_t *message, int *perrno);
 
 int jinue_create_ipc(int flags, int *perrno);
 
