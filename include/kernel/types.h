@@ -73,15 +73,6 @@ typedef struct {
     object_ref_t    descriptors[PROCESS_MAX_DESCRIPTORS];
 } process_t;
 
-/* TODO delete this */
-typedef struct {
-    void    *user_ptr;
-    size_t   buffer_size;
-    size_t   data_size;
-    size_t   desc_n;
-    size_t   total_size;
-} syscall_input_buffer_t;
-
 struct thread_t {
     object_header_t          header;
     thread_context_t         thread_ctx;
