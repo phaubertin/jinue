@@ -134,3 +134,32 @@ void jinue_thread_exit(void) {
 
     jinue_syscall(&args);
 }
+
+void jinue_putc(char c) {
+    jinue_syscall_args_t args;
+
+    args.arg0 = SYSCALL_FUNC_PUTC;
+    args.arg1 = c & 0xff;
+    args.arg2 = 0;
+    args.arg3 = 0;
+
+    jinue_syscall(&args);
+}
+
+int jinue_puts(const char *str, size_t n, int *perrno) {
+    jinue_syscall_args_t args;
+
+    if(n > JINUE_SEND_MAX_SIZE) {
+        jinue_set_errno(perrno, JINUE_EINVAL);
+        return -1;
+    }
+
+    args.arg0 = SYSCALL_FUNC_PUTS;
+    args.arg1 = 0;
+    args.arg2 = (uintptr_t)str;
+    args.arg3 = jinue_args_pack_data_size(n);
+
+    jinue_syscall(&args);
+
+    return 0;
+}

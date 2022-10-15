@@ -34,38 +34,11 @@
 #include <stddef.h>
 
 void console_printn(const char *message, unsigned int n, int colour) {
-    const char *ptr = message;
-
-    while(n > 0) {
-        unsigned int size = n;
-
-        if(size > JINUE_SEND_MAX_SIZE) {
-            size = JINUE_SEND_MAX_SIZE;
-        }
-
-        (void)jinue_send(
-                SYSCALL_FUNC_PUTS,
-                -1,             /* target */
-                (char *)ptr,    /* buffer */
-                size,           /* buffer size */
-                size,           /* data size */
-                0,              /* number of descriptors */
-                NULL);          /* perrno */
-
-        ptr += size;
-        n   -= size;
-    }
+    jinue_puts(message, n, NULL);
 }
 
 void console_putc(char c, int colour) {
-    jinue_syscall_args_t args;
-
-    args.arg0 = SYSCALL_FUNC_PUTC;
-    args.arg1 = (uintptr_t)c;
-    args.arg2 = 0;
-    args.arg3 = 0;
-
-    jinue_syscall(&args);
+    jinue_putc(c);
 }
 
 void console_print(const char *message, int colour) {
