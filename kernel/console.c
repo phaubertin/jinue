@@ -45,7 +45,7 @@ void console_init(const cmdline_opts_t *cmdline_opts) {
     }
 }
 
-void console_printn(const char *message, unsigned int n, int colour) {
+void console_printn(const char *message, size_t n, int colour) {
     const cmdline_opts_t *cmdline_opts = cmdline_get_options();
 
     if(cmdline_opts->vga_enable) {
