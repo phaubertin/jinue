@@ -45,6 +45,7 @@ an error number is set (in `arg1`).
 * JINUE_ENOMSG if there is no current message, i.e. if no message was received
 using the Receive Message system call.
 * JINUE_EINVAL if any part of the reply buffer belongs to the kernel.
+* JINUE_EINVAL if the reply message is larger than 2048 bytes.
 * JINUE_E2BIG if the reply message is too big for the sender's receive buffer
 size.
 

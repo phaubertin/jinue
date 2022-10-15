@@ -90,11 +90,10 @@ struct thread_t {
     addr_t                   local_storage_addr;
     size_t                   local_storage_size;
     struct thread_t         *sender;
-    /* TODO get rid of this member*/
-    jinue_syscall_args_t    *message_args;
     size_t                   recv_buffer_size;
-    size_t                   message_size;
     int                      reply_errno;
+    uintptr_t                message_function;
+    size_t                   message_size;
     char                     message_buffer[JINUE_SEND_MAX_SIZE];
 };
 
