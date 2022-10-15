@@ -131,7 +131,7 @@ int gather_message(thread_t *thread, const jinue_message_t *message) {
     /* TODO put an upper limit on the number of buffers in the array */
 
     for(int idx = 0; idx < message->send_buffers_length; ++idx) {
-        jinue_buffer_t send_buffer;
+        jinue_const_buffer_t send_buffer;
 
         /* We are reading the buffer definition from user space so let's make
          * sure to copy the data before we check and use it to prevent it

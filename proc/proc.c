@@ -70,8 +70,8 @@ void thread_a(void) {
         printk("Thread A got descriptor %u.\n", fd);
         printk("Thread A is sending message: \"%s\"\n", message_string);
 
-        jinue_buffer_t send_buffer;
-        send_buffer.addr = (void *)message_string;
+        jinue_const_buffer_t send_buffer;
+        send_buffer.addr = message_string;
         send_buffer.size = sizeof(message_string);   /* includes NUL terminator */
 
         jinue_buffer_t reply_buffer;
@@ -289,8 +289,8 @@ int main(int argc, char *argv[]) {
 
             const char reply_string[] = "OK";
 
-            jinue_buffer_t reply_buffer;
-            reply_buffer.addr = (void *)reply_string;
+            jinue_const_buffer_t reply_buffer;
+            reply_buffer.addr = reply_string;
             reply_buffer.size = sizeof(reply_string);   /* includes NUL terminator */
 
             jinue_message_t reply;

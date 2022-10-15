@@ -44,19 +44,23 @@
 #define JINUE_IPC_PROC      (1<<1)
 
 typedef struct {
-    void    *addr;
-    size_t   size;
+    void        *addr;
+    size_t       size;
 } jinue_buffer_t;
 
 typedef struct {
-    /* TODO should we have const send buffers? */
-    const jinue_buffer_t    *send_buffers;
-    size_t                   send_buffers_length;
-    const jinue_buffer_t    *recv_buffers;
-    size_t                   recv_buffers_length;
-    uintptr_t                recv_function;
-    uintptr_t                recv_cookie;
-    uintptr_t                reply_max_size;
+    const void  *addr;
+    size_t       size;
+} jinue_const_buffer_t;
+
+typedef struct {
+    const jinue_const_buffer_t  *send_buffers;
+    size_t                       send_buffers_length;
+    const jinue_buffer_t        *recv_buffers;
+    size_t                       recv_buffers_length;
+    uintptr_t                    recv_function;
+    uintptr_t                    recv_cookie;
+    uintptr_t                    reply_max_size;
 } jinue_message_t;
 
 #endif
