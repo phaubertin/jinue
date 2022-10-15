@@ -185,7 +185,6 @@ static void dump_auxvec(void) {
 
 static void ipc_test_run_client(void) {
     int errno;
-    const char message_string[] = "Hello World!";
     char reply[32];
 
     if(fd < 0) {
@@ -193,20 +192,25 @@ static void ipc_test_run_client(void) {
         return;
     }
 
-    printk("Client thread got descriptor %u.\n", fd);
-    printk("Client thread is sending message: \"%s\"\n", message_string);
+    const char hello[] = "Hello ";
+    const char world[] = "World!";
 
-    jinue_const_buffer_t send_buffer;
-    send_buffer.addr = message_string;
-    send_buffer.size = sizeof(message_string);   /* includes NUL terminator */
+    printk("Client thread got descriptor %u.\n", fd);
+    printk("Client thread is sending message.\n");
+
+    jinue_const_buffer_t send_buffers[2];
+    send_buffers[0].addr = hello;
+    send_buffers[0].size = sizeof(hello) - 1;   /* do not include NUL terminator */
+    send_buffers[1].addr = world;
+    send_buffers[1].size = sizeof(world);       /* includes NUL terminator */
 
     jinue_buffer_t reply_buffer;
     reply_buffer.addr = reply;
     reply_buffer.size = sizeof(reply);
 
     jinue_message_t message;
-    message.send_buffers        = &send_buffer;
-    message.send_buffers_length = 1;
+    message.send_buffers        = send_buffers;
+    message.send_buffers_length = 2;
     message.recv_buffers        = &reply_buffer;
     message.recv_buffers_length = 1;
 
@@ -271,6 +275,7 @@ static void run_ipc_test(void) {
 
     printk("Main thread received message:\n");
     printk("     data:              \"%s\"\n", recv_data);
+    printk("     size:              %u\n", ret);
     printk("     function:          %u\n", message.recv_function);
     printk("     cookie:            %u\n", message.recv_cookie);
     printk("     reply max. size:   %u\n", message.reply_max_size);

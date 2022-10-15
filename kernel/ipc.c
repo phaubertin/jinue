@@ -303,7 +303,7 @@ int ipc_receive(int fd, jinue_message_t *message) {
     message->recv_cookie    = ref->cookie;
     message->reply_max_size = send_thread->recv_buffer_size;
 
-    return 0;
+    return send_thread->message_size;
 }
 
 int ipc_reply(const jinue_message_t *message) {
