@@ -32,6 +32,8 @@
 #ifndef _JINUE_SHARED_ASM_SYSCALL_H
 #define _JINUE_SHARED_ASM_SYSCALL_H
 
+/* TODO definitions in this file need a JINUE_ prefix */
+
 /** interrupt vector for system call software interrupt */
 #define SYSCALL_IRQ                     0x80
 

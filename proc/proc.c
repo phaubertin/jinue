@@ -239,7 +239,7 @@ static void run_ipc_test(void) {
         return;
     }
 
-    printk("Running threading and IPC test\n");
+    printk("Running threading and IPC test...\n");
 
     int fd = jinue_create_ipc(JINUE_IPC_NONE, &errno);
 
@@ -268,15 +268,17 @@ static void run_ipc_test(void) {
         return;
     }
 
-    if(message.recv_function != MSG_FUNC_TEST) {
-        printk("jinue_receive() unexpected function number: %u.\n", message.recv_function);
+    int function = message.recv_function;
+
+    if(function != MSG_FUNC_TEST) {
+        printk("jinue_receive() unexpected function number: %u.\n", function);
         return;
     }
 
     printk("Main thread received message:\n");
     printk("     data:              \"%s\"\n", recv_data);
     printk("     size:              %u\n", ret);
-    printk("     function:          %u\n", message.recv_function);
+    printk("     function:          %u (user base + %u)\n", function, function - SYSCALL_USER_BASE);
     printk("     cookie:            %u\n", message.recv_cookie);
     printk("     reply max. size:   %u\n", message.reply_max_size);
 
