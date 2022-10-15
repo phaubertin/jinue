@@ -59,9 +59,9 @@ int jinue_get_user_memory(jinue_mem_map_t *buffer, size_t buffer_size, int *perr
     }
 
     args.arg0 = SYSCALL_FUNC_GET_USER_MEMORY;
-    args.arg1 = 0;
-    args.arg2 = (uintptr_t)buffer;
-    args.arg3 = jinue_args_pack_buffer_size(buffer_size);
+    args.arg1 = (uintptr_t)buffer;
+    args.arg2 = buffer_size;
+    args.arg3 = 0;
 
     return jinue_syscall_with_usual_convention(&args, perrno);
 }

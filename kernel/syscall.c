@@ -120,7 +120,7 @@ static void sys_putc(jinue_syscall_args_t *args) {
 }
 
 static void sys_puts(jinue_syscall_args_t *args) {
-    /** TODO: permission check, sanity check (data size vs buffer size) */
+    /** TODO: permission check, sanity check on length */
     console_printn(
             (const char *)args->arg1,
             args->arg2,
@@ -188,10 +188,11 @@ static void sys_get_thread_local(jinue_syscall_args_t *args) {
 static void sys_get_user_memory(jinue_syscall_args_t *args) {
     syscall_output_buffer_t buffer;
 
-    int checkval = check_output_buffer(&buffer, args);
+    buffer.user_ptr     = (void *)args->arg1;
+    buffer.buffer_size  = args->arg2;
 
-    if(checkval < 0) {
-        syscall_args_set_error(args, -checkval);
+    if(! check_userspace_buffer(buffer.user_ptr, buffer.buffer_size)) {
+        syscall_args_set_error(args, JINUE_EINVAL);
         return;
     }
 
