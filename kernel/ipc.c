@@ -126,17 +126,19 @@ int ipc_create_for_current_process(int flags) {
 }
 
 int ipc_send(
-        int                              fd,
-        int                              function,
-        const syscall_input_buffer_t    *buffer,
-        jinue_syscall_args_t            *args) {
+        int                      fd,
+        int                      function,
+        const jinue_message_t   *message,
+        jinue_syscall_args_t    *args) {
 
     thread_t *thread = get_current_thread();
 
-    /** TODO remove this check when descriptor passing is implemented */
-    if(buffer->desc_n > 0) {
-        return -JINUE_ENOSYS;
-    }
+    /* TODO validate user pointer */
+    /* TODO validate message size so we don't overflow message buffer */
+    /* TODO validate reply size so we don't overflow user space buffer */
+    /* TODO handle multiple buffers */
+    const jinue_buffer_t *send_buffer = &message->send_buffers[0];
+    const jinue_buffer_t *recv_buffer = &message->recv_buffers[0];
 
     object_ref_t *ref = process_get_descriptor(thread->process, fd);
 
@@ -162,7 +164,10 @@ int ipc_send(
 
     ipc_t *ipc = (ipc_t *)header;
     
-    memcpy(&thread->message_buffer, buffer->user_ptr, buffer->data_size);
+    thread->message_size        = send_buffer->size;
+    thread->recv_buffer_size    = recv_buffer->size;
+    thread->reply_errno         = 0;
+    memcpy(&thread->message_buffer, send_buffer->addr, send_buffer->size);
 
     /** TODO copy descriptors */
 
@@ -189,19 +194,22 @@ int ipc_send(
         thread_switch_to(recv_thread, true);
     }
     
+    if(thread->reply_errno != 0) {
+        return -thread->reply_errno;
+    }
+
     /* copy reply to user space buffer */
-    size_t reply_size = jinue_args_get_data_size(args);
-    memcpy(buffer->user_ptr, &thread->message_buffer, reply_size);
+    memcpy(recv_buffer->addr, &thread->message_buffer, thread->reply_size);
 
     /** TODO copy descriptors */
 
-    return 0;
+    return thread->reply_size;
 }
 
 int ipc_receive(
-        int                              fd,
-        const jinue_buffer_t            *buffer,
-        jinue_syscall_args_t            *args) {
+        int                     fd,
+        const jinue_buffer_t    *buffer,
+        jinue_syscall_args_t    *args) {
 
     thread_t *thread    = get_current_thread();
     object_ref_t *ref   = process_get_descriptor(thread->process, fd);
@@ -250,14 +258,8 @@ int ipc_receive(
         object_addref(&send_thread->header);
         thread->sender = send_thread;
     }
-    
-    size_t sender_data_size = jinue_args_get_data_size(send_thread->message_args);
-    size_t sender_desc_n    = jinue_args_get_n_desc(send_thread->message_args);
-    /* TODO aren't we missing padding size here? */
-    size_t total_size       =
-            sender_data_size + sender_desc_n * sizeof(jinue_ipc_descriptor_t);
 
-    if(total_size > buffer->size) {
+    if(send_thread->message_size > buffer->size) {
         /* message is too big for receive buffer */
         object_subref(&send_thread->header);
         thread->sender = NULL;
@@ -273,12 +275,13 @@ int ipc_receive(
     memcpy(
         buffer->addr,
         send_thread->message_buffer,
-        sender_data_size);
+        send_thread->message_size);
     
     args->arg0 = send_thread->message_args->arg0;   /* Function number */
     args->arg1 = ref->cookie;
     /* argument 2 is left intact (buffer pointer) */
-    args->arg3 = send_thread->message_args->arg3;   /* Packed sized */
+    args->arg3 =  jinue_args_pack_buffer_size(send_thread->recv_buffer_size)
+                | jinue_args_pack_data_size(send_thread->message_size);
 
     return 0;
 }
@@ -291,10 +294,8 @@ int ipc_reply(const syscall_input_buffer_t *buffer) {
         return -JINUE_ENOMSG;
     }
 
-    /* the reply must fit in the sender's buffer */
-    size_t sender_buffer_size = jinue_args_get_buffer_size(send_thread->message_args);
-
-    if(buffer->total_size > sender_buffer_size) {
+    /* the reply must fit in the sender's receive buffer */
+    if(buffer->total_size > send_thread->recv_buffer_size) {
         return -JINUE_E2BIG;
     }
 
@@ -308,10 +309,8 @@ int ipc_reply(const syscall_input_buffer_t *buffer) {
     /** TODO copy descriptors */
 
     /** TODO set return value and error number  */
-    syscall_args_set_return(send_thread->message_args, 0);
-    send_thread->message_args->arg3 =
-              jinue_args_pack_data_size(buffer->data_size)
-            | jinue_args_pack_n_desc(buffer->desc_n);
+    /** TODO are unused argument registers set to zero somehow, somewhere? */
+    send_thread->reply_size = buffer->data_size;
 
     object_subref(&send_thread->header);
     thread->sender = NULL;

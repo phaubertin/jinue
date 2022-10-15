@@ -42,6 +42,7 @@
 #include <process.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 #include <syscall.h>
 #include <thread.h>
 
@@ -206,24 +207,40 @@ static void sys_create_ipc(jinue_syscall_args_t *args) {
 }
 
 static void sys_send(jinue_syscall_args_t *args) {
-    syscall_input_buffer_t buffer;
+    jinue_message_t message;
 
-    int function    = args->arg0;
-    int fd          = args->arg1;
-    int checkval    = check_input_buffer(&buffer, args);
+    int function        = args->arg0;
+    int fd              = args->arg1;
+    void *user_message  = (void *)args->arg2;
 
-    if(checkval < 0) {
-        syscall_args_set_error(args, -checkval);
+    if(! check_userspace_buffer(user_message, sizeof(jinue_message_t))) {
+        syscall_args_set_error(args, JINUE_EINVAL);
         return;
     }
 
-    /* We need to pass the full args here so the receiver thread can set the
-     * return values in ipc_reply(). */
-    int retval = ipc_send(fd, function, &buffer, args);
+    /* Let's be careful here: we need to first copy the message structure and
+     * then check it to prevent the user application from modifying the content
+     * after we check. */
+    memcpy(&message, user_message, sizeof(jinue_message_t));
 
-    if(retval < 0) {
-        set_return_value_or_error(args, retval);
+    size_t send_buffers_size = message.send_buffers_length * sizeof(jinue_buffer_t);
+    size_t recv_buffers_size = message.recv_buffers_length * sizeof(jinue_buffer_t);
+
+    if(! check_userspace_buffer(message.send_buffers, send_buffers_size)) {
+        syscall_args_set_error(args, JINUE_EINVAL);
+        return;
     }
+
+    if(! check_userspace_buffer(message.recv_buffers, recv_buffers_size)) {
+        syscall_args_set_error(args, JINUE_EINVAL);
+        return;
+    }
+
+    /* TODO is this still true?
+     * We need to pass the full args here so the receiver thread can set the
+     * return values in ipc_reply(). */
+    int retval = ipc_send(fd, function, &message, args);
+    set_return_value_or_error(args, retval);
 }
 
 static void sys_receive(jinue_syscall_args_t *args) {
@@ -266,7 +283,7 @@ static void sys_reply(jinue_syscall_args_t *args) {
 void dispatch_syscall(trapframe_t *trapframe) {
     jinue_syscall_args_t *args = (jinue_syscall_args_t *)&trapframe->msg_arg0;
     
-    int function = args->arg0;
+    intptr_t function = args->arg0;
     
     if(function < 0) {
         /* The function number is expected to be non-negative. This is especially
