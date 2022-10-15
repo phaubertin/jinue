@@ -121,7 +121,7 @@ static void dump_phys_memory_map(const jinue_mem_map_t *map, bool ram_only) {
                     (entry->type==E820_RAM)?'*':' ',
                     entry->addr,
                     entry->addr + entry->size - 1,
-                    jinue_pys_mem_type_description(entry->type)
+                    jinue_phys_mem_type_description(entry->type)
             );
         }
     }
