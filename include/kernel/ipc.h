@@ -55,7 +55,7 @@ int ipc_send(
 
 int ipc_receive(
         int                              fd,
-        const syscall_output_buffer_t   *buffer,
+        const jinue_buffer_t            *buffer,
         jinue_syscall_args_t            *args);
 
 int ipc_reply(const syscall_input_buffer_t *buffer);

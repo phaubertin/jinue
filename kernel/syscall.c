@@ -86,17 +86,17 @@ static int check_input_buffer(
 }
 
 static int check_output_buffer(
-        syscall_output_buffer_t *buffer,
+        jinue_buffer_t          *buffer,
         jinue_syscall_args_t    *args) {
 
-    buffer->user_ptr    = jinue_args_get_buffer_ptr(args);
-    buffer->buffer_size = jinue_args_get_buffer_size(args);
+    buffer->addr    = jinue_args_get_buffer_ptr(args);
+    buffer->size    = jinue_args_get_buffer_size(args);
 
-    if(buffer->buffer_size > JINUE_SEND_MAX_SIZE) {
+    if(buffer->size > JINUE_SEND_MAX_SIZE) {
         return -JINUE_EINVAL;
     }
 
-    if(! check_userspace_buffer(buffer->user_ptr, buffer->buffer_size)) {
+    if(! check_userspace_buffer(buffer->addr, buffer->size)) {
         return -JINUE_EINVAL;
     }
 
@@ -186,12 +186,12 @@ static void sys_get_thread_local(jinue_syscall_args_t *args) {
 }
 
 static void sys_get_user_memory(jinue_syscall_args_t *args) {
-    syscall_output_buffer_t buffer;
+    jinue_buffer_t buffer;
 
-    buffer.user_ptr     = (void *)args->arg1;
-    buffer.buffer_size  = args->arg2;
+    buffer.addr     = (void *)args->arg1;
+    buffer.size     = args->arg2;
 
-    if(! check_userspace_buffer(buffer.user_ptr, buffer.buffer_size)) {
+    if(! check_userspace_buffer(buffer.addr, buffer.size)) {
         syscall_args_set_error(args, JINUE_EINVAL);
         return;
     }
@@ -227,7 +227,7 @@ static void sys_send(jinue_syscall_args_t *args) {
 }
 
 static void sys_receive(jinue_syscall_args_t *args) {
-    syscall_output_buffer_t  buffer;
+    jinue_buffer_t buffer;
 
     int fd          = (int)args->arg1;
     int checkval    = check_output_buffer(&buffer, args);

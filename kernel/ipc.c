@@ -200,7 +200,7 @@ int ipc_send(
 
 int ipc_receive(
         int                              fd,
-        const syscall_output_buffer_t   *buffer,
+        const jinue_buffer_t            *buffer,
         jinue_syscall_args_t            *args) {
 
     thread_t *thread    = get_current_thread();
@@ -257,7 +257,7 @@ int ipc_receive(
     size_t total_size       =
             sender_data_size + sender_desc_n * sizeof(jinue_ipc_descriptor_t);
 
-    if(total_size > buffer->buffer_size) {
+    if(total_size > buffer->size) {
         /* message is too big for receive buffer */
         object_subref(&send_thread->header);
         thread->sender = NULL;
@@ -271,7 +271,7 @@ int ipc_receive(
     }
     
     memcpy(
-        buffer->user_ptr,
+        buffer->addr,
         send_thread->message_buffer,
         sender_data_size);
     
