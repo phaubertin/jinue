@@ -149,15 +149,10 @@ void jinue_putc(char c) {
 int jinue_puts(const char *str, size_t n, int *perrno) {
     jinue_syscall_args_t args;
 
-    if(n > JINUE_SEND_MAX_SIZE) {
-        jinue_set_errno(perrno, JINUE_EINVAL);
-        return -1;
-    }
-
     args.arg0 = SYSCALL_FUNC_PUTS;
-    args.arg1 = 0;
-    args.arg2 = (uintptr_t)str;
-    args.arg3 = jinue_args_pack_data_size(n);
+    args.arg1 = (uintptr_t)str;
+    args.arg2 = n;
+    args.arg3 = 0;
 
     jinue_syscall(&args);
 

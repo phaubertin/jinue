@@ -122,8 +122,8 @@ static void sys_putc(jinue_syscall_args_t *args) {
 static void sys_puts(jinue_syscall_args_t *args) {
     /** TODO: permission check, sanity check (data size vs buffer size) */
     console_printn(
-            (char *)args->arg2,
-            jinue_args_get_data_size(args),
+            (const char *)args->arg1,
+            args->arg2,
             CONSOLE_DEFAULT_COLOR);
     syscall_args_set_return(args, 0);
 }

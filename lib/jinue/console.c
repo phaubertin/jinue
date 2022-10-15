@@ -33,7 +33,7 @@
 #include <jinue/syscall.h>
 #include <stddef.h>
 
-void console_printn(const char *message, unsigned int n, int colour) {
+void console_printn(const char *message, size_t n, int colour) {
     jinue_puts(message, n, NULL);
 }
 
