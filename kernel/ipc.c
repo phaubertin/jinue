@@ -314,20 +314,16 @@ int ipc_reply(const jinue_message_t *message) {
         return -JINUE_ENOMSG;
     }
 
-    /* TODO validate user pointer */
-    /* TODO validate reply size so we don't overflow message or user space buffer */
-    /* TODO handle multiple buffers */
-    const jinue_buffer_t *reply_buffer = &message->send_buffers[0];
+    int gather_result = gather_message(send_thread, message);
 
-    /* the reply must fit in the sender's receive buffer */
-    if(reply_buffer->size > send_thread->recv_buffer_size) {
-        return -JINUE_E2BIG;
+    if(gather_result < 0) {
+        return gather_result;
     }
 
-    send_thread->message_size = reply_buffer->size;
-    memcpy(&send_thread->message_buffer, reply_buffer->addr, reply_buffer->size);
-
-    /** TODO copy descriptors */
+    /* the reply must fit in the sender's receive buffer */
+    if(send_thread->message_size > send_thread->recv_buffer_size) {
+        return -JINUE_E2BIG;
+    }
 
     object_subref(&send_thread->header);
     thread->sender = NULL;
