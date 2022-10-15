@@ -86,4 +86,13 @@ typedef struct {
     size_t   size;
 } jinue_buffer_t;
 
+typedef struct {
+    const jinue_buffer_t    *send_buffers;
+    size_t                   send_buffers_length;
+    const jinue_buffer_t    *recv_buffers;
+    size_t                   recv_buffers_length;
+    uintptr_t                recv_function;
+    uintptr_t                recv_cookie;
+} jinue_message_t;
+
 #endif

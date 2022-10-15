@@ -256,7 +256,7 @@ int main(int argc, char *argv[]) {
     }
     else {
         char buffer[128];
-        jinue_message_t message;
+        old_message_t message;
 
         printk("Main thread got descriptor %u.\n", fd);
 

@@ -42,7 +42,7 @@ typedef struct {
     size_t               buffer_size;
     size_t               data_size;
     size_t               desc_n;
-} jinue_message_t;
+} old_message_t;
 
 typedef struct {
     size_t               data_size;
@@ -62,7 +62,7 @@ intptr_t jinue_receive(
         int              fd,
         char            *buffer,
         size_t           buffer_size,
-        jinue_message_t *message,
+        old_message_t   *message,
         int             *perrno);
 
 intptr_t jinue_reply(

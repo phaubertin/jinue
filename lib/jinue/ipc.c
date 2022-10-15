@@ -73,7 +73,7 @@ intptr_t jinue_receive(
         int              fd,
         char            *buffer,
         size_t           buffer_size,
-        jinue_message_t *message,
+        old_message_t   *message,
         int             *perrno) {
 
     jinue_syscall_args_t args;
