@@ -125,7 +125,39 @@ int ipc_create_for_current_process(int flags) {
     return fd;
 }
 
-int gather_message(thread_t *thread, const jinue_message_t *message) {
+static int get_receive_buffers_size(const jinue_message_t *message) {
+
+    /* TODO put an upper limit on the number of buffers in the array */
+
+    size_t buffer_size = 0;
+
+    for(int idx = 0; idx < message->recv_buffers_length; ++idx) {
+        const jinue_buffer_t *recv_buffer = &message->recv_buffers[idx];
+
+        /* This is not the final check, which will happen in scatter_message()
+         * while it is actually writing the message to the user space buffers.
+         * We still want to make the check here though: on the sender side, we
+         * don't want to send the message to the receiving thread, have it
+         * process the message, and then realize we can't store the reply, and,
+         * on the receiver side, we don't want to find out after we dequeued a
+         * sending thread.
+         *
+         * If things change in user space between here and when scatter_message()
+         * does the write, it's fine. scatter_message() does the checks it needs
+         * to protect the kernel and the application gets undefined behaviour,
+         * which is fine in this context. */
+        if(! check_userspace_buffer(recv_buffer->addr, recv_buffer->size)) {
+            return -JINUE_EINVAL;
+        }
+
+        /* TODO deal with overflow */
+        buffer_size += recv_buffer->size;
+    }
+
+    return buffer_size;
+}
+
+static int gather_message(thread_t *thread, const jinue_message_t *message) {
     thread->message_size = 0;
 
     /* TODO put an upper limit on the number of buffers in the array */
@@ -160,12 +192,57 @@ int gather_message(thread_t *thread, const jinue_message_t *message) {
     return 0;
 }
 
+static int scatter_message(thread_t *thread, const jinue_message_t *message) {
+    size_t read_position = 0;
+
+    for(int idx = 0; idx < message->recv_buffers_length; ++idx) {
+        size_t remaining = thread->message_size - read_position;
+
+        if(remaining == 0) {
+            break;
+        }
+
+        /* We are reading the buffer definition from user space so let's make
+         * sure to copy the data before we check and use it to prevent it from
+         * being changed by user space between steps.
+         *
+         * Also, even though we may already checked these, we need to check them
+         * again for the same reason. */
+        jinue_buffer_t recv_buffer;
+        recv_buffer.addr = message->recv_buffers[idx].addr;
+        recv_buffer.size = message->recv_buffers[idx].size;
+
+        if(! check_userspace_buffer(recv_buffer.addr, recv_buffer.size)) {
+            return -JINUE_EINVAL;
+        }
+
+        char *read_ptr = &thread->message_buffer[read_position];
+
+        size_t write_size = recv_buffer.size;
+
+        if(remaining < write_size) {
+            write_size = remaining;
+        }
+
+        memcpy(recv_buffer.addr, read_ptr, write_size);
+        read_position += write_size;
+
+        /* TODO copy descriptors */
+    }
+
+    return 0;
+}
+
 int ipc_send(int fd, int function, const jinue_message_t *message) {
     thread_t *thread = get_current_thread();
 
-    /* TODO handle multiple receive buffers */
-    const jinue_buffer_t *recv_buffer = &message->recv_buffers[0];
-    thread->recv_buffer_size    = recv_buffer->size;
+    int recv_buffer_size = get_receive_buffers_size(message);
+
+    if(recv_buffer_size < 0) {
+        return recv_buffer_size;
+    }
+
+    thread->recv_buffer_size    = recv_buffer_size;
     thread->reply_errno         = 0;
     thread->message_function    = function;
 
@@ -223,14 +300,22 @@ int ipc_send(int fd, int function, const jinue_message_t *message) {
     }
 
     /* copy reply to user space buffer */
-    memcpy(recv_buffer->addr, &thread->message_buffer, thread->message_size);
+    int scatter_result = scatter_message(thread, message);
 
-    /** TODO copy descriptors */
+    if(scatter_result < 0) {
+        return scatter_result;
+    }
 
     return thread->message_size;
 }
 
 int ipc_receive(int fd, jinue_message_t *message) {
+    int recv_buffer_size = get_receive_buffers_size(message);
+
+    if(recv_buffer_size < 0) {
+        return recv_buffer_size;
+    }
+
     thread_t *thread    = get_current_thread();
     object_ref_t *ref   = process_get_descriptor(thread->process, fd);
 
@@ -279,11 +364,8 @@ int ipc_receive(int fd, jinue_message_t *message) {
         thread->sender = send_thread;
     }
 
-    /* TODO handle multiple receive buffers */
-    const jinue_buffer_t *recv_buffer = &message->recv_buffers[0];
-
-    if(send_thread->message_size > recv_buffer->size) {
-        /* message is too big for receive buffer */
+    if(send_thread->message_size > recv_buffer_size) {
+        /* message is too big for the receive buffer */
         send_thread->reply_errno = JINUE_E2BIG;
         object_subref(&send_thread->header);
         thread->sender = NULL;
@@ -294,10 +376,12 @@ int ipc_receive(int fd, jinue_message_t *message) {
         return -JINUE_E2BIG;
     }
     
-    memcpy(
-        recv_buffer->addr,
-        send_thread->message_buffer,
-        send_thread->message_size);
+    /* copy reply to user space buffer */
+    int scatter_result = scatter_message(send_thread, message);
+
+    if(scatter_result < 0) {
+        return scatter_result;
+    }
     
     message->recv_function  = send_thread->message_function;
     message->recv_cookie    = ref->cookie;

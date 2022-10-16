@@ -95,7 +95,7 @@ static void dump_phys_memory_map(const jinue_mem_map_t *map) {
 
         if(entry->type == E820_RAM || !ram_only) {
             printk(
-                    "%c [%q-%q] %s\n",
+                    "  %c [%q-%q] %s\n",
                     (entry->type==E820_RAM)?'*':' ',
                     entry->addr,
                     entry->addr + entry->size - 1,
@@ -113,7 +113,7 @@ static void dump_cmdline_arguments(int argc, char *argv[]) {
     printk("Command line arguments:\n");
 
     for(int idx = 0; idx < argc; ++idx) {
-        printk("    %s\n", argv[idx]);
+        printk("  %s\n", argv[idx]);
     }
 }
 
@@ -125,7 +125,7 @@ static void dump_environ(void) {
     printk("Environment variables:\n");
 
     for(char **envvar = environ; *envvar != NULL; ++envvar) {
-        printk("    %s\n", *envvar);
+        printk("  %s\n", *envvar);
     }
 }
 
@@ -175,17 +175,21 @@ static void dump_auxvec(void) {
         const char *name = auxv_type_name(entry->a_type);
 
         if(name != NULL) {
-            printk("    %s: %u/0x%x\n", name, entry->a_un.a_val, entry->a_un.a_val);
+            printk("  %s: %u/0x%x\n", name, entry->a_un.a_val, entry->a_un.a_val);
         }
         else {
-            printk("    (%u): %u/0x%x\n", entry->a_type, entry->a_un.a_val, entry->a_un.a_val);
+            printk("  (%u): %u/0x%x\n", entry->a_type, entry->a_un.a_val, entry->a_un.a_val);
         }
     }
 }
 
 static void ipc_test_run_client(void) {
+    /* The order of these buffers is shuffled on purpose because they will be
+     * concatenated later and we don't want things to look OK by coincidence. */
+    char reply2[5];
+    char reply1[6];
+    char reply3[40];
     int errno;
-    char reply[32];
 
     if(fd < 0) {
         printk("Client thread has invalid descriptor.\n");
@@ -204,24 +208,34 @@ static void ipc_test_run_client(void) {
     send_buffers[1].addr = world;
     send_buffers[1].size = sizeof(world);       /* includes NUL terminator */
 
-    jinue_buffer_t reply_buffer;
-    reply_buffer.addr = reply;
-    reply_buffer.size = sizeof(reply);
+    jinue_buffer_t reply_buffers[3];
+    reply_buffers[0].addr = reply1;
+    reply_buffers[0].size = sizeof(reply1) - 1; /* minus one chunk is NUL terminated */
+    reply_buffers[1].addr = reply2;
+    reply_buffers[1].size = sizeof(reply2) - 1; /* minus one chunk is NUL terminated */
+    reply_buffers[2].addr = reply3;
+    reply_buffers[2].size = sizeof(reply3);     /* final NUL is part of the reply message */
+
+    memset(reply1, 0, sizeof(reply1));
+    memset(reply2, 0, sizeof(reply2));
+    memset(reply3, 0, sizeof(reply3));
 
     jinue_message_t message;
     message.send_buffers        = send_buffers;
     message.send_buffers_length = 2;
-    message.recv_buffers        = &reply_buffer;
-    message.recv_buffers_length = 1;
+    message.recv_buffers        = reply_buffers;
+    message.recv_buffers_length = 3;
 
     intptr_t ret = jinue_send(fd, MSG_FUNC_TEST, &message, &errno);
 
     if(ret < 0) {
         printk("jinue_send() failed with error: %u.\n", errno);
+        return;
     }
-    else {
-        printk("Client thread got reply from main thread: \"%s\"\n", reply);
-    }
+
+    printk("Client thread got reply from main thread:\n");
+    printk("  data:             \"%s%s%s\"\n", reply1, reply2, reply3);
+    printk("  size:             %u\n", ret);
 }
 
 static void ipc_test_client_thread(void) {
@@ -276,13 +290,13 @@ static void run_ipc_test(void) {
     }
 
     printk("Main thread received message:\n");
-    printk("     data:              \"%s\"\n", recv_data);
-    printk("     size:              %u\n", ret);
-    printk("     function:          %u (user base + %u)\n", function, function - SYSCALL_USER_BASE);
-    printk("     cookie:            %u\n", message.recv_cookie);
-    printk("     reply max. size:   %u\n", message.reply_max_size);
+    printk("  data:             \"%s\"\n", recv_data);
+    printk("  size:             %u\n", ret);
+    printk("  function:         %u (user base + %u)\n", function, function - SYSCALL_USER_BASE);
+    printk("  cookie:           %u\n", message.recv_cookie);
+    printk("  reply max. size:  %u\n", message.reply_max_size);
 
-    const char reply_string[] = "OK";
+    const char reply_string[] = "Hi, Main Thread!";
 
     jinue_const_buffer_t reply_buffer;
     reply_buffer.addr = reply_string;
