@@ -106,9 +106,9 @@ int jinue_create_thread(void (*entry)(), void *stack, int *perrno) {
     jinue_syscall_args_t args;
 
     args.arg0 = SYSCALL_FUNC_CREATE_THREAD;
-    args.arg1 = 0;
-    args.arg2 = (uintptr_t)entry;
-    args.arg3 = (uintptr_t)stack;
+    args.arg1 = (uintptr_t)entry;
+    args.arg2 = (uintptr_t)stack;
+    args.arg3 = 0;
 
     return jinue_syscall_with_usual_convention(&args, perrno);
 }

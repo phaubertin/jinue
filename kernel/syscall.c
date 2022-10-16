@@ -81,8 +81,8 @@ static void sys_puts(jinue_syscall_args_t *args) {
 }
 
 static void sys_create_thread(jinue_syscall_args_t *args) {
-    void *entry         = (void *)args->arg2;
-    void *user_stack    = (void *)args->arg3;
+    void *entry         = (void *)args->arg1;
+    void *user_stack    = (void *)args->arg2;
 
     if(!is_userspace_pointer(entry)) {
         syscall_args_set_error(args, JINUE_EINVAL);
