@@ -53,6 +53,10 @@ exists.
 buffer.
 * JINUE_EPERM if the process to which the calling thread belongs is not the
 owner of the IPC endpoint.
+* JINUE_EINVAL in any ofthe following situations:
+    * If any part of any of the receive buffers belongs to the kernel.
+    * If the receive buffers array has more than 256 elements.
+    * If any of the receive buffers is larger than 64 MB.
 
 ## Future Direction
 

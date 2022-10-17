@@ -85,7 +85,7 @@ struct thread_t {
     int                      reply_errno;
     uintptr_t                message_function;
     size_t                   message_size;
-    char                     message_buffer[JINUE_SEND_MAX_SIZE];
+    char                     message_buffer[JINUE_MAX_MESSAGE_SIZE];
 };
 
 typedef struct thread_t thread_t;

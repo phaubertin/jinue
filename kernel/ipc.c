@@ -126,13 +126,18 @@ int ipc_create_for_current_process(int flags) {
 }
 
 static int get_receive_buffers_size(const jinue_message_t *message) {
-
-    /* TODO put an upper limit on the number of buffers in the array */
-
     size_t buffer_size = 0;
+
+    if(message->recv_buffers_length > JINUE_MAX_BUFFERS_IN_ARRAY) {
+        return -JINUE_EINVAL;
+    }
 
     for(int idx = 0; idx < message->recv_buffers_length; ++idx) {
         const jinue_buffer_t *recv_buffer = &message->recv_buffers[idx];
+
+        if(recv_buffer->size > JINUE_MAX_BUFFER_SIZE) {
+            return -JINUE_EINVAL;
+        }
 
         /* This is not the final check, which will happen in scatter_message()
          * while it is actually writing the message to the user space buffers.
@@ -150,8 +155,13 @@ static int get_receive_buffers_size(const jinue_message_t *message) {
             return -JINUE_EINVAL;
         }
 
-        /* TODO deal with overflow */
         buffer_size += recv_buffer->size;
+
+        /* We don't need more than this and we don't want buffer_size to
+         * overflow. */
+        if(buffer_size > JINUE_MAX_MESSAGE_SIZE) {
+            buffer_size = JINUE_MAX_MESSAGE_SIZE;
+        }
     }
 
     return buffer_size;
@@ -160,7 +170,9 @@ static int get_receive_buffers_size(const jinue_message_t *message) {
 static int gather_message(thread_t *thread, const jinue_message_t *message) {
     thread->message_size = 0;
 
-    /* TODO put an upper limit on the number of buffers in the array */
+    if(message->send_buffers_length > JINUE_MAX_BUFFERS_IN_ARRAY) {
+        return -JINUE_EINVAL;
+    }
 
     for(int idx = 0; idx < message->send_buffers_length; ++idx) {
         jinue_const_buffer_t send_buffer;
@@ -175,7 +187,7 @@ static int gather_message(thread_t *thread, const jinue_message_t *message) {
             return -JINUE_EINVAL;
         }
 
-        size_t space_remaining = JINUE_SEND_MAX_SIZE - thread->message_size;
+        size_t space_remaining = JINUE_MAX_MESSAGE_SIZE - thread->message_size;
 
         if(send_buffer.size > space_remaining) {
             return -JINUE_EINVAL;

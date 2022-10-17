@@ -50,10 +50,13 @@ failure, the return value set in `arg0` is -1 and an error number is set in
 IPC endpoint.
 * JINUE_EIO if the specified descriptor is closed or the IPC endpoint no longer
 exists.
-* JINUE_EINVAL if the total length of the message is larger than 2048 bytes.
-* JINUE_EINVAL if any part of the message buffer belongs to the kernel.
 * JINUE_E2BIG if the receiving thread attempted to send a reply that was too big
-for the buffer size.
+for the receive buffers.
+* JINUE_EINVAL in any ofthe following situations:
+    * If the total length of the message is larger than 2048 bytes.
+    * If any part of any of the send and/or receive buffers belongs to the kernel.
+    * If the send and/or receive buffers array have more than 256 elements.
+    * If any of the receive buffers is larger than 64 MB.
 
 ## Future Direction
 

@@ -32,10 +32,15 @@
 #ifndef _JINUE_SHARED_ASM_IPC_H
 #define _JINUE_SHARED_ASM_IPC_H
 
-/** number of bits reserved for the message buffer size and data size fields */
-#define JINUE_SEND_SIZE_BITS            12
+#include <jinue/shared/asm/types.h>
 
-/** maximum size of a message buffer and of the data inside that buffer */
-#define JINUE_SEND_MAX_SIZE             (1 << (JINUE_SEND_SIZE_BITS - 1))
+/** maximum size of a message */
+#define JINUE_MAX_MESSAGE_SIZE      2048
+
+/** maximum size of a send or receive buffer */
+#define JINUE_MAX_BUFFER_SIZE       (64 * MB)
+
+/** maximum number of buffers in a buffer array */
+#define JINUE_MAX_BUFFERS_IN_ARRAY  256
 
 #endif
