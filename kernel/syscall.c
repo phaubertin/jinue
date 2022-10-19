@@ -250,6 +250,15 @@ static void sys_reply(jinue_syscall_args_t *args) {
     set_return_value_or_error(args, retval);
 }
 
+/**
+ * System call dispatching function
+ *
+ * Dispatch system calls based on the function number present in the call
+ * arguments.
+ *
+ * @param trapframe trap frame for current system call
+ *
+ */
 void dispatch_syscall(trapframe_t *trapframe) {
     jinue_syscall_args_t *args = (jinue_syscall_args_t *)&trapframe->msg_arg0;
     

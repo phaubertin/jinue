@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2022 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -42,12 +42,21 @@
 #include <syscall.h>
 #include <thread.h>
 
-
+/** slab cache used for allocating IPC endpoint objects */
 static slab_cache_t ipc_object_cache;
 
 static ipc_t *proc_ipc = NULL;
 
-static void ipc_object_ctor(void *buffer, size_t ignore) {
+/**
+ * Object constructor for IPC endpoint slab allocator
+ *
+ * All currently recognized flags will be deprecated.
+ *
+ * @param buffer IPC endpoint object being constructed
+ * @param size size in bytes of the IPC endpoint object (ignored)
+ *
+ */
+static void ipc_object_ctor(void *buffer, size_t size) {
     ipc_t *ipc_object = buffer;
     
     object_header_init(&ipc_object->header, OBJECT_TYPE_IPC);
@@ -55,6 +64,10 @@ static void ipc_object_ctor(void *buffer, size_t ignore) {
     jinue_list_init(&ipc_object->recv_list);
 }
 
+/**
+ * Perform boot-time initialization for IPC
+ *
+ */
 void ipc_boot_init(void) {
     slab_cache_init(
             &ipc_object_cache,
@@ -72,6 +85,15 @@ void ipc_boot_init(void) {
     }
 }
 
+/**
+ * Create a new IPC endpoint
+ *
+ * All currently recognized flags will be deprecated.
+ *
+ * @param flags flags
+ * @return pointer to IPC endpoint on success, NULL on allocation failure
+ *
+ */
 static ipc_t *ipc_object_create(int flags) {
     ipc_t *ipc = slab_cache_alloc(&ipc_object_cache);
     
@@ -82,10 +104,24 @@ static ipc_t *ipc_object_create(int flags) {
     return ipc;
 }
 
+/** To be deprecated
+ *
+ * TODO get rid of this
+ *
+ * */
 static ipc_t *ipc_get_proc_object(void) {
     return proc_ipc;
 }
 
+/**
+ * Create an IPC endpoint owned by the current thread
+ *
+ * All currently recognized flags will be deprecated.
+ *
+ * @param flags flags
+ * @return IPC endpoint descriptor on success, negated error number on error
+ *
+ */
 int ipc_create_for_current_process(int flags) {
     ipc_t *ipc;
 
@@ -125,6 +161,13 @@ int ipc_create_for_current_process(int flags) {
     return fd;
 }
 
+/**
+ * Check receive buffers and count receive buffer size
+ *
+ * @param message structure describing the receive buffers
+ * @return total receive buffer size on success, negated error number on error
+ *
+ */
 static int get_receive_buffers_size(const jinue_message_t *message) {
     size_t buffer_size = 0;
 
@@ -167,6 +210,14 @@ static int get_receive_buffers_size(const jinue_message_t *message) {
     return buffer_size;
 }
 
+/**
+ * Copy message or reply from user space buffer(s) to thread message buffer
+ *
+ * @param thread thread sending the message or reply
+ * @param message structure describing the message
+ * @return zero on success, negated error number on error
+ *
+ */
 static int gather_message(thread_t *thread, const jinue_message_t *message) {
     thread->message_size = 0;
 
@@ -204,6 +255,14 @@ static int gather_message(thread_t *thread, const jinue_message_t *message) {
     return 0;
 }
 
+/**
+ * Write message or reply to user space buffer(s)
+ *
+ * @param thread thread receiving the message or reply
+ * @param message structure describing the receive buffers
+ * @return zero on success, negated error number on error
+ *
+ */
 static int scatter_message(thread_t *thread, const jinue_message_t *message) {
     size_t read_position = 0;
 
@@ -216,14 +275,14 @@ static int scatter_message(thread_t *thread, const jinue_message_t *message) {
 
         /* We are reading the buffer definition from user space so let's make
          * sure to copy the data before we check and use it to prevent it from
-         * being changed by user space between steps.
-         *
-         * Also, even though we may already checked these, we need to check them
-         * again for the same reason. */
+         * being changed by user space between steps. */
         jinue_buffer_t recv_buffer;
         recv_buffer.addr = message->recv_buffers[idx].addr;
         recv_buffer.size = message->recv_buffers[idx].size;
 
+        /* We already checked this at the start of the system call but we need
+         * to check it again because another application thread might have
+         * changed the content of the array since. */
         if(! check_userspace_buffer(recv_buffer.addr, recv_buffer.size)) {
             return -JINUE_EINVAL;
         }
@@ -245,6 +304,27 @@ static int scatter_message(thread_t *thread, const jinue_message_t *message) {
     return 0;
 }
 
+/**
+ * Implementation of the SEND system call
+ *
+ * This function sends a message to an IPC endpoint so it can be received by
+ * another thread, possibly in another process.
+ *
+ * If a receiving thread is blocked on the IPC endpoint waiting for a message,
+ * then the message is processed immediately. Otherwise, the sending thread
+ * blocks until a receiving thread receives the message. Threads blocked waiting
+ * for a receiving thread are enqueued to a sender queue and processed in order.
+ *
+ * The send buffers pointed to by the message structure passed as argument
+ * contain the message to be sent. The receive buffers will be used to store the
+ * reply from the receiving thread.
+ *
+ * @param fd descriptor for the IPC endpoint
+ * @param function function number of the message
+ * @param message structure describing the message
+ * @return message size in bytes on success, negated error number on error
+ *
+ */
 int ipc_send(int fd, int function, const jinue_message_t *message) {
     thread_t *thread = get_current_thread();
 
@@ -321,6 +401,25 @@ int ipc_send(int fd, int function, const jinue_message_t *message) {
     return thread->message_size;
 }
 
+/**
+ * Implementation of the RECEIVE system call
+ *
+ * This function receives a message that another thread, probably in another
+ * process, sent to a specific IPC endpoint.
+ *
+ * If a sending thread is blocked on the IPC endpoint waiting for a receiving
+ * thread, then its message is processed immediately. Otherwise, the receiving
+ * thread blocks until a sending thread attempts to send a message. Threads
+ * blocked waiting to receive a message are enqueued to a receiving thread queue.
+ *
+ * The receive buffers pointed to by the message structure passed as argument
+ * will be used to receive the message.
+ *
+ * @param fd descriptor for the IPC endpoint
+ * @param message structure describing the receive buffers
+ * @return received message size in bytes on success, negated error number on error
+ *
+ */
 int ipc_receive(int fd, jinue_message_t *message) {
     int recv_buffer_size = get_receive_buffers_size(message);
 
@@ -402,6 +501,19 @@ int ipc_receive(int fd, jinue_message_t *message) {
     return send_thread->message_size;
 }
 
+/**
+ * Implementation of the REPLY system call
+ *
+ * This function is called by a receiving thread to end processing of the
+ * current message and send the reply to the sending thread.
+ *
+ * The send buffers pointed to by the message structure passed as argument
+ * contain the reply.
+ *
+ * @param message structure describing the message
+ * @return zero on success, negated error number on error
+ *
+ */
 int ipc_reply(const jinue_message_t *message) {
     thread_t *thread        = get_current_thread();
     thread_t *send_thread   = thread->sender;
@@ -429,3 +541,4 @@ int ipc_reply(const jinue_message_t *message) {
 
     return 0;
 }
+
