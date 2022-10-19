@@ -171,7 +171,9 @@ static void sys_send(jinue_syscall_args_t *args) {
 
     /* Let's be careful here: we need to first copy the message structure and
      * then check it to prevent the user application from modifying the content
-     * after we check. */
+     * after we check.
+     *
+     * TODO optimization: do not copy output members */
     memcpy(&message, user_message, sizeof(jinue_message_t));
 
     size_t send_buffers_size = message.send_buffers_length * sizeof(jinue_buffer_t);
@@ -204,7 +206,9 @@ static void sys_receive(jinue_syscall_args_t *args) {
 
     /* Let's be careful here: we need to first copy the message structure and
      * then check it to prevent the user application from modifying the content
-     * after we check. */
+     * after we check.
+     *
+     * TODO optimization: do not copy output members */
     memcpy(&message, user_message, sizeof(jinue_message_t));
 
     size_t recv_buffers_size = message.recv_buffers_length * sizeof(jinue_buffer_t);
@@ -236,7 +240,9 @@ static void sys_reply(jinue_syscall_args_t *args) {
 
     /* Let's be careful here: we need to first copy the message structure and
      * then check it to prevent the user application from modifying the content
-     * after we check. */
+     * after we check.
+     *
+     * TODO optimization: do not copy output members */
     memcpy(&message, user_message, sizeof(jinue_message_t));
 
     size_t send_buffers_size = message.send_buffers_length * sizeof(jinue_buffer_t);
