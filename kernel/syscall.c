@@ -168,7 +168,7 @@ static void sys_create_ipc(jinue_syscall_args_t *args) {
     set_return_value_or_error(args, fd);
 }
 
-static int copy_message_from_userspace(
+static int copy_message_struct_from_userspace(
         jinue_message_t         *message,
         const jinue_message_t   *userspace_message) {
 
@@ -219,7 +219,7 @@ static void sys_send(jinue_syscall_args_t *args) {
     /* Let's be careful here: we need to first copy the message structure and
      * then check it to protect against the user application modifying the
      * content after the check. */
-    int copy_retval = copy_message_from_userspace(&message, user_message);
+    int copy_retval = copy_message_struct_from_userspace(&message, user_message);
 
     if(copy_retval < 0) {
         set_return_value_or_error(args, copy_retval);
@@ -258,7 +258,7 @@ static void sys_receive(jinue_syscall_args_t *args) {
     /* Let's be careful here: we need to first copy the message structure and
      * then check it to protect against the user application modifying the
      * content after the check. */
-    int copy_retval = copy_message_from_userspace(&message, user_message);
+    int copy_retval = copy_message_struct_from_userspace(&message, user_message);
 
     if(copy_retval < 0) {
         set_return_value_or_error(args, copy_retval);
@@ -290,7 +290,7 @@ static void sys_reply(jinue_syscall_args_t *args) {
     /* Let's be careful here: we need to first copy the message structure and
      * then check it to protect against the user application modifying the
      * content after the check. */
-    int copy_retval = copy_message_from_userspace(&message, user_message);
+    int copy_retval = copy_message_struct_from_userspace(&message, user_message);
 
     if(copy_retval < 0) {
         set_return_value_or_error(args, copy_retval);
