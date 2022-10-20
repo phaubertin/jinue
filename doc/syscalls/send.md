@@ -12,9 +12,10 @@ number is passed to the receiving thread along with the message.
 
 The descriptor that references the IPC endpoint is passed in `arg1`. 
 
-A pointer to a jinue_message_t structure is passed in `arg2`. In this structure,
-the send buffers should be set to the message data to be sent while the receive
-buffers need to describe where to write the reply.
+A pointer to a [jinue_message_t structure](../../include/libc/jinue/shared/ipc.h)
+is passed in `arg2`. In this structure, the send buffers must be set to the
+message data to be sent while the receive buffers describe where to write the
+reply.
 
 ```
     +----------------------------------------------------------------+
@@ -50,9 +51,9 @@ failure, the return value set in `arg0` is -1 and an error number is set in
 IPC endpoint.
 * JINUE_EIO if the specified descriptor is closed or the IPC endpoint no longer
 exists.
-* JINUE_E2BIG if the receiving thread attempted to send a reply that was too big
-for the receive buffers.
-* JINUE_EINVAL in any ofthe following situations:
+* JINUE_E2BIG if a receiving thread attempted to receive the message but it was
+too large for its receive buffer(s).
+* JINUE_EINVAL in any of the following situations:
     * If the total length of the message is larger than 2048 bytes.
     * If any part of any of the send and/or receive buffers belongs to the kernel.
     * If the send and/or receive buffers array have more than 256 elements.
@@ -61,7 +62,7 @@ for the receive buffers.
 ## Future Direction
 
 This function will be modified to allow sending descriptors as part of the
-message.
+message and receive descriptors as part of the reply.
 
 A non-blocking version of this system call that would return immediately if no
 thread is waiting to receive the message may also be added.

@@ -11,8 +11,9 @@ Function number (`arg0`) is 10.
 
 The descriptor that references the IPC endpoint is passed in `arg1`.
 
-A pointer to a jinue_message_t structure is passed in `arg2`. In this structure,
-the receive buffers should be set to the where the message will be written.
+A pointer to a [jinue_message_t structure](../../include/libc/jinue/shared/ipc.h)
+is passed in `arg2`. In this structure, the receive buffers must be set to
+where the message is to be written.
 
 ```
     +----------------------------------------------------------------+
@@ -48,19 +49,19 @@ set in `arg1`.
 IPC endpoint.
 * JINUE_EIO if the specified descriptor is closed or the IPC endpoint no longer
 exists.
-* JINUE_EINVAL if any part of the receiver buffer belongs to the kernel.
-* JINUE_E2BIG if a message was available but it was too big for the receive
+* JINUE_E2BIG if a message was available but it was too large for the receive
 buffer.
 * JINUE_EPERM if the process to which the calling thread belongs is not the
 owner of the IPC endpoint.
-* JINUE_EINVAL in any ofthe following situations:
+* JINUE_EINVAL in any of the following situations:
     * If any part of any of the receive buffers belongs to the kernel.
     * If the receive buffers array has more than 256 elements.
     * If any of the receive buffers is larger than 64 MB.
 
 ## Future Direction
 
-This function will be modified to allow receiving descriptors from the sender.
+This function will be modified to allow receiving descriptors from the sender as
+part of the message.
 
 A combined reply/receive system call will be added to allow the receiver thread
 to atomically send a reply to the current message and wait for the next one.
