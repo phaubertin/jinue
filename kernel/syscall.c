@@ -157,6 +157,42 @@ static void sys_create_ipc(jinue_syscall_args_t *args) {
     set_return_value_or_error(args, fd);
 }
 
+static int copy_message_from_userspace(
+        jinue_message_t         *message,
+        const jinue_message_t   *userspace_message) {
+
+    if(! check_userspace_buffer(userspace_message, sizeof(jinue_message_t))) {
+        return -JINUE_EINVAL;
+    }
+
+    message->send_buffers           = userspace_message->send_buffers;
+    message->send_buffers_length    = userspace_message->send_buffers_length;
+    message->recv_buffers           = userspace_message->recv_buffers;
+    message->recv_buffers_length    = userspace_message->recv_buffers_length;
+
+    return 0;
+}
+
+static int check_send_buffers(const jinue_message_t *message) {
+    size_t send_buffers_size = message->send_buffers_length * sizeof(jinue_buffer_t);
+
+    if(! check_userspace_buffer(message->send_buffers, send_buffers_size)) {
+        return -JINUE_EINVAL;
+    }
+
+    return 0;
+}
+
+static int check_recv_buffers(const jinue_message_t *message) {
+    size_t recv_buffers_size = message->recv_buffers_length * sizeof(jinue_buffer_t);
+
+    if(! check_userspace_buffer(message->recv_buffers, recv_buffers_size)) {
+        return -JINUE_EINVAL;
+    }
+
+    return 0;
+}
+
 static void sys_send(jinue_syscall_args_t *args) {
     jinue_message_t message;
 
@@ -164,28 +200,27 @@ static void sys_send(jinue_syscall_args_t *args) {
     int fd              = args->arg1;
     void *user_message  = (void *)args->arg2;
 
-    if(! check_userspace_buffer(user_message, sizeof(jinue_message_t))) {
-        syscall_args_set_error(args, JINUE_EINVAL);
-        return;
-    }
-
     /* Let's be careful here: we need to first copy the message structure and
-     * then check it to prevent the user application from modifying the content
-     * after we check.
-     *
-     * TODO optimization: do not copy output members */
-    memcpy(&message, user_message, sizeof(jinue_message_t));
+     * then check it to protect against the user application modifying the
+     * content after the check. */
+    int copy_retval = copy_message_from_userspace(&message, user_message);
 
-    size_t send_buffers_size = message.send_buffers_length * sizeof(jinue_buffer_t);
-    size_t recv_buffers_size = message.recv_buffers_length * sizeof(jinue_buffer_t);
-
-    if(! check_userspace_buffer(message.send_buffers, send_buffers_size)) {
-        syscall_args_set_error(args, JINUE_EINVAL);
+    if(copy_retval < 0) {
+        set_return_value_or_error(args, copy_retval);
         return;
     }
 
-    if(! check_userspace_buffer(message.recv_buffers, recv_buffers_size)) {
-        syscall_args_set_error(args, JINUE_EINVAL);
+    int send_checkval = check_send_buffers(&message);
+
+    if(send_checkval < 0) {
+        set_return_value_or_error(args, send_checkval);
+        return;
+    }
+
+    int recv_checkval = check_recv_buffers(&message);
+
+    if(recv_checkval < 0) {
+        set_return_value_or_error(args, recv_checkval);
         return;
     }
 
@@ -199,22 +234,20 @@ static void sys_receive(jinue_syscall_args_t *args) {
     int fd                          = args->arg1;
     jinue_message_t *user_message   = (jinue_message_t *)args->arg2;
 
-    if(! check_userspace_buffer(user_message, sizeof(jinue_message_t))) {
-        syscall_args_set_error(args, JINUE_EINVAL);
+    /* Let's be careful here: we need to first copy the message structure and
+     * then check it to protect against the user application modifying the
+     * content after the check. */
+    int copy_retval = copy_message_from_userspace(&message, user_message);
+
+    if(copy_retval < 0) {
+        set_return_value_or_error(args, copy_retval);
         return;
     }
 
-    /* Let's be careful here: we need to first copy the message structure and
-     * then check it to prevent the user application from modifying the content
-     * after we check.
-     *
-     * TODO optimization: do not copy output members */
-    memcpy(&message, user_message, sizeof(jinue_message_t));
+    int recv_checkval = check_recv_buffers(&message);
 
-    size_t recv_buffers_size = message.recv_buffers_length * sizeof(jinue_buffer_t);
-
-    if(! check_userspace_buffer(message.recv_buffers, recv_buffers_size)) {
-        syscall_args_set_error(args, JINUE_EINVAL);
+    if(recv_checkval < 0) {
+        set_return_value_or_error(args, recv_checkval);
         return;
     }
 
@@ -233,22 +266,20 @@ static void sys_reply(jinue_syscall_args_t *args) {
 
     void *user_message  = (void *)args->arg2;
 
-    if(! check_userspace_buffer(user_message, sizeof(jinue_message_t))) {
-        syscall_args_set_error(args, JINUE_EINVAL);
+    /* Let's be careful here: we need to first copy the message structure and
+     * then check it to protect against the user application modifying the
+     * content after the check. */
+    int copy_retval = copy_message_from_userspace(&message, user_message);
+
+    if(copy_retval < 0) {
+        set_return_value_or_error(args, copy_retval);
         return;
     }
 
-    /* Let's be careful here: we need to first copy the message structure and
-     * then check it to prevent the user application from modifying the content
-     * after we check.
-     *
-     * TODO optimization: do not copy output members */
-    memcpy(&message, user_message, sizeof(jinue_message_t));
+    int send_checkval = check_send_buffers(&message);
 
-    size_t send_buffers_size = message.send_buffers_length * sizeof(jinue_buffer_t);
-
-    if(! check_userspace_buffer(message.send_buffers, send_buffers_size)) {
-        syscall_args_set_error(args, JINUE_EINVAL);
+    if(send_checkval < 0) {
+        set_return_value_or_error(args, send_checkval);
         return;
     }
 
