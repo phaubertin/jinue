@@ -186,7 +186,7 @@ static int get_receive_buffers_size(const jinue_message_t *message) {
          * while it is actually writing the message to the user space buffers.
          * We still want to make the check here though: on the sender side, we
          * don't want to send the message to the receiving thread, have it
-         * process the message, and then realize we can't store the reply, and,
+         * process the message, and then realize we can't store the reply and,
          * on the receiver side, we don't want to find out after we dequeued a
          * sending thread.
          *
