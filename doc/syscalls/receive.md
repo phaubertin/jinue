@@ -5,6 +5,17 @@
 Receive a message from an IPC endpoint. If no message is available, this call
 blocks until one becomes available.
 
+On a successful receive, this function sets the following members in the
+[jinue_message_t structure](../../include/libc/jinue/shared/ipc.h) passed as
+argument:
+
+* `recv_function` is set to the function number that was specified by the sender
+  when it invoked [SEND](send.md).
+* `recv_cookie` is set to the cookie associated with the descriptor specified by
+  the sender as part of the arguments to [SEND](send.md).
+* `reply_max_size` is set to the maximum size of the reply that can be sent back
+  when [REPLY](reply.md)ing to the sender.
+
 ## Arguments
 
 Function number (`arg0`) is 10.
