@@ -344,6 +344,7 @@ int ipc_send(int fd, int function, const jinue_message_t *message) {
         return gather_result;
     }
 
+    /* TODO put this in a separate function */
     object_ref_t *ref = process_get_descriptor(thread->process, fd);
 
     if(! object_ref_is_valid(ref)) {
@@ -428,6 +429,8 @@ int ipc_receive(int fd, jinue_message_t *message) {
     }
 
     thread_t *thread    = get_current_thread();
+
+    /* TODO put this in a separate function */
     object_ref_t *ref   = process_get_descriptor(thread->process, fd);
 
     if(! object_ref_is_valid(ref)) {
@@ -438,6 +441,7 @@ int ipc_receive(int fd, jinue_message_t *message) {
         return -JINUE_EIO;
     }
 
+    /* TODO be careful: this check exists only here, not in ipc_send() */
     if(! object_ref_is_owner(ref)) {
         return -JINUE_EPERM;
     }
