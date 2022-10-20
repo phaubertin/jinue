@@ -37,6 +37,7 @@
 #include <hal/trap.h>
 #include <console.h>
 #include <ipc.h>
+#include <limits.h>
 #include <object.h>
 #include <printk.h>
 #include <process.h>
@@ -53,6 +54,17 @@ static void set_return_value_or_error(jinue_syscall_args_t *args, int retval) {
     else {
         syscall_args_set_return(args, retval);
     }
+}
+
+static int get_descriptor(uintptr_t value) {
+    /* This handles the obvious case where the original value was positive and
+     * too large, but also the case where an originally negative value was cast
+     * to uintptr_t. */
+    if(value > INT_MAX) {
+        return -JINUE_EBADF;
+    }
+
+    return (int)value;
 }
 
 static void sys_nosys(jinue_syscall_args_t *args) {
@@ -196,10 +208,14 @@ static int check_recv_buffers(const jinue_message_t *message) {
 static void sys_send(jinue_syscall_args_t *args) {
     jinue_message_t message;
 
-    /* TODO check for negative fd argument (and maybe against INT_MAX too?) */
     int function        = args->arg0;
-    int fd              = args->arg1;
+    int fd              = get_descriptor(args->arg1);
     void *user_message  = (void *)args->arg2;
+
+    if(fd < 0) {
+        set_return_value_or_error(args, fd);
+        return;
+    }
 
     /* Let's be careful here: we need to first copy the message structure and
      * then check it to protect against the user application modifying the
@@ -232,9 +248,13 @@ static void sys_send(jinue_syscall_args_t *args) {
 static void sys_receive(jinue_syscall_args_t *args) {
     jinue_message_t message;
 
-    /* TODO check for negative fd argument (and maybe against INT_MAX too?) */
-    int fd                          = args->arg1;
+    int fd                          = get_descriptor(args->arg1);
     jinue_message_t *user_message   = (jinue_message_t *)args->arg2;
+
+    if(fd < 0) {
+        set_return_value_or_error(args, fd);
+        return;
+    }
 
     /* Let's be careful here: we need to first copy the message structure and
      * then check it to protect against the user application modifying the
