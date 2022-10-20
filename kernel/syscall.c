@@ -196,6 +196,7 @@ static int check_recv_buffers(const jinue_message_t *message) {
 static void sys_send(jinue_syscall_args_t *args) {
     jinue_message_t message;
 
+    /* TODO check for negative fd argument (and maybe against INT_MAX too?) */
     int function        = args->arg0;
     int fd              = args->arg1;
     void *user_message  = (void *)args->arg2;
@@ -231,6 +232,7 @@ static void sys_send(jinue_syscall_args_t *args) {
 static void sys_receive(jinue_syscall_args_t *args) {
     jinue_message_t message;
 
+    /* TODO check for negative fd argument (and maybe against INT_MAX too?) */
     int fd                          = args->arg1;
     jinue_message_t *user_message   = (jinue_message_t *)args->arg2;
 

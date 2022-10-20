@@ -41,7 +41,6 @@ intptr_t jinue_send(
 
     jinue_syscall_args_t args;
 
-    /** TODO how do we deal with negative function numbers? Is int the right type?*/
     args.arg0 = (uintptr_t)function;
     args.arg1 = (uintptr_t)fd;
     args.arg2 = (uintptr_t)message;
