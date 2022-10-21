@@ -56,10 +56,9 @@ set in `arg1`.
 
 ## Errors
 
-* JINUE_EBADF if the specified descriptor is invalid or does not refer to an
-IPC endpoint.
-* JINUE_EIO if the specified descriptor is closed or the IPC endpoint no longer
-exists.
+* JINUE_EBADF if the specified descriptor is invalid, or does not refer to an
+IPC endpoint, or is closed.
+* JINUE_EIO if the IPC endpoint no longer exists.
 * JINUE_E2BIG if a message was available but it was too large for the receive
 buffer.
 * JINUE_EPERM if the process to which the calling thread belongs is not the
