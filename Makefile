@@ -69,6 +69,10 @@ vbox-debug: vbox
 vbox-run: vbox
 	vboxmanage startvm $(vbox_vm_name)
 
+.PHONY: cppcheck-kernel
+cppcheck-kernel:
+	cppcheck --enable=all --std=c99 $(CPPFLAGS.includes) kernel/
+
 # ----- documentation
 .PHONY: doc
 doc:
