@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2022 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,35 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_SYSCALL_H
-#define JINUE_KERNEL_SYSCALL_H
+#ifndef _JINUE_LIBC_LIMITS_H
+#define _JINUE_LIBC_LIMITS_H
 
-#include <jinue/shared/syscall.h>
-#include <hal/types.h>
-#include <stdint.h>
-
-static inline void syscall_args_set_return_uintptr(jinue_syscall_args_t *args, uintptr_t retval) {
-	args->arg0	= retval;
-	args->arg1	= 0;
-	args->arg2	= 0;
-	args->arg3	= 0;
-}
-
-static inline void syscall_args_set_return(jinue_syscall_args_t *args, int retval) {
-	syscall_args_set_return_uintptr(args, (uintptr_t)retval);
-}
-
-static inline void syscall_args_set_return_ptr(jinue_syscall_args_t *args, void *retval) {
-	syscall_args_set_return_uintptr(args, (uintptr_t)retval);
-}
-
-static inline void syscall_args_set_error(jinue_syscall_args_t *args, int error) {
-	args->arg0	= (uintptr_t)-1;
-	args->arg1	= (uintptr_t)error;
-	args->arg2	= 0;
-	args->arg3	= 0;
-}
-
-void dispatch_syscall(trapframe_t *trapframe);
+#define INT_MAX 2147483647
 
 #endif

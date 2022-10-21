@@ -44,6 +44,6 @@ void memory_initialize_array(
 
 void *memory_lookup_page(uint64_t paddr);
 
-int memory_get_map(const syscall_output_buffer_t *buffer);
+int memory_get_map(const jinue_buffer_t *buffer);
 
 #endif

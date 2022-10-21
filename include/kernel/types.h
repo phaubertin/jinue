@@ -73,19 +73,6 @@ typedef struct {
     object_ref_t    descriptors[PROCESS_MAX_DESCRIPTORS];
 } process_t;
 
-typedef struct {
-    void    *user_ptr;
-    size_t   buffer_size;
-    size_t   data_size;
-    size_t   desc_n;
-    size_t   total_size;
-} syscall_input_buffer_t;
-
-typedef struct {
-    void    *user_ptr;
-    size_t   buffer_size;
-} syscall_output_buffer_t;
-
 struct thread_t {
     object_header_t          header;
     thread_context_t         thread_ctx;
@@ -94,8 +81,11 @@ struct thread_t {
     addr_t                   local_storage_addr;
     size_t                   local_storage_size;
     struct thread_t         *sender;
-    jinue_syscall_args_t    *message_args;
-    char                     message_buffer[JINUE_SEND_MAX_SIZE];
+    size_t                   recv_buffer_size;
+    int                      reply_errno;
+    uintptr_t                message_function;
+    size_t                   message_size;
+    char                     message_buffer[JINUE_MAX_MESSAGE_SIZE];
 };
 
 typedef struct thread_t thread_t;

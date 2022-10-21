@@ -37,6 +37,7 @@
 #include <hal/trap.h>
 #include <console.h>
 #include <ipc.h>
+#include <limits.h>
 #include <object.h>
 #include <printk.h>
 #include <process.h>
@@ -54,53 +55,15 @@ static void set_return_value_or_error(jinue_syscall_args_t *args, int retval) {
     }
 }
 
-static int check_input_buffer(
-        syscall_input_buffer_t  *buffer,
-        jinue_syscall_args_t    *args) {
-
-    buffer->user_ptr    = jinue_args_get_buffer_ptr(args);
-    buffer->buffer_size = jinue_args_get_buffer_size(args);
-    buffer->data_size   = jinue_args_get_data_size(args);
-    buffer->desc_n      = jinue_args_get_n_desc(args);
-    /* TODO aren't we missing padding size here? */
-    buffer->total_size  =
-            buffer->data_size + buffer->desc_n * sizeof(jinue_ipc_descriptor_t);
-
-    if(buffer->buffer_size > JINUE_SEND_MAX_SIZE) {
-        return -JINUE_EINVAL;
+static int get_descriptor(uintptr_t value) {
+    /* This handles the obvious case where the original value was positive and
+     * too large, but also the case where an originally negative value was cast
+     * to uintptr_t. */
+    if(value > INT_MAX) {
+        return -JINUE_EBADF;
     }
 
-    if(buffer->total_size > buffer->buffer_size) {
-        return -JINUE_EINVAL;
-    }
-
-    if(buffer->desc_n > JINUE_SEND_MAX_N_DESC) {
-        return -JINUE_EINVAL;
-    }
-
-    if(! check_userspace_buffer(buffer->user_ptr, buffer->buffer_size)) {
-        return -JINUE_EINVAL;
-    }
-
-    return 0;
-}
-
-static int check_output_buffer(
-        syscall_output_buffer_t *buffer,
-        jinue_syscall_args_t    *args) {
-
-    buffer->user_ptr    = jinue_args_get_buffer_ptr(args);
-    buffer->buffer_size = jinue_args_get_buffer_size(args);
-
-    if(buffer->buffer_size > JINUE_SEND_MAX_SIZE) {
-        return -JINUE_EINVAL;
-    }
-
-    if(! check_userspace_buffer(buffer->user_ptr, buffer->buffer_size)) {
-        return -JINUE_EINVAL;
-    }
-
-    return 0;
+    return (int)value;
 }
 
 static void sys_nosys(jinue_syscall_args_t *args) {
@@ -186,12 +149,12 @@ static void sys_get_thread_local(jinue_syscall_args_t *args) {
 }
 
 static void sys_get_user_memory(jinue_syscall_args_t *args) {
-    syscall_output_buffer_t buffer;
+    jinue_buffer_t buffer;
 
-    buffer.user_ptr     = (void *)args->arg1;
-    buffer.buffer_size  = args->arg2;
+    buffer.addr     = (void *)args->arg1;
+    buffer.size     = args->arg2;
 
-    if(! check_userspace_buffer(buffer.user_ptr, buffer.buffer_size)) {
+    if(! check_userspace_buffer(buffer.addr, buffer.size)) {
         syscall_args_set_error(args, JINUE_EINVAL);
         return;
     }
@@ -205,68 +168,159 @@ static void sys_create_ipc(jinue_syscall_args_t *args) {
     set_return_value_or_error(args, fd);
 }
 
+static int copy_message_struct_from_userspace(
+        jinue_message_t         *message,
+        const jinue_message_t   *userspace_message) {
+
+    if(! check_userspace_buffer(userspace_message, sizeof(jinue_message_t))) {
+        return -JINUE_EINVAL;
+    }
+
+    message->send_buffers           = userspace_message->send_buffers;
+    message->send_buffers_length    = userspace_message->send_buffers_length;
+    message->recv_buffers           = userspace_message->recv_buffers;
+    message->recv_buffers_length    = userspace_message->recv_buffers_length;
+
+    return 0;
+}
+
+static int check_send_buffers(const jinue_message_t *message) {
+    size_t send_buffers_size = message->send_buffers_length * sizeof(jinue_buffer_t);
+
+    if(! check_userspace_buffer(message->send_buffers, send_buffers_size)) {
+        return -JINUE_EINVAL;
+    }
+
+    return 0;
+}
+
+static int check_recv_buffers(const jinue_message_t *message) {
+    size_t recv_buffers_size = message->recv_buffers_length * sizeof(jinue_buffer_t);
+
+    if(! check_userspace_buffer(message->recv_buffers, recv_buffers_size)) {
+        return -JINUE_EINVAL;
+    }
+
+    return 0;
+}
+
 static void sys_send(jinue_syscall_args_t *args) {
-    syscall_input_buffer_t buffer;
+    jinue_message_t message;
 
-    int function    = args->arg0;
-    int fd          = args->arg1;
-    int checkval    = check_input_buffer(&buffer, args);
+    int function        = args->arg0;
+    int fd              = get_descriptor(args->arg1);
+    void *user_message  = (void *)args->arg2;
 
-    if(checkval < 0) {
-        syscall_args_set_error(args, -checkval);
+    if(fd < 0) {
+        set_return_value_or_error(args, fd);
         return;
     }
 
-    /* We need to pass the full args here so the receiver thread can set the
-     * return values in ipc_reply(). */
-    int retval = ipc_send(fd, function, &buffer, args);
+    /* Let's be careful here: we need to first copy the message structure and
+     * then check it to protect against the user application modifying the
+     * content after the check. */
+    int copy_retval = copy_message_struct_from_userspace(&message, user_message);
 
-    if(retval < 0) {
-        set_return_value_or_error(args, retval);
+    if(copy_retval < 0) {
+        set_return_value_or_error(args, copy_retval);
+        return;
     }
+
+    int send_checkval = check_send_buffers(&message);
+
+    if(send_checkval < 0) {
+        set_return_value_or_error(args, send_checkval);
+        return;
+    }
+
+    int recv_checkval = check_recv_buffers(&message);
+
+    if(recv_checkval < 0) {
+        set_return_value_or_error(args, recv_checkval);
+        return;
+    }
+
+    int retval = ipc_send(fd, function, &message);
+    set_return_value_or_error(args, retval);
 }
 
 static void sys_receive(jinue_syscall_args_t *args) {
-    syscall_output_buffer_t  buffer;
+    jinue_message_t message;
 
-    int fd          = (int)args->arg1;
-    int checkval    = check_output_buffer(&buffer, args);
+    int fd                          = get_descriptor(args->arg1);
+    jinue_message_t *user_message   = (jinue_message_t *)args->arg2;
 
-    if(checkval < 0) {
-        syscall_args_set_error(args, -checkval);
+    if(fd < 0) {
+        set_return_value_or_error(args, fd);
         return;
     }
 
-    /* This function does not set only a return value on success but needs to
-     * be able to set the value of all registers, which is why we pass the
-     * full args here. */
-    int retval = ipc_receive(fd, &buffer, args);
+    /* Let's be careful here: we need to first copy the message structure and
+     * then check it to protect against the user application modifying the
+     * content after the check. */
+    int copy_retval = copy_message_struct_from_userspace(&message, user_message);
 
-    /* ipc_receive() sets the return values on success so we only need to
-     * handle the error cases here. */
-    if(retval < 0) {
-        syscall_args_set_error(args, -retval);
+    if(copy_retval < 0) {
+        set_return_value_or_error(args, copy_retval);
+        return;
+    }
+
+    int recv_checkval = check_recv_buffers(&message);
+
+    if(recv_checkval < 0) {
+        set_return_value_or_error(args, recv_checkval);
+        return;
+    }
+
+    int retval = ipc_receive(fd, &message);
+    set_return_value_or_error(args, retval);
+
+    if(retval >= 0) {
+        user_message->recv_function     = message.recv_function;
+        user_message->recv_cookie       = message.recv_cookie;
+        user_message->reply_max_size    = message.reply_max_size;
     }
 }
 
 static void sys_reply(jinue_syscall_args_t *args) {
-    syscall_input_buffer_t buffer;
+    jinue_message_t message;
 
-    int checkval = check_input_buffer(&buffer, args);
+    void *user_message  = (void *)args->arg2;
 
-    if(checkval < 0) {
-        syscall_args_set_error(args, -checkval);
+    /* Let's be careful here: we need to first copy the message structure and
+     * then check it to protect against the user application modifying the
+     * content after the check. */
+    int copy_retval = copy_message_struct_from_userspace(&message, user_message);
+
+    if(copy_retval < 0) {
+        set_return_value_or_error(args, copy_retval);
         return;
     }
 
-    int retval = ipc_reply(&buffer);
+    int send_checkval = check_send_buffers(&message);
+
+    if(send_checkval < 0) {
+        set_return_value_or_error(args, send_checkval);
+        return;
+    }
+
+    int retval = ipc_reply(&message);
     set_return_value_or_error(args, retval);
 }
 
+/**
+ * System call dispatching function
+ *
+ * Dispatch system calls based on the function number present in the call
+ * arguments.
+ *
+ * @param trapframe trap frame for current system call
+ *
+ */
 void dispatch_syscall(trapframe_t *trapframe) {
     jinue_syscall_args_t *args = (jinue_syscall_args_t *)&trapframe->msg_arg0;
     
-    int function = args->arg0;
+    intptr_t function = args->arg0;
     
     if(function < 0) {
         /* The function number is expected to be non-negative. This is especially

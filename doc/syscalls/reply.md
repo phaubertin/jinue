@@ -3,20 +3,16 @@
 ## Description
 
 Reply to the current message. This function should be called after calling the
-Receive Message system call in order to send the reply and complete processing
-of the message.
+[RECEIVE](receive.md) system call in order to send the reply and complete
+processing of the message.
 
 ## Arguments
 
 Function number (`arg0`) is 11.
 
-The descriptor that references the IPC endpoint is passed in `arg1`.
-
-A pointer to the buffer containing the reply message is passed in `arg2` and the
-size, in bytes, of the buffer is passed in bits 31..20 of `arg3`.
-
-The length of the reply data length is set in bits 19..8 of `arg3` (see
-[Future Direction](#future-direction)).
+A pointer to a [jinue_message_t structure](../../include/libc/jinue/shared/ipc.h)
+is passed in `arg2`. In this structure, the send buffers must be set to the
+reply data.
 
 ```
     +----------------------------------------------------------------+
@@ -30,14 +26,14 @@ The length of the reply data length is set in bits 19..8 of `arg3` (see
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                        buffer address                          |  arg2
+    |                    reply message address                       |  arg2
     +----------------------------------------------------------------+
     31                                                               0
 
-    +-----------------------+------------------------+---------------+
-    |     buffer size       |     reply data size    |  reserved (0) |  arg3
-    +-----------------------+------------------------+---------------+
-    31                    20 19                     8 7              0
+    +----------------------------------------------------------------+
+    |                          reserved (0)                          |  arg3
+    +----------------------------------------------------------------+
+    31                                                               0
 ```
 
 ## Return Value
@@ -47,20 +43,23 @@ an error number is set (in `arg1`).
 
 ## Errors
 
-* JINUE_ENOMSG if there is no current message, i.e. if no message was received
-using the Receive Message system call.
-* JINUE_EINVAL if the reply buffer is larger than 2048 bytes.
-* JINUE_EINVAL if the reply data length is larger than the reply buffer size.
-* JINUE_EINVAL if any part of the reply buffer belongs to the kernel.
-* JINUE_E2BIG if the reply message is too big for the peer's buffer size. (This
-buffer size is available in bits 31..20 of `arg3` in the return value of the
-Receive Message system call.)
+* JINUE_ENOMSG if there is no current message, which means either:
+    * [RECEIVE](receive.md) was not called; or
+    * [RECEIVE](receive.md) was called but did not return successfully; or
+    * This function was already called at least once since the last call to
+      [RECEIVE](receive.md).
+* JINUE_E2BIG if the reply message is too big for the sender's receive buffer
+size.
+* JINUE_EINVAL in any of the following situations:
+    * If the total length of the reply is larger than 2048 bytes.
+    * If any part of any of the send buffers belongs to the kernel.
+    * If the send buffers array has more than 256 elements.
+    * If any of the send buffers is larger than 64 MB.
 
 ## Future Direction
 
 This function will be modified to allow sending descriptors as part of the
-reply message. (This is why there are separate arguments for the buffer size and
-the reply data length.)
+reply message.
 
 A combined reply/receive system call will be added to allow the receiver thread
 to atomically send a reply to the current message and wait for the next one.

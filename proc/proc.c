@@ -46,51 +46,17 @@
 
 #define CALL_BUFFER_SIZE    512
 
-#define MSG_FUNC_TEST       (SYSCALL_USER_BASE + 0)
+#define MSG_FUNC_TEST       (SYSCALL_USER_BASE + 42)
 
-int errno;
+static int errno;
 
-int fd;
+static int fd;
 
-char thread_a_stack[THREAD_STACK_SIZE];
+static char ipc_test_thread_stack[THREAD_STACK_SIZE];
 
 extern char **environ;
 
 extern const Elf32_auxv_t *_jinue_libc_auxv;
-
-void thread_a(void) {
-    int errno;
-    char message[] = "Hello World!";
-
-    if(fd < 0) {
-        printk("Thread A has invalid descriptor.\n");
-    }
-    else {
-        printk("Thread A got descriptor %u.\n", fd);
-
-        printk("Thread A is sending message: \"%s\"\n", message);
-
-        int ret = jinue_send(
-                SYSCALL_USER_BASE,  /* function number */
-                fd,                 /* target descriptor */
-                message,            /* buffer address */
-                sizeof(message),    /* buffer size */
-                sizeof(message),    /* data size */
-                0,                  /* number of descriptors */
-                &errno);            /* error number */
-
-        if(ret < 0) {
-            printk("jinue_send() failed with error: %u.\n", errno);
-        }
-        else {
-            printk("Thread A got reply from main thread: \"%s\"\n", message);
-        }
-    }
-
-    printk("Thread A is exiting.\n");
-
-    jinue_exit_thread();
-}
 
 static bool bool_getenv(const char *name) {
     const char *value = getenv(name);
@@ -129,7 +95,7 @@ static void dump_phys_memory_map(const jinue_mem_map_t *map) {
 
         if(entry->type == E820_RAM || !ram_only) {
             printk(
-                    "%c [%q-%q] %s\n",
+                    "  %c [%q-%q] %s\n",
                     (entry->type==E820_RAM)?'*':' ',
                     entry->addr,
                     entry->addr + entry->size - 1,
@@ -147,7 +113,7 @@ static void dump_cmdline_arguments(int argc, char *argv[]) {
     printk("Command line arguments:\n");
 
     for(int idx = 0; idx < argc; ++idx) {
-        printk("    %s\n", argv[idx]);
+        printk("  %s\n", argv[idx]);
     }
 }
 
@@ -159,7 +125,7 @@ static void dump_environ(void) {
     printk("Environment variables:\n");
 
     for(char **envvar = environ; *envvar != NULL; ++envvar) {
-        printk("    %s\n", *envvar);
+        printk("  %s\n", *envvar);
     }
 }
 
@@ -199,8 +165,6 @@ static const char *auxv_type_name(int type) {
 }
 
 static void dump_auxvec(void) {
-
-
     if(! bool_getenv("DEBUG_DUMP_AUXV")) {
         return;
     }
@@ -211,20 +175,152 @@ static void dump_auxvec(void) {
         const char *name = auxv_type_name(entry->a_type);
 
         if(name != NULL) {
-            printk("    %s: %u/0x%x\n", name, entry->a_un.a_val, entry->a_un.a_val);
+            printk("  %s: %u/0x%x\n", name, entry->a_un.a_val, entry->a_un.a_val);
         }
         else {
-            printk("    (%u): %u/0x%x\n", entry->a_type, entry->a_un.a_val, entry->a_un.a_val);
+            printk("  (%u): %u/0x%x\n", entry->a_type, entry->a_un.a_val, entry->a_un.a_val);
         }
     }
+}
+
+static void ipc_test_run_client(void) {
+    /* The order of these buffers is shuffled on purpose because they will be
+     * concatenated later and we don't want things to look OK by coincidence. */
+    char reply2[5];
+    char reply1[6];
+    char reply3[40];
+    int errno;
+
+    if(fd < 0) {
+        printk("Client thread has invalid descriptor.\n");
+        return;
+    }
+
+    const char hello[] = "Hello ";
+    const char world[] = "World!";
+
+    printk("Client thread got descriptor %u.\n", fd);
+    printk("Client thread is sending message.\n");
+
+    jinue_const_buffer_t send_buffers[2];
+    send_buffers[0].addr = hello;
+    send_buffers[0].size = sizeof(hello) - 1;   /* do not include NUL terminator */
+    send_buffers[1].addr = world;
+    send_buffers[1].size = sizeof(world);       /* includes NUL terminator */
+
+    jinue_buffer_t reply_buffers[3];
+    reply_buffers[0].addr = reply1;
+    reply_buffers[0].size = sizeof(reply1) - 1; /* minus one chunk is NUL terminated */
+    reply_buffers[1].addr = reply2;
+    reply_buffers[1].size = sizeof(reply2) - 1; /* minus one chunk is NUL terminated */
+    reply_buffers[2].addr = reply3;
+    reply_buffers[2].size = sizeof(reply3);     /* final NUL is part of the reply message */
+
+    memset(reply1, 0, sizeof(reply1));
+    memset(reply2, 0, sizeof(reply2));
+    memset(reply3, 0, sizeof(reply3));
+
+    jinue_message_t message;
+    message.send_buffers        = send_buffers;
+    message.send_buffers_length = 2;
+    message.recv_buffers        = reply_buffers;
+    message.recv_buffers_length = 3;
+
+    intptr_t ret = jinue_send(fd, MSG_FUNC_TEST, &message, &errno);
+
+    if(ret < 0) {
+        printk("jinue_send() failed with error: %u.\n", errno);
+        return;
+    }
+
+    printk("Client thread got reply from main thread:\n");
+    printk("  data:             \"%s%s%s\"\n", reply1, reply2, reply3);
+    printk("  size:             %u\n", ret);
+}
+
+static void ipc_test_client_thread(void) {
+    ipc_test_run_client();
+
+    printk("Client thread is exiting.\n");
+
+    jinue_exit_thread();
+}
+
+static void run_ipc_test(void) {
+    char recv_data[64];
+
+    if(! bool_getenv("RUN_TEST_IPC")) {
+        return;
+    }
+
+    printk("Running threading and IPC test...\n");
+
+    int fd = jinue_create_ipc(JINUE_IPC_NONE, &errno);
+
+    if(fd < 0) {
+        printk("Creating IPC object descriptor.\n");
+        printk("Error number: %u\n", errno);
+        return;
+    }
+
+    printk("Main thread got descriptor %u.\n", fd);
+
+    jinue_create_thread(ipc_test_client_thread, &ipc_test_thread_stack[THREAD_STACK_SIZE], NULL);
+
+    jinue_buffer_t recv_buffer;
+    recv_buffer.addr = recv_data;
+    recv_buffer.size = sizeof(recv_data);
+
+    jinue_message_t message;
+    message.recv_buffers        = &recv_buffer;
+    message.recv_buffers_length = 1;
+
+    intptr_t ret = jinue_receive(fd, &message, &errno);
+
+    if(ret < 0) {
+        printk("jinue_receive() failed with error: %u.\n", errno);
+        return;
+    }
+
+    int function = message.recv_function;
+
+    if(function != MSG_FUNC_TEST) {
+        printk("jinue_receive() unexpected function number: %u.\n", function);
+        return;
+    }
+
+    printk("Main thread received message:\n");
+    printk("  data:             \"%s\"\n", recv_data);
+    printk("  size:             %u\n", ret);
+    printk("  function:         %u (user base + %u)\n", function, function - SYSCALL_USER_BASE);
+    printk("  cookie:           %u\n", message.recv_cookie);
+    printk("  reply max. size:  %u\n", message.reply_max_size);
+
+    const char reply_string[] = "Hi, Main Thread!";
+
+    jinue_const_buffer_t reply_buffer;
+    reply_buffer.addr = reply_string;
+    reply_buffer.size = sizeof(reply_string);   /* includes NUL terminator */
+
+    jinue_message_t reply;
+    reply.send_buffers          = &reply_buffer;
+    reply.send_buffers_length   = 1;
+
+    ret = jinue_reply(&reply, &errno);
+
+    if(ret < 0) {
+        printk("jinue_reply() failed with error: %u.\n", errno);
+    }
+
+    printk("Main thread is running.\n");
 }
 
 int main(int argc, char *argv[]) {
     char call_buffer[CALL_BUFFER_SIZE];
     int status;
-    
+
     /* say hello */
-    printk("Process manager (%s) started.\n", argv[0]);
+    printk("Jinue user space loader (%s) started.\n", argv[0]);
 
     dump_cmdline_arguments(argc, argv);
     dump_environ();
@@ -233,9 +329,9 @@ int main(int argc, char *argv[]) {
     /* get system call implementation so we can use something faster than the
      * interrupt-based one if available */
     jinue_get_syscall();
-    
+
     printk("Using system call method '%s'.\n", jinue_get_syscall_implementation_name());
-    
+
     /* get free memory blocks from microkernel */
     errno = 0;
     status = jinue_get_user_memory((jinue_mem_map_t *)&call_buffer, sizeof(call_buffer), &errno);
@@ -248,52 +344,7 @@ int main(int argc, char *argv[]) {
 
     dump_phys_memory_map((jinue_mem_map_t *)&call_buffer);
 
-    int fd = jinue_create_ipc(JINUE_IPC_NONE, &errno);
-
-    if(fd < 0) {
-        printk("Creating IPC object descriptor.\n");
-        printk("Error number: %u\n", errno);
-    }
-    else {
-        char buffer[128];
-        jinue_message_t message;
-
-        printk("Main thread got descriptor %u.\n", fd);
-
-        (void)jinue_create_thread(thread_a, &thread_a_stack[THREAD_STACK_SIZE], NULL);
-
-        int ret = jinue_receive(
-                fd,
-                buffer,
-                sizeof(buffer),
-                &message,
-                &errno);
-
-        if(ret < 0) {
-            printk("jinue_receive() failed with error: %u.\n", errno);
-        }
-        else if(message.function != MSG_FUNC_TEST) {
-            printk("jinue_receive() unexpected function number: %u.\n", message.function);
-        }
-        else {
-            char reply[] = "OK";
-
-            printk("Main thread received message:  \"%s\"\n", buffer);
-
-            ret = jinue_reply(
-                    reply,                      /* buffer address */
-                    sizeof(reply),              /* buffer size */
-                    sizeof(reply),              /* data size */
-                    0,                          /* number of descriptors */
-                    &errno);                    /* error number */
-
-            if(ret < 0) {
-                printk("jinue_reply() failed with error: %u.\n", errno);
-            }
-        }
-    }
-
-    printk("Main thread is running.\n");
+    run_ipc_test();
 
     while (1) {
         jinue_yield_thread();

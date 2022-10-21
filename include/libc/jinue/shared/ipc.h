@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2022 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -43,36 +43,24 @@
 
 #define JINUE_IPC_PROC      (1<<1)
 
-/* TBD */
-typedef int jinue_ipc_descriptor_t;
+typedef struct {
+    void        *addr;
+    size_t       size;
+} jinue_buffer_t;
 
+typedef struct {
+    const void  *addr;
+    size_t       size;
+} jinue_const_buffer_t;
 
-static inline uintptr_t jinue_args_pack_buffer_size(size_t buffer_size) {
-    return JINUE_ARGS_PACK_BUFFER_SIZE((uintptr_t)buffer_size);
-}
-
-static inline uintptr_t jinue_args_pack_data_size(size_t data_size) {
-    return JINUE_ARGS_PACK_DATA_SIZE((uintptr_t)data_size);
-}
-
-static inline uintptr_t jinue_args_pack_n_desc(unsigned int n_desc) {
-    return JINUE_ARGS_PACK_N_DESC((uintptr_t)n_desc);
-}
-
-static inline char *jinue_args_get_buffer_ptr(const jinue_syscall_args_t *args) {
-    return (char *)(args->arg2);
-}
-
-static inline size_t jinue_args_get_buffer_size(const jinue_syscall_args_t *args) {
-    return ((size_t)(args->arg3) >> JINUE_SEND_BUFFER_SIZE_OFFSET) & JINUE_SEND_SIZE_MASK;
-}
-
-static inline size_t jinue_args_get_data_size(const jinue_syscall_args_t *args) {
-    return ((size_t)(args->arg3) >> JINUE_SEND_DATA_SIZE_OFFSET) & JINUE_SEND_SIZE_MASK;
-}
-
-static inline unsigned int jinue_args_get_n_desc(const jinue_syscall_args_t *args) {
-    return ((unsigned int)(args->arg3) >> JINUE_SEND_N_DESC_OFFSET) & JINUE_SEND_N_DESC_MASK;
-}
+typedef struct {
+    const jinue_const_buffer_t  *send_buffers;
+    size_t                       send_buffers_length;
+    const jinue_buffer_t        *recv_buffers;
+    size_t                       recv_buffers_length;
+    uintptr_t                    recv_function;
+    uintptr_t                    recv_cookie;
+    uintptr_t                    reply_max_size;
+} jinue_message_t;
 
 #endif
