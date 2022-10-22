@@ -32,11 +32,17 @@
 #ifndef JINUE_HAL_ASM_PIC8259_H
 #define JINUE_HAL_ASM_PIC8259_H
 
-/** Base I/O port for the master interrupt controller */
-#define PIC8259_MASTER_IO_BASE	0x20
+/** Base I/O port for the main interrupt controller */
+#define PIC8259_MAIN_IO_BASE	0x20
 
-/** Base I/O port for the slave interrupt controller */
-#define PIC8259_SLAVE_IO_BASE	0xa0
+/** Base I/O port for the proxied interrupt controller */
+#define PIC8259_PROXIED_IO_BASE	0xa0
+
+/** Proxied PIC is connected to input 2 of the main PIC. */
+#define PIC8259_CASCADE_INPUT   2
+
+/** Number of IRQs handled by both cascaded PIC8259s together */
+#define PIC8259_IRQ_COUNT       16
 
 /** ICW1 bit 0: ICW4 needed */
 #define PIC8259_ICW1_IC4		(1<<0)
@@ -58,11 +64,5 @@
 
 /** OCW2: non-specific EOI command */
 #define PIC8259_EOI				0x20
-
-/** Slave PIC is connected to input 2 of the master. */
-#define PIC8259_CASCADE_INPUT	2
-
-/** Number of IRQs handled by both cascaded PIC8259s together */
-#define PIC8259_IRQ_COUNT		16
 
 #endif

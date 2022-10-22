@@ -35,22 +35,22 @@
 #include <stdbool.h>
 
 typedef struct {
-    bool is_master;
+    bool is_main;
     int io_base;
     int irq_base;
     int mask;
 } pic8259_t;
 
-static pic8259_t master_pic8259 = {
-    .is_master  = true,
-    .io_base    = PIC8259_MASTER_IO_BASE,
+static pic8259_t main_pic8259 = {
+    .is_main    = true,
+    .io_base    = PIC8259_MAIN_IO_BASE,
     .irq_base   = IDT_PIC8259_BASE,
     .mask       = 0xff & ~(1<<PIC8259_CASCADE_INPUT)
 };
 
-static pic8259_t slave_pic8259 = {
-    .is_master  = false,
-    .io_base    = PIC8259_SLAVE_IO_BASE,
+static pic8259_t proxied_pic8259 = {
+    .is_main    = false,
+    .io_base    = PIC8259_PROXIED_IO_BASE,
     .irq_base   = IDT_PIC8259_BASE + 8,
     .mask       = 0xff
 };
@@ -68,8 +68,8 @@ static void initialize(const pic8259_t *pic8259) {
     outb(pic8259->io_base + 1, pic8259->irq_base);
     iodelay();
 
-    /* ICW3: master-slave connections */
-    if(pic8259->is_master) {
+    /* ICW3: cascading connections */
+    if(pic8259->is_main) {
         value = 1 << PIC8259_CASCADE_INPUT;
     } else {
         value = PIC8259_CASCADE_INPUT;
@@ -93,8 +93,8 @@ static void ack_eoi(pic8259_t *pic8259) {
 }
 
 void pic8259_init() {
-    initialize(&master_pic8259);
-    initialize(&slave_pic8259);
+    initialize(&main_pic8259);
+    initialize(&proxied_pic8259);
 }
 
 static void mask_irqs(pic8259_t *pic8259, int mask) {
@@ -112,28 +112,28 @@ static void unmask_irqs(pic8259_t *pic8259, int mask) {
 void pic8259_mask(int irq) {
     if(irq < 8) {
         if(irq != PIC8259_CASCADE_INPUT) {
-            mask_irqs(&master_pic8259, 1 << irq);
+            mask_irqs(&main_pic8259, 1 << irq);
         }
     }
     else {
-        mask_irqs(&slave_pic8259, 1 << (irq - 8));
+        mask_irqs(&proxied_pic8259, 1 << (irq - 8));
     }
 }
 
 void pic8259_unmask(int irq) {
     if(irq < 8) {
-        unmask_irqs(&master_pic8259, 1 << irq);
+        unmask_irqs(&main_pic8259, 1 << irq);
     }
     else {
-        unmask_irqs(&slave_pic8259, 1 << (irq - 8));
+        unmask_irqs(&proxied_pic8259, 1 << (irq - 8));
     }
 }
 
 void pic8259_ack(int irq) {
     if(irq >= 8) {
-        ack_eoi(&slave_pic8259);
+        ack_eoi(&proxied_pic8259);
     }
 
-    ack_eoi(&master_pic8259);
+    ack_eoi(&main_pic8259);
     pic8259_unmask(irq);
 }
