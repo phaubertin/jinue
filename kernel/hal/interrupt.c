@@ -59,7 +59,7 @@ void dispatch_interrupt(trapframe_t *trapframe) {
     else if(ivt >= IDT_PIC8259_BASE && ivt < IDT_PIC8259_BASE + PIC8259_IRQ_COUNT) {
     	int irq = ivt - IDT_PIC8259_BASE;
         printk("IRQ: %u (vector %u)\n", irq, ivt);
-        pic8259_eoi(irq);
+        pic8259_ack(irq);
     }
     else {
     	printk("INTR: vector %u\n", ivt);

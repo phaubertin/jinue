@@ -293,7 +293,7 @@ void hal_init(
     init_idt();
 
     /* Initialize programmable interrupt_controller. */
-    pic8259_init(IDT_PIC8259_BASE);
+    pic8259_init();
 
     addr_space_t *addr_space = vm_create_initial_addr_space(
             kernel_elf,

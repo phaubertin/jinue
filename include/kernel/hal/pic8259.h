@@ -34,12 +34,12 @@
 
 #include <hal/asm/pic8259.h>
 
-void pic8259_init(int intrvect_base);
+void pic8259_init();
 
-void pic8259_mask_irq(int irq);
+void pic8259_mask(int irq);
 
-void pic8259_unmask_irq(int irq);
+void pic8259_unmask(int irq);
 
-void pic8259_eoi(int irq);
+void pic8259_ack(int irq);
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2022 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,108 +29,111 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <hal/asm/irq.h>
 #include <hal/io.h>
 #include <hal/pic8259.h>
+#include <stdbool.h>
 
+typedef struct {
+    bool is_proxied;
+    int io_base;
+    int irq_base;
+    int mask;
+} pic8259_t;
 
-void pic8259_init(int intrvect_base) {
-	/* Issue ICW1 to start initialization sequence of both interrupt controllers.
-	 * Specify there will be an ICW4 in the sequence. Specify the interrupts are
-	 * edge-triggered and that the PICs are in a cascaded configuration by
-	 * leaving the relevant flags cleared. */
-	outb(PIC8259_MASTER_BASE+0, PIC8259_ICW1_1 | PIC8259_ICW1_IC4);
-	iodelay();
-	outb(PIC8259_SLAVE_BASE+0, PIC8259_ICW1_1 | PIC8259_ICW1_IC4);
-	iodelay();
+static pic8259_t main_pic8259 = {
+    .is_proxied = false,
+    .io_base    = PIC8259_MAIN_IO_BASE,
+    .irq_base   = IDT_PIC8259_BASE,
+    .mask       = 0xff & ~(1<<PIC8259_CASCADE_INPUT)
+};
 
-	/* ICW2: base interrupt vector */
-	outb(PIC8259_MASTER_BASE+1, intrvect_base);
-	iodelay();
-	outb(PIC8259_SLAVE_BASE+1, intrvect_base + 8);
-	iodelay();
+static pic8259_t proxied_pic8259 = {
+    .is_proxied = true,
+    .io_base    = PIC8259_PROXIED_IO_BASE,
+    .irq_base   = IDT_PIC8259_BASE + 8,
+    .mask       = 0xff
+};
 
-	/* ICW3: master-slave connections */
-	outb(PIC8259_MASTER_BASE+1, (1<<PIC8259_CASCADE_INPUT));
-	iodelay();
-	outb(PIC8259_SLAVE_BASE+1, PIC8259_CASCADE_INPUT);
-	iodelay();
+static void initialize(const pic8259_t *pic8259) {
+    int value;
 
-	/* ICW4: Use 8088/8086 mode */
-	outb(PIC8259_MASTER_BASE+1, PIC8259_ICW4_UPM);
-	iodelay();
-	outb(PIC8259_SLAVE_BASE+1, PIC8259_ICW4_UPM);
-	iodelay();
+    /* Issue ICW1 to start initialization sequence. Specify the interrupts are
+     * edge-triggered and that the PICs are in a cascaded configuration by
+     * leaving the relevant flags cleared. */
+    outb(pic8259->io_base + 0, PIC8259_ICW1_1 | PIC8259_ICW1_IC4);
+    iodelay();
 
-	/* Set interrupt mask: all masked */
-	outb(PIC8259_MASTER_BASE+1, 0xff & ~(1<<PIC8259_CASCADE_INPUT));
-	iodelay();
-	outb(PIC8259_SLAVE_BASE+1, 0xff);
-	iodelay();
+    /* ICW2: base interrupt vector */
+    outb(pic8259->io_base + 1, pic8259->irq_base);
+    iodelay();
+
+    /* ICW3: cascading connections */
+    if(pic8259->is_proxied) {
+        value = PIC8259_CASCADE_INPUT;
+    } else {
+        value = 1 << PIC8259_CASCADE_INPUT;
+    }
+
+    outb(pic8259->io_base + 1, value);
+    iodelay();
+
+    /* ICW4: Use 8088/8086 mode */
+    outb(pic8259->io_base + 1, PIC8259_ICW4_UPM);
+    iodelay();
+
+    /* Set interrupt mask */
+    outb(pic8259->io_base + 1, pic8259->mask);
+    iodelay();
 }
 
-void pic8259_mask_irq(int irq) {
-	if(irq < PIC8259_IRQ_COUNT) {
-		if(irq < 8 && irq != PIC8259_CASCADE_INPUT) {
-			int mask = inb(PIC8259_MASTER_BASE+1);
-			iodelay();
-
-			mask |= (1<<irq);
-			outb(PIC8259_MASTER_BASE+1, mask);
-			iodelay();
-		}
-		else {
-			int mask = inb(PIC8259_SLAVE_BASE+1);
-			iodelay();
-
-			mask |= (1<<(irq - 8));
-			outb(PIC8259_SLAVE_BASE+1, mask);
-			iodelay();
-		}
-	}
+static void ack_eoi(pic8259_t *pic8259) {
+    outb(pic8259->io_base + 0, PIC8259_EOI);
+    iodelay();
 }
 
-void pic8259_unmask_irq(int irq) {
-	if(irq < PIC8259_IRQ_COUNT) {
-		int master_irq;
-
-		if(irq < 8) {
-			master_irq = irq;
-		}
-		else {
-			/* Unmask interrupt in slave PIC. */
-			int mask = inb(PIC8259_SLAVE_BASE+1);
-			iodelay();
-
-			mask &= ~(1<<(irq - 8));
-			outb(PIC8259_SLAVE_BASE+1, mask);
-			iodelay();
-
-			/* We will also want to unmask the cascaded interrupt line in the
-			 * master PIC. */
-			master_irq = PIC8259_CASCADE_INPUT;
-		}
-
-		if(irq != PIC8259_CASCADE_INPUT) {
-			int mask = inb(PIC8259_MASTER_BASE+1);
-			iodelay();
-
-			mask &= ~(1<<master_irq);
-			outb(PIC8259_MASTER_BASE+1, mask);
-			iodelay();
-		}
-	}
+void pic8259_init() {
+    initialize(&main_pic8259);
+    initialize(&proxied_pic8259);
 }
 
-void pic8259_eoi(int irq) {
-	if(irq < PIC8259_IRQ_COUNT) {
-		if(irq >= 8) {
-			outb(PIC8259_SLAVE_BASE+0, PIC8259_EOI);
-			iodelay();
-		}
+static void mask_irqs(pic8259_t *pic8259, int mask) {
+    pic8259->mask |= mask;
+    outb(pic8259->io_base + 1, pic8259->mask);
+    iodelay();
+}
 
-		outb(PIC8259_MASTER_BASE+0, PIC8259_EOI);
-		iodelay();
+static void unmask_irqs(pic8259_t *pic8259, int mask) {
+    pic8259->mask &= ~mask;
+    outb(pic8259->io_base + 1, pic8259->mask);
+    iodelay();
+}
 
-		pic8259_unmask_irq(irq);
-	}
+void pic8259_mask(int irq) {
+    if(irq < 8) {
+        if(irq != PIC8259_CASCADE_INPUT) {
+            mask_irqs(&main_pic8259, 1 << irq);
+        }
+    }
+    else {
+        mask_irqs(&proxied_pic8259, 1 << (irq - 8));
+    }
+}
+
+void pic8259_unmask(int irq) {
+    if(irq < 8) {
+        unmask_irqs(&main_pic8259, 1 << irq);
+    }
+    else {
+        unmask_irqs(&proxied_pic8259, 1 << (irq - 8));
+    }
+}
+
+void pic8259_ack(int irq) {
+    if(irq >= 8) {
+        ack_eoi(&proxied_pic8259);
+    }
+
+    ack_eoi(&main_pic8259);
+    pic8259_unmask(irq);
 }
