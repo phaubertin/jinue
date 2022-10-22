@@ -71,7 +71,7 @@ vbox-run: vbox
 
 .PHONY: cppcheck-kernel
 cppcheck-kernel:
-	cppcheck --enable=all --std=c99 $(CPPFLAGS.includes) kernel/
+	cppcheck --enable=all --std=c99 --platform=unix32 $(CPPFLAGS.includes) kernel/
 
 # ----- documentation
 .PHONY: doc
