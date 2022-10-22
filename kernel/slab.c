@@ -74,8 +74,6 @@ static void init_and_add_slab(slab_cache_t *cache, void *slab_addr);
  *
  * */
 static void destroy_slab(slab_cache_t *cache, slab_t *slab) {
-    addr_t           buffer;
-
     /** ASSERTION: no object is allocated on slab. */
     assert(slab->obj_count == 0);
 
@@ -91,7 +89,7 @@ static void destroy_slab(slab_cache_t *cache, slab_t *slab) {
      * is allocated/deallocated instead of when initializing/destroying a slab,
      * i.e. not here. */
     if(cache->dtor != NULL && ! (cache->flags & SLAB_POISON)) {
-        for(buffer = start_addr + slab->colour; buffer < (addr_t)slab; buffer += cache->alloc_size) {
+        for(addr_t buffer = start_addr + slab->colour; buffer < (addr_t)slab; buffer += cache->alloc_size) {
             cache->dtor((void *)buffer, cache->obj_size);
         }
     }

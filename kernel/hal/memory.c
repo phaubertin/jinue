@@ -56,7 +56,7 @@ static bool memory_range_is_within(
         const memory_range_t *enclosed,
         const memory_range_t *enclosing) {
 
-    return enclosed->start >= enclosing->start && enclosed->end <= enclosed->end;
+    return enclosed->start >= enclosing->start && enclosed->end <= enclosing->end;
 }
 
 static bool memory_ranges_overlap(

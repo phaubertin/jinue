@@ -143,7 +143,7 @@ static inline void *jinue_node_entry_by_offset(jinue_node_t *node, size_t offset
 
 #define jinue_node_entry(node, type, member)   (jinue_node_entry_by_offset(node, JINUE_OFFSETOF(type, member)))
 
-static inline jinue_node_t *jinue_cursor_node(jinue_cursor_t cur) {
+static inline jinue_node_t *jinue_cursor_node(const jinue_cursor_t cur) {
     if(cur == NULL) {
         return NULL;
     }
