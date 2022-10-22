@@ -33,10 +33,10 @@
 #define JINUE_HAL_ASM_PIC8259_H
 
 /** Base I/O port for the master interrupt controller */
-#define PIC8259_MASTER_BASE		0x20
+#define PIC8259_MASTER_IO_BASE	0x20
 
 /** Base I/O port for the slave interrupt controller */
-#define PIC8259_SLAVE_BASE		0xa0
+#define PIC8259_SLAVE_IO_BASE	0xa0
 
 /** ICW1 bit 0: ICW4 needed */
 #define PIC8259_ICW1_IC4		(1<<0)

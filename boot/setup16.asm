@@ -129,11 +129,11 @@ just_here:
     
     ; Mask all external interrupts
     mov al, 0xff
-    out PIC8259_SLAVE_BASE + 1, al
+    out PIC8259_SLAVE_IO_BASE + 1, al
     call iodelay
     
     mov al, 0xff & ~(1<<PIC8259_CASCADE_INPUT)
-    out PIC8259_MASTER_BASE + 1, al
+    out PIC8259_MASTER_IO_BASE + 1, al
     call iodelay
 
     ; Disable interrupts
