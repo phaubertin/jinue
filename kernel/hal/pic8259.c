@@ -35,21 +35,21 @@
 #include <stdbool.h>
 
 typedef struct {
-    bool is_main;
+    bool is_proxied;
     int io_base;
     int irq_base;
     int mask;
 } pic8259_t;
 
 static pic8259_t main_pic8259 = {
-    .is_main    = true,
+    .is_proxied = false,
     .io_base    = PIC8259_MAIN_IO_BASE,
     .irq_base   = IDT_PIC8259_BASE,
     .mask       = 0xff & ~(1<<PIC8259_CASCADE_INPUT)
 };
 
 static pic8259_t proxied_pic8259 = {
-    .is_main    = false,
+    .is_proxied = true,
     .io_base    = PIC8259_PROXIED_IO_BASE,
     .irq_base   = IDT_PIC8259_BASE + 8,
     .mask       = 0xff
@@ -69,10 +69,10 @@ static void initialize(const pic8259_t *pic8259) {
     iodelay();
 
     /* ICW3: cascading connections */
-    if(pic8259->is_main) {
-        value = 1 << PIC8259_CASCADE_INPUT;
-    } else {
+    if(pic8259->is_proxied) {
         value = PIC8259_CASCADE_INPUT;
+    } else {
+        value = 1 << PIC8259_CASCADE_INPUT;
     }
 
     outb(pic8259->io_base + 1, value);
