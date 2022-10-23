@@ -40,8 +40,6 @@ void page_free(void *page);
 
 unsigned int get_page_count(void);
 
-bool page_alloc_is_empty(void);
-
 bool add_page_frame(kern_paddr_t paddr);
 
 kern_paddr_t remove_page_frame(void);

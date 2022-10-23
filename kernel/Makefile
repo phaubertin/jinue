@@ -50,7 +50,6 @@ sources.c		 = \
 	debug.c \
 	elf.c \
 	ipc.c \
-	kbd.c \
 	kmain.c \
 	page_alloc.c \
 	panic.c \

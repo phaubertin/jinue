@@ -121,10 +121,9 @@ void vga_print(const char *message, int colour) {
 
 void vga_printn(const char *message, unsigned int n, int colour) {
     vga_pos_t pos = vga_get_cursor_pos();
-    char c;
     
     while(n) {
-        c = *(message++);
+        char c = *(message++);
         pos = vga_raw_putc(c, pos, colour);
         --n;
     }

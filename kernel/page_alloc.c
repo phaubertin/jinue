@@ -94,19 +94,6 @@ unsigned int get_page_count(void) {
 }
 
 /**
- * Check if allocator is empty and no more page can be allocated
- *
- * Page availability can be checked with this function before calling either
- * page_alloc() or remove_page_frame().
- *
- * @return true if no more page is available for allocation
- *
- * */
-bool page_alloc_is_empty(void) {
-    return head_page == NULL;
-}
-
-/**
  * Map a page frame and add it to the page allocator.
  *
  * This function is used to implement a system call that allows userspace to

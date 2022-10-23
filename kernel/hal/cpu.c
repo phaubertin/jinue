@@ -114,25 +114,20 @@ void cpu_detect_features(void) {
     }
     
     if(cpu_has_feature(CPU_FEATURE_CPUID)) {
-        uint32_t            signature;
-        uint32_t            flags, ext_flags;
-        uint32_t            vendor_dw0, vendor_dw1, vendor_dw2;
-        uint32_t            cpuid_max;
-        uint32_t            cpuid_ext_max;
-        x86_cpuid_regs_t    regs;
+        x86_cpuid_regs_t regs;
 
         /* default values */
-        flags               = 0;
-        ext_flags           = 0;
+        uint32_t flags      = 0;
+        uint32_t ext_flags  = 0;
 
         /* function 0: vendor ID string, max value of eax when calling CPUID */
         regs.eax = 0;
         
         /* call CPUID instruction */
-        cpuid_max  = cpuid(&regs);
-        vendor_dw0 = regs.ebx;
-        vendor_dw1 = regs.edx;
-        vendor_dw2 = regs.ecx;
+        uint32_t cpuid_max  = cpuid(&regs);
+        uint32_t vendor_dw0 = regs.ebx;
+        uint32_t vendor_dw1 = regs.edx;
+        uint32_t vendor_dw2 = regs.ecx;
         
         /* identify vendor */
         if(    vendor_dw0 == CPU_VENDOR_AMD_DW0 
@@ -154,7 +149,7 @@ void cpu_detect_features(void) {
             regs.eax = 1;
 
             /* call CPUID instruction */
-            signature = cpuid(&regs);
+            uint32_t signature = cpuid(&regs);
 
             /* set processor signature */
             cpu_info.stepping  = signature       & 0xf;
@@ -177,7 +172,7 @@ void cpu_detect_features(void) {
 
         /* extended function 0: max value of eax when calling CPUID (extended function) */
         regs.eax = 0x80000000;
-        cpuid_ext_max = cpuid(&regs);
+        uint32_t cpuid_ext_max = cpuid(&regs);
 
         /* get extended feature flags */
         if(cpuid_ext_max >= 0x80000001) {
