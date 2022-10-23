@@ -35,7 +35,7 @@
 /* This is set by crt.asm. */
 const Elf32_auxv_t *_jinue_libc_auxv = NULL;
 
-uint32_t jinue_getauxval(int type) {
+uint32_t getauxval(int type) {
     if(_jinue_libc_auxv == NULL) {
         return 0;
     }

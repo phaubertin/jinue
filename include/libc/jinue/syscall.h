@@ -45,6 +45,8 @@ uintptr_t jinue_syscall(jinue_syscall_args_t *args);
 
 intptr_t jinue_syscall_with_usual_convention(jinue_syscall_args_t *args, int *perrno);
 
+int jinue_set_syscall_mechanism(int mechanism);
+
 int jinue_get_syscall(void);
 
 const char *jinue_get_syscall_implementation_name(void);

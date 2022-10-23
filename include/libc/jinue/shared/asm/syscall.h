@@ -87,4 +87,7 @@
 /** slow/safe system call method using interrupts */
 #define SYSCALL_METHOD_INTR             2
 
+/** last system call mechanism */
+#define SYSCALL_METHOD_LAST             2
+
 #endif

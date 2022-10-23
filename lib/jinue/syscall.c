@@ -63,6 +63,15 @@ intptr_t jinue_syscall_with_usual_convention(jinue_syscall_args_t *args, int *pe
     return retval;
 }
 
+int jinue_set_syscall_mechanism(int mechanism) {
+    if(mechanism < 0 || mechanism > SYSCALL_METHOD_LAST) {
+        return JINUE_EINVAL;
+    }
+
+    syscall_stub_index = mechanism;
+    return 0;
+}
+
 int jinue_get_syscall(void) {
     jinue_syscall_args_t args;
 

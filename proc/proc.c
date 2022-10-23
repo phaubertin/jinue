@@ -29,6 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <sys/auxv.h>
 #include <sys/elf.h>
 #include <jinue/errno.h>
 #include <jinue/ipc.h>
@@ -320,9 +321,10 @@ int main(int argc, char *argv[]) {
     dump_environ();
     dump_auxvec();
 
-    /* get system call implementation so we can use something faster than the
-     * interrupt-based one if available */
-    jinue_get_syscall();
+    /* Get system call mechanism/implementation from auxiliary vectors so we can
+     * use something faster than the interrupt-based one if available and ensure
+     * the one we attempt to use is supported. */
+    jinue_set_syscall_mechanism(getauxval(JINUE_AT_HOWSYSCALL));
 
     printk("Using system call method '%s'.\n", jinue_get_syscall_implementation_name());
 
