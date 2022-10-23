@@ -314,7 +314,14 @@ int main(int argc, char *argv[]) {
     char call_buffer[CALL_BUFFER_SIZE];
     int status;
 
-    /* say hello */
+    /* Say hello.
+     *
+     * We shouldn't do this before the call to jinue_set_syscall_mechanism(). It
+     * works because the system call implementation selected before the call is
+     * made is the interrupt-based one, which is slow but always available.
+     *
+     * TODO once things stabilize, ensure jinue_syscall() actually fails if no
+     * system call implementation was set. */
     printk("Jinue user space loader (%s) started.\n", argv[0]);
 
     dump_cmdline_arguments(argc, argv);

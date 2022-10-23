@@ -85,6 +85,8 @@ int jinue_get_syscall(void) {
     return syscall_stub_index;
 }
 
+/* TODO (maybe) move this to proc */
+/* TODO (definitely) used consistent terminology (mechanism vs implementation vs method) */
 const char *jinue_get_syscall_implementation_name(void) {
     return syscall_stub_names[syscall_stub_index];
 }
