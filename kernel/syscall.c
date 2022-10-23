@@ -71,7 +71,7 @@ static void sys_nosys(jinue_syscall_args_t *args) {
 }
 
 static void sys_get_syscall(jinue_syscall_args_t *args) {
-    syscall_args_set_return(args, syscall_method);
+    syscall_args_set_return(args, syscall_mechanism);
 }
 
 static void sys_putc(jinue_syscall_args_t *args) {

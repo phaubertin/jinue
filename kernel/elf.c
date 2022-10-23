@@ -29,6 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <hal/trap.h>
 #include <hal/vm.h>
 #include <assert.h>
 #include <boot.h>
@@ -410,7 +411,7 @@ void elf_initialize_stack(elf_info_t *info, const char *cmdline) {
 
     /* Auxiliary vectors */
     Elf32_auxv_t *auxvp = (Elf32_auxv_t *)sp;
-    sp = (uintptr_t *)(auxvp + 7);
+    sp = (uintptr_t *)(auxvp + 8);
 
     auxvp[0].a_type     = JINUE_AT_PHDR;
     auxvp[0].a_un.a_val = (uint32_t)info->at_phdr;
@@ -430,8 +431,11 @@ void elf_initialize_stack(elf_info_t *info, const char *cmdline) {
     auxvp[5].a_type     = JINUE_AT_STACKBASE;
     auxvp[5].a_un.a_val = STACK_BASE;
 
-    auxvp[6].a_type     = JINUE_AT_NULL;
-    auxvp[6].a_un.a_val = 0;
+    auxvp[6].a_type     = JINUE_AT_HOWSYSCALL;
+    auxvp[6].a_un.a_val = syscall_mechanism;
+
+    auxvp[7].a_type     = JINUE_AT_NULL;
+    auxvp[7].a_un.a_val = 0;
 
     /* Write arguments and environment variables (i.e. the actual strings). */
     char *const args = (char *)sp;

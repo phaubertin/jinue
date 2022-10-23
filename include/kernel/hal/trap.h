@@ -32,8 +32,7 @@
 #ifndef JINUE_HAL_TRAP_H
 #define JINUE_HAL_TRAP_H
 
-
-extern int syscall_method;
+extern int syscall_mechanism;
 
 /** entry point for Intel fast system call mechanism (SYSENTER/SYSEXIT) */
 void fast_intel_entry(void);
