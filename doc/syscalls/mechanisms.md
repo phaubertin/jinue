@@ -3,7 +3,11 @@
 The microkernel supports the following mechanisms to invoke system calls. Not
 all mechanisms are available on all CPUs. On initialization, before invoking any
 system call, an application should look at the value of auxiliary vector number
-11 (JINUE_AT_HOWSYSCALL) to determine the best supported system call mechanism.
+11 (JINUE_AT_HOWSYSCALL) to determine the best supported system call mechanism:
+
+* 0 for the interrupt-based mechanism
+* 1 for the SYSCALL/SYSRET (fast AMD) mechanism
+* 2 for the SYSENTER/SYSEXIT (fast Intel) mechanism
 
 ## Interrupt-Based Mechanism
 
