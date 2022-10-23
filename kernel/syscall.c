@@ -70,10 +70,6 @@ static void sys_nosys(jinue_syscall_args_t *args) {
     syscall_args_set_error(args, JINUE_ENOSYS);
 }
 
-static void sys_get_syscall(jinue_syscall_args_t *args) {
-    syscall_args_set_return(args, syscall_method);
-}
-
 static void sys_putc(jinue_syscall_args_t *args) {
     /** TODO: permission check */
     console_putc(
@@ -332,9 +328,6 @@ void dispatch_syscall(trapframe_t *trapframe) {
     else if(function < SYSCALL_USER_BASE) {
         /* microkernel system calls */
         switch(function) {
-        case SYSCALL_FUNC_GET_SYSCALL:
-            sys_get_syscall(args);
-            break;
         case SYSCALL_FUNC_PUTC:
             sys_putc(args);
             break;

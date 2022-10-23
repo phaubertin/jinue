@@ -29,6 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <sys/auxv.h>
 #include <sys/elf.h>
 #include <jinue/errno.h>
 #include <jinue/ipc.h>
@@ -130,28 +131,22 @@ static void dump_environ(void) {
 }
 
 static const char *auxv_type_name(int type) {
-    /* TODO this mapping should be in a library somewhere for reuse */
     const struct {
         const char  *name;
         int          type;
     } *entry, mapping[] = {
-            {"AT_NULL",         AT_NULL},
-            {"AT_IGNORE",       AT_IGNORE},
-            {"AT_EXECFD",       AT_EXECFD},
-            {"AT_PHDR",         AT_PHDR},
-            {"AT_PHENT",        AT_PHENT},
-            {"AT_PHNUM",        AT_PHNUM},
-            {"AT_PAGESZ",       AT_PAGESZ},
-            {"AT_BASE",         AT_BASE},
-            {"AT_FLAGS",        AT_FLAGS},
-            {"AT_ENTRY",        AT_ENTRY},
-            {"AT_DCACHEBSIZE",  AT_DCACHEBSIZE},
-            {"AT_ICACHEBSIZE",  AT_ICACHEBSIZE},
-            {"AT_UCACHEBSIZE",  AT_UCACHEBSIZE},
-            {"AT_STACKBASE",    AT_STACKBASE},
-            {"AT_HWCAP",        AT_HWCAP},
-            {"AT_HWCAP2",       AT_HWCAP2},
-            {"AT_SYSINFO_EHDR", AT_SYSINFO_EHDR},
+            {"AT_NULL",             JINUE_AT_NULL},
+            {"AT_IGNORE",           JINUE_AT_IGNORE},
+            {"AT_EXECFD",           JINUE_AT_EXECFD},
+            {"AT_PHDR",             JINUE_AT_PHDR},
+            {"AT_PHENT",            JINUE_AT_PHENT},
+            {"AT_PHNUM",            JINUE_AT_PHNUM},
+            {"AT_PAGESZ",           JINUE_AT_PAGESZ},
+            {"AT_BASE",             JINUE_AT_BASE},
+            {"AT_FLAGS",            JINUE_AT_FLAGS},
+            {"AT_ENTRY",            JINUE_AT_ENTRY},
+            {"AT_STACKBASE",        JINUE_AT_STACKBASE},
+            {"JINUE_AT_HOWSYSCALL", JINUE_AT_HOWSYSCALL},
             {NULL, 0}
     };
 
@@ -164,6 +159,20 @@ static const char *auxv_type_name(int type) {
     return NULL;
 }
 
+static const char *syscall_implementation_name(int implementation) {
+    const char *names[] = {
+            [SYSCALL_IMPL_INTR]         = "interrupt",
+            [SYSCALL_IMPL_FAST_AMD]     = "SYSCALL/SYSRET (fast AMD)",
+            [SYSCALL_IMPL_FAST_INTEL]   = "SYSENTER/SYSEXIT (fast Intel)"
+    };
+
+    if(implementation < 0 || implementation > SYSCALL_IMPL_LAST) {
+        return "?";
+    }
+
+    return names[implementation];
+}
+
 static void dump_auxvec(void) {
     if(! bool_getenv("DEBUG_DUMP_AUXV")) {
         return;
@@ -171,7 +180,7 @@ static void dump_auxvec(void) {
 
     printk("Auxiliary vectors:\n");
 
-    for(const Elf32_auxv_t *entry = _jinue_libc_auxv; entry->a_type != AT_NULL; ++entry) {
+    for(const Elf32_auxv_t *entry = _jinue_libc_auxv; entry->a_type != JINUE_AT_NULL; ++entry) {
         const char *name = auxv_type_name(entry->a_type);
 
         if(name != NULL) {
@@ -319,21 +328,35 @@ int main(int argc, char *argv[]) {
     char call_buffer[CALL_BUFFER_SIZE];
     int status;
 
-    /* say hello */
+    /* Say hello.
+     *
+     * We shouldn't do this before the call to jinue_set_syscall_implementation().
+     * It works because the system call implementation selected before the call
+     * is made is the interrupt-based one, which is slower but always available.
+     *
+     * TODO once things stabilize, ensure jinue_syscall() fails if no system
+     * call implementation was set. */
     printk("Jinue user space loader (%s) started.\n", argv[0]);
 
     dump_cmdline_arguments(argc, argv);
     dump_environ();
     dump_auxvec();
 
-    /* get system call implementation so we can use something faster than the
-     * interrupt-based one if available */
-    jinue_get_syscall();
+    /* Get system call implementation from auxiliary vectors so we can use
+     * something faster than the interrupt-based one if available and ensure the
+     * one we attempt to use is supported. */
+    errno           = 0;
+    int howsyscall  = getauxval(JINUE_AT_HOWSYSCALL);
+    int ret         = jinue_set_syscall_implementation(howsyscall, &errno);
 
-    printk("Using system call method '%s'.\n", jinue_get_syscall_implementation_name());
+    if (ret < 0) {
+        /* TODO map error numbers to name */
+        printk("Could not set system call implementation: %i", errno);
+    }
+
+    printk("Using system call implementation '%s'.\n", syscall_implementation_name(howsyscall));
 
     /* get free memory blocks from microkernel */
-    errno = 0;
     status = jinue_get_user_memory((jinue_mem_map_t *)&call_buffer, sizeof(call_buffer), &errno);
 
     if(status != 0) {

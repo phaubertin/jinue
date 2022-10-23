@@ -7,7 +7,6 @@
 | Number  | Name                                    | Description                          |
 |---------|-----------------------------------------|--------------------------------------|
 | 0       | -                                       | Reserved                             |
-| 1       | [GET_SYSCALL](get-syscall.md)           | Get System Call Mechanism            |
 | 2       | [PUTC](putc.md)                         | Write Character to Console           |
 | 3       | [PUTS](puts.md)                         | Write String to Console              |
 | 4       | [CREATE_THREAD](create-thread.md)       | Create a thread                      |
@@ -49,11 +48,11 @@ During a system call, information is passed back and forth between user space
 and the microkernel through four pointer-sized logical registers named `arg0` to
 `arg3`.
 
-### System Call Mechanisms
+### System Call Implementations
 
-The architecture-dependent mechanisms for invoking a system call and the mapping
-of system call registers to actual architectural registers is described in
-[System Call Mechanisms](mechanisms.md)
+The architecture-dependent implementations for invoking a system call and the
+mapping of system call registers to actual architectural registers is described
+in [System Call Implementations](implementations.md).
 
 ### Function Number and Arguments
 

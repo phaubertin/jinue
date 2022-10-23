@@ -37,9 +37,6 @@
 /** interrupt vector for system call software interrupt */
 #define SYSCALL_IRQ                     0x80
 
-/** get best system call implementation number based on CPU features */
-#define SYSCALL_FUNC_GET_SYSCALL        1
-
 /** send a character to in-kernel console driver */
 #define SYSCALL_FUNC_PUTC               2
 
@@ -77,14 +74,16 @@
 /** start of function numbers for user space messages */
 #define SYSCALL_USER_BASE               4096
 
+/** slow/safe interrupt-based system call implementation */
+#define SYSCALL_IMPL_INTR               0
 
-/** Intel's fast system call method (SYSENTER/SYSEXIT) */
-#define SYSCALL_METHOD_FAST_INTEL       0
+/** AMD's fast system call implementation (SYSCALL/SYSLEAVE) */
+#define SYSCALL_IMPL_FAST_AMD           1
 
-/** AMD's fast system call method (SYSCALL/SYSLEAVE) */
-#define SYSCALL_METHOD_FAST_AMD         1
+/** Intel's fast system call implementation (SYSENTER/SYSEXIT) */
+#define SYSCALL_IMPL_FAST_INTEL         2
 
-/** slow/safe system call method using interrupts */
-#define SYSCALL_METHOD_INTR             2
+/** last system call implementation index */
+#define SYSCALL_IMPL_LAST               2
 
 #endif

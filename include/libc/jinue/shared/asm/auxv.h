@@ -33,54 +33,39 @@
 #define _JINUE_SHARED_ASM_AUXV_H
 
 /** Last entry  */
-#define AT_NULL          0
+#define JINUE_AT_NULL           0
 
 /** Ignore entry */
-#define AT_IGNORE        1
+#define JINUE_AT_IGNORE         1
 
 /** Program file descriptor */
-#define AT_EXECFD        2
+#define JINUE_AT_EXECFD         2
 
 /** Program headers address */
-#define AT_PHDR          3
+#define JINUE_AT_PHDR           3
 
 /** Size of program header entry */
-#define AT_PHENT         4
+#define JINUE_AT_PHENT          4
 
 /** Number of program header entries */
-#define AT_PHNUM         5
+#define JINUE_AT_PHNUM          5
 
 /** Page size */
-#define AT_PAGESZ        6
+#define JINUE_AT_PAGESZ         6
 
 /** Base address */
-#define AT_BASE          7
+#define JINUE_AT_BASE           7
 
 /** Flags */
-#define AT_FLAGS         8
+#define JINUE_AT_FLAGS          8
 
 /** Program entry point */
-#define AT_ENTRY         9
-
-/** Data cache block size */
-#define AT_DCACHEBSIZE  10
-
-/** Instruction cache block size */
-#define AT_ICACHEBSIZE  11
-
-/** Unified cache block size */
-#define AT_UCACHEBSIZE  12
+#define JINUE_AT_ENTRY          9
 
 /** Stack base address for main thread */
-#define AT_STACKBASE    13
+#define JINUE_AT_STACKBASE      10
 
-/** Machine-dependent processor feature flags */
-#define AT_HWCAP        16
-
-/** More machine-dependent processor feature flags */
-#define AT_HWCAP2       26
-
-/** Address of vDSO */
-#define AT_SYSINFO_EHDR 33
+/** System call implementation */
+#define JINUE_AT_HOWSYSCALL     11
 
 #endif

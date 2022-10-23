@@ -36,18 +36,12 @@
 #include "stubs.h"
 
 static jinue_syscall_stub_t syscall_stubs[] = {
-        [SYSCALL_METHOD_FAST_INTEL] = jinue_syscall_fast_intel,
-        [SYSCALL_METHOD_FAST_AMD]   = jinue_syscall_fast_amd,
-        [SYSCALL_METHOD_INTR]       = jinue_syscall_intr
+        [SYSCALL_IMPL_INTR]         = jinue_syscall_intr,
+        [SYSCALL_IMPL_FAST_AMD]     = jinue_syscall_fast_amd,
+        [SYSCALL_IMPL_FAST_INTEL]   = jinue_syscall_fast_intel
 };
 
-static char *syscall_stub_names[] = {
-        [SYSCALL_METHOD_FAST_INTEL] = "SYSENTER/SYSEXIT (fast Intel)",
-        [SYSCALL_METHOD_FAST_AMD]   = "SYSCALL/SYSRET (fast AMD)",
-        [SYSCALL_METHOD_INTR]       = "interrupt",
-};
-
-static int syscall_stub_index = SYSCALL_METHOD_INTR;
+static int syscall_stub_index = SYSCALL_IMPL_INTR;
 
 uintptr_t jinue_syscall(jinue_syscall_args_t *args) {
     return syscall_stubs[syscall_stub_index](args);
@@ -63,21 +57,14 @@ intptr_t jinue_syscall_with_usual_convention(jinue_syscall_args_t *args, int *pe
     return retval;
 }
 
-int jinue_get_syscall(void) {
-    jinue_syscall_args_t args;
+int jinue_set_syscall_implementation(int implementation, int *perrno) {
+    if(implementation < 0 || implementation > SYSCALL_IMPL_LAST) {
+        *perrno = JINUE_EINVAL;
+        return -1;
+    }
 
-    args.arg0 = SYSCALL_FUNC_GET_SYSCALL;
-    args.arg1 = 0;
-    args.arg2 = 0;
-    args.arg3 = 0;
-
-    syscall_stub_index = (intptr_t)jinue_syscall(&args);
-
-    return syscall_stub_index;
-}
-
-const char *jinue_get_syscall_implementation_name(void) {
-    return syscall_stub_names[syscall_stub_index];
+    syscall_stub_index = implementation;
+    return 0;
 }
 
 void jinue_set_thread_local(void *addr, size_t size) {

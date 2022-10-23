@@ -53,7 +53,7 @@ void dispatch_interrupt(trapframe_t *trapframe) {
     }
     
     if(ivt == SYSCALL_IRQ) {
-    	/* slow system call method */
+    	/* interrupt-based system call implementation */
         dispatch_syscall(trapframe);
     }
     else if(ivt >= IDT_PIC8259_BASE && ivt < IDT_PIC8259_BASE + PIC8259_IRQ_COUNT) {

@@ -57,7 +57,7 @@
 
 
 /** Specifies the entry point to use for system calls */
-int syscall_method;
+int syscall_implementation;
 
 static void check_data_segment(const boot_info_t *boot_info) {
     if(     boot_info->data_start == 0 ||
@@ -213,11 +213,11 @@ static void init_descriptors(cpu_data_t *cpu_data, boot_alloc_t *boot_alloc) {
     boot_heap_pop(boot_alloc);
 }
 
-static void select_syscall_method(void) {
+static void select_syscall_implementation(void) {
     if(cpu_has_feature(CPU_FEATURE_SYSCALL)) {
         uint64_t msrval;
 
-        syscall_method = SYSCALL_METHOD_FAST_AMD;
+        syscall_implementation = SYSCALL_IMPL_FAST_AMD;
 
         msrval  = rdmsr(MSR_EFER);
         msrval |= MSR_FLAG_EFER_SCE;
@@ -230,7 +230,7 @@ static void select_syscall_method(void) {
         wrmsr(MSR_STAR, msrval);
     }
     else if(cpu_has_feature(CPU_FEATURE_SYSENTER)) {
-        syscall_method = SYSCALL_METHOD_FAST_INTEL;
+        syscall_implementation = SYSCALL_IMPL_FAST_INTEL;
 
         wrmsr(MSR_IA32_SYSENTER_CS,  SEG_SELECTOR(GDT_KERNEL_CODE, RPL_KERNEL));
         wrmsr(MSR_IA32_SYSENTER_EIP, (uint64_t)(uintptr_t)fast_intel_entry);
@@ -239,7 +239,7 @@ static void select_syscall_method(void) {
         wrmsr(MSR_IA32_SYSENTER_ESP, (uint64_t)(uintptr_t)NULL);
     }
     else {
-        syscall_method = SYSCALL_METHOD_INTR;
+        syscall_implementation = SYSCALL_IMPL_INTR;
     }
 }
 
@@ -333,6 +333,6 @@ void hal_init(
         vm_pae_create_pdpt_cache();
     }
 
-    /* choose system call method */
-    select_syscall_method();
+    /* choose a system call implementation */
+    select_syscall_implementation();
 }
