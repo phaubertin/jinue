@@ -72,19 +72,6 @@ int jinue_set_syscall_mechanism(int mechanism) {
     return 0;
 }
 
-int jinue_get_syscall(void) {
-    jinue_syscall_args_t args;
-
-    args.arg0 = SYSCALL_FUNC_GET_SYSCALL;
-    args.arg1 = 0;
-    args.arg2 = 0;
-    args.arg3 = 0;
-
-    syscall_stub_index = (intptr_t)jinue_syscall(&args);
-
-    return syscall_stub_index;
-}
-
 /* TODO (maybe) move this to proc */
 /* TODO (definitely) used consistent terminology (mechanism vs implementation vs method) */
 const char *jinue_get_syscall_implementation_name(void) {

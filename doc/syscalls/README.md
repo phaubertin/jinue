@@ -7,7 +7,6 @@
 | Number  | Name                                    | Description                          |
 |---------|-----------------------------------------|--------------------------------------|
 | 0       | -                                       | Reserved                             |
-| 1       | [GET_SYSCALL](get-syscall.md)           | Get System Call Mechanism            |
 | 2       | [PUTC](putc.md)                         | Write Character to Console           |
 | 3       | [PUTS](puts.md)                         | Write String to Console              |
 | 4       | [CREATE_THREAD](create-thread.md)       | Create a thread                      |

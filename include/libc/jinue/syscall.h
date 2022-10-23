@@ -47,8 +47,6 @@ intptr_t jinue_syscall_with_usual_convention(jinue_syscall_args_t *args, int *pe
 
 int jinue_set_syscall_mechanism(int mechanism);
 
-int jinue_get_syscall(void);
-
 const char *jinue_get_syscall_implementation_name(void);
 
 void jinue_set_thread_local(void *addr, size_t size);

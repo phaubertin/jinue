@@ -2,10 +2,8 @@
 
 The microkernel supports the following mechanisms to invoke system calls. Not
 all mechanisms are available on all CPUs. On initialization, before invoking any
-other system call, an application should call the [GET_SYSCALL](get-syscall.md)
-system call to determine the best supported system call mechanism. This should
-be done with the interrupt-based mechanism, which is the only one garanteed to
-be supported by all CPUs.
+system call, an application should look at the value of auxiliary vector number
+11 (JINUE_AT_HOWSYSCALL) to determine the best supported system call mechanism.
 
 ## Interrupt-Based Mechanism
 
@@ -17,9 +15,6 @@ vector 128 (80h). The argument registers are mapped as follow:
 * `arg2` maps to CPU register `esi`.
 * `arg3` maps to CPU register `edi`.
 
-This system call is always available. However, it is also the slowest, so it is
-best to use another one if support is available.
-
 ## SYSCALL/SYSRET (Fast AMD) Mechanism
 
 A system call can be invoked by executing the `SYSCALL` CPU instruction.
@@ -29,8 +24,7 @@ A system call can be invoked by executing the `SYSCALL` CPU instruction.
 * `arg2` maps to CPU register `esi`.
 * `arg3` maps to CPU register `edi`.
 
-This system call is not supported by all CPUs. It should only be used if the
-"Get System Call Mechanism" system call indicates this is the right one to use.
+This system call is not supported by all CPUs.
 
 ## SYSENTER/SYSEXIT (Fast Intel) Mechanism
 
@@ -43,5 +37,4 @@ A system call can be invoked by executing the `SYSENTER` CPU instruction.
 * The return address must be set in the `ecx` CPU register.
 * The user stack pointer must be set in the `ebp` CPU register.
 
-This system call is not supported by all CPUs. It should only be used if the
-"Get System Call Mechanism" system call indicates this is the right one to use.
+This system call is not supported by all CPUs.

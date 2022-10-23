@@ -37,9 +37,6 @@
 /** interrupt vector for system call software interrupt */
 #define SYSCALL_IRQ                     0x80
 
-/** get best system call implementation number based on CPU features */
-#define SYSCALL_FUNC_GET_SYSCALL        1
-
 /** send a character to in-kernel console driver */
 #define SYSCALL_FUNC_PUTC               2
 
