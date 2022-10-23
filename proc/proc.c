@@ -159,6 +159,20 @@ static const char *auxv_type_name(int type) {
     return NULL;
 }
 
+static const char *syscall_mechanism_name(int mechanism) {
+    const char *names[] = {
+            [SYSCALL_METHOD_INTR]       = "interrupt",
+            [SYSCALL_METHOD_FAST_AMD]   = "SYSCALL/SYSRET (fast AMD)",
+            [SYSCALL_METHOD_FAST_INTEL] = "SYSENTER/SYSEXIT (fast Intel)"
+    };
+
+    if(mechanism < 0 || mechanism > SYSCALL_METHOD_LAST) {
+        return "?";
+    }
+
+    return names[mechanism];
+}
+
 static void dump_auxvec(void) {
     if(! bool_getenv("DEBUG_DUMP_AUXV")) {
         return;
@@ -331,12 +345,17 @@ int main(int argc, char *argv[]) {
     /* Get system call mechanism/implementation from auxiliary vectors so we can
      * use something faster than the interrupt-based one if available and ensure
      * the one we attempt to use is supported. */
-    jinue_set_syscall_mechanism(getauxval(JINUE_AT_HOWSYSCALL));
+    errno           = 0;
+    int mechanism   = getauxval(JINUE_AT_HOWSYSCALL);
+    int ret         = jinue_set_syscall_mechanism(mechanism, &errno);
 
-    printk("Using system call method '%s'.\n", jinue_get_syscall_implementation_name());
+    if (ret < 0) {
+        printk("Could not set system call mechanism: %i", errno);
+    }
+
+    printk("Using system call method '%s'.\n", syscall_mechanism_name(mechanism));
 
     /* get free memory blocks from microkernel */
-    errno = 0;
     status = jinue_get_user_memory((jinue_mem_map_t *)&call_buffer, sizeof(call_buffer), &errno);
 
     if(status != 0) {

@@ -41,12 +41,6 @@ static jinue_syscall_stub_t syscall_stubs[] = {
         [SYSCALL_METHOD_FAST_INTEL] = jinue_syscall_fast_intel
 };
 
-static char *syscall_stub_names[] = {
-        [SYSCALL_METHOD_INTR]       = "interrupt",
-        [SYSCALL_METHOD_FAST_AMD]   = "SYSCALL/SYSRET (fast AMD)",
-        [SYSCALL_METHOD_FAST_INTEL] = "SYSENTER/SYSEXIT (fast Intel)"
-};
-
 static int syscall_stub_index = SYSCALL_METHOD_INTR;
 
 uintptr_t jinue_syscall(jinue_syscall_args_t *args) {
@@ -63,19 +57,15 @@ intptr_t jinue_syscall_with_usual_convention(jinue_syscall_args_t *args, int *pe
     return retval;
 }
 
-int jinue_set_syscall_mechanism(int mechanism) {
+/* TODO (definitely) used consistent terminology (mechanism vs implementation vs method) */
+int jinue_set_syscall_mechanism(int mechanism, int *perrno) {
     if(mechanism < 0 || mechanism > SYSCALL_METHOD_LAST) {
-        return JINUE_EINVAL;
+        *perrno = JINUE_EINVAL;
+        return -1;
     }
 
     syscall_stub_index = mechanism;
     return 0;
-}
-
-/* TODO (maybe) move this to proc */
-/* TODO (definitely) used consistent terminology (mechanism vs implementation vs method) */
-const char *jinue_get_syscall_implementation_name(void) {
-    return syscall_stub_names[syscall_stub_index];
 }
 
 void jinue_set_thread_local(void *addr, size_t size) {
