@@ -62,25 +62,7 @@
 /** Program entry point */
 #define AT_ENTRY         9
 
-/** Data cache block size */
-#define AT_DCACHEBSIZE  10
-
-/** Instruction cache block size */
-#define AT_ICACHEBSIZE  11
-
-/** Unified cache block size */
-#define AT_UCACHEBSIZE  12
-
 /** Stack base address for main thread */
-#define AT_STACKBASE    13
-
-/** Machine-dependent processor feature flags */
-#define AT_HWCAP        16
-
-/** More machine-dependent processor feature flags */
-#define AT_HWCAP2       26
-
-/** Address of vDSO */
-#define AT_SYSINFO_EHDR 33
+#define AT_STACKBASE    10
 
 #endif

@@ -145,13 +145,7 @@ static const char *auxv_type_name(int type) {
             {"AT_BASE",         AT_BASE},
             {"AT_FLAGS",        AT_FLAGS},
             {"AT_ENTRY",        AT_ENTRY},
-            {"AT_DCACHEBSIZE",  AT_DCACHEBSIZE},
-            {"AT_ICACHEBSIZE",  AT_ICACHEBSIZE},
-            {"AT_UCACHEBSIZE",  AT_UCACHEBSIZE},
             {"AT_STACKBASE",    AT_STACKBASE},
-            {"AT_HWCAP",        AT_HWCAP},
-            {"AT_HWCAP2",       AT_HWCAP2},
-            {"AT_SYSINFO_EHDR", AT_SYSINFO_EHDR},
             {NULL, 0}
     };
 
