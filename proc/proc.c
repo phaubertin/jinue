@@ -135,17 +135,17 @@ static const char *auxv_type_name(int type) {
         const char  *name;
         int          type;
     } *entry, mapping[] = {
-            {"AT_NULL",         AT_NULL},
-            {"AT_IGNORE",       AT_IGNORE},
-            {"AT_EXECFD",       AT_EXECFD},
-            {"AT_PHDR",         AT_PHDR},
-            {"AT_PHENT",        AT_PHENT},
-            {"AT_PHNUM",        AT_PHNUM},
-            {"AT_PAGESZ",       AT_PAGESZ},
-            {"AT_BASE",         AT_BASE},
-            {"AT_FLAGS",        AT_FLAGS},
-            {"AT_ENTRY",        AT_ENTRY},
-            {"AT_STACKBASE",    AT_STACKBASE},
+            {"AT_NULL",         JINUE_AT_NULL},
+            {"AT_IGNORE",       JINUE_AT_IGNORE},
+            {"AT_EXECFD",       JINUE_AT_EXECFD},
+            {"AT_PHDR",         JINUE_AT_PHDR},
+            {"AT_PHENT",        JINUE_AT_PHENT},
+            {"AT_PHNUM",        JINUE_AT_PHNUM},
+            {"AT_PAGESZ",       JINUE_AT_PAGESZ},
+            {"AT_BASE",         JINUE_AT_BASE},
+            {"AT_FLAGS",        JINUE_AT_FLAGS},
+            {"AT_ENTRY",        JINUE_AT_ENTRY},
+            {"AT_STACKBASE",    JINUE_AT_STACKBASE},
             {NULL, 0}
     };
 
@@ -165,7 +165,7 @@ static void dump_auxvec(void) {
 
     printk("Auxiliary vectors:\n");
 
-    for(const Elf32_auxv_t *entry = _jinue_libc_auxv; entry->a_type != AT_NULL; ++entry) {
+    for(const Elf32_auxv_t *entry = _jinue_libc_auxv; entry->a_type != JINUE_AT_NULL; ++entry) {
         const char *name = auxv_type_name(entry->a_type);
 
         if(name != NULL) {

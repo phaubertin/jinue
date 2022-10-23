@@ -412,25 +412,25 @@ void elf_initialize_stack(elf_info_t *info, const char *cmdline) {
     Elf32_auxv_t *auxvp = (Elf32_auxv_t *)sp;
     sp = (uintptr_t *)(auxvp + 7);
 
-    auxvp[0].a_type     = AT_PHDR;
+    auxvp[0].a_type     = JINUE_AT_PHDR;
     auxvp[0].a_un.a_val = (uint32_t)info->at_phdr;
 
-    auxvp[1].a_type     = AT_PHENT;
+    auxvp[1].a_type     = JINUE_AT_PHENT;
     auxvp[1].a_un.a_val = (uint32_t)info->at_phent;
 
-    auxvp[2].a_type     = AT_PHNUM;
+    auxvp[2].a_type     = JINUE_AT_PHNUM;
     auxvp[2].a_un.a_val = (uint32_t)info->at_phnum;
 
-    auxvp[3].a_type     = AT_PAGESZ;
+    auxvp[3].a_type     = JINUE_AT_PAGESZ;
     auxvp[3].a_un.a_val = PAGE_SIZE;
 
-    auxvp[4].a_type     = AT_ENTRY;
+    auxvp[4].a_type     = JINUE_AT_ENTRY;
     auxvp[4].a_un.a_val = (uint32_t)info->entry;
 
-    auxvp[5].a_type     = AT_STACKBASE;
+    auxvp[5].a_type     = JINUE_AT_STACKBASE;
     auxvp[5].a_un.a_val = STACK_BASE;
 
-    auxvp[6].a_type     = AT_NULL;
+    auxvp[6].a_type     = JINUE_AT_NULL;
     auxvp[6].a_un.a_val = 0;
 
     /* Write arguments and environment variables (i.e. the actual strings). */

@@ -40,7 +40,7 @@ uint32_t jinue_getauxval(int type) {
         return 0;
     }
 
-    for(const Elf32_auxv_t *entry = _jinue_libc_auxv; entry->a_type != AT_NULL; ++entry) {
+    for(const Elf32_auxv_t *entry = _jinue_libc_auxv; entry->a_type != JINUE_AT_NULL; ++entry) {
         if(entry->a_type == type) {
             return entry->a_un.a_val;
         }
