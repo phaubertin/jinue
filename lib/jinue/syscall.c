@@ -36,15 +36,15 @@
 #include "stubs.h"
 
 static jinue_syscall_stub_t syscall_stubs[] = {
-        [SYSCALL_METHOD_FAST_INTEL] = jinue_syscall_fast_intel,
+        [SYSCALL_METHOD_INTR]       = jinue_syscall_intr,
         [SYSCALL_METHOD_FAST_AMD]   = jinue_syscall_fast_amd,
-        [SYSCALL_METHOD_INTR]       = jinue_syscall_intr
+        [SYSCALL_METHOD_FAST_INTEL] = jinue_syscall_fast_intel
 };
 
 static char *syscall_stub_names[] = {
-        [SYSCALL_METHOD_FAST_INTEL] = "SYSENTER/SYSEXIT (fast Intel)",
-        [SYSCALL_METHOD_FAST_AMD]   = "SYSCALL/SYSRET (fast AMD)",
         [SYSCALL_METHOD_INTR]       = "interrupt",
+        [SYSCALL_METHOD_FAST_AMD]   = "SYSCALL/SYSRET (fast AMD)",
+        [SYSCALL_METHOD_FAST_INTEL] = "SYSENTER/SYSEXIT (fast Intel)"
 };
 
 static int syscall_stub_index = SYSCALL_METHOD_INTR;

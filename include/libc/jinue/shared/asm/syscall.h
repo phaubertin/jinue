@@ -74,15 +74,14 @@
 /** start of function numbers for user space messages */
 #define SYSCALL_USER_BASE               4096
 
-
-/** Intel's fast system call method (SYSENTER/SYSEXIT) */
-#define SYSCALL_METHOD_FAST_INTEL       0
+/** slow/safe system call method using interrupts */
+#define SYSCALL_METHOD_INTR             0
 
 /** AMD's fast system call method (SYSCALL/SYSLEAVE) */
 #define SYSCALL_METHOD_FAST_AMD         1
 
-/** slow/safe system call method using interrupts */
-#define SYSCALL_METHOD_INTR             2
+/** Intel's fast system call method (SYSENTER/SYSEXIT) */
+#define SYSCALL_METHOD_FAST_INTEL       2
 
 /** last system call mechanism */
 #define SYSCALL_METHOD_LAST             2
