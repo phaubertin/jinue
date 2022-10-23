@@ -159,18 +159,18 @@ static const char *auxv_type_name(int type) {
     return NULL;
 }
 
-static const char *syscall_mechanism_name(int mechanism) {
+static const char *syscall_implementation_name(int implementation) {
     const char *names[] = {
-            [SYSCALL_METHOD_INTR]       = "interrupt",
-            [SYSCALL_METHOD_FAST_AMD]   = "SYSCALL/SYSRET (fast AMD)",
-            [SYSCALL_METHOD_FAST_INTEL] = "SYSENTER/SYSEXIT (fast Intel)"
+            [SYSCALL_IMPL_INTR]         = "interrupt",
+            [SYSCALL_IMPL_FAST_AMD]     = "SYSCALL/SYSRET (fast AMD)",
+            [SYSCALL_IMPL_FAST_INTEL]   = "SYSENTER/SYSEXIT (fast Intel)"
     };
 
-    if(mechanism < 0 || mechanism > SYSCALL_METHOD_LAST) {
+    if(implementation < 0 || implementation > SYSCALL_IMPL_LAST) {
         return "?";
     }
 
-    return names[mechanism];
+    return names[implementation];
 }
 
 static void dump_auxvec(void) {
@@ -330,30 +330,31 @@ int main(int argc, char *argv[]) {
 
     /* Say hello.
      *
-     * We shouldn't do this before the call to jinue_set_syscall_mechanism(). It
-     * works because the system call implementation selected before the call is
-     * made is the interrupt-based one, which is slow but always available.
+     * We shouldn't do this before the call to jinue_set_syscall_implementation().
+     * It works because the system call implementation selected before the call
+     * is made is the interrupt-based one, which is slower but always available.
      *
-     * TODO once things stabilize, ensure jinue_syscall() actually fails if no
-     * system call implementation was set. */
+     * TODO once things stabilize, ensure jinue_syscall() fails if no system
+     * call implementation was set. */
     printk("Jinue user space loader (%s) started.\n", argv[0]);
 
     dump_cmdline_arguments(argc, argv);
     dump_environ();
     dump_auxvec();
 
-    /* Get system call mechanism/implementation from auxiliary vectors so we can
-     * use something faster than the interrupt-based one if available and ensure
-     * the one we attempt to use is supported. */
+    /* Get system call implementation from auxiliary vectors so we can use
+     * something faster than the interrupt-based one if available and ensure the
+     * one we attempt to use is supported. */
     errno           = 0;
-    int mechanism   = getauxval(JINUE_AT_HOWSYSCALL);
-    int ret         = jinue_set_syscall_mechanism(mechanism, &errno);
+    int howsyscall  = getauxval(JINUE_AT_HOWSYSCALL);
+    int ret         = jinue_set_syscall_implementation(howsyscall, &errno);
 
     if (ret < 0) {
-        printk("Could not set system call mechanism: %i", errno);
+        /* TODO map error numbers to name */
+        printk("Could not set system call implementation: %i", errno);
     }
 
-    printk("Using system call method '%s'.\n", syscall_mechanism_name(mechanism));
+    printk("Using system call implementation '%s'.\n", syscall_implementation_name(howsyscall));
 
     /* get free memory blocks from microkernel */
     status = jinue_get_user_memory((jinue_mem_map_t *)&call_buffer, sizeof(call_buffer), &errno);

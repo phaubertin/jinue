@@ -65,7 +65,7 @@
 /** Stack base address for main thread */
 #define JINUE_AT_STACKBASE      10
 
-/** System call mechanism */
+/** System call implementation */
 #define JINUE_AT_HOWSYSCALL     11
 
 #endif

@@ -432,7 +432,7 @@ void elf_initialize_stack(elf_info_t *info, const char *cmdline) {
     auxvp[5].a_un.a_val = STACK_BASE;
 
     auxvp[6].a_type     = JINUE_AT_HOWSYSCALL;
-    auxvp[6].a_un.a_val = syscall_mechanism;
+    auxvp[6].a_un.a_val = syscall_implementation;
 
     auxvp[7].a_type     = JINUE_AT_NULL;
     auxvp[7].a_un.a_val = 0;

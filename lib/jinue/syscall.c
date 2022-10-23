@@ -36,12 +36,12 @@
 #include "stubs.h"
 
 static jinue_syscall_stub_t syscall_stubs[] = {
-        [SYSCALL_METHOD_INTR]       = jinue_syscall_intr,
-        [SYSCALL_METHOD_FAST_AMD]   = jinue_syscall_fast_amd,
-        [SYSCALL_METHOD_FAST_INTEL] = jinue_syscall_fast_intel
+        [SYSCALL_IMPL_INTR]         = jinue_syscall_intr,
+        [SYSCALL_IMPL_FAST_AMD]     = jinue_syscall_fast_amd,
+        [SYSCALL_IMPL_FAST_INTEL]   = jinue_syscall_fast_intel
 };
 
-static int syscall_stub_index = SYSCALL_METHOD_INTR;
+static int syscall_stub_index = SYSCALL_IMPL_INTR;
 
 uintptr_t jinue_syscall(jinue_syscall_args_t *args) {
     return syscall_stubs[syscall_stub_index](args);
@@ -57,14 +57,13 @@ intptr_t jinue_syscall_with_usual_convention(jinue_syscall_args_t *args, int *pe
     return retval;
 }
 
-/* TODO (definitely) used consistent terminology (mechanism vs implementation vs method) */
-int jinue_set_syscall_mechanism(int mechanism, int *perrno) {
-    if(mechanism < 0 || mechanism > SYSCALL_METHOD_LAST) {
+int jinue_set_syscall_implementation(int implementation, int *perrno) {
+    if(implementation < 0 || implementation > SYSCALL_IMPL_LAST) {
         *perrno = JINUE_EINVAL;
         return -1;
     }
 
-    syscall_stub_index = mechanism;
+    syscall_stub_index = implementation;
     return 0;
 }
 
