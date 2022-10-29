@@ -395,6 +395,8 @@ int main(int argc, char *argv[]) {
     jinue_printf("%.3s\n", "123456");
     jinue_printf("|%10s|\n", "123456");
     jinue_printf("|%-10s|\n", "123456");
+    jinue_printf("|%2c%c%c\n", 'f', 'o', 'o');
+    jinue_printf("%c%c%-2c|\n", 'b', 'a', 'r');
 
     while (1) {
         jinue_yield_thread();

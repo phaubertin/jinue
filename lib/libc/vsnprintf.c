@@ -469,6 +469,21 @@ static void process_conversion(state_t *state, const conv_spec_t *spec, va_list 
         }
     }
         break;
+    case 'c':
+    {
+        const unsigned char value = (unsigned char)va_arg(*args, int);
+
+        if(is_right_justified(spec)) {
+            add_padding_right_justified(state, spec, 1);
+        }
+
+        write_char(state, value);
+
+        if(is_left_justified(spec)) {
+            add_padding_left_justified(state, spec, 1);
+        }
+    }
+        break;
     case 's':
     {
         const char *value = va_arg(*args, char *);
