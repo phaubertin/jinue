@@ -246,28 +246,6 @@ static void write_signed(state_t *state, intmax_t value, const conv_spec_t *spec
     }
 }
 
-static bool process_flag(conv_spec_t *spec, int c) {
-    switch(c) {
-    case '-':
-        spec->minus = true;
-        return true;
-    case '+':
-        spec->plus = true;
-        return true;
-    case ' ':
-        spec->space = true;
-        return true;
-    case '#':
-        spec->hash = true;
-        return true;
-    case '0':
-        spec->zero = true;
-        return true;
-    default:
-        return false;
-    }
-}
-
 static int current(const state_t *state) {
     return *state->format;
 }
@@ -295,8 +273,33 @@ static void parse_flags(conv_spec_t *spec, state_t *state) {
     spec->space = false;
     spec->hash  = false;
 
-    while(process_flag(spec, current(state))) {
-        consume(state);
+    bool is_flag = true;
+
+    while(is_flag) {
+        switch(current(state)) {
+        case '-':
+            spec->minus = true;
+            consume(state);
+            continue;
+        case '+':
+            spec->plus = true;
+            consume(state);
+            continue;
+        case ' ':
+            spec->space = true;
+            consume(state);
+            continue;
+        case '#':
+            spec->hash = true;
+            consume(state);
+            continue;
+        case '0':
+            spec->zero = true;
+            consume(state);
+            continue;
+        default:
+            is_flag = false;
+        }
     }
 }
 
