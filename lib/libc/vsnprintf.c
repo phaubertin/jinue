@@ -51,9 +51,12 @@ typedef struct {
     char        *wrptr;
     size_t       len;
     size_t       maxlen;
-    char        *saved_wrptr;
-    size_t       saved_len;
 } state_t;
+
+typedef struct {
+    char        *wrptr;
+    size_t       len;
+} saved_position_t;
 
 typedef struct {
     bool                plus;
@@ -67,27 +70,26 @@ typedef struct {
     int                 conversion;
 } conv_spec_t;
 
-static void start_dry_run(state_t *state) {
-    state->saved_len    = state->len;
-    state->saved_wrptr  = state->wrptr;
-    state->wrptr        = NULL;
+static void save_position(saved_position_t *start, const state_t *state) {
+    start->len      = state->len;
+    start->wrptr    = state->wrptr;
 }
 
-static size_t end_dry_run_and_get_length(state_t *state) {
-    size_t length   = state->len - state->saved_len;
+static size_t get_length(const saved_position_t *start, const state_t *state) {
+    return state->len - start->len;
+}
 
-    state->len      = state->saved_len;
-    state->wrptr    = state->saved_wrptr;
+static void start_dry_run(state_t *state) {
+    state->wrptr = NULL;
+}
+
+static size_t go_back(state_t *state, const saved_position_t *start) {
+    size_t length   = get_length(start, state);
+
+    state->len      = start->len;
+    state->wrptr    = start->wrptr;
 
     return length;
-}
-
-static int get_start(state_t *state) {
-    return state->len;
-}
-
-static size_t get_length(state_t *state, int start) {
-    return state->len - start;
 }
 
 static int length_modifier_size(const conv_spec_t *spec) {
@@ -167,11 +169,13 @@ static void write_char(state_t *state, int c) {
 }
 
 static void write_string(state_t *state, const char *str, const conv_spec_t *spec) {
+    saved_position_t start;
+
     int prec        = spec->prec;
     const char *ptr = str;
-    size_t start    = get_start(state);
+    save_position(&start, state);
 
-    while((prec < 0 || get_length(state, start) < prec) && *ptr != '\0') {
+    while((prec < 0 || get_length(&start, state) < prec) && *ptr != '\0') {
         write_char(state, *ptr++);
     }
 }
@@ -391,11 +395,7 @@ static bool is_right_justified(const conv_spec_t *spec) {
     return spec->width > 0 && !spec->minus;
 }
 
-static void right_justify(state_t *state, const conv_spec_t *spec, int length) {
-    if(!is_right_justified(spec)) {
-        return;
-    }
-
+static void add_padding_right_justified(state_t *state, const conv_spec_t *spec, int length) {
     if(spec->width < length) {
         return;
     }
@@ -415,11 +415,7 @@ static bool is_left_justified(const conv_spec_t *spec) {
     return spec->width > 0 && spec->minus;
 }
 
-static void left_justify(state_t *state, const conv_spec_t *spec, int length) {
-    if(!is_left_justified(spec)) {
-        return;
-    }
-
+static void add_padding_left_justified(state_t *state, const conv_spec_t *spec, int length) {
     if(spec->width < length) {
         return;
     }
@@ -430,6 +426,10 @@ static void left_justify(state_t *state, const conv_spec_t *spec, int length) {
 }
 
 static void process_conversion(state_t *state, const conv_spec_t *spec, va_list *args) {
+    saved_position_t start;
+
+    save_position(&start, state);
+
     switch(spec->conversion) {
     case 'i':
     case 'd':
@@ -439,12 +439,14 @@ static void process_conversion(state_t *state, const conv_spec_t *spec, va_list 
         if(is_right_justified(spec)) {
             start_dry_run(state);
             write_signed(state, value, spec);
-            right_justify(state, spec, end_dry_run_and_get_length(state));
+            add_padding_right_justified(state, spec, go_back(state, &start));
         }
 
-        int start = get_start(state);
         write_signed(state, value, spec);
-        left_justify(state, spec, get_length(state, start));
+
+        if(is_left_justified(spec)) {
+            add_padding_left_justified(state, spec, get_length(&start, state));
+        }
     }
         break;
     case 'u':
@@ -454,12 +456,14 @@ static void process_conversion(state_t *state, const conv_spec_t *spec, va_list 
         if(is_right_justified(spec)) {
             start_dry_run(state);
             write_unsigned(state, value, spec);
-            right_justify(state, spec, end_dry_run_and_get_length(state));
+            add_padding_right_justified(state, spec, go_back(state, &start));
         }
 
-        int start = get_start(state);
         write_unsigned(state, value, spec);
-        left_justify(state, spec, get_length(state, start));
+
+        if(is_left_justified(spec)) {
+            add_padding_left_justified(state, spec, get_length(&start, state));
+        }
     }
         break;
     case 's':
@@ -473,12 +477,14 @@ static void process_conversion(state_t *state, const conv_spec_t *spec, va_list 
         if(is_right_justified(spec)) {
             start_dry_run(state);
             write_string(state, value, spec);
-            right_justify(state, spec, end_dry_run_and_get_length(state));
+            add_padding_right_justified(state, spec, go_back(state, &start));
         }
 
-        int start = get_start(state);
         write_string(state, value, spec);
-        left_justify(state, spec, get_length(state, start));
+
+        if(is_left_justified(spec)) {
+            add_padding_left_justified(state, spec, get_length(&start, state));
+        }
     }
         break;
     default:
