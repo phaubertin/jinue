@@ -32,10 +32,6 @@
 #ifndef _JINUE_LIBC_STDINT_H
 #define _JINUE_LIBC_STDINT_H
 
-#define INT64_C(x)              (x##LL)
-
-#define UINT64_C(x)             (x##ULL)
-
 typedef signed char             int8_t;
 
 typedef short int               int16_t;
@@ -63,8 +59,24 @@ typedef long long int           intmax_t;
 
 typedef unsigned long long int  uintmax_t;
 
-#define INTMAX_C(x) x ## LL
+#define INT8_C(x)               x
 
-#define UINTMAX_C(x) x ## ULL
+#define UINT8_C(x)              x
+
+#define INT16_C(x)              x
+
+#define UINT16_C(x)             x
+
+#define INT32_C(x)              x
+
+#define UINT32_C(x)             x
+
+#define INT64_C(x)              x ## LL
+
+#define UINT64_C(x)             x ## ULL
+
+#define INTMAX_C(x)             x ## LL
+
+#define UINTMAX_C(x)            x ## ULL
 
 #endif

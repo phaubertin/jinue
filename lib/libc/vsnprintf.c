@@ -35,14 +35,6 @@
 #include <stdint.h>
 #include <stdio.h>
 
-typedef struct {
-    const char  *format;
-    char        *wrptr;
-    size_t       len;
-    size_t       maxlen;
-    char        *saved_wrptr;
-    size_t       saved_len;
-} state_t;
 
 typedef enum {
     LENGTH_MODIFIER_NONE,
@@ -55,6 +47,15 @@ typedef enum {
 } length_modifier_t;
 
 typedef struct {
+    const char  *format;
+    char        *wrptr;
+    size_t       len;
+    size_t       maxlen;
+    char        *saved_wrptr;
+    size_t       saved_len;
+} state_t;
+
+typedef struct {
     bool                plus;
     bool                minus;
     bool                zero;
@@ -62,7 +63,6 @@ typedef struct {
     bool                hash;
     int                 width;
     int                 prec;
-    int                 bytes;  /* TODO delete */
     length_modifier_t   length_modifier;
     int                 conversion;
 } conv_spec_t;
@@ -112,10 +112,6 @@ static int length_modifier_size(const conv_spec_t *spec) {
 
 static intmax_t get_signed_argument(state_t *state, const conv_spec_t *spec, va_list *args) {
     switch(spec->length_modifier) {
-    case LENGTH_MODIFIER_HH:
-        return va_arg(*args, int);
-    case LENGTH_MODIFIER_H:
-        return va_arg(*args, int);
     case LENGTH_MODIFIER_L:
         return va_arg(*args, long int);
     case LENGTH_MODIFIER_LL:
@@ -125,6 +121,8 @@ static intmax_t get_signed_argument(state_t *state, const conv_spec_t *spec, va_
     case LENGTH_MODIFIER_Z:
         return (intmax_t)va_arg(*args, size_t);
     case LENGTH_MODIFIER_NONE:
+    case LENGTH_MODIFIER_HH:
+    case LENGTH_MODIFIER_H:
     default:
         return va_arg(*args, int);
     }
@@ -132,11 +130,6 @@ static intmax_t get_signed_argument(state_t *state, const conv_spec_t *spec, va_
 
 static uintmax_t get_unsigned_argument(state_t *state, const conv_spec_t *spec, va_list *args) {
     switch(spec->length_modifier) {
-    case LENGTH_MODIFIER_HH:
-        return va_arg(*args, int);
-    case LENGTH_MODIFIER_H:
-        /* TODO check this promotion */
-        return va_arg(*args, int);
     case LENGTH_MODIFIER_L:
         return va_arg(*args, unsigned long int);
     case LENGTH_MODIFIER_LL:
@@ -146,12 +139,26 @@ static uintmax_t get_unsigned_argument(state_t *state, const conv_spec_t *spec, 
     case LENGTH_MODIFIER_Z:
         return va_arg(*args, size_t);
     case LENGTH_MODIFIER_NONE:
+    case LENGTH_MODIFIER_HH:
+    case LENGTH_MODIFIER_H:
     default:
         return va_arg(*args, unsigned int);
     }
 }
 
+static void terminate_string(state_t *state) {
+    /* All writes to the output buffer except this one go through write_char().
+     * That function ensures there is space to write the terminating null
+     * character. */
+    if(state->wrptr != NULL) {
+        *state->wrptr = '\0';
+    }
+}
+
 static void write_char(state_t *state, int c) {
+    /* All writes to the output buffer except writing the terminating null
+     * character go through this function (see terminate_string()). Here, we
+     * must reserve the space necessary to store that terminating character.*/
     if(state->len < state->maxlen && state->wrptr != NULL) {
         *(state->wrptr)++ = c;
     }
@@ -169,19 +176,19 @@ static void write_string(state_t *state, const char *str, const conv_spec_t *spe
     }
 }
 
-static void write_unsigned(state_t *state, unsigned long long value, const conv_spec_t *spec) {
+static void write_unsigned(state_t *state, uintmax_t value, const conv_spec_t *spec) {
     if(value == 0) {
         write_char(state,  '0');
         return;
     }
 
-    unsigned long long power;
+    uintmax_t power;
     int digit;
 
     switch(length_modifier_size(spec)) {
     case 8:
-        power   = 10000000000000000000ULL;
-        digit   = 20;
+        power    = UINTMAX_C(10000000000000000000);
+        digit    = 20;
         break;
     case 4:
         power    = 1000000000;
@@ -206,7 +213,7 @@ static void write_unsigned(state_t *state, unsigned long long value, const conv_
     bool nonzero = false;
 
     while(power > 0) {
-        unsigned long long digit_value = value / power;
+        uintmax_t digit_value = value / power;
 
         if(nonzero || digit_value != 0 || digit <= spec->prec) {
             write_char(state, digit_value + '0');
@@ -219,7 +226,7 @@ static void write_unsigned(state_t *state, unsigned long long value, const conv_
     }
 }
 
-static void write_signed(state_t *state, long long value, const conv_spec_t *spec) {
+static void write_signed(state_t *state, intmax_t value, const conv_spec_t *spec) {
     if(value < 0) {
         write_char(state, '-');
         write_unsigned(state, -value, spec);
@@ -257,13 +264,21 @@ static bool process_flag(conv_spec_t *spec, int c) {
     }
 }
 
+static int current(const state_t *state) {
+    return *state->format;
+}
+
+static void consume(state_t *state) {
+    ++(state->format);
+}
+
 static int parse_numeric(state_t *state) {
     int value = 0;
 
-    while(isdigit(*state->format)) {
+    while(isdigit(current(state))) {
         value *= 10;
-        value += *state->format - '0';
-        ++(state->format);
+        value += current(state) - '0';
+        consume(state);
     }
 
     return value;
@@ -276,19 +291,19 @@ static void parse_flags(conv_spec_t *spec, state_t *state) {
     spec->space = false;
     spec->hash  = false;
 
-    while(process_flag(spec, *state->format)) {
-        ++(state->format);
+    while(process_flag(spec, current(state))) {
+        consume(state);
     }
 }
 
 static void parse_field_width(conv_spec_t *spec, state_t *state, va_list *args) {
     spec->width = -1;
 
-    if(*state->format == '*') {
-        ++(state->format);
+    if(current(state) == '*') {
+        consume(state);
         spec->width = va_arg(*args, int);
     }
-    else if(isdigit(*state->format)) {
+    else if(isdigit(current(state))) {
         spec->width = parse_numeric(state);
     }
 }
@@ -296,10 +311,10 @@ static void parse_field_width(conv_spec_t *spec, state_t *state, va_list *args) 
 static void parse_precision(conv_spec_t *spec, state_t *state, va_list *args) {
     spec->prec = -1;
 
-    if(*state->format == '.') {
-        ++(state->format);
+    if(current(state) == '.') {
+        consume(state);
 
-        if(*state->format == '*') {
+        if(current(state) == '*') {
             spec->prec = va_arg(*args, int);
 
             if(spec->prec < 0) {
@@ -314,32 +329,32 @@ static void parse_precision(conv_spec_t *spec, state_t *state, va_list *args) {
 }
 
 static void parse_length_modifier(conv_spec_t *spec, state_t *state) {
-    switch(*state->format) {
+    switch(current(state)) {
     case 'h':
         spec->length_modifier = LENGTH_MODIFIER_H;
-        ++(state->format);
+        consume(state);
 
-        if(*state->format == 'h') {
+        if(current(state) == 'h') {
             spec->length_modifier = LENGTH_MODIFIER_HH;
-            ++(state->format);
+            consume(state);
         }
         break;
     case 'l':
         spec->length_modifier = LENGTH_MODIFIER_L;
-        ++(state->format);
+        consume(state);
 
-        if(*state->format == 'l') {
+        if(current(state) == 'l') {
             spec->length_modifier = LENGTH_MODIFIER_LL;
-            ++(state->format);
+            consume(state);
         }
         break;
     case 'j':
         spec->length_modifier = LENGTH_MODIFIER_J;
-        ++(state->format);
+        consume(state);
         break;
     case 'z':
         spec->length_modifier = LENGTH_MODIFIER_Z;
-        ++(state->format);
+        consume(state);
         break;
     default:
         spec->length_modifier = LENGTH_MODIFIER_NONE;
@@ -347,7 +362,7 @@ static void parse_length_modifier(conv_spec_t *spec, state_t *state) {
 }
 
 static void parse_conversion_specifier(conv_spec_t *spec, state_t *state) {
-    spec->conversion = *state->format;
+    spec->conversion = current(state);
 
     /* Only consume conversion specifier if it is recognized. */
 
@@ -360,7 +375,7 @@ static void parse_conversion_specifier(conv_spec_t *spec, state_t *state) {
     case 'c':
     case 's':
     case 'p':
-        ++(state->format);
+        consume(state);
     }
 }
 
@@ -471,33 +486,33 @@ static void process_conversion(state_t *state, const conv_spec_t *spec, va_list 
     }
 }
 
-int vsnprintf(char *restrict s, size_t n, const char *restrict format, va_list args) {
-    if(n == 0) {
-        return 0;
-    }
+static void initialize_state(state_t *state, char *s, size_t n, const char *format) {
+    state->format   = format;
+    state->wrptr    = s;
+    state->len      = 0;
+    state->maxlen   = (n == 0) ? 0 : n - 1;
+}
 
+int vsnprintf(char *restrict s, size_t n, const char *restrict format, va_list args) {
     state_t state;
     conv_spec_t spec;
 
-    state.format    = format;
-    state.wrptr     = s;
-    state.len       = 0;
-    state.maxlen    = n - 1;
+    initialize_state(&state, s, n, format);
 
-    while(*state.format != '\0') {
-        if(*state.format != '%') {
-            write_char(&state, *state.format);
-            ++(state.format);
+    while(current(&state) != '\0') {
+        if(current(&state) != '%') {
+            write_char(&state, current(&state));
+            consume(&state);
             continue;
         }
 
         /* consume "%" */
-        ++(state.format);
+        consume(&state);
 
-        if(*state.format == '%') {
+        if(current(&state) == '%') {
             /* got "%%" */
             write_char(&state, '%');
-            ++(state.format);
+            consume(&state);
             continue;
         }
 
@@ -505,7 +520,7 @@ int vsnprintf(char *restrict s, size_t n, const char *restrict format, va_list a
         process_conversion(&state, &spec, &args);
     }
 
-    *state.wrptr = '\0';
+    terminate_string(&state);
 
     return state.len;
 }

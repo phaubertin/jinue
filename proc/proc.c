@@ -40,6 +40,7 @@
 #include <jinue/vm.h>
 #include <printk.h>
 #include <stdint.h>
+#include <stdio.h>  /* TODO remove */
 #include <stdlib.h>
 #include <string.h>
 
@@ -371,6 +372,7 @@ int main(int argc, char *argv[]) {
     run_ipc_test();
 
     /* TODO remove this */
+    char strbuf[80];
     jinue_printf("Meaning of life: %i\n", 42);
     jinue_printf("Meaning of life: %.3i\n", 42);
     jinue_printf("Meaning of life: %0.3i\n", 42);
@@ -386,6 +388,13 @@ int main(int argc, char *argv[]) {
     jinue_printf("%s %s\n", "foo", NULL);
     jinue_printf("%s %s %s\n", "foo", "bar", "baz");
     jinue_printf("%u %s %u %s %u %s\n", 42, "foo", 13, "bar", 26, "baz");
+
+    jinue_printf("length: %zu\n", snprintf(NULL, 0, "foo"));
+    snprintf(strbuf, sizeof(strbuf), "%s %s", "bar", "baz");
+    jinue_printf("foo %s\n", strbuf);
+    jinue_printf("%.3s\n", "123456");
+    jinue_printf("|%10s|\n", "123456");
+    jinue_printf("|%-10s|\n", "123456");
 
     while (1) {
         jinue_yield_thread();
