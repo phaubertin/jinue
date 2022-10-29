@@ -34,7 +34,7 @@
 #include <stddef.h>
 
 void console_printn(const char *message, size_t n, int colour) {
-    jinue_puts(message, n, NULL);
+    jinue_puts(message, n);
 }
 
 void console_putc(char c, int colour) {

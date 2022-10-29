@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2022 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -33,6 +33,7 @@
 #include <sys/elf.h>
 #include <jinue/errno.h>
 #include <jinue/ipc.h>
+#include <jinue/logging.h>
 #include <jinue/memory.h>
 #include <jinue/syscall.h>
 #include <jinue/types.h>
@@ -368,6 +369,23 @@ int main(int argc, char *argv[]) {
     dump_phys_memory_map((jinue_mem_map_t *)&call_buffer);
 
     run_ipc_test();
+
+    /* TODO remove this */
+    jinue_printf("Meaning of life: %i\n", 42);
+    jinue_printf("Meaning of life: %.3i\n", 42);
+    jinue_printf("Meaning of life: %0.3i\n", 42);
+    jinue_printf("Meaning of life: |% .3i\n", 42);
+    jinue_printf("Meaning of life: %.3i\n", -42);
+    jinue_printf("Meaning of life: %06i\n", 42);
+    jinue_printf("Meaning of life: %-6i|\n", 42);
+    jinue_printf("Meaning of life: %-06i|\n", 42);
+    jinue_printf("Meaning of life: %u\n", 42);
+    jinue_printf("Meaning of life: %u %u %u\n", 42, 13, 26);
+    jinue_printf("Zero: %i\n", 0);
+    jinue_printf("%s %s\n", "foo", "bar");
+    jinue_printf("%s %s\n", "foo", NULL);
+    jinue_printf("%s %s %s\n", "foo", "bar", "baz");
+    jinue_printf("%u %s %u %s %u %s\n", 42, "foo", 13, "bar", 26, "baz");
 
     while (1) {
         jinue_yield_thread();

@@ -59,6 +59,6 @@ void jinue_exit_thread(void);
 
 void jinue_putc(char c);
 
-int jinue_puts(const char *str, size_t length, int *perrno);
+void jinue_puts(const char *str, size_t length);
 
 #endif

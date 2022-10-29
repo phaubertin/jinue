@@ -133,7 +133,7 @@ void jinue_putc(char c) {
     jinue_syscall(&args);
 }
 
-int jinue_puts(const char *str, size_t n, int *perrno) {
+void jinue_puts(const char *str, size_t n) {
     jinue_syscall_args_t args;
 
     args.arg0 = SYSCALL_FUNC_PUTS;
@@ -142,6 +142,4 @@ int jinue_puts(const char *str, size_t n, int *perrno) {
     args.arg3 = 0;
 
     jinue_syscall(&args);
-
-    return 0;
 }

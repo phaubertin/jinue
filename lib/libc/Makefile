@@ -34,15 +34,16 @@ sources.c        = \
 	assert-kernel.c \
 	getauxval.c \
 	getenv.c \
-	string.c
+	snprintf.c \
+	vsnprintf.c
 sources.nasm     = crt.asm
 
 target.user      = libc.a
 target.kernel    = libc-kernel.a
 targets          = $(target.user) $(target.kernel)
 
-objects.generic  = string.o
-objects.user     = crt.o getauxval.o getenv.o 
+objects.generic  = string.o snprintf.o vsnprintf.o
+objects.user     = crt.o getauxval.o getenv.o
 objects.kernel   = assert-kernel.o
 
 include $(common)

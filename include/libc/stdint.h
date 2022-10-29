@@ -58,4 +58,13 @@ typedef int                     intptr_t;
 
 typedef unsigned int            uintptr_t;
 
+
+typedef long long int           intmax_t;
+
+typedef unsigned long long int  uintmax_t;
+
+#define INTMAX_C(x) x ## LL
+
+#define UINTMAX_C(x) x ## ULL
+
 #endif

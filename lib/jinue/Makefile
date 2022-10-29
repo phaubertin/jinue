@@ -32,6 +32,7 @@ include $(jinue_root)/header.mk
 
 sources.c 		= \
 	ipc.c \
+	logging.c \
 	memory.c \
 	printk.c \
 	syscall.c \
@@ -45,7 +46,7 @@ target.kernel    = libjinue-kernel.a
 targets          = $(target.user) $(target.kernel) $(target.proc)
 
 objects.user     = ipc.o memory.o stubs.o syscall.o
-objects.proc     = printk.o console.o
+objects.proc     = logging.o printk.o console.o
 objects.kernel   = printk.o
 
 include $(common)
