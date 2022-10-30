@@ -34,8 +34,8 @@
 
 #include <stdarg.h>
 
-void jinue_vprintf(const char *restrict format, va_list arg);
+void jinue_vinfo(const char *restrict format, va_list arg);
 
-void jinue_printf(const char *restrict format, ...);
+void jinue_info(const char *restrict format, ...);
 
 #endif

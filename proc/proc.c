@@ -38,9 +38,7 @@
 #include <jinue/syscall.h>
 #include <jinue/types.h>
 #include <jinue/vm.h>
-#include <printk.h>
-#include <stdint.h>
-#include <stdio.h>  /* TODO remove */
+#include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -91,14 +89,14 @@ static void dump_phys_memory_map(const jinue_mem_map_t *map) {
         return;
     }
 
-    printk("Dump of the BIOS memory map%s:\n", ram_only?" (showing only available entries)":"");
+    jinue_info("Dump of the BIOS memory map%s:\n", ram_only?" (showing only available entries)":"");
 
     for(int idx = 0; idx < map->num_entries; ++idx) {
         const jinue_mem_entry_t *entry = &map->entry[idx];
 
         if(entry->type == E820_RAM || !ram_only) {
-            printk(
-                    "  %c [%q-%q] %s\n",
+            jinue_info(
+                    "  %c [%016" PRIx64 "-%016" PRIx64 "] %s\n",
                     (entry->type==E820_RAM)?'*':' ',
                     entry->addr,
                     entry->addr + entry->size - 1,
@@ -113,10 +111,10 @@ static void dump_cmdline_arguments(int argc, char *argv[]) {
         return;
     }
 
-    printk("Command line arguments:\n");
+    jinue_info("Command line arguments:\n");
 
     for(int idx = 0; idx < argc; ++idx) {
-        printk("  %s\n", argv[idx]);
+        jinue_info("  %s\n", argv[idx]);
     }
 }
 
@@ -125,10 +123,10 @@ static void dump_environ(void) {
         return;
     }
 
-    printk("Environment variables:\n");
+    jinue_info("Environment variables:\n");
 
     for(char **envvar = environ; *envvar != NULL; ++envvar) {
-        printk("  %s\n", *envvar);
+        jinue_info("  %s\n", *envvar);
     }
 }
 
@@ -180,16 +178,16 @@ static void dump_auxvec(void) {
         return;
     }
 
-    printk("Auxiliary vectors:\n");
+    jinue_info("Auxiliary vectors:\n");
 
     for(const Elf32_auxv_t *entry = _jinue_libc_auxv; entry->a_type != JINUE_AT_NULL; ++entry) {
         const char *name = auxv_type_name(entry->a_type);
 
         if(name != NULL) {
-            printk("  %s: %u/0x%x\n", name, entry->a_un.a_val, entry->a_un.a_val);
+            jinue_info("  %s: %u/0x%" PRIx32 "\n", name, entry->a_un.a_val, entry->a_un.a_val);
         }
         else {
-            printk("  (%u): %u/0x%x\n", entry->a_type, entry->a_un.a_val, entry->a_un.a_val);
+            jinue_info("  (%u): %u/0x%" PRIx32 "\n", entry->a_type, entry->a_un.a_val, entry->a_un.a_val);
         }
     }
 }
@@ -203,15 +201,15 @@ static void ipc_test_run_client(void) {
     int errno;
 
     if(fd < 0) {
-        printk("Client thread has invalid descriptor.\n");
+        jinue_info("Client thread has invalid descriptor.\n");
         return;
     }
 
     const char hello[] = "Hello ";
     const char world[] = "World!";
 
-    printk("Client thread got descriptor %u.\n", fd);
-    printk("Client thread is sending message.\n");
+    jinue_info("Client thread got descriptor %i.\n", fd);
+    jinue_info("Client thread is sending message.\n");
 
     jinue_const_buffer_t send_buffers[2];
     send_buffers[0].addr = hello;
@@ -240,19 +238,19 @@ static void ipc_test_run_client(void) {
     intptr_t ret = jinue_send(fd, MSG_FUNC_TEST, &message, &errno);
 
     if(ret < 0) {
-        printk("jinue_send() failed with error: %u.\n", errno);
+        jinue_info("jinue_send() failed with error: %i.\n", errno);
         return;
     }
 
-    printk("Client thread got reply from main thread:\n");
-    printk("  data:             \"%s%s%s\"\n", reply1, reply2, reply3);
-    printk("  size:             %u\n", ret);
+    jinue_info("Client thread got reply from main thread:\n");
+    jinue_info("  data:             \"%s%s%s\"\n", reply1, reply2, reply3);
+    jinue_info("  size:             %" PRIuPTR "\n", ret);
 }
 
 static void ipc_test_client_thread(void) {
     ipc_test_run_client();
 
-    printk("Client thread is exiting.\n");
+    jinue_info("Client thread is exiting.\n");
 
     jinue_exit_thread();
 }
@@ -264,17 +262,17 @@ static void run_ipc_test(void) {
         return;
     }
 
-    printk("Running threading and IPC test...\n");
+    jinue_info("Running threading and IPC test...\n");
 
     int fd = jinue_create_ipc(JINUE_IPC_NONE, &errno);
 
     if(fd < 0) {
-        printk("Creating IPC object descriptor.\n");
-        printk("Error number: %u\n", errno);
+        jinue_info("Creating IPC object descriptor.\n");
+        jinue_info("Error number: %i\n", errno);
         return;
     }
 
-    printk("Main thread got descriptor %u.\n", fd);
+    jinue_info("Main thread got descriptor %i.\n", fd);
 
     jinue_create_thread(ipc_test_client_thread, &ipc_test_thread_stack[THREAD_STACK_SIZE], NULL);
 
@@ -289,23 +287,23 @@ static void run_ipc_test(void) {
     intptr_t ret = jinue_receive(fd, &message, &errno);
 
     if(ret < 0) {
-        printk("jinue_receive() failed with error: %u.\n", errno);
+        jinue_info("jinue_receive() failed with error: %i.\n", errno);
         return;
     }
 
     int function = message.recv_function;
 
     if(function != MSG_FUNC_TEST) {
-        printk("jinue_receive() unexpected function number: %u.\n", function);
+        jinue_info("jinue_receive() unexpected function number: %i.\n", function);
         return;
     }
 
-    printk("Main thread received message:\n");
-    printk("  data:             \"%s\"\n", recv_data);
-    printk("  size:             %u\n", ret);
-    printk("  function:         %u (user base + %u)\n", function, function - SYSCALL_USER_BASE);
-    printk("  cookie:           %u\n", message.recv_cookie);
-    printk("  reply max. size:  %u\n", message.reply_max_size);
+    jinue_info("Main thread received message:\n");
+    jinue_info("  data:             \"%s\"\n", recv_data);
+    jinue_info("  size:             %" PRIuPTR "\n", ret);
+    jinue_info("  function:         %u (user base + %u)\n", function, function - SYSCALL_USER_BASE);
+    jinue_info("  cookie:           %" PRIuPTR "\n", message.recv_cookie);
+    jinue_info("  reply max. size:  %" PRIuPTR "\n", message.reply_max_size);
 
     const char reply_string[] = "Hi, Main Thread!";
 
@@ -320,10 +318,10 @@ static void run_ipc_test(void) {
     ret = jinue_reply(&reply, &errno);
 
     if(ret < 0) {
-        printk("jinue_reply() failed with error: %u.\n", errno);
+        jinue_info("jinue_reply() failed with error: %i.\n", errno);
     }
 
-    printk("Main thread is running.\n");
+    jinue_info("Main thread is running.\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -338,7 +336,7 @@ int main(int argc, char *argv[]) {
      *
      * TODO once things stabilize, ensure jinue_syscall() fails if no system
      * call implementation was set. */
-    printk("Jinue user space loader (%s) started.\n", argv[0]);
+    jinue_info("Jinue user space loader (%s) started.\n", argv[0]);
 
     dump_cmdline_arguments(argc, argv);
     dump_environ();
@@ -353,16 +351,16 @@ int main(int argc, char *argv[]) {
 
     if (ret < 0) {
         /* TODO map error numbers to name */
-        printk("Could not set system call implementation: %i", errno);
+        jinue_info("Could not set system call implementation: %i", errno);
     }
 
-    printk("Using system call implementation '%s'.\n", syscall_implementation_name(howsyscall));
+    jinue_info("Using system call implementation '%s'.\n", syscall_implementation_name(howsyscall));
 
     /* get free memory blocks from microkernel */
     status = jinue_get_user_memory((jinue_mem_map_t *)&call_buffer, sizeof(call_buffer), &errno);
 
     if(status != 0) {
-        printk("error: could not get physical memory map from microkernel.\n");
+        jinue_info("error: could not get physical memory map from microkernel.\n");
 
         return EXIT_FAILURE;
     }
@@ -371,47 +369,6 @@ int main(int argc, char *argv[]) {
 
     run_ipc_test();
 
-    /* TODO remove this */
-    char strbuf[80];
-    jinue_printf("Meaning of life: %i\n", 42);
-    jinue_printf("Meaning of life: %.3i\n", 42);
-    jinue_printf("Meaning of life: %0.3i\n", 42);
-    jinue_printf("Meaning of life: |% .3i\n", 42);
-    jinue_printf("Meaning of life: %.3i\n", -42);
-    jinue_printf("Meaning of life: %06i\n", 42);
-    jinue_printf("Meaning of life: %-6i|\n", 42);
-    jinue_printf("Meaning of life: %-06i|\n", 42);
-    jinue_printf("Meaning of life: %u\n", 42);
-    jinue_printf("Meaning of life: %u %u %u\n", 42, 13, 26);
-    jinue_printf("%s %s\n", "foo", "bar");
-    jinue_printf("%s %s\n", "foo", NULL);
-    jinue_printf("%s %s %s\n", "foo", "bar", "baz");
-    jinue_printf("%u %s %u %s %u %s\n", 42, "foo", 13, "bar", 26, "baz");
-
-    jinue_printf("length: %zu\n", snprintf(NULL, 0, "foo"));
-    snprintf(strbuf, sizeof(strbuf), "%s %s", "bar", "baz");
-    jinue_printf("foo %s\n", strbuf);
-    jinue_printf("%.3s\n", "123456");
-    jinue_printf("|%10s|\n", "123456");
-    jinue_printf("|%-10s|\n", "123456");
-    jinue_printf("|%2c%c%c\n", 'f', 'o', 'o');
-    jinue_printf("%c%c%-2c|\n", 'b', 'a', 'r');
-
-    jinue_printf("Zero: %i\n", 0);
-    jinue_printf("Zero: %.3i\n", 0);
-
-    jinue_printf("%x\n", 0x1234abcd);
-    jinue_printf("%X\n", 0x1234abcd);
-    jinue_printf("%#x\n", 0x123abcd);
-    jinue_printf("%#x\n", 0);
-    jinue_printf("%p\n", strbuf);
-    jinue_printf("%#p\n", strbuf);
-    jinue_printf("%#p\n", NULL);
-
-    jinue_printf("%%foo%%\n", NULL);
-    jinue_printf("foo%%bar\n", NULL);
-    jinue_printf("%%%s%%\n", "foo");
-    jinue_printf("%s%%%s\n", "foo", "bar");
 
     while (1) {
         jinue_yield_thread();
