@@ -408,6 +408,11 @@ int main(int argc, char *argv[]) {
     jinue_printf("%#p\n", strbuf);
     jinue_printf("%#p\n", NULL);
 
+    jinue_printf("%%foo%%\n", NULL);
+    jinue_printf("foo%%bar\n", NULL);
+    jinue_printf("%%%s%%\n", "foo");
+    jinue_printf("%s%%%s\n", "foo", "bar");
+
     while (1) {
         jinue_yield_thread();
     }

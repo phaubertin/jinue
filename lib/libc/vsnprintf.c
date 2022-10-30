@@ -604,6 +604,9 @@ static void process_conversion(state_t *state, const conv_spec_t *spec, va_list 
         }
     }
         break;
+    case '%':
+        write_char(state, '%');
+        break;
     default:
         break;
     }
