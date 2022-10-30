@@ -35,6 +35,7 @@
 #include <hal/memory.h>
 #include <hal/thread.h>
 #include <hal/trap.h>
+#include <hal/vga.h>    /* TODO remove this */
 #include <console.h>
 #include <ipc.h>
 #include <limits.h>
@@ -71,12 +72,36 @@ static void sys_nosys(jinue_syscall_args_t *args) {
 }
 
 static void sys_puts(jinue_syscall_args_t *args) {
-    /** TODO: permission check, sanity check on length */
-    console_printn(
-            (const char *)args->arg1,
-            args->arg2,
-            CONSOLE_DEFAULT_COLOR);
-    console_putc('\n', CONSOLE_DEFAULT_COLOR);
+    int loglevel        = args->arg1;
+    const char *message = (const char *)args->arg2;
+    size_t length       = args->arg3;
+
+    /* TODO this should be a constant */
+    if(length > 120) {
+        syscall_args_set_error(args, JINUE_EINVAL);
+        return;
+    }
+
+    int colour;
+
+    /* TODO move this into VGA code */
+    switch(loglevel) {
+    case 'I':
+        colour = VGA_COLOR_BRIGHTGREEN;
+        break;
+    case 'W':
+        colour = VGA_COLOR_YELLOW;
+        break;
+    case 'E':
+        colour = VGA_COLOR_RED;
+        break;
+    default:
+        syscall_args_set_error(args, JINUE_EINVAL);
+        return;
+    }
+
+    console_printn(message, length,colour);
+    console_putc('\n', colour);
     syscall_args_set_return(args, 0);
 }
 

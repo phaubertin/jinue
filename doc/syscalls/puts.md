@@ -2,15 +2,21 @@
 
 ## Description
 
-Write a character string to the console.
+Add a character string to the kernel logs.
 
 ## Arguments
 
 Function number (`arg0`) is 3.
 
-The pointer to the string is set in `arg1`.
+The value in `arg1` identifies the log level:
 
-The length of the string is set in `arg2`.
+* The ASCII character `I` for level "information".
+* The ASCII character `W` for level "warning".
+* The ASCII character `E` for level "error".
+
+The pointer to the string is set in `arg2`.
+
+The length of the string, which must be at most 120 characters, is set in `arg3`.
 
 ```
     +----------------------------------------------------------------+
@@ -19,31 +25,27 @@ The length of the string is set in `arg2`.
     31                                                               0
     
     +----------------------------------------------------------------+
-    |                       address of string                        |  arg1
+    |                           log level                            |  arg1
+    +----------------------------------------------------------------+
+    31                                                               0
+    
+    +----------------------------------------------------------------+
+    |                       address of string                        |  arg2
     +----------------------------------------------------------------+
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                       length of string                         |  arg2
-    +----------------------------------------------------------------+
-    31                                                               0
-
-    +----------------------------------------------------------------+
-    |                         reserved (0)                           | arg3
+    |                       length of string                         |  arg3
     +----------------------------------------------------------------+
     31                                                               0
 ```
 
 ## Return Value
 
-No return value.
+On success, this function returns 0 (in `arg0`). On failure, this function
+returns -1 and an error number is set (in `arg1`).
 
 ## Errors
 
-This function always succeeds.
-
-## Future Direction
-
-A proper logging system call with log levels and a ring buffer in the kernel
-will be implemented. Once this happens, this system call will be removed and/or
-replaced.
+* JINUE_EINVAL if the specified string length is more than 120.
+* JINUE_EINVAL if the specified log level is not recognized.

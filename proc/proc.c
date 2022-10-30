@@ -201,7 +201,7 @@ static void ipc_test_run_client(void) {
     int errno;
 
     if(fd < 0) {
-        jinue_info("Client thread has invalid descriptor.");
+        jinue_error("Client thread has invalid descriptor.");
         return;
     }
 
@@ -238,7 +238,7 @@ static void ipc_test_run_client(void) {
     intptr_t ret = jinue_send(fd, MSG_FUNC_TEST, &message, &errno);
 
     if(ret < 0) {
-        jinue_info("jinue_send() failed with error: %i.", errno);
+        jinue_error("jinue_send() failed with error: %i.", errno);
         return;
     }
 
@@ -268,7 +268,7 @@ static void run_ipc_test(void) {
 
     if(fd < 0) {
         jinue_info("Creating IPC object descriptor.");
-        jinue_info("Error number: %i", errno);
+        jinue_error("Error number: %i", errno);
         return;
     }
 
@@ -287,14 +287,14 @@ static void run_ipc_test(void) {
     intptr_t ret = jinue_receive(fd, &message, &errno);
 
     if(ret < 0) {
-        jinue_info("jinue_receive() failed with error: %i.", errno);
+        jinue_error("jinue_receive() failed with error: %i.", errno);
         return;
     }
 
     int function = message.recv_function;
 
     if(function != MSG_FUNC_TEST) {
-        jinue_info("jinue_receive() unexpected function number: %i.", function);
+        jinue_error("jinue_receive() unexpected function number: %i.", function);
         return;
     }
 
@@ -318,7 +318,7 @@ static void run_ipc_test(void) {
     ret = jinue_reply(&reply, &errno);
 
     if(ret < 0) {
-        jinue_info("jinue_reply() failed with error: %i.", errno);
+        jinue_error("jinue_reply() failed with error: %i.", errno);
     }
 
     jinue_info("Main thread is running.");
@@ -351,7 +351,7 @@ int main(int argc, char *argv[]) {
 
     if (ret < 0) {
         /* TODO map error numbers to name */
-        jinue_info("Could not set system call implementation: %i", errno);
+        jinue_error("Could not set system call implementation: %i", errno);
     }
 
     jinue_info("Using system call implementation '%s'.", syscall_implementation_name(howsyscall));
@@ -360,7 +360,7 @@ int main(int argc, char *argv[]) {
     status = jinue_get_user_memory((jinue_mem_map_t *)&call_buffer, sizeof(call_buffer), &errno);
 
     if(status != 0) {
-        jinue_info("error: could not get physical memory map from microkernel.");
+        jinue_error("error: could not get physical memory map from microkernel.");
 
         return EXIT_FAILURE;
     }
@@ -368,7 +368,6 @@ int main(int argc, char *argv[]) {
     dump_phys_memory_map((jinue_mem_map_t *)&call_buffer);
 
     run_ipc_test();
-
 
     while (1) {
         jinue_yield_thread();

@@ -41,9 +41,9 @@ returns -1 and an error number is set (in `arg1`).
 
 ## Errors
 
-* JINUE_EINVAL the code entry point is set to a kernel address.
-* JINUE_EINVAL the user stack address is set to a kernel address.
-* JINUE_EAGAIN the thread could not be created because of needed resources.
+* JINUE_EINVAL if the code entry point is set to a kernel address.
+* JINUE_EINVAL if the user stack address is set to a kernel address.
+* JINUE_EAGAIN if the thread could not be created because of needed resources.
 
 ## Future Direction
 
