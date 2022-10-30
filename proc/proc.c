@@ -400,6 +400,14 @@ int main(int argc, char *argv[]) {
     jinue_printf("Zero: %i\n", 0);
     jinue_printf("Zero: %.3i\n", 0);
 
+    jinue_printf("%x\n", 0x1234abcd);
+    jinue_printf("%X\n", 0x1234abcd);
+    jinue_printf("%#x\n", 0x123abcd);
+    jinue_printf("%#x\n", 0);
+    jinue_printf("%p\n", strbuf);
+    jinue_printf("%#p\n", strbuf);
+    jinue_printf("%#p\n", NULL);
+
     while (1) {
         jinue_yield_thread();
     }
