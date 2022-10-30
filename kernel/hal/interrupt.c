@@ -52,7 +52,7 @@ void dispatch_interrupt(trapframe_t *trapframe) {
         panic("caught exception");
     }
     
-    if(ivt == SYSCALL_IRQ) {
+    if(ivt == JINUE_SYSCALL_IRQ) {
     	/* interrupt-based system call implementation */
         dispatch_syscall(trapframe);
     }

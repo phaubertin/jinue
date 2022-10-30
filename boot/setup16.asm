@@ -38,6 +38,8 @@
 %define DATA_SEG        2
 %define SETUP_SEG       3
 
+%define E820_SMAP       0x534d4150
+
     bits 16
 
     ; defined by linker - see image.lds linker script

@@ -125,7 +125,7 @@ static void init_idt(void) {
         /* set interrupt gate flags */
         unsigned int flags = SEG_TYPE_INTERRUPT_GATE | SEG_FLAG_NORMAL_GATE;
 
-        if(idx == SYSCALL_IRQ) {
+        if(idx == JINUE_SYSCALL_IRQ) {
             flags |= SEG_FLAG_USER;
         }
         else {
@@ -217,7 +217,7 @@ static void select_syscall_implementation(void) {
     if(cpu_has_feature(CPU_FEATURE_SYSCALL)) {
         uint64_t msrval;
 
-        syscall_implementation = SYSCALL_IMPL_FAST_AMD;
+        syscall_implementation = JINUE_SYSCALL_IMPL_FAST_AMD;
 
         msrval  = rdmsr(MSR_EFER);
         msrval |= MSR_FLAG_EFER_SCE;
@@ -230,7 +230,7 @@ static void select_syscall_implementation(void) {
         wrmsr(MSR_STAR, msrval);
     }
     else if(cpu_has_feature(CPU_FEATURE_SYSENTER)) {
-        syscall_implementation = SYSCALL_IMPL_FAST_INTEL;
+        syscall_implementation = JINUE_SYSCALL_IMPL_FAST_INTEL;
 
         wrmsr(MSR_IA32_SYSENTER_CS,  SEG_SELECTOR(GDT_KERNEL_CODE, RPL_KERNEL));
         wrmsr(MSR_IA32_SYSENTER_EIP, (uint64_t)(uintptr_t)fast_intel_entry);
@@ -239,7 +239,7 @@ static void select_syscall_implementation(void) {
         wrmsr(MSR_IA32_SYSENTER_ESP, (uint64_t)(uintptr_t)NULL);
     }
     else {
-        syscall_implementation = SYSCALL_IMPL_INTR;
+        syscall_implementation = JINUE_SYSCALL_IMPL_INTERRUPT;
     }
 }
 

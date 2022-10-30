@@ -32,9 +32,17 @@
 #ifndef JINUE_KERNEL_CONSOLE_H
 #define JINUE_KERNEL_CONSOLE_H
 
-#include <jinue/shared/console.h>
 #include <cmdline.h>
+#include <stddef.h>
+
+#define CONSOLE_DEFAULT_COLOR 0x0a /* VGA_COLOR_BRIGHTGREEN */
 
 void console_init(const cmdline_opts_t *cmdline_opts);
+
+void console_printn(const char *message, size_t n, int colour);
+
+void console_putc(char c, int colour);
+
+void console_print(const char *message, int colour);
 
 #endif
