@@ -84,6 +84,7 @@ static void sys_puts(jinue_syscall_args_t *args) {
             (const char *)args->arg1,
             args->arg2,
             CONSOLE_DEFAULT_COLOR);
+    console_putc('\n', CONSOLE_DEFAULT_COLOR);
     syscall_args_set_return(args, 0);
 }
 
