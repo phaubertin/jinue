@@ -383,7 +383,6 @@ int main(int argc, char *argv[]) {
     jinue_printf("Meaning of life: %-06i|\n", 42);
     jinue_printf("Meaning of life: %u\n", 42);
     jinue_printf("Meaning of life: %u %u %u\n", 42, 13, 26);
-    jinue_printf("Zero: %i\n", 0);
     jinue_printf("%s %s\n", "foo", "bar");
     jinue_printf("%s %s\n", "foo", NULL);
     jinue_printf("%s %s %s\n", "foo", "bar", "baz");
@@ -397,6 +396,9 @@ int main(int argc, char *argv[]) {
     jinue_printf("|%-10s|\n", "123456");
     jinue_printf("|%2c%c%c\n", 'f', 'o', 'o');
     jinue_printf("%c%c%-2c|\n", 'b', 'a', 'r');
+
+    jinue_printf("Zero: %i\n", 0);
+    jinue_printf("Zero: %.3i\n", 0);
 
     while (1) {
         jinue_yield_thread();

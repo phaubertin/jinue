@@ -171,23 +171,36 @@ static void write_char(state_t *state, int c) {
 static void write_string(state_t *state, const char *str, const conv_spec_t *spec) {
     saved_position_t start;
 
-    int prec        = spec->prec;
-    const char *ptr = str;
+    int prec            = spec->prec;
+    const char *ptr     = str;
     save_position(&start, state);
 
+    /* A precision less than zero (specifically, -1) means it wasn't specified,
+     * and that, in turn, means we don't put a limit on the number of characters
+     * we write. */
     while((prec < 0 || get_length(&start, state) < prec) && *ptr != '\0') {
         write_char(state, *ptr++);
     }
 }
 
 static void write_unsigned(state_t *state, uintmax_t value, const conv_spec_t *spec) {
-    if(value == 0) {
-        write_char(state,  '0');
-        return;
-    }
-
     uintmax_t power;
     int digit;
+
+    int prec = spec->prec;
+
+    if(prec < 1) {
+        /* A precision less than zero (specifically, -1) means no precision was
+         * specified, in which case the default must be 1.
+         *
+         * As for the case prec == 0: there is no value that can be represented
+         * with no digits, so specifying 0 or 1 as the precision is equivalent,
+         * but the implementation below relies on the precision being at least
+         * one. The specific case where this matters is when the value being
+         * converted is zero, in which case we want to keep at least one zero
+         * instead of discarding all zero-valued digits as leading zeroes. */
+        prec = 1;
+    }
 
     switch(length_modifier_size(spec)) {
     case 8:
@@ -210,7 +223,7 @@ static void write_unsigned(state_t *state, uintmax_t value, const conv_spec_t *s
         digit    = 3;
     }
 
-    for(int idx = 0; idx < spec->prec - digit; ++idx) {
+    for(int idx = 0; idx < prec - digit; ++idx) {
         write_char(state, '0');
     }
 
@@ -219,7 +232,7 @@ static void write_unsigned(state_t *state, uintmax_t value, const conv_spec_t *s
     while(power > 0) {
         uintmax_t digit_value = value / power;
 
-        if(nonzero || digit_value != 0 || digit <= spec->prec) {
+        if(nonzero || digit_value != 0 || digit <= prec) {
             write_char(state, digit_value + '0');
             nonzero = true;
             value -= digit_value * power;
