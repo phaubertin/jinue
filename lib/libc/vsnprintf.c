@@ -325,7 +325,10 @@ static int current(const state_t *state) {
 }
 
 static void consume(state_t *state) {
-    ++(state->format);
+    /* Don't go past the end of the format string. */
+    if(current(state) != '\0') {
+        ++(state->format);
+    }
 }
 
 static int parse_numeric(state_t *state) {
@@ -444,20 +447,7 @@ static void parse_length_modifier(conv_spec_t *spec, state_t *state) {
 
 static void parse_conversion_specifier(conv_spec_t *spec, state_t *state) {
     spec->conversion = current(state);
-
-    /* Only consume conversion specifier if it is recognized. */
-
-    switch(spec->conversion) {
-    case 'd':
-    case 'i':
-    case 'u':
-    case 'x':
-    case 'X':
-    case 'c':
-    case 's':
-    case 'p':
-        consume(state);
-    }
+    consume(state);
 }
 
 static void parse_conversion_specification(conv_spec_t *spec, state_t *state, va_list *args) {
