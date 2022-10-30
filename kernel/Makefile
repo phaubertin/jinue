@@ -38,7 +38,6 @@ build_info_h     = build-info.gen.h
 LDFLAGS         += -T $(kernel_ldscript)
 
 kernel.hal    	 = hal/kern-hal.o
-kernel.lib    	 = $(libjinue)/libjinue-kernel.a
 c.lib            = $(libc)/libc-kernel.a
 
 target	 		 = kernel-stripped
@@ -53,12 +52,13 @@ sources.c		 = \
 	kmain.c \
 	page_alloc.c \
 	panic.c \
+	printk.c \
 	process.c \
 	slab.c \
 	syscall.c \
 	thread.c \
 	vmalloc.c
-objects.extra	 = $(c.lib) $(kernel.hal) $(kernel.lib)
+objects.extra	 = $(c.lib) $(kernel.hal)
 
 include $(common)
 
@@ -75,10 +75,6 @@ $(target): kernel
 .PHONY: hal
 hal:
 	$(MAKE) -C $@
-
-.PHONY: libjinue
-libjinue:
-	$(MAKE) -C $(libjinue) all-kernel
 	
 .PHONY: libc
 libc:
@@ -87,5 +83,3 @@ libc:
 $(c.lib): libc
 
 $(kernel.hal): hal
-
-$(kernel.lib): libjinue

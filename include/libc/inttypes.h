@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2022 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,54 +29,44 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_LIBC_STDINT_H
-#define _JINUE_LIBC_STDINT_H
+#ifndef _JINUE_LIBC_INTTYPES_H
+#define _JINUE_LIBC_INTTYPES_H
 
-typedef signed char             int8_t;
+#include <stdint.h>
 
-typedef short int               int16_t;
+#define PRIi8       "i"
+#define PRIi16      "i"
+#define PRIi32      "i"
+#define PRIi64      "lli"
+#define PRIiMAX     "lli"
+#define PRIiPTR     "li"
 
-typedef int                     int32_t;
+#define PRId8       "d"
+#define PRId16      "d"
+#define PRId32      "d"
+#define PRId64      "lld"
+#define PRIdMAX     "lld"
+#define PRIdPTR     "ld"
 
-typedef long long int           int64_t;
+#define PRIu8       "u"
+#define PRIu16      "u"
+#define PRIu32      "u"
+#define PRIu64      "llu"
+#define PRIuMAX     "llu"
+#define PRIuPTR     "lu"
 
+#define PRIx8       "x"
+#define PRIx16      "x"
+#define PRIx32      "x"
+#define PRIx64      "llx"
+#define PRIxMAX     "llx"
+#define PRIxPTR     "lx"
 
-typedef unsigned char           uint8_t;
-
-typedef unsigned short int      uint16_t;
-
-typedef unsigned int            uint32_t;
-
-typedef unsigned long long int  uint64_t;
-
-
-typedef int                     intptr_t;
-
-typedef unsigned int            uintptr_t;
-
-
-typedef long long int           intmax_t;
-
-typedef unsigned long long int  uintmax_t;
-
-#define INT8_C(x)               x
-
-#define UINT8_C(x)              x
-
-#define INT16_C(x)              x
-
-#define UINT16_C(x)             x
-
-#define INT32_C(x)              x
-
-#define UINT32_C(x)             x
-
-#define INT64_C(x)              x ## LL
-
-#define UINT64_C(x)             x ## ULL
-
-#define INTMAX_C(x)             x ## LL
-
-#define UINTMAX_C(x)            x ## ULL
+#define PRIX8       "X"
+#define PRIX16      "X"
+#define PRIX32      "X"
+#define PRIX64      "llX"
+#define PRIXMAX     "llX"
+#define PRIXPTR     "lX"
 
 #endif

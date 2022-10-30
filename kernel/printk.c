@@ -106,7 +106,7 @@ void printk(const char *format, ...) {
         }
         
         ++idx;
-    }    
+    }
     
     va_end(ap);        
 }

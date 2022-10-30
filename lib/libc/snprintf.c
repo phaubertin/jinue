@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2022 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,54 +29,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_LIBC_STDINT_H
-#define _JINUE_LIBC_STDINT_H
+#include <stdarg.h>
+#include <stdio.h>
 
-typedef signed char             int8_t;
+int snprintf(char *restrict s, size_t n, const char *restrict format, ...) {
+    va_list args;
 
-typedef short int               int16_t;
+    va_start(args, format);
 
-typedef int                     int32_t;
+    int retval = vsnprintf(s, n, format, args);
 
-typedef long long int           int64_t;
+    va_end(args);
 
-
-typedef unsigned char           uint8_t;
-
-typedef unsigned short int      uint16_t;
-
-typedef unsigned int            uint32_t;
-
-typedef unsigned long long int  uint64_t;
-
-
-typedef int                     intptr_t;
-
-typedef unsigned int            uintptr_t;
-
-
-typedef long long int           intmax_t;
-
-typedef unsigned long long int  uintmax_t;
-
-#define INT8_C(x)               x
-
-#define UINT8_C(x)              x
-
-#define INT16_C(x)              x
-
-#define UINT16_C(x)             x
-
-#define INT32_C(x)              x
-
-#define UINT32_C(x)             x
-
-#define INT64_C(x)              x ## LL
-
-#define UINT64_C(x)             x ## ULL
-
-#define INTMAX_C(x)             x ## LL
-
-#define UINTMAX_C(x)            x ## ULL
-
-#endif
+    return retval;
+}

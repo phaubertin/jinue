@@ -34,26 +34,25 @@ sources.c		 = proc.c
 proc			 = proc
 target			 = $(proc)-stripped
 
-LIBS    		 = -L$(libjinue) -L$(libc) -lc -ljinue -ljinue-proc
-
 # The linker might not link crt.o from libjinue.a, which is required to
 # provide the _start entry point but otherwise contains no symbol that
 # other object files are interested in. I have seen different behaviour
 # in this regard on different machines with different versions of the
 # linker. By explicitly forcing _start as an undefined symbol, we
 # ensure the linker links the startup code.
-LDFLAGS         += -Wl,-u,_start
+LDFLAGS			+= -Wl,-u,_start -static-libgcc -m32 -march=i686
+LDLIBS			 = -lgcc
 
 unclean.extra    = $(proc)
 
 include $(common)
 
-$(libjinue)/libjinue.a $(libjinue)/libjinue-proc.a: FORCE
+$(libjinue)/libjinue.a: FORCE
 	$(MAKE) -C $(libjinue)
 	
 $(libc)/libc.a: FORCE
 	$(MAKE) -C $(libc)
 
-$(proc): $(objects) $(libc)/libc.a $(libjinue)/libjinue.a $(libjinue)/libjinue-proc.a
+$(proc): $(objects) $(libjinue)/libjinue.a $(libc)/libc.a
 
 $(target): $(proc)
