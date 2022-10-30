@@ -37,9 +37,6 @@
 /** interrupt vector for system call software interrupt */
 #define SYSCALL_IRQ                     0x80
 
-/** send a character to in-kernel console driver */
-#define SYSCALL_FUNC_PUTC               2
-
 /** send a fixed-length string to in-kernel console driver */
 #define SYSCALL_FUNC_PUTS               3
 

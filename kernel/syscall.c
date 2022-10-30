@@ -70,14 +70,6 @@ static void sys_nosys(jinue_syscall_args_t *args) {
     syscall_args_set_error(args, JINUE_ENOSYS);
 }
 
-static void sys_putc(jinue_syscall_args_t *args) {
-    /** TODO: permission check */
-    console_putc(
-            args->arg1 & 0xff,
-            CONSOLE_DEFAULT_COLOR);
-    syscall_args_set_return(args, 0);
-}
-
 static void sys_puts(jinue_syscall_args_t *args) {
     /** TODO: permission check, sanity check on length */
     console_printn(
@@ -329,9 +321,6 @@ void dispatch_syscall(trapframe_t *trapframe) {
     else if(function < SYSCALL_USER_BASE) {
         /* microkernel system calls */
         switch(function) {
-        case SYSCALL_FUNC_PUTC:
-            sys_putc(args);
-            break;
         case SYSCALL_FUNC_PUTS:
             sys_puts(args);
             break;

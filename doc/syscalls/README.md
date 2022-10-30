@@ -7,7 +7,6 @@
 | Number  | Name                                    | Description                          |
 |---------|-----------------------------------------|--------------------------------------|
 | 0       | -                                       | Reserved                             |
-| 2       | [PUTC](putc.md)                         | Write Character to Console           |
 | 3       | [PUTS](puts.md)                         | Write String to Console              |
 | 4       | [CREATE_THREAD](create-thread.md)       | Create a thread                      |
 | 5       | [YIELD_THREAD](yield-thread.md)         | Yield the Current Thread             |
