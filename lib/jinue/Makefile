@@ -30,38 +30,14 @@
 jinue_root = ../..
 include $(jinue_root)/header.mk
 
-sources.c 		= \
-	ipc.c \
-	logging.c \
-	memory.c \
-	printk.c \
-	syscall.c \
-	console.c
-sources.nasm     = stubs.asm
-
-target.user      = libjinue.a
-target.proc      = libjinue-proc.a
-target.kernel    = libjinue-kernel.a
-
-targets          = $(target.user) $(target.kernel) $(target.proc)
-
-objects.user     = ipc.o memory.o stubs.o syscall.o
-objects.proc     = logging.o printk.o console.o
-objects.kernel   = printk.o
+sources.c 		= ipc.c logging.c memory.c syscall.c
+sources.nasm	= stubs.asm
+target      	= libjinue.a
 
 include $(common)
 
-.PHONY: all-kernel
-all-kernel: $(target.kernel)
-
-.PHONY: all-proc
-all-proc: $(target.user) $(target.proc)
-
-$(target.user): $(objects.user)
-
-$(target.proc): $(objects.proc)
-
-$(target.kernel): $(objects.kernel)
+$(target): $(objects)
 
 %.a:
 	ar rcs $@ $^
+

@@ -40,19 +40,19 @@ target			 = $(proc)-stripped
 # in this regard on different machines with different versions of the
 # linker. By explicitly forcing _start as an undefined symbol, we
 # ensure the linker links the startup code.
-LDFLAGS         += -Wl,-u,_start -static-libgcc -m32 -march=i686
-LDLIBS		= -lgcc
+LDFLAGS			+= -Wl,-u,_start -static-libgcc -m32 -march=i686
+LDLIBS			 = -lgcc
 
 unclean.extra    = $(proc)
 
 include $(common)
 
-$(libjinue)/libjinue.a $(libjinue)/libjinue-proc.a: FORCE
+$(libjinue)/libjinue.a: FORCE
 	$(MAKE) -C $(libjinue)
 	
 $(libc)/libc.a: FORCE
 	$(MAKE) -C $(libc)
 
-$(proc): $(objects) $(libjinue)/libjinue.a $(libjinue)/libjinue-proc.a $(libc)/libc.a
+$(proc): $(objects) $(libjinue)/libjinue.a $(libc)/libc.a
 
 $(target): $(proc)
