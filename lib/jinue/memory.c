@@ -36,13 +36,13 @@
 const char *jinue_phys_mem_type_description(uint32_t type) {
     switch(type) {
 
-    case E820_RAM:
+    case JINUE_E820_RAM:
         return "Available";
 
-    case E820_RESERVED:
+    case JINUE_E820_RESERVED:
         return "Unavailable/Reserved";
 
-    case E820_ACPI:
+    case JINUE_E820_ACPI:
         return "Unavailable/ACPI";
 
     default:
@@ -53,7 +53,7 @@ const char *jinue_phys_mem_type_description(uint32_t type) {
 int jinue_get_user_memory(jinue_mem_map_t *buffer, size_t buffer_size, int *perrno) {
     jinue_syscall_args_t args;
 
-    args.arg0 = SYSCALL_FUNC_GET_USER_MEMORY;
+    args.arg0 = JINUE_SYS_GET_USER_MEMORY;
     args.arg1 = (uintptr_t)buffer;
     args.arg2 = buffer_size;
     args.arg3 = 0;
