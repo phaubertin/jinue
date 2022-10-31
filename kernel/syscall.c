@@ -76,8 +76,7 @@ static void sys_puts(jinue_syscall_args_t *args) {
     const char *message = (const char *)args->arg2;
     size_t length       = args->arg3;
 
-    /* TODO this should be a constant */
-    if(length > 120) {
+    if(length > JINUE_PUTS_MAX_LENGTH) {
         syscall_args_set_error(args, JINUE_EINVAL);
         return;
     }
@@ -86,13 +85,13 @@ static void sys_puts(jinue_syscall_args_t *args) {
 
     /* TODO move this into VGA code */
     switch(loglevel) {
-    case 'I':
+    case JINUE_PUTS_LOGLEVEL_INFO:
         colour = VGA_COLOR_BRIGHTGREEN;
         break;
-    case 'W':
+    case JINUE_PUTS_LOGLEVEL_WARNING:
         colour = VGA_COLOR_YELLOW;
         break;
-    case 'E':
+    case JINUE_PUTS_LOGLEVEL_ERROR:
         colour = VGA_COLOR_RED;
         break;
     default:

@@ -35,6 +35,7 @@
 /** interrupt vector for system call software interrupt */
 #define JINUE_SYSCALL_IRQ               0x80
 
+
 /** send a fixed-length string to in-kernel console driver */
 #define JINUE_SYS_PUTS                  3
 
@@ -68,6 +69,7 @@
 /** start of function numbers for user space messages */
 #define JINUE_SYS_USER_BASE             4096
 
+
 /** slow/safe interrupt-based system call implementation */
 #define JINUE_SYSCALL_IMPL_INTERRUPT    0
 
@@ -79,5 +81,18 @@
 
 /** last system call implementation index */
 #define JINUE_SYSCALL_IMPL_LAST         2
+
+
+/** maximum string length for the PUTS system call */
+#define JINUE_PUTS_MAX_LENGTH           120
+
+/** log level "info" for the PUTS system call */
+#define JINUE_PUTS_LOGLEVEL_INFO        'I'
+
+/** log level "warning" for the PUTS system call */
+#define JINUE_PUTS_LOGLEVEL_WARNING     'W'
+
+/** log level "error" for the PUTS system call */
+#define JINUE_PUTS_LOGLEVEL_ERROR       'E'
 
 #endif

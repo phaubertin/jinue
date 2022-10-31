@@ -35,8 +35,7 @@
 #include <string.h>
 
 static void log_message(int loglevel, const char *restrict format, va_list args) {
-    /* TODO figure out the right size */
-    char buffer[120];
+    char buffer[JINUE_PUTS_MAX_LENGTH + 1];
 
     /* TODO (maybe?) append (...) when the string is cropped */
     vsnprintf(buffer, sizeof(buffer), format, args);
@@ -55,15 +54,15 @@ static void log_message(int loglevel, const char *restrict format, va_list args)
 }
 
 void jinue_vinfo(const char *restrict format, va_list args) {
-    log_message('I', format, args);
+    log_message(JINUE_PUTS_LOGLEVEL_INFO, format, args);
 }
 
 void jinue_vwarning(const char *restrict format, va_list args) {
-    log_message('W', format, args);
+    log_message(JINUE_PUTS_LOGLEVEL_WARNING, format, args);
 }
 
 void jinue_verror(const char *restrict format, va_list args) {
-    log_message('E', format, args);
+    log_message(JINUE_PUTS_LOGLEVEL_ERROR, format, args);
 }
 
 void jinue_info(const char *restrict format, ...) {
