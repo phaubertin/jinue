@@ -52,7 +52,7 @@ intptr_t jinue_send(
 intptr_t jinue_receive(int fd, const jinue_message_t *message, int *perrno){
     jinue_syscall_args_t args;
 
-    args.arg0 = SYSCALL_FUNC_RECEIVE;
+    args.arg0 = JINUE_SYS_RECEIVE;
     args.arg1 = (uintptr_t)fd;
     args.arg2 = (uintptr_t)message;
     args.arg3 = 0;
@@ -63,7 +63,7 @@ intptr_t jinue_receive(int fd, const jinue_message_t *message, int *perrno){
 intptr_t jinue_reply(const jinue_message_t *message, int *perrno) {
     jinue_syscall_args_t args;
 
-    args.arg0 = SYSCALL_FUNC_REPLY;
+    args.arg0 = JINUE_SYS_REPLY;
     args.arg1 = 0;
     args.arg2 = (uintptr_t)message;
     args.arg3 = 0;
@@ -74,7 +74,7 @@ intptr_t jinue_reply(const jinue_message_t *message, int *perrno) {
 int jinue_create_ipc(int flags, int *perrno) {
     jinue_syscall_args_t args;
 
-    args.arg0 = SYSCALL_FUNC_CREATE_IPC;
+    args.arg0 = JINUE_SYS_CREATE_IPC;
     args.arg1 = (uintptr_t)flags;
     args.arg2 = 0;
     args.arg3 = 0;

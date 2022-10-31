@@ -343,37 +343,37 @@ void dispatch_syscall(trapframe_t *trapframe) {
          * the call failed. */
         syscall_args_set_error(args, JINUE_EINVAL);
     }
-    else if(function < SYSCALL_USER_BASE) {
+    else if(function < JINUE_SYS_USER_BASE) {
         /* microkernel system calls */
         switch(function) {
-        case SYSCALL_FUNC_PUTS:
+        case JINUE_SYS_PUTS:
             sys_puts(args);
             break;
-        case SYSCALL_FUNC_CREATE_THREAD:
+        case JINUE_SYS_CREATE_THREAD:
             sys_create_thread(args);
             break;
-        case SYSCALL_FUNC_YIELD_THREAD:
+        case JINUE_SYS_YIELD_THREAD:
             sys_yield_thread(args);
             break;
-        case SYSCALL_FUNC_SET_THREAD_LOCAL:
+        case JINUE_SYS_SET_THREAD_LOCAL:
             sys_set_thread_local(args);
             break;
-        case SYSCALL_FUNC_GET_THREAD_LOCAL:
+        case JINUE_SYS_GET_THREAD_LOCAL:
             sys_get_thread_local(args);
             break;
-        case SYSCALL_FUNC_GET_USER_MEMORY:
+        case JINUE_SYS_GET_USER_MEMORY:
             sys_get_user_memory(args);
             break;
-        case SYSCALL_FUNC_CREATE_IPC:
+        case JINUE_SYS_CREATE_IPC:
             sys_create_ipc(args);
             break;
-        case SYSCALL_FUNC_RECEIVE:
+        case JINUE_SYS_RECEIVE:
             sys_receive(args);
             break;
-        case SYSCALL_FUNC_REPLY:
+        case JINUE_SYS_REPLY:
             sys_reply(args);
             break;
-        case SYSCALL_FUNC_EXIT_THREAD:
+        case JINUE_SYS_EXIT_THREAD:
             sys_exit_thread(args);
             break;
         default:

@@ -79,7 +79,7 @@ static bool range_is_in_available_memory(
         entry_range.start   = entry->addr;
         entry_range.end     = entry->addr + entry->size;
 
-        if(entry->type == E820_RAM) {
+        if(entry->type == JINUE_E820_RAM) {
             if(memory_range_is_within(range, &entry_range)) {
                 retval = true;
             }
@@ -174,7 +174,7 @@ static uint64_t memory_find_top(const boot_info_t *boot_info) {
         const e820_t *entry = &boot_info->e820_map[idx];
 
         /* Only consider available memory entries. */
-        if(entry->type != E820_RAM) {
+        if(entry->type != JINUE_E820_RAM) {
             continue;
         }
 

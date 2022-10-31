@@ -29,7 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/console.h>
+#include <console.h>
 #include <printk.h>
 #include <stdarg.h>
 #include <stddef.h>

@@ -32,55 +32,52 @@
 #ifndef _JINUE_SHARED_ASM_SYSCALL_H
 #define _JINUE_SHARED_ASM_SYSCALL_H
 
-/* TODO definitions in this file need a JINUE_ prefix */
-
 /** interrupt vector for system call software interrupt */
-#define SYSCALL_IRQ                     0x80
+#define JINUE_SYSCALL_IRQ               0x80
 
 /** send a fixed-length string to in-kernel console driver */
-#define SYSCALL_FUNC_PUTS               3
+#define JINUE_SYS_PUTS                  3
 
 /** create a new thread */
-#define SYSCALL_FUNC_CREATE_THREAD      4
+#define JINUE_SYS_CREATE_THREAD         4
 
 /** relinquish the CPU and allow the next thread to run */
-#define SYSCALL_FUNC_YIELD_THREAD       5
+#define JINUE_SYS_YIELD_THREAD          5
 
 /** set address and size of thread local storage for current thread */
-#define SYSCALL_FUNC_SET_THREAD_LOCAL   6
+#define JINUE_SYS_SET_THREAD_LOCAL      6
 
 /** get address of thread local storage for current thread */
-#define SYSCALL_FUNC_GET_THREAD_LOCAL   7
+#define JINUE_SYS_GET_THREAD_LOCAL      7
 
 /** get free memory block list for management by user space */
-#define SYSCALL_FUNC_GET_USER_MEMORY    8
+#define JINUE_SYS_GET_USER_MEMORY       8
 
 /** create an IPC object to receive messages */
-#define SYSCALL_FUNC_CREATE_IPC         9
+#define JINUE_SYS_CREATE_IPC            9
 
 /** receive a message on an IPC object */
-#define SYSCALL_FUNC_RECEIVE            10
+#define JINUE_SYS_RECEIVE               10
 
 /** reply to current message */
-#define SYSCALL_FUNC_REPLY              11
+#define JINUE_SYS_REPLY                 11
 
 /** destroy the current thread */
-#define SYSCALL_FUNC_EXIT_THREAD        12
-
+#define JINUE_SYS_EXIT_THREAD           12
 
 /** start of function numbers for user space messages */
-#define SYSCALL_USER_BASE               4096
+#define JINUE_SYS_USER_BASE             4096
 
 /** slow/safe interrupt-based system call implementation */
-#define SYSCALL_IMPL_INTR               0
+#define JINUE_SYSCALL_IMPL_INTERRUPT    0
 
 /** AMD's fast system call implementation (SYSCALL/SYSLEAVE) */
-#define SYSCALL_IMPL_FAST_AMD           1
+#define JINUE_SYSCALL_IMPL_FAST_AMD     1
 
 /** Intel's fast system call implementation (SYSENTER/SYSEXIT) */
-#define SYSCALL_IMPL_FAST_INTEL         2
+#define JINUE_SYSCALL_IMPL_FAST_INTEL   2
 
 /** last system call implementation index */
-#define SYSCALL_IMPL_LAST               2
+#define JINUE_SYSCALL_IMPL_LAST         2
 
 #endif

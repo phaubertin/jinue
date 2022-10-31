@@ -47,7 +47,7 @@
 
 #define CALL_BUFFER_SIZE    512
 
-#define MSG_FUNC_TEST       (SYSCALL_USER_BASE + 42)
+#define MSG_FUNC_TEST       (JINUE_SYS_USER_BASE + 42)
 
 static int errno;
 
@@ -94,10 +94,10 @@ static void dump_phys_memory_map(const jinue_mem_map_t *map) {
     for(int idx = 0; idx < map->num_entries; ++idx) {
         const jinue_mem_entry_t *entry = &map->entry[idx];
 
-        if(entry->type == E820_RAM || !ram_only) {
+        if(entry->type == JINUE_E820_RAM || !ram_only) {
             jinue_info(
                     "  %c [%016" PRIx64 "-%016" PRIx64 "] %s",
-                    (entry->type==E820_RAM)?'*':' ',
+                    (entry->type==JINUE_E820_RAM)?'*':' ',
                     entry->addr,
                     entry->addr + entry->size - 1,
                     jinue_phys_mem_type_description(entry->type)
@@ -161,12 +161,12 @@ static const char *auxv_type_name(int type) {
 
 static const char *syscall_implementation_name(int implementation) {
     const char *names[] = {
-            [SYSCALL_IMPL_INTR]         = "interrupt",
-            [SYSCALL_IMPL_FAST_AMD]     = "SYSCALL/SYSRET (fast AMD)",
-            [SYSCALL_IMPL_FAST_INTEL]   = "SYSENTER/SYSEXIT (fast Intel)"
+            [JINUE_SYSCALL_IMPL_INTERRUPT]         = "interrupt",
+            [JINUE_SYSCALL_IMPL_FAST_AMD]     = "SYSCALL/SYSRET (fast AMD)",
+            [JINUE_SYSCALL_IMPL_FAST_INTEL]   = "SYSENTER/SYSEXIT (fast Intel)"
     };
 
-    if(implementation < 0 || implementation > SYSCALL_IMPL_LAST) {
+    if(implementation < 0 || implementation > JINUE_SYSCALL_IMPL_LAST) {
         return "?";
     }
 
@@ -301,7 +301,7 @@ static void run_ipc_test(void) {
     jinue_info("Main thread received message:");
     jinue_info("  data:             \"%s\"", recv_data);
     jinue_info("  size:             %" PRIuPTR, ret);
-    jinue_info("  function:         %u (user base + %u)", function, function - SYSCALL_USER_BASE);
+    jinue_info("  function:         %u (user base + %u)", function, function - JINUE_SYS_USER_BASE);
     jinue_info("  cookie:           %" PRIuPTR, message.recv_cookie);
     jinue_info("  reply max. size:  %" PRIuPTR, message.reply_max_size);
 

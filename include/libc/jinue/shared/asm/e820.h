@@ -32,12 +32,10 @@
 #ifndef _JINUE_SHARED_ASM_E820_H
 #define _JINUE_SHARED_ASM_E820_H
 
-#define E820_RAM            1
+#define JINUE_E820_RAM          1
 
-#define E820_RESERVED       2
+#define JINUE_E820_RESERVED     2
 
-#define E820_ACPI           3
-
-#define E820_SMAP           0x534d4150
+#define JINUE_E820_ACPI         3
 
 #endif
