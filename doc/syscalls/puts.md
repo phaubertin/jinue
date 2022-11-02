@@ -14,9 +14,10 @@ The value in `arg1` identifies the log level:
 * The ASCII character `W` for level "warning".
 * The ASCII character `E` for level "error".
 
-The pointer to the string is set in `arg2`.
+The pointer to the string is set in `arg2`. The length of the string, which must
+be at most 120 characters, is set in `arg3`.
 
-The length of the string, which must be at most 120 characters, is set in `arg3`.
+The string does not need to be null terminated or end with a newline character.
 
 ```
     +----------------------------------------------------------------+
