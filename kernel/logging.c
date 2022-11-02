@@ -53,17 +53,17 @@ static void log_message(int loglevel, const char *restrict format, va_list args)
     static char message[JINUE_PUTS_MAX_LENGTH + 1];
 
     size_t length = vsnprintf(message, sizeof(message), format, args);
-    logging_puts(loglevel, message, length);
+    logging_add_message(loglevel, message, length);
 }
 
-void logging_puts(int loglevel, const char *message, size_t n) {
+void logging_add_message(int loglevel, const char *message, size_t n) {
     const cmdline_opts_t *cmdline_opts = cmdline_get_options();
 
     if(cmdline_opts->vga_enable) {
-        vga_puts(loglevel, message, n);
+        vga_printn(loglevel, message, n);
     }
     if(cmdline_opts->serial_enable) {
-        serial_puts(cmdline_opts->serial_ioport, message, n);
+        serial_printn(cmdline_opts->serial_ioport, message, n);
     }
 }
 

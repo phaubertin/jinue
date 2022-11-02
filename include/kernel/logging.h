@@ -38,7 +38,7 @@
 
 void logging_init(const cmdline_opts_t *cmdline_opts);
 
-void logging_puts(int loglevel, const char *message, size_t n);
+void logging_add_message(int loglevel, const char *message, size_t n);
 
 void info(const char *restrict format, ...);
 

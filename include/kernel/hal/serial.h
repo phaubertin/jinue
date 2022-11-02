@@ -37,9 +37,7 @@
 
 void serial_init(int base_ioport, unsigned int baud_rate);
 
-void serial_puts(int base_ioport, const char *message, size_t n);
-
-void serial_printn(int base_ioport, const char *message, unsigned int n);
+void serial_printn(int base_ioport, const char *message, size_t n);
 
 void serial_putc(int base_ioport, char c);
 

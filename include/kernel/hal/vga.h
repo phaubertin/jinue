@@ -43,11 +43,7 @@ void vga_set_base_addr(void *base_addr);
 
 void vga_clear(void);
 
-void vga_puts(int loglevel, const char *message, size_t n);
-
-void vga_printn(const char *message, unsigned int n, int colour);
-
-void vga_putc(char c, int colour);
+void vga_printn(int loglevel, const char *message, size_t n);
 
 void vga_scroll(void);
 

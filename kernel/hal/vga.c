@@ -121,7 +121,7 @@ static int get_colour(int loglevel) {
     }
 }
 
-void vga_puts(int loglevel, const char *message, size_t n) {
+void vga_printn(int loglevel, const char *message, size_t n) {
     int colour = get_colour(loglevel);
 
     unsigned short int pos  = vga_get_cursor_pos();
@@ -132,26 +132,6 @@ void vga_puts(int loglevel, const char *message, size_t n) {
     
     pos = vga_raw_putc('\n', pos, colour);
 
-    vga_set_cursor_pos(pos);
-}
-
-void vga_printn(const char *message, unsigned int n, int colour) {
-    vga_pos_t pos = vga_get_cursor_pos();
-    
-    while(n) {
-        char c = *(message++);
-        pos = vga_raw_putc(c, pos, colour);
-        --n;
-    }
-    
-    vga_set_cursor_pos(pos);
-}
-
-void vga_putc(char c, int colour) {
-    vga_pos_t pos = vga_get_cursor_pos();
-
-    pos = vga_raw_putc(c, pos, colour);
-    
     vga_set_cursor_pos(pos);
 }
 

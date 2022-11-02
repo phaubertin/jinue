@@ -89,7 +89,7 @@ static void sys_puts(jinue_syscall_args_t *args) {
         return;
     }
 
-    logging_puts(loglevel, message, length);
+    logging_add_message(loglevel, message, length);
     syscall_args_set_return(args, 0);
 }
 
