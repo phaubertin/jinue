@@ -32,16 +32,17 @@
 #include <jinue/shared/types.h>
 #include <hal/abi.h>
 #include <hal/boot.h>
-#include <elf.h>
-#include <stddef.h>
 #include <debug.h>
-#include <printk.h>
+#include <elf.h>
+#include <inttypes.h>
+#include <logging.h>
+#include <stddef.h>
 
-/** Dump the call stack to console */
+/** Dump the call stack to kernel logs */
 void dump_call_stack(void) {
     const boot_info_t *boot_info = get_boot_info();
 
-    printk("Call stack dump:\n");
+    info("Call stack dump:");
 
     for(addr_t fptr = get_fpointer(); fptr != NULL; fptr = get_caller_fpointer(fptr)) {
         addr_t return_addr = get_ret_addr(fptr);
@@ -60,7 +61,7 @@ void dump_call_stack(void) {
                 (Elf32_Addr)return_addr);
 
         if(symbol == NULL) {
-            printk("\t0x%x (unknown)\n", return_addr);
+            info("  0x%x (unknown)", return_addr);
             continue;
         }
 
@@ -70,8 +71,7 @@ void dump_call_stack(void) {
             name = "[unknown]";
         }
 
-        printk(
-                "\t0x%x (%s+%u)\n",
+        info(   "  %#p (%s+%" PRIuPTR ")",
                 return_addr,
                 name,
                 return_addr - symbol->st_value);

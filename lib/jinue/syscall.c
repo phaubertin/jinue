@@ -36,7 +36,7 @@
 #include "stubs.h"
 
 static jinue_syscall_stub_t syscall_stubs[] = {
-        [JINUE_SYSCALL_IMPL_INTERRUPT]         = jinue_syscall_intr,
+        [JINUE_SYSCALL_IMPL_INTERRUPT]    = jinue_syscall_intr,
         [JINUE_SYSCALL_IMPL_FAST_AMD]     = jinue_syscall_fast_amd,
         [JINUE_SYSCALL_IMPL_FAST_INTEL]   = jinue_syscall_fast_intel
 };
@@ -122,13 +122,13 @@ void jinue_exit_thread(void) {
     jinue_syscall(&args);
 }
 
-void jinue_puts(const char *str, size_t n) {
+int jinue_puts(int loglevel, const char *str, size_t n, int *perrno) {
     jinue_syscall_args_t args;
 
     args.arg0 = JINUE_SYS_PUTS;
-    args.arg1 = (uintptr_t)str;
-    args.arg2 = n;
-    args.arg3 = 0;
+    args.arg1 = loglevel;
+    args.arg2 = (uintptr_t)str;
+    args.arg3 = n;
 
-    jinue_syscall(&args);
+    return jinue_syscall_with_usual_convention(&args, perrno);
 }

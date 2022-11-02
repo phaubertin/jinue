@@ -32,9 +32,8 @@
 #include <hal/serial.h>
 #include <ctype.h>
 #include <cmdline.h>
-#include <console.h>
+#include <logging.h>
 #include <panic.h>
-#include <printk.h>
 #include <string.h>
 
 #define CMDLINE_ERROR_TOO_LONG                  (1<<0)
@@ -937,60 +936,60 @@ const cmdline_opts_t *cmdline_get_options(void) {
  * Report command line parsing errors
  *
  * Call this function after parsing the command line, i.e. after calling
- * cmdline_parse_options(), once the console (i.e. logging) has been initialized.
- * It logs a message for any parsing error that occurred and then panics if any
- * parsing error was fatal.
+ * cmdline_parse_options(), once logging has been initialized. It logs a message
+ * for any parsing error that occurred and then panics if any parsing error was
+ * fatal.
  *
  * This two-step process is needed because some command line arguments influence
  * how logging is performed (enable VGA and/or serial logging, baud rate, etc.).
- * For this reason, we want to first parse the command line, then initialize the
- * console (taking command line options into account), and then report parsing
+ * For this reason, we want to first parse the command line, then initialize
+ * logging (taking command line options into account), and then report parsing
  * errors.
  *
  * */
 void cmdline_report_parsing_errors(void) {
     if(cmdline_errors != 0) {
-        printk("There are issues with the kernel command line:\n");
+        warning("There are issues with the kernel command line:");
     }
 
     if(cmdline_errors & CMDLINE_ERROR_TOO_LONG) {
-        printk("    Kernel command line is too long\n");
+        warning("  Kernel command line is too long");
     }
 
     if(cmdline_errors & CMDLINE_ERROR_IS_NULL) {
-        printk("    No kernel command line/command line is NULL\n");
+        warning("  No kernel command line/command line is NULL");
     }
 
     if(cmdline_errors & CMDLINE_ERROR_INVALID_PAE) {
-        printk("    Invalid value for argument 'pae'\n");
+        warning("  Invalid value for argument 'pae'");
     }
 
     if(cmdline_errors & CMDLINE_ERROR_INVALID_SERIAL_ENABLE) {
-        printk("    Invalid value for argument 'serial_enable'\n");
+        warning("  Invalid value for argument 'serial_enable'");
     }
 
     if(cmdline_errors & CMDLINE_ERROR_INVALID_SERIAL_BAUD_RATE) {
-        printk("    Invalid value for argument 'serial_baud_rate'\n");
+        warning("  Invalid value for argument 'serial_baud_rate'");
     }
 
     if(cmdline_errors & CMDLINE_ERROR_INVALID_SERIAL_IOPORT) {
-        printk("    Invalid value for argument 'serial_ioport'\n");
+        warning("  Invalid value for argument 'serial_ioport'");
     }
 
     if(cmdline_errors & CMDLINE_ERROR_INVALID_SERIAL_DEV) {
-        printk("    Invalid value for argument 'serial_dev'\n");
+        warning("  Invalid value for argument 'serial_dev'");
     }
 
     if(cmdline_errors & CMDLINE_ERROR_INVALID_VGA_ENABLE) {
-        printk("    Invalid value for argument 'vga_enable'\n");
+        warning("  Invalid value for argument 'vga_enable'");
     }
 
     if(cmdline_errors & CMDLINE_ERROR_JUNK_AFTER_ENDQUOTE) {
-        printk("    Invalid character after closing quote, separator (e.g. space) expected\n");
+        warning("  Invalid character after closing quote, separator (e.g. space) expected");
     }
 
     if(cmdline_errors & CMDLINE_ERROR_UNCLOSED_QUOTES) {
-        printk("    Unclosed quotes at end of input. Is closing quote missing?\n");
+        warning("  Unclosed quotes at end of input. Is closing quote missing?");
     }
 
     if(cmdline_errors != 0) {

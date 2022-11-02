@@ -35,11 +35,10 @@
 #include <hal/memory.h>
 #include <hal/thread.h>
 #include <hal/trap.h>
-#include <console.h>
 #include <ipc.h>
 #include <limits.h>
+#include <logging.h>
 #include <object.h>
-#include <printk.h>
 #include <process.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -71,12 +70,26 @@ static void sys_nosys(jinue_syscall_args_t *args) {
 }
 
 static void sys_puts(jinue_syscall_args_t *args) {
-    /** TODO: permission check, sanity check on length */
-    console_printn(
-            (const char *)args->arg1,
-            args->arg2,
-            CONSOLE_DEFAULT_COLOR);
-    console_putc('\n', CONSOLE_DEFAULT_COLOR);
+    int loglevel        = args->arg1;
+    const char *message = (const char *)args->arg2;
+    size_t length       = args->arg3;
+
+    if(length > JINUE_PUTS_MAX_LENGTH) {
+        syscall_args_set_error(args, JINUE_EINVAL);
+        return;
+    }
+
+    switch(loglevel) {
+    case JINUE_PUTS_LOGLEVEL_INFO:
+    case JINUE_PUTS_LOGLEVEL_WARNING:
+    case JINUE_PUTS_LOGLEVEL_ERROR:
+        break;
+    default:
+        syscall_args_set_error(args, JINUE_EINVAL);
+        return;
+    }
+
+    logging_add_message(loglevel, message, length);
     syscall_args_set_return(args, 0);
 }
 

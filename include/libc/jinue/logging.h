@@ -36,6 +36,14 @@
 
 void jinue_vinfo(const char *restrict format, va_list arg);
 
+void jinue_vwarning(const char *restrict format, va_list arg);
+
+void jinue_verror(const char *restrict format, va_list arg);
+
 void jinue_info(const char *restrict format, ...);
+
+void jinue_warning(const char *restrict format, ...);
+
+void jinue_error(const char *restrict format, ...);
 
 #endif

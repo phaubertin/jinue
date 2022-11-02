@@ -63,16 +63,16 @@ bool elf_check(Elf32_Ehdr *elf);
 const Elf32_Phdr *elf_executable_program_header(const Elf32_Ehdr *elf);
 
 void elf_load(
-        elf_info_t      *info,
+        elf_info_t      *elf_info,
         Elf32_Ehdr      *elf,
         const char      *argv0,
         const char      *cmdline,
         addr_space_t    *addr_space,
         boot_alloc_t    *boot_alloc);
 
-void elf_allocate_stack(elf_info_t *info, boot_alloc_t *boot_alloc);
+void elf_allocate_stack(elf_info_t *elf_info, boot_alloc_t *boot_alloc);
 
-void elf_initialize_stack(elf_info_t *info, const char *cmdline);
+void elf_initialize_stack(elf_info_t *elf_info, const char *cmdline);
 
 const char *elf_symbol_name(
         const Elf32_Ehdr    *elf_header,

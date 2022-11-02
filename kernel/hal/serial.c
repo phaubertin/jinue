@@ -27,12 +27,12 @@ void serial_init(int base_ioport, unsigned int baud_rate) {
     outb(base_ioport + SERIAL_REG_MODEM_CTRL,   0x03);
 }
 
-void serial_printn(int base_ioport, const char *message, unsigned int n) {
-    int idx;
-
-    for(idx = 0; idx < n; ++idx) {
+void serial_printn(int base_ioport, const char *message, size_t n) {
+    for(int idx = 0; idx < n && message[idx] != '\0'; ++idx) {
         serial_putc(base_ioport, message[idx]);
     }
+
+    serial_putc(base_ioport, '\n');
 }
 
 void serial_putc(int base_ioport, char c) {

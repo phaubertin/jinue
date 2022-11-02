@@ -29,6 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <jinue/shared/syscall.h>
 #include <jinue/shared/vm.h>
 #include <ascii.h>
 #include <hal/io.h>
@@ -107,35 +108,30 @@ void vga_set_cursor_pos(vga_pos_t pos) {
     outb(VGA_CRTC_DATA, l);    
 }
 
-
-void vga_print(const char *message, int colour) {
-    unsigned short int pos = vga_get_cursor_pos();
-    char c;
-    
-    while( (c = *(message++)) ) {
-        pos = vga_raw_putc(c, pos, colour);
+static int get_colour(int loglevel) {
+    switch(loglevel) {
+    case JINUE_PUTS_LOGLEVEL_INFO:
+        return VGA_COLOR_BRIGHTGREEN;
+    case JINUE_PUTS_LOGLEVEL_WARNING:
+        return VGA_COLOR_YELLOW;
+    case JINUE_PUTS_LOGLEVEL_ERROR:
+        return VGA_COLOR_RED;
+    default:
+        return VGA_COLOR_GRAY;
     }
-    
-    vga_set_cursor_pos(pos);
 }
 
-void vga_printn(const char *message, unsigned int n, int colour) {
-    vga_pos_t pos = vga_get_cursor_pos();
-    
-    while(n) {
-        char c = *(message++);
-        pos = vga_raw_putc(c, pos, colour);
-        --n;
+void vga_printn(int loglevel, const char *message, size_t n) {
+    int colour = get_colour(loglevel);
+
+    unsigned short int pos  = vga_get_cursor_pos();
+
+    for(int idx = 0; idx < n && message[idx] != '\0'; ++idx) {
+        pos = vga_raw_putc(message[idx], pos, colour);
     }
     
-    vga_set_cursor_pos(pos);
-}
+    pos = vga_raw_putc('\n', pos, colour);
 
-void vga_putc(char c, int colour) {
-    vga_pos_t pos = vga_get_cursor_pos();
-
-    pos = vga_raw_putc(c, pos, colour);
-    
     vga_set_cursor_pos(pos);
 }
 

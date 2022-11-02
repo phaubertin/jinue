@@ -33,8 +33,9 @@
 #include <hal/io.h>
 #include <hal/pic8259.h>
 #include <hal/x86.h>
+#include <inttypes.h>
+#include <logging.h>
 #include <panic.h>
-#include <printk.h>
 #include <syscall.h>
 #include <types.h>
 
@@ -46,7 +47,12 @@ void dispatch_interrupt(trapframe_t *trapframe) {
     
     /* exceptions */
     if(ivt <= IDT_LAST_EXCEPTION) {
-        printk("EXCEPT: %u cr2=0x%x errcode=0x%x eip=0x%x\n", ivt, get_cr2(), errcode, eip);
+        info(
+                "EXCEPT: %u cr2=%#" PRIx32 " errcode=%#" PRIx32 " eip=%#" PRIxPTR,
+                ivt,
+                get_cr2(),
+                errcode,
+                eip);
         
         /* never returns */
         panic("caught exception");
@@ -58,10 +64,10 @@ void dispatch_interrupt(trapframe_t *trapframe) {
     }
     else if(ivt >= IDT_PIC8259_BASE && ivt < IDT_PIC8259_BASE + PIC8259_IRQ_COUNT) {
     	int irq = ivt - IDT_PIC8259_BASE;
-        printk("IRQ: %u (vector %u)\n", irq, ivt);
+        info("IRQ: %i (vector %u)", irq, ivt);
         pic8259_ack(irq);
     }
     else {
-    	printk("INTR: vector %u\n", ivt);
+    	info("INTR: vector %u", ivt);
     }
 }

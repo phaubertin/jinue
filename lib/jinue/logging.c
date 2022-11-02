@@ -34,13 +34,35 @@
 #include <stdio.h>
 #include <string.h>
 
-void jinue_vinfo(const char *restrict format, va_list args) {
-    /* TODO figure out the right size */
-    char buffer[120];
+static void log_message(int loglevel, const char *restrict format, va_list args) {
+    char buffer[JINUE_PUTS_MAX_LENGTH + 1];
 
+    /* TODO (maybe?) append (...) when the string is cropped */
     vsnprintf(buffer, sizeof(buffer), format, args);
 
-    jinue_puts(buffer, strlen(buffer));
+    /* There are two situations where the PUTS system call can fail:
+     *
+     * - When the string is too long. This function crops the string to ensure
+     *   this doesn't happen.
+     * - When the value of the loglevel argument is not recognized. This
+     *   function is static and is only called by utility functions that pass
+     *   a specific log level.
+     *
+     * For these reasons, this function won't fail, so we can pass NULL as
+     * the error number pointer and not return anything. */
+    jinue_puts(loglevel, buffer, strlen(buffer), NULL);
+}
+
+void jinue_vinfo(const char *restrict format, va_list args) {
+    log_message(JINUE_PUTS_LOGLEVEL_INFO, format, args);
+}
+
+void jinue_vwarning(const char *restrict format, va_list args) {
+    log_message(JINUE_PUTS_LOGLEVEL_WARNING, format, args);
+}
+
+void jinue_verror(const char *restrict format, va_list args) {
+    log_message(JINUE_PUTS_LOGLEVEL_ERROR, format, args);
 }
 
 void jinue_info(const char *restrict format, ...) {
@@ -52,3 +74,24 @@ void jinue_info(const char *restrict format, ...) {
 
     va_end(args);
 }
+
+void jinue_warning(const char *restrict format, ...) {
+    va_list args;
+
+    va_start(args, format);
+
+    jinue_vwarning(format, args);
+
+    va_end(args);
+}
+
+void jinue_error(const char *restrict format, ...) {
+    va_list args;
+
+    va_start(args, format);
+
+    jinue_verror(format, args);
+
+    va_end(args);
+}
+

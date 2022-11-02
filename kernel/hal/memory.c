@@ -36,8 +36,9 @@
 #include <hal/vm.h>
 #include <assert.h>
 #include <boot.h>
+#include <inttypes.h>
+#include <logging.h>
 #include <panic.h>
-#include <printk.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -195,7 +196,7 @@ static uint64_t memory_find_top(const boot_info_t *boot_info) {
         }
     }
 
-    printk("Top memory address for kernel is 0x%q\n", memory_top);
+    info("Top memory address for kernel is %#" PRIx64, memory_top);
 
     return memory_top;
 }
