@@ -35,7 +35,8 @@ subdirs			 = hal
 kernel_ldscript	 = $(scripts)/kernel.ld
 build_info_h     = build-info.gen.h
 
-LDFLAGS         += -T $(kernel_ldscript)
+LDFLAGS         += -T $(kernel_ldscript) -static-libgcc -m32 -march=i686
+LDLIBS			 = -lgcc
 
 kernel.hal    	 = hal/kern-hal.o
 c.lib            = $(libc)/libc-kernel.a
@@ -45,14 +46,13 @@ unclean.extra    = kernel $(build_info_h)
 sources.c		 = \
 	boot.c \
 	cmdline.c \
-	console.c \
 	debug.c \
 	elf.c \
 	ipc.c \
 	kmain.c \
+	logging.c \
 	page_alloc.c \
 	panic.c \
-	printk.c \
 	process.c \
 	slab.c \
 	syscall.c \

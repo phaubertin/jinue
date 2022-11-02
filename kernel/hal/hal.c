@@ -45,11 +45,11 @@
 #include <hal/vm.h>
 #include <hal/vm_pae.h>
 #include <hal/x86.h>
-#include <cmdline.h>
 #include <boot.h>
+#include <cmdline.h>
+#include <logging.h>
 #include <panic.h>
 #include <page_alloc.h>
-#include <printk.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <syscall.h>
@@ -105,11 +105,11 @@ static bool maybe_enable_pae(
     }
 
     if(! use_pae) {
-        printk("%kWarning: Physical Address Extension (PAE) not enabled. NX protection disabled.\n", VGA_COLOR_YELLOW);
+        warning("Warning: Physical Address Extension (PAE) not enabled. NX protection disabled.");
         vm_set_no_pae();
     }
     else {
-        printk("Enabling Physical Address Extension (PAE).\n");
+        info("Enabling Physical Address Extension (PAE).");
         vm_pae_enable(boot_alloc, boot_info);
     }
 
@@ -150,11 +150,12 @@ static void remap_text_video_memory(boot_alloc_t *boot_alloc) {
 
     vm_boot_map(mapped, VGA_TEXT_VID_BASE, num_pages);
 
-    printk("Remapping text video memory at 0x%x\n", mapped);
+    info("Remapping text video memory at %#p", mapped);
 
     /* Note: after this call to vga_set_base_addr() until we switch to the new
-     * new address space, VGA output is not possible. Calling printk() will cause
-     * a kernel panic due to a page fault (and the panic handler calls printk()). */
+     * new address space, VGA output is not possible. Attempting it will cause
+     * a kernel panic due to a page fault (and the panic handler itself attempts
+     * to log). */
     vga_set_base_addr(mapped);
 }
 
@@ -169,8 +170,8 @@ static void initialize_page_allocator(boot_alloc_t *boot_alloc) {
         page_free(boot_page_alloc(boot_alloc));
     }
 
-    printk(
-            "%u kilobytes available for allocation by the kernel\n",
+    info(
+            "%u kilobytes available for allocation by the kernel",
             get_page_count() * PAGE_SIZE / (1 * KB));
 }
 
@@ -303,9 +304,9 @@ void hal_init(
     memory_initialize_array(boot_alloc, boot_info);
 
     /* After this, VGA output is not possible until we switch to the
-     * new address space (see the call to vm_switch_addr_space() below). Calling
-     * printk() will cause a kernel panic due to a page fault (and the panic
-     * handler calls printk()). */
+     * new address space (see the call to vm_switch_addr_space() below).
+     * Attempting it will cause a kernel panic due to a page fault (and the
+     * panic handler itself attempts to log). */
     remap_text_video_memory(boot_alloc);
 
     /* switch to new address space */

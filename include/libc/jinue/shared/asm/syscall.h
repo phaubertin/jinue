@@ -36,7 +36,7 @@
 #define JINUE_SYSCALL_IRQ               0x80
 
 
-/** send a fixed-length string to in-kernel console driver */
+/** send a fixed-length string to kernel logger */
 #define JINUE_SYS_PUTS                  3
 
 /** create a new thread */

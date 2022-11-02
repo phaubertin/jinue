@@ -31,17 +31,16 @@
 
 #include <hal/boot.h>
 #include <hal/hal.h>
-#include <hal/vga.h>
 #include <hal/vm.h>
 #include <boot.h>
 #include <cmdline.h>
-#include <console.h>
 #include <elf.h>
 #include <hal/memory.h>
+#include <inttypes.h>
 #include <ipc.h>
 #include <kmain.h>
+#include <logging.h>
 #include <panic.h>
-#include <printk.h>
 #include <process.h>
 #include <stddef.h>
 #include <syscall.h>
@@ -74,7 +73,7 @@ static Elf32_Ehdr *get_userspace_loader_elf_header(const boot_info_t *boot_info)
         panic("user space loader too small to be an ELF binary");
     }
 
-    printk("Found user space loader with size %u bytes.\n", boot_info->proc_size);
+    info("Found user space loader with size %" PRIu32 " bytes.", boot_info->proc_size);
 
     if(! elf_check(boot_info->proc_start)) {
         panic("user space loader ELF binary is invalid");
@@ -99,21 +98,20 @@ void kmain(void) {
      * boot_info_check() logs errors (actually panics) on failure. */
     cmdline_parse_options(boot_info->cmdline);
 
-    /* Now that we parsed the command line options, we can initialize the
-     * console (i.e. logging) properly and say hello. */
+    /* Now that we parsed the command line options, we can initialize logging
+     * properly and say hello. */
     const cmdline_opts_t *cmdline_opts = cmdline_get_options();
-    console_init(cmdline_opts);
+    logging_init(cmdline_opts);
 
-    printk("Jinue microkernel started.\n");
-    printk("Kernel revision " GIT_REVISION " built " BUILD_TIME " on " BUILD_HOST "\n");
-    
-    printk("Kernel command line:\n", boot_info->kernel_size);
-    printk("%s\n", boot_info->cmdline);
-    printk("---\n");
+    info("Jinue microkernel started.");
+    info("Kernel revision " GIT_REVISION " built " BUILD_TIME " on " BUILD_HOST);
+    info("Kernel command line:");
+    info("%s", boot_info->cmdline);
+    info("---");
 
     /* If there were issues parsing the command line, these will be reported
-     * here (i.e. panic), now that the console has been initialized and we can
-     * log things. */
+     * here (i.e. panic), now that logging has been initialized and we can log
+     * things. */
     cmdline_report_parsing_errors();
 
     /* Validate the boot information structure. */
@@ -121,10 +119,13 @@ void kmain(void) {
 
     if(boot_info->ramdisk_start == 0 || boot_info->ramdisk_size == 0) {
         /* TODO once user loader is implemented, this needs to be a kernel panic. */
-        printk("%kWarning: no initial RAM disk loaded.\n", VGA_COLOR_YELLOW);
+        warning("Warning: no initial RAM disk loaded.");
     }
     else {
-        printk("Bootloader has loaded RAM disk with size %u bytes at address %x.\n", boot_info->ramdisk_size, boot_info->ramdisk_start);
+        info(
+            "Bootloader loaded RAM disk with size %" PRIu32 " bytes at address %#" PRIx32 ".",
+            boot_info->ramdisk_size,
+            boot_info->ramdisk_start);
     }
 
     /* Initialize the boot allocator. */
@@ -173,7 +174,7 @@ void kmain(void) {
 
     /* This should be the last thing the kernel prints before passing control
      * to the user space loader. */
-    printk("---\n");
+    info("---");
 
     /* Start first thread */
     thread_start_first();

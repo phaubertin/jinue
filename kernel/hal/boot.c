@@ -32,7 +32,6 @@
 #include <hal/boot.h>
 #include <hal/vm.h>
 #include <panic.h>
-#include <printk.h>
 #include <stddef.h>
 
 /* There is no extern declaration of this global variable in any header file but

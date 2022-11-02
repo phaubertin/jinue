@@ -29,69 +29,70 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/logging.h>
-#include <jinue/syscall.h>
+#include <jinue/shared/syscall.h>
+#include <hal/serial.h>
+#include <hal/vga.h>
+#include <cmdline.h>
+#include <logging.h>
 #include <stdio.h>
-#include <string.h>
+
+void logging_init(const cmdline_opts_t *cmdline_opts) {
+    if(cmdline_opts->vga_enable) {
+        vga_init();
+    }
+    if(cmdline_opts->serial_enable) {
+        serial_init(cmdline_opts->serial_ioport, cmdline_opts->serial_baud_rate);
+    }
+}
 
 static void log_message(int loglevel, const char *restrict format, va_list args) {
-    char buffer[JINUE_PUTS_MAX_LENGTH + 1];
-
-    /* TODO (maybe?) append (...) when the string is cropped */
-    vsnprintf(buffer, sizeof(buffer), format, args);
-
-    /* There are two situations where the PUTS system call can fail:
+    /* TODO implement kernel logs ring buffer and get rid of this buffer
      *
-     * - When the string is too long. This function crops the string to ensure
-     *   this doesn't happen.
-     * - When the value of the loglevel argument is not recognized. This
-     *   function is static and is only called by utility functions that pass
-     *   a specific log level.
-     *
-     * For these reasons, this function won't fail, so we can pass NULL as
-     * the error number pointer and not return anything. */
-    jinue_puts(loglevel, buffer, strlen(buffer), NULL);
+     * This is static so it does not take a big chunk of the thread's stack. The
+     * downside is obviously that this function is not reentrant. */
+    static char message[JINUE_PUTS_MAX_LENGTH + 1];
+
+    size_t length = vsnprintf(message, sizeof(message), format, args);
+    logging_puts(loglevel, message, length);
 }
 
-void jinue_vinfo(const char *restrict format, va_list args) {
+void logging_puts(int loglevel, const char *message, size_t n) {
+    const cmdline_opts_t *cmdline_opts = cmdline_get_options();
+
+    if(cmdline_opts->vga_enable) {
+        vga_puts(loglevel, message, n);
+    }
+    if(cmdline_opts->serial_enable) {
+        serial_puts(cmdline_opts->serial_ioport, message, n);
+    }
+}
+
+void info(const char *restrict format, ...) {
+    va_list args;
+
+    va_start(args, format);
+
     log_message(JINUE_PUTS_LOGLEVEL_INFO, format, args);
+
+    va_end(args);
 }
 
-void jinue_vwarning(const char *restrict format, va_list args) {
+void warning(const char *restrict format, ...) {
+    va_list args;
+
+    va_start(args, format);
+
     log_message(JINUE_PUTS_LOGLEVEL_WARNING, format, args);
+
+    va_end(args);
 }
 
-void jinue_verror(const char *restrict format, va_list args) {
+void error(const char *restrict format, ...) {
+    va_list args;
+
+    va_start(args, format);
+
     log_message(JINUE_PUTS_LOGLEVEL_ERROR, format, args);
-}
-
-void jinue_info(const char *restrict format, ...) {
-    va_list args;
-
-    va_start(args, format);
-
-    jinue_vinfo(format, args);
 
     va_end(args);
 }
-
-void jinue_warning(const char *restrict format, ...) {
-    va_list args;
-
-    va_start(args, format);
-
-    jinue_vwarning(format, args);
-
-    va_end(args);
-}
-
-void jinue_error(const char *restrict format, ...) {
-    va_list args;
-
-    va_start(args, format);
-
-    jinue_verror(format, args);
-
-    va_end(args);
-}
-

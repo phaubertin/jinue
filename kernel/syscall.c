@@ -35,12 +35,10 @@
 #include <hal/memory.h>
 #include <hal/thread.h>
 #include <hal/trap.h>
-#include <hal/vga.h>    /* TODO remove this */
-#include <console.h>
 #include <ipc.h>
 #include <limits.h>
+#include <logging.h>
 #include <object.h>
-#include <printk.h>
 #include <process.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -81,26 +79,17 @@ static void sys_puts(jinue_syscall_args_t *args) {
         return;
     }
 
-    int colour;
-
-    /* TODO move this into VGA code */
     switch(loglevel) {
     case JINUE_PUTS_LOGLEVEL_INFO:
-        colour = VGA_COLOR_BRIGHTGREEN;
-        break;
     case JINUE_PUTS_LOGLEVEL_WARNING:
-        colour = VGA_COLOR_YELLOW;
-        break;
     case JINUE_PUTS_LOGLEVEL_ERROR:
-        colour = VGA_COLOR_RED;
         break;
     default:
         syscall_args_set_error(args, JINUE_EINVAL);
         return;
     }
 
-    console_printn(message, length,colour);
-    console_putc('\n', colour);
+    logging_puts(loglevel, message, length);
     syscall_args_set_return(args, 0);
 }
 

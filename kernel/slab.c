@@ -33,8 +33,9 @@
 #include <hal/vm.h>
 #include <assert.h>
 #include <boot.h>
+#include <inttypes.h>
+#include <logging.h>
 #include <page_alloc.h>
-#include <printk.h>
 #include <slab.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -309,14 +310,14 @@ void *slab_cache_alloc(slab_cache_t *cache) {
         for(idx = 0; idx < cache->obj_size / sizeof(uint32_t); ++idx) {
             if(buffer[idx] != SLAB_POISON_DEAD_VALUE) {
                 if(dump_lines == 0) {
-                    printk("detected write to freed object, cache: %s buffer: 0x%x:\n",
+                    warning("detected write to freed object, cache: %s buffer: %#p:",
                         cache->name,
-                        (unsigned int)buffer
+                        buffer
                     );
                 }
                 
                 if(dump_lines < 4) {
-                    printk(" value 0x%x at byte offset %u\n", buffer[idx], idx * sizeof(uint32_t));
+                    warning("  value %#x at byte offset %u", buffer[idx], idx * sizeof(uint32_t));
                 }
                 
                 ++dump_lines;
@@ -329,9 +330,9 @@ void *slab_cache_alloc(slab_cache_t *cache) {
          * redzone checking even on freed objects. */
         if(cache->flags & SLAB_RED_ZONE) {
             if(buffer[idx] != SLAB_RED_ZONE_VALUE) {
-                printk("detected write past the end of freed object, cache: %s buffer: 0x%x value: 0x%x\n",
+                warning("detected write past the end of freed object, cache: %s buffer: %#p value: %#" PRIx32,
                     cache->name,
-                    (unsigned int)buffer,
+                    buffer,
                     buffer[idx]
                 );
             }
@@ -393,9 +394,9 @@ void slab_cache_free(void *buffer) {
         uint32_t *rz_word = (uint32_t *)((char *)buffer + cache->obj_size);
         
         if(*rz_word != SLAB_RED_ZONE_VALUE) {
-            printk("detected write past the end of object, cache: %s buffer: 0x%x value: 0x%x\n",
+            warning("detected write past the end of object, cache: %s buffer: %#p value: %#" PRIx32,
                 cache->name,
-                (unsigned int)buffer,
+                buffer,
                 *rz_word
             );
         }

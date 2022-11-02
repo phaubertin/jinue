@@ -35,9 +35,9 @@
 #include <boot.h>
 #include <cmdline.h>
 #include <elf.h>
+#include <logging.h>
 #include <page_alloc.h>
 #include <panic.h>
-#include <printk.h>
 #include <vmalloc.h>
 #include <string.h>
 #include <util.h>
@@ -54,7 +54,7 @@
  *
  * */
 static bool check_failed(const char *message) {
-    printk("Invalid ELF binary: %s\n", message);
+    error("Invalid ELF binary: %s", message);
     return false;
 }
 
@@ -193,7 +193,7 @@ const Elf32_Phdr *elf_executable_program_header(const Elf32_Ehdr *elf) {
  *
  * */
 void elf_load(
-        elf_info_t      *info,
+        elf_info_t      *elf_info,
         Elf32_Ehdr      *elf,
         const char      *argv0,
         const char      *cmdline,
@@ -203,12 +203,12 @@ void elf_load(
     /* get the program header table */
     Elf32_Phdr *phdr = (Elf32_Phdr *)((char *)elf + elf->e_phoff);
     
-    info->at_phdr       = (addr_t)phdr;
-    info->at_phnum      = elf->e_phnum;
-    info->at_phent      = elf->e_phentsize;
-    info->addr_space    = addr_space;
-    info->entry         = (void *)elf->e_entry;
-    info->argv0         = argv0;
+    elf_info->at_phdr       = (addr_t)phdr;
+    elf_info->at_phnum      = elf->e_phnum;
+    elf_info->at_phent      = elf->e_phentsize;
+    elf_info->addr_space    = addr_space;
+    elf_info->entry         = (void *)elf->e_entry;
+    elf_info->argv0         = argv0;
 
     for(unsigned int idx = 0; idx < elf->e_phnum; ++idx) {
         if(phdr[idx].p_type != PT_LOAD) {
@@ -313,11 +313,11 @@ void elf_load(
         }
     }
     
-    elf_allocate_stack(info, boot_alloc);
+    elf_allocate_stack(elf_info, boot_alloc);
 
-    elf_initialize_stack(info, cmdline);
+    elf_initialize_stack(elf_info, cmdline);
     
-    printk("ELF binary loaded.\n");
+    info("ELF binary loaded.");
 }
 
 /**
@@ -327,7 +327,7 @@ void elf_load(
  * @param boot_alloc boot-time page allocator
  *
  * */
-void elf_allocate_stack(elf_info_t *info, boot_alloc_t *boot_alloc) {
+void elf_allocate_stack(elf_info_t *elf_info, boot_alloc_t *boot_alloc) {
     /** TODO: check for overlap of stack with loaded segments */
 
     for(addr_t vpage = (addr_t)STACK_START; vpage < (addr_t)STACK_BASE; vpage += PAGE_SIZE) {
@@ -338,7 +338,7 @@ void elf_allocate_stack(elf_info_t *info, boot_alloc_t *boot_alloc) {
         clear_page(page);
 
         checked_map_userspace(
-                info->addr_space,
+                elf_info->addr_space,
                 vpage,
                 vm_lookup_kernel_paddr(page),
                 VM_MAP_READ | VM_MAP_WRITE);
@@ -387,9 +387,9 @@ static void initialize_string_array(const char *array[], const char *str, size_t
  * @param cmdline full kernel command line
  *
  * */
-void elf_initialize_stack(elf_info_t *info, const char *cmdline) {
+void elf_initialize_stack(elf_info_t *elf_info, const char *cmdline) {
     uintptr_t *sp       = (uintptr_t *)(STACK_BASE - RESERVED_STACK_SIZE);
-    info->stack_addr    = sp;
+    elf_info->stack_addr    = sp;
 
     /* We add 1 because argv[0] is the program name, which is not on the kernel
      * command line. */
@@ -414,19 +414,19 @@ void elf_initialize_stack(elf_info_t *info, const char *cmdline) {
     sp = (uintptr_t *)(auxvp + 8);
 
     auxvp[0].a_type     = JINUE_AT_PHDR;
-    auxvp[0].a_un.a_val = (uint32_t)info->at_phdr;
+    auxvp[0].a_un.a_val = (uint32_t)elf_info->at_phdr;
 
     auxvp[1].a_type     = JINUE_AT_PHENT;
-    auxvp[1].a_un.a_val = (uint32_t)info->at_phent;
+    auxvp[1].a_un.a_val = (uint32_t)elf_info->at_phent;
 
     auxvp[2].a_type     = JINUE_AT_PHNUM;
-    auxvp[2].a_un.a_val = (uint32_t)info->at_phnum;
+    auxvp[2].a_un.a_val = (uint32_t)elf_info->at_phnum;
 
     auxvp[3].a_type     = JINUE_AT_PAGESZ;
     auxvp[3].a_un.a_val = PAGE_SIZE;
 
     auxvp[4].a_type     = JINUE_AT_ENTRY;
-    auxvp[4].a_un.a_val = (uint32_t)info->entry;
+    auxvp[4].a_un.a_val = (uint32_t)elf_info->entry;
 
     auxvp[5].a_type     = JINUE_AT_STACKBASE;
     auxvp[5].a_un.a_val = STACK_BASE;
@@ -440,9 +440,9 @@ void elf_initialize_stack(elf_info_t *info, const char *cmdline) {
     /* Write arguments and environment variables (i.e. the actual strings). */
     char *const args = (char *)sp;
 
-    strcpy(args, info->argv0);
+    strcpy(args, elf_info->argv0);
 
-    char *const arg1 = args + strlen(info->argv0) + 1;
+    char *const arg1 = args + strlen(elf_info->argv0) + 1;
 
     char *const envs = cmdline_write_arguments(arg1, cmdline);
 
