@@ -90,12 +90,12 @@ kernel:
 $(kernel): kernel
 	true
 
-$(kernel_img): $(setup16) $(setup32) $(kernel) proc $(image_ldscript)
+$(kernel_img): $(setup16) $(setup32) $(kernel) loader $(image_ldscript)
 	$(LINK.o) -Wl,-T,$(image_ldscript) $(LOADLIBES) $(LDLIBS) -o $@
 
-# ----- process manager
-.PHONY: proc
-proc:
+# ----- user space loader
+.PHONY: loader
+loader:
 	$(MAKE) -C $(userspace)/loader
 
 # ----- setup code, boot sector, etc.
