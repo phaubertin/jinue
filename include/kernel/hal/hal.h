@@ -34,7 +34,6 @@
 
 #include <kernel/cmdline.h>
 #include <kernel/types.h>
-/* TODO check this #include */
 #include <sys/elf.h>
 
 void hal_init(

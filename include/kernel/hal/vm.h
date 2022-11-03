@@ -39,7 +39,6 @@
 #include <kernel/hal/asm/boot.h>
 #include <kernel/hal/asm/vm.h>
 #include <kernel/types.h>
-/* TODO check this #include */
 #include <sys/elf.h>
 
 /** convert physical to virtual address for kernel loaded at 0x100000 (1MB) */

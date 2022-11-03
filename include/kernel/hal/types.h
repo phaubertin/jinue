@@ -33,7 +33,6 @@
 #define JINUE_HAL_TYPES_H
 
 #include <kernel/hal/asm/descriptors.h>
-/* TODO check this #include */
 #include <sys/elf.h>
 #include <stdbool.h>
 #include <stddef.h>
