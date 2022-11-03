@@ -63,9 +63,9 @@
 ; |            boot_info              |                          v
 ; +===================================+ boot_info.image_top     ===
 ; |                                   |                          ^
-; |       process manager (ELF)       |                          |
+; |      user space loader (ELF)      |                          |
 ; |                                   |                          |
-; +-----------------------------------+ boot_info.proc_start     |
+; +-----------------------------------+ boot_info.loader_start   |
 ; |                                   |                          | kernel image
 ; |         microkernel (ELF)         |                          |
 ; |                                   |                          |
@@ -186,8 +186,8 @@
     
     extern kernel_start
     extern kernel_size
-    extern proc_start
-    extern proc_size
+    extern loader_start
+    extern loader_size
 
 image_start:
     jmp start
@@ -287,7 +287,7 @@ start:
     ; adjust the pointers in the boot information structure so they point in the
     ; kernel alias
     add dword [ebp + BOOT_INFO_KERNEL_START],   BOOT_OFFSET_FROM_1MB
-    add dword [ebp + BOOT_INFO_PROC_START],     BOOT_OFFSET_FROM_1MB
+    add dword [ebp + BOOT_INFO_LOADER_START],   BOOT_OFFSET_FROM_1MB
     add dword [ebp + BOOT_INFO_IMAGE_START],    BOOT_OFFSET_FROM_1MB
     add dword [ebp + BOOT_INFO_IMAGE_TOP],      BOOT_OFFSET_FROM_1MB
     add dword [ebp + BOOT_INFO_E820_MAP],       BOOT_OFFSET_FROM_1MB
@@ -408,8 +408,8 @@ copy_cmdline:
     ;
     ;       kernel_start    (ebp + BOOT_INFO_KERNEL_START)
     ;       kernel_size     (ebp + BOOT_INFO_KERNEL_SIZE)
-    ;       proc_start      (ebp + BOOT_INFO_PROC_START)
-    ;       proc_size       (ebp + BOOT_INFO_PROC_SIZE)
+    ;       loader_start    (ebp + BOOT_INFO_LOADER_START)
+    ;       loader_size     (ebp + BOOT_INFO_LOADER_SIZE)
     ;       image_start     (ebp + BOOT_INFO_IMAGE_START)
     ;       image_top       (ebp + BOOT_INFO_IMAGE_TOP)
     ;       ramdisk_start   (ebp + BOOT_INFO_RAMDISK_START)
@@ -427,8 +427,8 @@ initialize_boot_info:
     ; Values provided by linker.
     mov dword [ebp + BOOT_INFO_KERNEL_START], kernel_start
     mov dword [ebp + BOOT_INFO_KERNEL_SIZE], kernel_size
-    mov dword [ebp + BOOT_INFO_PROC_START], proc_start
-    mov dword [ebp + BOOT_INFO_PROC_SIZE], proc_size
+    mov dword [ebp + BOOT_INFO_LOADER_START], loader_start
+    mov dword [ebp + BOOT_INFO_LOADER_SIZE], loader_size
     mov dword [ebp + BOOT_INFO_IMAGE_START], image_start
 
     ; set pointer to top of kernel image

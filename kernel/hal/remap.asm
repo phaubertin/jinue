@@ -75,7 +75,7 @@
 ;   |     kernel heap allocations (boot)    | Start of page allocations      |
 ;   +=======================================+ End of kernel image            |
 ;   |                                       |                                |
-;   |         process manager (ELF)         |                                |
+;   |        user space loader (ELF)        |                                |
 ;   |                                       |                                |
 ;   +---------------------------------------+                                |
 ;   |                                       |                                |

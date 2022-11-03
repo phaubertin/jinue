@@ -98,8 +98,8 @@ typedef struct {
 typedef struct {
     Elf32_Ehdr      *kernel_start;
     uint32_t         kernel_size;
-    Elf32_Ehdr      *proc_start;
-    uint32_t         proc_size;
+    Elf32_Ehdr      *loader_start;
+    uint32_t         loader_size;
     void            *image_start;
     void            *image_top;
     uint32_t	     ramdisk_start;

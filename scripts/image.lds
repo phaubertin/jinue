@@ -99,8 +99,8 @@ SECTIONS {
      * Run address:                     KLIMIT
      * Needed symbols:                  kernel_start
      *                                  kernel_size
-     *                                  proc_start
-     *                                  proc_size */
+     *                                  loader_start
+     *                                  loader_size */
     setup32 BOOT_SETUP32_ADDR : AT(ADDR(setup16) + SIZEOF(setup16)) {
         boot/setup32.o
     }
@@ -124,13 +124,12 @@ SECTIONS {
         . = ALIGN(PAGE_SIZE);
     }
     
-    /* The section that follows is an ELF binary for the initial user space
-     * process. */
-    proc_start = .;
+    /* The section that follows is the ELF binary for the user space loader. */
+    loader_start = .;
     
     loader : {
         userspace/loader/loader-stripped
-        proc_end = ABSOLUTE(.);
+        loader_end = ABSOLUTE(.);
         
         . = ALIGN(PAGE_SIZE);
     }
@@ -138,7 +137,7 @@ SECTIONS {
     kernel_top = .;
     
     kernel_size = kernel_end - kernel_start;
-    proc_size   = proc_end   - proc_start;
+    loader_size = loader_end - loader_start;
     
     /* The value of these two symbols is placed in the header located in the
      * 16-bit setup code section as specified by the boot protocol.

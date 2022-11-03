@@ -96,11 +96,11 @@
 /** Offset of the kernel_size boot_info_t member */
 #define BOOT_INFO_KERNEL_SIZE       4
 
-/** Offset of the proc_start boot_info_t member */
-#define BOOT_INFO_PROC_START        8
+/** Offset of the loader_start boot_info_t member */
+#define BOOT_INFO_LOADER_START      8
 
-/** Offset of the proc_size boot_info_t member */
-#define BOOT_INFO_PROC_SIZE         12
+/** Offset of the loader_size boot_info_t member */
+#define BOOT_INFO_LOADER_SIZE       12
 
 /** Offset of the image_start boot_info_t member */
 #define BOOT_INFO_IMAGE_START       16

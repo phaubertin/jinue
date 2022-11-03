@@ -217,7 +217,7 @@ void elf_load(
         
         /* check that the segment is not in the region reserved for kernel use */
         if(! check_userspace_buffer((void *)phdr[idx].p_vaddr, phdr[idx].p_memsz)) {
-            panic("process manager memory layout -- address of segment too low");
+            panic("user space loader memory layout -- address of segment too low");
         }
         
         /* set start and end addresses for mapping and copying */

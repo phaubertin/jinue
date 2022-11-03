@@ -43,7 +43,7 @@ target           = $(loader)-stripped
 LDFLAGS			+= -Wl,-u,_start -static-libgcc -m32 -march=i686
 LDLIBS			 = -lgcc
 
-unclean.extra    = $(proc)
+unclean.extra    = $(loader)
 
 include $(common)
 

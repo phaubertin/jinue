@@ -14,7 +14,7 @@
 
 3  - IPC mechanism (doors) and file descriptors
 
-4  - Memory and namespace management (process manager)
+4  - Memory and namespace management (user space loader)
 
 5  - Process management and fork()
 
@@ -22,7 +22,7 @@
 
 7  - Thread scheduler
 
-8  - Image filesystem (process manager)
+8  - Image filesystem (user space loader)
 
 9  - vfork() and exec()
 

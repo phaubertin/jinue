@@ -66,9 +66,7 @@ loads this binary in user space and gives control to it. This program is
 responsible for decompressing the initial RAM disk image, finding the initial
 user program, loading it and running it. (TODO the user space loader is not yet
 implemented. For now, this binary simply runs some basic functional tests and
-prints debugging information. It is still referred to in some places in the
-code and documentation as the "process manager", a legacy name that no longer
-has any meaning.)
+prints debugging information.)
 
 ## 32-bit Setup Code
 

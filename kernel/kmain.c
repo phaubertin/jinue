@@ -65,21 +65,21 @@ static Elf32_Ehdr *get_kernel_elf_header(const boot_info_t *boot_info) {
 }
 
 static Elf32_Ehdr *get_userspace_loader_elf_header(const boot_info_t *boot_info) {
-    if(boot_info->proc_start == NULL) {
+    if(boot_info->loader_start == NULL) {
         panic("malformed boot image: no user space loader ELF binary");
     }
 
-    if(boot_info->proc_size < sizeof(Elf32_Ehdr)) {
+    if(boot_info->loader_size < sizeof(Elf32_Ehdr)) {
         panic("user space loader too small to be an ELF binary");
     }
 
-    info("Found user space loader with size %" PRIu32 " bytes.", boot_info->proc_size);
+    info("Found user space loader with size %" PRIu32 " bytes.", boot_info->loader_size);
 
-    if(! elf_check(boot_info->proc_start)) {
+    if(! elf_check(boot_info->loader_start)) {
         panic("user space loader ELF binary is invalid");
     }
 
-    return boot_info->proc_start;
+    return boot_info->loader_start;
 }
 
 
@@ -142,7 +142,7 @@ void kmain(void) {
     ipc_boot_init();
     process_boot_init();
 
-    /* create process for process manager */
+    /* create process for user space loader */
     process_t *process = process_create();
 
     if(process == NULL) {

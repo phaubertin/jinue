@@ -35,6 +35,7 @@ sources.c        = \
 	getauxval.c \
 	getenv.c \
 	snprintf.c \
+	string.c \
 	vsnprintf.c
 sources.nasm     = crt.asm
 

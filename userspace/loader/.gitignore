@@ -28,6 +28,6 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 # ------------------------------------------------------------------------------
-# Process Manager binaries
-proc
-proc-stripped
+# User space loader binaries
+loader
+loader-stripped
