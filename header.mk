@@ -55,8 +55,9 @@ jinue_root 			?= .
 
 # project directory structure
 includes             = $(jinue_root)/include
-lib                  = $(jinue_root)/lib
 scripts              = $(jinue_root)/scripts
+userspace			 = $(jinue_root)/userspace
+lib                  = $(userspace)/lib
 
 libc_includes        = $(includes)/libc
 kernel_includes	     = $(includes)/kernel

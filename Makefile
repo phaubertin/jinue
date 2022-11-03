@@ -29,7 +29,7 @@
 
 include header.mk
 
-subdirs              = boot doc kernel proc $(libc) $(libjinue) $(scripts)
+subdirs              = boot doc kernel $(userspace)/loader $(libc) $(libjinue) $(scripts)
 
 kernel               = kernel/kernel
 setup16              = boot/setup16.o
@@ -96,7 +96,7 @@ $(kernel_img): $(setup16) $(setup32) $(kernel) proc $(image_ldscript)
 # ----- process manager
 .PHONY: proc
 proc:
-	$(MAKE) -C proc
+	$(MAKE) -C $(userspace)/loader
 
 # ----- setup code, boot sector, etc.
 .PHONY: boot

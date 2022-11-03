@@ -1,4 +1,4 @@
-# Copyright (C) 2019 Philippe Aubertin.
+# Copyright (C) 2022 Philippe Aubertin.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,32 +27,30 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-jinue_root = ..
+jinue_root = ../../..
 include $(jinue_root)/header.mk
 
-sources.c		 = proc.c
-proc			 = proc
-target			 = $(proc)-stripped
+sources.c        = \
+	assert-kernel.c \
+	getauxval.c \
+	getenv.c \
+	snprintf.c \
+	vsnprintf.c
+sources.nasm     = crt.asm
 
-# The linker might not link crt.o from libjinue.a, which is required to
-# provide the _start entry point but otherwise contains no symbol that
-# other object files are interested in. I have seen different behaviour
-# in this regard on different machines with different versions of the
-# linker. By explicitly forcing _start as an undefined symbol, we
-# ensure the linker links the startup code.
-LDFLAGS			+= -Wl,-u,_start -static-libgcc -m32 -march=i686
-LDLIBS			 = -lgcc
+target.user      = libc.a
+target.kernel    = libc-kernel.a
+targets          = $(target.user) $(target.kernel)
 
-unclean.extra    = $(proc)
+objects.generic  = string.o snprintf.o vsnprintf.o
+objects.user     = crt.o getauxval.o getenv.o
+objects.kernel   = assert-kernel.o
 
 include $(common)
 
-$(libjinue)/libjinue.a: FORCE
-	$(MAKE) -C $(libjinue)
-	
-$(libc)/libc.a: FORCE
-	$(MAKE) -C $(libc)
+$(target.user): $(objects.generic) $(objects.user)
 
-$(proc): $(objects) $(libjinue)/libjinue.a $(libc)/libc.a
+$(target.kernel): $(objects.generic) $(objects.kernel)
 
-$(target): $(proc)
+%.a:
+	ar rcs $@ $^

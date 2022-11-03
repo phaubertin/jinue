@@ -42,7 +42,7 @@ INPUT("boot/setup32.o")
  * whole into the kernel image, hence why the TARGET is specified as binary. Both
  * are already linked. */
 TARGET("binary")
-INPUT("proc/proc-stripped")
+INPUT("userspace/loader/loader-stripped")
 INPUT("kernel/kernel-stripped")
 
 SECTIONS {
@@ -128,8 +128,8 @@ SECTIONS {
      * process. */
     proc_start = .;
     
-    proc : {
-        proc/proc-stripped
+    loader : {
+        userspace/loader/loader-stripped
         proc_end = ABSOLUTE(.);
         
         . = ALIGN(PAGE_SIZE);

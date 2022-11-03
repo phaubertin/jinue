@@ -27,7 +27,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-jinue_root = ../..
+jinue_root = ../../..
 include $(jinue_root)/header.mk
 
 sources.c 		= ipc.c logging.c memory.c syscall.c
