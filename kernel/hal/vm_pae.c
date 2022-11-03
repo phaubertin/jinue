@@ -29,19 +29,19 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <hal/boot.h>
-#include <hal/cpu.h>
-#include <hal/memory.h>
-#include <hal/vm_private.h>
-#include <hal/x86.h>
+#include <kernel/hal/boot.h>
+#include <kernel/hal/cpu.h>
+#include <kernel/hal/memory.h>
+#include <kernel/hal/vm_private.h>
+#include <kernel/hal/x86.h>
+#include <kernel/boot.h>
+#include <kernel/page_alloc.h>
+#include <kernel/panic.h>
+#include <kernel/slab.h>
+#include <kernel/util.h>
+#include <kernel/vmalloc.h>
 #include <assert.h>
-#include <boot.h>
-#include <page_alloc.h>
-#include <panic.h>
-#include <slab.h>
 #include <string.h>
-#include <util.h>
-#include <vmalloc.h>
 
 /* This file contains Physical Address Extension (PAE) memory management code.
  * Non-PAE code is located in vm_x86.c. Virtual memory management code

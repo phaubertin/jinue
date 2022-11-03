@@ -29,10 +29,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <hal/vm.h>
-#include <page_alloc.h>
+#include <kernel/hal/vm.h>
+#include <kernel/page_alloc.h>
+#include <kernel/vmalloc.h>
 #include <string.h>
-#include <vmalloc.h>
 
 
 struct alloc_page {

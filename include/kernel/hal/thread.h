@@ -32,9 +32,9 @@
 #ifndef JINUE_HAL_THREAD_H
 #define JINUE_HAL_THREAD_H
 
-#include <hal/asm/thread.h>
-#include <hal/x86.h>
-#include <types.h>
+#include <kernel/hal/asm/thread.h>
+#include <kernel/hal/x86.h>
+#include <kernel/types.h>
 
 
 static inline thread_t *get_current_thread(void) {

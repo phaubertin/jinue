@@ -29,10 +29,10 @@
 
 #include <jinue/shared/asm/e820.h>
 #include <jinue/shared/asm/vm.h>
-#include <hal/asm/boot.h>
-#include <hal/asm/descriptors.h>
-#include <hal/asm/pic8259.h>
-#include <asm/cmdline.h>
+#include <kernel/hal/asm/boot.h>
+#include <kernel/hal/asm/descriptors.h>
+#include <kernel/hal/asm/pic8259.h>
+#include <kernel/asm/cmdline.h>
 
 %define CODE_SEG        1
 %define DATA_SEG        2

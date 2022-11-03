@@ -32,9 +32,8 @@
 #ifndef JINUE_HAL_MEMORY_H
 #define JINUE_HAL_MEMORY_H
 
-#include "asm/memory.h"
-
-#include <types.h>
+#include <kernel/hal/asm/memory.h>
+#include <kernel/types.h>
 
 void check_memory(const boot_info_t *boot_info);
 

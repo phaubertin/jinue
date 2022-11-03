@@ -32,9 +32,10 @@
 #ifndef JINUE_HAL_H
 #define JINUE_HAL_H
 
+#include <kernel/cmdline.h>
+#include <kernel/types.h>
+/* TODO check this #include */
 #include <sys/elf.h>
-#include <cmdline.h>
-#include <types.h>
 
 void hal_init(
         Elf32_Ehdr              *kernel_elf,

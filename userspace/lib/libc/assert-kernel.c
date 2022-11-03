@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <logging.h>
-#include <panic.h>
+#include <kernel/logging.h>
+#include <kernel/panic.h>
 
 #ifndef NDEBUG
 void __assert_failed(

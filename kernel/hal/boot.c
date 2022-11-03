@@ -29,9 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <hal/boot.h>
-#include <hal/vm.h>
-#include <panic.h>
+#include <kernel/hal/boot.h>
+#include <kernel/hal/vm.h>
+#include <kernel/panic.h>
 #include <stddef.h>
 
 /* There is no extern declaration of this global variable in any header file but

@@ -32,8 +32,8 @@
 #ifndef JINUE_HAL_INTERRUPT_H
 #define JINUE_HAL_INTERRUPT_H
 
-#include <hal/asm/irq.h>
-#include <hal/types.h>
+#include <kernel/hal/asm/irq.h>
+#include <kernel/hal/types.h>
 #include <stdint.h>
 
 

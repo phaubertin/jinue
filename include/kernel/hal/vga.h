@@ -32,7 +32,7 @@
 #ifndef JINUE_HAL_VGA_H
 #define JINUE_HAL_VGA_H
 
-#include <hal/asm/vga.h>
+#include <kernel/hal/asm/vga.h>
 #include <stddef.h>
 
 typedef unsigned int vga_pos_t;

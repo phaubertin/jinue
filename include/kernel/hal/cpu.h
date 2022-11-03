@@ -32,7 +32,7 @@
 #ifndef JINUE_HAL_CPU_H
 #define JINUE_HAL_CPU_H
 
-#include <hal/types.h>
+#include <kernel/hal/types.h>
 
 
 #define MSR_IA32_SYSENTER_CS        0x174

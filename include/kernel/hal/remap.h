@@ -32,7 +32,7 @@
 #ifndef JINUE_HAL_REMAP_H
 #define JINUE_HAL_REMAP_H
 
-#include <hal/types.h>
+#include <kernel/hal/types.h>
 
 void move_and_remap_kernel(addr_t end_addr, addr_t pte, uint32_t cr3_value);
 

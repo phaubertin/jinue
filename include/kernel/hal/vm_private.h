@@ -33,12 +33,12 @@
 #define JINUE_HAL_VM_PRIVATE_H
 
 #include <jinue/shared/vm.h>
-#include <hal/vm.h>
-#include <hal/vm_pae.h>
-#include <hal/vm_x86.h>
+#include <kernel/hal/vm.h>
+#include <kernel/hal/vm_pae.h>
+#include <kernel/hal/vm_x86.h>
+#include <kernel/types.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <types.h>
 
 /** This header file contains private definitions shared by hal/vm.c, hal/vm_pae.c
  *  and hal/vm_x86.c. There should be no reason to include it anywhere else. */

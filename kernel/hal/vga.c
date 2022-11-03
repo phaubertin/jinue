@@ -31,10 +31,10 @@
 
 #include <jinue/shared/syscall.h>
 #include <jinue/shared/vm.h>
-#include <ascii.h>
-#include <hal/io.h>
-#include <hal/vga.h>
-#include <hal/vm.h>
+#include <kernel/asm/ascii.h>
+#include <kernel/hal/io.h>
+#include <kernel/hal/vga.h>
+#include <kernel/hal/vm.h>
 
 /** base address of the VGA text video buffer */
 static unsigned char *video_base_addr = (void *)VGA_TEXT_VID_BASE;

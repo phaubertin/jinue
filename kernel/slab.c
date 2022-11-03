@@ -29,19 +29,19 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <hal/cpu.h>
-#include <hal/vm.h>
+#include <kernel/hal/cpu.h>
+#include <kernel/hal/vm.h>
+#include <kernel/boot.h>
+#include <kernel/logging.h>
+#include <kernel/page_alloc.h>
+#include <kernel/slab.h>
+#include <kernel/types.h>
+#include <kernel/util.h>
 #include <assert.h>
-#include <boot.h>
 #include <inttypes.h>
-#include <logging.h>
-#include <page_alloc.h>
-#include <slab.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <types.h>
-#include <util.h>
 
 
 /**

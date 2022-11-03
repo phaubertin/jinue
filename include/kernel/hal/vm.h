@@ -35,11 +35,12 @@
 /** This header file contains the public interface of the low-level page table
  * management code located in hal/vm.c and hal/vm_pae.c. */
 
-#include <sys/elf.h>
 #include <jinue/shared/vm.h>
-#include <hal/asm/boot.h>
-#include <hal/asm/vm.h>
-#include <types.h>
+#include <kernel/hal/asm/boot.h>
+#include <kernel/hal/asm/vm.h>
+#include <kernel/types.h>
+/* TODO check this #include */
+#include <sys/elf.h>
 
 /** convert physical to virtual address for kernel loaded at 0x100000 (1MB) */
 #define PHYS_TO_VIRT_AT_1MB(x)      (((uintptr_t)(x)) + BOOT_OFFSET_FROM_1MB)

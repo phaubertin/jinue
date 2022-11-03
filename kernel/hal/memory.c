@@ -31,18 +31,19 @@
 
 #include <jinue/shared/asm/e820.h>
 #include <jinue/shared/errno.h>
-#include <hal/boot.h>
-#include <hal/memory.h>
-#include <hal/vm.h>
+#include <kernel/hal/boot.h>
+#include <kernel/hal/memory.h>
+#include <kernel/hal/vm.h>
+#include <kernel/boot.h>
+#include <kernel/logging.h>
+#include <kernel/panic.h>
+#include <kernel/util.h>
 #include <assert.h>
-#include <boot.h>
 #include <inttypes.h>
-#include <logging.h>
-#include <panic.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <util.h>
+
 
 typedef struct {
     uint64_t    start;

@@ -32,8 +32,8 @@
 #ifndef JINUE_KERNEL_CMDLINE_H
 #define JINUE_KERNEL_CMDLINE_H
 
-#include <asm/cmdline.h>
-#include <types.h>
+#include <kernel/asm/cmdline.h>
+#include <kernel/types.h>
 
 typedef enum {
     CMDLINE_OPT_PAE_AUTO,

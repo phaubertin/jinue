@@ -29,12 +29,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <hal/cpu.h>
-#include <hal/cpu_data.h>
-#include <hal/descriptors.h>
-#include <hal/thread.h>
-#include <hal/trap.h>
-#include <hal/types.h>
+#include <kernel/hal/cpu.h>
+#include <kernel/hal/cpu_data.h>
+#include <kernel/hal/descriptors.h>
+#include <kernel/hal/thread.h>
+#include <kernel/hal/trap.h>
+#include <kernel/hal/types.h>
 #include <assert.h>
 #include <stddef.h>
 #include <string.h>

@@ -32,7 +32,7 @@
 #ifndef JINUE_HAL_PIC8259_H
 #define JINUE_HAL_PIC8259_H
 
-#include <hal/asm/pic8259.h>
+#include <kernel/hal/asm/pic8259.h>
 
 void pic8259_init();
 

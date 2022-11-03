@@ -29,31 +29,31 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <kernel/hal/boot.h>
+#include <kernel/hal/cpu.h>
+#include <kernel/hal/cpu_data.h>
+#include <kernel/hal/descriptors.h>
+#include <kernel/hal/hal.h>
+#include <kernel/hal/interrupt.h>
+#include <kernel/hal/memory.h>
+#include <kernel/hal/pic8259.h>
+#include <kernel/hal/remap.h>
+#include <kernel/hal/thread.h>
+#include <kernel/hal/trap.h>
+#include <kernel/hal/vga.h>
+#include <kernel/hal/vm.h>
+#include <kernel/hal/vm_pae.h>
+#include <kernel/hal/x86.h>
+#include <kernel/boot.h>
+#include <kernel/cmdline.h>
+#include <kernel/logging.h>
+#include <kernel/panic.h>
+#include <kernel/page_alloc.h>
+#include <kernel/syscall.h>
+#include <kernel/util.h>
 #include <assert.h>
-#include <hal/boot.h>
-#include <hal/cpu.h>
-#include <hal/cpu_data.h>
-#include <hal/descriptors.h>
-#include <hal/hal.h>
-#include <hal/interrupt.h>
-#include <hal/memory.h>
-#include <hal/pic8259.h>
-#include <hal/remap.h>
-#include <hal/thread.h>
-#include <hal/trap.h>
-#include <hal/vga.h>
-#include <hal/vm.h>
-#include <hal/vm_pae.h>
-#include <hal/x86.h>
-#include <boot.h>
-#include <cmdline.h>
-#include <logging.h>
-#include <panic.h>
-#include <page_alloc.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <syscall.h>
-#include <util.h>
 
 
 /** Specifies the entry point to use for system calls */

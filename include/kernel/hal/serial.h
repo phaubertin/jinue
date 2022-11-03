@@ -32,7 +32,7 @@
 #ifndef HAL_SERIAL_H_
 #define HAL_SERIAL_H_
 
-#include <hal/asm/serial.h>
+#include <kernel/hal/asm/serial.h>
 #include <stddef.h>
 
 void serial_init(int base_ioport, unsigned int baud_rate);

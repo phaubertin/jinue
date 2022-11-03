@@ -29,23 +29,23 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <hal/boot.h>
-#include <hal/cpu_data.h>
-#include <hal/memory.h>
-#include <hal/vga.h>
-#include <hal/vm.h>
-#include <hal/vm_private.h>
-#include <hal/x86.h>
+#include <kernel/hal/boot.h>
+#include <kernel/hal/cpu_data.h>
+#include <kernel/hal/memory.h>
+#include <kernel/hal/vga.h>
+#include <kernel/hal/vm.h>
+#include <kernel/hal/vm_private.h>
+#include <kernel/hal/x86.h>
+#include <kernel/boot.h>
+#include <kernel/elf.h>
+#include <kernel/page_alloc.h>
+#include <kernel/panic.h>
+#include <kernel/util.h>
+#include <kernel/vmalloc.h>
 #include <assert.h>
-#include <boot.h>
-#include <elf.h>
-#include <page_alloc.h>
-#include <panic.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
-#include <util.h>
-#include <vmalloc.h>
 
 /* This file contains memory management code that is independent of whether
  * Physical Address Extension (PAE) is enabled or not. The PAE code is in the

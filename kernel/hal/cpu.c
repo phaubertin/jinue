@@ -29,9 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <hal/cpu.h>
-#include <hal/descriptors.h>
-#include <hal/x86.h>
+#include <kernel/hal/cpu.h>
+#include <kernel/hal/descriptors.h>
+#include <kernel/hal/x86.h>
 #include <stdint.h>
 #include <string.h>
 

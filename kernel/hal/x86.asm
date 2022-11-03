@@ -28,8 +28,8 @@
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <jinue/shared/asm/vm.h>
-#include <hal/asm/boot.h>
-#include <hal/asm/x86.h>
+#include <kernel/hal/asm/boot.h>
+#include <kernel/hal/asm/x86.h>
 
     bits 32
 

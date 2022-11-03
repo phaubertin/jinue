@@ -28,8 +28,8 @@
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <jinue/shared/asm/vm.h>
-#include <hal/asm/descriptors.h>
-#include <hal/asm/irq.h>
+#include <kernel/hal/asm/descriptors.h>
+#include <kernel/hal/asm/irq.h>
 
 
     bits 32

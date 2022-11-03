@@ -30,7 +30,7 @@
  */
  
 #include <jinue/shared/asm/vm.h>
-#include <hal/asm/boot.h>
+#include <kernel/hal/asm/boot.h>
 
 OUTPUT_FORMAT("binary")
 

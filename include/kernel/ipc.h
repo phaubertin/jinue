@@ -32,7 +32,7 @@
 #ifndef JINUE_KERNEL_IPC_H
 #define JINUE_KERNEL_IPC_H
 
-#include <types.h>
+#include <kernel/types.h>
 
 
 /* object header flag bits 0..7 are reserved for common flags, flag bits 8 and

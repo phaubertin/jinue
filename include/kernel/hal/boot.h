@@ -32,8 +32,8 @@
 #ifndef JINUE_HAL_BOOT_H
 #define JINUE_HAL_BOOT_H
 
-#include <hal/asm/boot.h>
-#include <hal/types.h>
+#include <kernel/hal/asm/boot.h>
+#include <kernel/hal/types.h>
 
 
 bool boot_info_check(bool panic_on_failure);

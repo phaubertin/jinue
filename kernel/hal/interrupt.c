@@ -29,15 +29,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <hal/interrupt.h>
-#include <hal/io.h>
-#include <hal/pic8259.h>
-#include <hal/x86.h>
+#include <kernel/hal/interrupt.h>
+#include <kernel/hal/io.h>
+#include <kernel/hal/pic8259.h>
+#include <kernel/hal/x86.h>
+#include <kernel/logging.h>
+#include <kernel/panic.h>
+#include <kernel/syscall.h>
+#include <kernel/types.h>
 #include <inttypes.h>
-#include <logging.h>
-#include <panic.h>
-#include <syscall.h>
-#include <types.h>
 
 
 void dispatch_interrupt(trapframe_t *trapframe) {

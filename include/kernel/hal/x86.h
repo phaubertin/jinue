@@ -32,8 +32,8 @@
 #ifndef JINUE_HAL_X86_H
 #define JINUE_HAL_X86_H
 
-#include <hal/asm/x86.h>
-#include <hal/types.h>
+#include <kernel/hal/asm/x86.h>
+#include <kernel/hal/types.h>
 
 typedef struct {
     uint32_t eax;

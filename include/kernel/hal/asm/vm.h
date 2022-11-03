@@ -33,7 +33,7 @@
 #define JINUE_HAL_ASM_VM_H
 
 #include <jinue/shared/asm/vm.h>
-#include <hal/asm/x86.h>
+#include <kernel/hal/asm/x86.h>
 
 /** map page with no permission */
 #define VM_MAP_NONE             0

@@ -29,9 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <hal/asm/irq.h>
-#include <hal/io.h>
-#include <hal/pic8259.h>
+#include <kernel/hal/asm/irq.h>
+#include <kernel/hal/io.h>
+#include <kernel/hal/pic8259.h>
 #include <stdbool.h>
 
 typedef struct {

@@ -58,9 +58,6 @@ includes             = $(jinue_root)/include
 scripts              = $(jinue_root)/scripts
 userspace			 = $(jinue_root)/userspace
 lib                  = $(userspace)/lib
-
-libc_includes        = $(includes)/libc
-kernel_includes	     = $(includes)/kernel
 libjinue             = $(lib)/jinue
 libc                 = $(lib)/libc
 
@@ -99,7 +96,7 @@ endif
 # C preprocessor flags
 #
 # These flags are used when preprocessing C and assembly language files.
-CPPFLAGS.includes    = -I$(kernel_includes) -I$(libc_includes)
+CPPFLAGS.includes    = -I$(includes)
 CPPFLAGS.others      = -nostdinc
 CPPFLAGS             = $(CPPFLAGS.includes) $(CPPFLAGS.debug) $(CPPFLAGS.others) $(CPPFLAGS.extra)
 

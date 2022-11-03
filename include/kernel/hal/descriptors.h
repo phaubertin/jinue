@@ -32,9 +32,8 @@
 #ifndef JINUE_HAL_DESCRIPTORS_H
 #define JINUE_HAL_DESCRIPTORS_H
 
-#include <hal/asm/descriptors.h>
-
-#include <hal/types.h>
+#include <kernel/hal/asm/descriptors.h>
+#include <kernel/hal/types.h>
 
 
 #define PACK_DESCRIPTOR(val, mask, shamt1, shamt2) \

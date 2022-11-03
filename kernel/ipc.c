@@ -31,16 +31,16 @@
 
 #include <jinue/shared/errno.h>
 #include <jinue/shared/ipc.h>
-#include <hal/thread.h>
-#include <ipc.h>
-#include <object.h>
-#include <panic.h>
-#include <process.h>
-#include <slab.h>
+#include <kernel/hal/thread.h>
+#include <kernel/ipc.h>
+#include <kernel/object.h>
+#include <kernel/panic.h>
+#include <kernel/process.h>
+#include <kernel/slab.h>
+#include <kernel/syscall.h>
+#include <kernel/thread.h>
 #include <stddef.h>
 #include <string.h>
-#include <syscall.h>
-#include <thread.h>
 
 /** slab cache used for allocating IPC endpoint objects */
 static slab_cache_t ipc_object_cache;

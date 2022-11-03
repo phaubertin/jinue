@@ -32,7 +32,7 @@
 #ifndef JINUE_KERNEL_VMALLOC_H
 #define JINUE_KERNEL_VMALLOC_H
 
-#include <types.h>
+#include <kernel/types.h>
 
 addr_t vmalloc(void);
 

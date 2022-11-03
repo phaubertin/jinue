@@ -32,8 +32,8 @@
 #ifndef JINUE_HAL_CPU_DATA_H
 #define JINUE_HAL_CPU_DATA_H
 
-#include <hal/types.h>
-#include <hal/x86.h>
+#include <kernel/hal/types.h>
+#include <kernel/hal/x86.h>
 
 
 #define CPU_DATA_ALIGNMENT      256

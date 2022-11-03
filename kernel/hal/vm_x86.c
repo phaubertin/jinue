@@ -29,10 +29,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <hal/vm_private.h>
+#include <kernel/hal/vm_private.h>
+#include <kernel/boot.h>
+#include <kernel/vmalloc.h>
 #include <assert.h>
-#include <boot.h>
-#include <vmalloc.h>
 
 /* This file contains non-Physical Address Extension (PAE) memory management
  * code. PAE code is located in vm_pae.c. Virtual memory management code

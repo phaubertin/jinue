@@ -36,7 +36,7 @@
  * hal/vm_x86.c. It is intended to be included by hal/vm.c and hal/vm_x86.c.
  * There should be no reason to include it anywhere else. */
 
-#include <hal/types.h>
+#include <kernel/hal/types.h>
 
 void vm_x86_create_initial_addr_space(
         addr_space_t    *address_space,

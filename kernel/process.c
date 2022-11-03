@@ -29,12 +29,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <hal/cpu_data.h>
-#include <hal/vm.h>
-#include <panic.h>
-#include <process.h>
-#include <object.h>
-#include <slab.h>
+#include <kernel/hal/cpu_data.h>
+#include <kernel/hal/vm.h>
+#include <kernel/panic.h>
+#include <kernel/process.h>
+#include <kernel/object.h>
+#include <kernel/slab.h>
 #include <stddef.h>
 #include <string.h>
 

@@ -27,8 +27,8 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include <hal/asm/memory.h>
-#include <hal/asm/vm.h>
+#include <kernel/hal/asm/memory.h>
+#include <kernel/hal/asm/vm.h>
 
     bits 32
 

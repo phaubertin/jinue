@@ -32,8 +32,9 @@
 #ifndef JINUE_KERNEL_ELF_H
 #define JINUE_KERNEL_ELF_H
 
+/* TODO check this #include */
 #include <sys/elf.h>
-#include <types.h>
+#include <kernel/types.h>
 
 
 typedef struct {

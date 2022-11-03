@@ -31,19 +31,19 @@
 
 #include <jinue/shared/errno.h>
 #include <jinue/shared/vm.h>
-#include <hal/cpu_data.h>
-#include <hal/memory.h>
-#include <hal/thread.h>
-#include <hal/trap.h>
-#include <ipc.h>
+#include <kernel/hal/cpu_data.h>
+#include <kernel/hal/memory.h>
+#include <kernel/hal/thread.h>
+#include <kernel/hal/trap.h>
+#include <kernel/ipc.h>
+#include <kernel/logging.h>
+#include <kernel/object.h>
+#include <kernel/process.h>
+#include <kernel/syscall.h>
+#include <kernel/thread.h>
 #include <limits.h>
-#include <logging.h>
-#include <object.h>
-#include <process.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <syscall.h>
-#include <thread.h>
 
 static void set_return_value_or_error(jinue_syscall_args_t *args, int retval) {
     if(retval < 0) {

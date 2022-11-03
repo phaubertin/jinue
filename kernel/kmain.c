@@ -29,22 +29,22 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <hal/boot.h>
-#include <hal/hal.h>
-#include <hal/vm.h>
-#include <boot.h>
-#include <cmdline.h>
-#include <elf.h>
-#include <hal/memory.h>
+#include <kernel/hal/boot.h>
+#include <kernel/hal/hal.h>
+#include <kernel/hal/memory.h>
+#include <kernel/hal/vm.h>
+#include <kernel/boot.h>
+#include <kernel/cmdline.h>
+#include <kernel/elf.h>
+#include <kernel/ipc.h>
+#include <kernel/kmain.h>
+#include <kernel/logging.h>
+#include <kernel/panic.h>
+#include <kernel/process.h>
+#include <kernel/syscall.h>
+#include <kernel/thread.h>
 #include <inttypes.h>
-#include <ipc.h>
-#include <kmain.h>
-#include <logging.h>
-#include <panic.h>
-#include <process.h>
 #include <stddef.h>
-#include <syscall.h>
-#include <thread.h>
 #include "build-info.gen.h"
 
 

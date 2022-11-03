@@ -32,7 +32,7 @@
 #ifndef JINUE_KERNEL_PROCESS_H
 #define JINUE_KERNEL_PROCESS_H
 
-#include <types.h>
+#include <kernel/types.h>
 
 
 void process_boot_init(void);

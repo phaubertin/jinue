@@ -32,7 +32,7 @@
 #ifndef JINUE_HAL_ABI_H
 #define JINUE_HAL_ABI_H
 
-#include <hal/types.h>
+#include <kernel/hal/types.h>
 
 
 addr_t get_fpointer(void);
