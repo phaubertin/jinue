@@ -79,7 +79,7 @@ The copied kernel image file is `/boot/jinue`.
 Once this is done, you need to configure your boot loader/manager to load this
 kernel. Jinue uses the 16-bit Linux boot protocol, so you can configure your
 boot manager as if you were loading a Linux image with the 16-bit boot protocol
-([linux16 command](https://github.com/phaubertin/jinue/blob/main/boot/grub.cfg#L29)
+([linux16 command](https://github.com/phaubertin/jinue/blob/main/scripts/grub.cfg#L29)
 if using GRUB).
 
 For detail on the Linux boot protocol, see
