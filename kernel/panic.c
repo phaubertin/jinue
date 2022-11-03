@@ -29,9 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/hal/boot.h>
-#include <kernel/hal/startup.h>
-#include <kernel/hal/vga.h>
+#include <kernel/i686/boot.h>
+#include <kernel/i686/startup.h>
+#include <kernel/i686/vga.h>
 #include <kernel/debug.h>
 #include <kernel/logging.h>
 #include <stdbool.h>

@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/hal/cpu.h>
-#include <kernel/hal/vm.h>
+#include <kernel/i686/cpu.h>
+#include <kernel/i686/vm.h>
 #include <kernel/boot.h>
 #include <kernel/logging.h>
 #include <kernel/page_alloc.h>

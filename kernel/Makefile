@@ -30,7 +30,7 @@
 jinue_root = ..
 include $(jinue_root)/header.mk
 
-subdirs			 = hal
+subdirs			 = i686
 
 kernel_ldscript	 = $(scripts)/kernel.ld
 build_info_h     = build-info.gen.h
@@ -38,7 +38,7 @@ build_info_h     = build-info.gen.h
 LDFLAGS         += -T $(kernel_ldscript) -static-libgcc -m32 -march=i686
 LDLIBS           = -lgcc
 
-kernel.hal    	 = hal/kern-hal.o
+kernel.i686    	 = i686/kern-i686.o
 c.lib            = $(libc)/libc-kernel.a
 
 target	 		 = kernel-stripped
@@ -58,7 +58,7 @@ sources.c		 = \
 	syscall.c \
 	thread.c \
 	vmalloc.c
-objects.extra	 = $(c.lib) $(kernel.hal)
+objects.extra	 = $(c.lib) $(kernel.i686)
 
 include $(common)
 
@@ -72,8 +72,8 @@ kernel: $(objects) $(kernel_ldscript)
 
 $(target): kernel
 
-.PHONY: hal
-hal:
+.PHONY: i686
+i686:
 	$(MAKE) -C $@
 	
 .PHONY: libc
@@ -82,4 +82,4 @@ libc:
 
 $(c.lib): libc
 
-$(kernel.hal): hal
+$(kernel.i686): i686

@@ -30,8 +30,8 @@
  */
 
 #include <jinue/shared/syscall.h>
-#include <kernel/hal/serial.h>
-#include <kernel/hal/vga.h>
+#include <kernel/i686/serial.h>
+#include <kernel/i686/vga.h>
 #include <kernel/cmdline.h>
 #include <kernel/logging.h>
 #include <stdio.h>

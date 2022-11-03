@@ -31,7 +31,7 @@
 
 #include <jinue/shared/errno.h>
 #include <jinue/shared/ipc.h>
-#include <kernel/hal/thread.h>
+#include <kernel/i686/thread.h>
 #include <kernel/ipc.h>
 #include <kernel/object.h>
 #include <kernel/panic.h>

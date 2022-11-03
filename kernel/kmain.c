@@ -29,10 +29,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/hal/boot.h>
-#include <kernel/hal/hal.h>
-#include <kernel/hal/memory.h>
-#include <kernel/hal/vm.h>
+#include <kernel/i686/boot.h>
+#include <kernel/i686/machine.h>
+#include <kernel/i686/memory.h>
+#include <kernel/i686/vm.h>
 #include <kernel/boot.h>
 #include <kernel/cmdline.h>
 #include <kernel/elf.h>
@@ -135,8 +135,8 @@ void kmain(void) {
     /* Check and get kernel ELF header */
     Elf32_Ehdr *kernel = get_kernel_elf_header(boot_info);
 
-    /* initialize the hardware abstraction layer */
-    hal_init(kernel, cmdline_opts, &boot_alloc, boot_info);
+    /* initialize machine-dependent code */
+    machine_init(kernel, cmdline_opts, &boot_alloc, boot_info);
 
     /* initialize caches */
     ipc_boot_init();

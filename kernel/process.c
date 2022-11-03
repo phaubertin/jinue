@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/hal/cpu_data.h>
-#include <kernel/hal/vm.h>
+#include <kernel/i686/cpu_data.h>
+#include <kernel/i686/vm.h>
 #include <kernel/panic.h>
 #include <kernel/process.h>
 #include <kernel/object.h>

@@ -30,9 +30,9 @@
  */
 
 #include <jinue/shared/list.h>
-#include <kernel/hal/cpu_data.h>
-#include <kernel/hal/thread.h>
-#include <kernel/hal/vm.h>
+#include <kernel/i686/cpu_data.h>
+#include <kernel/i686/thread.h>
+#include <kernel/i686/vm.h>
 #include <kernel/boot.h>
 #include <kernel/object.h>
 #include <kernel/process.h>

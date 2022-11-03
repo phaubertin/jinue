@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/hal/trap.h>
-#include <kernel/hal/vm.h>
+#include <kernel/i686/trap.h>
+#include <kernel/i686/vm.h>
 #include <kernel/boot.h>
 #include <kernel/cmdline.h>
 #include <kernel/elf.h>

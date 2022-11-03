@@ -31,10 +31,10 @@
 
 #include <jinue/shared/errno.h>
 #include <jinue/shared/vm.h>
-#include <kernel/hal/cpu_data.h>
-#include <kernel/hal/memory.h>
-#include <kernel/hal/thread.h>
-#include <kernel/hal/trap.h>
+#include <kernel/i686/cpu_data.h>
+#include <kernel/i686/memory.h>
+#include <kernel/i686/thread.h>
+#include <kernel/i686/trap.h>
 #include <kernel/ipc.h>
 #include <kernel/logging.h>
 #include <kernel/object.h>

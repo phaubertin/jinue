@@ -30,8 +30,8 @@
  */
 
 #include <jinue/shared/types.h>
-#include <kernel/hal/abi.h>
-#include <kernel/hal/boot.h>
+#include <kernel/i686/abi.h>
+#include <kernel/i686/boot.h>
 #include <kernel/debug.h>
 #include <kernel/elf.h>
 #include <kernel/logging.h>

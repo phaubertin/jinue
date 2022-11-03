@@ -166,10 +166,10 @@
 /* TODO check this #include */
 #include <sys/asm/elf.h>
 #include <kernel/asm/cmdline.h>
-#include <kernel/hal/asm/boot.h>
-#include <kernel/hal/asm/memory.h>
-#include <kernel/hal/asm/vm.h>
-#include <kernel/hal/asm/x86.h>
+#include <kernel/i686/asm/boot.h>
+#include <kernel/i686/asm/memory.h>
+#include <kernel/i686/asm/vm.h>
+#include <kernel/i686/asm/x86.h>
 
 ; Stack frame variables and size
 #define VAR_ZERO_PAGE       0
