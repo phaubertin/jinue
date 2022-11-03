@@ -30,8 +30,6 @@
 jinue_root = ..
 include $(jinue_root)/header.mk
 
-subdirs			 = i686
-
 kernel_ldscript	 = $(scripts)/kernel.ld
 build_info_h     = build-info.gen.h
 
@@ -44,6 +42,18 @@ c.lib            = $(libc)/libc-kernel.a
 target	 		 = kernel-stripped
 unclean.extra    = kernel $(build_info_h)
 sources.c		 = \
+	i686/boot.c \
+	i686/cpu.c \
+	i686/interrupt.c \
+	i686/machine.c \
+	i686/memory.c \
+	i686/pic8259.c \
+	i686/serial.c \
+	i686/thread.c \
+	i686/vga.c \
+	i686/vm.c \
+	i686/vm_pae.c \
+	i686/vm_x86.c \
 	boot.c \
 	cmdline.c \
 	debug.c \
@@ -58,7 +68,17 @@ sources.c		 = \
 	syscall.c \
 	thread.c \
 	vmalloc.c
-objects.extra	 = $(c.lib) $(kernel.i686)
+	
+sources.nasm = \
+	i686/abi.asm \
+	i686/crt.asm \
+	i686/io.asm \
+	i686/remap.asm \
+	i686/trap.asm \
+	i686/thread_switch.asm \
+	i686/x86.asm
+
+objects.extra = $(c.lib)
 
 include $(common)
 
@@ -72,14 +92,8 @@ kernel: $(objects) $(kernel_ldscript)
 
 $(target): kernel
 
-.PHONY: i686
-i686:
-	$(MAKE) -C $@
-	
 .PHONY: libc
 libc:
 	$(MAKE) -C $(libc)
 
 $(c.lib): libc
-
-$(kernel.i686): i686
