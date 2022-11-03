@@ -29,7 +29,7 @@
 
 include header.mk
 
-subdirs              = boot doc kernel $(userspace)/loader $(libc) $(libjinue) $(scripts)
+subdirs              = boot doc kernel $(userspace)/loader $(libc) $(libjinue)
 
 kernel               = kernel/kernel
 setup16              = boot/setup16.o
@@ -39,10 +39,10 @@ kernel_img           = bin/jinue
 jinue_iso            = bin/jinue.iso
 vbox_vm_name         = Jinue
 
-image_ldscript	 	 = $(scripts)/image.ld
+image_ldscript	 	 = kernel/i686/ld/image.ld
 
 temp_iso_fs          = bin/iso-tmp
-grub_config          = boot/grub.cfg
+grub_config          = $(scripts)/grub.cfg
 grub_image_rel       = boot/grub/i386-pc/jinue.img
 grub_image           = $(temp_iso_fs)/$(grub_image_rel)
 

@@ -30,7 +30,7 @@
 jinue_root = ..
 include $(jinue_root)/header.mk
 
-kernel_ldscript	 = $(scripts)/kernel.ld
+kernel_ldscript	 = i686/ld/kernel.ld
 build_info_h     = build-info.gen.h
 
 LDFLAGS         += -T $(kernel_ldscript) -static-libgcc -m32 -march=i686
