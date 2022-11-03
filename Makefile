@@ -31,9 +31,9 @@ include header.mk
 
 subdirs              = boot doc kernel $(userspace)/loader $(libc) $(libjinue)
 
-kernel               = kernel/kernel
-setup16              = boot/setup16.o
-setup32              = boot/setup32.o
+kernel               = kernel/i686/kernel
+setup16              = kernel/i686/setup16.o
+setup32              = kernel/i686/setup32.o
 vbox_initrd          = boot/vbox-initrd.gz
 kernel_img           = bin/jinue
 jinue_iso            = bin/jinue.iso
@@ -103,7 +103,7 @@ loader:
 boot:
 	$(MAKE) -C boot
 
-$(setup16) $(setup32): boot
+$(setup16) $(setup32): kernel
 
 # ----- bootable ISO image for virtual machine
 $(temp_iso_fs): $(kernel_img) $(grub_config) $(vbox_initrd) FORCE

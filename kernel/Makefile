@@ -31,16 +31,29 @@ jinue_root = ..
 include $(jinue_root)/header.mk
 
 kernel_ldscript	 = i686/ld/kernel.ld
+image_ldscript	 = i686/ld/image.ld
 build_info_h     = build-info.gen.h
 
 LDFLAGS         += -T $(kernel_ldscript) -static-libgcc -m32 -march=i686
 LDLIBS           = -lgcc
 
-kernel.i686    	 = i686/kern-i686.o
 c.lib            = $(libc)/libc-kernel.a
 
-target	 		 = kernel-stripped
-unclean.extra    = kernel $(build_info_h)
+kernel	 		 = i686/kernel
+target	 		 = i686/kernel-stripped
+setup16			 = i686/setup16.o
+setup32			 = i686/setup32.o
+
+unclean.extra    = \
+	$(kernel) \
+	$(build_info_h) \
+	$(kernel_ldscript) \
+	$(image_ldscript) \
+	$(setup16) \
+	$(setup32) \
+	$(setup16:%.o=%.d) \
+	$(setup32:%.o=%.d)
+
 sources.c		 = \
 	i686/boot.c \
 	i686/cpu.c \
@@ -87,10 +100,14 @@ $(build_info_h): FORCE
 	
 kmain.o: kmain.c $(build_info_h)
 
-kernel: $(objects) $(kernel_ldscript)
+$(setup16): i686/setup16.asm
+
+$(setup32): i686/setup32.asm
+
+$(kernel): $(objects) $(kernel_ldscript)
 	$(LINK.o) $(objects) $(LOADLIBES) $(LDLIBS) -o $@
 
-$(target): kernel
+$(target): $(kernel)
 
 .PHONY: libc
 libc:
