@@ -29,19 +29,20 @@
 
 include header.mk
 
-subdirs              = doc kernel $(userspace)/loader $(libc) $(libjinue)
+subdirs              = boot doc kernel $(userspace)/loader $(libc) $(libjinue)
 
 kernel               = kernel/i686/kernel
 setup16              = kernel/i686/setup16.o
 setup32              = kernel/i686/setup32.o
-image_ldscript	 	 = kernel/i686/ld/image.ld
+vbox_initrd          = boot/vbox-initrd.gz
 kernel_img           = bin/jinue
-
+jinue_iso            = bin/jinue.iso
 vbox_vm_name         = Jinue
-vbox_initrd          = $(virtualbox)/vbox-initrd.gz
-jinue_iso            = $(virtualbox)/jinue.iso
-temp_iso_fs          = $(virtualbox)/iso-tmp
-grub_config          = $(virtualbox)/grub.cfg
+
+image_ldscript	 	 = kernel/i686/ld/image.ld
+
+temp_iso_fs          = bin/iso-tmp
+grub_config          = $(scripts)/grub.cfg
 grub_image_rel       = boot/grub/i386-pc/jinue.img
 grub_image           = $(temp_iso_fs)/$(grub_image_rel)
 
@@ -96,6 +97,11 @@ $(kernel_img): $(setup16) $(setup32) $(kernel) loader $(image_ldscript)
 .PHONY: loader
 loader:
 	$(MAKE) -C $(userspace)/loader
+
+# ----- setup code, boot sector, etc.
+.PHONY: boot
+boot:
+	$(MAKE) -C boot
 
 $(setup16) $(setup32): kernel
 

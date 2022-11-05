@@ -1,4 +1,4 @@
-# Copyright (C) 2022 Philippe Aubertin.
+# Copyright (C) 2019 Philippe Aubertin.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -26,9 +26,12 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-# ------------------------------------------------------------------------------
 
-iso-tmp/
-jinue.iso
-vbox-initrd.gz
+jinue_root = ..
+include $(jinue_root)/header.mk
+
+sources.nasm = setup16.asm setup32.asm
+
+targets = setup16.o setup32.o
+
+include $(common)

@@ -57,7 +57,6 @@ jinue_root 			?= .
 includes             = $(jinue_root)/include
 scripts              = $(jinue_root)/scripts
 userspace			 = $(jinue_root)/userspace
-virtualbox			 = $(jinue_root)/virtualbox
 lib                  = $(userspace)/lib
 libjinue             = $(lib)/jinue
 libc                 = $(lib)/libc
