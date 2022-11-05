@@ -1,4 +1,4 @@
-# Copyright (C) 2019 Philippe Aubertin.
+# Copyright (C) 2019-2022 Philippe Aubertin.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,7 +29,7 @@
 
 include header.mk
 
-subdirs              = boot doc kernel $(userspace)/loader $(libc) $(libjinue)
+subdirs              = doc kernel $(userspace)/loader $(libc) $(libjinue)
 
 kernel               = kernel/i686/kernel
 setup16              = kernel/i686/setup16.o
@@ -42,7 +42,7 @@ vbox_vm_name         = Jinue
 image_ldscript	 	 = kernel/i686/ld/image.ld
 
 temp_iso_fs          = bin/iso-tmp
-grub_config          = $(scripts)/grub.cfg
+grub_config          = $(virtualbox)/grub.cfg
 grub_image_rel       = boot/grub/i386-pc/jinue.img
 grub_image           = $(temp_iso_fs)/$(grub_image_rel)
 
