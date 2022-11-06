@@ -44,7 +44,7 @@ target               = $(kernel_img)
 include $(common)
 
 .PHONY: install
-install: $(kernel_img)
+install: $(kernel_img) kernel-image
 	install -m644 $< /boot
 
 .PHONY: vbox
