@@ -29,50 +29,62 @@
 
 include header.mk
 
-subdirs              = doc kernel $(userspace)/loader $(libc) $(libjinue) $(virtualbox)
+subdirs = doc kernel $(userspace)/loader $(libc) $(libjinue) $(virtualbox)
 
-# ----- main targets
+# make all (default target) will build the kernel image
+targets.phony = image
+
+# main targets
 include $(common)
 
+# install kernel image in /boot
 .PHONY: install
 install: $(kernel_img) kernel-image
 	install -m644 $< /boot
 
+# build the ISO file (CDROM image) needed by the VirtualBox VM
 .PHONY: vbox
 vbox: $(kernel_img)
 	make -C $(virtualbox)
 
+# build the ISO file for VirtualBox and run the VM with the debugger
 .PHONY: vbox-debug
 vbox-debug: $(kernel_img)
 	make -C $(virtualbox) debug
-	
+
+# build the ISO file for VirtualBox and run the VM (without the debugger)
 .PHONY: vbox-run
 vbox-run: $(kernel_img)
 	make -C $(virtualbox) run
 
+# Run cppcheck on the kernel sources
+# Note: there are known failures
 .PHONY: cppcheck-kernel
 cppcheck-kernel:
 	cppcheck --enable=all --std=c99 --platform=unix32 $(CPPFLAGS.includes) $(kernel)
 
-# ----- documentation
+# build the Doxygen documentation
+# (not really maintained)
 .PHONY: doc
 doc:
 	$(MAKE) -C doc
 
+# clean the Doxygen docuumentation
 .PHONY: clean-doc
 clean-doc:
 	$(MAKE) -C doc clean
 
-# ----- kernel image
+# build the kernel ELF file
 .PHONY: kernel
 kernel:
 	$(MAKE) -C kernel
 
+# build the kernel image (set up code + kernel ELF + user space loader ELF)
 .PHONY: image
 image:
 	$(MAKE) -C kernel image
 
-# ----- user space loader
+# build the user space loader
 .PHONY: loader
 loader:
 	$(MAKE) -C $(userspace)/loader
