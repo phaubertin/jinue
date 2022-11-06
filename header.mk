@@ -54,11 +54,12 @@
 jinue_root 			?= .
 
 # project directory structure
+devel             	 = $(jinue_root)/devel
 includes             = $(jinue_root)/include
 kernel             	 = $(jinue_root)/kernel
 scripts              = $(jinue_root)/scripts
 userspace			 = $(jinue_root)/userspace
-virtualbox			 = $(jinue_root)/virtualbox
+virtualbox			 = $(devel)/virtualbox
 lib                  = $(userspace)/lib
 libjinue             = $(lib)/jinue
 libc                 = $(lib)/libc
