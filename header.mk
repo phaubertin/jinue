@@ -55,6 +55,7 @@ jinue_root 			?= .
 
 # project directory structure
 includes             = $(jinue_root)/include
+kernel             	 = $(jinue_root)/kernel
 scripts              = $(jinue_root)/scripts
 userspace			 = $(jinue_root)/userspace
 virtualbox			 = $(jinue_root)/virtualbox

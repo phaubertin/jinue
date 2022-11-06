@@ -39,7 +39,9 @@ clean:
 ifneq ($(strip $(subdirs)),)
 	for i in $(subdirs); do make -C $$i clean; done
 endif
+ifneq ($(strip $(unclean)),)
 	-rm -f $(unclean)
+endif
 ifneq ($(strip $(unclean_recursive)),)
 	-rm -rf $(unclean_recursive)
 endif
