@@ -31,15 +31,6 @@ include header.mk
 
 subdirs              = doc kernel $(userspace)/loader $(libc) $(libjinue) $(virtualbox)
 
-kernel               = kernel/i686/kernel
-setup16              = kernel/i686/setup16.o
-setup32              = kernel/i686/setup32.o
-vbox_initrd          = boot/vbox-initrd.gz
-
-kernel_img           = bin/jinue
-image_ldscript	 	 = kernel/i686/ld/image.ld
-target               = $(kernel_img)
-
 # ----- main targets
 include $(common)
 
@@ -77,14 +68,9 @@ clean-doc:
 kernel:
 	$(MAKE) -C kernel
 
-.PHONY: kernel-image
-kernel-image: $(kernel_img)
-
-$(kernel): kernel
-	true
-
-$(kernel_img): $(setup16) $(setup32) $(kernel) loader $(image_ldscript)
-	$(LINK.o) -Wl,-T,$(image_ldscript) $(LOADLIBES) $(LDLIBS) -o $@
+.PHONY: image
+image:
+	$(MAKE) -C kernel image
 
 # ----- user space loader
 .PHONY: loader

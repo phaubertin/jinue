@@ -32,8 +32,12 @@ include $(jinue_root)/header.mk
 
 vm_name         	 = Jinue
 
-# TODO move grub_modules definition here
-kernel_img           = $(jinue_root)/bin/jinue
+# GRUB location (for creation of bootable ISO for virtual machine)
+#
+# TODO this should probably be configurable through some sort of configure script
+grub_modules         = /usr/lib/grub/i386-pc
+
+kernel_img           = $(jinue_root)/kernel/i686/jinue
 temp_iso_fs          = iso-tmp
 grub_config          = grub.cfg
 jinue_iso            = jinue.iso
@@ -57,7 +61,7 @@ debug: $(jinue_iso)
 
 .PHONY: kernel-image
 kernel-image:
-	make -C $(jinue_root) kernel-image
+	make -C $(jinue_root)/kernel image
 
 $(kernel_img): kernel-image
 

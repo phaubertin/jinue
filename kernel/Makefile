@@ -19,7 +19,7 @@
 # THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
 # ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE FOR ANY
+# DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTO-RS BE LIABLE FOR ANY
 # DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
 # (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
 # LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
@@ -34,18 +34,23 @@ kernel_ldscript	 = i686/ld/kernel.ld
 image_ldscript	 = i686/ld/image.ld
 build_info_h     = build-info.gen.h
 
-LDFLAGS         += -T $(kernel_ldscript) -static-libgcc -m32 -march=i686
-LDLIBS           = -lgcc
+LDFLAGS         += -m32 -march=i686
+KERNEL_LDFLAGS	 = -T $(kernel_ldscript) -static-libgcc
+KERNEL_LDLIBS    = -lgcc
+IMAGE_LDFLAGS  	 = -T $(image_ldscript)
 
 c.lib            = $(libc)/libc-kernel.a
+loader.bin	 	 = $(loader)/loader
 
 kernel	 		 = i686/kernel
-target	 		 = i686/kernel-stripped
+image			 = i686/jinue
 setup16			 = i686/setup16.o
 setup32			 = i686/setup32.o
+target	 		 = i686/kernel-stripped
 
 unclean.extra    = \
 	$(kernel) \
+	$(image) \
 	$(build_info_h) \
 	$(kernel_ldscript) \
 	$(image_ldscript) \
@@ -95,6 +100,9 @@ objects.extra = $(c.lib)
 
 include $(common)
 
+.PHONY: image
+image: $(image)
+
 $(build_info_h): FORCE
 	$(scripts)/gen_build_info_h.sh > $@
 	
@@ -105,12 +113,19 @@ $(setup16): i686/setup16.asm
 $(setup32): i686/setup32.asm
 
 $(kernel): $(objects) $(kernel_ldscript)
-	$(LINK.o) $(objects) $(LOADLIBES) $(LDLIBS) -o $@
+	$(LINK.o) $(KERNEL_LDFLAGS) $(objects) $(KERNEL_LDLIBS) -o $@
 
-$(target): $(kernel)
+$(image): $(setup16) $(setup32) $(kernel)-stripped loader $(image_ldscript)
+	$(LINK.o) $(IMAGE_LDFLAGS) -o $@
 
 .PHONY: libc
 libc:
 	$(MAKE) -C $(libc)
 
+.PHONY: loader
+loader:
+	$(MAKE) -C $(loader)
+
 $(c.lib): libc
+
+$(loader.bin): loader

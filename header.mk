@@ -63,6 +63,7 @@ virtualbox			 = $(devel)/virtualbox
 lib                  = $(userspace)/lib
 libjinue             = $(lib)/jinue
 libc                 = $(lib)/libc
+loader               = $(userspace)/loader
 
 # object files
 objects.c            = $(sources.c:%.c=%.o)
@@ -128,11 +129,6 @@ DEPFLAGS             = -MT $@ -MD -MP -MF $*.d
 
 # Add dependencies generation flags when compiling object files from C source code
 COMPILE.c = $(CC) $(DEPFLAGS) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
-
-# GRUB location (for creation of bootable ISO for virtual machine)
-#
-# This should probably be configurable through some sort of configure script
-grub_modules         = /usr/lib/grub/i386-pc
 
 # macro to include common target definitions (all, clean, implicit rules)
 common               = $(jinue_root)/common.mk
