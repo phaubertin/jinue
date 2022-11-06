@@ -55,8 +55,11 @@ run: $(jinue_iso)
 debug: $(jinue_iso)
 	vboxmanage startvm $(vm_name) -E VBOX_GUI_DBG_AUTO_SHOW=true -E VBOX_GUI_DBG_ENABLED=true
 
-$(kernel_img):
+.PHONY: kernel-image
+kernel-image:
 	make -C $(jinue_root) kernel-image
+
+$(kernel_img): kernel-image
 
 $(temp_iso_fs): $(grub_config)
 	mkdir -p $(temp_iso_fs)/boot/grub/i386-pc
@@ -67,7 +70,7 @@ $(temp_iso_fs): $(grub_config)
 $(initrd): $(temp_iso_fs)
 	head -c 1m < /dev/urandom | gzip > $@
 
-$(kernel_img_copy): $(kernel_img) $(temp_iso_fs)
+$(kernel_img_copy): $(kernel_img) $(temp_iso_fs) kernel-image
 	cp $< $@
 
 $(grub_image): $(initrd) $(kernel_img_copy)
