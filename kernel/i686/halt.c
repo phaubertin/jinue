@@ -36,18 +36,18 @@
 #include <stdbool.h>
 
 static void reboot(void) {
-	outb(0x64, 0xfe);
+    outb(0x64, 0xfe);
 }
 
 void halt(void) {
-	const cmdline_opts_t *cmdline_opts = cmdline_get_options();
+    const cmdline_opts_t *cmdline_opts = cmdline_get_options();
 
-	if(cmdline_opts->on_halt == CMDLINE_OPT_ON_HALT_RESET) {
-		reboot();
-	}
+    if(cmdline_opts->on_halt == CMDLINE_OPT_ON_HALT_RESET) {
+        reboot();
+    }
 
-	while(true) {
-		cli();
-		hlt();
-	}
+    while(true) {
+        cli();
+        hlt();
+    }
 }

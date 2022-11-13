@@ -45,4 +45,4 @@ _start:
 
 .end:
 
-	call halt
+    call halt
