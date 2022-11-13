@@ -106,8 +106,8 @@ typedef struct {
 } parse_context_t;
 
 typedef enum {
-	CMDLINE_OPT_NAME_IDLE,
-	CMDLINE_OPT_NAME_ON_HALT,
+    CMDLINE_OPT_NAME_IDLE,
+    CMDLINE_OPT_NAME_ON_HALT,
     CMDLINE_OPT_NAME_PAE,
     CMDLINE_OPT_NAME_SERIAL_ENABLE,
     CMDLINE_OPT_NAME_SERIAL_BAUD_RATE,
@@ -117,7 +117,7 @@ typedef enum {
 } cmdline_opt_names_t;
 
 static const enum_def_t kernel_option_names[] = {
-	{"idle",             	CMDLINE_OPT_NAME_IDLE},
+    {"idle",                CMDLINE_OPT_NAME_IDLE},
 	{"on_halt",             CMDLINE_OPT_NAME_ON_HALT},
     {"pae",                 CMDLINE_OPT_NAME_PAE},
     {"serial_enable",       CMDLINE_OPT_NAME_SERIAL_ENABLE},
@@ -130,14 +130,14 @@ static const enum_def_t kernel_option_names[] = {
 
 static const enum_def_t opt_idle_names[] = {
     {"panic",       CMDLINE_OPT_IDLE_PANIC},
-    {"halt",     	CMDLINE_OPT_IDLE_HALT},
+    {"halt",        CMDLINE_OPT_IDLE_HALT},
     {NULL, 0}
 };
 
 static const enum_def_t opt_on_halt_names[] = {
     {"halt",        CMDLINE_OPT_ON_HALT_HALT},
-    {"reboot",     	CMDLINE_OPT_ON_HALT_RESET},
-	{"reset",     	CMDLINE_OPT_ON_HALT_RESET},
+    {"reboot",      CMDLINE_OPT_ON_HALT_RESET},
+    {"reset",       CMDLINE_OPT_ON_HALT_RESET},
     {NULL, 0}
 };
 
@@ -204,8 +204,8 @@ static const enum_def_t bool_names[] = {
 };
 
 static cmdline_opts_t cmdline_options = {
-	.idle				= CMDLINE_OPT_IDLE_PANIC,
-	.on_halt			= CMDLINE_OPT_ON_HALT_HALT,
+    .idle               = CMDLINE_OPT_IDLE_PANIC,
+    .on_halt            = CMDLINE_OPT_ON_HALT_HALT,
     .pae                = CMDLINE_OPT_PAE_AUTO,
     .serial_enable      = false,
     .serial_baud_rate   = SERIAL_DEFAULT_BAUD_RATE,

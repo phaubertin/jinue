@@ -125,8 +125,8 @@ static void idle(void) {
     const cmdline_opts_t *cmdline_opts = cmdline_get_options();
 
     if(cmdline_opts->idle == CMDLINE_OPT_IDLE_HALT) {
-    	warning("No thread to schedule");
-    	halt();
+        warning("No thread to schedule");
+        halt();
     }
 
     panic("No thread to schedule");
