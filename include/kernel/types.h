@@ -36,7 +36,7 @@
 #include <jinue/shared/list.h>
 #include <jinue/shared/syscall.h>
 #include <jinue/shared/types.h>
-#include <hal/types.h>
+#include <kernel/i686/types.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>

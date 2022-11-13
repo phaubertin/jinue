@@ -31,21 +31,21 @@
 
 #include <jinue/shared/errno.h>
 #include <jinue/shared/ipc.h>
-#include <hal/thread.h>
-#include <ipc.h>
-#include <object.h>
-#include <panic.h>
-#include <process.h>
-#include <slab.h>
+#include <kernel/i686/thread.h>
+#include <kernel/ipc.h>
+#include <kernel/object.h>
+#include <kernel/panic.h>
+#include <kernel/process.h>
+#include <kernel/slab.h>
+#include <kernel/syscall.h>
+#include <kernel/thread.h>
 #include <stddef.h>
 #include <string.h>
-#include <syscall.h>
-#include <thread.h>
 
 /** slab cache used for allocating IPC endpoint objects */
 static slab_cache_t ipc_object_cache;
 
-static ipc_t *proc_ipc = NULL;
+static ipc_t *loader_ipc = NULL;
 
 /**
  * Object constructor for IPC endpoint slab allocator
@@ -78,10 +78,10 @@ void ipc_boot_init(void) {
             NULL,
             SLAB_DEFAULTS);
 
-    proc_ipc = slab_cache_alloc(&ipc_object_cache);
+    loader_ipc = slab_cache_alloc(&ipc_object_cache);
 
-    if(proc_ipc == NULL) {
-        panic("Cannot create process manager IPC object.");
+    if(loader_ipc == NULL) {
+        panic("Cannot create user space loader IPC object.");
     }
 }
 
@@ -109,8 +109,8 @@ static ipc_t *ipc_object_create(int flags) {
  * TODO get rid of this
  *
  * */
-static ipc_t *ipc_get_proc_object(void) {
-    return proc_ipc;
+static ipc_t *ipc_get_loader_endpoint(void) {
+    return loader_ipc;
 }
 
 /**
@@ -133,8 +133,8 @@ int ipc_create_for_current_process(int flags) {
         return -JINUE_EAGAIN;
     }
 
-    if(flags & JINUE_IPC_PROC) {
-        ipc = ipc_get_proc_object();
+    if(flags & JINUE_IPC_LOADER) {
+        ipc = ipc_get_loader_endpoint();
     }
     else {
         int ipc_flags = IPC_FLAG_NONE;

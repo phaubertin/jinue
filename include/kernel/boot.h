@@ -32,7 +32,7 @@
 #ifndef JINUE_KERNEL_BOOT_H
 #define JINUE_KERNEL_BOOT_H
 
-#include <types.h>
+#include <kernel/types.h>
 
 void boot_alloc_init(boot_alloc_t *boot_alloc, const boot_info_t *boot_info);
 

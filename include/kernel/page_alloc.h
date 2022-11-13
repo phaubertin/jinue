@@ -32,7 +32,7 @@
 #ifndef JINUE_KERNEL_PAGE_ALLOC_H
 #define JINUE_KERNEL_PAGE_ALLOC_H
 
-#include <types.h>
+#include <kernel/types.h>
 
 void *page_alloc(void);
 

@@ -32,7 +32,7 @@
 #ifndef JINUE_KERNEL_THREAD_H
 #define JINUE_KERNEL_THREAD_H
 
-#include <types.h>
+#include <kernel/types.h>
 
 thread_t *thread_create(
         process_t       *process,

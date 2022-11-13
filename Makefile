@@ -1,4 +1,4 @@
-# Copyright (C) 2019 Philippe Aubertin.
+# Copyright (C) 2019-2022 Philippe Aubertin.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,97 +29,62 @@
 
 include header.mk
 
-subdirs              = boot doc kernel proc $(libc) $(libjinue) $(scripts)
+subdirs = doc kernel $(userspace)/loader $(libc) $(libjinue) $(virtualbox)
 
-kernel               = kernel/kernel
-setup16              = boot/setup16.o
-setup32              = boot/setup32.o
-vbox_initrd          = boot/vbox-initrd.gz
-kernel_img           = bin/jinue
-jinue_iso            = bin/jinue.iso
-vbox_vm_name         = Jinue
+# make all (default target) will build the kernel image
+targets.phony = image
 
-image_ldscript	 	 = $(scripts)/image.ld
-
-temp_iso_fs          = bin/iso-tmp
-grub_config          = boot/grub.cfg
-grub_image_rel       = boot/grub/i386-pc/jinue.img
-grub_image           = $(temp_iso_fs)/$(grub_image_rel)
-
-target               = $(kernel_img)
-unclean.extra        = $(jinue_iso) $(vbox_initrd)
-unclean_recursive    = $(temp_iso_fs)
-
-
-# ----- main targets
+# main targets
 include $(common)
 
+# install kernel image in /boot
 .PHONY: install
-install: $(kernel_img)
+install: $(kernel_img) kernel-image
 	install -m644 $< /boot
 
+# build the ISO file (CDROM image) needed by the VirtualBox VM
 .PHONY: vbox
-vbox: $(jinue_iso) $(vbox_initrd)
+vbox: $(kernel_img)
+	make -C $(virtualbox)
 
+# build the ISO file for VirtualBox and run the VM with the debugger
 .PHONY: vbox-debug
-vbox-debug: vbox
-	vboxmanage startvm $(vbox_vm_name) -E VBOX_GUI_DBG_AUTO_SHOW=true -E VBOX_GUI_DBG_ENABLED=true
-	
-.PHONY: vbox-run
-vbox-run: vbox
-	vboxmanage startvm $(vbox_vm_name)
+vbox-debug: $(kernel_img)
+	make -C $(virtualbox) debug
 
+# build the ISO file for VirtualBox and run the VM (without the debugger)
+.PHONY: vbox-run
+vbox-run: $(kernel_img)
+	make -C $(virtualbox) run
+
+# Run cppcheck on the kernel sources
+# Note: there are known failures
 .PHONY: cppcheck-kernel
 cppcheck-kernel:
-	cppcheck --enable=all --std=c99 --platform=unix32 $(CPPFLAGS.includes) kernel/
+	cppcheck --enable=all --std=c99 --platform=unix32 $(CPPFLAGS.includes) $(kernel)
 
-# ----- documentation
+# build the Doxygen documentation
+# (not really maintained)
 .PHONY: doc
 doc:
 	$(MAKE) -C doc
 
+# clean the Doxygen docuumentation
 .PHONY: clean-doc
 clean-doc:
 	$(MAKE) -C doc clean
 
-# ----- kernel image
+# build the kernel ELF file
 .PHONY: kernel
 kernel:
 	$(MAKE) -C kernel
 
-$(kernel): kernel
-	true
+# build the kernel image (set up code + kernel ELF + user space loader ELF)
+.PHONY: image
+image:
+	$(MAKE) -C kernel image
 
-$(kernel_img): $(setup16) $(setup32) $(kernel) proc $(image_ldscript)
-	$(LINK.o) -Wl,-T,$(image_ldscript) $(LOADLIBES) $(LDLIBS) -o $@
-
-# ----- process manager
-.PHONY: proc
-proc:
-	$(MAKE) -C proc
-
-# ----- setup code, boot sector, etc.
-.PHONY: boot
-boot:
-	$(MAKE) -C boot
-
-$(setup16) $(setup32): boot
-
-# ----- bootable ISO image for virtual machine
-$(temp_iso_fs): $(kernel_img) $(grub_config) $(vbox_initrd) FORCE
-	mkdir -p $(temp_iso_fs)/boot/grub/i386-pc
-	cp $(grub_modules)/* $(temp_iso_fs)/boot/grub/i386-pc/
-	cp $(kernel_img) $(temp_iso_fs)/boot/
-	cp $(grub_config) $(temp_iso_fs)/boot/grub/
-	cp $(vbox_initrd) $(temp_iso_fs)/boot/
-	touch $(temp_iso_fs)
-
-$(grub_image): $(temp_iso_fs)
-	grub2-mkimage --prefix '/boot/grub' --output $(grub_image) --format i386-pc-eltorito --compression auto --config $(grub_config) biosdisk iso9660
-
-$(jinue_iso): $(grub_image)
-	xorriso -as mkisofs -graft-points -b $(grub_image_rel) -no-emul-boot -boot-load-size 4 -boot-info-table --grub2-boot-info --grub2-mbr $(grub_modules)/boot_hybrid.img --protective-msdos-label -o $(jinue_iso) -r $(temp_iso_fs) --sort-weight 0 / --sort-weight 1 /boot
-	
-# Fake initrd file for virtual machine
-$(vbox_initrd):
-	head -c 1m < /dev/urandom | gzip > $(vbox_initrd)
+# build the user space loader
+.PHONY: loader
+loader:
+	$(MAKE) -C $(userspace)/loader

@@ -29,17 +29,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <hal/vm.h>
+#include <kernel/i686/vm.h>
+#include <kernel/boot.h>
+#include <kernel/page_alloc.h>
+#include <kernel/panic.h>
+#include <kernel/types.h>
+#include <kernel/util.h>
+#include <kernel/vmalloc.h>
 #include <assert.h>
-#include <boot.h>
-#include <page_alloc.h>
-#include <panic.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
-#include <types.h>
-#include <util.h>
-#include <vmalloc.h>
 
 
 /**

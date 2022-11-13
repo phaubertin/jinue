@@ -51,17 +51,19 @@
 # relative path to the root of the project
 #
 # Makefiles that include this file must define this.
-jinue_root 			?= .
+jinue_root          ?= .
 
 # project directory structure
+devel                = $(jinue_root)/devel
 includes             = $(jinue_root)/include
-lib                  = $(jinue_root)/lib
+kernel               = $(jinue_root)/kernel
 scripts              = $(jinue_root)/scripts
-
-libc_includes        = $(includes)/libc
-kernel_includes	     = $(includes)/kernel
+userspace            = $(jinue_root)/userspace
+virtualbox           = $(devel)/virtualbox
+lib                  = $(userspace)/lib
 libjinue             = $(lib)/jinue
 libc                 = $(lib)/libc
+loader               = $(userspace)/loader
 
 # object files
 objects.c            = $(sources.c:%.c=%.o)
@@ -98,7 +100,7 @@ endif
 # C preprocessor flags
 #
 # These flags are used when preprocessing C and assembly language files.
-CPPFLAGS.includes    = -I$(kernel_includes) -I$(libc_includes)
+CPPFLAGS.includes    = -I$(includes)
 CPPFLAGS.others      = -nostdinc
 CPPFLAGS             = $(CPPFLAGS.includes) $(CPPFLAGS.debug) $(CPPFLAGS.others) $(CPPFLAGS.extra)
 
@@ -127,11 +129,6 @@ DEPFLAGS             = -MT $@ -MD -MP -MF $*.d
 
 # Add dependencies generation flags when compiling object files from C source code
 COMPILE.c = $(CC) $(DEPFLAGS) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
-
-# GRUB location (for creation of bootable ISO for virtual machine)
-#
-# This should probably be configurable through some sort of configure script
-grub_modules         = /usr/lib/grub/i386-pc
 
 # macro to include common target definitions (all, clean, implicit rules)
 common               = $(jinue_root)/common.mk

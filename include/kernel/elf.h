@@ -32,8 +32,8 @@
 #ifndef JINUE_KERNEL_ELF_H
 #define JINUE_KERNEL_ELF_H
 
+#include <kernel/types.h>
 #include <sys/elf.h>
-#include <types.h>
 
 
 typedef struct {

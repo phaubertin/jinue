@@ -29,22 +29,22 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <hal/boot.h>
-#include <hal/hal.h>
-#include <hal/vm.h>
-#include <boot.h>
-#include <cmdline.h>
-#include <elf.h>
-#include <hal/memory.h>
+#include <kernel/i686/boot.h>
+#include <kernel/i686/machine.h>
+#include <kernel/i686/memory.h>
+#include <kernel/i686/vm.h>
+#include <kernel/boot.h>
+#include <kernel/cmdline.h>
+#include <kernel/elf.h>
+#include <kernel/ipc.h>
+#include <kernel/kmain.h>
+#include <kernel/logging.h>
+#include <kernel/panic.h>
+#include <kernel/process.h>
+#include <kernel/syscall.h>
+#include <kernel/thread.h>
 #include <inttypes.h>
-#include <ipc.h>
-#include <kmain.h>
-#include <logging.h>
-#include <panic.h>
-#include <process.h>
 #include <stddef.h>
-#include <syscall.h>
-#include <thread.h>
 #include "build-info.gen.h"
 
 
@@ -65,21 +65,21 @@ static Elf32_Ehdr *get_kernel_elf_header(const boot_info_t *boot_info) {
 }
 
 static Elf32_Ehdr *get_userspace_loader_elf_header(const boot_info_t *boot_info) {
-    if(boot_info->proc_start == NULL) {
+    if(boot_info->loader_start == NULL) {
         panic("malformed boot image: no user space loader ELF binary");
     }
 
-    if(boot_info->proc_size < sizeof(Elf32_Ehdr)) {
+    if(boot_info->loader_size < sizeof(Elf32_Ehdr)) {
         panic("user space loader too small to be an ELF binary");
     }
 
-    info("Found user space loader with size %" PRIu32 " bytes.", boot_info->proc_size);
+    info("Found user space loader with size %" PRIu32 " bytes.", boot_info->loader_size);
 
-    if(! elf_check(boot_info->proc_start)) {
+    if(! elf_check(boot_info->loader_start)) {
         panic("user space loader ELF binary is invalid");
     }
 
-    return boot_info->proc_start;
+    return boot_info->loader_start;
 }
 
 
@@ -135,14 +135,14 @@ void kmain(void) {
     /* Check and get kernel ELF header */
     Elf32_Ehdr *kernel = get_kernel_elf_header(boot_info);
 
-    /* initialize the hardware abstraction layer */
-    hal_init(kernel, cmdline_opts, &boot_alloc, boot_info);
+    /* initialize machine-dependent code */
+    machine_init(kernel, cmdline_opts, &boot_alloc, boot_info);
 
     /* initialize caches */
     ipc_boot_init();
     process_boot_init();
 
-    /* create process for process manager */
+    /* create process for user space loader */
     process_t *process = process_create();
 
     if(process == NULL) {

@@ -29,11 +29,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <hal/boot.h>
-#include <hal/startup.h>
-#include <hal/vga.h>
-#include <debug.h>
-#include <logging.h>
+#include <kernel/i686/boot.h>
+#include <kernel/i686/startup.h>
+#include <kernel/i686/vga.h>
+#include <kernel/debug.h>
+#include <kernel/logging.h>
 #include <stdbool.h>
 
 

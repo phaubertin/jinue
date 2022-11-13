@@ -29,18 +29,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <hal/trap.h>
-#include <hal/vm.h>
+#include <kernel/i686/trap.h>
+#include <kernel/i686/vm.h>
+#include <kernel/boot.h>
+#include <kernel/cmdline.h>
+#include <kernel/elf.h>
+#include <kernel/logging.h>
+#include <kernel/page_alloc.h>
+#include <kernel/panic.h>
+#include <kernel/vmalloc.h>
+#include <kernel/util.h>
 #include <assert.h>
-#include <boot.h>
-#include <cmdline.h>
-#include <elf.h>
-#include <logging.h>
-#include <page_alloc.h>
-#include <panic.h>
-#include <vmalloc.h>
 #include <string.h>
-#include <util.h>
 
 /**
  * Print validation error message and return false
@@ -217,7 +217,7 @@ void elf_load(
         
         /* check that the segment is not in the region reserved for kernel use */
         if(! check_userspace_buffer((void *)phdr[idx].p_vaddr, phdr[idx].p_memsz)) {
-            panic("process manager memory layout -- address of segment too low");
+            panic("user space loader memory layout -- address of segment too low");
         }
         
         /* set start and end addresses for mapping and copying */

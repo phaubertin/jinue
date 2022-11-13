@@ -32,7 +32,7 @@
 #ifndef JINUE_KERNEL_LOGGING_H
 #define JINUE_KERNEL_LOGGING_H
 
-#include <cmdline.h>
+#include <kernel/cmdline.h>
 #include <stdarg.h>
 #include <stddef.h>
 

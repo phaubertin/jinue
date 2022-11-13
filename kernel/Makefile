@@ -30,20 +30,47 @@
 jinue_root = ..
 include $(jinue_root)/header.mk
 
-subdirs			 = hal
-
-kernel_ldscript	 = $(scripts)/kernel.ld
+kernel_ldscript  = i686/ld/kernel.ld
+image_ldscript   = i686/ld/image.ld
 build_info_h     = build-info.gen.h
 
-LDFLAGS         += -T $(kernel_ldscript) -static-libgcc -m32 -march=i686
-LDLIBS           = -lgcc
+LDFLAGS         += -m32 -march=i686
+KERNEL_LDFLAGS   = -T $(kernel_ldscript) -static-libgcc
+KERNEL_LDLIBS    = -lgcc
+IMAGE_LDFLAGS    = -T $(image_ldscript)
 
-kernel.hal    	 = hal/kern-hal.o
 c.lib            = $(libc)/libc-kernel.a
+loader.bin       = $(loader)/loader
 
-target	 		 = kernel-stripped
-unclean.extra    = kernel $(build_info_h)
-sources.c		 = \
+kernel           = i686/kernel
+stripped         = i686/kernel-stripped
+image            = i686/jinue
+setup16          = i686/setup16.o
+setup32          = i686/setup32.o
+targets          = $(setup16) $(setup32) $(stripped)
+
+unclean.extra    = \
+	$(kernel) \
+	$(image) \
+	$(build_info_h) \
+	$(kernel_ldscript) \
+	$(image_ldscript) \
+	$(setup16) \
+	$(setup32)
+
+sources.kernel.c = \
+	i686/boot.c \
+	i686/cpu.c \
+	i686/interrupt.c \
+	i686/machine.c \
+	i686/memory.c \
+	i686/pic8259.c \
+	i686/serial.c \
+	i686/thread.c \
+	i686/vga.c \
+	i686/vm.c \
+	i686/vm_pae.c \
+	i686/vm_x86.c \
 	boot.c \
 	cmdline.c \
 	debug.c \
@@ -58,28 +85,53 @@ sources.c		 = \
 	syscall.c \
 	thread.c \
 	vmalloc.c
-objects.extra	 = $(c.lib) $(kernel.hal)
+	
+sources.kernel.nasm = \
+	i686/abi.asm \
+	i686/crt.asm \
+	i686/io.asm \
+	i686/remap.asm \
+	i686/trap.asm \
+	i686/thread_switch.asm \
+	i686/x86.asm
+
+sources.setup.nasm = \
+	i686/setup16.asm \
+	i686/setup32.asm
+
+sources.c = $(sources.kernel.c)
+sources.nasm = $(sources.kernel.nasm) $(sources.setup.nasm)
+
+objects.kernel = $(sources.kernel.nasm:%.asm=%.o) $(sources.kernel.c:%.c=%.o)
 
 include $(common)
+
+.PHONY: image
+image: $(image)
 
 $(build_info_h): FORCE
 	$(scripts)/gen_build_info_h.sh > $@
 	
 kmain.o: kmain.c $(build_info_h)
 
-kernel: $(objects) $(kernel_ldscript)
-	$(LINK.o) $(objects) $(LOADLIBES) $(LDLIBS) -o $@
+$(setup16): i686/setup16.asm
 
-$(target): kernel
+$(setup32): i686/setup32.asm
 
-.PHONY: hal
-hal:
-	$(MAKE) -C $@
-	
+$(kernel): $(objects.kernel) $(kernel_ldscript) libc
+	$(LINK.o) $(KERNEL_LDFLAGS) $(objects.kernel) $(c.lib) $(KERNEL_LDLIBS) -o $@
+
+$(image): $(setup16) $(setup32) $(kernel)-stripped loader $(image_ldscript)
+	$(LINK.o) $(IMAGE_LDFLAGS) -o $@
+
 .PHONY: libc
 libc:
 	$(MAKE) -C $(libc)
 
+.PHONY: loader
+loader:
+	$(MAKE) -C $(loader)
+
 $(c.lib): libc
 
-$(kernel.hal): hal
+$(loader.bin): loader

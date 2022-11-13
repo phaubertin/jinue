@@ -29,11 +29,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <hal/serial.h>
+#include <kernel/i686/serial.h>
+#include <kernel/cmdline.h>
+#include <kernel/logging.h>
+#include <kernel/panic.h>
 #include <ctype.h>
-#include <cmdline.h>
-#include <logging.h>
-#include <panic.h>
 #include <string.h>
 
 #define CMDLINE_ERROR_TOO_LONG                  (1<<0)

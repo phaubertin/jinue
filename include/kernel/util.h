@@ -32,8 +32,8 @@
 #ifndef JINUE_KERNEL_UTIL_H
 #define JINUE_KERNEL_UTIL_H
 
+#include <kernel/types.h>
 #include <stddef.h>
-#include <types.h>
 
 #define ALIGN_START(x, s)       ( (x) & ~((s)-1) )
 

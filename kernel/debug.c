@@ -30,12 +30,12 @@
  */
 
 #include <jinue/shared/types.h>
-#include <hal/abi.h>
-#include <hal/boot.h>
-#include <debug.h>
-#include <elf.h>
+#include <kernel/i686/abi.h>
+#include <kernel/i686/boot.h>
+#include <kernel/debug.h>
+#include <kernel/elf.h>
+#include <kernel/logging.h>
 #include <inttypes.h>
-#include <logging.h>
 #include <stddef.h>
 
 /** Dump the call stack to kernel logs */

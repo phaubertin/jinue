@@ -32,7 +32,7 @@
 #ifndef JINUE_KERNEL_OBJECT_H
 #define JINUE_KERNEL_OBJECT_H
 
-#include <types.h>
+#include <kernel/types.h>
 
 
 /* flag bits 0..7 are common flags, flag bits 8 and up are per object type flags */

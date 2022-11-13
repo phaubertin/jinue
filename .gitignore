@@ -46,9 +46,6 @@
 # auto-generated header files
 *.gen.h
 
-# flat binary (i.e. non-ELF) compiled code
-*.bin
-
 # stripped executables
 *-stripped
 
@@ -61,6 +58,3 @@ RemoteSystemsTempFiles/
 
 # directory for storing local temporary/debugging files
 wrk/
-
-# Fake initial RAM disk image
-boot/vbox-initrd.gz

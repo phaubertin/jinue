@@ -30,10 +30,10 @@
  */
 
 #include <jinue/shared/syscall.h>
-#include <hal/serial.h>
-#include <hal/vga.h>
-#include <cmdline.h>
-#include <logging.h>
+#include <kernel/i686/serial.h>
+#include <kernel/i686/vga.h>
+#include <kernel/cmdline.h>
+#include <kernel/logging.h>
 #include <stdio.h>
 
 void logging_init(const cmdline_opts_t *cmdline_opts) {
