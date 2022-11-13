@@ -40,8 +40,8 @@ target           = $(loader)-stripped
 # in this regard on different machines with different versions of the
 # linker. By explicitly forcing _start as an undefined symbol, we
 # ensure the linker links the startup code.
-LDFLAGS			+= -Wl,-u,_start -static-libgcc -m32 -march=i686
-LDLIBS			 = -lgcc
+LDFLAGS         += -Wl,-u,_start -static-libgcc -m32 -march=i686
+LDLIBS           = -lgcc
 
 unclean.extra    = $(loader)
 

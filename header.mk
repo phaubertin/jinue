@@ -51,15 +51,15 @@
 # relative path to the root of the project
 #
 # Makefiles that include this file must define this.
-jinue_root 			?= .
+jinue_root          ?= .
 
 # project directory structure
-devel             	 = $(jinue_root)/devel
+devel                = $(jinue_root)/devel
 includes             = $(jinue_root)/include
-kernel             	 = $(jinue_root)/kernel
+kernel               = $(jinue_root)/kernel
 scripts              = $(jinue_root)/scripts
-userspace			 = $(jinue_root)/userspace
-virtualbox			 = $(devel)/virtualbox
+userspace            = $(jinue_root)/userspace
+virtualbox           = $(devel)/virtualbox
 lib                  = $(userspace)/lib
 libjinue             = $(lib)/jinue
 libc                 = $(lib)/libc
