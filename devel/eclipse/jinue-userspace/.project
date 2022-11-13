@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>libc</name>
+	<name>jinue-userspace</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -27,17 +27,22 @@
 		<link>
 			<name>include</name>
 			<type>2</type>
-			<locationURI>$%7BWORKSPACE_LOC%7D/include</locationURI>
+			<locationURI>WORKSPACE_LOC/include</locationURI>
 		</link>
 		<link>
-			<name>libc</name>
+			<name>lib</name>
 			<type>2</type>
-			<locationURI>$%7BWORKSPACE_LOC%7D/lib/libc</locationURI>
+			<locationURI>WORKSPACE_LOC/userspace/lib</locationURI>
+		</link>
+		<link>
+			<name>loader</name>
+			<type>2</type>
+			<location>/data/code/git/jinue/userspace/loader</location>
 		</link>
 	</linkedResources>
 	<filteredResources>
 		<filter>
-			<id>1553131788624</id>
+			<id>1668298586623</id>
 			<name></name>
 			<type>22</type>
 			<matcher>
@@ -46,7 +51,16 @@
 			</matcher>
 		</filter>
 		<filter>
-			<id>1553131788630</id>
+			<id>1668298586632</id>
+			<name></name>
+			<type>22</type>
+			<matcher>
+				<id>org.eclipse.ui.ide.multiFilter</id>
+				<arguments>1.0-name-matches-false-false-*.o</arguments>
+			</matcher>
+		</filter>
+		<filter>
+			<id>1668298586650</id>
 			<name></name>
 			<type>22</type>
 			<matcher>
@@ -55,21 +69,12 @@
 			</matcher>
 		</filter>
 		<filter>
-			<id>1498090091943</id>
-			<name>libc</name>
-			<type>6</type>
+			<id>1668298586672</id>
+			<name></name>
+			<type>22</type>
 			<matcher>
 				<id>org.eclipse.ui.ide.multiFilter</id>
-				<arguments>1.0-name-matches-false-false-*.o</arguments>
-			</matcher>
-		</filter>
-		<filter>
-			<id>1498090091959</id>
-			<name>libc</name>
-			<type>6</type>
-			<matcher>
-				<id>org.eclipse.ui.ide.multiFilter</id>
-				<arguments>1.0-name-matches-false-false-*.a</arguments>
+				<arguments>1.0-name-matches-false-false-*.ld</arguments>
 			</matcher>
 		</filter>
 	</filteredResources>

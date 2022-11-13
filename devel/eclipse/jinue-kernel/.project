@@ -25,24 +25,19 @@
 	</natures>
 	<linkedResources>
 		<link>
-			<name>boot</name>
-			<type>2</type>
-			<locationURI>$%257BWORKSPACE_LOC%257D/boot</locationURI>
-		</link>
-		<link>
 			<name>include</name>
 			<type>2</type>
-			<locationURI>$%7BWORKSPACE_LOC%7D/include</locationURI>
+			<locationURI>WORKSPACE_LOC/include</locationURI>
 		</link>
 		<link>
 			<name>kernel</name>
 			<type>2</type>
-			<locationURI>$%7BWORKSPACE_LOC%7D/kernel</locationURI>
+			<locationURI>WORKSPACE_LOC/kernel</locationURI>
 		</link>
 	</linkedResources>
 	<filteredResources>
 		<filter>
-			<id>1553131737792</id>
+			<id>1668298481274</id>
 			<name></name>
 			<type>22</type>
 			<matcher>
@@ -51,7 +46,16 @@
 			</matcher>
 		</filter>
 		<filter>
-			<id>1553131737795</id>
+			<id>1668298481286</id>
+			<name></name>
+			<type>22</type>
+			<matcher>
+				<id>org.eclipse.ui.ide.multiFilter</id>
+				<arguments>1.0-name-matches-false-false-*.o</arguments>
+			</matcher>
+		</filter>
+		<filter>
+			<id>1668298481294</id>
 			<name></name>
 			<type>22</type>
 			<matcher>
@@ -60,39 +64,12 @@
 			</matcher>
 		</filter>
 		<filter>
-			<id>1622357227761</id>
-			<name>boot</name>
+			<id>1668298481347</id>
+			<name></name>
 			<type>22</type>
 			<matcher>
 				<id>org.eclipse.ui.ide.multiFilter</id>
-				<arguments>1.0-name-matches-false-false-*.o</arguments>
-			</matcher>
-		</filter>
-		<filter>
-			<id>1622357227772</id>
-			<name>boot</name>
-			<type>6</type>
-			<matcher>
-				<id>org.eclipse.ui.ide.multiFilter</id>
-				<arguments>1.0-name-matches-false-false-vbox-initrd.gz</arguments>
-			</matcher>
-		</filter>
-		<filter>
-			<id>1498090297862</id>
-			<name>kernel</name>
-			<type>22</type>
-			<matcher>
-				<id>org.eclipse.ui.ide.multiFilter</id>
-				<arguments>1.0-name-matches-false-false-*.o</arguments>
-			</matcher>
-		</filter>
-		<filter>
-			<id>1498090297872</id>
-			<name>kernel</name>
-			<type>6</type>
-			<matcher>
-				<id>org.eclipse.ui.ide.multiFilter</id>
-				<arguments>1.0-name-matches-false-false-kernel</arguments>
+				<arguments>1.0-name-matches-false-false-*.ld</arguments>
 			</matcher>
 		</filter>
 	</filteredResources>
