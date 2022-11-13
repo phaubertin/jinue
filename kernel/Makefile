@@ -43,10 +43,11 @@ c.lib            = $(libc)/libc-kernel.a
 loader.bin	 	 = $(loader)/loader
 
 kernel	 		 = i686/kernel
+stripped		 = i686/kernel-stripped
 image			 = i686/jinue
 setup16			 = i686/setup16.o
 setup32			 = i686/setup32.o
-target	 		 = i686/kernel-stripped
+targets	 		 = $(setup16) $(setup32) $(stripped)
 
 unclean.extra    = \
 	$(kernel) \
@@ -55,11 +56,9 @@ unclean.extra    = \
 	$(kernel_ldscript) \
 	$(image_ldscript) \
 	$(setup16) \
-	$(setup32) \
-	$(setup16:%.o=%.d) \
-	$(setup32:%.o=%.d)
+	$(setup32)
 
-sources.c		 = \
+sources.kernel.c = \
 	i686/boot.c \
 	i686/cpu.c \
 	i686/interrupt.c \
@@ -87,7 +86,7 @@ sources.c		 = \
 	thread.c \
 	vmalloc.c
 	
-sources.nasm = \
+sources.kernel.nasm = \
 	i686/abi.asm \
 	i686/crt.asm \
 	i686/io.asm \
@@ -96,7 +95,14 @@ sources.nasm = \
 	i686/thread_switch.asm \
 	i686/x86.asm
 
-objects.extra = $(c.lib)
+sources.setup.nasm = \
+	i686/setup16.asm \
+	i686/setup32.asm
+
+sources.c = $(sources.kernel.c)
+sources.nasm = $(sources.kernel.nasm) $(sources.setup.nasm)
+
+objects.kernel = $(sources.kernel.nasm:%.asm=%.o) $(sources.kernel.c:%.c=%.o)
 
 include $(common)
 
@@ -112,8 +118,8 @@ $(setup16): i686/setup16.asm
 
 $(setup32): i686/setup32.asm
 
-$(kernel): $(objects) $(kernel_ldscript)
-	$(LINK.o) $(KERNEL_LDFLAGS) $(objects) $(KERNEL_LDLIBS) -o $@
+$(kernel): $(objects.kernel) $(kernel_ldscript) libc
+	$(LINK.o) $(KERNEL_LDFLAGS) $(objects.kernel) $(c.lib) $(KERNEL_LDLIBS) -o $@
 
 $(image): $(setup16) $(setup32) $(kernel)-stripped loader $(image_ldscript)
 	$(LINK.o) $(IMAGE_LDFLAGS) -o $@
