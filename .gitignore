@@ -46,9 +46,6 @@
 # auto-generated header files
 *.gen.h
 
-# flat binary (i.e. non-ELF) compiled code
-*.bin
-
 # stripped executables
 *-stripped
 
