@@ -29,7 +29,7 @@
 
 include header.mk
 
-subdirs = doc kernel $(userspace)/loader $(libc) $(libjinue) $(virtualbox)
+subdirs = doc kernel $(userspace)/loader $(libc) $(libjinue) $(qemu) $(virtualbox)
 
 # make all (default target) will build the kernel image
 targets.phony = image
@@ -56,6 +56,21 @@ vbox-debug: $(kernel_img)
 .PHONY: vbox-run
 vbox-run: $(kernel_img)
 	make -C $(virtualbox) run
+	
+# build the ISO file (CDROM image) needed by the QEMU
+.PHONY: qemu
+qemu: $(kernel_img)
+	make -C $(qemu)
+
+# build the ISO file for QEMU and run
+.PHONY: qemu-run
+qemu-run: $(kernel_img)
+	make -C $(qemu) run
+
+# build the ISO file for QEMU and run (without the debugger)
+.PHONY: qemu-run-no-display
+qemu-run-no-display: $(kernel_img)
+	make -C $(qemu) run-no-display
 
 # Run cppcheck on the kernel sources
 # Note: there are known failures

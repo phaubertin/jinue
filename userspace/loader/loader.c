@@ -369,6 +369,10 @@ int main(int argc, char *argv[]) {
 
     run_ipc_test();
 
+    if(bool_getenv("DEBUG_DO_EXIT")) {
+        jinue_exit_thread();
+    }
+
     while (1) {
         jinue_yield_thread();
     }

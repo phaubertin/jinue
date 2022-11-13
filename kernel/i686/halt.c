@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2022 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,11 +29,25 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_I686_STARTUP_H
-#define JINUE_KERNEL_I686_STARTUP_H
+#include <kernel/i686/halt.h>
+#include <kernel/i686/io.h>
+#include <kernel/i686/x86.h>
+#include <kernel/cmdline.h>
+#include <stdbool.h>
 
+static void reboot(void) {
+    outb(0x64, 0xfe);
+}
 
-void halt(void);
+void halt(void) {
+    const cmdline_opts_t *cmdline_opts = cmdline_get_options();
 
-#endif
+    if(cmdline_opts->on_halt == CMDLINE_OPT_ON_HALT_RESET) {
+        reboot();
+    }
 
+    while(true) {
+        cli();
+        hlt();
+    }
+}

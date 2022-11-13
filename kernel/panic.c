@@ -30,12 +30,11 @@
  */
 
 #include <kernel/i686/boot.h>
-#include <kernel/i686/startup.h>
+#include <kernel/i686/halt.h>
 #include <kernel/i686/vga.h>
 #include <kernel/debug.h>
 #include <kernel/logging.h>
 #include <stdbool.h>
-
 
 void panic(const char *message) {
     static int enter_count = 0;

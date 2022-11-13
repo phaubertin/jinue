@@ -59,6 +59,7 @@ includes             = $(jinue_root)/include
 kernel               = $(jinue_root)/kernel
 scripts              = $(jinue_root)/scripts
 userspace            = $(jinue_root)/userspace
+qemu                 = $(devel)/qemu
 virtualbox           = $(devel)/virtualbox
 lib                  = $(userspace)/lib
 libjinue             = $(lib)/jinue

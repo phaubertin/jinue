@@ -40,21 +40,25 @@
 
 #define CMDLINE_ERROR_IS_NULL                   (1<<1)
 
-#define CMDLINE_ERROR_INVALID_PAE               (1<<2)
+#define CMDLINE_ERROR_INVALID_IDLE              (1<<2)
 
-#define CMDLINE_ERROR_INVALID_SERIAL_ENABLE     (1<<3)
+#define CMDLINE_ERROR_INVALID_ON_HALT           (1<<3)
 
-#define CMDLINE_ERROR_INVALID_SERIAL_BAUD_RATE  (1<<4)
+#define CMDLINE_ERROR_INVALID_PAE               (1<<4)
 
-#define CMDLINE_ERROR_INVALID_SERIAL_IOPORT     (1<<5)
+#define CMDLINE_ERROR_INVALID_SERIAL_ENABLE     (1<<5)
 
-#define CMDLINE_ERROR_INVALID_SERIAL_DEV        (1<<6)
+#define CMDLINE_ERROR_INVALID_SERIAL_BAUD_RATE  (1<<6)
 
-#define CMDLINE_ERROR_INVALID_VGA_ENABLE        (1<<7)
+#define CMDLINE_ERROR_INVALID_SERIAL_IOPORT     (1<<7)
 
-#define CMDLINE_ERROR_JUNK_AFTER_ENDQUOTE       (1<<8)
+#define CMDLINE_ERROR_INVALID_SERIAL_DEV        (1<<8)
 
-#define CMDLINE_ERROR_UNCLOSED_QUOTES           (1<<9)
+#define CMDLINE_ERROR_INVALID_VGA_ENABLE        (1<<9)
+
+#define CMDLINE_ERROR_JUNK_AFTER_ENDQUOTE       (1<<10)
+
+#define CMDLINE_ERROR_UNCLOSED_QUOTES           (1<<11)
 
 typedef enum {
     PARSE_STATE_START,
@@ -102,6 +106,8 @@ typedef struct {
 } parse_context_t;
 
 typedef enum {
+    CMDLINE_OPT_NAME_IDLE,
+    CMDLINE_OPT_NAME_ON_HALT,
     CMDLINE_OPT_NAME_PAE,
     CMDLINE_OPT_NAME_SERIAL_ENABLE,
     CMDLINE_OPT_NAME_SERIAL_BAUD_RATE,
@@ -111,12 +117,27 @@ typedef enum {
 } cmdline_opt_names_t;
 
 static const enum_def_t kernel_option_names[] = {
+    {"idle",                CMDLINE_OPT_NAME_IDLE},
+	{"on_halt",             CMDLINE_OPT_NAME_ON_HALT},
     {"pae",                 CMDLINE_OPT_NAME_PAE},
     {"serial_enable",       CMDLINE_OPT_NAME_SERIAL_ENABLE},
     {"serial_baud_rate",    CMDLINE_OPT_NAME_SERIAL_BAUD_RATE},
     {"serial_ioport",       CMDLINE_OPT_NAME_SERIAL_IOPORT},
     {"serial_dev",          CMDLINE_OPT_NAME_SERIAL_DEV},
     {"vga_enable",          CMDLINE_OPT_NAME_VGA_ENABLE},
+    {NULL, 0}
+};
+
+static const enum_def_t opt_idle_names[] = {
+    {"panic",       CMDLINE_OPT_IDLE_PANIC},
+    {"halt",        CMDLINE_OPT_IDLE_HALT},
+    {NULL, 0}
+};
+
+static const enum_def_t opt_on_halt_names[] = {
+    {"halt",        CMDLINE_OPT_ON_HALT_HALT},
+    {"reboot",      CMDLINE_OPT_ON_HALT_RESET},
+    {"reset",       CMDLINE_OPT_ON_HALT_RESET},
     {NULL, 0}
 };
 
@@ -183,6 +204,8 @@ static const enum_def_t bool_names[] = {
 };
 
 static cmdline_opts_t cmdline_options = {
+    .idle               = CMDLINE_OPT_IDLE_PANIC,
+    .on_halt            = CMDLINE_OPT_ON_HALT_HALT,
     .pae                = CMDLINE_OPT_PAE_AUTO,
     .serial_enable      = false,
     .serial_baud_rate   = SERIAL_DEFAULT_BAUD_RATE,
@@ -813,6 +836,22 @@ static void process_name_value_pair(parse_context_t *context) {
     }
 
     switch(opt_name) {
+    case CMDLINE_OPT_NAME_IDLE:
+        if(match_enum(&opt_value, opt_idle_names, &context->value)) {
+            cmdline_options.idle = opt_value;
+        }
+        else {
+            context->errors |= CMDLINE_ERROR_INVALID_IDLE;
+        }
+        break;
+    case CMDLINE_OPT_NAME_ON_HALT:
+        if(match_enum(&opt_value, opt_on_halt_names, &context->value)) {
+            cmdline_options.on_halt = opt_value;
+        }
+        else {
+            context->errors |= CMDLINE_ERROR_INVALID_ON_HALT;
+        }
+        break;
     case CMDLINE_OPT_NAME_PAE:
         if(match_enum(&opt_value, opt_pae_names, &context->value)) {
             cmdline_options.pae = opt_value;
@@ -958,6 +997,14 @@ void cmdline_report_parsing_errors(void) {
 
     if(cmdline_errors & CMDLINE_ERROR_IS_NULL) {
         warning("  No kernel command line/command line is NULL");
+    }
+
+    if(cmdline_errors & CMDLINE_ERROR_INVALID_IDLE) {
+        warning("  Invalid value for argument 'idle'");
+    }
+
+    if(cmdline_errors & CMDLINE_ERROR_INVALID_ON_HALT) {
+        warning("  Invalid value for argument 'on_halt'");
     }
 
     if(cmdline_errors & CMDLINE_ERROR_INVALID_PAE) {

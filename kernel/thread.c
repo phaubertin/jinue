@@ -31,9 +31,12 @@
 
 #include <jinue/shared/list.h>
 #include <kernel/i686/cpu_data.h>
+#include <kernel/i686/halt.h>
 #include <kernel/i686/thread.h>
 #include <kernel/i686/vm.h>
 #include <kernel/boot.h>
+#include <kernel/cmdline.h>
+#include <kernel/logging.h>
 #include <kernel/object.h>
 #include <kernel/process.h>
 #include <kernel/page_alloc.h>
@@ -114,6 +117,21 @@ static void switch_thread(
     }
 }
 
+static void idle(void) {
+    /* Currently, scheduling is purely cooperative and only one CPU is
+     * supported (so, there are no threads currently running on other
+     * CPUs). What this means is that, once there are no more threads
+     * running or ready to run, this situation will never change. */
+    const cmdline_opts_t *cmdline_opts = cmdline_get_options();
+
+    if(cmdline_opts->idle == CMDLINE_OPT_IDLE_HALT) {
+        warning("No thread to schedule");
+        halt();
+    }
+
+    panic("No thread to schedule");
+}
+
 static thread_t *reschedule(bool current_can_run) {
     thread_t *to_thread = jinue_node_entry(
             jinue_list_dequeue(&ready_list),
@@ -128,11 +146,7 @@ static thread_t *reschedule(bool current_can_run) {
             return get_current_thread();
         }
 
-        /* Currently, scheduling is purely cooperative and only one CPU is
-         * supported (so, there are no threads currently running on other
-         * CPUs). What this means is that, once there are no more threads
-         * running or ready to run, this situation will never change. */
-        panic("No thread to schedule");
+        idle();
     }
 
     return to_thread;
