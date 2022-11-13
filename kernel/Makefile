@@ -61,6 +61,7 @@ unclean.extra    = \
 sources.kernel.c = \
 	i686/boot.c \
 	i686/cpu.c \
+	i686/halt.c \
 	i686/interrupt.c \
 	i686/machine.c \
 	i686/memory.c \

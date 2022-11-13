@@ -36,17 +36,29 @@
 #include <kernel/types.h>
 
 typedef enum {
+	CMDLINE_OPT_IDLE_PANIC,
+	CMDLINE_OPT_IDLE_HALT,
+} cmdline_opt_idle_t;
+
+typedef enum {
+    CMDLINE_OPT_ON_HALT_HALT,
+    CMDLINE_OPT_ON_HALT_RESET,
+} cmdline_opt_on_halt_t;
+
+typedef enum {
     CMDLINE_OPT_PAE_AUTO,
     CMDLINE_OPT_PAE_DISABLE,
-    CMDLINE_OPT_PAE_REQUIRE
+    CMDLINE_OPT_PAE_REQUIRE,
 } cmdline_opt_pae_t;
 
 typedef struct {
-    cmdline_opt_pae_t    pae;
-    bool                 serial_enable;
-    int                  serial_baud_rate;
-    int                  serial_ioport;
-    bool                 vga_enable;
+	cmdline_opt_idle_t		idle;
+	cmdline_opt_on_halt_t   on_halt;
+    cmdline_opt_pae_t   	pae;
+    bool                 	serial_enable;
+    int                  	serial_baud_rate;
+    int                  	serial_ioport;
+    bool                 	vga_enable;
 } cmdline_opts_t;
 
 void cmdline_parse_options(const char *cmdline);

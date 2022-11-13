@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2022 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,9 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_I686_STARTUP_H
-#define JINUE_KERNEL_I686_STARTUP_H
-
+#ifndef JINUE_KERNEL_I686_HALT_H
+#define JINUE_KERNEL_I686_HALT_H
 
 void halt(void);
 

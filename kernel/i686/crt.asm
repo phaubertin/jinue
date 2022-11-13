@@ -31,6 +31,7 @@
 
     extern kmain
     extern boot_info
+    extern halt
     
     global _start:function (_start.end - _start)
 _start:
@@ -44,13 +45,4 @@ _start:
 
 .end:
 
-    ; The halt() function never returns.
-    ;
-    ; If kmain() ever returns, it will enter halt().
-    global halt:function (halt.end - halt)
-halt:
-    cli
-    hlt
-    jmp halt
-
-.end:
+	call halt
