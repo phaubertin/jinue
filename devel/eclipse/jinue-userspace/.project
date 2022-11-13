@@ -37,7 +37,7 @@
 		<link>
 			<name>loader</name>
 			<type>2</type>
-			<location>/data/code/git/jinue/userspace/loader</location>
+			<location>WORKSPACE_LOC/userspace/loader</location>
 		</link>
 	</linkedResources>
 	<filteredResources>
