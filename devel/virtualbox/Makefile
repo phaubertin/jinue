@@ -30,7 +30,7 @@
 jinue_root = ../..
 include $(jinue_root)/header.mk
 
-vm_name         	 = Jinue
+vm_name              = Jinue
 
 # GRUB location (for creation of bootable ISO for virtual machine)
 #
