@@ -29,21 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/i686/halt.h>
-#include <kernel/i686/reboot.h>
-#include <kernel/i686/x86.h>
-#include <kernel/cmdline.h>
-#include <stdbool.h>
+#ifndef JINUE_KERNEL_I686_REBOOT_H_
+#define JINUE_KERNEL_I686_REBOOT_H_
 
-void halt(void) {
-    const cmdline_opts_t *cmdline_opts = cmdline_get_options();
+void reboot(void);
 
-    if(cmdline_opts->on_halt == CMDLINE_OPT_ON_HALT_RESET) {
-        reboot();
-    }
-
-    while(true) {
-        cli();
-        hlt();
-    }
-}
+#endif

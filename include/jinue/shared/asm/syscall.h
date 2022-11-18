@@ -36,6 +36,9 @@
 #define JINUE_SYSCALL_IRQ               0x80
 
 
+/** rebooot the system */
+#define JINUE_SYS_REBOOT                2
+
 /** send a fixed-length string to kernel logger */
 #define JINUE_SYS_PUTS                  3
 

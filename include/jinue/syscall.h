@@ -47,6 +47,8 @@ intptr_t jinue_syscall_with_usual_convention(jinue_syscall_args_t *args, int *pe
 
 int jinue_set_syscall_implementation(int implementation, int *perrno);
 
+void jinue_reboot(void);
+
 void jinue_set_thread_local(void *addr, size_t size);
 
 void *jinue_get_thread_local(void);

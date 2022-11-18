@@ -33,6 +33,7 @@
 #include <jinue/shared/vm.h>
 #include <kernel/i686/cpu_data.h>
 #include <kernel/i686/memory.h>
+#include <kernel/i686/reboot.h>
 #include <kernel/i686/thread.h>
 #include <kernel/i686/trap.h>
 #include <kernel/ipc.h>
@@ -67,6 +68,10 @@ static int get_descriptor(uintptr_t value) {
 
 static void sys_nosys(jinue_syscall_args_t *args) {
     syscall_args_set_error(args, JINUE_ENOSYS);
+}
+
+static void sys_reboot(jinue_syscall_args_t *args) {
+    reboot();
 }
 
 static void sys_puts(jinue_syscall_args_t *args) {
@@ -334,6 +339,9 @@ void dispatch_syscall(trapframe_t *trapframe) {
     else if(function < JINUE_SYS_USER_BASE) {
         /* microkernel system calls */
         switch(function) {
+        case JINUE_SYS_REBOOT:
+            sys_reboot(args);
+            break;
         case JINUE_SYS_PUTS:
             sys_puts(args);
             break;
