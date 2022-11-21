@@ -34,7 +34,6 @@
 #include <jinue/errno.h>
 #include <jinue/ipc.h>
 #include <jinue/logging.h>
-#include <jinue/memory.h>
 #include <jinue/syscall.h>
 #include <jinue/types.h>
 #include <jinue/vm.h>
@@ -70,6 +69,23 @@ static bool bool_getenv(const char *name) {
             strcmp(value, "true") == 0 ||
             strcmp(value, "yes") == 0 ||
             strcmp(value, "1") == 0;
+}
+
+static const char *jinue_phys_mem_type_description(uint32_t type) {
+    switch(type) {
+
+    case JINUE_E820_RAM:
+        return "Available";
+
+    case JINUE_E820_RESERVED:
+        return "Unavailable/Reserved";
+
+    case JINUE_E820_ACPI:
+        return "Unavailable/ACPI";
+
+    default:
+        return "Unavailable/Other";
+    }
 }
 
 static void dump_phys_memory_map(const jinue_mem_map_t *map) {

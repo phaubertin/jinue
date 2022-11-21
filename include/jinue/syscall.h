@@ -32,7 +32,10 @@
 #ifndef _JINUE_SYSCALL_H
 #define _JINUE_SYSCALL_H
 
+
+#include <jinue/shared/asm/e820.h>
 #include <jinue/shared/syscall.h>
+#include <jinue/shared/types.h>
 #include <stddef.h>
 
 static inline void jinue_set_errno(int *perrno, int errval) {
@@ -60,5 +63,7 @@ void jinue_exit_thread(void);
 void jinue_putc(char c);
 
 int jinue_puts(int loglevel, const char *str, size_t n, int *perrno);
+
+int jinue_get_user_memory(jinue_mem_map_t *buffer, size_t buffer_size, int *perrno);
 
 #endif
