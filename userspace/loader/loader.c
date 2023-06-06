@@ -385,8 +385,9 @@ int main(int argc, char *argv[]) {
 
     run_ipc_test();
 
-    if(bool_getenv("DEBUG_DO_EXIT")) {
-        jinue_exit_thread();
+    if(bool_getenv("DEBUG_DO_REBOOT")) {
+        jinue_info("Rebooting.");
+        jinue_reboot();
     }
 
     while (1) {

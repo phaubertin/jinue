@@ -66,6 +66,7 @@ sources.kernel.c = \
 	i686/machine.c \
 	i686/memory.c \
 	i686/pic8259.c \
+	i686/reboot.c \
 	i686/serial.c \
 	i686/thread.c \
 	i686/vga.c \

@@ -29,38 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_CMDLINE_H
-#define JINUE_KERNEL_CMDLINE_H
+#ifndef JINUE_KERNEL_I686_REBOOT_H_
+#define JINUE_KERNEL_I686_REBOOT_H_
 
-#include <kernel/asm/cmdline.h>
-#include <kernel/types.h>
-
-typedef enum {
-    CMDLINE_OPT_PAE_AUTO,
-    CMDLINE_OPT_PAE_DISABLE,
-    CMDLINE_OPT_PAE_REQUIRE
-} cmdline_opt_pae_t;
-
-typedef struct {
-    cmdline_opt_pae_t    pae;
-    bool                 serial_enable;
-    int                  serial_baud_rate;
-    int                  serial_ioport;
-    bool                 vga_enable;
-} cmdline_opts_t;
-
-void cmdline_parse_options(const char *cmdline);
-
-const cmdline_opts_t *cmdline_get_options(void);
-
-void cmdline_report_parsing_errors(void);
-
-char *cmdline_write_arguments(char *buffer, const char *cmdline);
-
-char *cmdline_write_environ(char *buffer, const char *cmdline);
-
-size_t cmdline_count_arguments(const char *cmdline);
-
-size_t cmdline_count_environ(const char *cmdline);
+void reboot(void);
 
 #endif

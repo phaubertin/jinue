@@ -67,6 +67,17 @@ int jinue_set_syscall_implementation(int implementation, int *perrno) {
     return 0;
 }
 
+void jinue_reboot(void) {
+    jinue_syscall_args_t args;
+
+    args.arg0 = JINUE_SYS_REBOOT;
+    args.arg1 = 0;
+    args.arg2 = 0;
+    args.arg3 = 0;
+
+    jinue_syscall(&args);
+}
+
 void jinue_set_thread_local(void *addr, size_t size) {
     jinue_syscall_args_t args;
 
