@@ -34,6 +34,7 @@
 #include <jinue/errno.h>
 #include <jinue/ipc.h>
 #include <jinue/logging.h>
+#include <jinue/memory.h>
 #include <jinue/syscall.h>
 #include <jinue/types.h>
 #include <jinue/vm.h>

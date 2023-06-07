@@ -35,12 +35,6 @@
 #include <jinue/shared/asm/types.h>
 #include <stdint.h>
 
-#define JINUE_MEM_TYPE_AVAILABLE        0
-
-#define JINUE_MEM_TYPE_BIOS_RESERVED    1
-
-#define JINUE_MEM_TYPE_ACPI             2
-
 typedef struct {
 	uint64_t	addr;
 	uint64_t	size;

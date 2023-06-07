@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2023 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/e820.h>
 #include <jinue/shared/errno.h>
+#include <kernel/i686/asm/e820.h>
 #include <kernel/i686/boot.h>
 #include <kernel/i686/memory.h>
 #include <kernel/i686/vm.h>
@@ -81,7 +81,7 @@ static bool range_is_in_available_memory(
         entry_range.start   = entry->addr;
         entry_range.end     = entry->addr + entry->size;
 
-        if(entry->type == JINUE_E820_RAM) {
+        if(entry->type == E820_RAM) {
             if(memory_range_is_within(range, &entry_range)) {
                 retval = true;
             }
@@ -176,7 +176,7 @@ static uint64_t memory_find_top(const boot_info_t *boot_info) {
         const e820_t *entry = &boot_info->e820_map[idx];
 
         /* Only consider available memory entries. */
-        if(entry->type != JINUE_E820_RAM) {
+        if(entry->type != E820_RAM) {
             continue;
         }
 
@@ -253,11 +253,11 @@ void *memory_lookup_page(uint64_t paddr) {
 
 static int map_memory_type(int e820_type) {
     switch(e820_type) {
-    case JINUE_E820_RAM:
+    case E820_RAM:
         return JINUE_MEM_TYPE_AVAILABLE;
-    case JINUE_E820_ACPI:
+    case E820_ACPI:
         return JINUE_MEM_TYPE_ACPI;
-    case JINUE_E820_RESERVED:
+    case E820_RESERVED:
     default:
         return JINUE_MEM_TYPE_BIOS_RESERVED;
     }
