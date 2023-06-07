@@ -73,18 +73,14 @@ static bool bool_getenv(const char *name) {
 
 static const char *jinue_phys_mem_type_description(uint32_t type) {
     switch(type) {
-
-    case JINUE_E820_RAM:
+    case JINUE_MEM_TYPE_AVAILABLE:
         return "Available";
-
-    case JINUE_E820_RESERVED:
+    case JINUE_MEM_TYPE_BIOS_RESERVED:
         return "Unavailable/Reserved";
-
-    case JINUE_E820_ACPI:
+    case JINUE_MEM_TYPE_ACPI:
         return "Unavailable/ACPI";
-
     default:
-        return "Unavailable/Other";
+        return "Unavailable/???";
     }
 }
 
@@ -110,10 +106,10 @@ static void dump_phys_memory_map(const jinue_mem_map_t *map) {
     for(int idx = 0; idx < map->num_entries; ++idx) {
         const jinue_mem_entry_t *entry = &map->entry[idx];
 
-        if(entry->type == JINUE_E820_RAM || !ram_only) {
+        if(entry->type == JINUE_MEM_TYPE_AVAILABLE || !ram_only) {
             jinue_info(
                     "  %c [%016" PRIx64 "-%016" PRIx64 "] %s",
-                    (entry->type==JINUE_E820_RAM)?'*':' ',
+                    (entry->type==JINUE_MEM_TYPE_AVAILABLE)?'*':' ',
                     entry->addr,
                     entry->addr + entry->size - 1,
                     jinue_phys_mem_type_description(entry->type)

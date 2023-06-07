@@ -251,6 +251,18 @@ void *memory_lookup_page(uint64_t paddr) {
     return (void *)memory_array[entry_index];
 }
 
+static int map_memory_type(int e820_type) {
+    switch(e820_type) {
+    case JINUE_E820_RAM:
+        return JINUE_MEM_TYPE_AVAILABLE;
+    case JINUE_E820_ACPI:
+        return JINUE_MEM_TYPE_ACPI;
+    case JINUE_E820_RESERVED:
+    default:
+        return JINUE_MEM_TYPE_BIOS_RESERVED;
+    }
+}
+
 int memory_get_map(const jinue_buffer_t *buffer) {
     unsigned int idx;
 
@@ -268,7 +280,7 @@ int memory_get_map(const jinue_buffer_t *buffer) {
     for(idx = 0; idx < map->num_entries; ++idx) {
         map->entry[idx].addr = boot_info->e820_map[idx].addr;
         map->entry[idx].size = boot_info->e820_map[idx].size;
-        map->entry[idx].type = boot_info->e820_map[idx].type;
+        map->entry[idx].type = map_memory_type(boot_info->e820_map[idx].type);
     }
 
     return 0;
