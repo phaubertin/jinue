@@ -435,12 +435,15 @@ int memory_get_map(const jinue_buffer_t *buffer) {
     const size_t result_size        =
             sizeof(jinue_mem_map_t) + total_entries * sizeof(jinue_mem_entry_t);
 
+    jinue_mem_map_t *map = buffer->addr;
+
+    if(buffer->size >= sizeof(jinue_mem_map_t)) {
+        map->num_entries = total_entries;
+    }
+
     if(buffer->size < result_size) {
         return -JINUE_E2BIG;
     }
-
-    jinue_mem_map_t *map = buffer->addr;
-    map->num_entries = total_entries;
 
     for(unsigned int idx = 0; idx < e820_entries; ++idx) {
         map->entry[idx].addr = boot_info->e820_map[idx].addr;
