@@ -44,7 +44,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-
 typedef struct {
     uint64_t    start;
     uint64_t    end;
@@ -264,23 +263,51 @@ static int map_memory_type(int e820_type) {
 }
 
 int memory_get_map(const jinue_buffer_t *buffer) {
-    unsigned int idx;
+    const jinue_mem_entry_t kernel_regions[] = {
+        {
+            .addr = 0x123 /* TODO */,
+            .size = 0 /* TODO */,
+            .type = JINUE_MEM_TYPE_RAMDISK
+        },
+        {
+            .addr = 0x456 /* TODO */,
+            .size = 0 /* TODO */,
+            .type = JINUE_MEM_TYPE_KERNEL_IMAGE
+        },
+        {
+            .addr = 0x789 /* TODO */,
+            .size = 0 /* TODO */,
+            .type = JINUE_MEM_TYPE_KERNEL_RESERVED
+        },
+        {
+            .addr = 0xabc /* TODO */,
+            .size = 0 /* TODO */,
+            .type = JINUE_MEM_TYPE_LOADER_AVAILABLE
+        }
+    };
 
     const boot_info_t *boot_info    = get_boot_info();
-    jinue_mem_map_t *map            = buffer->addr;
-    size_t result_size              =
-            sizeof(jinue_mem_map_t) + boot_info->e820_entries * sizeof(jinue_mem_entry_t);
+    const size_t e820_entries       = boot_info->e820_entries;
+    const size_t kernel_entries     = sizeof(kernel_regions) / sizeof(kernel_regions[0]);
+    const size_t total_entries      = e820_entries + kernel_entries;
+    const size_t result_size        =
+            sizeof(jinue_mem_map_t) + total_entries * sizeof(jinue_mem_entry_t);
 
     if(buffer->size < result_size) {
         return -JINUE_E2BIG;
     }
 
-    map->num_entries = boot_info->e820_entries;
+    jinue_mem_map_t *map = buffer->addr;
+    map->num_entries = total_entries;
 
-    for(idx = 0; idx < map->num_entries; ++idx) {
+    for(unsigned int idx = 0; idx < e820_entries; ++idx) {
         map->entry[idx].addr = boot_info->e820_map[idx].addr;
         map->entry[idx].size = boot_info->e820_map[idx].size;
         map->entry[idx].type = map_memory_type(boot_info->e820_map[idx].type);
+    }
+
+    for(unsigned int idx = 0; idx < kernel_entries; ++idx) {
+        map->entry[e820_entries + idx] = kernel_regions[idx];
     }
 
     return 0;

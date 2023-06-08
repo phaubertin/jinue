@@ -80,6 +80,14 @@ static const char *jinue_phys_mem_type_description(uint32_t type) {
         return "Unavailable/Reserved";
     case JINUE_MEM_TYPE_ACPI:
         return "Unavailable/ACPI";
+    case JINUE_MEM_TYPE_RAMDISK:
+        return "Compressed RAM Disk";
+    case JINUE_MEM_TYPE_KERNEL_IMAGE:
+        return "Kernel Image";
+    case JINUE_MEM_TYPE_KERNEL_RESERVED:
+        return "Unavailable/Kernel Data";
+    case JINUE_MEM_TYPE_LOADER_AVAILABLE:
+        return "Available (Loader Hint)";
     default:
         return "Unavailable/???";
     }
@@ -174,9 +182,9 @@ static const char *auxv_type_name(int type) {
 
 static const char *syscall_implementation_name(int implementation) {
     const char *names[] = {
-            [JINUE_SYSCALL_IMPL_INTERRUPT]         = "interrupt",
-            [JINUE_SYSCALL_IMPL_FAST_AMD]     = "SYSCALL/SYSRET (fast AMD)",
-            [JINUE_SYSCALL_IMPL_FAST_INTEL]   = "SYSENTER/SYSEXIT (fast Intel)"
+            [JINUE_SYSCALL_IMPL_INTERRUPT]      = "interrupt",
+            [JINUE_SYSCALL_IMPL_FAST_AMD]       = "SYSCALL/SYSRET (fast AMD)",
+            [JINUE_SYSCALL_IMPL_FAST_INTEL]     = "SYSENTER/SYSEXIT (fast Intel)"
     };
 
     if(implementation < 0 || implementation > JINUE_SYSCALL_IMPL_LAST) {
