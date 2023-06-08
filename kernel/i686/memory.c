@@ -265,6 +265,8 @@ static int map_memory_type(int e820_type) {
 int memory_get_map(const jinue_buffer_t *buffer) {
     const boot_info_t *boot_info = get_boot_info();
 
+    const uintptr_t kernel_image_size = (uintptr_t)boot_info->image_top - (uintptr_t)boot_info->image_start;
+
     const jinue_mem_entry_t kernel_regions[] = {
         {
             .addr = boot_info->ramdisk_start,
@@ -273,12 +275,12 @@ int memory_get_map(const jinue_buffer_t *buffer) {
         },
         {
             .addr = VIRT_TO_PHYS_AT_16MB(boot_info->image_start),
-            .size = (uintptr_t)boot_info->image_top - (uintptr_t)boot_info->image_start,
+            .size = kernel_image_size,
             .type = JINUE_MEM_TYPE_KERNEL_IMAGE
         },
         {
-            .addr = 0x789 /* TODO */,
-            .size = 0 /* TODO */,
+            .addr = VIRT_TO_PHYS_AT_16MB(boot_info->image_top),
+            .size = BOOT_SIZE_AT_16MB - kernel_image_size,
             .type = JINUE_MEM_TYPE_KERNEL_RESERVED
         },
         {
