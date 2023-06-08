@@ -31,7 +31,7 @@ jinue_root = ../..
 include $(jinue_root)/header.mk
 
 QEMU_CPU            ?= core2duo
-QEMU_MEM            ?= 128
+QEMU_MEM            ?= 128M
 
 # GRUB location (for creation of bootable ISO for virtual machine)
 #

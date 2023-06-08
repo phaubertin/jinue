@@ -121,11 +121,11 @@ static bool range_is_in_available_memory(
  *
  * */
 void check_memory(const boot_info_t *boot_info) {
-    memory_range_t range_at_1mb = {
+    const memory_range_t range_at_1mb = {
             .start  = MEMORY_ADDR_1MB,
             .end    = MEMORY_ADDR_1MB + 1 * MB
     };
-    memory_range_t range_at_16mb = {
+    const memory_range_t range_at_16mb = {
             .start  = MEMORY_ADDR_16MB,
             .end    = MEMORY_ADDR_16MB + BOOT_SIZE_AT_16MB
     };
@@ -262,10 +262,149 @@ static int map_memory_type(int e820_type) {
     }
 }
 
+static void align_range(memory_range_t *dest, bool is_available) {
+    if(is_available) {
+        /* shrink to align ends to page boundaries */
+        dest->start = ALIGN_END(dest->start, PAGE_SIZE);
+        dest->end   = ALIGN_START(dest->end, PAGE_SIZE);
+    }
+    else {
+        /* grow to align ends to page boundaries */
+        dest->start = ALIGN_START(dest->start, PAGE_SIZE);
+        dest->end   = ALIGN_END(dest->end, PAGE_SIZE);
+    }
+}
+
+static void assign_and_align_entry(memory_range_t *dest, const e820_t *entry) {
+    dest->start = entry->addr;
+    dest->end   = entry->addr + entry->size;
+    align_range(dest, entry->type == E820_RAM);
+}
+
+static void clip_memory_range(memory_range_t *dest, const memory_range_t *clipping) {
+    if(clipping->start <= dest->start) {
+        if(clipping->end <= dest->start) {
+            return;
+        }
+
+        dest->start = clipping->end;
+
+        if(dest->end < dest->start) {
+            dest->end = dest->start;
+        }
+
+        return;
+    }
+
+    if(clipping->start >= dest->end) {
+        return;
+    }
+
+    if(clipping->end >= dest->end) {
+        dest->end = clipping->start;
+        return;
+    }
+
+    const size_t low_size = clipping->start - dest->start;
+    const size_t high_size = dest->end - clipping->end;
+
+    if(high_size > low_size) {
+        dest->start = clipping->end;
+        return;
+    }
+
+    dest->end = clipping->start;
+}
+
+static void clip_available_range(memory_range_t *dest, const boot_info_t *boot_info) {
+    for(int idx = 0; idx < boot_info->e820_entries; ++idx) {
+        const e820_t *entry = &boot_info->e820_map[idx];
+
+        if(entry->type == E820_RAM) {
+            continue;
+        }
+
+        memory_range_t not_available;
+        assign_and_align_entry(&not_available, entry);
+        clip_memory_range(dest, &not_available);
+    }
+
+    memory_range_t ramdisk = {
+        .start  = boot_info->ramdisk_start,
+        .end    = boot_info->ramdisk_start + boot_info->ramdisk_size
+    };
+    align_range(&ramdisk, false);
+    clip_memory_range(dest, &ramdisk);
+}
+
+static void find_range_for_loader(memory_range_t *dest, const boot_info_t *boot_info) {
+    /* First, find the largest available range over the 4GB mark. */
+    memory_range_t largest_over_4gb = {0};
+
+    for(int idx = 0; idx < boot_info->e820_entries; ++idx) {
+        const e820_t *entry = &boot_info->e820_map[idx];
+
+        if(entry->type != E820_RAM) {
+            continue;
+        }
+
+        if(entry->addr < UINT64_C(4) * GB) {
+            continue;
+        }
+
+        memory_range_t available;
+        assign_and_align_entry(&available, entry);
+        clip_available_range(&available, boot_info);
+
+        uint64_t available_size = available.end - available.start;
+        uint64_t largest_size = largest_over_4gb.end - largest_over_4gb.start;
+
+        if(available_size > largest_size) {
+            largest_over_4gb = available;
+        }
+    }
+
+    /* Then, compare this to the region just above the kernel data. */
+    memory_range_t under_4gb = {0};
+
+    for(int idx = 0; idx < boot_info->e820_entries; ++idx) {
+        const e820_t *entry = &boot_info->e820_map[idx];
+
+        if(entry->type != E820_RAM) {
+            continue;
+        }
+
+        uint64_t start = MEMORY_ADDR_16MB + BOOT_SIZE_AT_16MB;
+
+        if(entry->addr + entry->size <= start || entry->addr > MEMORY_ADDR_16MB) {
+            continue;
+        }
+
+        under_4gb.start = start;
+        under_4gb.end   = entry->addr + entry->size;
+        align_range(&under_4gb, true);
+        clip_available_range(&under_4gb, boot_info);
+        break;
+    }
+
+    uint64_t under_4gb_size = under_4gb.end - under_4gb.start;
+    uint64_t over_4gb_size = largest_over_4gb.end - largest_over_4gb.start;
+
+    if(under_4gb_size > over_4gb_size) {
+        *dest = under_4gb;
+    }
+    else {
+        *dest = largest_over_4gb;
+    }
+}
+
 int memory_get_map(const jinue_buffer_t *buffer) {
     const boot_info_t *boot_info = get_boot_info();
 
     const uintptr_t kernel_image_size = (uintptr_t)boot_info->image_top - (uintptr_t)boot_info->image_start;
+
+    memory_range_t loader_range;
+    find_range_for_loader(&loader_range, boot_info);
 
     const jinue_mem_entry_t kernel_regions[] = {
         {
@@ -284,8 +423,8 @@ int memory_get_map(const jinue_buffer_t *buffer) {
             .type = JINUE_MEM_TYPE_KERNEL_RESERVED
         },
         {
-            .addr = 0xabc /* TODO */,
-            .size = 0 /* TODO */,
+            .addr = loader_range.start,
+            .size = loader_range.end - loader_range.start,
             .type = JINUE_MEM_TYPE_LOADER_AVAILABLE
         }
     };
