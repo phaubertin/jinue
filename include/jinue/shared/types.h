@@ -33,6 +33,7 @@
 #define _JINUE_SHARED_TYPES_H
 
 #include <jinue/shared/asm/types.h>
+#include <stddef.h>
 #include <stdint.h>
 
 typedef struct {
@@ -45,5 +46,12 @@ typedef struct {
 	uint32_t			num_entries;
 	jinue_mem_entry_t	entry[];
 } jinue_mem_map_t;
+
+typedef struct {
+    void        *addr;
+    size_t       length;
+    int          prot;
+    uint64_t     paddr;
+} jinue_mmap_args_t;
 
 #endif

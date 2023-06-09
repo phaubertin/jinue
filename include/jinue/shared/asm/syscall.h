@@ -69,6 +69,9 @@
 /** destroy the current thread */
 #define JINUE_SYS_EXIT_THREAD           12
 
+/** map memory into the address space of a process */
+#define JINUE_SYS_MMAP                  13
+
 /** start of function numbers for user space messages */
 #define JINUE_SYS_USER_BASE             4096
 
