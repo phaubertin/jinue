@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2023 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,6 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <jinue/shared/errno.h>
 #include <kernel/i686/boot.h>
 #include <kernel/i686/cpu_data.h>
 #include <kernel/i686/memory.h>
@@ -903,4 +904,8 @@ kern_paddr_t vm_lookup_kernel_paddr(void *addr) {
     assert(pte != NULL && pte_is_present(pte));
 
     return (kern_paddr_t)get_pte_paddr(pte);
+}
+
+int vm_mmap_syscall(int process_fd, const jinue_mmap_args_t *args) {
+    return -JINUE_ENOSYS;
 }

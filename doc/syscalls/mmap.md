@@ -12,7 +12,7 @@ The descriptor number for the target process is set in `arg1`.
 
 A pointer to a [jinue_mmap_args_t structure](../../include/jinue/shared/types.h)
 (i.e. the mmap arguments structure) that contains the rest of the arguments is
-set in `arg2`, while `arg3` is set to the size of that structure.
+set in `arg2`.
 
 The mmap arguments structure contains the following fields:
 
@@ -51,7 +51,7 @@ the following table:
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                 size of mmap arguments structure               |  arg3
+    |                         reserved (0)                           |  arg3
     +----------------------------------------------------------------+
     31                                                               0
 ```
