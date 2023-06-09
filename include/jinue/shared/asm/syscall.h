@@ -101,4 +101,17 @@
 /** log level "error" for the PUTS system call */
 #define JINUE_PUTS_LOGLEVEL_ERROR       'E'
 
+
+/** map page with no access permission */
+#define JINUE_PROT_NONE         0
+
+/** map page with read permission */
+#define JINUE_PROT_READ         (1<<0)
+
+/** map page with write permission */
+#define JINUE_PROT_WRITE        (1<<1)
+
+/** map page with execution permission */
+#define JINUE_PROT_EXEC         (1<<2)
+
 #endif

@@ -34,7 +34,6 @@
 
 #include <kernel/types.h>
 
-
 /* flag bits 0..7 are common flags, flag bits 8 and up are per object type flags */
 
 #define OBJECT_FLAG_NONE        0

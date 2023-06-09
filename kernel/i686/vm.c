@@ -29,17 +29,21 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <jinue/shared/asm/syscall.h>
 #include <jinue/shared/errno.h>
 #include <kernel/i686/boot.h>
 #include <kernel/i686/cpu_data.h>
 #include <kernel/i686/memory.h>
+#include <kernel/i686/thread.h>
 #include <kernel/i686/vga.h>
 #include <kernel/i686/vm.h>
 #include <kernel/i686/vm_private.h>
 #include <kernel/i686/x86.h>
 #include <kernel/boot.h>
 #include <kernel/elf.h>
+#include <kernel/object.h>
 #include <kernel/page_alloc.h>
+#include <kernel/process.h>
 #include <kernel/panic.h>
 #include <kernel/util.h>
 #include <kernel/vmalloc.h>
@@ -695,8 +699,8 @@ static void invalidate_mapping(
 /**
  * Translate architecture-independent protection flags to architecture-dependent flags
  *
- * Argument should be either VM_MAP_NONE (no access) or any combination of
- * VM_MAP_READ, VM_MAP_WRITE and/or VM_MAP_EXEC.
+ * Argument should be either JINUE_PROT_NONE (no access) or any combination of
+ * JINUE_PROT_READ, JINUE_PROT_WRITE and/or JINUE_PROT_EXEC.
  *
  * Return value is a combination of architecture-dependent flags appropriate to
  * be set directly in a page table entry (i.e. the X86_PTE_... constants).
@@ -706,7 +710,7 @@ static void invalidate_mapping(
  *
  */
 static uint64_t map_page_access_flags(int flags) {
-    const int rwe_mask = VM_MAP_READ | VM_MAP_WRITE | VM_MAP_EXEC;
+    const int rwe_mask = JINUE_PROT_READ | JINUE_PROT_WRITE | JINUE_PROT_EXEC;
 
     if(! (flags & rwe_mask)) {
         return X86_PTE_PROT_NONE;
@@ -714,11 +718,11 @@ static uint64_t map_page_access_flags(int flags) {
 
     int mapped_flags = X86_PTE_PRESENT;
 
-    if(flags & VM_MAP_WRITE) {
+    if(flags & JINUE_PROT_WRITE) {
         mapped_flags |= X86_PTE_READ_WRITE;
     }
 
-    if(! (flags & VM_MAP_EXEC)) {
+    if(! (flags & JINUE_PROT_EXEC)) {
         mapped_flags |= X86_PTE_NX;
     }
 
@@ -907,5 +911,36 @@ kern_paddr_t vm_lookup_kernel_paddr(void *addr) {
 }
 
 int vm_mmap_syscall(int process_fd, const jinue_mmap_args_t *args) {
-    return -JINUE_ENOSYS;
+    object_header_t *object;
+    int get_object_result = process_get_object_header(
+            &object,
+            NULL,
+            process_fd,
+            get_current_thread()->process
+    );
+
+    if(get_object_result < 0) {
+        return get_object_result;
+    }
+
+    if(object->type != OBJECT_TYPE_PROCESS) {
+        return -JINUE_EBADF;
+    }
+
+    process_t *process          = (process_t *)object;
+    addr_space_t *addr_space    = &process->addr_space;
+
+    char *addr      = args->addr;
+    uint64_t paddr  = args->paddr;
+
+    for(size_t idx =0; idx < args->length / PAGE_SIZE; ++idx) {
+        if(!vm_map_userspace(addr_space, addr, paddr, args->prot)) {
+            return -JINUE_ENOMEM;
+        }
+
+        addr += PAGE_SIZE;
+        paddr += PAGE_SIZE;
+    }
+
+    return 0;
 }

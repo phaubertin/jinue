@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Philippe Aubertin.
+ * Copyright (C) 2019-2023 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -43,6 +43,7 @@
 #include <kernel/process.h>
 #include <kernel/syscall.h>
 #include <kernel/thread.h>
+#include <kernel/util.h>
 #include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -328,6 +329,27 @@ static void sys_mmap(jinue_syscall_args_t *args) {
     }
 
     mmap_args = *userspace_mmap_args;
+
+    if(OFFSET_OF_PTR(mmap_args.addr, PAGE_SIZE) != 0) {
+        syscall_args_set_error(args, JINUE_EINVAL);
+        return;
+    }
+
+    if((mmap_args.length & (PAGE_SIZE -1)) != 0) {
+        syscall_args_set_error(args, JINUE_EINVAL);
+        return;
+    }
+
+    if((mmap_args.paddr & (PAGE_SIZE -1)) != 0) {
+        syscall_args_set_error(args, JINUE_EINVAL);
+        return;
+    }
+
+    const int all_prot_flags = JINUE_PROT_READ | JINUE_PROT_WRITE | JINUE_PROT_EXEC;
+    if((mmap_args.prot & ~all_prot_flags) != 0) {
+        syscall_args_set_error(args, JINUE_EINVAL);
+        return;
+    }
 
     int retval = vm_mmap_syscall(process_fd, &mmap_args);
     set_return_value_or_error(args, retval);
