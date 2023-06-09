@@ -2,36 +2,56 @@
 
 ## Description
 
-Map memory into the address space of a process.
+Map a contiguous block of memory into the address space of a process.
 
 ## Arguments
 
-TODO
+Function number (`arg0`) is 13.
 
-- process
-- physical start
-- virtual start
-- size
-- permissions
+The descriptor number for the target process is set in `arg1`.
+
+A pointer to a [jinue_mmap_args_t structure](../../include/jinue/shared/types.h)
+(i.e. the mmap arguments structure) that contains the rest of the arguments is
+set in `arg2`, while `arg3` is set to the size of that structure.
+
+The mmap arguments structure contains the following fields:
+
+* `addr` the virtual address (i.e. pointer) of the start of the mapping.
+* `length` the length of the mapping, in bytes.
+* `prot` the protection flags (see below).
+* `paddr` the physical address of the start of the mapped memory.
+
+`addr`, `length` and `paddr` must all be aligned on a page boundary.
+
+`prot` must be set to either `JINUE_PROT_NONE` or to the bitwise or of
+`JINUE_PROT_READ`, `JINUE_PROT_WRITE` and/or `JINUE_PROT_EXEC` as described in
+the following table:
+
+| Value | Name             | Description           |
+|-------|------------------|-----------------------|
+| 0     | JINUE_PROT_NONE  | No access             |
+| 1     | JINUE_PROT_READ  | Mapping is readable   |
+| 2     | JINUE_PROT_WRITE | Mapping is writeable  |
+| 4     | JINUE_PROT_EXEC  | Mapping is executable |
 
 ```
     +----------------------------------------------------------------+
-    |                         function = 3                           |  arg0
+    |                         function = 13                          |  arg0
     +----------------------------------------------------------------+
     31                                                               0
     
     +----------------------------------------------------------------+
-    |                           log level                            |  arg1
+    |                            process                             |  arg1
     +----------------------------------------------------------------+
     31                                                               0
     
     +----------------------------------------------------------------+
-    |                       address of string                        |  arg2
+    |                pointer to mmap arguments structure             |  arg2
     +----------------------------------------------------------------+
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                       length of string                         |  arg3
+    |                 size of mmap arguments structure               |  arg3
     +----------------------------------------------------------------+
     31                                                               0
 ```
