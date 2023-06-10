@@ -37,7 +37,12 @@
 		<link>
 			<name>loader</name>
 			<type>2</type>
-			<location>WORKSPACE_LOC/userspace/loader</location>
+			<locationURI>WORKSPACE_LOC/userspace/loader</locationURI>
+		</link>
+		<link>
+			<name>testapp</name>
+			<type>2</type>
+			<locationURI>WORKSPACE_LOC/userspace/testapp</locationURI>
 		</link>
 	</linkedResources>
 	<filteredResources>
