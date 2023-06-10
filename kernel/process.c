@@ -124,12 +124,14 @@ int process_get_object_header(
         return -JINUE_EBADF;
     }
 
+    if(object_ref_is_destroyed(ref)) {
+        return -JINUE_EIO;
+    }
+
     object_header_t *header = ref->object;
 
-    /* TODO this is not idempotent since error code will be EIO on the first call
-     * and then EBADF on subsequent ones */
     if(object_is_destroyed(header)) {
-        ref->flags |= OBJECT_REF_FLAG_CLOSED;
+        ref->flags |= OBJECT_REF_FLAG_DESTROYED;
         object_subref(header);
         return -JINUE_EIO;
     }
