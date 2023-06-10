@@ -30,9 +30,13 @@
 jinue_root = ../..
 include $(jinue_root)/header.mk
 
-sources.c        = testapp.c
-testapp          = testapp
-target           = $(testapp)-stripped
+sources.c       	 = testapp.c
+testapp         	 = testapp
+temp_ramdisk_fs		 = ramdisk-tmp
+ramdisk 			 = jinue-ramdisk.tar.gz
+
+target          	 = $(ramdisk)
+unclean_recursive	 = $(temp_ramdisk_fs)
 
 # The linker might not link crt.o from libjinue.a, which is required to
 # provide the _start entry point but otherwise contains no symbol that
@@ -43,7 +47,7 @@ target           = $(testapp)-stripped
 LDFLAGS         += -Wl,-u,_start -static-libgcc -m32 -march=i686
 LDLIBS           = -lgcc
 
-unclean.extra    = $(testapp)
+unclean.extra    = $(testapp) $(testapp)-stripped
 
 include $(common)
 
@@ -55,4 +59,10 @@ $(libc)/libc.a: FORCE
 
 $(testapp): $(objects) $(libjinue)/libjinue.a $(libc)/libc.a
 
-$(target): $(testapp)
+$(temp_ramdisk_fs): $(testapp)-stripped
+	mkdir -p $(temp_ramdisk_fs)/sbin
+	cp $(testapp)-stripped $(temp_ramdisk_fs)/sbin/init
+	touch $(temp_ramdisk_fs)
+
+$(ramdisk): $(temp_ramdisk_fs)
+	tar -czvf $(ramdisk) -C $(temp_ramdisk_fs) sbin

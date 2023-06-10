@@ -30,3 +30,7 @@
 # ------------------------------------------------------------------------------
 # Test application binary binaries
 testapp
+
+# RAM disk artifacts
+jinue-ramdisk.tar.gz
+ramdisk-tmp/
