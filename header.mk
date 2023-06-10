@@ -65,6 +65,7 @@ lib                  = $(userspace)/lib
 libjinue             = $(lib)/jinue
 libc                 = $(lib)/libc
 loader               = $(userspace)/loader
+testapp              = $(userspace)/testapp
 
 # object files
 objects.c            = $(sources.c:%.c=%.o)
