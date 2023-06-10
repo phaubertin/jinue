@@ -355,6 +355,11 @@ static void sys_mmap(jinue_syscall_args_t *args) {
     set_return_value_or_error(args, retval);
 }
 
+static void sys_get_process(jinue_syscall_args_t *args) {
+    int retval = process_get_current();
+    set_return_value_or_error(args, retval);
+}
+
 /**
  * System call dispatching function
  *
@@ -414,6 +419,9 @@ void dispatch_syscall(trapframe_t *trapframe) {
             break;
         case JINUE_SYS_MMAP:
             sys_mmap(args);
+            break;
+        case JINUE_SYS_GET_PROCESS:
+            sys_get_process(args);
             break;
         default:
             sys_nosys(args);

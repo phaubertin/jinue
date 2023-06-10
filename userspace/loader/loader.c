@@ -261,17 +261,54 @@ int main(int argc, char *argv[]) {
 
     dump_phys_memory_map((jinue_mem_map_t *)&call_buffer);
 
-    const jinue_mem_entry_t *ramdisk = get_ramdisk_entry((jinue_mem_map_t *)&call_buffer);
+    const jinue_mem_entry_t *ramdisk_entry = get_ramdisk_entry((jinue_mem_map_t *)&call_buffer);
 
-    if(ramdisk->addr == 0 || ramdisk->size == 0) {
+    if(ramdisk_entry->addr == 0 || ramdisk_entry->size == 0) {
         jinue_error("No initial RAM disk found.");
         return EXIT_FAILURE;
     }
 
     jinue_info(
         "Found RAM disk with size %" PRIu64 " bytes at address %#" PRIx64 ".",
-        ramdisk->size,
-        ramdisk->addr);
+        ramdisk_entry->size,
+        ramdisk_entry->addr);
+
+    /* TODO be more flexible on this */
+    if((ramdisk_entry->addr & (PAGE_SIZE - 1)) != 0) {
+        jinue_error("error: RAM disk is not aligned on a page boundary.");
+        return EXIT_FAILURE;
+    }
+
+    int process = jinue_get_process(&errno);
+
+    if(process < 0) {
+        jinue_error("error: could not get descriptor for current process.");
+        return EXIT_FAILURE;
+    }
+
+    void *const mmap_base = (void *)0x40000000;
+
+    status = jinue_mmap(
+            process,
+            mmap_base,
+            (ramdisk_entry->size + PAGE_SIZE - 1) & ~(uint64_t)(PAGE_SIZE - 1),
+            JINUE_PROT_READ,
+            ramdisk_entry->addr,
+            &errno);
+
+    if(status != 0) {
+        jinue_error("error: could not map RAM disk.");
+        return EXIT_FAILURE;
+    }
+
+    const char *ramdisk = mmap_base;
+
+    if(ramdisk[0] != 0x1f || ramdisk[1] != (char)0x8b || ramdisk[2] != 0x08) {
+        jinue_error("error: RAM disk is not a gzip file (bad signature).");
+        return EXIT_FAILURE;
+    }
+
+    jinue_info("RAM disk is a gzip file.");
 
     if(bool_getenv("DEBUG_DO_REBOOT")) {
         jinue_info("Rebooting.");

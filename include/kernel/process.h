@@ -53,4 +53,6 @@ int process_unused_descriptor(process_t *process);
 
 void process_switch_to(process_t *process);
 
+int process_get_current(void);
+
 #endif

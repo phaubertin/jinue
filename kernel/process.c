@@ -31,6 +31,7 @@
 
 #include <jinue/shared/errno.h>
 #include <kernel/i686/cpu_data.h>
+#include <kernel/i686/thread.h>
 #include <kernel/i686/vm.h>
 #include <kernel/panic.h>
 #include <kernel/process.h>
@@ -162,4 +163,24 @@ void process_switch_to(process_t *process) {
     vm_switch_addr_space(
             &process->addr_space,
             get_cpu_local_data());
+}
+
+int process_get_current(void) {
+    process_t *process = get_current_thread()->process;
+
+    int fd = process_unused_descriptor(process);
+
+    if(fd < 0) {
+        return -JINUE_EAGAIN;
+    }
+
+    object_ref_t *ref = process_get_descriptor(process, fd);
+
+    object_addref(&process->header);
+
+    ref->object = &process->header;
+    ref->flags  = OBJECT_REF_FLAG_VALID;
+    ref->cookie = 0;
+
+    return fd;
 }
