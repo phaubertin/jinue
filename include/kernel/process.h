@@ -43,8 +43,16 @@ void process_destroy(process_t *process);
 
 object_ref_t *process_get_descriptor(process_t *process, int fd);
 
+int process_get_object_header(
+        object_header_t **pheader,
+        object_ref_t    **pref,
+        int               fd,
+        process_t       *process);
+
 int process_unused_descriptor(process_t *process);
 
 void process_switch_to(process_t *process);
+
+int process_get_current(void);
 
 #endif

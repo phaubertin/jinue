@@ -69,6 +69,12 @@
 /** destroy the current thread */
 #define JINUE_SYS_EXIT_THREAD           12
 
+/** map memory into the address space of a process */
+#define JINUE_SYS_MMAP                  13
+
+/** get descriptor that represents current process */
+#define JINUE_SYS_GET_PROCESS           14
+
 /** start of function numbers for user space messages */
 #define JINUE_SYS_USER_BASE             4096
 
@@ -97,5 +103,18 @@
 
 /** log level "error" for the PUTS system call */
 #define JINUE_PUTS_LOGLEVEL_ERROR       'E'
+
+
+/** map page with no access permission */
+#define JINUE_PROT_NONE         0
+
+/** map page with read permission */
+#define JINUE_PROT_READ         (1<<0)
+
+/** map page with write permission */
+#define JINUE_PROT_WRITE        (1<<1)
+
+/** map page with execution permission */
+#define JINUE_PROT_EXEC         (1<<2)
 
 #endif

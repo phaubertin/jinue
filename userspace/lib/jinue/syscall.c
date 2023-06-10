@@ -154,3 +154,31 @@ int jinue_get_user_memory(jinue_mem_map_t *buffer, size_t buffer_size, int *perr
 
     return jinue_syscall_with_usual_convention(&args, perrno);
 }
+
+int jinue_mmap(int process, void *addr, size_t length, int prot, uint64_t paddr, int *perrno) {
+    jinue_syscall_args_t args;
+    jinue_mmap_args_t mmap_args;
+
+    mmap_args.addr = addr;
+    mmap_args.length = length;
+    mmap_args.prot = prot;
+    mmap_args.paddr = paddr;
+
+    args.arg0 = JINUE_SYS_MMAP;
+    args.arg1 = process;
+    args.arg2 = (uintptr_t)&mmap_args;
+    args.arg3 = 0;
+
+    return jinue_syscall_with_usual_convention(&args, perrno);
+}
+
+int jinue_get_process(int *perrno) {
+    jinue_syscall_args_t args;
+
+    args.arg0 = JINUE_SYS_GET_PROCESS;
+    args.arg1 = 0;
+    args.arg2 = 0;
+    args.arg3 = 0;
+
+    return jinue_syscall_with_usual_convention(&args, perrno);
+}

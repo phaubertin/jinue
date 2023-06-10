@@ -29,6 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <jinue/shared/asm/syscall.h>
 #include <kernel/i686/trap.h>
 #include <kernel/i686/vm.h>
 #include <kernel/boot.h>
@@ -241,11 +242,11 @@ void elf_load(
             int flags = 0;
 
             if(phdr[idx].p_flags & PF_R) {
-                flags |= VM_MAP_READ;
+                flags |= JINUE_PROT_READ;
             }
 
             if(phdr[idx].p_flags & PF_X) {
-                flags |= VM_MAP_EXEC;
+                flags |= JINUE_PROT_EXEC;
             }
 
             while(vptr < vend) {
@@ -272,15 +273,15 @@ void elf_load(
                 int flags = 0;
 
                 if(phdr[idx].p_flags & PF_R) {
-                    flags |= VM_MAP_READ;
+                    flags |= JINUE_PROT_READ;
                 }
 
                 if(phdr[idx].p_flags & PF_W) {
-                    flags |= VM_MAP_WRITE;
+                    flags |= JINUE_PROT_WRITE;
                 }
 
                 if(phdr[idx].p_flags & PF_X) {
-                    flags |= VM_MAP_EXEC;
+                    flags |= JINUE_PROT_EXEC;
                 }
 
                 /* allocate and map the new page */
@@ -341,7 +342,7 @@ void elf_allocate_stack(elf_info_t *elf_info, boot_alloc_t *boot_alloc) {
                 elf_info->addr_space,
                 vpage,
                 vm_lookup_kernel_paddr(page),
-                VM_MAP_READ | VM_MAP_WRITE);
+                JINUE_PROT_READ | JINUE_PROT_WRITE);
 
         /* TODO transfer page ownership to userspace */
     }

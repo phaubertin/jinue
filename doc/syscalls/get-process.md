@@ -1,19 +1,16 @@
-# GET_THREAD_LOCAL - Get Thread Local Storage Address
+# GET_PROCESS - Get Descriptor for Current Process
 
 ## Description
 
-Get the address of the thread-local storage for the current thread.
-
-A thread can set the address and size of its thread-local storage by calling the
-Set Thread-Local Storage system call.
+Get a descriptor that represents the current process.
 
 ## Arguments
 
-Function number (`arg0`) is 7.
+Function number (`arg0`) is 14.
 
 ```
     +----------------------------------------------------------------+
-    |                         function = 7                           |  arg0
+    |                         function = 14                          |  arg0
     +----------------------------------------------------------------+
     31                                                               0
     
@@ -35,22 +32,15 @@ Function number (`arg0`) is 7.
 
 ## Return Value
 
-This function returns the address of the thread-local storage in `arg0`. If this
-has not been set for the current thread by a previous call to the Set
-Thread-Local Storage system call, then the return value is zero (i.e. the NULL
-pointer in C).
-
-Note that, since this function returns a pointer, it does not follow the usual
-convention whereby a negative return value indicates a failure.
+On success, this function returns the descriptor number (in `arg0`). On failure,
+it returns -1 and an error number is set (in `arg1`).
 
 ## Errors
 
-This function always succeeds.
+* JINUE_EAGAIN if a descriptor number could not be allocated.
 
 ## Future Direction
 
-Support will be implemented in the kernel for an architecture-dependent
-mechanism to access thread-local storage that is faster than calling this
-function. On x86, this will likely mean dedicating an entry to thread-local
-storage in the GDT. Once this happens, this function may or may not be
-deprecated.
+Currently, the kernel allocates a new descriptor number to represent the
+process. This will be changed so the descriptor is passed as an argument and
+the kernel binds that descriptor to the current process.
