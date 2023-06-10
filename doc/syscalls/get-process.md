@@ -43,4 +43,4 @@ it returns -1 and an error number is set (in `arg1`).
 
 Currently, the kernel allocates a new descriptor number to represent the
 process. This will be changed so the descriptor is passed as an argument and
-the kernel binds the descriptor to the current process.
+the kernel binds that descriptor to the current process.
