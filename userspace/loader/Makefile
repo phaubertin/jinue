@@ -1,4 +1,4 @@
-# Copyright (C) 2019 Philippe Aubertin.
+# Copyright (C) 2019-2023 Philippe Aubertin.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -53,6 +53,9 @@ $(libjinue)/libjinue.a: FORCE
 $(libc)/libc.a: FORCE
 	$(MAKE) -C $(libc)
 
-$(loader): $(objects) $(libjinue)/libjinue.a $(libc)/libc.a
+$(zlib)/libz.a: FORCE
+	$(MAKE) -C $(zlib) libz.a
+
+$(loader): $(objects) $(libjinue)/libjinue.a $(zlib)/libz.a $(libc)/libc.a
 
 $(target): $(loader)
