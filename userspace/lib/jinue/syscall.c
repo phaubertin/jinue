@@ -167,7 +167,7 @@ int jinue_mmap(int process, void *addr, size_t length, int prot, uint64_t paddr,
     args.arg0 = JINUE_SYS_MMAP;
     args.arg1 = process;
     args.arg2 = (uintptr_t)&mmap_args;
-    args.arg3 = sizeof(mmap_args);
+    args.arg3 = 0;
 
     return jinue_syscall_with_usual_convention(&args, perrno);
 }
