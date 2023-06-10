@@ -76,4 +76,4 @@ process, or is closed.
 
 As currently implemented, this system call does not check whether the caller is
 authorized to map the specified block memory. This is obviously unacceptable and
-will be fixed.
+will be changed.
