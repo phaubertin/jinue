@@ -32,5 +32,5 @@
 testapp
 
 # RAM disk artifacts
-jinue-ramdisk.tar.gz
+jinue-initrd.tar.gz
 ramdisk-tmp/
