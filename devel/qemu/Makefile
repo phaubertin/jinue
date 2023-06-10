@@ -45,7 +45,7 @@ jinue_iso            = jinue.iso
 grub_image_rel       = boot/grub/i386-pc/jinue.img
 grub_image           = $(temp_iso_fs)/$(grub_image_rel)
 kernel_img_copy      = $(temp_iso_fs)/boot/$(notdir $(kernel_img))
-initrd               = $(temp_iso_fs)/boot/vbox-initrd.gz
+initrd               = $(temp_iso_fs)/boot/qemu-initrd.gz
 
 target               = $(jinue_iso)
 unclean_recursive    = $(temp_iso_fs)
