@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Philippe Aubertin.
+ * Copyright (C) 2019 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,9 +29,52 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_MEMORY_H
-#define _JINUE_MEMORY_H
+#ifndef _JINUE_JINUE_H
+#define _JINUE_JINUE_H
 
 #include <jinue/shared/asm/memory.h>
+#include <jinue/shared/errno.h>
+#include <jinue/shared/ipc.h>
+#include <jinue/shared/syscall.h>
+#include <jinue/shared/types.h>
+#include <jinue/shared/vm.h>
+#include <stddef.h>
+#include <stdint.h>
+
+int jinue_init(int implementation, int *perrno);
+
+void jinue_reboot(void);
+
+void jinue_set_thread_local(void *addr, size_t size);
+
+void *jinue_get_thread_local(void);
+
+int jinue_create_thread(void (*entry)(), void *stack, int *perrno);
+
+void jinue_yield_thread(void);
+
+void jinue_exit_thread(void);
+
+void jinue_putc(char c);
+
+int jinue_puts(int loglevel, const char *str, size_t n, int *perrno);
+
+int jinue_get_user_memory(jinue_mem_map_t *buffer, size_t buffer_size, int *perrno);
+
+int jinue_mmap(int process, void *addr, size_t length, int prot, uint64_t paddr, int *perrno);
+
+int jinue_get_process(int *perrno);
+
+intptr_t jinue_send(
+        int                      fd,
+        intptr_t                 function,
+        const jinue_message_t   *message,
+        int                     *perrno);
+
+intptr_t jinue_receive(int fd, const jinue_message_t *message, int *perrno);
+
+intptr_t jinue_reply(const jinue_message_t *message, int *perrno);
+
+int jinue_create_ipc(int flags, int *perrno);
 
 #endif

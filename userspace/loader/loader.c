@@ -31,17 +31,11 @@
 
 #include <sys/auxv.h>
 #include <sys/elf.h>
-#include <jinue/errno.h>
-#include <jinue/ipc.h>
-#include <jinue/logging.h>
-#include <jinue/memory.h>
-#include <jinue/syscall.h>
-#include <jinue/types.h>
-#include <jinue/vm.h>
+#include <jinue/jinue.h>
+#include <jinue/util.h>
 #include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
-
 
 #define THREAD_STACK_SIZE   4096
 
@@ -242,7 +236,7 @@ int main(int argc, char *argv[]) {
      * one we attempt to use is supported. */
     errno           = 0;
     int howsyscall  = getauxval(JINUE_AT_HOWSYSCALL);
-    int ret         = jinue_set_syscall_implementation(howsyscall, &errno);
+    int ret         = jinue_init(howsyscall, &errno);
 
     if (ret < 0) {
         /* TODO map error numbers to name */

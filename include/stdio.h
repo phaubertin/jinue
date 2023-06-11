@@ -32,6 +32,7 @@
 #ifndef _JINUE_LIBC_STDIO_H_
 #define _JINUE_LIBC_STDIO_H_
 
+#include <stdarg.h>
 #include <stddef.h>
 
 int snprintf(char *restrict s, size_t n, const char *restrict format, ...);

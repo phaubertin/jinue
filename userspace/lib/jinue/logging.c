@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/logging.h>
-#include <jinue/syscall.h>
+#include <jinue/jinue.h>
+#include <jinue/util.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -94,4 +94,3 @@ void jinue_error(const char *restrict format, ...) {
 
     va_end(args);
 }
-

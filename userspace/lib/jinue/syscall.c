@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2023 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,43 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/errno.h>
-#include <jinue/ipc.h>
-#include <jinue/syscall.h>
+#include <jinue/jinue.h>
 #include <stdbool.h>
-#include "stubs.h"
-
-static jinue_syscall_stub_t syscall_stubs[] = {
-        [JINUE_SYSCALL_IMPL_INTERRUPT]    = jinue_syscall_intr,
-        [JINUE_SYSCALL_IMPL_FAST_AMD]     = jinue_syscall_fast_amd,
-        [JINUE_SYSCALL_IMPL_FAST_INTEL]   = jinue_syscall_fast_intel
-};
-
-static int syscall_stub_index = JINUE_SYSCALL_IMPL_INTERRUPT;
-
-uintptr_t jinue_syscall(jinue_syscall_args_t *args) {
-    return syscall_stubs[syscall_stub_index](args);
-}
-
-intptr_t jinue_syscall_with_usual_convention(jinue_syscall_args_t *args, int *perrno) {
-    const intptr_t retval = (intptr_t)jinue_syscall(args);
-
-    if(retval < 0) {
-        jinue_set_errno(perrno, args->arg1);
-    }
-
-    return retval;
-}
-
-int jinue_set_syscall_implementation(int implementation, int *perrno) {
-    if(implementation < 0 || implementation > JINUE_SYSCALL_IMPL_LAST) {
-        *perrno = JINUE_EINVAL;
-        return -1;
-    }
-
-    syscall_stub_index = implementation;
-    return 0;
-}
+#include "implementations.h"
 
 void jinue_reboot(void) {
     jinue_syscall_args_t args;
@@ -177,6 +143,55 @@ int jinue_get_process(int *perrno) {
 
     args.arg0 = JINUE_SYS_GET_PROCESS;
     args.arg1 = 0;
+    args.arg2 = 0;
+    args.arg3 = 0;
+
+    return jinue_syscall_with_usual_convention(&args, perrno);
+}
+
+intptr_t jinue_send(
+        int                      fd,
+        intptr_t                 function,
+        const jinue_message_t   *message,
+        int                     *perrno) {
+
+    jinue_syscall_args_t args;
+
+    args.arg0 = (uintptr_t)function;
+    args.arg1 = (uintptr_t)fd;
+    args.arg2 = (uintptr_t)message;
+    args.arg3 = 0;
+
+    return jinue_syscall_with_usual_convention(&args, perrno);
+}
+
+intptr_t jinue_receive(int fd, const jinue_message_t *message, int *perrno){
+    jinue_syscall_args_t args;
+
+    args.arg0 = JINUE_SYS_RECEIVE;
+    args.arg1 = (uintptr_t)fd;
+    args.arg2 = (uintptr_t)message;
+    args.arg3 = 0;
+
+    return jinue_syscall_with_usual_convention(&args, perrno);
+}
+
+intptr_t jinue_reply(const jinue_message_t *message, int *perrno) {
+    jinue_syscall_args_t args;
+
+    args.arg0 = JINUE_SYS_REPLY;
+    args.arg1 = 0;
+    args.arg2 = (uintptr_t)message;
+    args.arg3 = 0;
+
+    return jinue_syscall_with_usual_convention(&args, perrno);
+}
+
+int jinue_create_ipc(int flags, int *perrno) {
+    jinue_syscall_args_t args;
+
+    args.arg0 = JINUE_SYS_CREATE_IPC;
+    args.arg1 = (uintptr_t)flags;
     args.arg2 = 0;
     args.arg3 = 0;
 
