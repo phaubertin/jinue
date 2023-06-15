@@ -247,7 +247,7 @@ static void initialize_string_array(const char *array[], const char *str, size_t
  *
  * */
 static void initialize_stack(elf_info_t *elf_info, const char *cmdline) {
-    uintptr_t *sp       = (uintptr_t *)(STACK_BASE - RESERVED_STACK_SIZE);
+    uintptr_t *sp           = (uintptr_t *)(STACK_BASE - RESERVED_STACK_SIZE);
     elf_info->stack_addr    = sp;
 
     /* We add 1 because argv[0] is the program name, which is not on the kernel
@@ -350,7 +350,7 @@ void elf_load(
     
     addr_space_t *addr_space = &process->addr_space;
 
-    elf_info->at_phdr       = (addr_t)phdr;
+    elf_info->at_phdr       = NULL; /* set below */
     elf_info->at_phnum      = elf->e_phnum;
     elf_info->at_phent      = elf->e_phentsize;
     elf_info->addr_space    = addr_space;
@@ -381,6 +381,18 @@ void elf_load(
 
         bool is_writable    = !!(phdr[idx].p_flags & PF_W);
         bool needs_padding  = (phdr[idx].p_filesz != phdr[idx].p_memsz);
+
+        if(!is_writable) {
+            Elf32_Off filestart     = phdr[idx].p_offset;
+            Elf32_Off fileend       = phdr[idx].p_offset + phdr[idx].p_filesz;
+
+            Elf32_Off phdr_start    = elf->e_phoff;
+            Elf32_Off phdr_end      = elf->e_phoff + elf->e_phnum * elf->e_phentsize;
+
+            if(filestart <= phdr_start && phdr_end <= fileend) {
+                elf_info->at_phdr = (addr_t)phdr[idx].p_vaddr + elf->e_phoff;
+            }
+        }
 
         if(! (is_writable || needs_padding)) {
             /* Since the segment has to be mapped read only and does not require
@@ -460,6 +472,10 @@ void elf_load(
         }
     }
     
+    if(elf_info->at_phdr == NULL) {
+        panic("Program headers address (AT_PHDR) could not be determined");
+    }
+
     allocate_stack(elf_info, boot_alloc);
 
     initialize_stack(elf_info, cmdline);
