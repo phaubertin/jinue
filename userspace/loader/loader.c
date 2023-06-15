@@ -279,17 +279,10 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    int process = jinue_get_process(&errno);
-
-    if(process < 0) {
-        jinue_error("error: could not get descriptor for current process.");
-        return EXIT_FAILURE;
-    }
-
     void *const mmap_base = (void *)0x40000000;
 
     status = jinue_mmap(
-            process,
+            JINUE_DESCRIPTOR_PROCESS,
             mmap_base,
             (ramdisk_entry->size + PAGE_SIZE - 1) & ~(uint64_t)(PAGE_SIZE - 1),
             JINUE_PROT_READ,
@@ -297,7 +290,7 @@ int main(int argc, char *argv[]) {
             &errno);
 
     if(status != 0) {
-        jinue_error("error: could not map RAM disk.");
+        jinue_error("error: could not map RAM disk (%i).", errno);
         return EXIT_FAILURE;
     }
 

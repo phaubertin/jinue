@@ -20,8 +20,7 @@
 | 11      | [REPLY](reply.md)                       | Reply to Message                     |
 | 12      | [EXIT_THREAD](exit-thread.md)           | Exit the Current Thread              |
 | 13      | [MMAP](mmap.md)                         | Map Memory                           |
-| 14      | [GET_PROCESS](get-process.md)           | Get Descriptor for Current Process   |
-| 15-4095 | -                                       | Reserved                             |
+| 14-4095 | -                                       | Reserved                             |
 | 4096+   | [SEND](send.md)                         | Send Message                         |
 
 #### Reserved Function Numbers

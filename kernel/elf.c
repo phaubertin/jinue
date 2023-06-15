@@ -36,8 +36,10 @@
 #include <kernel/cmdline.h>
 #include <kernel/elf.h>
 #include <kernel/logging.h>
+#include <kernel/object.h>
 #include <kernel/page_alloc.h>
 #include <kernel/panic.h>
+#include <kernel/process.h>
 #include <kernel/vmalloc.h>
 #include <kernel/util.h>
 #include <assert.h>
@@ -178,6 +180,148 @@ const Elf32_Phdr *elf_executable_program_header(const Elf32_Ehdr *elf) {
 }
 
 /**
+ * Allocate the stack for ELF binary
+ *
+ * @param info ELF information structure (output)
+ * @param boot_alloc boot-time page allocator
+ *
+ * */
+static void allocate_stack(elf_info_t *elf_info, boot_alloc_t *boot_alloc) {
+    /** TODO: check for overlap of stack with loaded segments */
+
+    for(addr_t vpage = (addr_t)STACK_START; vpage < (addr_t)STACK_BASE; vpage += PAGE_SIZE) {
+        void *page = page_alloc();
+
+        /* This newly allocated page may have data left from a previous boot
+         * which may contain sensitive information. Let's clear it. */
+        clear_page(page);
+
+        checked_map_userspace(
+                elf_info->addr_space,
+                vpage,
+                vm_lookup_kernel_paddr(page),
+                JINUE_PROT_READ | JINUE_PROT_WRITE);
+
+        /* TODO transfer page ownership to userspace */
+    }
+}
+
+/**
+ * Initialize the arguments (argv) and environment variables string arrays
+ *
+ * This function is intended to initialize the string arrays for the command
+ * line arguments (argv) and environment variables. It does not initialize the
+ * terminating NULL entry, which needs to be intialized separately.
+ *
+ * This function intializes a fixed number of entries and assumes the
+ * NUL-terminated strings are concatenated.
+ *
+ * @param array array to initialize
+ * @param str pointer to the first string
+ * @param n number of entries to initialize
+ *
+ * */
+static void initialize_string_array(const char *array[], const char *str, size_t n) {
+    for(int idx = 0; idx < n; ++idx) {
+        /* Write address of current string. */
+        array[idx] = str;
+
+        /* skip to end of string */
+        while(*str != '\0') {
+            ++str;
+        }
+
+        /* skip terminator to get to next string */
+        ++str;
+    }
+}
+
+/**
+ * Initialize stack for ELF binary
+ *
+ * Initializes the command line arguments, the environment variables and the
+ * auxiliary vectors.
+ *
+ * @param info ELF information structure (output)
+ * @param cmdline full kernel command line
+ *
+ * */
+static void initialize_stack(elf_info_t *elf_info, const char *cmdline) {
+    uintptr_t *sp       = (uintptr_t *)(STACK_BASE - RESERVED_STACK_SIZE);
+    elf_info->stack_addr    = sp;
+
+    /* We add 1 because argv[0] is the program name, which is not on the kernel
+     * command line. */
+    size_t argc = cmdline_count_arguments(cmdline) + 1;
+    *(sp++) = argc;
+
+    /* Reserve space for argv and remember where we are. We will fill in the
+     * pointers later. We add 1 to argc for the terminating NULL entry. */
+    const char **argv = (const char **)sp;
+    argv[argc] = NULL;
+    sp += argc + 1;
+
+    /* Reserve space for envp. Again, we will fill in the pointer values later.
+     * We add 1 to nenv for the terminating NULL entry. */
+    size_t nenv = cmdline_count_environ(cmdline);
+    const char **envp = (const char **)sp;
+    envp[nenv] = NULL;
+    sp += (nenv + 1);
+
+    /* Auxiliary vectors */
+    Elf32_auxv_t *auxvp = (Elf32_auxv_t *)sp;
+    sp = (uintptr_t *)(auxvp + 8);
+
+    auxvp[0].a_type     = JINUE_AT_PHDR;
+    auxvp[0].a_un.a_val = (uint32_t)elf_info->at_phdr;
+
+    auxvp[1].a_type     = JINUE_AT_PHENT;
+    auxvp[1].a_un.a_val = (uint32_t)elf_info->at_phent;
+
+    auxvp[2].a_type     = JINUE_AT_PHNUM;
+    auxvp[2].a_un.a_val = (uint32_t)elf_info->at_phnum;
+
+    auxvp[3].a_type     = JINUE_AT_PAGESZ;
+    auxvp[3].a_un.a_val = PAGE_SIZE;
+
+    auxvp[4].a_type     = JINUE_AT_ENTRY;
+    auxvp[4].a_un.a_val = (uint32_t)elf_info->entry;
+
+    auxvp[5].a_type     = JINUE_AT_STACKBASE;
+    auxvp[5].a_un.a_val = STACK_BASE;
+
+    auxvp[6].a_type     = JINUE_AT_HOWSYSCALL;
+    auxvp[6].a_un.a_val = syscall_implementation;
+
+    auxvp[7].a_type     = JINUE_AT_NULL;
+    auxvp[7].a_un.a_val = 0;
+
+    /* Write arguments and environment variables (i.e. the actual strings). */
+    char *const args = (char *)sp;
+
+    strcpy(args, elf_info->argv0);
+
+    char *const arg1 = args + strlen(elf_info->argv0) + 1;
+
+    char *const envs = cmdline_write_arguments(arg1, cmdline);
+
+    cmdline_write_environ(envs, cmdline);
+
+    /* Fill in content of pointer arrays argv and envp. */
+    initialize_string_array(argv, args, argc);
+    initialize_string_array(envp, envs, nenv);
+}
+
+static void initialize_descriptors(process_t *process) {
+    object_ref_t *ref = process_get_descriptor(process, JINUE_DESCRIPTOR_PROCESS);
+
+    object_addref(&process->header);
+    ref->object = &process->header;
+    ref->flags  = OBJECT_REF_FLAG_VALID;
+    ref->cookie = 0;
+}
+
+/**
  * Load ELF binary
  *
  * This function is intended to be used to load the user space loader binary,
@@ -198,12 +342,14 @@ void elf_load(
         Elf32_Ehdr      *elf,
         const char      *argv0,
         const char      *cmdline,
-        addr_space_t    *addr_space,
+        process_t       *process,
         boot_alloc_t    *boot_alloc) {
     
     /* get the program header table */
     Elf32_Phdr *phdr = (Elf32_Phdr *)((char *)elf + elf->e_phoff);
     
+    addr_space_t *addr_space = &process->addr_space;
+
     elf_info->at_phdr       = (addr_t)phdr;
     elf_info->at_phnum      = elf->e_phnum;
     elf_info->at_phent      = elf->e_phentsize;
@@ -314,144 +460,13 @@ void elf_load(
         }
     }
     
-    elf_allocate_stack(elf_info, boot_alloc);
+    allocate_stack(elf_info, boot_alloc);
 
-    elf_initialize_stack(elf_info, cmdline);
+    initialize_stack(elf_info, cmdline);
     
+    initialize_descriptors(process);
+
     info("ELF binary loaded.");
-}
-
-/**
- * Allocate the stack for ELF binary
- *
- * @param info ELF information structure (output)
- * @param boot_alloc boot-time page allocator
- *
- * */
-void elf_allocate_stack(elf_info_t *elf_info, boot_alloc_t *boot_alloc) {
-    /** TODO: check for overlap of stack with loaded segments */
-
-    for(addr_t vpage = (addr_t)STACK_START; vpage < (addr_t)STACK_BASE; vpage += PAGE_SIZE) {
-        void *page = page_alloc();
-
-        /* This newly allocated page may have data left from a previous boot
-         * which may contain sensitive information. Let's clear it. */
-        clear_page(page);
-
-        checked_map_userspace(
-                elf_info->addr_space,
-                vpage,
-                vm_lookup_kernel_paddr(page),
-                JINUE_PROT_READ | JINUE_PROT_WRITE);
-
-        /* TODO transfer page ownership to userspace */
-    }
-}
-
-/**
- * Initialize the arguments (argv) and environment variables string arrays
- *
- * This function is intended to initialize the string arrays for the command
- * line arguments (argv) and environment variables. It does not initialize the
- * terminating NULL entry, which needs to be intialized separately.
- *
- * This function intializes a fixed number of entries and assumes the
- * NUL-terminated strings are concatenated.
- *
- * @param array array to initialize
- * @param str pointer to the first string
- * @param n number of entries to initialize
- *
- * */
-static void initialize_string_array(const char *array[], const char *str, size_t n) {
-    for(int idx = 0; idx < n; ++idx) {
-        /* Write address of current string. */
-        array[idx] = str;
-
-        /* skip to end of string */
-        while(*str != '\0') {
-            ++str;
-        }
-
-        /* skip terminator to get to next string */
-        ++str;
-    }
-}
-
-/**
- * Initialize stack for ELF binary
- *
- * Initializes the command line arguments, the environment variables and the
- * auxiliary vectors.
- *
- * @param info ELF information structure (output)
- * @param cmdline full kernel command line
- *
- * */
-void elf_initialize_stack(elf_info_t *elf_info, const char *cmdline) {
-    uintptr_t *sp       = (uintptr_t *)(STACK_BASE - RESERVED_STACK_SIZE);
-    elf_info->stack_addr    = sp;
-
-    /* We add 1 because argv[0] is the program name, which is not on the kernel
-     * command line. */
-    size_t argc = cmdline_count_arguments(cmdline) + 1;
-    *(sp++) = argc;
-
-    /* Reserve space for argv and remember where we are. We will fill in the
-     * pointers later. We add 1 to argc for the terminating NULL entry. */
-    const char **argv = (const char **)sp;
-    argv[argc] = NULL;
-    sp += argc + 1;
-
-    /* Reserve space for envp. Again, we will fill in the pointer values later.
-     * We add 1 to nenv for the terminating NULL entry. */
-    size_t nenv = cmdline_count_environ(cmdline);
-    const char **envp = (const char **)sp;
-    envp[nenv] = NULL;
-    sp += (nenv + 1);
-
-    /* Auxiliary vectors */
-    Elf32_auxv_t *auxvp = (Elf32_auxv_t *)sp;
-    sp = (uintptr_t *)(auxvp + 8);
-
-    auxvp[0].a_type     = JINUE_AT_PHDR;
-    auxvp[0].a_un.a_val = (uint32_t)elf_info->at_phdr;
-
-    auxvp[1].a_type     = JINUE_AT_PHENT;
-    auxvp[1].a_un.a_val = (uint32_t)elf_info->at_phent;
-
-    auxvp[2].a_type     = JINUE_AT_PHNUM;
-    auxvp[2].a_un.a_val = (uint32_t)elf_info->at_phnum;
-
-    auxvp[3].a_type     = JINUE_AT_PAGESZ;
-    auxvp[3].a_un.a_val = PAGE_SIZE;
-
-    auxvp[4].a_type     = JINUE_AT_ENTRY;
-    auxvp[4].a_un.a_val = (uint32_t)elf_info->entry;
-
-    auxvp[5].a_type     = JINUE_AT_STACKBASE;
-    auxvp[5].a_un.a_val = STACK_BASE;
-
-    auxvp[6].a_type     = JINUE_AT_HOWSYSCALL;
-    auxvp[6].a_un.a_val = syscall_implementation;
-
-    auxvp[7].a_type     = JINUE_AT_NULL;
-    auxvp[7].a_un.a_val = 0;
-
-    /* Write arguments and environment variables (i.e. the actual strings). */
-    char *const args = (char *)sp;
-
-    strcpy(args, elf_info->argv0);
-
-    char *const arg1 = args + strlen(elf_info->argv0) + 1;
-
-    char *const envs = cmdline_write_arguments(arg1, cmdline);
-
-    cmdline_write_environ(envs, cmdline);
-
-    /* Fill in content of pointer arrays argv and envp. */
-    initialize_string_array(argv, args, argc);
-    initialize_string_array(envp, envs, nenv);
 }
 
 /**
