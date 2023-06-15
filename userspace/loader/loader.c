@@ -31,6 +31,7 @@
 
 #include <sys/auxv.h>
 #include <sys/elf.h>
+#include <sys/mman.h>
 #include <jinue/jinue.h>
 #include <jinue/util.h>
 #include <inttypes.h>
@@ -273,22 +274,21 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    void *const mmap_base = (void *)0x40000000;
+    /* Our implementation of mmap() doesn't actually care about the file descriptor. */
+    const int dummy_fd = 0;
 
-    status = jinue_mmap(
-            JINUE_DESCRIPTOR_PROCESS,
-            mmap_base,
-            (ramdisk_entry->size + PAGE_SIZE - 1) & ~(uint64_t)(PAGE_SIZE - 1),
-            JINUE_PROT_READ,
-            ramdisk_entry->addr,
-            &errno);
+    const char *ramdisk = mmap(
+            NULL,
+            ramdisk_entry->size,
+            PROT_READ,
+            MAP_SHARED,
+            dummy_fd,
+            ramdisk_entry->addr);
 
-    if(status != 0) {
+    if(ramdisk == MAP_FAILED) {
         jinue_error("error: could not map RAM disk (%i).", errno);
         return EXIT_FAILURE;
     }
-
-    const char *ramdisk = mmap_base;
 
     if(ramdisk[0] != 0x1f || ramdisk[1] != (char)0x8b || ramdisk[2] != 0x08) {
         jinue_error("error: RAM disk is not a gzip file (bad signature).");

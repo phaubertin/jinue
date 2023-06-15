@@ -46,7 +46,7 @@ static void *bottom_break;
 static void *reported_break;
 
 /* We only allocate, never free, we just pretend we do. This is how far we
- * allocated. Also, this is the actually allocated limit, aligned on a page
+ * allocated. Also, this is the actual allocated limit, aligned on a page
  * boundary. */
 static void *allocated_break;
 

@@ -53,7 +53,7 @@
 
 #define MAP_ANONYMOUS   (1<<3)
 
-#define MAP_FAILED      ((void *)NULL);
+#define MAP_FAILED      ((void *)NULL)
 
 
 void *mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off);

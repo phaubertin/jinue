@@ -64,10 +64,12 @@ void *mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off) {
         return MAP_FAILED;
     }
 
-    if(len == 0 || (len & (PAGE_SIZE - 1)) != 0) {
+    if(len == 0) {
         errno = EINVAL;
         return MAP_FAILED;
     }
+
+    size_t aligned_length = (len + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
 
     if(off < 0 || (off & (PAGE_SIZE - 1)) != 0) {
         errno = EINVAL;
@@ -75,7 +77,7 @@ void *mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off) {
     }
 
     if(flags & MAP_FIXED) {
-        if(((uintptr_t)addr & (PAGE_SIZE - 1)) != 0) {
+        if(addr == NULL || ((uintptr_t)addr & (PAGE_SIZE - 1)) != 0) {
             errno = EINVAL;
             return MAP_FAILED;
         }
@@ -93,29 +95,30 @@ void *mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off) {
         errno = EINVAL;
         return MAP_FAILED;
     }
-    else if((uintptr_t)addr >= KLIMIT || KLIMIT - (uintptr_t)addr < len) {
+    else if((uintptr_t)addr >= KLIMIT || KLIMIT - (uintptr_t)addr < aligned_length) {
         errno = ENOMEM;
         return MAP_FAILED;
     }
 
     int64_t paddr;
 
-    if(flags & MAP_FIXED) {
-        paddr = off;
-    } else {
-        paddr = physmem_alloc(len);
+    if(flags & MAP_ANONYMOUS) {
+        paddr = physmem_alloc(aligned_length);
 
         if(paddr < 0) {
             errno = ENOMEM;
             return MAP_FAILED;
         }
     }
+    else {
+        paddr = off;
+    }
 
     int kernel_errno;
     int ret = jinue_mmap(
             JINUE_DESCRIPTOR_PROCESS,
             addr,
-            len,
+            aligned_length,
             prot,
             paddr,
             &kernel_errno);
@@ -126,7 +129,7 @@ void *mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off) {
     }
 
     if(!(flags & MAP_FIXED)) {
-        alloc_addr = (void *)((uintptr_t)alloc_addr + len);
+        alloc_addr = (void *)((uintptr_t)alloc_addr + aligned_length);
     }
 
     return addr;
