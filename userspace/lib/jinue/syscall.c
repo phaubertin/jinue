@@ -138,17 +138,6 @@ int jinue_mmap(int process, void *addr, size_t length, int prot, uint64_t paddr,
     return jinue_syscall_with_usual_convention(&args, perrno);
 }
 
-int jinue_get_process(int *perrno) {
-    jinue_syscall_args_t args;
-
-    args.arg0 = JINUE_SYS_GET_PROCESS;
-    args.arg1 = 0;
-    args.arg2 = 0;
-    args.arg3 = 0;
-
-    return jinue_syscall_with_usual_convention(&args, perrno);
-}
-
 intptr_t jinue_send(
         int                      fd,
         intptr_t                 function,

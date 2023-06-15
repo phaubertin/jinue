@@ -67,12 +67,8 @@ void elf_load(
         Elf32_Ehdr      *elf,
         const char      *argv0,
         const char      *cmdline,
-        addr_space_t    *addr_space,
+        process_t       *process,
         boot_alloc_t    *boot_alloc);
-
-void elf_allocate_stack(elf_info_t *elf_info, boot_alloc_t *boot_alloc);
-
-void elf_initialize_stack(elf_info_t *elf_info, const char *cmdline);
 
 const char *elf_symbol_name(
         const Elf32_Ehdr    *elf_header,
