@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <jinue/shared/asm/errno.h>
 #include <jinue/shared/asm/syscall.h>
-#include <jinue/shared/errno.h>
 #include <kernel/i686/boot.h>
 #include <kernel/i686/cpu_data.h>
 #include <kernel/i686/memory.h>

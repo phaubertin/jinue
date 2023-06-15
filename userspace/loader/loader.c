@@ -146,18 +146,18 @@ static const char *auxv_type_name(int type) {
         const char  *name;
         int          type;
     } *entry, mapping[] = {
-            {"AT_NULL",             JINUE_AT_NULL},
-            {"AT_IGNORE",           JINUE_AT_IGNORE},
-            {"AT_EXECFD",           JINUE_AT_EXECFD},
-            {"AT_PHDR",             JINUE_AT_PHDR},
-            {"AT_PHENT",            JINUE_AT_PHENT},
-            {"AT_PHNUM",            JINUE_AT_PHNUM},
-            {"AT_PAGESZ",           JINUE_AT_PAGESZ},
-            {"AT_BASE",             JINUE_AT_BASE},
-            {"AT_FLAGS",            JINUE_AT_FLAGS},
-            {"AT_ENTRY",            JINUE_AT_ENTRY},
-            {"AT_STACKBASE",        JINUE_AT_STACKBASE},
-            {"JINUE_AT_HOWSYSCALL", JINUE_AT_HOWSYSCALL},
+            {"AT_NULL",         JINUE_AT_NULL},
+            {"AT_IGNORE",       JINUE_AT_IGNORE},
+            {"AT_EXECFD",       JINUE_AT_EXECFD},
+            {"AT_PHDR",         JINUE_AT_PHDR},
+            {"AT_PHENT",        JINUE_AT_PHENT},
+            {"AT_PHNUM",        JINUE_AT_PHNUM},
+            {"AT_PAGESZ",       JINUE_AT_PAGESZ},
+            {"AT_BASE",         JINUE_AT_BASE},
+            {"AT_FLAGS",        JINUE_AT_FLAGS},
+            {"AT_ENTRY",        JINUE_AT_ENTRY},
+            {"AT_STACKBASE",    JINUE_AT_STACKBASE},
+            {"AT_HOWSYSCALL",   JINUE_AT_HOWSYSCALL},
             {NULL, 0}
     };
 

@@ -29,7 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/errno.h>
+#include <jinue/shared/asm/errno.h>
 #include <jinue/shared/vm.h>
 #include <kernel/i686/cpu_data.h>
 #include <kernel/i686/memory.h>
@@ -346,8 +346,16 @@ static void sys_mmap(jinue_syscall_args_t *args) {
     }
 
     const int all_prot_flags = JINUE_PROT_READ | JINUE_PROT_WRITE | JINUE_PROT_EXEC;
+
     if((mmap_args.prot & ~all_prot_flags) != 0) {
         syscall_args_set_error(args, JINUE_EINVAL);
+        return;
+    }
+
+    const int write_exec = JINUE_PROT_WRITE | JINUE_PROT_EXEC;
+
+    if((mmap_args.prot & write_exec) == write_exec) {
+        syscall_args_set_error(args, JINUE_ENOTSUP);
         return;
     }
 
