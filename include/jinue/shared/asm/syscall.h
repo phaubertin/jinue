@@ -117,4 +117,8 @@
 /** map page with execution permission */
 #define JINUE_PROT_EXEC         (1<<2)
 
+
+/** descriptor assigned to refer to own process in loader and initial process*/
+#define JINUE_DESCRIPTOR_PROCESS        0
+
 #endif
