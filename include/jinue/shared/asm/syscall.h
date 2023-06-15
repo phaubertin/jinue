@@ -72,9 +72,6 @@
 /** map memory into the address space of a process */
 #define JINUE_SYS_MMAP                  13
 
-/** get descriptor that represents current process */
-#define JINUE_SYS_GET_PROCESS           14
-
 /** start of function numbers for user space messages */
 #define JINUE_SYS_USER_BASE             4096
 

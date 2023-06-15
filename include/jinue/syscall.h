@@ -68,6 +68,4 @@ int jinue_get_user_memory(jinue_mem_map_t *buffer, size_t buffer_size, int *perr
 
 int jinue_mmap(int process, void *addr, size_t length, int prot, uint64_t paddr, int *perrno);
 
-int jinue_get_process(int *perrno);
-
 #endif
