@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_LIBC_SYS_TYPES_H
-#define _JINUE_LIBC_SYS_TYPES_H
+#ifndef _JINUE_LIBC_SYS_MMAN_H
+#define _JINUE_LIBC_SYS_MMAN_H
 
 #include <jinue/shared/asm/syscall.h>
 #include <sys/types.h>
