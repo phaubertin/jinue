@@ -50,7 +50,7 @@ static void *reported_break;
  * boundary. */
 static void *allocated_break;
 
-int init_brk(void) {
+int brk_init(void) {
     Elf32_Phdr *phdr = (Elf32_Phdr *)getauxval(JINUE_AT_PHDR);
 
     if(phdr == NULL) {

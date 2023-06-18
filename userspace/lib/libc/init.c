@@ -48,7 +48,7 @@ int _init(void) {
         return EXIT_FAILURE;
     }
 
-    ret = init_brk();
+    ret = brk_init();
 
     if(ret < 0) {
         return EXIT_FAILURE;

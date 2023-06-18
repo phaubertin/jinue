@@ -32,6 +32,6 @@
 #ifndef LIBC_BRK_H
 #define LIBC_BRK_H
 
-int init_brk(void);
+int brk_init(void);
 
 #endif
