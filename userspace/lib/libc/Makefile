@@ -37,6 +37,7 @@ sources.c        = \
 	getauxval.c \
 	getenv.c \
 	init.c \
+	malloc.c \
 	mmap.c \
 	physmem.c \
 	snprintf.c \
@@ -49,7 +50,7 @@ target.kernel    = libc-kernel.a
 targets          = $(target.user) $(target.kernel)
 
 objects.generic  = string.o snprintf.o vsnprintf.o
-objects.user     = crt.o brk.o errno.o getauxval.o getenv.o init.o mmap.o physmem.o
+objects.user     = crt.o brk.o errno.o getauxval.o getenv.o init.o malloc.o mmap.o physmem.o
 objects.kernel   = assert-kernel.o
 
 include $(common)
