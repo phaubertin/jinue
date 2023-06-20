@@ -43,17 +43,22 @@ void *mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off) {
         return MAP_FAILED;
     }
 
-    const int supported_flags = MAP_FIXED | MAP_SHARED | MAP_ANONYMOUS;
-
-    if((flags & ~supported_flags) != 0) {
+    if(flags & MAP_PRIVATE) {
         errno = ENOTSUP;
         return MAP_FAILED;
     }
 
-    const int all_prot = PROT_READ | PROT_WRITE | PROT_EXEC;
+    const int flags_mask = MAP_FIXED | MAP_SHARED | MAP_ANONYMOUS;
 
-    if((prot & ~all_prot) != 0) {
-        errno = ENOTSUP;
+    if((flags & ~flags_mask) != 0) {
+        errno = EINVAL;
+        return MAP_FAILED;
+    }
+
+    const int prot_mask = PROT_READ | PROT_WRITE | PROT_EXEC;
+
+    if((prot & ~prot_mask) != 0) {
+        errno = EINVAL;
         return MAP_FAILED;
     }
 
@@ -71,18 +76,8 @@ void *mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off) {
 
     size_t aligned_length = (len + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
 
-    if(off < 0 || (off & (PAGE_SIZE - 1)) != 0) {
-        errno = EINVAL;
-        return MAP_FAILED;
-    }
-
     if(flags & MAP_FIXED) {
         if(addr == NULL || ((uintptr_t)addr & (PAGE_SIZE - 1)) != 0) {
-            errno = EINVAL;
-            return MAP_FAILED;
-        }
-
-        if(addr == NULL) {
             errno = EINVAL;
             return MAP_FAILED;
         }
@@ -91,12 +86,18 @@ void *mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off) {
         addr = alloc_addr;
     }
 
-    if((uintptr_t)addr >= KLIMIT && (flags & MAP_FIXED)) {
-        errno = EINVAL;
+    if((uintptr_t)addr >= KLIMIT || KLIMIT - (uintptr_t)addr < aligned_length) {
+        if(flags & MAP_FIXED) {
+            errno = EINVAL;
+        }
+        else {
+            errno = ENOMEM;
+        }
         return MAP_FAILED;
     }
-    else if((uintptr_t)addr >= KLIMIT || KLIMIT - (uintptr_t)addr < aligned_length) {
-        errno = ENOMEM;
+
+    if(off < 0 || (off & (PAGE_SIZE - 1)) != 0) {
+        errno = EINVAL;
         return MAP_FAILED;
     }
 
