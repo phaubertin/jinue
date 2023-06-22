@@ -40,9 +40,10 @@ static uint64_t alloc_addr;
 static uint64_t alloc_limit;
 
 int physmem_init(void) {
-    jinue_mem_map_t map;
+    char map_buffer[sizeof(jinue_mem_map_t) + MAX_MAP_ENTRIES * sizeof(jinue_mem_entry_t)];
+    jinue_mem_map_t *map = (void *)map_buffer;
 
-    int ret = jinue_get_user_memory(&map, sizeof(map), NULL);
+    int ret = jinue_get_user_memory(map, sizeof(map_buffer), NULL);
 
     if(ret < 0) {
         return EXIT_FAILURE;
@@ -50,8 +51,8 @@ int physmem_init(void) {
 
     const jinue_mem_entry_t *entry = NULL;
 
-    for(int idx = 0; idx < map.num_entries; ++idx) {
-        entry = &map.entry[idx];
+    for(int idx = 0; idx < map->num_entries; ++idx) {
+        entry = &map->entry[idx];
         if(entry->type == JINUE_MEM_TYPE_LOADER_AVAILABLE) {
             break;
         }

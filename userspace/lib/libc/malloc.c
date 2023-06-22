@@ -30,6 +30,7 @@
  */
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -120,8 +121,14 @@ static void *allocate_from_buffer(struct header *buffer, size_t size) {
     return buffer + 1;
 }
 
+#define FAILED_SBRK ((void *)-1)
+
 static void *align_break(void) {
     void *current_break = sbrk(0);
+
+    if(current_break == FAILED_SBRK) {
+        return FAILED_SBRK;
+    }
 
     uintptr_t alignment = (uintptr_t)current_break & (sizeof(struct header) - 1);
 
@@ -129,7 +136,11 @@ static void *align_break(void) {
         return current_break;
     }
 
-    (void)sbrk(sizeof(struct header) - alignment);
+    void *ret = sbrk(sizeof(struct header) - alignment);
+
+    if(ret == FAILED_SBRK) {
+        return FAILED_SBRK;
+    }
 
     return sbrk(0);
 }
@@ -137,12 +148,14 @@ static void *align_break(void) {
 static void *allocate_with_sbrk(size_t size) {
     void *current_break = align_break();
 
+    size_t alloc_size;
+
     if(size < MIN_SBRK_SIZE) {
-        size = MIN_SBRK_SIZE;
+        alloc_size = MIN_SBRK_SIZE;
     }
     else {
         /* align to header size */
-        size = (size + sizeof(struct header) - 1) & ~(sizeof(struct header) - 1);
+        alloc_size = (size + sizeof(struct header) - 1) & ~(sizeof(struct header) - 1);
     }
 
     struct header *buffer;
@@ -152,7 +165,11 @@ static void *allocate_with_sbrk(size_t size) {
          *
          * Three headers: the one for the new buffer and two terminators for the
          * new frame */
-        sbrk(size + 3 * sizeof(struct header));
+        void *ret = sbrk(alloc_size + 3 * sizeof(struct header));
+
+        if(ret == FAILED_SBRK) {
+            return NULL;
+        }
 
         struct header *start    = (struct header *)current_break;
         start->prev_and_flags   = (uintptr_t)heap_tail | FLAG_TERMINATOR;
@@ -160,7 +177,7 @@ static void *allocate_with_sbrk(size_t size) {
 
         buffer                  = start + 1;
         buffer->prev_and_flags  = (uintptr_t)start | FLAG_FREE;
-        buffer->size_or_next    = size;
+        buffer->size_or_next    = alloc_size;
 
         if(heap_head == NULL) {
             heap_head = start;
@@ -179,18 +196,28 @@ static void *allocate_with_sbrk(size_t size) {
             buffer = tail_prev;
 
             /* only one header size for the new end terminator */
-            sbrk(size - bufsize(buffer));
-            buffer->size_or_next = size;
+            void *ret = sbrk(alloc_size - bufsize(buffer));
+
+            if(ret == FAILED_SBRK) {
+                return NULL;
+            }
+
+            buffer->size_or_next = alloc_size;
         }
         else {
             /* We need a new buffer but we can extend the existing frame and
              * put it there. */
             buffer = heap_tail;
 
-            sbrk(size + sizeof(struct header));
+            void *ret = sbrk(alloc_size + sizeof(struct header));
+
+            if(ret == FAILED_SBRK) {
+                return NULL;
+            }
+
             buffer->prev_and_flags &= ~(uintptr_t)FLAGS_MASK;
             buffer->prev_and_flags |= FLAG_FREE;
-            buffer->size_or_next = size;
+            buffer->size_or_next = alloc_size;
         }
     }
 

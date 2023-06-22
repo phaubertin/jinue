@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sys/auxv.h>
 #include <jinue/jinue.h>
+#include <sys/auxv.h>
 #include <stdlib.h>
 #include "brk.h"
 #include "physmem.h"
@@ -44,13 +44,13 @@ int _init(void) {
 
     ret = physmem_init();
 
-    if(ret < 0) {
+    if(ret != EXIT_SUCCESS) {
         return EXIT_FAILURE;
     }
 
     ret = brk_init();
 
-    if(ret < 0) {
+    if(ret != EXIT_SUCCESS) {
         return EXIT_FAILURE;
     }
 
