@@ -29,9 +29,29 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_ERRNO_H
-#define _JINUE_ERRNO_H
+#ifndef _JINUE_SHARED_ASM_ERRNO_H
+#define _JINUE_SHARED_ASM_ERRNO_H
 
-#include <jinue/shared/errno.h>
+#define JINUE_ENOMEM    1
+
+#define JINUE_ENOSYS    2
+
+#define JINUE_EINVAL    3
+
+#define JINUE_EAGAIN    4
+
+#define JINUE_EBADF     5
+
+#define JINUE_EIO       6
+
+#define JINUE_EPERM     7
+
+#define JINUE_E2BIG     8
+
+#define JINUE_ENOMSG    9
+
+#define JINUE_ENOTSUP   10
+
+#define _JINUE_ELAST    10
 
 #endif

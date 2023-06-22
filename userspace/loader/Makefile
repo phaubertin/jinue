@@ -47,12 +47,12 @@ unclean.extra    = $(loader)
 
 include $(common)
 
-$(libjinue)/libjinue.a: FORCE
+$(libjinue)/libjinue-syscalls.a $(libjinue)/libjinue-util.a: FORCE
 	$(MAKE) -C $(libjinue)
 	
 $(libc)/libc.a: FORCE
 	$(MAKE) -C $(libc)
 
-$(loader): $(objects) $(libjinue)/libjinue.a $(libc)/libc.a
+$(loader): $(objects) $(libjinue)/libjinue-util.a $(libc)/libc.a $(libjinue)/libjinue-syscalls.a
 
 $(target): $(loader)

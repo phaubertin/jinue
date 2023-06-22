@@ -59,7 +59,7 @@ static inline bool is_userspace_pointer(const void *addr) {
 
 /** Maximum size of user buffer starting at specified address */
 static inline uintptr_t user_pointer_max_size(const void *addr) {
-    return (uintptr_t)0 - (uintptr_t)addr;
+    return (uintptr_t)KLIMIT - (uintptr_t)addr;
 }
 
 /** Check that a buffer is completely in user space */

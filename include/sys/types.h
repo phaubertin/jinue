@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2023 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,55 +29,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/errno.h>
-#include <jinue/ipc.h>
-#include <jinue/syscall.h>
+#ifndef _JINUE_LIBC_SYS_TYPES_H
+#define _JINUE_LIBC_SYS_TYPES_H
 
-intptr_t jinue_send(
-        int                      fd,
-        intptr_t                 function,
-        const jinue_message_t   *message,
-        int                     *perrno) {
+#include <stdint.h>
 
-    jinue_syscall_args_t args;
+typedef int64_t off_t;
 
-    args.arg0 = (uintptr_t)function;
-    args.arg1 = (uintptr_t)fd;
-    args.arg2 = (uintptr_t)message;
-    args.arg3 = 0;
-
-    return jinue_syscall_with_usual_convention(&args, perrno);
-}
-
-intptr_t jinue_receive(int fd, const jinue_message_t *message, int *perrno){
-    jinue_syscall_args_t args;
-
-    args.arg0 = JINUE_SYS_RECEIVE;
-    args.arg1 = (uintptr_t)fd;
-    args.arg2 = (uintptr_t)message;
-    args.arg3 = 0;
-
-    return jinue_syscall_with_usual_convention(&args, perrno);
-}
-
-intptr_t jinue_reply(const jinue_message_t *message, int *perrno) {
-    jinue_syscall_args_t args;
-
-    args.arg0 = JINUE_SYS_REPLY;
-    args.arg1 = 0;
-    args.arg2 = (uintptr_t)message;
-    args.arg3 = 0;
-
-    return jinue_syscall_with_usual_convention(&args, perrno);
-}
-
-int jinue_create_ipc(int flags, int *perrno) {
-    jinue_syscall_args_t args;
-
-    args.arg0 = JINUE_SYS_CREATE_IPC;
-    args.arg1 = (uintptr_t)flags;
-    args.arg2 = 0;
-    args.arg3 = 0;
-
-    return jinue_syscall_with_usual_convention(&args, perrno);
-}
+#endif

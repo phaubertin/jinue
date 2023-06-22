@@ -38,6 +38,10 @@
 
 #define EXIT_FAILURE 1
 
+void free(void *ptr);
+
 char *getenv(const char *name);
+
+void *malloc(size_t size);
 
 #endif

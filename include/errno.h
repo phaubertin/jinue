@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2023 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,9 +29,31 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_VM_H
-#define _JINUE_VM_H
+#ifndef _JINUE_LIBC_ERRNO_H
+#define _JINUE_LIBC_ERRNO_H
 
-#include <jinue/shared/vm.h>
+#include <jinue/shared/asm/errno.h>
+
+extern int errno;
+
+#define ENOMEM      JINUE_ENOMEM
+
+#define ENOSYS      JINUE_ENOSYS
+
+#define EINVAL      JINUE_EINVAL
+
+#define EAGAIN      JINUE_EAGAIN
+
+#define EBADF       JINUE_EBADF
+
+#define EIO         JINUE_EIO
+
+#define EPERM       JINUE_EPERM
+
+#define E2BIG       JINUE_E2BIG
+
+#define ENOMSG      JINUE_ENOMSG
+
+#define ENOTSUP     JINUE_ENOTSUP
 
 #endif

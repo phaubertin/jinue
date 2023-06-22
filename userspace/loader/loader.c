@@ -31,17 +31,12 @@
 
 #include <sys/auxv.h>
 #include <sys/elf.h>
-#include <jinue/errno.h>
-#include <jinue/ipc.h>
-#include <jinue/logging.h>
-#include <jinue/memory.h>
-#include <jinue/syscall.h>
-#include <jinue/types.h>
-#include <jinue/vm.h>
+#include <sys/mman.h>
+#include <jinue/jinue.h>
+#include <jinue/util.h>
 #include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
-
 
 #define THREAD_STACK_SIZE   4096
 
@@ -152,18 +147,18 @@ static const char *auxv_type_name(int type) {
         const char  *name;
         int          type;
     } *entry, mapping[] = {
-            {"AT_NULL",             JINUE_AT_NULL},
-            {"AT_IGNORE",           JINUE_AT_IGNORE},
-            {"AT_EXECFD",           JINUE_AT_EXECFD},
-            {"AT_PHDR",             JINUE_AT_PHDR},
-            {"AT_PHENT",            JINUE_AT_PHENT},
-            {"AT_PHNUM",            JINUE_AT_PHNUM},
-            {"AT_PAGESZ",           JINUE_AT_PAGESZ},
-            {"AT_BASE",             JINUE_AT_BASE},
-            {"AT_FLAGS",            JINUE_AT_FLAGS},
-            {"AT_ENTRY",            JINUE_AT_ENTRY},
-            {"AT_STACKBASE",        JINUE_AT_STACKBASE},
-            {"JINUE_AT_HOWSYSCALL", JINUE_AT_HOWSYSCALL},
+            {"AT_NULL",         JINUE_AT_NULL},
+            {"AT_IGNORE",       JINUE_AT_IGNORE},
+            {"AT_EXECFD",       JINUE_AT_EXECFD},
+            {"AT_PHDR",         JINUE_AT_PHDR},
+            {"AT_PHENT",        JINUE_AT_PHENT},
+            {"AT_PHNUM",        JINUE_AT_PHNUM},
+            {"AT_PAGESZ",       JINUE_AT_PAGESZ},
+            {"AT_BASE",         JINUE_AT_BASE},
+            {"AT_FLAGS",        JINUE_AT_FLAGS},
+            {"AT_ENTRY",        JINUE_AT_ENTRY},
+            {"AT_STACKBASE",    JINUE_AT_STACKBASE},
+            {"AT_HOWSYSCALL",   JINUE_AT_HOWSYSCALL},
             {NULL, 0}
     };
 
@@ -209,6 +204,15 @@ static void dump_auxvec(void) {
     }
 }
 
+static void dump_syscall_implementation(void) {
+    if(! bool_getenv("DEBUG_DUMP_SYSCALL_IMPLEMENTATION")) {
+        return;
+    }
+
+    int howsyscall = getauxval(JINUE_AT_HOWSYSCALL);
+    jinue_info("Using system call implementation '%s'.", syscall_implementation_name(howsyscall));
+}
+
 static const jinue_mem_entry_t *get_ramdisk_entry(const jinue_mem_map_t *map) {
     for(int idx = 0; idx < map->num_entries; ++idx) {
         if(map->entry[idx].type == JINUE_MEM_TYPE_RAMDISK) {
@@ -223,33 +227,13 @@ int main(int argc, char *argv[]) {
     char call_buffer[CALL_BUFFER_SIZE];
     int status;
 
-    /* Say hello.
-     *
-     * We shouldn't do this before the call to jinue_set_syscall_implementation().
-     * It works because the system call implementation selected before the call
-     * is made is the interrupt-based one, which is slower but always available.
-     *
-     * TODO once things stabilize, ensure jinue_syscall() fails if no system
-     * call implementation was set. */
+    /* Say hello. */
     jinue_info("Jinue user space loader (%s) started.", argv[0]);
 
     dump_cmdline_arguments(argc, argv);
     dump_environ();
     dump_auxvec();
-
-    /* Get system call implementation from auxiliary vectors so we can use
-     * something faster than the interrupt-based one if available and ensure the
-     * one we attempt to use is supported. */
-    errno           = 0;
-    int howsyscall  = getauxval(JINUE_AT_HOWSYSCALL);
-    int ret         = jinue_set_syscall_implementation(howsyscall, &errno);
-
-    if (ret < 0) {
-        /* TODO map error numbers to name */
-        jinue_error("Could not set system call implementation: %i", errno);
-    }
-
-    jinue_info("Using system call implementation '%s'.", syscall_implementation_name(howsyscall));
+    dump_syscall_implementation();
 
     /* get free memory blocks from microkernel */
     status = jinue_get_user_memory((jinue_mem_map_t *)&call_buffer, sizeof(call_buffer), &errno);
@@ -279,22 +263,21 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    void *const mmap_base = (void *)0x40000000;
+    /* Our implementation of mmap() doesn't actually care about the file descriptor. */
+    const int dummy_fd = 0;
 
-    status = jinue_mmap(
-            JINUE_DESCRIPTOR_PROCESS,
-            mmap_base,
-            (ramdisk_entry->size + PAGE_SIZE - 1) & ~(uint64_t)(PAGE_SIZE - 1),
-            JINUE_PROT_READ,
-            ramdisk_entry->addr,
-            &errno);
+    const char *ramdisk = mmap(
+            NULL,
+            ramdisk_entry->size,
+            PROT_READ,
+            MAP_SHARED,
+            dummy_fd,
+            ramdisk_entry->addr);
 
-    if(status != 0) {
+    if(ramdisk == MAP_FAILED) {
         jinue_error("error: could not map RAM disk (%i).", errno);
         return EXIT_FAILURE;
     }
-
-    const char *ramdisk = mmap_base;
 
     if(ramdisk[0] != 0x1f || ramdisk[1] != (char)0x8b || ramdisk[2] != 0x08) {
         jinue_error("error: RAM disk is not a gzip file (bad signature).");

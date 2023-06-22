@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_SHARED_LIST_H
-#define _JINUE_SHARED_LIST_H
+#ifndef JINUE_KERNEL_LIST_H
+#define JINUE_KERNEL_LIST_H
 
 #include <stdbool.h>
 #include <stddef.h>

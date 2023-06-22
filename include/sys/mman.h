@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2023 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,43 +29,33 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_SYSCALL_H
-#define _JINUE_SYSCALL_H
+#ifndef _JINUE_LIBC_SYS_MMAN_H
+#define _JINUE_LIBC_SYS_MMAN_H
 
-#include <jinue/shared/syscall.h>
-#include <jinue/shared/types.h>
+#include <jinue/shared/asm/syscall.h>
+#include <sys/types.h>
 #include <stddef.h>
 
-static inline void jinue_set_errno(int *perrno, int errval) {
-    if(perrno != NULL) {
-        *perrno = errval;
-    }
-}
+#define PROT_NONE   JINUE_PROT_NONE
 
-uintptr_t jinue_syscall(jinue_syscall_args_t *args);
+#define PROT_READ   JINUE_PROT_READ
 
-intptr_t jinue_syscall_with_usual_convention(jinue_syscall_args_t *args, int *perrno);
+#define PROT_WRITE  JINUE_PROT_WRITE
 
-int jinue_set_syscall_implementation(int implementation, int *perrno);
+#define PROT_EXEC   JINUE_PROT_EXEC
 
-void jinue_reboot(void);
 
-void jinue_set_thread_local(void *addr, size_t size);
+#define MAP_SHARED      (1<<0)
 
-void *jinue_get_thread_local(void);
+#define MAP_PRIVATE     (1<<1)
 
-int jinue_create_thread(void (*entry)(), void *stack, int *perrno);
+#define MAP_FIXED       (1<<2)
 
-void jinue_yield_thread(void);
+#define MAP_ANONYMOUS   (1<<3)
 
-void jinue_exit_thread(void);
+#define MAP_FAILED      ((void *)-1)
 
-void jinue_putc(char c);
 
-int jinue_puts(int loglevel, const char *str, size_t n, int *perrno);
-
-int jinue_get_user_memory(jinue_mem_map_t *buffer, size_t buffer_size, int *perrno);
-
-int jinue_mmap(int process, void *addr, size_t length, int prot, uint64_t paddr, int *perrno);
+void *mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off);
 
 #endif
