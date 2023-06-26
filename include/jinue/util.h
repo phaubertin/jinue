@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2022 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,45 +29,21 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_SYSCALL_H
-#define _JINUE_SYSCALL_H
+#ifndef _JINUE_UTIL_H
+#define _JINUE_UTIL_H
 
-#include <jinue/shared/syscall.h>
-#include <jinue/shared/types.h>
-#include <stddef.h>
+#include <stdarg.h>
 
-static inline void jinue_set_errno(int *perrno, int errval) {
-    if(perrno != NULL) {
-        *perrno = errval;
-    }
-}
+void jinue_vinfo(const char *restrict format, va_list arg);
 
-uintptr_t jinue_syscall(jinue_syscall_args_t *args);
+void jinue_vwarning(const char *restrict format, va_list arg);
 
-intptr_t jinue_syscall_with_usual_convention(jinue_syscall_args_t *args, int *perrno);
+void jinue_verror(const char *restrict format, va_list arg);
 
-int jinue_set_syscall_implementation(int implementation, int *perrno);
+void jinue_info(const char *restrict format, ...);
 
-void jinue_reboot(void);
+void jinue_warning(const char *restrict format, ...);
 
-void jinue_set_thread_local(void *addr, size_t size);
-
-void *jinue_get_thread_local(void);
-
-int jinue_create_thread(void (*entry)(), void *stack, int *perrno);
-
-void jinue_yield_thread(void);
-
-void jinue_exit_thread(void);
-
-void jinue_putc(char c);
-
-int jinue_puts(int loglevel, const char *str, size_t n, int *perrno);
-
-int jinue_get_user_memory(jinue_mem_map_t *buffer, size_t buffer_size, int *perrno);
-
-int jinue_mmap(int process, void *addr, size_t length, int prot, uint64_t paddr, int *perrno);
-
-int jinue_get_process(int *perrno);
+void jinue_error(const char *restrict format, ...);
 
 #endif

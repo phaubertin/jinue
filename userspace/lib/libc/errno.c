@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Philippe Aubertin.
+ * Copyright (C) 2023 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,17 +29,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LIBJINUE_STUBS_H
-#define LIBJINUE_STUBS_H
+#include <errno.h>
 
-#include <stdint.h>
-
-typedef uintptr_t (*jinue_syscall_stub_t)(jinue_syscall_args_t *args);
-
-uintptr_t jinue_syscall_fast_intel(jinue_syscall_args_t *args);
-
-uintptr_t jinue_syscall_fast_amd(jinue_syscall_args_t *args);
-
-uintptr_t jinue_syscall_intr(jinue_syscall_args_t *args);
-
-#endif
+int errno;

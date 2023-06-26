@@ -29,7 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/errno.h>
+#include <jinue/shared/asm/errno.h>
 #include <jinue/shared/ipc.h>
 #include <kernel/i686/thread.h>
 #include <kernel/ipc.h>

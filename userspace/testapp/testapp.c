@@ -31,17 +31,11 @@
 
 #include <sys/auxv.h>
 #include <sys/elf.h>
-#include <jinue/errno.h>
-#include <jinue/ipc.h>
-#include <jinue/logging.h>
-#include <jinue/memory.h>
-#include <jinue/syscall.h>
-#include <jinue/types.h>
-#include <jinue/vm.h>
+#include <jinue/jinue.h>
+#include <jinue/util.h>
 #include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
-
 
 #define THREAD_STACK_SIZE   4096
 
@@ -213,6 +207,15 @@ static void dump_auxvec(void) {
     }
 }
 
+static void dump_syscall_implementation(void) {
+    if(! bool_getenv("DEBUG_DUMP_SYSCALL_IMPLEMENTATION")) {
+        return;
+    }
+
+    int howsyscall = getauxval(JINUE_AT_HOWSYSCALL);
+    jinue_info("Using system call implementation '%s'.", syscall_implementation_name(howsyscall));
+}
+
 static void ipc_test_run_client(void) {
     /* The order of these buffers is shuffled on purpose because they will be
      * concatenated later and we don't want things to look OK by coincidence. */
@@ -349,33 +352,13 @@ int main(int argc, char *argv[]) {
     char call_buffer[CALL_BUFFER_SIZE];
     int status;
 
-    /* Say hello.
-     *
-     * We shouldn't do this before the call to jinue_set_syscall_implementation().
-     * It works because the system call implementation selected before the call
-     * is made is the interrupt-based one, which is slower but always available.
-     *
-     * TODO once things stabilize, ensure jinue_syscall() fails if no system
-     * call implementation was set. */
+    /* Say hello. */
     jinue_info("Jinue user space loader (%s) started.", argv[0]);
 
     dump_cmdline_arguments(argc, argv);
     dump_environ();
     dump_auxvec();
-
-    /* Get system call implementation from auxiliary vectors so we can use
-     * something faster than the interrupt-based one if available and ensure the
-     * one we attempt to use is supported. */
-    errno           = 0;
-    int howsyscall  = getauxval(JINUE_AT_HOWSYSCALL);
-    int ret         = jinue_set_syscall_implementation(howsyscall, &errno);
-
-    if (ret < 0) {
-        /* TODO map error numbers to name */
-        jinue_error("Could not set system call implementation: %i", errno);
-    }
-
-    jinue_info("Using system call implementation '%s'.", syscall_implementation_name(howsyscall));
+    dump_syscall_implementation();
 
     /* get free memory blocks from microkernel */
     status = jinue_get_user_memory((jinue_mem_map_t *)&call_buffer, sizeof(call_buffer), &errno);

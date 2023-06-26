@@ -51,13 +51,13 @@ unclean.extra    = $(testapp) $(testapp)-stripped
 
 include $(common)
 
-$(libjinue)/libjinue.a: FORCE
+$(libjinue)/libjinue-syscalls.a $(libjinue)/libjinue-util.a: FORCE
 	$(MAKE) -C $(libjinue)
 	
 $(libc)/libc.a: FORCE
 	$(MAKE) -C $(libc)
 
-$(testapp): $(objects) $(libjinue)/libjinue.a $(libc)/libc.a
+$(testapp): $(objects) $(libjinue)/libjinue-util.a $(libc)/libc.a $(libjinue)/libjinue-syscalls.a
 
 $(temp_ramdisk_fs): $(testapp)-stripped
 	mkdir -p $(temp_ramdisk_fs)/sbin

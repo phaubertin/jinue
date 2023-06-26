@@ -27,11 +27,15 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#include <jinue/shared/asm/syscall.h>
+
     bits 32
     
-    extern main
-    extern _jinue_libc_auxv
     extern environ
+    extern _init
+    extern main
+    extern jinue_exit_thread
+    extern _jinue_libc_auxv
 
 ; ------------------------------------------------------------------------------
 ; ELF binary entry point
@@ -77,9 +81,15 @@ _start:
     ; Set address of auxiliary vectors
     mov dword [_jinue_libc_auxv], edi
     
-    ; Now that all arguments are where they should be, call main()
+    call _init
+
+    or eax, eax
+    jnz .exit
+
     call main
     
-    ; main() must never return
+    ; Exit the thread
+.exit:
+    call jinue_exit_thread
 
 .end:

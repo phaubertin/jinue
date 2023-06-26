@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2023 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,9 +29,33 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_TYPES_H
-#define _JINUE_TYPES_H
+#ifndef _JINUE_LIBC_SYS_MMAN_H
+#define _JINUE_LIBC_SYS_MMAN_H
 
-#include <jinue/shared/types.h>
+#include <jinue/shared/asm/syscall.h>
+#include <sys/types.h>
+#include <stddef.h>
+
+#define PROT_NONE   JINUE_PROT_NONE
+
+#define PROT_READ   JINUE_PROT_READ
+
+#define PROT_WRITE  JINUE_PROT_WRITE
+
+#define PROT_EXEC   JINUE_PROT_EXEC
+
+
+#define MAP_SHARED      (1<<0)
+
+#define MAP_PRIVATE     (1<<1)
+
+#define MAP_FIXED       (1<<2)
+
+#define MAP_ANONYMOUS   (1<<3)
+
+#define MAP_FAILED      ((void *)-1)
+
+
+void *mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off);
 
 #endif

@@ -157,7 +157,7 @@ void kmain(void) {
             loader,
             "jinue-userspace-loader",
             boot_info->cmdline,
-            &process->addr_space,
+            process,
             &boot_alloc);
 
     /* create initial thread */

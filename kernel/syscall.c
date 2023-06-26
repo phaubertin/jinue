@@ -29,7 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/errno.h>
+#include <jinue/shared/asm/errno.h>
 #include <jinue/shared/vm.h>
 #include <kernel/i686/cpu_data.h>
 #include <kernel/i686/memory.h>
@@ -346,17 +346,20 @@ static void sys_mmap(jinue_syscall_args_t *args) {
     }
 
     const int all_prot_flags = JINUE_PROT_READ | JINUE_PROT_WRITE | JINUE_PROT_EXEC;
+
     if((mmap_args.prot & ~all_prot_flags) != 0) {
         syscall_args_set_error(args, JINUE_EINVAL);
         return;
     }
 
-    int retval = vm_mmap_syscall(process_fd, &mmap_args);
-    set_return_value_or_error(args, retval);
-}
+    const int write_exec = JINUE_PROT_WRITE | JINUE_PROT_EXEC;
 
-static void sys_get_process(jinue_syscall_args_t *args) {
-    int retval = process_get_current();
+    if((mmap_args.prot & write_exec) == write_exec) {
+        syscall_args_set_error(args, JINUE_ENOTSUP);
+        return;
+    }
+
+    int retval = vm_mmap_syscall(process_fd, &mmap_args);
     set_return_value_or_error(args, retval);
 }
 
@@ -419,9 +422,6 @@ void dispatch_syscall(trapframe_t *trapframe) {
             break;
         case JINUE_SYS_MMAP:
             sys_mmap(args);
-            break;
-        case JINUE_SYS_GET_PROCESS:
-            sys_get_process(args);
             break;
         default:
             sys_nosys(args);

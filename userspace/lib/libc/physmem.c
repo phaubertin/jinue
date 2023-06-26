@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Philippe Aubertin.
+ * Copyright (C) 2023 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,17 +29,54 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LIBJINUE_STUBS_H
-#define LIBJINUE_STUBS_H
+#include <jinue/jinue.h>
+#include <stdlib.h>
+#include "physmem.h"
 
-#include <stdint.h>
+#define MAX_MAP_ENTRIES 128
 
-typedef uintptr_t (*jinue_syscall_stub_t)(jinue_syscall_args_t *args);
+static uint64_t alloc_addr;
 
-uintptr_t jinue_syscall_fast_intel(jinue_syscall_args_t *args);
+static uint64_t alloc_limit;
 
-uintptr_t jinue_syscall_fast_amd(jinue_syscall_args_t *args);
+int physmem_init(void) {
+    char map_buffer[sizeof(jinue_mem_map_t) + MAX_MAP_ENTRIES * sizeof(jinue_mem_entry_t)];
+    jinue_mem_map_t *map = (void *)map_buffer;
 
-uintptr_t jinue_syscall_intr(jinue_syscall_args_t *args);
+    int ret = jinue_get_user_memory(map, sizeof(map_buffer), NULL);
 
-#endif
+    if(ret < 0) {
+        return EXIT_FAILURE;
+    }
+
+    const jinue_mem_entry_t *entry = NULL;
+
+    for(int idx = 0; idx < map->num_entries; ++idx) {
+        entry = &map->entry[idx];
+        if(entry->type == JINUE_MEM_TYPE_LOADER_AVAILABLE) {
+            break;
+        }
+    }
+
+    if(entry == NULL || entry->type != JINUE_MEM_TYPE_LOADER_AVAILABLE) {
+        return EXIT_FAILURE;
+    }
+
+    alloc_addr  = entry->addr;
+    alloc_limit = entry->addr + entry->size;
+
+    return EXIT_SUCCESS;
+}
+
+int64_t physmem_alloc(size_t size) {
+    uint64_t top = alloc_addr + size;
+
+    if(top > alloc_limit) {
+        return -1;
+    }
+
+    uint64_t retval = alloc_addr;
+    alloc_addr      = top;
+
+    return retval;
+}
