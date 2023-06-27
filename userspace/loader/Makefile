@@ -30,7 +30,7 @@
 jinue_root = ../..
 include $(jinue_root)/header.mk
 
-sources.c        = loader.c
+sources.c        = loader.c ramdisk.c
 loader           = loader
 target           = $(loader)-stripped
 

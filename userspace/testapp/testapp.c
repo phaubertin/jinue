@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Philippe Aubertin.
+ * Copyright (C) 2019-2023 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -39,7 +39,7 @@
 
 #define THREAD_STACK_SIZE   4096
 
-#define CALL_BUFFER_SIZE    512
+#define MAP_BUFFER_SIZE     16384
 
 #define MSG_FUNC_TEST       (JINUE_SYS_USER_BASE + 42)
 
@@ -349,7 +349,7 @@ static void run_ipc_test(void) {
 }
 
 int main(int argc, char *argv[]) {
-    char call_buffer[CALL_BUFFER_SIZE];
+    char call_buffer[MAP_BUFFER_SIZE];
     int status;
 
     /* Say hello. */
