@@ -34,6 +34,8 @@ sources.c        = loader.c
 loader           = loader
 target           = $(loader)-stripped
 
+CPPFLAGS        += -I$(zlib) -DZLIB_CONST
+
 # The linker might not link crt.o from libjinue.a, which is required to
 # provide the _start entry point but otherwise contains no symbol that
 # other object files are interested in. I have seen different behaviour

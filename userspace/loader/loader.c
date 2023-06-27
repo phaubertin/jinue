@@ -37,6 +37,7 @@
 #include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
+#include <zlib.h>
 
 #define THREAD_STACK_SIZE   4096
 
@@ -223,6 +224,14 @@ static const jinue_mem_entry_t *get_ramdisk_entry(const jinue_mem_map_t *map) {
     return NULL;
 }
 
+static void *zalloc(void *unused, uInt items, uInt size) {
+    return malloc(items * size);
+}
+
+static void zfree(void *unused, void *address) {
+    free(address);
+}
+
 int main(int argc, char *argv[]) {
     char call_buffer[CALL_BUFFER_SIZE];
     int status;
@@ -266,7 +275,7 @@ int main(int argc, char *argv[]) {
     /* Our implementation of mmap() doesn't actually care about the file descriptor. */
     const int dummy_fd = 0;
 
-    const char *ramdisk = mmap(
+    const unsigned char *ramdisk = mmap(
             NULL,
             ramdisk_entry->size,
             PROT_READ,
@@ -279,12 +288,55 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    if(ramdisk[0] != 0x1f || ramdisk[1] != (char)0x8b || ramdisk[2] != 0x08) {
+    if(ramdisk[0] != 0x1f || ramdisk[1] != 0x8b || ramdisk[2] != 0x08) {
         jinue_error("error: RAM disk is not a gzip file (bad signature).");
         return EXIT_FAILURE;
     }
 
     jinue_info("RAM disk is a gzip file.");
+
+
+    z_stream strm;
+    strm.zalloc = zalloc;
+    strm.zfree = zfree;
+    strm.opaque = NULL;
+    strm.next_in = ramdisk;
+    strm.avail_in = ramdisk_entry->size;
+
+    status = inflateInit2(&strm, 16);
+
+    if(status != Z_OK) {
+        jinue_error(
+                "error: zlib initialization failed: %s",
+                strm.msg == NULL ? "(no message)" : strm.msg
+        );
+        return EXIT_FAILURE;
+    }
+
+    unsigned char buffer[512];
+    memset(buffer, 0, sizeof(buffer));
+
+    strm.next_out = buffer;
+    strm.avail_out = sizeof(buffer);
+
+    status = inflate(&strm, Z_SYNC_FLUSH);
+
+    if(status != Z_OK) {
+        jinue_error(
+                "error: zlib could not inflate: %s",
+                strm.msg == NULL ? "(no message)" : strm.msg
+        );
+        return EXIT_FAILURE;
+    }
+
+    (void)inflateEnd(&strm);
+
+    if(strcmp("ustar", (char *)&buffer[257]) != 0 && strcmp("ustar  ", (char *)&buffer[257]) != 0) {
+        jinue_error("error: compressed data is not a tar archive (bad signature).");
+        return EXIT_FAILURE;
+    }
+
+    jinue_info("compressed data is a tar archive");
 
     if(bool_getenv("DEBUG_DO_REBOOT")) {
         jinue_info("Rebooting.");

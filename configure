@@ -45,4 +45,4 @@ fi
 echo "*** Please ignore any warning about vsnprintf() not being found in stdio.h."
 echo "*** Jinue does not use the part of the code in zlib where that warning is relevant."
 
-(cd $ZLIB; CFLAGS='-std=c99 -ffreestanding -I../../../include' ./configure --solo --static --archs="-m32")
+(cd $ZLIB; CFLAGS='-std=c99 -ffreestanding -I../../../include' ./configure --solo --static --warn --const --archs="-m32")
