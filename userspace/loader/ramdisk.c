@@ -37,7 +37,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <zlib.h>
+#include "gzip.h"
 #include "ramdisk.h"
 #include "tar.h"
 
@@ -92,65 +92,42 @@ int map_ramdisk(ramdisk_t *ramdisk, const jinue_mem_map_t *map) {
     return EXIT_SUCCESS;
 }
 
-static void *zalloc(void *unused, uInt items, uInt size) {
-    return malloc(items * size);
-}
-
-static void zfree(void *unused, void *address) {
-    free(address);
-}
-
 int extract_ramdisk(const ramdisk_t *ramdisk) {
-    const unsigned char *compressed = ramdisk->addr;
-
-    if(compressed[0] != 0x1f || compressed[1] != 0x8b || compressed[2] != 0x08) {
+    if(!gzip_is_header_valid(ramdisk->addr)) {
         jinue_error("error: RAM disk image is not a gzip file (bad signature).");
         return EXIT_FAILURE;
     }
 
     jinue_info("RAM disk image is a gzip file.");
 
-    z_stream strm;
-    strm.zalloc = zalloc;
-    strm.zfree = zfree;
-    strm.opaque = NULL;
-    strm.next_in = compressed;
-    strm.avail_in = ramdisk->size;
+    gzip_context_t gzip_context;
 
-    int status = inflateInit2(&strm, 16);
+    int status = gzip_initialize(&gzip_context, ramdisk->addr, ramdisk->size);
 
-    if(status != Z_OK) {
-        jinue_error(
-                "error: zlib initialization failed: %s",
-                strm.msg == NULL ? "(no message)" : strm.msg
-        );
-        return EXIT_FAILURE;
+    if(status != EXIT_SUCCESS) {
+        return status;
     }
 
     unsigned char buffer[512];
-    memset(buffer, 0, sizeof(buffer));
 
-    strm.next_out = buffer;
-    strm.avail_out = sizeof(buffer);
+    status = gzip_inflate(&gzip_context, buffer, sizeof(buffer));
 
-    status = inflate(&strm, Z_SYNC_FLUSH);
-
-    if(status != Z_OK) {
-        jinue_error(
-                "error: zlib could not inflate: %s",
-                strm.msg == NULL ? "(no message)" : strm.msg
-        );
-        return EXIT_FAILURE;
+    if(status != EXIT_SUCCESS) {
+        gzip_finalize(&gzip_context);
+        return status;
     }
 
-    (void)inflateEnd(&strm);
-
     if(! tar_is_header_valid((const tar_header_t *)buffer)) {
-        jinue_error("error: compressed data is not a tar archive (bad signature).");
+        jinue_error("error: compressed data is not a tar archive (bad signature or checksum).");
+        gzip_finalize(&gzip_context);
         return EXIT_FAILURE;
     }
 
     jinue_info("compressed data is a tar archive");
+
+    /* TODO extract tar archive */
+
+    gzip_finalize(&gzip_context);
 
     return EXIT_SUCCESS;
 }
