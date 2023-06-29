@@ -39,6 +39,7 @@
 #include <string.h>
 #include <zlib.h>
 #include "ramdisk.h"
+#include "tar.h"
 
 static const jinue_mem_entry_t *get_ramdisk_entry(const jinue_mem_map_t *map) {
     for(int idx = 0; idx < map->num_entries; ++idx) {
@@ -144,7 +145,7 @@ int extract_ramdisk(const ramdisk_t *ramdisk) {
 
     (void)inflateEnd(&strm);
 
-    if(strcmp("ustar", (char *)&buffer[257]) != 0 && strcmp("ustar  ", (char *)&buffer[257]) != 0) {
+    if(! tar_is_header_valid((const tar_header_t *)buffer)) {
         jinue_error("error: compressed data is not a tar archive (bad signature).");
         return EXIT_FAILURE;
     }
