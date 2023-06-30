@@ -87,6 +87,15 @@ int gzip_inflate(gzip_context_t *ctx, void *buffer, size_t size) {
         return EXIT_FAILURE;
     }
 
+    if(strm->avail_out != 0) {
+        jinue_error(
+                "error: zlib could only decompress %zu of %zu bytes requested",
+                size - strm->avail_out,
+                size
+        );
+        return EXIT_FAILURE;
+    }
+
     return EXIT_SUCCESS;
 }
 
