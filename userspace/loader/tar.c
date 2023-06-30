@@ -30,32 +30,48 @@
  */
 
 #include <jinue/initrd.h>
+#include <stdint.h>
 #include <string.h>
 #include "tar.h"
 
-static void compute_checksum(tar_header_t *header) {
-    memset(header->chksum, ' ', sizeof(header->chksum));
+static bool is_octal_digit(int c) {
+    return c >= '0' && c <= '7';
+}
 
-    int chksm = 0;
+static int octal_digit_value(int c) {
+    return c - '0';
+}
 
-    for(int idx = 0; idx < sizeof(tar_header_t); ++idx) {
-        chksm += ((unsigned char *)header)[idx];
+static int64_t decode_octal_field(const char *field, size_t length) {
+    const char *const end = field + length;
+
+    while(field < end && *field == ' ') {
+        ++field;
     }
 
-    for(int pos = 0; pos < 6; ++pos) {
-        header->chksum[5 - pos] = '0' + (chksm & 7);
-        chksm >>= 3;
+    int64_t value = 0;
+
+    while(field < end && is_octal_digit(*field)) {
+        value <<= 3;
+        value += octal_digit_value(*field);
+        ++field;
     }
 
-    header->chksum[6] = 0;
-    header->chksum[7] = ' ';
+    return value;
 }
 
 static bool is_checksum_valid(const tar_header_t *header) {
-    tar_header_t copy;
-    memcpy(&copy, header, sizeof(tar_header_t));
-    compute_checksum(&copy);
-    return memcmp(header->chksum, copy.chksum, sizeof(header->chksum)) == 0;
+    int checksum = ' ' * sizeof(header->chksum);
+
+    for(int idx = 0; idx < sizeof(tar_header_t); ++idx) {
+        checksum += ((unsigned char *)header)[idx];
+    }
+
+    for(int idx = 0; idx < sizeof(header->chksum); ++idx) {
+        checksum -= header->chksum[idx];
+    }
+
+    return checksum == decode_octal_field(header->chksum, sizeof(header->chksum));
 }
 
 bool tar_is_header_valid(const tar_header_t *header) {
