@@ -33,6 +33,7 @@
 #define LOADER_TAR_H_
 
 #include <stdbool.h>
+#include "gzip.h"
 
 typedef struct {
     char name[100];
@@ -53,6 +54,6 @@ typedef struct {
     char prefix[155];
 } tar_header_t;
 
-bool tar_is_header_valid(const tar_header_t *header);
+int tar_extract(gzip_context_t *gzip_context);
 
 #endif

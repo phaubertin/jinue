@@ -108,26 +108,9 @@ int extract_ramdisk(const ramdisk_t *ramdisk) {
         return status;
     }
 
-    unsigned char buffer[512];
-
-    status = gzip_inflate(&gzip_context, buffer, sizeof(buffer));
-
-    if(status != EXIT_SUCCESS) {
-        gzip_finalize(&gzip_context);
-        return status;
-    }
-
-    if(! tar_is_header_valid((const tar_header_t *)buffer)) {
-        jinue_error("error: compressed data is not a tar archive (bad signature or checksum).");
-        gzip_finalize(&gzip_context);
-        return EXIT_FAILURE;
-    }
-
-    jinue_info("compressed data is a tar archive");
-
-    /* TODO extract tar archive */
+    status = tar_extract(&gzip_context);
 
     gzip_finalize(&gzip_context);
 
-    return EXIT_SUCCESS;
+    return status;
 }

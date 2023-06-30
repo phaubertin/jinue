@@ -30,7 +30,9 @@
  */
 
 #include <jinue/initrd.h>
+#include <jinue/util.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include "tar.h"
 
@@ -82,4 +84,25 @@ bool tar_is_header_valid(const tar_header_t *header) {
     }
 
     return is_checksum_valid(header);
+}
+
+int tar_extract(gzip_context_t *gzip_context) {
+    unsigned char buffer[512];
+
+    int status = gzip_inflate(gzip_context, buffer, sizeof(buffer));
+
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
+
+    if(! tar_is_header_valid((const tar_header_t *)buffer)) {
+        jinue_error("error: compressed data is not a tar archive (bad signature or checksum).");
+        return EXIT_FAILURE;
+    }
+
+    jinue_info("compressed data is a tar archive");
+
+    /* TODO extract tar archive */
+
+    return EXIT_SUCCESS;
 }
