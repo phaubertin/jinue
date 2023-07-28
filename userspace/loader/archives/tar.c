@@ -77,6 +77,39 @@
 /** PAX global extended header - recognized but not supported */
 #define FILETYPE_PAX_GLOBAL 'g'
 
+/** set UID on execution */
+#define TAR_ISUID 04000
+
+/** set GID on execution */
+#define TAR_ISGID 02000
+
+/** read permission for file owner class */
+#define TAR_IRUSR 00400
+
+/** write permission for file owner class */
+#define TAR_IWUSR 00200
+
+/** execute/search permission for file owner class */
+#define TAR_IXUSR 00100
+
+/** read permission for file group class */
+#define TAR_IRGRP 00040
+
+/** write permission for file group class */
+#define TAR_IWGRP 00020
+
+/** execute/search permission for file group class */
+#define TAR_IXGRP 00010
+
+/** read permission for file other class */
+#define TAR_IROTH 00004
+
+/** write permission for file other class */
+#define TAR_IWOTH 00002
+
+/** execute/search permission for file other class */
+#define TAR_IXOTH 00001
+
 
 static bool is_octal_digit(int c) {
     return c >= '0' && c <= '7';
@@ -580,7 +613,7 @@ static void dump_dirent(const jinue_dirent_t*dirent) {
     jinue_info("    size:   %zu", dirent->size);
     jinue_info("    uid:    %i", dirent->uid);
     jinue_info("    gid:    %i", dirent->gid);
-    jinue_info("    mode:   %x", dirent->mode);
+    jinue_info("    mode:   %o", (unsigned int)dirent->mode);
     jinue_info("    major:  %i", dirent->devmajor);
     jinue_info("    minor:  %i", dirent->devminor);
 
@@ -628,6 +661,32 @@ static void dump_dirent(const jinue_dirent_t*dirent) {
             );
         }
     }
+}
+
+const int map_mode(int tar_mode) {
+    const struct {int from; int to;} map[] = {
+            {TAR_ISUID, JINUE_ISUID},
+            {TAR_ISGID, JINUE_ISGID},
+            {TAR_IRUSR, JINUE_IRUSR},
+            {TAR_IWUSR, JINUE_IWUSR},
+            {TAR_IXUSR, JINUE_IXUSR},
+            {TAR_IRGRP, JINUE_IRGRP},
+            {TAR_IWGRP, JINUE_IWGRP},
+            {TAR_IXGRP, JINUE_IXGRP},
+            {TAR_IROTH, JINUE_IROTH},
+            {TAR_IWOTH, JINUE_IWOTH},
+            {TAR_IXOTH, JINUE_IXOTH}
+    };
+
+    int mode = 0;
+
+    for(int idx = 0; idx < sizeof(map) / sizeof(map[0]); ++idx) {
+        if(tar_mode & map[idx].from) {
+            mode |= map[idx].to;
+        }
+    }
+
+    return mode;
 }
 
 const jinue_dirent_t *tar_extract(stream_t *stream) {
@@ -713,15 +772,12 @@ const jinue_dirent_t *tar_extract(stream_t *stream) {
         dirent->size = DECODE_OCTAL_FIELD(header->size);
         dirent->uid  = DECODE_OCTAL_FIELD(header->uid);
         dirent->gid  = DECODE_OCTAL_FIELD(header->gid);
-
-        /* TODO mode */
+        dirent->mode = map_mode(DECODE_OCTAL_FIELD(header->mode));
 
         int status;
 
         switch(type) {
         case JINUE_DIRENT_TYPE_FILE:
-            /* This must be done last since it reuses the state's read buffer,
-             * which means we lose the header. */
             status = copy_file(&state, dirent);
 
             if(status < 0) {

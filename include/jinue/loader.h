@@ -59,7 +59,6 @@
 /** end of list - for internal use by implementation */
 #define JINUE_DIRENT_TYPE_END   (-2)
 
-
 #define JINUE_ISUID             (1<<11)
 
 #define JINUE_ISGID             (1<<10)
