@@ -131,3 +131,14 @@ int strncmp(const char *s1, const char *s2, size_t n) {
 
     return 0;
 }
+
+size_t strnlen(const char *s, size_t maxlen) {
+    size_t count = 0;
+
+    while(count < maxlen && *s != 0) {
+        ++s;
+        ++count;
+    }
+
+    return count;
+}

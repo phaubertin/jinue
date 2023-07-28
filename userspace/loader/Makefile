@@ -30,7 +30,14 @@
 jinue_root = ../..
 include $(jinue_root)/header.mk
 
-sources.c        = gzip.c loader.c ramdisk.c tar.c
+sources.c        = \
+	archives/alloc.c \
+	archives/tar.c \
+	streams/gzip.c \
+	streams/raw.c \
+	streams/stream.c \
+	loader.c \
+	ramdisk.c
 loader           = loader
 target           = $(loader)-stripped
 

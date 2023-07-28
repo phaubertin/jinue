@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2023 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,25 +29,56 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_LIBC_STRING_H
-#define _JINUE_LIBC_STRING_H
+#include <stdlib.h>
+#include <string.h>
+#include "raw.h"
 
-#include <stddef.h>
+struct state {
+    const char  *addr;
+    const char  *start;
+    size_t       size;
+};
 
-void *memset(void *s, int c, size_t n);
+static int read(stream_t *stream, void *dest, size_t size) {
+    struct state *state = stream->state;
 
-int memcmp(const void *s1, const void *s2, size_t n);
+    size_t remaining = state->start + state->size - state->addr;
 
-void *memcpy(void *restrict dest, const void *restrict src, size_t n);
+    if(size > remaining) {
+        return STREAM_ERROR;
+    }
 
-int strcmp(const char *s1, const char *s2);
+    memcpy(dest, state->addr, size);
+    state->addr += size;
 
-char *strcpy(char *restrict dest, const char *restrict src);
+    return STREAM_SUCCESS;
+}
 
-size_t strlen(const char *s);
+static int reset(stream_t *stream) {
+    struct state *state = stream->state;
+    state->addr = state->start;
+    return STREAM_SUCCESS;
+}
 
-int strncmp(const char *s1, const char *s2, size_t n);
+static void finalize(stream_t *stream) {
+    free(stream->state);
+}
 
-size_t strnlen(const char *s, size_t maxlen);
+int raw_stream_initialize(stream_t *stream, const void *addr, size_t size) {
+    struct state *state = malloc(sizeof(struct state));
 
-#endif
+    if(state == NULL) {
+        return STREAM_ERROR;
+    }
+
+    state->addr             = addr;
+    state->start            = addr;
+    state->size             = size;
+
+    stream->state           = state;
+    stream->ops.read        = read;
+    stream->ops.reset       = reset;
+    stream->ops.finalize    = finalize;
+
+    return STREAM_SUCCESS;
+}

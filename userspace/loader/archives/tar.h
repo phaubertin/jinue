@@ -29,48 +29,34 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_INITRD_H
-#define _JINUE_INITRD_H
+#ifndef LOADER_ARCHIVES_TAR_H_
+#define LOADER_ARCHIVES_TAR_H_
 
-#include <stddef.h>
-
-#define JINUE_DIRENT_TYPE_FILE  1
-
-#define JINUE_DIRENT_TYPE_NEXT  2
-
-#define JINUE_DIRENT_TYPE_END   3
-
-
-#define JINUE_ISUID             (1<<11)
-
-#define JINUE_ISGID             (1<<10)
-
-#define JINUE_IRUSR             (1<<8)
-
-#define JINUE_IWUSR             (1<<7)
-
-#define JINUE_IXUSR             (1<<6)
-
-#define JINUE_IRGRP             (1<<5)
-
-#define JINUE_IWGRP             (1<<4)
-
-#define JINUE_IXGRP             (1<<3)
-
-#define JINUE_IROTH             (1<<2)
-
-#define JINUE_IWOTH             (1<<1)
-
-#define JINUE_IXOTH             (1<<0)
-
+#include <jinue/loader.h>
+#include <stdbool.h>
+#include "../streams/stream.h"
 
 typedef struct {
-    int          type;
-    int          mode;
-    int          uid;
-    int          gid;
-    size_t       offset;
-    const char  *name;
-} jinue_dirent_t;
+    char name[100];
+    char mode[8];
+    char uid[8];
+    char gid[8];
+    char size[12];
+    char mtime[12];
+    char chksum[8];
+    char typeflag;
+    char linkname[100];
+    char magic[6];
+    char version[2];
+    char uname[32];
+    char gname[32];
+    char devmajor[8];
+    char devminor[8];
+    char prefix[155];
+} tar_header_t;
+
+bool is_tar(stream_t *stream);
+
+const jinue_dirent_t *tar_extract(stream_t *stream);
 
 #endif

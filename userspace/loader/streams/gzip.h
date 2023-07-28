@@ -29,31 +29,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LOADER_TAR_H_
-#define LOADER_TAR_H_
+#ifndef LOADER_STREAMS_GZIP_H_
+#define LOADER_STREAMS_GZIP_H_
 
-#include <stdbool.h>
-#include "gzip.h"
+#include <stddef.h>
+#include "stream.h"
 
-typedef struct {
-    char name[100];
-    char mode[8];
-    char uid[8];
-    char gid[8];
-    char size[12];
-    char mtime[12];
-    char chksum[8];
-    char typeflag;
-    char linkname[100];
-    char magic[6];
-    char version[2];
-    char uname[32];
-    char gname[32];
-    char devmajor[8];
-    char devminor[8];
-    char prefix[155];
-} tar_header_t;
-
-int tar_extract(gzip_context_t *gzip_context);
+int gzip_stream_initialize(stream_t *stream, const void *addr, size_t size);
 
 #endif

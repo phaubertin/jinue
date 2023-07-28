@@ -29,22 +29,27 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LOADER_GZIP_H_
-#define LOADER_GZIP_H_
+#include <jinue/util.h>
+#include "stream.h"
 
-#include <stdbool.h>
-#include <zlib.h>
+int stream_read(stream_t *stream, void *dest, size_t size) {
+    if(stream->ops.read == NULL) {
+        jinue_error("Stream read op not set (internal error)");
+        return STREAM_ERROR;
+    }
+    return stream->ops.read(stream, dest, size);
+}
 
-typedef struct {
-    z_stream strm;
-} gzip_context_t;
+int stream_reset(stream_t *stream) {
+    if(stream->ops.reset == NULL) {
+        jinue_error("Stream reset op not set (internal error)");
+        return STREAM_ERROR;
+    }
+    return stream->ops.reset(stream);
+}
 
-bool gzip_is_header_valid(const void *compressed);
-
-int gzip_initialize(gzip_context_t *ctx, const void *compressed, size_t size);
-
-int gzip_inflate(gzip_context_t *ctx, void *buffer, size_t size);
-
-void gzip_finalize(gzip_context_t *ctx);
-
-#endif
+void stream_finalize(stream_t *stream) {
+    if(stream->ops.finalize != NULL) {
+        stream->ops.finalize(stream);
+    }
+}

@@ -247,10 +247,10 @@ int main(int argc, char *argv[]) {
         return status;
     }
 
-    status = extract_ramdisk(&ramdisk);
+    const jinue_dirent_t *root = extract_ramdisk(&ramdisk);
 
-    if(status != EXIT_SUCCESS) {
-        return status;
+    if(root == NULL) {
+        return EXIT_FAILURE;
     }
 
     if(bool_getenv("DEBUG_DO_REBOOT")) {
