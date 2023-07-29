@@ -62,8 +62,7 @@ $(testapp): $(objects) $(libjinue)/libjinue-util.a $(libc)/libc.a $(libjinue)/li
 $(temp_ramdisk_fs): $(testapp)
 	mkdir -p $(temp_ramdisk_fs)/sbin
 	cp $(testapp) $(temp_ramdisk_fs)/sbin/init
-	ln -s /sbin/init $(temp_ramdisk_fs)/start
 	touch $(temp_ramdisk_fs)
 
 $(ramdisk): $(temp_ramdisk_fs)
-	tar -czvf $(ramdisk) -C $(temp_ramdisk_fs) sbin start
+	tar -czvf $(ramdisk) -C $(temp_ramdisk_fs) sbin

@@ -108,64 +108,6 @@ static bool is_ustar(const tar_header_t *header) {
     return strncmp(header->magic, TMAGIC, strlen(TMAGIC)) == 0;
 }
 
-static int formatc(int c) {
-    if(c < 32) {
-        return ' ';
-    }
-    if(c > 126) {
-        return ' ';
-    }
-    return c;
-}
-
-/* TODO remove this function */
-static void dump_header(const tar_header_t *header) {
-    const unsigned char *raw = (const unsigned char *)header;
-
-    jinue_info("tar header:");
-
-    for(int idx = 0; idx < 512; idx += 16) {
-        jinue_info(
-                "    %06i %04x    %02hhx %02hhx %02hhx %02hhx  %02hhx %02hhx %02hhx %02hhx    %02hhx %02hhx %02hhx %02hhx  %02hhx %02hhx %02hhx %02hhx %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c",
-                idx,
-                idx,
-                raw[idx + 0],
-                raw[idx + 1],
-                raw[idx + 2],
-                raw[idx + 3],
-                raw[idx + 4],
-                raw[idx + 5],
-                raw[idx + 6],
-                raw[idx + 7],
-                raw[idx + 8],
-                raw[idx + 9],
-                raw[idx + 10],
-                raw[idx + 11],
-                raw[idx + 12],
-                raw[idx + 13],
-                raw[idx + 14],
-                raw[idx + 15],
-                formatc(raw[idx + 0]),
-                formatc(raw[idx + 1]),
-                formatc(raw[idx + 2]),
-                formatc(raw[idx + 3]),
-                formatc(raw[idx + 4]),
-                formatc(raw[idx + 5]),
-                formatc(raw[idx + 6]),
-                formatc(raw[idx + 7]),
-                formatc(raw[idx + 8]),
-                formatc(raw[idx + 9]),
-                formatc(raw[idx + 10]),
-                formatc(raw[idx + 11]),
-                formatc(raw[idx + 12]),
-                formatc(raw[idx + 13]),
-                formatc(raw[idx + 14]),
-                formatc(raw[idx + 15])
-        );
-    }
-
-}
-
 bool is_tar(stream_t *stream) {
     tar_header_t header;
 
@@ -174,8 +116,6 @@ bool is_tar(stream_t *stream) {
     if(status != STREAM_SUCCESS) {
         return false;
     }
-
-    dump_header(&header);
 
     if(! is_checksum_valid(&header)) {
         return false;
@@ -233,8 +173,6 @@ const tar_header_t *extract_header(state_t *state) {
         state->at_end = true;
         return header;
     }
-
-    dump_header(header);
 
     if(! is_checksum_valid(header)) {
         jinue_error("error: bad checksum in tar header.");
@@ -315,8 +253,7 @@ static int sanitize_filename_string(char *output, const char *input, size_t leng
         int c = input[in_index];
 
         if(c != '/' && !is_valid_filename_char(c)) {
-            /* TODO are we actually ignoring it though or failing the whole thing? */
-            jinue_error("error: ignoring file with invalid character in file name/path");
+            jinue_error("error: invalid character in file name/path");
             return -1;
         }
 
@@ -375,7 +312,7 @@ static int sanitize_filename_string(char *output, const char *input, size_t leng
              * we now find a slash, then it means the whole path component is
              * ".." (i.e. parent directory) which we want to reject. */
             if(c == '/') {
-                jinue_error("error: ignoring file with reference to parent directory (..) in path");
+                jinue_error("error: invalid or unsupported reference to parent directory (..) in file path");
                 return -1;
             }
 
@@ -406,7 +343,7 @@ static int sanitize_filename_string(char *output, const char *input, size_t leng
      * case to handle at the end of the string is the one where the path ends
      * with a ".." component (FILENAME_STATE_DOT2 state).  */
     if(state == FILENAME_STATE_DOT2) {
-        jinue_error("error: ignoring file with reference to parent directory (..) in path");
+        jinue_error("error: invalid or unsupported reference to parent directory (..) in file path");
         return -1;
     }
 
@@ -497,7 +434,6 @@ static char *copy_fixed_string(state_t *state, const char *str, size_t size) {
         return NULL;
     }
 
-    /* TODO add strncpy() to libc */
     memcpy(newstr, str, length);
     newstr[length] = '\0';
 
@@ -529,104 +465,6 @@ static int copy_file_data(state_t *state, jinue_dirent_t *dirent) {
     }
 
     return 0;
-}
-
-/* TODO delete this function */
-static void dump_dirent(const jinue_dirent_t* dirent) {
-    char buffer[64];
-    const char *type;
-
-    switch(dirent->type) {
-    case JINUE_DIRENT_TYPE_FILE:
-        type = "file (regular)";
-        break;
-    case JINUE_DIRENT_TYPE_DIR:
-        type = "directory";
-        break;
-    case JINUE_DIRENT_TYPE_SYMLINK:
-        type = "symbolic link";
-        break;
-    case JINUE_DIRENT_TYPE_CHARDEV:
-        type = "character device";
-        break;
-    case JINUE_DIRENT_TYPE_BLKDEV:
-        type = "block device";
-        break;
-    case JINUE_DIRENT_TYPE_FIFO:
-        type = "FIFO";
-        break;
-    default:
-        snprintf(buffer, sizeof(buffer), "unknown (%i)", dirent->type);
-        type = buffer;
-        break;
-    }
-
-    jinue_info("directory entry:");
-    jinue_info("    name:   %s", dirent->name);
-    jinue_info("    type:   %s", type);
-    jinue_info("    size:   %zu", dirent->size);
-    jinue_info("    uid:    %i", dirent->uid);
-    jinue_info("    gid:    %i", dirent->gid);
-    jinue_info("    mode:   %o", (unsigned int)dirent->mode);
-    jinue_info("    major:  %i", dirent->devmajor);
-    jinue_info("    minor:  %i", dirent->devminor);
-
-    jinue_info("    content:");
-
-    if(dirent->file == NULL) {
-        jinue_info("        (none)");
-    }
-    else {
-        const unsigned char *raw = dirent->file;
-
-        for(int idx = 0; idx < dirent->size; idx += 16) {
-            if(idx == 64 && dirent->size > 256) {
-                jinue_info("        ...");
-                idx = (dirent->size - 64) & ~0xf;
-            }
-
-            jinue_info(
-                    "        %8i %06x    %02hhx %02hhx %02hhx %02hhx  %02hhx %02hhx %02hhx %02hhx    %02hhx %02hhx %02hhx %02hhx  %02hhx %02hhx %02hhx %02hhx %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c",
-                    idx,
-                    idx,
-                    raw[idx + 0],
-                    raw[idx + 1],
-                    raw[idx + 2],
-                    raw[idx + 3],
-                    raw[idx + 4],
-                    raw[idx + 5],
-                    raw[idx + 6],
-                    raw[idx + 7],
-                    raw[idx + 8],
-                    raw[idx + 9],
-                    raw[idx + 10],
-                    raw[idx + 11],
-                    raw[idx + 12],
-                    raw[idx + 13],
-                    raw[idx + 14],
-                    raw[idx + 15],
-                    formatc(raw[idx + 0]),
-                    formatc(raw[idx + 1]),
-                    formatc(raw[idx + 2]),
-                    formatc(raw[idx + 3]),
-                    formatc(raw[idx + 4]),
-                    formatc(raw[idx + 5]),
-                    formatc(raw[idx + 6]),
-                    formatc(raw[idx + 7]),
-                    formatc(raw[idx + 8]),
-                    formatc(raw[idx + 9]),
-                    formatc(raw[idx + 10]),
-                    formatc(raw[idx + 11]),
-                    formatc(raw[idx + 12]),
-                    formatc(raw[idx + 13]),
-                    formatc(raw[idx + 14]),
-                    formatc(raw[idx + 15])
-            );
-        }
-    }
-
-    jinue_info("    link:");
-    jinue_info("        %s", dirent->link == NULL ? "(none)" : dirent->link);
 }
 
 const int map_mode(int tar_mode) {
@@ -680,7 +518,6 @@ const jinue_dirent_t *tar_extract(stream_t *stream) {
         const char *filename = parse_filename(&state, header);
 
         if(filename == NULL) {
-            /* TODO error message on failure */
             return NULL;
         }
 
@@ -737,7 +574,7 @@ const jinue_dirent_t *tar_extract(stream_t *stream) {
         jinue_dirent_t *dirent = append_dirent_to_list(&state.dirent_area, type);
 
         if(dirent == NULL) {
-            /* TODO error message on failure */
+            jinue_error("error: directory entry allocation failed");
             return NULL;
         }
 
@@ -748,7 +585,7 @@ const jinue_dirent_t *tar_extract(stream_t *stream) {
         dirent->mode = map_mode(DECODE_OCTAL_FIELD(header->mode));
 
         if(dirent->name == NULL) {
-            /* TODO error message on failure */
+            jinue_error("error: failed to allocate memory for string (for file name)");
             return NULL;
         }
 
@@ -758,7 +595,7 @@ const jinue_dirent_t *tar_extract(stream_t *stream) {
             dirent->link    = copy_fixed_string(&state, header->linkname, sizeof(header->linkname));
 
             if(dirent->link == NULL) {
-                /* TODO error message on failure */
+                jinue_error("error: failed to allocate memory for string (for symbolic link)");
                 return NULL;
             }
 
@@ -782,7 +619,5 @@ const jinue_dirent_t *tar_extract(stream_t *stream) {
                 return NULL;
             }
         }
-
-        dump_dirent(dirent);
     }
 }
