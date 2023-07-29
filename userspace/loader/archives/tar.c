@@ -44,10 +44,10 @@
 #include "tar.h"
 
 /** tar record size - must be 512 */
-#define RECORD_SIZE         512
+#define RECORD_SIZE             512
 
 /** number of areas in the array used to allocate strings */
-#define NUM_STRING_AREAS    4
+#define NUM_STRING_AREAS        4
 
 /** PAX extended header - recognized but not supported */
 #define FILETYPE_PAX            'x'
@@ -188,308 +188,13 @@ bool is_tar(stream_t *stream) {
     return header.name[0] != '\0';
 }
 
-static bool is_valid_filename_char(int c) {
-    if(c < ' ') {
-        /* Exclude control characters and NUL. */
-        return false;
-    }
-
-    switch(c) {
-    case '/':
-    case ':':
-    case '\\':
-    case '*':
-    case '?':
-    case '|':
-    case '"':
-    case '<':
-    case '>':
-#define DEL 127
-    case DEL:
-#undef DEL
-        return false;
-    default:
-        return true;
-    }
-}
-
-typedef enum {
-    FILENAME_STATE_SLASH,
-    FILENAME_STATE_DOT1,
-    FILENAME_STATE_DOT2,
-    FILENAME_STATE_NAME
-} filename_state_t;
-
-
-/**
- * Sanitize and copy file path string.
- *
- * See filename_copy().
- *
- * This function is called up to twice, i.e. once with the prefix field from the
- * header (ustar format) and once with the name string. It performs the actual
- * sanitization and copy for each of these strings individually.
- *
- * This function ensures the copied string starts with a slash (/), as long as
- * something remains after sanitization (i.e. this function can return zero and
- * copy nothing):
- *
- *  - When called on the prefix string, or when called on the name string when
- *    there is no prefix string, this leading slash is the one used to form an
- *    absolute path.
- *  - When called on the name string when there is a prefix, this leading slash
- *    is the one that joins the prefix and name parts.
- *
- * This function does not NUL-terminate the string it copies (filename_copy()
- * does that).
- *
- * @param output pointer to output buffer, NULL to only determine output length
- * @param input input string
- * @param length length of the input string
- * @param header header
- * @return output length excluding NUL terminator (none written), -1 on failure
- *
- * */
-static int copy_filename_string(char *output, const char *input, size_t length) {
-    /* The start of the string is the start of a path component, just as if we
-     * just consumed a slash (/). */
-    filename_state_t state = FILENAME_STATE_SLASH;
-
-    int in_index = 0;
-    int out_count = 0;
-
-    while(in_index < length && input[in_index] != '\0') {
-        /* We process one character from the input per loop iteration. */
-        int c = input[in_index];
-
-        if(c != '/' && !is_valid_filename_char(c)) {
-            jinue_error("error: ignoring file with invalid character in file name/path");
-            return -1;
-        }
-
-        switch(state) {
-        case FILENAME_STATE_SLASH:
-            /* We are at the beginning of a path component, i.e. either we are
-             * at the start of the string or the previous character we read was
-             * a slash (/). If we find another slash, we can just discard it so
-             * we don't end up with empty path components. That is, we interpret
-             * any number of consecutive slashes as a single one. */
-            if(c == '/') {
-                break;
-            }
-
-            /* If the path component starts with a dot(.) let's wait and see if
-             * its a ".", a ".." or just a file name that starts with a dot. */
-            if(c == '.') {
-                state = FILENAME_STATE_DOT1;
-                break;
-            }
-
-            if(output != NULL) {
-                /* We haven't output the slash we encountered previously on the
-                 * input, so let's do this now. If we are at the beginning of
-                 * the string, then this slash is the leading slash. */
-                *(output++) = '/';
-                *(output++) = c;
-            }
-
-            out_count += 2;
-
-            state = FILENAME_STATE_NAME;
-            break;
-        case FILENAME_STATE_DOT1:
-            /* The last character we found was a dot (.) and it was the first
-             * character of a path component. If its followed by a slash, then
-             * we can just consume it and not output anything, i.e. we just
-             * strip single-dot components. */
-            if(c == '/') {
-                state = FILENAME_STATE_SLASH;
-                break;
-            }
-
-            /* If we find a second dot, let's wait and see if it's a ".." (i.e.
-             * parent directory) component or just a file name that starts with
-             * two dots. */
-            if(c == '.') {
-                state = FILENAME_STATE_DOT2;
-                break;
-            }
-
-            if(output != NULL) {
-                *(output++) = '/';
-                *(output++) = '.';
-                *(output++) = c;
-            }
-
-            out_count += 3;
-
-            state = FILENAME_STATE_NAME;
-            break;
-        case FILENAME_STATE_DOT2:
-            /* We just found a path component that starts with two dots. If
-             * we now find a slash, then it means the whole path component is
-             * ".." (i.e. parent directory) which we want to reject. */
-            if(c == '/') {
-                jinue_error("error: ignoring file with reference to parent directory (..) in path");
-                return -1;
-            }
-
-            if(output != NULL) {
-                *(output++) = '/';
-                *(output++) = '.';
-                *(output++) = '.';
-                *(output++) = c;
-            }
-
-            out_count += 4;
-
-            state = FILENAME_STATE_NAME;
-            break;
-        case FILENAME_STATE_NAME:
-            if(c == '/') {
-                state = FILENAME_STATE_SLASH;
-            }
-
-            if(output != NULL) {
-                *(output++) = c;
-            }
-
-            ++out_count;
-            break;
-        }
-
-        ++in_index;
-    }
-
-    /* If the last character was a "normal" character (FILENAME_STATE_NAME state),
-     * we already output everything we needed to. If the string ended with a
-     * slash or with a "." component, we just strip that off. The only remaining
-     * case to handle at the end of the string is the one where the path ends
-     * with a ".." component (FILENAME_STATE_DOT2 state).  */
-    if(state == FILENAME_STATE_DOT2) {
-        jinue_error("error: ignoring file with reference to parent directory (..) in path");
-        return -1;
-    }
-
-    return out_count;
-}
-
-/**
- * Sanitize file path from a tar header and copy it to an output string buffer.
- *
- * We have to go a bit further than an typical tar implementation in terms of
- * path sanitization because we are not merely generating a path where we will
- * extract the file. Rather, we are generating the file's canonical path in a
- * virtual filesystem.
- *
- * Sanitization rules:
- * - Convert to an absolute path by prepending a slash (/) if there isn't one at the start.
- * - Strip off any trailing slash.
- * - Strip off any . path component.
- * - Strip off any empty path component (e.g. /foo//bar).
- * - Fail if there is any .. path component.
- * - Fail if any path component contains an unsupported character (see is_valid_filename_char()).
- *
- * This function writes a file path of arbitrary length, with no size/length
- * argument to set a limit. Expected usage is to determine the length of output
- * by a first call where the output argument is set to NULL, allocate sufficient
- * space, then call it again for the actual copy.
- *
- * @param output pointer to output buffer, NULL to only determine output length
- * @param header header
- * @return path length including NUL terminator, -1 on failure
- *
- * */
-static int copy_filename_to(char *output, const tar_header_t *header) {
-    int prefix_length = 0;
-
-    if(is_ustar(header)) {
-        prefix_length = copy_filename_string(output, header->prefix, sizeof(header->prefix));
-
-        if(prefix_length < 0) {
-            return -1;
-        }
-
-        if(output != NULL) {
-            output += prefix_length;
-        }
-    }
-
-    int name_length = copy_filename_string(output, header->name, sizeof(header->name));
-
-    if(name_length < 0) {
-        return -1;
-    }
-
-    if(output != NULL) {
-        output += name_length;
-    }
-
-    int total = prefix_length + name_length;
-
-    if(total == 0) {
-        /* TODO check this */
-        if(header->typeflag != DIRTYPE) {
-            jinue_error("error: ignoring file with empty file name/path");
-            return -1;
-        }
-
-        if(output != NULL) {
-            /* root directory */
-            *(output++) = '/';
-        }
-
-        ++total;
-    }
-
-    if(output != NULL) {
-        /* NUL terminator */
-        *(output++) = '\0';
-    }
-
-    ++total;
-
-    return total;
-}
-
-static char *copy_filename(alloc_area_t *string_areas, const tar_header_t *header) {
-    int size = copy_filename_to(NULL, header);
-
-    if(size < 0) {
-        return NULL;
-    }
-
-    char *str = allocate_from_areas_best_fit(string_areas, NUM_STRING_AREAS, size);
-
-    if(str == NULL) {
-        return NULL;
-    }
-
-    (void)copy_filename_to(str, header);
-
-    return str;
-}
-
-static char *copy_symlink(alloc_area_t *string_areas, const tar_header_t *header) {
-    size_t length = strnlen(header->linkname, sizeof(header->linkname));
-
-    char *str = allocate_from_areas_best_fit(string_areas, NUM_STRING_AREAS, length + 1);
-
-    if(str == NULL) {
-        return NULL;
-    }
-
-    memcpy(str, header->linkname, length);
-    str[length] = '\0';
-
-    return str;
-}
-
 typedef struct {
     stream_t        *stream;
     alloc_area_t     dirent_area;
     alloc_area_t     string_areas[NUM_STRING_AREAS];
     unsigned char    buffer[RECORD_SIZE];
+    /* Maximum path length is 256 characters, plus leading slash and NUL terminator. */
+    char             filename[260];
     bool             at_end;
     bool             found_pax_extension;
 } state_t;
@@ -537,6 +242,266 @@ const tar_header_t *extract_header(state_t *state) {
     }
 
     return header;
+}
+
+static bool is_valid_filename_char(int c) {
+    if(c < ' ') {
+        /* Exclude control characters and NUL. */
+        return false;
+    }
+
+    switch(c) {
+    case '/':
+    case ':':
+    case '\\':
+    case '*':
+    case '?':
+    case '|':
+    case '"':
+    case '<':
+    case '>':
+#define DEL 127
+    case DEL:
+#undef DEL
+        return false;
+    default:
+        return true;
+    }
+}
+
+typedef enum {
+    FILENAME_STATE_SLASH,
+    FILENAME_STATE_DOT1,
+    FILENAME_STATE_DOT2,
+    FILENAME_STATE_NAME
+} filename_state_t;
+
+
+/**
+ * Sanitize a string that represents a complete or part of a file path.
+ *
+ * See description of parse_filename() for the sanitization rules.
+ *
+ * This function is called up to twice, i.e. once with the prefix field from the
+ * header (ustar format) and once with the name string. It performs the actual
+ * sanitization and copy for each of these strings individually.
+ *
+ * This function ensures the copied string starts with a slash (/), as long as
+ * something remains after sanitization (i.e. this function can return zero and
+ * write nothing):
+ *
+ *  - When passed the prefix string, or when passed the name string when there
+ *    is no prefix string, this leading slash is the one that forms an absolute
+ *    path.
+ *  - When passed the name string when there is a prefix, this leading slash
+ *    is the one that joins the prefix and name parts.
+ *
+ * @param output pointer to output buffer
+ * @param input input string
+ * @param length length of the input string field
+ * @return output length excluding the NUL terminator, -1 on failure
+ *
+ * */
+static int sanitize_filename_string(char *output, const char *input, size_t length) {
+    /* The start of the string is the start of a path component, just as if we
+     * just consumed a slash (/). */
+    filename_state_t state = FILENAME_STATE_SLASH;
+
+    const char *const start = output;
+    int in_index = 0;
+
+    while(in_index < length && input[in_index] != '\0') {
+        /* We process one character from the input per loop iteration. */
+        int c = input[in_index];
+
+        if(c != '/' && !is_valid_filename_char(c)) {
+            /* TODO are we actually ignoring it though or failing the whole thing? */
+            jinue_error("error: ignoring file with invalid character in file name/path");
+            return -1;
+        }
+
+        switch(state) {
+        case FILENAME_STATE_SLASH:
+            /* We are at the beginning of a path component, i.e. either we are
+             * at the start of the string or the previous character we read was
+             * a slash (/). If we find another slash, we can just discard it so
+             * we don't end up with empty path components. That is, we interpret
+             * any number of consecutive slashes as a single one. */
+            if(c == '/') {
+                break;
+            }
+
+            /* If the path component starts with a dot(.) let's wait and see if
+             * its a ".", a ".." or just a file name that starts with a dot. */
+            if(c == '.') {
+                state = FILENAME_STATE_DOT1;
+                break;
+            }
+
+            /* We haven't output the slash we encountered previously on the
+             * input, so let's do this now. If we are at the beginning of
+             * the string, then this slash is the leading slash. */
+            *(output++) = '/';
+            *(output++) = c;
+
+            state = FILENAME_STATE_NAME;
+            break;
+        case FILENAME_STATE_DOT1:
+            /* The last character we found was a dot (.) and it was the first
+             * character of a path component. If its followed by a slash, then
+             * we can just consume it and not output anything, i.e. we just
+             * strip single-dot components. */
+            if(c == '/') {
+                state = FILENAME_STATE_SLASH;
+                break;
+            }
+
+            /* If we find a second dot, let's wait and see if it's a ".." (i.e.
+             * parent directory) component or just a file name that starts with
+             * two dots. */
+            if(c == '.') {
+                state = FILENAME_STATE_DOT2;
+                break;
+            }
+
+            *(output++) = '/';
+            *(output++) = '.';
+            *(output++) = c;
+
+            state = FILENAME_STATE_NAME;
+            break;
+        case FILENAME_STATE_DOT2:
+            /* We just found a path component that starts with two dots. If
+             * we now find a slash, then it means the whole path component is
+             * ".." (i.e. parent directory) which we want to reject. */
+            if(c == '/') {
+                jinue_error("error: ignoring file with reference to parent directory (..) in path");
+                return -1;
+            }
+
+            *(output++) = '/';
+            *(output++) = '.';
+            *(output++) = '.';
+            *(output++) = c;
+
+            state = FILENAME_STATE_NAME;
+            break;
+        case FILENAME_STATE_NAME:
+            if(c == '/') {
+                state = FILENAME_STATE_SLASH;
+                break;
+            }
+
+            *(output++) = c;
+
+            break;
+        }
+
+        ++in_index;
+    }
+
+    /* If the last character was a "normal" character (FILENAME_STATE_NAME state),
+     * we already output everything we needed to. If the string ended with a
+     * slash or with a "." component, we just strip that off. The only remaining
+     * case to handle at the end of the string is the one where the path ends
+     * with a ".." component (FILENAME_STATE_DOT2 state).  */
+    if(state == FILENAME_STATE_DOT2) {
+        jinue_error("error: ignoring file with reference to parent directory (..) in path");
+        return -1;
+    }
+
+    /* Add terminator, do not increment to ensure is it not included in length. */
+    *output = '\0';
+
+    return output - start;
+}
+
+/**
+ * Sanitize file path from a tar header into state filename buffer
+ *
+ * We have to go a bit further than an typical tar implementation in terms of
+ * path sanitization because we are not merely generating a path where we will
+ * extract the file. Rather, we are generating the file's canonical path in a
+ * virtual filesystem.
+ *
+ * Sanitization/conversion rules:
+ * - Convert to an absolute path by prepending a slash (/) if there isn't one at the start.
+ * - Strip off any trailing slash.
+ * - Strip off any . path component.
+ * - Strip off any empty path component (e.g. /foo//bar).
+ * - Fail if there is any .. path component.
+ * - Fail if any path component contains an unsupported character (see is_valid_filename_char()).
+ *
+ * @param state state with filename buffer
+ * @param header header
+ * @return file name, NULL on failure
+ *
+ * */
+static const char *parse_filename(state_t *state, const tar_header_t *header) {
+    int length;
+
+    char *output = state->filename;
+
+    if(is_ustar(header)) {
+        length = sanitize_filename_string(output, header->prefix, sizeof(header->prefix));
+
+        if(length < 0) {
+            return NULL;
+        }
+
+        output += length;
+    }
+
+    length = sanitize_filename_string(output, header->name, sizeof(header->name));
+
+    if(length < 0) {
+        return NULL;
+    }
+
+    output += length;
+
+    if(output - state->filename == 0) {
+        if(header->typeflag != DIRTYPE) {
+            jinue_error("error: empty file name/path");
+            return NULL;
+        }
+
+        /* root directory */
+        state->filename[0] = '/';
+        state->filename[1] = '\0';
+    }
+
+    return state->filename;
+}
+
+static const char *copy_string(state_t *state, const char *str) {
+    size_t length = strlen(str);
+
+    char *newstr = allocate_from_areas_best_fit(state->string_areas, NUM_STRING_AREAS, length + 1);
+
+    if(newstr == NULL) {
+        return NULL;
+    }
+
+    strcpy(newstr, str);
+
+    return newstr;
+}
+
+static char *copy_fixed_string(state_t *state, const char *str, size_t size) {
+    size_t length = strnlen(str, size);
+
+    char *newstr = allocate_from_areas_best_fit(state->string_areas, NUM_STRING_AREAS, length + 1);
+
+    if(newstr == NULL) {
+        return NULL;
+    }
+
+    /* TODO add strncpy() to libc */
+    memcpy(newstr, str, length);
+    newstr[length] = '\0';
+
+    return newstr;
 }
 
 static int copy_file_data(state_t *state, jinue_dirent_t *dirent) {
@@ -712,10 +677,7 @@ const jinue_dirent_t *tar_extract(stream_t *stream) {
             return root;
         }
 
-        /* TODO We should wait until we know we are going to extract the file
-         * before we allocate the file path. We should stage the file path in
-         * a fixed buffer in the mean time for use in warning/error messages. */
-        const char *filename = copy_filename(state.string_areas, header);
+        const char *filename = parse_filename(&state, header);
 
         if(filename == NULL) {
             /* TODO error message on failure */
@@ -779,16 +741,21 @@ const jinue_dirent_t *tar_extract(stream_t *stream) {
             return NULL;
         }
 
-        dirent->name = filename;
+        dirent->name = copy_string(&state, filename);
         dirent->size = DECODE_OCTAL_FIELD(header->size);
         dirent->uid  = DECODE_OCTAL_FIELD(header->uid);
         dirent->gid  = DECODE_OCTAL_FIELD(header->gid);
         dirent->mode = map_mode(DECODE_OCTAL_FIELD(header->mode));
 
+        if(dirent->name == NULL) {
+            /* TODO error message on failure */
+            return NULL;
+        }
+
         switch(type) {
         case JINUE_DIRENT_TYPE_SYMLINK:
             dirent->size    = 0;
-            dirent->link    = copy_symlink(state.string_areas, header);
+            dirent->link    = copy_fixed_string(&state, header->linkname, sizeof(header->linkname));
 
             if(dirent->link == NULL) {
                 /* TODO error message on failure */
