@@ -35,8 +35,10 @@
 #include <sys/mman.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <tar.h>
 #include "../streams/stream.h"
 #include "alloc.h"
 #include "tar.h"
@@ -47,68 +49,17 @@
 /** number of areas in the array used to allocate strings */
 #define NUM_STRING_AREAS    4
 
-/** regular file */
-#define FILETYPE_FILE       '0'
-
-/** hard link */
-#define FILETYPE_HARD_LINK  '1'
-
-/** symbolic link */
-#define FILETYPE_SYMLINK    '2'
-
-/** character device */
-#define FILETYPE_CHARDEV    '3'
-
-/** block device */
-#define FILETYPE_BLKDEV     '4'
-
-/** directory */
-#define FILETYPE_DIR        '5'
-
-/** FIFO */
-#define FILETYPE_FIFO       '6'
-
-/** contiguous file - treated as a regular file */
-#define FILETYPE_CONTFILE   '7'
-
 /** PAX extended header - recognized but not supported */
-#define FILETYPE_PAX        'x'
+#define FILETYPE_PAX            'x'
 
 /** PAX global extended header - recognized but not supported */
-#define FILETYPE_PAX_GLOBAL 'g'
+#define FILETYPE_PAX_GLOBAL     'g'
 
-/** set UID on execution */
-#define TAR_ISUID 04000
+/** GNU extension for long name */
+#define FILETYPE_GNU_LONGNAME   'L'
 
-/** set GID on execution */
-#define TAR_ISGID 02000
-
-/** read permission for file owner class */
-#define TAR_IRUSR 00400
-
-/** write permission for file owner class */
-#define TAR_IWUSR 00200
-
-/** execute/search permission for file owner class */
-#define TAR_IXUSR 00100
-
-/** read permission for file group class */
-#define TAR_IRGRP 00040
-
-/** write permission for file group class */
-#define TAR_IWGRP 00020
-
-/** execute/search permission for file group class */
-#define TAR_IXGRP 00010
-
-/** read permission for file other class */
-#define TAR_IROTH 00004
-
-/** write permission for file other class */
-#define TAR_IWOTH 00002
-
-/** execute/search permission for file other class */
-#define TAR_IXOTH 00001
+/** GNU extension for long link name */
+#define FILETYPE_GNU_LONGLINK   'K'
 
 
 static bool is_octal_digit(int c) {
@@ -122,7 +73,7 @@ static int octal_digit_value(int c) {
 static int64_t decode_octal_field(const char *field, size_t length) {
     const char *const end = field + length;
 
-    while(field < end && *field == ' ') {
+    while(field < end && !is_octal_digit(*field)) {
         ++field;
     }
 
@@ -154,8 +105,7 @@ static bool is_checksum_valid(const tar_header_t *header) {
 }
 
 static bool is_ustar(const tar_header_t *header) {
-    const char *ustar = "ustar";
-    return strncmp(header->magic, ustar, strlen(ustar)) == 0;
+    return strncmp(header->magic, TMAGIC, strlen(TMAGIC)) == 0;
 }
 
 static int formatc(int c) {
@@ -478,7 +428,8 @@ static int copy_filename_to(char *output, const tar_header_t *header) {
     int total = prefix_length + name_length;
 
     if(total == 0) {
-        if(header->typeflag != FILETYPE_DIR) {
+        /* TODO check this */
+        if(header->typeflag != DIRTYPE) {
             jinue_error("error: ignoring file with empty file name/path");
             return -1;
         }
@@ -515,6 +466,21 @@ static char *copy_filename(alloc_area_t *string_areas, const tar_header_t *heade
     }
 
     (void)copy_filename_to(str, header);
+
+    return str;
+}
+
+static char *copy_symlink(alloc_area_t *string_areas, const tar_header_t *header) {
+    size_t length = strnlen(header->linkname, sizeof(header->linkname));
+
+    char *str = allocate_from_areas_best_fit(string_areas, NUM_STRING_AREAS, length + 1);
+
+    if(str == NULL) {
+        return NULL;
+    }
+
+    memcpy(str, header->linkname, length);
+    str[length] = '\0';
 
     return str;
 }
@@ -573,12 +539,7 @@ const tar_header_t *extract_header(state_t *state) {
     return header;
 }
 
-static int copy_file(state_t *state, jinue_dirent_t *dirent) {
-    if(dirent->size == 0) {
-        /* Empty file, legitimate case, nothing to do. */
-        return 0;
-    }
-
+static int copy_file_data(state_t *state, jinue_dirent_t *dirent) {
     dirent->file = allocate_page_aligned(dirent->size);
 
     if(dirent->file == NULL) {
@@ -606,10 +567,38 @@ static int copy_file(state_t *state, jinue_dirent_t *dirent) {
 }
 
 /* TODO delete this function */
-static void dump_dirent(const jinue_dirent_t*dirent) {
+static void dump_dirent(const jinue_dirent_t* dirent) {
+    char buffer[64];
+    const char *type;
+
+    switch(dirent->type) {
+    case JINUE_DIRENT_TYPE_FILE:
+        type = "file (regular)";
+        break;
+    case JINUE_DIRENT_TYPE_DIR:
+        type = "directory";
+        break;
+    case JINUE_DIRENT_TYPE_SYMLINK:
+        type = "symbolic link";
+        break;
+    case JINUE_DIRENT_TYPE_CHARDEV:
+        type = "character device";
+        break;
+    case JINUE_DIRENT_TYPE_BLKDEV:
+        type = "block device";
+        break;
+    case JINUE_DIRENT_TYPE_FIFO:
+        type = "FIFO";
+        break;
+    default:
+        snprintf(buffer, sizeof(buffer), "unknown (%i)", dirent->type);
+        type = buffer;
+        break;
+    }
+
     jinue_info("directory entry:");
     jinue_info("    name:   %s", dirent->name);
-    jinue_info("    type:   %i", dirent->type);
+    jinue_info("    type:   %s", type);
     jinue_info("    size:   %zu", dirent->size);
     jinue_info("    uid:    %i", dirent->uid);
     jinue_info("    gid:    %i", dirent->gid);
@@ -617,13 +606,22 @@ static void dump_dirent(const jinue_dirent_t*dirent) {
     jinue_info("    major:  %i", dirent->devmajor);
     jinue_info("    minor:  %i", dirent->devminor);
 
-    if(dirent->file != NULL) {
-        jinue_info("    content:");
+    jinue_info("    content:");
 
+    if(dirent->file == NULL) {
+        jinue_info("        (none)");
+    }
+    else {
         const unsigned char *raw = dirent->file;
-        for(int idx = 0; idx < 64; idx += 16) {
+
+        for(int idx = 0; idx < dirent->size; idx += 16) {
+            if(idx == 64 && dirent->size > 256) {
+                jinue_info("        ...");
+                idx = (dirent->size - 64) & ~0xf;
+            }
+
             jinue_info(
-                    "        %06i %04x    %02hhx %02hhx %02hhx %02hhx  %02hhx %02hhx %02hhx %02hhx    %02hhx %02hhx %02hhx %02hhx  %02hhx %02hhx %02hhx %02hhx %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c",
+                    "        %8i %06x    %02hhx %02hhx %02hhx %02hhx  %02hhx %02hhx %02hhx %02hhx    %02hhx %02hhx %02hhx %02hhx  %02hhx %02hhx %02hhx %02hhx %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c",
                     idx,
                     idx,
                     raw[idx + 0],
@@ -661,21 +659,24 @@ static void dump_dirent(const jinue_dirent_t*dirent) {
             );
         }
     }
+
+    jinue_info("    link:");
+    jinue_info("        %s", dirent->link == NULL ? "(none)" : dirent->link);
 }
 
 const int map_mode(int tar_mode) {
     const struct {int from; int to;} map[] = {
-            {TAR_ISUID, JINUE_ISUID},
-            {TAR_ISGID, JINUE_ISGID},
-            {TAR_IRUSR, JINUE_IRUSR},
-            {TAR_IWUSR, JINUE_IWUSR},
-            {TAR_IXUSR, JINUE_IXUSR},
-            {TAR_IRGRP, JINUE_IRGRP},
-            {TAR_IWGRP, JINUE_IWGRP},
-            {TAR_IXGRP, JINUE_IXGRP},
-            {TAR_IROTH, JINUE_IROTH},
-            {TAR_IWOTH, JINUE_IWOTH},
-            {TAR_IXOTH, JINUE_IXOTH}
+            {TSUID,     JINUE_ISUID},
+            {TSGID,     JINUE_ISGID},
+            {TUREAD,    JINUE_IRUSR},
+            {TUWRITE,   JINUE_IWUSR},
+            {TUEXEC,    JINUE_IXUSR},
+            {TGREAD,    JINUE_IRGRP},
+            {TGWRITE,   JINUE_IWGRP},
+            {TGEXEC,    JINUE_IXGRP},
+            {TOREAD,    JINUE_IROTH},
+            {TOWRITE,   JINUE_IWOTH},
+            {TOEXEC,    JINUE_IXOTH}
     };
 
     int mode = 0;
@@ -711,13 +712,24 @@ const jinue_dirent_t *tar_extract(stream_t *stream) {
             return root;
         }
 
+        /* TODO We should wait until we know we are going to extract the file
+         * before we allocate the file path. We should stage the file path in
+         * a fixed buffer in the mean time for use in warning/error messages. */
+        const char *filename = copy_filename(state.string_areas, header);
+
+        if(filename == NULL) {
+            /* TODO error message on failure */
+            return NULL;
+        }
+
         int type;
-        size_t name_length;
 
         switch(header->typeflag) {
-        case FILETYPE_FILE:
-        case FILETYPE_CONTFILE:
-            name_length = strnlen(header->name, sizeof(header->name));
+        case REGTYPE:
+        case AREGTYPE:
+        case CONTTYPE:
+        {
+            size_t name_length = strnlen(header->name, sizeof(header->name));
 
             if(!is_ustar(header) && name_length > 0 && header->name[name_length - 1] == '/') {
                 type = JINUE_DIRENT_TYPE_DIR;
@@ -725,40 +737,39 @@ const jinue_dirent_t *tar_extract(stream_t *stream) {
             }
 
             type = JINUE_DIRENT_TYPE_FILE;
+        }
             break;
-        case FILETYPE_HARD_LINK:
-            /* TODO how should we handle hard links? */
-            type = 0;
-            break;
-        case FILETYPE_SYMLINK:
+        case LNKTYPE:
+            jinue_warning("hard links not supported, skipping %s", filename);
+            continue;
+        case SYMTYPE:
             type = JINUE_DIRENT_TYPE_SYMLINK;
             break;
-        case FILETYPE_CHARDEV:
+        case CHRTYPE:
             type = JINUE_DIRENT_TYPE_CHARDEV;
             break;
-        case FILETYPE_BLKDEV:
+        case BLKTYPE:
             type = JINUE_DIRENT_TYPE_BLKDEV;
             break;
-        case FILETYPE_DIR:
+        case DIRTYPE:
             type = JINUE_DIRENT_TYPE_DIR;
             break;
-        case FILETYPE_FIFO:
+        case FIFOTYPE:
             type = JINUE_DIRENT_TYPE_FIFO;
             break;
         case FILETYPE_PAX:
         case FILETYPE_PAX_GLOBAL:
             jinue_error("error: PAX archive not supported");
             return NULL;
+        case FILETYPE_GNU_LONGNAME:
+        case FILETYPE_GNU_LONGLINK:
+            jinue_error("error: tar archive with GNU long names extensions supported");
+            return NULL;
+            break;
         default:
-            jinue_error("error: file type not supported");
-            return NULL;
-        }
-
-        const char *filename = copy_filename(state.string_areas, header);
-
-        if(filename == NULL) {
-            /* TODO error message on failure */
-            return NULL;
+            jinue_warning("warning: file with unrecognized type treated as a regular file: %s", filename);
+            type = JINUE_DIRENT_TYPE_FILE;
+            break;
         }
 
         jinue_dirent_t *dirent = append_dirent_to_list(&state.dirent_area, type);
@@ -774,21 +785,35 @@ const jinue_dirent_t *tar_extract(stream_t *stream) {
         dirent->gid  = DECODE_OCTAL_FIELD(header->gid);
         dirent->mode = map_mode(DECODE_OCTAL_FIELD(header->mode));
 
-        int status;
-
         switch(type) {
-        case JINUE_DIRENT_TYPE_FILE:
-            status = copy_file(&state, dirent);
+        case JINUE_DIRENT_TYPE_SYMLINK:
+            dirent->size    = 0;
+            dirent->link    = copy_symlink(state.string_areas, header);
+
+            if(dirent->link == NULL) {
+                /* TODO error message on failure */
+                return NULL;
+            }
+
+            break;
+        case JINUE_DIRENT_TYPE_BLKDEV:
+        case JINUE_DIRENT_TYPE_CHARDEV:
+            dirent->size     = 0;
+            dirent->devmajor = DECODE_OCTAL_FIELD(header->devmajor);
+            dirent->devmajor = DECODE_OCTAL_FIELD(header->devminor);
+            break;
+        case JINUE_DIRENT_TYPE_DIR:
+        case JINUE_DIRENT_TYPE_FIFO:
+            dirent->size     = 0;
+            break;
+        }
+
+        if(dirent->size > 0) {
+            int status = copy_file_data(&state, dirent);
 
             if(status < 0) {
                 return NULL;
             }
-            break;
-        case JINUE_DIRENT_TYPE_BLKDEV:
-        case JINUE_DIRENT_TYPE_CHARDEV:
-            dirent->devmajor = DECODE_OCTAL_FIELD(header->devmajor);
-            dirent->devmajor = DECODE_OCTAL_FIELD(header->devminor);
-            break;
         }
 
         dump_dirent(dirent);

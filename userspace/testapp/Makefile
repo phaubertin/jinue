@@ -47,7 +47,7 @@ unclean_recursive	 = $(temp_ramdisk_fs)
 LDFLAGS         += -Wl,-u,_start -static-libgcc -m32 -march=i686
 LDLIBS           = -lgcc
 
-unclean.extra    = $(testapp) $(testapp)-stripped
+unclean.extra    = $(testapp)
 
 include $(common)
 
@@ -59,10 +59,11 @@ $(libc)/libc.a: FORCE
 
 $(testapp): $(objects) $(libjinue)/libjinue-util.a $(libc)/libc.a $(libjinue)/libjinue-syscalls.a
 
-$(temp_ramdisk_fs): $(testapp)-stripped
+$(temp_ramdisk_fs): $(testapp)
 	mkdir -p $(temp_ramdisk_fs)/sbin
-	cp $(testapp)-stripped $(temp_ramdisk_fs)/sbin/init
+	cp $(testapp) $(temp_ramdisk_fs)/sbin/init
+	ln -s /sbin/init $(temp_ramdisk_fs)/start
 	touch $(temp_ramdisk_fs)
 
 $(ramdisk): $(temp_ramdisk_fs)
-	tar -czvf $(ramdisk) -C $(temp_ramdisk_fs) sbin
+	tar -czvf $(ramdisk) -C $(temp_ramdisk_fs) sbin start
