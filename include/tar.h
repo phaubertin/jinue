@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2023 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,25 +29,75 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_LIBC_STRING_H
-#define _JINUE_LIBC_STRING_H
+#ifndef _JINUE_LIBC_TAR_H
+#define _JINUE_LIBC_TAR_H
 
-#include <stddef.h>
+/** ustar header magic*/
+#define TMAGIC "ustar"
 
-void *memset(void *s, int c, size_t n);
 
-int memcmp(const void *s1, const void *s2, size_t n);
+/** regular file */
+#define REGTYPE     '0'
 
-void *memcpy(void *restrict dest, const void *restrict src, size_t n);
+/** regular file */
+#define AREGTYPE    '\0'
 
-int strcmp(const char *s1, const char *s2);
+/** link */
+#define LNKTYPE     '1'
 
-char *strcpy(char *restrict dest, const char *restrict src);
+/** symbolic link */
+#define SYMTYPE     '2'
 
-size_t strlen(const char *s);
+/** character special */
+#define CHRTYPE     '3'
 
-int strncmp(const char *s1, const char *s2, size_t n);
+/** block special */
+#define BLKTYPE     '4'
 
-size_t strnlen(const char *s, size_t maxlen);
+/** directory */
+#define DIRTYPE     '5'
+
+/** FIFO special */
+#define FIFOTYPE    '6'
+
+/** contiguous file - treated as a regular file */
+#define CONTTYPE    '7'
+
+
+/** set UID on execution */
+#define TSUID       04000
+
+/** set GID on execution */
+#define TSGID       02000
+
+/** on directories, restricted deletion flag */
+#define TSVTX       01000
+
+/** read by owner */
+#define TUREAD      00400
+
+/** write by owner special */
+#define TUWRITE     00200
+
+/** execute/search by owner */
+#define TUEXEC      00100
+
+/** read by group */
+#define TGREAD      00040
+
+/** write by group */
+#define TGWRITE     00020
+
+/** execute/search by group */
+#define TGEXEC      00010
+
+/** read by other */
+#define TOREAD      00004
+
+/** write by other */
+#define TOWRITE     00002
+
+/** execute/search by other */
+#define TOEXEC      00001
 
 #endif

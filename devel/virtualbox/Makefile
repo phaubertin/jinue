@@ -38,13 +38,14 @@ vm_name              = Jinue
 grub_modules         = /usr/lib/grub/i386-pc
 
 kernel_img           = $(jinue_root)/kernel/i686/jinue
+initrd               = $(testapp)/jinue-initrd.tar.gz
 temp_iso_fs          = iso-tmp
 grub_config          = grub.cfg
 jinue_iso            = jinue.iso
 grub_image_rel       = boot/grub/i386-pc/jinue.img
 grub_image           = $(temp_iso_fs)/$(grub_image_rel)
 kernel_img_copy      = $(temp_iso_fs)/boot/$(notdir $(kernel_img))
-initrd               = $(temp_iso_fs)/boot/vbox-initrd.gz
+initrd_copy          = $(temp_iso_fs)/boot/$(notdir $(initrd))
 
 target               = $(jinue_iso)
 unclean_recursive    = $(temp_iso_fs)
@@ -63,7 +64,13 @@ debug: $(jinue_iso)
 kernel-image:
 	make -C $(jinue_root)/kernel image
 
+.PHONY: testapp-initrd
+testapp-initrd:
+	make -C $(testapp)
+
 $(kernel_img): kernel-image
+
+$(initrd): testapp-initrd
 
 $(temp_iso_fs): $(grub_config)
 	mkdir -p $(temp_iso_fs)/boot/grub/i386-pc
@@ -71,13 +78,13 @@ $(temp_iso_fs): $(grub_config)
 	cp $(grub_config) $(temp_iso_fs)/boot/grub/
 	touch $(temp_iso_fs)
 
-$(initrd): $(temp_iso_fs)
-	head -c 1m < /dev/urandom | gzip > $@
-
 $(kernel_img_copy): $(kernel_img) $(temp_iso_fs) kernel-image
 	cp $< $@
 
-$(grub_image): $(initrd) $(kernel_img_copy)
+$(initrd_copy): $(initrd) $(temp_iso_fs) testapp-initrd
+	cp $< $@
+
+$(grub_image): $(initrd_copy) $(kernel_img_copy)
 	grub2-mkimage --prefix '/boot/grub' --output $(grub_image) --format i386-pc-eltorito --compression auto --config $(grub_config) biosdisk iso9660
 
 $(jinue_iso): $(grub_image)

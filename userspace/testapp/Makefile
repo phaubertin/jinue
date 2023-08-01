@@ -1,4 +1,4 @@
-# Copyright (C) 2019 Philippe Aubertin.
+# Copyright (C) 2019-2023 Philippe Aubertin.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -26,12 +26,43 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-linux16 /boot/jinue \
-    serial_enable=yes \
-    serial_dev=/dev/ttyS0 \
-    DEBUG_DUMP_MEMORY_MAP=1 \
-    DEBUG_DUMP_SYSCALL_IMPLEMENTATION=1 \
-    DEBUG_DO_REBOOT=1 \
-    RUN_TEST_IPC=1
-initrd16 /boot/jinue-initrd.tar.gz
-boot
+
+jinue_root = ../..
+include $(jinue_root)/header.mk
+
+sources.c       	 = testapp.c
+testapp         	 = testapp
+temp_ramdisk_fs		 = ramdisk-tmp
+ramdisk 			 = jinue-initrd.tar.gz
+
+target          	 = $(ramdisk)
+unclean_recursive	 = $(temp_ramdisk_fs)
+
+# The linker might not link crt.o from libjinue.a, which is required to
+# provide the _start entry point but otherwise contains no symbol that
+# other object files are interested in. I have seen different behaviour
+# in this regard on different machines with different versions of the
+# linker. By explicitly forcing _start as an undefined symbol, we
+# ensure the linker links the startup code.
+LDFLAGS         += -Wl,-u,_start -static-libgcc -m32 -march=i686
+LDLIBS           = -lgcc
+
+unclean.extra    = $(testapp)
+
+include $(common)
+
+$(libjinue)/libjinue-syscalls.a $(libjinue)/libjinue-util.a: FORCE
+	$(MAKE) -C $(libjinue)
+	
+$(libc)/libc.a: FORCE
+	$(MAKE) -C $(libc)
+
+$(testapp): $(objects) $(libjinue)/libjinue-util.a $(libc)/libc.a $(libjinue)/libjinue-syscalls.a
+
+$(temp_ramdisk_fs): $(testapp)
+	mkdir -p $(temp_ramdisk_fs)/sbin
+	cp $(testapp) $(temp_ramdisk_fs)/sbin/init
+	touch $(temp_ramdisk_fs)
+
+$(ramdisk): $(temp_ramdisk_fs)
+	tar -czvf $(ramdisk) -C $(temp_ramdisk_fs) sbin

@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2023 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,25 +29,23 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_LIBC_STRING_H
-#define _JINUE_LIBC_STRING_H
+#ifndef LOADER_ARCHIVES_ALLOC_H_
+#define LOADER_ARCHIVES_ALLOC_H_
 
+#include <jinue/loader.h>
 #include <stddef.h>
 
-void *memset(void *s, int c, size_t n);
+typedef struct {
+    void    *addr;
+    size_t   bytes_remaining;
+} alloc_area_t;
 
-int memcmp(const void *s1, const void *s2, size_t n);
+void *allocate_page_aligned(size_t bytes);
 
-void *memcpy(void *restrict dest, const void *restrict src, size_t n);
+void *allocate_from_areas_best_fit(alloc_area_t *areas, size_t n_areas, size_t bytes);
 
-int strcmp(const char *s1, const char *s2);
+jinue_dirent_t *initialize_empty_dirent_list(alloc_area_t *area);
 
-char *strcpy(char *restrict dest, const char *restrict src);
-
-size_t strlen(const char *s);
-
-int strncmp(const char *s1, const char *s2, size_t n);
-
-size_t strnlen(const char *s, size_t maxlen);
+jinue_dirent_t *append_dirent_to_list(alloc_area_t *area, int type);
 
 #endif

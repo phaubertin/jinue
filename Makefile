@@ -29,7 +29,16 @@
 
 include header.mk
 
-subdirs = doc kernel $(userspace)/loader $(libc) $(libjinue) $(qemu) $(virtualbox)
+subdirs = \
+	doc \
+	kernel \
+	$(userspace)/loader \
+	$(userspace)/testapp \
+	$(libc) \
+	$(libjinue) \
+	$(zlib) \
+	$(qemu) \
+	$(virtualbox)
 
 # make all (default target) will build the kernel image
 targets.phony = image

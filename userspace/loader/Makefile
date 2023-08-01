@@ -1,4 +1,4 @@
-# Copyright (C) 2019 Philippe Aubertin.
+# Copyright (C) 2019-2023 Philippe Aubertin.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,9 +30,18 @@
 jinue_root = ../..
 include $(jinue_root)/header.mk
 
-sources.c        = loader.c
+sources.c        = \
+	archives/alloc.c \
+	archives/tar.c \
+	streams/gzip.c \
+	streams/raw.c \
+	streams/stream.c \
+	loader.c \
+	ramdisk.c
 loader           = loader
 target           = $(loader)-stripped
+
+CPPFLAGS        += -I$(zlib) -DZLIB_CONST
 
 # The linker might not link crt.o from libjinue.a, which is required to
 # provide the _start entry point but otherwise contains no symbol that
@@ -53,6 +62,9 @@ $(libjinue)/libjinue-syscalls.a $(libjinue)/libjinue-util.a: FORCE
 $(libc)/libc.a: FORCE
 	$(MAKE) -C $(libc)
 
-$(loader): $(objects) $(libjinue)/libjinue-util.a $(libc)/libc.a $(libjinue)/libjinue-syscalls.a
+$(zlib)/libz.a: FORCE
+	$(MAKE) -C $(zlib) libz.a
+
+$(loader): $(objects) $(libjinue)/libjinue-util.a $(zlib)/libz.a $(libc)/libc.a $(libjinue)/libjinue-syscalls.a
 
 $(target): $(loader)

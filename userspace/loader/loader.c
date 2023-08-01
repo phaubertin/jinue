@@ -31,20 +31,17 @@
 
 #include <sys/auxv.h>
 #include <sys/elf.h>
-#include <sys/mman.h>
 #include <jinue/jinue.h>
 #include <jinue/util.h>
 #include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
+#include "ramdisk.h"
 
-#define THREAD_STACK_SIZE   4096
 
-#define CALL_BUFFER_SIZE    512
+#define MAP_BUFFER_SIZE     16384
 
 #define MSG_FUNC_TEST       (JINUE_SYS_USER_BASE + 42)
-
-static int errno;
 
 extern char **environ;
 
@@ -213,20 +210,18 @@ static void dump_syscall_implementation(void) {
     jinue_info("Using system call implementation '%s'.", syscall_implementation_name(howsyscall));
 }
 
-static const jinue_mem_entry_t *get_ramdisk_entry(const jinue_mem_map_t *map) {
-    for(int idx = 0; idx < map->num_entries; ++idx) {
-        if(map->entry[idx].type == JINUE_MEM_TYPE_RAMDISK) {
-            return &map->entry[idx];
-        }
+static jinue_mem_map_t *get_memory_map(void *buffer, size_t bufsize) {
+    int status = jinue_get_user_memory((jinue_mem_map_t *)buffer, bufsize, NULL);
+
+    if(status != 0) {
+        jinue_error("error: could not get physical memory map from microkernel.");
+        return NULL;
     }
 
-    return NULL;
+    return buffer;
 }
 
 int main(int argc, char *argv[]) {
-    char call_buffer[CALL_BUFFER_SIZE];
-    int status;
-
     /* Say hello. */
     jinue_info("Jinue user space loader (%s) started.", argv[0]);
 
@@ -235,56 +230,28 @@ int main(int argc, char *argv[]) {
     dump_auxvec();
     dump_syscall_implementation();
 
-    /* get free memory blocks from microkernel */
-    status = jinue_get_user_memory((jinue_mem_map_t *)&call_buffer, sizeof(call_buffer), &errno);
+    char map_buffer[MAP_BUFFER_SIZE];
+    jinue_mem_map_t *map = get_memory_map(map_buffer, sizeof(map_buffer));
 
-    if(status != 0) {
-        jinue_error("error: could not get physical memory map from microkernel.");
+    if(map == NULL) {
         return EXIT_FAILURE;
     }
 
-    dump_phys_memory_map((jinue_mem_map_t *)&call_buffer);
+    dump_phys_memory_map(map);
 
-    const jinue_mem_entry_t *ramdisk_entry = get_ramdisk_entry((jinue_mem_map_t *)&call_buffer);
+    ramdisk_t ramdisk;
 
-    if(ramdisk_entry->addr == 0 || ramdisk_entry->size == 0) {
-        jinue_error("No initial RAM disk found.");
-        return EXIT_FAILURE;
+    int status = map_ramdisk(&ramdisk, map);
+
+    if(status != EXIT_SUCCESS) {
+        return status;
     }
 
-    jinue_info(
-        "Found RAM disk with size %" PRIu64 " bytes at address %#" PRIx64 ".",
-        ramdisk_entry->size,
-        ramdisk_entry->addr);
+    const jinue_dirent_t *root = extract_ramdisk(&ramdisk);
 
-    /* TODO be more flexible on this */
-    if((ramdisk_entry->addr & (PAGE_SIZE - 1)) != 0) {
-        jinue_error("error: RAM disk is not aligned on a page boundary.");
+    if(root == NULL) {
         return EXIT_FAILURE;
     }
-
-    /* Our implementation of mmap() doesn't actually care about the file descriptor. */
-    const int dummy_fd = 0;
-
-    const char *ramdisk = mmap(
-            NULL,
-            ramdisk_entry->size,
-            PROT_READ,
-            MAP_SHARED,
-            dummy_fd,
-            ramdisk_entry->addr);
-
-    if(ramdisk == MAP_FAILED) {
-        jinue_error("error: could not map RAM disk (%i).", errno);
-        return EXIT_FAILURE;
-    }
-
-    if(ramdisk[0] != 0x1f || ramdisk[1] != (char)0x8b || ramdisk[2] != 0x08) {
-        jinue_error("error: RAM disk is not a gzip file (bad signature).");
-        return EXIT_FAILURE;
-    }
-
-    jinue_info("RAM disk is a gzip file.");
 
     if(bool_getenv("DEBUG_DO_REBOOT")) {
         jinue_info("Rebooting.");
