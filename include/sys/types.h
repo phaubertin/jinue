@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2023 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,9 +29,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_VM_H
-#define _JINUE_VM_H
+#ifndef _JINUE_LIBC_SYS_TYPES_H
+#define _JINUE_LIBC_SYS_TYPES_H
 
-#include <jinue/shared/vm.h>
+#include <stdint.h>
+
+typedef int64_t off_t;
 
 #endif

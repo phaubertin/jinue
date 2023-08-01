@@ -29,12 +29,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/errno.h>
+#include <jinue/shared/asm/errno.h>
 #include <jinue/shared/ipc.h>
 #include <kernel/i686/thread.h>
 #include <kernel/ipc.h>
 #include <kernel/object.h>
 #include <kernel/panic.h>
+#include <kernel/object.h>
 #include <kernel/process.h>
 #include <kernel/slab.h>
 #include <kernel/syscall.h>
@@ -305,50 +306,6 @@ static int scatter_message(thread_t *thread, const jinue_message_t *message) {
 }
 
 /**
- * Get the IPC endpoint referenced by a descriptor
- *
- * @param pref pointer to where to store the object reference pointer
- * @param ipc pointer to where to store the pointer to the IPC endpoint
- * @param fd descriptor
- * @param thread thread for which the descriptor is looked up
- * @return zero on success, negated error number on error
- *
- */
-static int get_ipc_endpoint(
-        object_ref_t    **pref,
-        ipc_t           **ipc,
-        int               fd,
-        thread_t         *thread) {
-
-    object_ref_t *ref = process_get_descriptor(thread->process, fd);
-
-    if(! object_ref_is_valid(ref)) {
-        return -JINUE_EBADF;
-    }
-
-    if(object_ref_is_closed(ref)) {
-        return -JINUE_EBADF;
-    }
-
-    object_header_t *header = ref->object;
-
-    if(object_is_destroyed(header)) {
-        ref->flags |= OBJECT_REF_FLAG_CLOSED;
-        object_subref(header);
-        return -JINUE_EIO;
-    }
-
-    if(header->type != OBJECT_TYPE_IPC) {
-        return -JINUE_EBADF;
-    }
-
-    *pref = ref;
-    *ipc = (ipc_t *)header;
-
-    return 0;
-}
-
-/**
  * Implementation of the SEND system call
  *
  * This function sends a message to an IPC endpoint so it can be received by
@@ -388,13 +345,18 @@ int ipc_send(int fd, int function, const jinue_message_t *message) {
         return gather_result;
     }
 
-    object_ref_t    *ref;
-    ipc_t           *ipc;
-    int get_endpoint_result = get_ipc_endpoint(&ref, &ipc, fd, thread);
+    object_header_t *object;
+    int get_object_result = process_get_object_header(&object, NULL, fd, thread->process);
 
-    if(get_endpoint_result < 0) {
-        return get_endpoint_result;
+    if(get_object_result < 0) {
+        return get_object_result;
     }
+
+    if(object->type != OBJECT_TYPE_IPC) {
+        return -JINUE_EBADF;
+    }
+
+    ipc_t *ipc = (ipc_t *)object;
 
     thread_t *recv_thread = jinue_node_entry(
             jinue_list_dequeue(&ipc->recv_list),
@@ -457,13 +419,19 @@ int ipc_receive(int fd, jinue_message_t *message) {
 
     thread_t *thread = get_current_thread();
 
+    object_header_t *object;
     object_ref_t    *ref;
-    ipc_t           *ipc;
-    int get_endpoint_result = get_ipc_endpoint(&ref, &ipc, fd, thread);
+    int get_object_result = process_get_object_header(&object, &ref, fd, thread->process);
 
-    if(get_endpoint_result < 0) {
-        return get_endpoint_result;
+    if(get_object_result < 0) {
+        return get_object_result;
     }
+
+    if(object->type != OBJECT_TYPE_IPC) {
+        return -JINUE_EBADF;
+    }
+
+    ipc_t *ipc = (ipc_t *)object;
 
     if(! object_ref_is_owner(ref)) {
         return -JINUE_EPERM;

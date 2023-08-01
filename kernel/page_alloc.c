@@ -29,6 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <jinue/shared/asm/syscall.h>
 #include <kernel/i686/vm.h>
 #include <kernel/page_alloc.h>
 #include <kernel/vmalloc.h>
@@ -112,7 +113,7 @@ bool add_page_frame(kern_paddr_t paddr) {
         return false;
     }
 
-    vm_map_kernel(page, paddr, VM_MAP_READ | VM_MAP_WRITE);
+    vm_map_kernel(page, paddr, JINUE_PROT_READ | JINUE_PROT_WRITE);
 
     /* Since this page is coming from userspace, is is important to clear it:
      * 1) The page may contain sensitive information, which we don't want to

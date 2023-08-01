@@ -19,7 +19,8 @@
 | 10      | [RECEIVE](receive.md)                   | Receive Message                      |
 | 11      | [REPLY](reply.md)                       | Reply to Message                     |
 | 12      | [EXIT_THREAD](exit-thread.md)           | Exit the Current Thread              |
-| 13-4095 | -                                       | Reserved                             |
+| 13      | [MMAP](mmap.md)                         | Map Memory                           |
+| 14-4095 | -                                       | Reserved                             |
 | 4096+   | [SEND](send.md)                         | Send Message                         |
 
 #### Reserved Function Numbers

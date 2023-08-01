@@ -43,6 +43,25 @@ void *memset(void *s, int c, size_t n) {
     return s;
 }
 
+int memcmp(const void *s1, const void *s2, size_t n) {
+    const unsigned char *uc1 = s1;
+    const unsigned char *uc2 = s2;
+
+    while(n > 0) {
+        if(*uc1 > *uc2) {
+            return 1;
+        }
+        if(*uc1 < *uc2) {
+            return -1;
+        }
+        ++uc1;
+        ++uc2;
+        --n;
+    }
+
+    return 0;
+}
+
 void *memcpy(void *restrict dest, const void *restrict src, size_t n) {
     size_t       idx;
     char        *cdest  = dest;
@@ -91,5 +110,35 @@ size_t strlen(const char *s) {
         ++count;
     }
     
+    return count;
+}
+
+int strncmp(const char *s1, const char *s2, size_t n) {
+    while(n > 0) {
+        if(*s1 > *s2) {
+            return 1;
+        }
+        if(*s1 < *s2) {
+            return -1;
+        }
+        if(*s1 == '\0') {
+            return 0;
+        }
+        ++s1;
+        ++s2;
+        --n;
+    }
+
+    return 0;
+}
+
+size_t strnlen(const char *s, size_t maxlen) {
+    size_t count = 0;
+
+    while(count < maxlen && *s != 0) {
+        ++s;
+        ++count;
+    }
+
     return count;
 }

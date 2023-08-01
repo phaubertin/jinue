@@ -35,18 +35,6 @@
 #include <jinue/shared/asm/vm.h>
 #include <kernel/i686/asm/x86.h>
 
-/** map page with no permission */
-#define VM_MAP_NONE             0
-
-/** map page with read permission */
-#define VM_MAP_READ             (1<<0)
-
-/** map page with write permission */
-#define VM_MAP_WRITE            (1<<1)
-
-/** map page with execution permission */
-#define VM_MAP_EXEC             (1<<2)
-
 /** Number of entries per page table/directory, PAE disabled */
 #define VM_X86_PAGE_TABLE_PTES  1024
 

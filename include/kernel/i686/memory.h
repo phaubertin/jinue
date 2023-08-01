@@ -32,6 +32,7 @@
 #ifndef JINUE_KERNEL_I686_MEMORY_H
 #define JINUE_KERNEL_I686_MEMORY_H
 
+#include <jinue/shared/asm/memory.h>
 #include <kernel/i686/asm/memory.h>
 #include <kernel/types.h>
 

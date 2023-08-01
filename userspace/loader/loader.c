@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Philippe Aubertin.
+ * Copyright (C) 2023 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -31,28 +31,17 @@
 
 #include <sys/auxv.h>
 #include <sys/elf.h>
-#include <jinue/errno.h>
-#include <jinue/ipc.h>
-#include <jinue/logging.h>
-#include <jinue/syscall.h>
-#include <jinue/types.h>
-#include <jinue/vm.h>
+#include <jinue/jinue.h>
+#include <jinue/util.h>
 #include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
+#include "ramdisk.h"
 
 
-#define THREAD_STACK_SIZE   4096
-
-#define CALL_BUFFER_SIZE    512
+#define MAP_BUFFER_SIZE     16384
 
 #define MSG_FUNC_TEST       (JINUE_SYS_USER_BASE + 42)
-
-static int errno;
-
-static int fd;
-
-static char ipc_test_thread_stack[THREAD_STACK_SIZE];
 
 extern char **environ;
 
@@ -73,18 +62,22 @@ static bool bool_getenv(const char *name) {
 
 static const char *jinue_phys_mem_type_description(uint32_t type) {
     switch(type) {
-
-    case JINUE_E820_RAM:
+    case JINUE_MEM_TYPE_AVAILABLE:
         return "Available";
-
-    case JINUE_E820_RESERVED:
+    case JINUE_MEM_TYPE_BIOS_RESERVED:
         return "Unavailable/Reserved";
-
-    case JINUE_E820_ACPI:
+    case JINUE_MEM_TYPE_ACPI:
         return "Unavailable/ACPI";
-
+    case JINUE_MEM_TYPE_RAMDISK:
+        return "Compressed RAM Disk";
+    case JINUE_MEM_TYPE_KERNEL_IMAGE:
+        return "Kernel Image";
+    case JINUE_MEM_TYPE_KERNEL_RESERVED:
+        return "Unavailable/Kernel Data";
+    case JINUE_MEM_TYPE_LOADER_AVAILABLE:
+        return "Available (Loader Hint)";
     default:
-        return "Unavailable/Other";
+        return "Unavailable/???";
     }
 }
 
@@ -110,10 +103,10 @@ static void dump_phys_memory_map(const jinue_mem_map_t *map) {
     for(int idx = 0; idx < map->num_entries; ++idx) {
         const jinue_mem_entry_t *entry = &map->entry[idx];
 
-        if(entry->type == JINUE_E820_RAM || !ram_only) {
+        if(entry->type == JINUE_MEM_TYPE_AVAILABLE || !ram_only) {
             jinue_info(
                     "  %c [%016" PRIx64 "-%016" PRIx64 "] %s",
-                    (entry->type==JINUE_E820_RAM)?'*':' ',
+                    (entry->type==JINUE_MEM_TYPE_AVAILABLE)?'*':' ',
                     entry->addr,
                     entry->addr + entry->size - 1,
                     jinue_phys_mem_type_description(entry->type)
@@ -151,18 +144,18 @@ static const char *auxv_type_name(int type) {
         const char  *name;
         int          type;
     } *entry, mapping[] = {
-            {"AT_NULL",             JINUE_AT_NULL},
-            {"AT_IGNORE",           JINUE_AT_IGNORE},
-            {"AT_EXECFD",           JINUE_AT_EXECFD},
-            {"AT_PHDR",             JINUE_AT_PHDR},
-            {"AT_PHENT",            JINUE_AT_PHENT},
-            {"AT_PHNUM",            JINUE_AT_PHNUM},
-            {"AT_PAGESZ",           JINUE_AT_PAGESZ},
-            {"AT_BASE",             JINUE_AT_BASE},
-            {"AT_FLAGS",            JINUE_AT_FLAGS},
-            {"AT_ENTRY",            JINUE_AT_ENTRY},
-            {"AT_STACKBASE",        JINUE_AT_STACKBASE},
-            {"JINUE_AT_HOWSYSCALL", JINUE_AT_HOWSYSCALL},
+            {"AT_NULL",         JINUE_AT_NULL},
+            {"AT_IGNORE",       JINUE_AT_IGNORE},
+            {"AT_EXECFD",       JINUE_AT_EXECFD},
+            {"AT_PHDR",         JINUE_AT_PHDR},
+            {"AT_PHENT",        JINUE_AT_PHENT},
+            {"AT_PHNUM",        JINUE_AT_PHNUM},
+            {"AT_PAGESZ",       JINUE_AT_PAGESZ},
+            {"AT_BASE",         JINUE_AT_BASE},
+            {"AT_FLAGS",        JINUE_AT_FLAGS},
+            {"AT_ENTRY",        JINUE_AT_ENTRY},
+            {"AT_STACKBASE",    JINUE_AT_STACKBASE},
+            {"AT_HOWSYSCALL",   JINUE_AT_HOWSYSCALL},
             {NULL, 0}
     };
 
@@ -177,9 +170,9 @@ static const char *auxv_type_name(int type) {
 
 static const char *syscall_implementation_name(int implementation) {
     const char *names[] = {
-            [JINUE_SYSCALL_IMPL_INTERRUPT]         = "interrupt",
-            [JINUE_SYSCALL_IMPL_FAST_AMD]     = "SYSCALL/SYSRET (fast AMD)",
-            [JINUE_SYSCALL_IMPL_FAST_INTEL]   = "SYSENTER/SYSEXIT (fast Intel)"
+            [JINUE_SYSCALL_IMPL_INTERRUPT]      = "interrupt",
+            [JINUE_SYSCALL_IMPL_FAST_AMD]       = "SYSCALL/SYSRET (fast AMD)",
+            [JINUE_SYSCALL_IMPL_FAST_INTEL]     = "SYSENTER/SYSEXIT (fast Intel)"
     };
 
     if(implementation < 0 || implementation > JINUE_SYSCALL_IMPL_LAST) {
@@ -208,182 +201,57 @@ static void dump_auxvec(void) {
     }
 }
 
-static void ipc_test_run_client(void) {
-    /* The order of these buffers is shuffled on purpose because they will be
-     * concatenated later and we don't want things to look OK by coincidence. */
-    char reply2[5];
-    char reply1[6];
-    char reply3[40];
-    int errno;
-
-    if(fd < 0) {
-        jinue_error("Client thread has invalid descriptor.");
+static void dump_syscall_implementation(void) {
+    if(! bool_getenv("DEBUG_DUMP_SYSCALL_IMPLEMENTATION")) {
         return;
     }
 
-    const char hello[] = "Hello ";
-    const char world[] = "World!";
-
-    jinue_info("Client thread got descriptor %i.", fd);
-    jinue_info("Client thread is sending message.");
-
-    jinue_const_buffer_t send_buffers[2];
-    send_buffers[0].addr = hello;
-    send_buffers[0].size = sizeof(hello) - 1;   /* do not include NUL terminator */
-    send_buffers[1].addr = world;
-    send_buffers[1].size = sizeof(world);       /* includes NUL terminator */
-
-    jinue_buffer_t reply_buffers[3];
-    reply_buffers[0].addr = reply1;
-    reply_buffers[0].size = sizeof(reply1) - 1; /* minus one chunk is NUL terminated */
-    reply_buffers[1].addr = reply2;
-    reply_buffers[1].size = sizeof(reply2) - 1; /* minus one chunk is NUL terminated */
-    reply_buffers[2].addr = reply3;
-    reply_buffers[2].size = sizeof(reply3);     /* final NUL is part of the reply message */
-
-    memset(reply1, 0, sizeof(reply1));
-    memset(reply2, 0, sizeof(reply2));
-    memset(reply3, 0, sizeof(reply3));
-
-    jinue_message_t message;
-    message.send_buffers        = send_buffers;
-    message.send_buffers_length = 2;
-    message.recv_buffers        = reply_buffers;
-    message.recv_buffers_length = 3;
-
-    intptr_t ret = jinue_send(fd, MSG_FUNC_TEST, &message, &errno);
-
-    if(ret < 0) {
-        jinue_error("jinue_send() failed with error: %i.", errno);
-        return;
-    }
-
-    jinue_info("Client thread got reply from main thread:");
-    jinue_info("  data:             \"%s%s%s\"", reply1, reply2, reply3);
-    jinue_info("  size:             %" PRIuPTR, ret);
+    int howsyscall = getauxval(JINUE_AT_HOWSYSCALL);
+    jinue_info("Using system call implementation '%s'.", syscall_implementation_name(howsyscall));
 }
 
-static void ipc_test_client_thread(void) {
-    ipc_test_run_client();
+static jinue_mem_map_t *get_memory_map(void *buffer, size_t bufsize) {
+    int status = jinue_get_user_memory((jinue_mem_map_t *)buffer, bufsize, NULL);
 
-    jinue_info("Client thread is exiting.");
-
-    jinue_exit_thread();
-}
-
-static void run_ipc_test(void) {
-    char recv_data[64];
-
-    if(! bool_getenv("RUN_TEST_IPC")) {
-        return;
+    if(status != 0) {
+        jinue_error("error: could not get physical memory map from microkernel.");
+        return NULL;
     }
 
-    jinue_info("Running threading and IPC test...");
-
-    int fd = jinue_create_ipc(JINUE_IPC_NONE, &errno);
-
-    if(fd < 0) {
-        jinue_info("Creating IPC object descriptor.");
-        jinue_error("Error number: %i", errno);
-        return;
-    }
-
-    jinue_info("Main thread got descriptor %i.", fd);
-
-    jinue_create_thread(ipc_test_client_thread, &ipc_test_thread_stack[THREAD_STACK_SIZE], NULL);
-
-    jinue_buffer_t recv_buffer;
-    recv_buffer.addr = recv_data;
-    recv_buffer.size = sizeof(recv_data);
-
-    jinue_message_t message;
-    message.recv_buffers        = &recv_buffer;
-    message.recv_buffers_length = 1;
-
-    intptr_t ret = jinue_receive(fd, &message, &errno);
-
-    if(ret < 0) {
-        jinue_error("jinue_receive() failed with error: %i.", errno);
-        return;
-    }
-
-    int function = message.recv_function;
-
-    if(function != MSG_FUNC_TEST) {
-        jinue_error("jinue_receive() unexpected function number: %i.", function);
-        return;
-    }
-
-    jinue_info("Main thread received message:");
-    jinue_info("  data:             \"%s\"", recv_data);
-    jinue_info("  size:             %" PRIuPTR, ret);
-    jinue_info("  function:         %u (user base + %u)", function, function - JINUE_SYS_USER_BASE);
-    jinue_info("  cookie:           %" PRIuPTR, message.recv_cookie);
-    jinue_info("  reply max. size:  %" PRIuPTR, message.reply_max_size);
-
-    const char reply_string[] = "Hi, Main Thread!";
-
-    jinue_const_buffer_t reply_buffer;
-    reply_buffer.addr = reply_string;
-    reply_buffer.size = sizeof(reply_string);   /* includes NUL terminator */
-
-    jinue_message_t reply;
-    reply.send_buffers          = &reply_buffer;
-    reply.send_buffers_length   = 1;
-
-    ret = jinue_reply(&reply, &errno);
-
-    if(ret < 0) {
-        jinue_error("jinue_reply() failed with error: %i.", errno);
-    }
-
-    jinue_info("Main thread is running.");
+    return buffer;
 }
 
 int main(int argc, char *argv[]) {
-    char call_buffer[CALL_BUFFER_SIZE];
-    int status;
-
-    /* Say hello.
-     *
-     * We shouldn't do this before the call to jinue_set_syscall_implementation().
-     * It works because the system call implementation selected before the call
-     * is made is the interrupt-based one, which is slower but always available.
-     *
-     * TODO once things stabilize, ensure jinue_syscall() fails if no system
-     * call implementation was set. */
+    /* Say hello. */
     jinue_info("Jinue user space loader (%s) started.", argv[0]);
 
     dump_cmdline_arguments(argc, argv);
     dump_environ();
     dump_auxvec();
+    dump_syscall_implementation();
 
-    /* Get system call implementation from auxiliary vectors so we can use
-     * something faster than the interrupt-based one if available and ensure the
-     * one we attempt to use is supported. */
-    errno           = 0;
-    int howsyscall  = getauxval(JINUE_AT_HOWSYSCALL);
-    int ret         = jinue_set_syscall_implementation(howsyscall, &errno);
+    char map_buffer[MAP_BUFFER_SIZE];
+    jinue_mem_map_t *map = get_memory_map(map_buffer, sizeof(map_buffer));
 
-    if (ret < 0) {
-        /* TODO map error numbers to name */
-        jinue_error("Could not set system call implementation: %i", errno);
-    }
-
-    jinue_info("Using system call implementation '%s'.", syscall_implementation_name(howsyscall));
-
-    /* get free memory blocks from microkernel */
-    status = jinue_get_user_memory((jinue_mem_map_t *)&call_buffer, sizeof(call_buffer), &errno);
-
-    if(status != 0) {
-        jinue_error("error: could not get physical memory map from microkernel.");
-
+    if(map == NULL) {
         return EXIT_FAILURE;
     }
 
-    dump_phys_memory_map((jinue_mem_map_t *)&call_buffer);
+    dump_phys_memory_map(map);
 
-    run_ipc_test();
+    ramdisk_t ramdisk;
+
+    int status = map_ramdisk(&ramdisk, map);
+
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
+
+    const jinue_dirent_t *root = extract_ramdisk(&ramdisk);
+
+    if(root == NULL) {
+        return EXIT_FAILURE;
+    }
 
     if(bool_getenv("DEBUG_DO_REBOOT")) {
         jinue_info("Rebooting.");

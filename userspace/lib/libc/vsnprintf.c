@@ -244,6 +244,54 @@ static void write_hexadecimal(state_t *state, uintmax_t value, const conv_spec_t
     }
 }
 
+static void write_octal(state_t *state, uintmax_t value, const conv_spec_t *spec) {
+    int prec = spec->prec;
+
+    if(prec < 1) {
+        /* A precision less than zero (specifically, -1) means no precision was
+         * specified, in which case the default must be 1.
+         *
+         * As for the case prec == 0: there is no value that can be represented
+         * with no digits, so specifying 0 or 1 as the precision is equivalent,
+         * but the implementation below relies on the precision being at least
+         * one. The specific case where this matters is when the value being
+         * converted is zero, in which case we want to keep at least one zero
+         * instead of discarding all zero-valued digits as leading zeroes. */
+        prec = 1;
+    }
+
+    int digit = (8 * argument_size(spec) + 2) / 3;
+
+    /* For pointers we always print all leading zeroes. (ISO/IEC 9899:TC2
+     * §7.19.6.1 paragraph 8 lets us do whatever we want for this conversion.) */
+    if(spec->conversion == 'p') {
+       prec = digit;
+    }
+
+    if(spec->hash && (value != 0 || spec->conversion == 'p')) {
+        /* "0" prefix */
+        write_char(state, '0');
+    }
+
+    for(int idx = 0; idx < prec - digit; ++idx) {
+        write_char(state, '0');
+    }
+
+    bool nonzero = false;
+
+    while(digit > 0) {
+        int digit_bit_position = 3 * (digit - 1);
+        int digit_value = (value >> digit_bit_position) & 7;
+
+        if(nonzero || digit_value != 0 || digit <= prec) {
+            write_char(state, digit_value + '0');
+            nonzero = true;
+        }
+
+        --digit;
+    }
+}
+
 static void write_unsigned(state_t *state, uintmax_t value, const conv_spec_t *spec) {
     uintmax_t power;
     int digit;
@@ -510,6 +558,23 @@ static void process_conversion(state_t *state, const conv_spec_t *spec, va_list 
         }
 
         write_signed(state, value, spec);
+
+        if(is_left_justified(spec)) {
+            add_padding_left_justified(state, spec, get_length(&start, state));
+        }
+    }
+        break;
+    case 'o':
+    {
+        uintmax_t value = get_unsigned_argument(state, spec, args);
+
+        if(is_right_justified(spec)) {
+            start_dry_run(state);
+            write_octal(state, value, spec);
+            add_padding_right_justified(state, spec, go_back(state, &start));
+        }
+
+        write_octal(state, value, spec);
 
         if(is_left_justified(spec)) {
             add_padding_left_justified(state, spec, get_length(&start, state));

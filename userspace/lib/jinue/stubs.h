@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef STUBS_H_
-#define STUBS_H_
+#ifndef LIBJINUE_STUBS_H
+#define LIBJINUE_STUBS_H
 
 #include <stdint.h>
 

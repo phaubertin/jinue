@@ -29,17 +29,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/list.h>
 #include <kernel/i686/cpu_data.h>
 #include <kernel/i686/thread.h>
 #include <kernel/i686/vm.h>
 #include <kernel/boot.h>
+#include <kernel/list.h>
 #include <kernel/object.h>
 #include <kernel/process.h>
 #include <kernel/page_alloc.h>
 #include <kernel/panic.h>
 #include <kernel/thread.h>
-
 
 static jinue_list_t ready_list = JINUE_LIST_STATIC;
 
