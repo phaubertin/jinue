@@ -62,14 +62,36 @@
 #define FILETYPE_GNU_LONGLINK   'K'
 
 
+/**
+ * Determine whether a character is an octal digit
+ *
+ * @param c character to check
+ * @return true if octal digit, false otherwise
+ *
+ * */
 static bool is_octal_digit(int c) {
     return c >= '0' && c <= '7';
 }
 
+/**
+ * Get numerical value of octal digit
+ *
+ * @param c a character that is an octal digit
+ * @return numerical value of octal digit
+ *
+ * */
 static int octal_digit_value(int c) {
     return c - '0';
 }
 
+/**
+ * Decode an octal field in a tar header block
+ *
+ * @param field pointer to field
+ * @param length length of field
+ * @return numerical value encoded in field
+ *
+ * */
 static int64_t decode_octal_field(const char *field, size_t length) {
     const char *const end = field + length;
 
@@ -90,6 +112,16 @@ static int64_t decode_octal_field(const char *field, size_t length) {
 
 #define DECODE_OCTAL_FIELD(x) decode_octal_field(x, sizeof(x))
 
+/**
+ * Check the checksum of a tar header block
+ *
+ * Compute the checksum over the header block and compare it against the
+ * checksum field stored in that header block.
+ *
+ * @param header header block
+ * @return true if checksum matches, false otherwise
+ *
+ * */
 static bool is_checksum_valid(const tar_header_t *header) {
     int checksum = ' ' * sizeof(header->chksum);
 
@@ -104,10 +136,31 @@ static bool is_checksum_valid(const tar_header_t *header) {
     return checksum == DECODE_OCTAL_FIELD(header->chksum);
 }
 
+/**
+ * Check ustar magic in a header block
+ *
+ * @param header header block
+ * @return true for ustar format, false for an older format
+ *
+ * */
 static bool is_ustar(const tar_header_t *header) {
+    /* The specification states that the magic field should be NUL-terminated.
+     * However, some implementations ("old GNU") put a space where the NUL
+     * character should be. For better compatibility, we just check that the
+     * "ustar" string (5 letters) is present and ignore what follows. */
     return strncmp(header->magic, TMAGIC, strlen(TMAGIC)) == 0;
 }
 
+/**
+ * Check whether a RAM disk image is a tar archive
+ *
+ * This function reads from the stream, so the stream should be reset before
+ * attempting to read the archive content.
+ *
+ * @param stream stream initialized on RAM disk image
+ * @return true if image is a tar archive, false otherwise
+ *
+ * */
 bool is_tar(stream_t *stream) {
     tar_header_t header;
 
@@ -128,6 +181,7 @@ bool is_tar(stream_t *stream) {
     return header.name[0] != '\0';
 }
 
+/** archive read state */
 typedef struct {
     stream_t        *stream;
     alloc_area_t     dirent_area;
@@ -139,16 +193,37 @@ typedef struct {
     bool             found_pax_extension;
 } state_t;
 
+/**
+ * Get last tar header block read from archive
+ *
+ * @param state read state
+ * @return header block
+ *
+ * */
 const tar_header_t *state_header(const state_t *state) {
     return (const tar_header_t *)(state->buffer);
 }
 
+/**
+ * Initialize read state
+ *
+ * @param state read state to initialize
+ * @param stream stream from which to read archive content
+ *
+ * */
 void initialize_state(state_t *state, stream_t *stream) {
     memset(state, 0, sizeof(state_t));
     initialize_empty_dirent_list(&state->dirent_area);
     state->stream = stream;
 }
 
+/**
+ * Check whether the last tar header block read from archive is archive trailer
+ *
+ * @param state read state
+ * @return true if trailer found, false otherwise
+ *
+ * */
 static bool found_trailer(state_t *state) {
     int total = 0;
 
@@ -159,6 +234,13 @@ static bool found_trailer(state_t *state) {
     return !total;
 }
 
+/**
+ * Read the next header block from archive
+ *
+ * @param state read state
+ * @return header block, NULL on failure
+ *
+ * */
 const tar_header_t *extract_header(state_t *state) {
     int status = stream_read(state->stream, state->buffer, sizeof(state->buffer));
 
@@ -182,6 +264,16 @@ const tar_header_t *extract_header(state_t *state) {
     return header;
 }
 
+/**
+ * Check whether a character is valid in a file name
+ *
+ * This function considers a slash character (/) as invalid; it is valid in a
+ * file path as a separator but not in a file name (i.e. in a path component).
+ *
+ * @param c character to check
+ * @return true if character is valid in a file name, false otherwise
+ *
+ * */
 static bool is_valid_filename_char(int c) {
     if(c < ' ') {
         /* Exclude control characters and NUL. */
@@ -213,7 +305,6 @@ typedef enum {
     FILENAME_STATE_DOT2,
     FILENAME_STATE_NAME
 } filename_state_t;
-
 
 /**
  * Sanitize a string that represents a complete or part of a file path.
@@ -411,6 +502,14 @@ static const char *parse_filename(state_t *state, const tar_header_t *header) {
     return state->filename;
 }
 
+/**
+ * Copy a NUL-terminated string into newly allocated memory
+ *
+ * @param state read state (for allocator state)
+ * @param str string to copy
+ * @return string copy, NULL on failure
+ *
+ * */
 static const char *copy_string(state_t *state, const char *str) {
     size_t length = strlen(str);
 
@@ -425,6 +524,19 @@ static const char *copy_string(state_t *state, const char *str) {
     return newstr;
 }
 
+/**
+ * Copy a string from a fixed-sized field into newly allocated memory
+ *
+ * The original string can be any length up to and including the specified field
+ * length, which means it is not necessarily NUL-terminated). String copy is
+ * NUL-terminated.
+ *
+ * @param state read state (for allocator state)
+ * @param str address of string field
+ * @param size length of string field
+ * @return string copy, NULL on failure
+ *
+ * */
 static char *copy_fixed_string(state_t *state, const char *str, size_t size) {
     size_t length = strnlen(str, size);
 
@@ -440,6 +552,23 @@ static char *copy_fixed_string(state_t *state, const char *str, size_t size) {
     return newstr;
 }
 
+/**
+ * Read file data from archive into newly allocated memory
+ *
+ * Before calling this function, the (non-zero) size of the data must have been
+ * set in the size member of the directory entry passed as argument.
+ *
+ * On success, this function sets the file member of the directory entry to the
+ * newly allocated memory. The address and size of the newly allocated memory
+ * are guaranteed to be page-aligned (the size is extended to the next page
+ * boundary if needed). The bytes after the file data up to the end of the
+ * allocated memory is cleared (i.e. zero padding).
+
+ * @param state read state
+ * @param dirent directory entry
+ * @return zero (0) on success, other value on failure
+ *
+ * */
 static int copy_file_data(state_t *state, jinue_dirent_t *dirent) {
     dirent->file = allocate_page_aligned(dirent->size);
 
@@ -467,6 +596,13 @@ static int copy_file_data(state_t *state, jinue_dirent_t *dirent) {
     return 0;
 }
 
+/**
+ * Map mode flags from tar definitions to Jinue definitions
+
+ * @param tar_mode tar mode flags (decoded from octal field in header block)
+ * @return mode flags conforming to Jinue definitions
+ *
+ * */
 const int map_mode(int tar_mode) {
     const struct {int from; int to;} map[] = {
             {TSUID,     JINUE_ISUID},
@@ -493,6 +629,13 @@ const int map_mode(int tar_mode) {
     return mode;
 }
 
+/**
+ * Extract tar archive into a virtual filesystem
+ *
+ * @param stream stream from which to read the archive data
+ * @return virtual filesystem root, NULL on failure
+ *
+ * */
 const jinue_dirent_t *tar_extract(stream_t *stream) {
     state_t state;
 

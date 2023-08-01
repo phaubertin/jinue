@@ -44,6 +44,13 @@
 #include "ramdisk.h"
 
 
+/**
+ * Find the kernel memory map entry for the RAM disk image
+ *
+ * @param map kernel memory map
+ * @return map entry, NULL if not found (should not happen)
+ *
+ * */
 static const jinue_mem_entry_t *get_ramdisk_entry(const jinue_mem_map_t *map) {
     for(int idx = 0; idx < map->num_entries; ++idx) {
         if(map->entry[idx].type == JINUE_MEM_TYPE_RAMDISK) {
@@ -54,6 +61,14 @@ static const jinue_mem_entry_t *get_ramdisk_entry(const jinue_mem_map_t *map) {
     return NULL;
 }
 
+/**
+ * Map the compressed RAM disk image in this process
+ *
+ * @param ramdisk structure to initialize with RAM disk image address and size
+ * @param map kernel memory map
+ * @return EXIT_SUCCESS on success, other value on failure
+ *
+ * */
 int map_ramdisk(ramdisk_t *ramdisk, const jinue_mem_map_t *map) {
     const jinue_mem_entry_t *ramdisk_entry = get_ramdisk_entry(map);
 
@@ -96,6 +111,17 @@ int map_ramdisk(ramdisk_t *ramdisk, const jinue_mem_map_t *map) {
     return EXIT_SUCCESS;
 }
 
+/**
+ * Initialize stream to read uncompressed RAM disk
+ *
+ * This function detects the compression algorithm and initializes the right
+ * type of stream to read the uncompressed RAM disk data.
+ *
+ * @param stream stream to initialize
+ * @param ramdisk structure that contains the RAM disk image address and size
+ * @return STREAM_SUCCESS on success, other value on failure
+ *
+ * */
 static int initialize_stream(stream_t *stream, const ramdisk_t *ramdisk) {
     int status = gzip_stream_initialize(stream, ramdisk->addr, ramdisk->size);
 
@@ -118,6 +144,16 @@ enum format {
     FORMAT_UNKNOWN
 };
 
+/**
+ * Detect the format of the RAM disk archive
+ *
+ * The stream abstract the compression algorithm, if application, so this
+ * function determines the archive format after decompression.
+ *
+ * @param stream stream that represents the archive
+ * @return archive format, FORMAT_UNKNOWN if unknown
+ *
+ * */
 static enum format detect_format(stream_t *stream) {
     bool tar = is_tar(stream);
 
@@ -130,6 +166,22 @@ static enum format detect_format(stream_t *stream) {
     return FORMAT_UNKNOWN;
 }
 
+/**
+ * Extract the initial RAM disk into a virtual filesystem
+ *
+ * The following formats are currently supported:
+ *
+ * Archive format:
+ * - tar archive
+ *
+ * Compression algorithms:
+ * - no compression (.tar)
+ * - gzip compression (.tar.gz)
+ *
+ * @param ramdisk structure that contains the RAM disk image address and size
+ * @return virtual filesystem root, NULL on failure
+ *
+ * */
 const jinue_dirent_t *extract_ramdisk(const ramdisk_t *ramdisk) {
     stream_t stream;
 
