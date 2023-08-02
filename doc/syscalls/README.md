@@ -8,7 +8,7 @@
 |---------|-----------------------------------------|--------------------------------------|
 | 0       | -                                       | Reserved                             |
 | 1       | -                                       | Reserved                             |
-| 2       | [REBOOT](reboot.md)                     | Reboot the System                    |
+| 2       | [REBOOT](reboot.md)                     | Reboot the system                    |
 | 3       | [PUTS](puts.md)                         | Write String to Console              |
 | 4       | [CREATE_THREAD](create-thread.md)       | Create a thread                      |
 | 5       | [YIELD_THREAD](yield-thread.md)         | Yield the Current Thread             |
@@ -20,7 +20,8 @@
 | 11      | [REPLY](reply.md)                       | Reply to Message                     |
 | 12      | [EXIT_THREAD](exit-thread.md)           | Exit the Current Thread              |
 | 13      | [MMAP](mmap.md)                         | Map Memory                           |
-| 14-4095 | -                                       | Reserved                             |
+| 14      | [CREATE_PROCESS](create-process.md)     | Create Process                       |
+| 15-4095 | -                                       | Reserved                             |
 | 4096+   | [SEND](send.md)                         | Send Message                         |
 
 #### Reserved Function Numbers

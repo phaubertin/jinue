@@ -147,6 +147,27 @@ int process_get_object_header(
     return 0;
 }
 
+int process_create_with_desc(int fd) {
+    thread_t *thread    = get_current_thread();
+    object_ref_t *ref   = process_get_descriptor(thread->process, fd);
+
+    /* TODO close descriptor if open */
+
+    process_t *process = process_create();
+
+    if(process == NULL) {
+        return -JINUE_EAGAIN;
+    }
+
+    object_addref(&process->header);
+
+    ref->object = &process->header;
+    ref->flags  = OBJECT_REF_FLAG_VALID | OBJECT_REF_FLAG_OWNER;
+    ref->cookie = 0;
+
+    return 0;
+}
+
 int process_unused_descriptor(process_t *process) {
     int idx;
 

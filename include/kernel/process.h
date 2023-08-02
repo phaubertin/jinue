@@ -41,6 +41,8 @@ process_t *process_create(void);
 
 void process_destroy(process_t *process);
 
+int process_create_with_desc(int fd);
+
 object_ref_t *process_get_descriptor(process_t *process, int fd);
 
 int process_get_object_header(
