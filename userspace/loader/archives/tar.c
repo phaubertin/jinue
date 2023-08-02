@@ -707,7 +707,6 @@ const jinue_dirent_t *tar_extract(stream_t *stream) {
         case FILETYPE_GNU_LONGLINK:
             jinue_error("error: tar archive with GNU long names extensions supported");
             return NULL;
-            break;
         default:
             jinue_warning("warning: file with unrecognized type treated as a regular file: %s", filename);
             type = JINUE_DIRENT_TYPE_FILE;

@@ -210,6 +210,87 @@ static void dump_syscall_implementation(void) {
     jinue_info("Using system call implementation '%s'.", syscall_implementation_name(howsyscall));
 }
 
+#define PRETTY_MODE_SIZE 11
+
+static const char *pretty_mode(char *mode, const jinue_dirent_t *dirent) {
+    switch(dirent->type) {
+    case JINUE_DIRENT_TYPE_FILE:
+        mode[0] = '-';
+        break;
+    case JINUE_DIRENT_TYPE_DIR:
+        mode[0] = 'd';
+        break;
+    case JINUE_DIRENT_TYPE_SYMLINK:
+        mode[0] = '1';
+        break;
+    case JINUE_DIRENT_TYPE_CHARDEV:
+        mode[0] = 'c';
+        break;
+    case JINUE_DIRENT_TYPE_BLKDEV:
+        mode[0] = 'b';
+        break;
+    case JINUE_DIRENT_TYPE_FIFO:
+        mode[0] = 'p';
+        break;
+    default:
+        mode[0] = '?';
+        break;
+    }
+
+    struct {int pos; int c; int mask;} map[] = {
+            {1, 'r', JINUE_IRUSR},
+            {2, 'w', JINUE_IWUSR},
+            {3, 's', JINUE_IXUSR | JINUE_ISUID},
+            {3, 'S', JINUE_ISUID},
+            {3, 'x', JINUE_IXUSR},
+            {4, 'r', JINUE_IRGRP},
+            {5, 'w', JINUE_IWGRP},
+            {6, 's', JINUE_IXGRP | JINUE_ISGID},
+            {6, 'S', JINUE_ISGID},
+            {6, 'x', JINUE_IXGRP},
+            {7, 'r', JINUE_IROTH},
+            {8, 'w', JINUE_IWOTH},
+            {9, 'x', JINUE_IXOTH}
+    };
+
+    for(int idx = 0; idx < sizeof(map) / sizeof(map[0]); ++idx) {
+        if((dirent->mode & map[idx].mask) == map[idx].mask) {
+            mode[map[idx].pos] = map[idx].c;
+        } else {
+            mode[map[idx].pos] = '-';
+        }
+    }
+
+    mode[10] = '\0';
+
+    return mode;
+}
+
+static void dump_ramdisk(const jinue_dirent_t *root) {
+    char mode_buffer[PRETTY_MODE_SIZE];
+
+    if(! bool_getenv("DEBUG_DUMP_RAMDISK")) {
+        return;
+    }
+
+    jinue_info("RAM disk dump:");
+
+    const jinue_dirent_t *dirent = jinue_dirent_get_first(root);
+
+    while(dirent != NULL) {
+        jinue_info(
+                "  %s %6u %6u %12u %s",
+                pretty_mode(mode_buffer, dirent),
+                dirent->uid,
+                dirent->gid,
+                dirent->size,
+                dirent->name
+        );
+
+        dirent = jinue_dirent_get_next(dirent);
+    }
+}
+
 static jinue_mem_map_t *get_memory_map(void *buffer, size_t bufsize) {
     int status = jinue_get_user_memory((jinue_mem_map_t *)buffer, bufsize, NULL);
 
@@ -252,6 +333,8 @@ int main(int argc, char *argv[]) {
     if(root == NULL) {
         return EXIT_FAILURE;
     }
+
+    dump_ramdisk(root);
 
     if(bool_getenv("DEBUG_DO_REBOOT")) {
         jinue_info("Rebooting.");
