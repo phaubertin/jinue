@@ -43,7 +43,7 @@ static jinue_mem_map_t *get_memory_map(void *buffer, size_t bufsize) {
     int status = jinue_get_user_memory((jinue_mem_map_t *)buffer, bufsize, NULL);
 
     if(status != 0) {
-        jinue_error("error: could not get physical memory map from microkernel.");
+        jinue_error("error: could not get physical memory map from microkernel");
         return NULL;
     }
 
