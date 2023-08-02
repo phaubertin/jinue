@@ -97,4 +97,8 @@ struct jinue_dirent {
 
 typedef struct jinue_dirent jinue_dirent_t;
 
+const jinue_dirent_t *jinue_dirent_get_first(const jinue_dirent_t *root);
+
+const jinue_dirent_t *jinue_dirent_get_next(const jinue_dirent_t *prev);
+
 #endif
