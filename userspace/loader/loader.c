@@ -50,6 +50,28 @@ static jinue_mem_map_t *get_memory_map(void *buffer, size_t bufsize) {
     return buffer;
 }
 
+static const jinue_dirent_t *get_init(const jinue_dirent_t *root) {
+    const char *init = getenv("init");
+
+    if(init == NULL) {
+        init = "/sbin/init";
+    }
+
+    const jinue_dirent_t *dirent = jinue_dirent_find_by_name(root, init);
+
+    if(dirent == NULL) {
+        jinue_error("error: init program not found: %s", init);
+        return NULL;
+    }
+
+    if(dirent->type != JINUE_DIRENT_TYPE_FILE) {
+        jinue_error("error: init program is not a regular file: %s", init);
+        return NULL;
+    }
+
+    return dirent;
+}
+
 int main(int argc, char *argv[]) {
     /* Say hello. */
     jinue_info("Jinue user space loader (%s) started.", argv[0]);
@@ -83,6 +105,14 @@ int main(int argc, char *argv[]) {
     }
 
     dump_ramdisk(root);
+
+    const jinue_dirent_t *init = get_init(root);
+
+    if(init == NULL) {
+        return EXIT_FAILURE;
+    }
+
+    jinue_info("Loading init program %s", init->name);
 
     jinue_info("---");
 

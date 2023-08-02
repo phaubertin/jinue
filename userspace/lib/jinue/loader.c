@@ -31,6 +31,7 @@
 
 #include <jinue/loader.h>
 #include <stddef.h>
+#include <string.h>
 
 const jinue_dirent_t *jinue_dirent_get_first(const jinue_dirent_t *root) {
     if(root == NULL || root->type == JINUE_DIRENT_TYPE_END) {
@@ -56,4 +57,18 @@ const jinue_dirent_t *jinue_dirent_get_next(const jinue_dirent_t *prev) {
     }
 
     return current;
+}
+
+const jinue_dirent_t *jinue_dirent_find_by_name(const jinue_dirent_t *root, const char *name) {
+    const jinue_dirent_t *dirent = jinue_dirent_get_first(root);
+
+    while(dirent != NULL) {
+        if(strcmp(dirent->name, name) == 0) {
+            return dirent;
+        }
+
+        dirent = jinue_dirent_get_next(dirent);
+    }
+
+    return NULL;
 }
