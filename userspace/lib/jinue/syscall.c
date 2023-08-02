@@ -186,3 +186,14 @@ int jinue_create_ipc(int flags, int *perrno) {
 
     return jinue_syscall_with_usual_convention(&args, perrno);
 }
+
+int jinue_create_process(int fd, int *perrno) {
+    jinue_syscall_args_t args;
+
+    args.arg0 = JINUE_SYS_CREATE_PROCESS;
+    args.arg1 = fd;
+    args.arg2 = 0;
+    args.arg3 = 0;
+
+    return jinue_syscall_with_usual_convention(&args, perrno);
+}

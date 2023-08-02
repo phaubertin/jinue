@@ -75,4 +75,6 @@ intptr_t jinue_reply(const jinue_message_t *message, int *perrno);
 
 int jinue_create_ipc(int flags, int *perrno);
 
+int jinue_create_process(int fd, int *perrno);
+
 #endif
