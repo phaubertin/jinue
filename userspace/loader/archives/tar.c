@@ -257,7 +257,7 @@ const tar_header_t *extract_header(state_t *state) {
     }
 
     if(! is_checksum_valid(header)) {
-        jinue_error("error: bad checksum in tar header.");
+        jinue_error("error: bad checksum in tar header");
         return NULL;
     }
 
