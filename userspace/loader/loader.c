@@ -84,6 +84,8 @@ int main(int argc, char *argv[]) {
 
     dump_ramdisk(root);
 
+    jinue_info("---");
+
     if(bool_getenv("DEBUG_DO_REBOOT")) {
         jinue_info("Rebooting.");
         jinue_reboot();
