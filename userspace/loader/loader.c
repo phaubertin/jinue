@@ -33,16 +33,20 @@
 #include <jinue/loader.h>
 #include <jinue/util.h>
 #include <stdlib.h>
+#include "elf/elf.h"
 #include "debug.h"
 #include "ramdisk.h"
 #include "util.h"
 
-#define MAP_BUFFER_SIZE     16384
+#define MAP_BUFFER_SIZE         16384
+
+#define INIT_PROCESS_DESCRIPTOR (JINUE_DESCRIPTOR_PROCESS + 1)
 
 static jinue_mem_map_t *get_memory_map(void *buffer, size_t bufsize) {
     int status = jinue_get_user_memory((jinue_mem_map_t *)buffer, bufsize, NULL);
 
     if(status != 0) {
+        /* TODO use errno to give more information */
         jinue_error("error: could not get physical memory map from microkernel");
         return NULL;
     }
@@ -72,8 +76,27 @@ static const jinue_dirent_t *get_init(const jinue_dirent_t *root) {
     return dirent;
 }
 
+static int load_init(const jinue_dirent_t *init) {
+    jinue_info("Loading init program %s", init->name);
+
+    int status = jinue_create_process(INIT_PROCESS_DESCRIPTOR, NULL);
+
+    if(status != 0) {
+        /* TODO use errno to give more information */
+        jinue_error("error: could not create process for init program");
+        return EXIT_FAILURE;
+    }
+
+    status = load_elf(INIT_PROCESS_DESCRIPTOR, init->file, init->size);
+
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
+
+    return EXIT_SUCCESS;
+}
+
 int main(int argc, char *argv[]) {
-    /* Say hello. */
     jinue_info("Jinue user space loader (%s) started.", argv[0]);
 
     dump_cmdline_arguments(argc, argv);
@@ -112,7 +135,11 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    jinue_info("Loading init program %s", init->name);
+    status = load_init(init);
+
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
 
     jinue_info("---");
 
