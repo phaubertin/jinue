@@ -43,7 +43,6 @@ typedef struct {
     int              at_phent;
     int              at_phnum;
     addr_space_t    *addr_space;
-    const char      *argv0;
 } elf_info_t;
 
 static inline const char *elf_file_bytes(const Elf32_Ehdr *elf_header) {
