@@ -87,7 +87,7 @@ static int load_init(const jinue_dirent_t *init) {
         return EXIT_FAILURE;
     }
 
-    status = load_elf(INIT_PROCESS_DESCRIPTOR, init->file, init->size);
+    status = load_elf(INIT_PROCESS_DESCRIPTOR, init);
 
     if(status != EXIT_SUCCESS) {
         return status;

@@ -32,8 +32,9 @@
 #ifndef LOADER_ELF_ELF_H_
 #define LOADER_ELF_ELF_H_
 
+#include <jinue/loader.h>
 #include <stddef.h>
 
-int load_elf(int fd, const void *file, size_t size);
+int load_elf(int fd, const jinue_dirent_t *dirent);
 
 #endif

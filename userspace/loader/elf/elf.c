@@ -97,9 +97,9 @@ static int check_elf_header(const Elf32_Ehdr *ehdr, size_t size) {
     return EXIT_SUCCESS;
 }
 
-int load_elf(int fd, const void *file, size_t size) {
-    const Elf32_Ehdr *ehdr = file;
+int load_elf(int fd, const jinue_dirent_t *dirent) {
+    const Elf32_Ehdr *ehdr = dirent->file;
 
     /* TODO implement this */
-    return check_elf_header(ehdr, size);
+    return check_elf_header(ehdr, dirent->size);
 }
