@@ -75,6 +75,9 @@
 /** create a new process */
 #define JINUE_SYS_CREATE_PROCESS        14
 
+/** clone a memory mapping from one process to another */
+#define JINUE_SYS_MCLONE                15
+
 /** start of function numbers for user space messages */
 #define JINUE_SYS_USER_BASE             4096
 

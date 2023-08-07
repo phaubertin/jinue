@@ -121,7 +121,14 @@ int jinue_get_user_memory(jinue_mem_map_t *buffer, size_t buffer_size, int *perr
     return jinue_syscall_with_usual_convention(&args, perrno);
 }
 
-int jinue_mmap(int process, void *addr, size_t length, int prot, uint64_t paddr, int *perrno) {
+int jinue_mmap(
+        int          process,
+        void        *addr,
+        size_t       length,
+        int          prot,
+        uint64_t     paddr,
+        int         *perrno) {
+
     jinue_syscall_args_t args;
     jinue_mmap_args_t mmap_args;
 
@@ -194,6 +201,31 @@ int jinue_create_process(int fd, int *perrno) {
     args.arg1 = fd;
     args.arg2 = 0;
     args.arg3 = 0;
+
+    return jinue_syscall_with_usual_convention(&args, perrno);
+}
+
+int jinue_mclone(
+        int      src,
+        int      dest,
+        void    *src_addr,
+        void    *dest_addr,
+        size_t   length,
+        int      prot,
+        int     *perrno) {
+
+    jinue_syscall_args_t args;
+    jinue_mclone_args_t mclone_args;
+
+    mclone_args.src_addr = src_addr;
+    mclone_args.dest_addr = dest_addr;
+    mclone_args.length = length;
+    mclone_args.prot = prot;
+
+    args.arg0 = JINUE_SYS_MCLONE;
+    args.arg1 = src;
+    args.arg2 = dest;
+    args.arg3 = (uintptr_t)&mclone_args;
 
     return jinue_syscall_with_usual_convention(&args, perrno);
 }

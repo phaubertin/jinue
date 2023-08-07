@@ -96,5 +96,7 @@ kern_paddr_t vm_lookup_kernel_paddr(void *addr);
 
 int vm_mmap_syscall(int process_fd, const jinue_mmap_args_t *args);
 
+int vm_mclone_syscall(int src, int dest, const jinue_mclone_args_t *args);
+
 #endif
 
