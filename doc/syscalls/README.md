@@ -21,7 +21,8 @@
 | 12      | [EXIT_THREAD](exit-thread.md)           | Exit the Current Thread              |
 | 13      | [MMAP](mmap.md)                         | Map Memory                           |
 | 14      | [CREATE_PROCESS](create-process.md)     | Create Process                       |
-| 15-4095 | -                                       | Reserved                             |
+| 15      | [MCLONE](mclone.md)                     | Clone Memory Mapping                 |
+| 16-4095 | -                                       | Reserved                             |
 | 4096+   | [SEND](send.md)                         | Send Message                         |
 
 #### Reserved Function Numbers
