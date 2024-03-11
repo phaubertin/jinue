@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2023 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,30 +29,22 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_PROCESS_H
-#define JINUE_KERNEL_PROCESS_H
 
-#include <kernel/types.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include "util.h"
 
+bool bool_getenv(const char *name) {
+    const char *value = getenv(name);
 
-void process_boot_init(void);
+    if(value == NULL) {
+        return false;
+    }
 
-process_t *process_create(void);
-
-void process_destroy(process_t *process);
-
-int process_create_with_desc(int fd);
-
-object_ref_t *process_get_descriptor(process_t *process, int fd);
-
-int process_get_object_header(
-        object_header_t **pheader,
-        object_ref_t    **pref,
-        int               fd,
-        process_t       *process);
-
-int process_unused_descriptor(process_t *process);
-
-void process_switch_to(process_t *process);
-
-#endif
+    return  strcmp(value, "enable") == 0 ||
+            strcmp(value, "true") == 0 ||
+            strcmp(value, "yes") == 0 ||
+            strcmp(value, "1") == 0;
+}

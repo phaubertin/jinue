@@ -54,4 +54,11 @@ typedef struct {
     uint64_t     paddr;
 } jinue_mmap_args_t;
 
+typedef struct {
+    void        *src_addr;
+    void        *dest_addr;
+    size_t       length;
+    int          prot;
+} jinue_mclone_args_t;
+
 #endif

@@ -33,11 +33,14 @@ include $(jinue_root)/header.mk
 sources.c        = \
 	archives/alloc.c \
 	archives/tar.c \
+	elf/elf.c \
 	streams/gzip.c \
 	streams/raw.c \
 	streams/stream.c \
+	debug.c \
 	loader.c \
-	ramdisk.c
+	ramdisk.c \
+	util.c
 loader           = loader
 target           = $(loader)-stripped
 
