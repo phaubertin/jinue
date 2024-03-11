@@ -5,7 +5,7 @@
 Set the address and size of the thread-local storage for the current thread.
 
 A thread can then retrieve the address of the thead-local storage by calling the
-Get Thread Local Storage Address system call.
+[GET_THREAD_LOCAL](get-thread-local.md) system call.
 
 ## Arguments
 
@@ -55,5 +55,5 @@ another thread, which would be specified using a descriptor.
 
 Support will also be implemented in the kernel for an architecture-dependent
 mechanism to access thread-local storage that is faster than calling the
-Get Thread Local Storage Address system call. On x86, this will likely mean
-dedicating an entry to thread-local storage in the GDT.
+[GET_THREAD_LOCAL](get-thread-local.md) system call. On x86, this will likely
+mean dedicating an entry to thread-local storage in the GDT.

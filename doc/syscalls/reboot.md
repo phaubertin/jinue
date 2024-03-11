@@ -1,4 +1,4 @@
-# REBOOT - Exit the Current Thread
+# REBOOT - Reboot the System
 
 ## Description
 

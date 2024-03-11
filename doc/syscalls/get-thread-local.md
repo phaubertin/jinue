@@ -5,7 +5,7 @@
 Get the address of the thread-local storage for the current thread.
 
 A thread can set the address and size of its thread-local storage by calling the
-Set Thread-Local Storage system call.
+[SET_THREAD_LOCAL](set-thread-local.md) system call.
 
 ## Arguments
 

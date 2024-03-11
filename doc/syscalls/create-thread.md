@@ -52,4 +52,4 @@ This will be changed so a thread can be created in another process, referred to
 by a descriptor.
 
 This system call will also be modified to bind the new thread to a descriptor
-so other system call can refer to it e.g. to destroy it, join it, etc.
+so other system calls can refer to it e.g. to destroy it, join it, etc.
