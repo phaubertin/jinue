@@ -8,7 +8,7 @@
 |---------|-----------------------------------------|--------------------------------------|
 | 0       | -                                       | Reserved                             |
 | 1       | -                                       | Reserved                             |
-| 2       | [REBOOT](reboot.md)                     | Reboot system                        |
+| 2       | [REBOOT](reboot.md)                     | Reboot the System                    |
 | 3       | [PUTS](puts.md)                         | Write String to Console              |
 | 4       | [CREATE_THREAD](create-thread.md)       | Create a thread                      |
 | 5       | [YIELD_THREAD](yield-thread.md)         | Yield the Current Thread             |

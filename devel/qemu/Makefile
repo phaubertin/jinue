@@ -1,4 +1,4 @@
-# Copyright (C) 2022 Philippe Aubertin.
+# Copyright (C) 2022-2024 Philippe Aubertin.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,7 +31,7 @@ jinue_root = ../..
 include $(jinue_root)/header.mk
 
 QEMU_CPU            ?= core2duo
-QEMU_MEM            ?= 128M
+QEMU_MEM            ?= 128
 
 # GRUB location (for creation of bootable ISO for virtual machine)
 #
@@ -103,7 +103,29 @@ $(initrd_copy): $(initrd) $(temp_iso_fs) testapp-initrd
 	cp $< $@
 
 $(grub_image): $(initrd_copy) $(kernel_img_copy)
-	grub2-mkimage --prefix '/boot/grub' --output $(grub_image) --format i386-pc-eltorito --compression auto --config $(grub_config) biosdisk iso9660
+	`grub2-mkimage --version > /dev/null 2>&1 && echo grub2-mkimage || echo grub-mkimage` \
+		--prefix '/boot/grub' \
+		--output $(grub_image) \
+		--format i386-pc-eltorito \
+		--compression auto \
+		--config $(grub_config) \
+		biosdisk iso9660
 
 $(jinue_iso): $(grub_image)
-	xorriso -as mkisofs -graft-points -b $(grub_image_rel) -no-emul-boot -boot-load-size 4 -boot-info-table --grub2-boot-info --grub2-mbr $(grub_modules)/boot_hybrid.img --protective-msdos-label -o $(jinue_iso) -r $(temp_iso_fs) --sort-weight 0 / --sort-weight 1 /boot
+	xorriso \
+		-as mkisofs \
+		-graft-points \
+		-b $(grub_image_rel) \
+		-no-emul-boot \
+		-boot-load-size 4 \
+		-boot-info-table \
+		--grub2-boot-info \
+		--grub2-mbr \
+		$(grub_modules)/boot_hybrid.img \
+		--protective-msdos-label \
+		-o $(jinue_iso) \
+		-r $(temp_iso_fs) \
+		--sort-weight 0 \
+		/ \
+		--sort-weight 1 \
+		/boot
