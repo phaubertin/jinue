@@ -109,7 +109,7 @@ CPPFLAGS             = $(CPPFLAGS.includes) $(CPPFLAGS.debug) $(CPPFLAGS.others)
 CFLAGS.warnings      = -std=c99 -pedantic -Wall -Werror=implicit -Werror=uninitialized -Werror=return-type
 CFLAGS.arch          = -m32 -march=i686
 CFLAGS.optimization  = -O3
-CFLAGS.others        = -ffreestanding -fno-common -fno-omit-frame-pointer -fno-delete-null-pointer-checks
+CFLAGS.others        = -ffreestanding -fno-pie -fno-common -fno-omit-frame-pointer -fno-delete-null-pointer-checks
 CFLAGS               = $(CFLAGS.arch) $(CFLAGS.optimization) $(CFLAGS.debug) $(CFLAGS.warnings) $(CFLAGS.others) $(CFLAGS.extra)
 
 # Linker flags
