@@ -61,7 +61,13 @@ int jinue_puts(int loglevel, const char *str, size_t n, int *perrno);
 
 int jinue_get_user_memory(jinue_mem_map_t *buffer, size_t buffer_size, int *perrno);
 
-int jinue_mmap(int process, void *addr, size_t length, int prot, uint64_t paddr, int *perrno);
+int jinue_mmap(
+        int          process,
+        void        *addr,
+        size_t       length,
+        int          prot,
+        uint64_t     paddr,
+        int         *perrno);
 
 intptr_t jinue_send(
         int                      fd,
@@ -74,5 +80,16 @@ intptr_t jinue_receive(int fd, const jinue_message_t *message, int *perrno);
 intptr_t jinue_reply(const jinue_message_t *message, int *perrno);
 
 int jinue_create_ipc(int flags, int *perrno);
+
+int jinue_create_process(int fd, int *perrno);
+
+int jinue_mclone(
+        int      src,
+        int      dest,
+        void    *src_addr,
+        void    *dest_addr,
+        size_t   length,
+        int      prot,
+        int     *perrno);
 
 #endif
