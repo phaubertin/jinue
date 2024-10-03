@@ -63,7 +63,7 @@ const Elf32_Phdr *elf_executable_program_header(const Elf32_Ehdr *elf);
 
 void elf_load(
         elf_info_t      *elf_info,
-        Elf32_Ehdr      *elf,
+        Elf32_Ehdr      *ehdr,
         const char      *argv0,
         const char      *cmdline,
         process_t       *process,

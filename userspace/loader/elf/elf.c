@@ -29,17 +29,29 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <jinue/jinue.h>
 #include <jinue/util.h>
 #include <sys/elf.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include "elf.h"
 
+typedef struct {
+    void    *entry;
+    void    *stack_addr;
+    void    *at_phdr;
+    int      at_phent;
+    int      at_phnum;
+} elf_info_t;
+
+
 static int check_elf_header(const Elf32_Ehdr *ehdr, size_t size) {
     if(size < sizeof(Elf32_Ehdr)) {
         jinue_error("error: init program is too small to be an ELF binary");
         return EXIT_FAILURE;
     }
+
+    /* TODO should we check e_ehsize? */
 
     if(     ehdr->e_ident[EI_MAG0] != ELF_MAGIC0 ||
             ehdr->e_ident[EI_MAG1] != ELF_MAGIC1 ||
@@ -94,12 +106,69 @@ static int check_elf_header(const Elf32_Ehdr *ehdr, size_t size) {
         return EXIT_FAILURE;
     }
 
+    if(size < ehdr->e_phoff + ehdr->e_phnum * ehdr->e_phentsize) {
+        jinue_error("error: invalid init program ELF binary: program headers past end of file");
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}
+
+static int map_flags(Elf32_Word pflags) {
+    /* set flags */
+    int flags = 0;
+
+    if(pflags & PF_R) {
+        flags |= JINUE_PROT_READ;
+    }
+
+    if(pflags & PF_W) {
+        flags |= JINUE_PROT_WRITE;
+    }
+    else if(pflags & PF_X) {
+        flags |= JINUE_PROT_EXEC;
+    }
+
+    return flags;
+}
+
+static int load_segments(elf_info_t *elf_info, int fd, const Elf32_Ehdr *ehdr) {
+    /* program header table */
+    Elf32_Phdr *phdr        = (Elf32_Phdr *)((char *)ehdr + ehdr->e_phoff);
+
+    elf_info->at_phdr       = NULL; /* set below */
+    elf_info->at_phnum      = ehdr->e_phnum;
+    elf_info->at_phent      = ehdr->e_phentsize;
+    elf_info->entry         = (void *)ehdr->e_entry;
+
+    for(int idx = 0; idx < ehdr->e_phnum; ++idx) {
+       if(phdr[idx].p_type != PT_LOAD) {
+           continue;
+       }
+
+       /* TODO implement this */
+    }
+
+    if(elf_info->at_phdr == NULL) {
+        jinue_error("error: program headers address (AT_PHDR) could not be determined");
+        return EXIT_FAILURE;
+    }
+
     return EXIT_SUCCESS;
 }
 
 int load_elf(int fd, const jinue_dirent_t *dirent) {
     const Elf32_Ehdr *ehdr = dirent->file;
 
-    /* TODO implement this */
-    return check_elf_header(ehdr, dirent->size);
+    int status = check_elf_header(ehdr, dirent->size);
+
+    elf_info_t elf_info;
+
+    if(status == EXIT_SUCCESS) {
+        status = load_segments(&elf_info, fd, ehdr);
+    }
+
+    /* TODO implement stack initialization, etc. */
+
+    return status;
 }

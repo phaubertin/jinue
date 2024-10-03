@@ -75,10 +75,6 @@ static Elf32_Ehdr *get_userspace_loader_elf_header(const boot_info_t *boot_info)
 
     info("Found user space loader with size %" PRIu32 " bytes.", boot_info->loader_size);
 
-    if(! elf_check(boot_info->loader_start)) {
-        panic("user space loader ELF binary is invalid");
-    }
-
     return boot_info->loader_start;
 }
 
