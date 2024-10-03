@@ -519,23 +519,34 @@ void elf_load(
     info("ELF binary loaded.");
 }
 
+static const char *elf_file_bytes(const Elf32_Ehdr *elf_header) {
+    return (const char *)elf_header;
+}
+
+static const Elf32_Shdr *elf_get_section_header(const Elf32_Ehdr *elf_header, int index) {
+    const char *elf_file        = elf_file_bytes(elf_header);
+    const char *section_table   = &elf_file[elf_header->e_shoff];
+    
+    return (const Elf32_Shdr *)&section_table[index * elf_header->e_shentsize];
+}
+
 /**
  * Find an ELF section header by type
  *
  * If multiple sections of the same type are present, the first instance is
  * returned.
  *
- * @param elf_header ELF header of ELF binary
+ * @param ehdr ELF header of ELF binary
  * @param type type of symbol
  * @return pointer on section header if found, NULL otherwise
  *
  * */
 static const Elf32_Shdr *elf_find_section_header_by_type(
-        const Elf32_Ehdr    *elf_header,
+        const Elf32_Ehdr    *ehdr,
         Elf32_Word           type) {
 
-    for(int idx = 0; idx < elf_header->e_shnum; ++idx) {
-        const Elf32_Shdr *section_header = elf_get_section_header(elf_header, idx);
+    for(int idx = 0; idx < ehdr->e_shnum; ++idx) {
+        const Elf32_Shdr *section_header = elf_get_section_header(ehdr, idx);
 
         if(section_header->sh_type == type) {
             return section_header;
@@ -548,49 +559,43 @@ static const Elf32_Shdr *elf_find_section_header_by_type(
 /**
  * Find the section header for the symbol table
  *
- * @param elf_header ELF header of ELF binary
+ * @param ehdr ELF header of ELF binary
  * @return pointer on section header if found, NULL otherwise
  *
  * */
-static const Elf32_Shdr *elf_find_symtab_section_header(const Elf32_Ehdr *elf_header) {
-    return elf_find_section_header_by_type(elf_header, SHT_SYMTAB);
+static const Elf32_Shdr *elf_find_symtab_section_header(const Elf32_Ehdr *ehdr) {
+    return elf_find_section_header_by_type(ehdr, SHT_SYMTAB);
 }
 
 /**
  * Get the binary data of a section
  *
- * @param elf_header ELF header of ELF binary
+ * @param ehdr ELF header of ELF binary
  * @param section_header ELF section header
  * @return symbol name as a NUL-terminated string
  *
  * */
-static const char *elf_section_data(
-        const Elf32_Ehdr    *elf_header,
-        const Elf32_Shdr    *section_header) {
-
-    const char *elf_file = elf_file_bytes(elf_header);
+static const char *elf_section_data(const Elf32_Ehdr *ehdr, const Elf32_Shdr *section_header) {
+    const char *elf_file = elf_file_bytes(ehdr);
     return &elf_file[section_header->sh_offset];
 }
 
 /**
  * Look up the name of a symbol
  *
- * @param elf_header ELF header of ELF binary
+ * @param ehdr ELF header of ELF binary
  * @param symbol_header ELF symbol header
  * @return symbol name as a NUL-terminated string
  *
  * */
-const char *elf_symbol_name(
-        const Elf32_Ehdr    *elf_header,
-        const Elf32_Sym     *symbol_header) {
-
+const char *elf_symbol_name(const Elf32_Ehdr *ehdr, const Elf32_Sym *symbol_header) {
     /* Here, we can safely assume the symbol table exists because the symbol
      * header passed as argument had to be looked up there. */
     const Elf32_Shdr *string_section_header = elf_get_section_header(
-            elf_header,
-            elf_find_symtab_section_header(elf_header)->sh_link);
+            ehdr,
+            elf_find_symtab_section_header(ehdr)->sh_link);
 
-    const char *string_table = elf_section_data(elf_header, string_section_header);
+    const char *string_table = elf_section_data(ehdr, string_section_header);
 
     return &string_table[symbol_header->st_name];
 }
@@ -601,25 +606,25 @@ const char *elf_symbol_name(
  * Input is an address and a symbol type. The result contains the start address
  * and length of the symbol.
  *
- * @param elf_header ELF header of ELF binary
+ * @param ehdr ELF header of ELF binary
  * @param addr address to look up
  * @param type type of the symbol
  * @return symbol header if found, NULL otherwise
  *
  * */
-const Elf32_Sym *elf_find_symbol_by_address_and_type(
-        const Elf32_Ehdr    *elf_header,
+static const Elf32_Sym *find_symbol_by_address_and_type(
+        const Elf32_Ehdr    *ehdr,
         Elf32_Addr           addr,
         int                  type) {
 
-    const Elf32_Shdr *section_header = elf_find_symtab_section_header(elf_header);
+    const Elf32_Shdr *section_header = elf_find_symtab_section_header(ehdr);
 
     if(section_header == NULL) {
         /* no symbol table */
         return NULL;
     }
 
-    const char *symbols_table = elf_section_data(elf_header, section_header);
+    const char *symbols_table = elf_section_data(ehdr, section_header);
     
     for(int offset = 0; offset < section_header->sh_size; offset += section_header->sh_entsize) {
         const Elf32_Sym *symbol_header = (const Elf32_Sym *)&symbols_table[offset];
@@ -647,14 +652,11 @@ const Elf32_Sym *elf_find_symbol_by_address_and_type(
  * Input is an address and a symbol type. The result contains the start address
  * and length of the symbol.
  *
- * @param elf_header ELF header of ELF binary
+ * @param ehdr ELF header of ELF binary
  * @param addr address to look up
  * @return symbol header if found, NULL otherwise
  *
  * */
-const Elf32_Sym *elf_find_function_symbol_by_address(
-        const Elf32_Ehdr    *elf_header,
-        Elf32_Addr           addr) {
-
-    return elf_find_symbol_by_address_and_type(elf_header, addr, STT_FUNCTION);
+const Elf32_Sym *elf_find_function_symbol_by_address(const Elf32_Ehdr *ehdr, Elf32_Addr addr) {
+    return find_symbol_by_address_and_type(ehdr, addr, STT_FUNCTION);
 }

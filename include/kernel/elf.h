@@ -45,18 +45,6 @@ typedef struct {
     addr_space_t    *addr_space;
 } elf_info_t;
 
-static inline const char *elf_file_bytes(const Elf32_Ehdr *elf_header) {
-    return (const char *)elf_header;
-}
-
-static inline const Elf32_Shdr *elf_get_section_header(const Elf32_Ehdr *elf_header, int index) {
-    const char *elf_file        = elf_file_bytes(elf_header);
-    const char *section_table   = &elf_file[elf_header->e_shoff];
-    
-    return (const Elf32_Shdr *)&section_table[index * elf_header->e_shentsize];
-}
-
-
 bool elf_check(Elf32_Ehdr *elf);
 
 const Elf32_Phdr *elf_executable_program_header(const Elf32_Ehdr *elf);
@@ -69,17 +57,8 @@ void elf_load(
         process_t       *process,
         boot_alloc_t    *boot_alloc);
 
-const char *elf_symbol_name(
-        const Elf32_Ehdr    *elf_header,
-        const Elf32_Sym     *symbol_header);
+const char *elf_symbol_name(const Elf32_Ehdr *ehdr, const Elf32_Sym *symbol_header);
 
-const Elf32_Sym *elf_find_symbol_by_address_and_type(
-        const Elf32_Ehdr    *elf_header,
-        Elf32_Addr           addr,
-        int                  type);
-
-const Elf32_Sym *elf_find_function_symbol_by_address(
-        const Elf32_Ehdr    *elf_header,
-        Elf32_Addr           addr);
+const Elf32_Sym *elf_find_function_symbol_by_address(const Elf32_Ehdr *ehdr, Elf32_Addr addr);
 
 #endif
