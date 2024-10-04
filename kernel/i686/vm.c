@@ -368,19 +368,21 @@ static void initialize_initial_page_tables(
         panic("could not find kernel executable segment");
     }
 
-    size_t code_offset = ((uintptr_t)phdr->p_vaddr - KLIMIT) / PAGE_SIZE;
+    uintptr_t code_vaddr    = ALIGN_START((uintptr_t)phdr->p_vaddr, PAGE_SIZE);
+    size_t code_size        = phdr->p_memsz + OFFSET_OF_PTR(phdr->p_vaddr, PAGE_SIZE);
+    size_t code_offset      = (code_vaddr - KLIMIT) / PAGE_SIZE;
 
     vm_initialize_page_table_linear(
-            vm_pae_get_pte_with_offset(page_tables, code_offset),
-            phdr->p_vaddr + MEMORY_ADDR_16MB - KLIMIT,
+            get_pte_with_offset(page_tables, code_offset),
+            code_vaddr + MEMORY_ADDR_16MB - KLIMIT,
             X86_PTE_GLOBAL,
-            phdr->p_memsz / PAGE_SIZE);
+            code_size / PAGE_SIZE);
 
     /* map kernel data segment */
     size_t data_offset = ((uintptr_t)boot_info->data_start - KLIMIT) / PAGE_SIZE;
 
     vm_initialize_page_table_linear(
-            vm_pae_get_pte_with_offset(page_tables, data_offset),
+            get_pte_with_offset(page_tables, data_offset),
             boot_info->data_physaddr + MEMORY_ADDR_16MB - MEMORY_ADDR_1MB,
             X86_PTE_GLOBAL | X86_PTE_READ_WRITE | X86_PTE_NX,
             boot_info->data_size / PAGE_SIZE);
