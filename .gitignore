@@ -58,3 +58,7 @@ RemoteSystemsTempFiles/
 
 # directory for storing local temporary/debugging files
 wrk/
+
+# Userspace executables
+userspace/loader/loader
+userspace/testapp/testapp
