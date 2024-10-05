@@ -158,16 +158,5 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    /* TODO remove this BEGIN */
-
-    jinue_info("A");
-    jinue_yield_thread();
-    jinue_info("A");
-    jinue_yield_thread();
-    jinue_info("A");
-    jinue_yield_thread();
-
-    /* TODO remove this END */
-
     return EXIT_SUCCESS;
 }

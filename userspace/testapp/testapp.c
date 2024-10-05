@@ -364,25 +364,6 @@ int main(int argc, char *argv[]) {
     /* Say hello. */
     jinue_info("Jinue test app (%s) started.", argv[0]);
 
-    /* TODO remove this BEGIN */
-
-    jinue_info("C");
-    jinue_yield_thread();
-    jinue_info("C");
-    jinue_yield_thread();
-    jinue_info("C");
-    jinue_yield_thread();
-    jinue_info("C");
-    jinue_yield_thread();
-    jinue_info("C");
-    jinue_yield_thread();
-    jinue_info("C");
-    jinue_yield_thread();
-    jinue_info("C");
-    jinue_yield_thread();
-
-    /* TODO remove this END */
-
     dump_cmdline_arguments(argc, argv);
     dump_environ();
     dump_auxvec();
