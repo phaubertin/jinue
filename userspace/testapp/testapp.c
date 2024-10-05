@@ -262,7 +262,7 @@ static void ipc_test_run_client(void) {
     intptr_t ret = jinue_send(fd, MSG_FUNC_TEST, &message, &errno);
 
     if(ret < 0) {
-        jinue_error("jinue_send() failed with error: %i.", errno);
+        jinue_error("jinue_send() failed with error: %s.", strerror(errno));
         return;
     }
 
@@ -291,14 +291,23 @@ static void run_ipc_test(void) {
     int fd = jinue_create_ipc(JINUE_IPC_NONE, &errno);
 
     if(fd < 0) {
-        jinue_info("Creating IPC object descriptor.");
-        jinue_error("Error number: %i", errno);
+        jinue_error("Could not create IPC object: %s", strerror(errno));
         return;
     }
 
     jinue_info("Main thread got descriptor %i.", fd);
 
-    jinue_create_thread(ipc_test_client_thread, &ipc_test_thread_stack[THREAD_STACK_SIZE], NULL);
+    int status = jinue_create_thread(
+        JINUE_SELF_PROCESS_DESCRIPTOR,
+        ipc_test_client_thread,
+        &ipc_test_thread_stack[THREAD_STACK_SIZE],
+        &errno
+    );
+
+    if (status != 0) {
+        jinue_error("Could not create thread: %s", strerror(errno));
+        return;
+    }
 
     jinue_buffer_t recv_buffer;
     recv_buffer.addr = recv_data;
@@ -311,7 +320,7 @@ static void run_ipc_test(void) {
     intptr_t ret = jinue_receive(fd, &message, &errno);
 
     if(ret < 0) {
-        jinue_error("jinue_receive() failed with error: %i.", errno);
+        jinue_error("jinue_receive() failed with error: %s.", strerror(errno));
         return;
     }
 
@@ -342,7 +351,7 @@ static void run_ipc_test(void) {
     ret = jinue_reply(&reply, &errno);
 
     if(ret < 0) {
-        jinue_error("jinue_reply() failed with error: %i", errno);
+        jinue_error("jinue_reply() failed with error: %s", strerror(errno));
     }
 
     jinue_info("Main thread is running.");

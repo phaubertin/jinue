@@ -105,8 +105,9 @@ static void sys_puts(jinue_syscall_args_t *args) {
 }
 
 static void sys_create_thread(jinue_syscall_args_t *args) {
-    void *entry         = (void *)args->arg1;
-    void *user_stack    = (void *)args->arg2;
+    int process_fd      = get_descriptor(args->arg1);
+    void *entry         = (void *)args->arg2;
+    void *user_stack    = (void *)args->arg3;
 
     if(!is_userspace_pointer(entry)) {
         syscall_args_set_error(args, JINUE_EINVAL);
@@ -118,19 +119,9 @@ static void sys_create_thread(jinue_syscall_args_t *args) {
         return;
     }
 
-    thread_t *thread = thread_create(
-            /* TODO use arg1 as an address space reference if specified */
-            get_current_thread()->process,
-            entry,
-            user_stack);
-
     /** TODO return descriptor that represents thread */
-    if(thread == NULL) {
-        syscall_args_set_error(args, JINUE_EAGAIN);
-    }
-    else {
-        syscall_args_set_return(args, 0);
-    }
+    int retval = thread_create_syscall(process_fd, entry, user_stack);
+    set_return_value_or_error(args, retval);
 }
 
 static void sys_yield_thread(jinue_syscall_args_t *args) {

@@ -34,6 +34,11 @@
 
 #include <kernel/types.h>
 
+int thread_create_syscall(
+        int              process_fd,
+        void            *entry,
+        void            *user_stack);
+
 thread_t *thread_create(
         process_t       *process,
         void            *entry,

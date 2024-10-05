@@ -171,7 +171,12 @@ int main(int argc, char *argv[]) {
 
     /* TODO remove this BEGIN */
 
-    status = jinue_create_thread(test_thread, &test_thread_stack[THREAD_STACK_SIZE], &errno);
+    status = jinue_create_thread(
+        JINUE_SELF_PROCESS_DESCRIPTOR,
+        test_thread,
+        &test_thread_stack[THREAD_STACK_SIZE],
+        &errno
+    );
 
     if (status != 0) {
         jinue_error("Could not create thread: %s", strerror(errno));

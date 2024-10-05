@@ -49,7 +49,7 @@ void jinue_set_thread_local(void *addr, size_t size);
 
 void *jinue_get_thread_local(void);
 
-int jinue_create_thread(void (*entry)(), void *stack, int *perrno);
+int jinue_create_thread(int process, void (*entry)(), void *stack, int *perrno);
 
 void jinue_yield_thread(void);
 

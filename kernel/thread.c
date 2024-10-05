@@ -29,6 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <jinue/shared/asm/errno.h>
 #include <kernel/i686/cpu_data.h>
 #include <kernel/i686/thread.h>
 #include <kernel/i686/vm.h>
@@ -41,6 +42,33 @@
 #include <kernel/thread.h>
 
 static jinue_list_t ready_list = JINUE_LIST_STATIC;
+
+int thread_create_syscall(
+        int              process_fd,
+        void            *entry,
+        void            *user_stack) {
+    object_header_t *object;
+
+    int status = process_get_object_header(
+            &object,
+            NULL,
+            process_fd,
+            get_current_thread()->process
+    );
+
+    if(status < 0) {
+        return status;
+    }
+
+    if(object->type != OBJECT_TYPE_PROCESS) {
+        return -JINUE_EBADF;
+    }
+
+    process_t *process = (process_t *)object;
+    const thread_t *thread = thread_create(process, entry, user_stack);
+
+    return (thread == NULL) ? JINUE_EAGAIN : 0;
+}
 
 static void thread_init(thread_t *thread, process_t *process) {
     object_header_init(&thread->header, OBJECT_TYPE_THREAD);

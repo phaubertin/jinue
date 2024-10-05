@@ -66,13 +66,13 @@ void *jinue_get_thread_local(void) {
     return (void *)jinue_syscall(&args);
 }
 
-int jinue_create_thread(void (*entry)(), void *stack, int *perrno) {
+int jinue_create_thread(int process, void (*entry)(), void *stack, int *perrno) {
     jinue_syscall_args_t args;
 
     args.arg0 = JINUE_SYS_CREATE_THREAD;
-    args.arg1 = (uintptr_t)entry;
-    args.arg2 = (uintptr_t)stack;
-    args.arg3 = 0;
+    args.arg1 = process;
+    args.arg2 = (uintptr_t)entry;
+    args.arg3 = (uintptr_t)stack;
 
     return jinue_syscall_with_usual_convention(&args, perrno);
 }
