@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Philippe Aubertin.
+ * Copyright (C) 2023-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -41,6 +41,14 @@
 #include "../util.h"
 #include "elf.h"
 
+/**
+ * Validate the ELF header
+ *
+ * @param ehdr ELF file header
+ * @param size total size of the ELF binary in bytes
+ * @return EXIT_SUCCESS if header is valid, EXIT_FAILURE otherwise
+ *
+ * */
 static int check_elf_header(const Elf32_Ehdr *ehdr, size_t size) {
     if(size < sizeof(Elf32_Ehdr)) {
         jinue_error("error: init program is too small to be an ELF binary");
@@ -155,24 +163,42 @@ static void *get_at_phdr(const Elf32_Ehdr *ehdr) {
     return NULL;
 }
 
-static int map_flags(Elf32_Word pflags) {
+/**
+ * Map the protection flags
+ * 
+ * Maps the protection flags in a program headers' p_flags member to the
+ * JINUE_PROT_READ, JINUE_PROT_WRITE and/or JINUE_PROT_EXEC protection
+ * flags.
+ * 
+ * @param p_flags flags
+ * @return start of stack in loader address space
+ *
+ * */
+static int map_flags(Elf32_Word p_flags) {
     /* set flags */
     int flags = 0;
 
-    if(pflags & PF_R) {
+    if(p_flags & PF_R) {
         flags |= JINUE_PROT_READ;
     }
 
-    if(pflags & PF_W) {
+    if(p_flags & PF_W) {
         flags |= JINUE_PROT_WRITE;
     }
-    else if(pflags & PF_X) {
+    else if(p_flags & PF_X) {
         flags |= JINUE_PROT_EXEC;
     }
 
     return flags;
 }
 
+/**
+ * String representation of protection flags
+ * 
+ * @param prot protection flags
+ * @return string representation
+ *
+ * */
 static const char *prot_str(int prot) {
     static char buffer[4];
     buffer[0] = (prot & PROT_READ)  ? 'r' : '-';
@@ -182,6 +208,22 @@ static const char *prot_str(int prot) {
     return buffer;
 }
 
+/**
+ * Clone a segment mapping from this process to the one where the ELF binary is loaded
+ * 
+ * This function is a wrapper around jinue_mclone() with debug logging if
+ * requested with the DEBUG_LOADER_VERBOSE_MCLONE environment variable.
+ * 
+ * src_addr, dest_addr and length must be aligned on a page boundary.
+ * 
+ * @param fd descriptor of the process in which too load the binary
+ * @param src_addr segment start address in this process
+ * @param dest_addr segment start address in the other process
+ * @param length length of segment in bytes
+ * @param prot protection flags
+ * @return start of stack in loader address space
+ *
+ * */
 static int clone_mapping(
         int      fd,
         void    *src_addr,
@@ -219,6 +261,20 @@ static int clone_mapping(
     return EXIT_SUCCESS;
 }
 
+/**
+ * Load the loadable (PT_LOAD) segments from the ELF binary
+ * 
+ * This function is a wrapper around jinue_mclone() with debug logging if
+ * requested with the DEBUG_LOADER_VERBOSE_MCLONE environment variable.
+ * 
+ * src_addr, dest_addr and length must be aligned on a page boundary.
+ * 
+ * @param elf_info ELF information structure (output)
+ * @param fd descriptor of the process in which to load the binary
+ * @param ehdr ELF header
+ * @return EXIT_SUCCESS on success, EXIT_FAILURE on failure
+ *
+ * */
 static int load_segments(elf_info_t *elf_info, int fd, const Elf32_Ehdr *ehdr) {
     /* program header table */
     const Elf32_Phdr *phdrs = program_header_table(ehdr);
@@ -336,7 +392,7 @@ static void *allocate_stack(int fd) {
 extern char **environ;
 
 /**
- * Count environment variables
+ * Count the environment variables
  *
  * @return number of environment variables
  *
@@ -351,6 +407,20 @@ size_t count_environ(void) {
     return n;
 }
 
+/**
+ * Write the command line argument strings
+ * 
+ * The loader's own argc and argv should be passed as the argc and argv
+ * parameters. This function takes care of substituting argv[0] with the
+ * file name from the ELF binary directory entry.
+ *
+ * @param dest write destination
+ * @param dirent directory entry for the ELF binary
+ * @param argc number of command line arguments
+ * @param argv command line arguments
+ * @return address of first byte following the last terminator
+ * 
+ * */
 char *write_cmdline_arguments(char *dest, const jinue_dirent_t *dirent, int argc, char *argv[]) {
     strcpy(dest, dirent->name);
     dest += strlen(dirent->name) + 1;
@@ -363,6 +433,12 @@ char *write_cmdline_arguments(char *dest, const jinue_dirent_t *dirent, int argc
     return dest;
 }
 
+/**
+ * Write the environment variable strings
+ *
+ * @param dest write destination
+ * 
+ * */
 void write_environ(char *dest) {
     for(int idx = 0; environ[idx] != NULL; ++idx) {
         strcpy(dest, environ[idx]);
@@ -408,6 +484,23 @@ static void initialize_string_array(
     }
 }
 
+/**
+ * Initialize the stack
+ * 
+ * Initializes the command line arguments, the environment variables and the
+ * auxiliary vectors.
+ * 
+ * The loader's own argc and argv should be passed as the argc and argv
+ * parameters. This function takes care of substituting argv[0] with the
+ * file name from the ELF binary directory entry.
+ *
+ * @param stack allocated stack segment
+ * @param elf_info ELF information structure (in and out)
+ * @param dirent directory entry for the ELF binary
+ * @param argc number of command line arguments
+ * @param argv command line arguments
+ *
+ * */
 static void initialize_stack(
         void                    *stack,
         elf_info_t              *elf_info,
@@ -488,7 +581,7 @@ static void initialize_stack(
  *
  * @param elf_info ELF information structure (output)
  * @param fd descriptor of the process in which too load the binary
- * @param dirent directory entry of the ELF binary
+ * @param dirent directory entry for the ELF binary
  * @param argc number of command line arguments
  * @param argv command line arguments
  *

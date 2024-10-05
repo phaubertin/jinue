@@ -64,61 +64,61 @@ static bool check_failed(const char *message) {
 /**
  * Check the validity of an ELF binary
  *
- * @param elf ELF header, which is at the very beginning of the ELF binary
+ * @param ehdr ELF header, which is at the very beginning of the ELF binary
  * @return true if ELF binary is valid, false otherwise
  *
  * */
-bool elf_check(Elf32_Ehdr *elf) {
+bool elf_check(Elf32_Ehdr *ehdr) {
     /* check: valid ELF binary magic number */
-    if(     elf->e_ident[EI_MAG0] != ELF_MAGIC0 ||
-            elf->e_ident[EI_MAG1] != ELF_MAGIC1 ||
-            elf->e_ident[EI_MAG2] != ELF_MAGIC2 ||
-            elf->e_ident[EI_MAG3] != ELF_MAGIC3 ) {
+    if(     ehdr->e_ident[EI_MAG0] != ELF_MAGIC0 ||
+            ehdr->e_ident[EI_MAG1] != ELF_MAGIC1 ||
+            ehdr->e_ident[EI_MAG2] != ELF_MAGIC2 ||
+            ehdr->e_ident[EI_MAG3] != ELF_MAGIC3 ) {
         return check_failed("not an ELF binary (ELF identification/magic check)");
     }
     
     /* check: 32-bit objects */
-    if(elf->e_ident[EI_CLASS] != ELFCLASS32) {
+    if(ehdr->e_ident[EI_CLASS] != ELFCLASS32) {
         return check_failed("bad file class");
     }
     
     /* check: endianess */
-    if(elf->e_ident[EI_DATA] != ELFDATA2LSB) {
+    if(ehdr->e_ident[EI_DATA] != ELFDATA2LSB) {
         return check_failed("bad endianess");
     }
     
     /* check: version */
-    if(elf->e_version != 1 || elf->e_ident[EI_VERSION] != 1) {
+    if(ehdr->e_version != 1 || ehdr->e_ident[EI_VERSION] != 1) {
         return check_failed("not ELF version 1");
     }
     
     /* check: machine */
-    if(elf->e_machine != EM_386) {
+    if(ehdr->e_machine != EM_386) {
         return check_failed("not for x86 architecture");
     }
     
     /* check: the 32-bit Intel architecture defines no flags */
-    if(elf->e_flags != 0) {
+    if(ehdr->e_flags != 0) {
         return check_failed("invalid flags");
     }
     
     /* check: file type is executable */
-    if(elf->e_type != ET_EXEC) {
+    if(ehdr->e_type != ET_EXEC) {
         return check_failed("not an an executable");
     }
     
     /* check: must have a program header */
-    if(elf->e_phoff == 0 || elf->e_phnum == 0) {
+    if(ehdr->e_phoff == 0 || ehdr->e_phnum == 0) {
         return check_failed("no program headers");
     }
     
     /* check: must have an entry point */
-    if(elf->e_entry == 0) {
+    if(ehdr->e_entry == 0) {
         return check_failed("no entry point");
     }
     
     /* check: program header entry size */
-    if(elf->e_phentsize != sizeof(Elf32_Phdr)) {
+    if(ehdr->e_phentsize != sizeof(Elf32_Phdr)) {
         return check_failed("unsupported program header size");
     }
 
@@ -252,24 +252,48 @@ static addr_t get_at_phdr(const Elf32_Ehdr *ehdr) {
     panic("Program headers address (AT_PHDR) could not be determined");
 }
 
-static int map_flags(Elf32_Word pflags) {
+/**
+ * Map the protection flags
+ * 
+ * Maps the protection flags in a program headers' p_flags member to the
+ * JINUE_PROT_READ, JINUE_PROT_WRITE and/or JINUE_PROT_EXEC protection
+ * flags.
+ * 
+ * @param p_flags flags
+ * @return start of stack in loader address space
+ *
+ * */
+static int map_flags(Elf32_Word p_flags) {
     /* set flags */
     int flags = 0;
 
-    if(pflags & PF_R) {
+    if(p_flags & PF_R) {
         flags |= JINUE_PROT_READ;
     }
 
-    if(pflags & PF_W) {
+    if(p_flags & PF_W) {
         flags |= JINUE_PROT_WRITE;
     }
-    else if(pflags & PF_X) {
+    else if(p_flags & PF_X) {
         flags |= JINUE_PROT_EXEC;
     }
 
     return flags;
 }
 
+/**
+ * Load the loadable (PT_LOAD) segments from the ELF binary
+ * 
+ * This function is a wrapper around jinue_mclone() with debug logging if
+ * requested with the DEBUG_LOADER_VERBOSE_MCLONE environment variable.
+ * 
+ * src_addr, dest_addr and length must be aligned on a page boundary.
+ * 
+ * @param elf_info ELF information structure (output)
+ * @param ehdr ELF header
+ * @param process process in which to load the binary
+ *
+ * */
 static void load_segments(
         elf_info_t      *elf_info,
         Elf32_Ehdr      *ehdr,
@@ -471,6 +495,15 @@ static void initialize_stack(
     initialize_string_array(envp, nenv, envs);
 }
 
+/**
+ * Initialize descriptors for user space loader
+ *
+ * This function initializes a single descriptor which references the process
+ * itself (JINUE_SELF_PROCESS_DESCRIPTOR).
+ * 
+ * @param process process in which the ELF binary is loaded
+ *
+ * */
 static void initialize_descriptors(process_t *process) {
     object_ref_t *ref = process_get_descriptor(process, JINUE_SELF_PROCESS_DESCRIPTOR);
 
@@ -519,15 +552,33 @@ void elf_load(
     info("ELF binary loaded.");
 }
 
-static const char *elf_file_bytes(const Elf32_Ehdr *elf_header) {
-    return (const char *)elf_header;
+/**
+ * Get pointer to ELF file as a bytes array
+ *
+ * @param ehdr ELF header of ELF binary
+ * @return start of ELF file bytes
+ *
+ * */
+static const char *elf_file_bytes(const Elf32_Ehdr *ehdr) {
+    return (const char *)ehdr;
 }
 
-static const Elf32_Shdr *elf_get_section_header(const Elf32_Ehdr *elf_header, int index) {
-    const char *elf_file        = elf_file_bytes(elf_header);
-    const char *section_table   = &elf_file[elf_header->e_shoff];
+/**
+ * Get an ELF section header by index
+ * 
+ * No bound check is performed. It is the caller's responsibility to ensure
+ * 0 <= index < ehdr->e_shnum.
+ *
+ * @param ehdr ELF header of ELF binary
+ * @param index index of the section header
+ * @return pointer on section header
+ *
+ * */
+static const Elf32_Shdr *elf_get_section_header(const Elf32_Ehdr *ehdr, int index) {
+    const char *elf_file        = elf_file_bytes(ehdr);
+    const char *section_table   = &elf_file[ehdr->e_shoff];
     
-    return (const Elf32_Shdr *)&section_table[index * elf_header->e_shentsize];
+    return (const Elf32_Shdr *)&section_table[index * ehdr->e_shentsize];
 }
 
 /**
