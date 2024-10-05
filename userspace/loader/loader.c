@@ -32,7 +32,9 @@
 #include <jinue/jinue.h>
 #include <jinue/loader.h>
 #include <jinue/util.h>
+#include <errno.h>
 #include <stdlib.h>
+#include <string.h>
 #include "elf/elf.h"
 #include "debug.h"
 #include "ramdisk.h"
@@ -97,6 +99,29 @@ static int load_init(const jinue_dirent_t *init, int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
+/* TODO remove this BEGIN */
+
+#define THREAD_STACK_SIZE 8192
+
+static char test_thread_stack[THREAD_STACK_SIZE];
+
+static void test_thread(void) {
+    jinue_info("B");
+    jinue_yield_thread();
+    jinue_info("B");
+    jinue_yield_thread();
+    jinue_info("B");
+    jinue_yield_thread();
+    jinue_info("B");
+    jinue_yield_thread();
+
+    jinue_info("Thread is exiting.");
+
+    jinue_exit_thread();
+}
+
+/* TODO remove this END */
+
 int main(int argc, char *argv[]) {
     jinue_info("Jinue user space loader (%s) started.", argv[0]);
 
@@ -143,6 +168,36 @@ int main(int argc, char *argv[]) {
     }
 
     jinue_info("---");
+
+    /* TODO remove this BEGIN */
+
+    status = jinue_create_thread(test_thread, &test_thread_stack[THREAD_STACK_SIZE], &errno);
+
+    if (status != 0) {
+        jinue_error("Could not create thread: %s", strerror(errno));
+        return EXIT_FAILURE;
+    }
+
+    jinue_info("A");
+    jinue_yield_thread();
+    jinue_info("A");
+    jinue_yield_thread();
+    jinue_info("A");
+    jinue_yield_thread();
+    jinue_info("A");
+    jinue_yield_thread();
+    jinue_info("A");
+    jinue_yield_thread();
+    jinue_info("A");
+    jinue_yield_thread();
+    jinue_info("A");
+    jinue_yield_thread();
+    jinue_info("A");
+    jinue_yield_thread();
+    jinue_info("A");
+    jinue_yield_thread();
+
+    /* TODO remove this END */
 
     if(bool_getenv("DEBUG_DO_REBOOT")) {
         jinue_info("Rebooting.");
