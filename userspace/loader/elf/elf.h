@@ -35,6 +35,14 @@
 #include <jinue/loader.h>
 #include <stddef.h>
 
-int load_elf(int fd, const jinue_dirent_t *dirent);
+typedef struct {
+    void    *entry;
+    void    *stack_addr;
+    void    *at_phdr;
+    int      at_phent;
+    int      at_phnum;
+} elf_info_t;
+
+int load_elf(elf_info_t *elf_info, int fd, const jinue_dirent_t *dirent, int argc, char *argv[]);
 
 #endif

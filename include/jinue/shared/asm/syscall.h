@@ -121,7 +121,10 @@
 #define JINUE_PROT_EXEC         (1<<2)
 
 
-/** descriptor assigned to refer to own process in loader and initial process */
-#define JINUE_DESCRIPTOR_PROCESS        0
+/** descriptor assigned to refer to own process in loader and initial process
+ * 
+ * On a Unix system, the first three file descriptors typically represent
+ * stdout, stdin and stderr. Lets leave them unused to allow this usage. */
+#define JINUE_SELF_PROCESS_DESCRIPTOR 3
 
 #endif

@@ -63,7 +63,7 @@ _start:
     ; Skip whole argv array (eax entries) as well as the following NULL pointer
     lea esi, [esi + 4 * eax + 4]
     
-    ; Store envp as third argument to main and keep a copy in jinue_environ.
+    ; Store envp as third argument to main and in the environ global variable.
     mov dword [ebp-4], esi
     mov dword [environ], esi
     

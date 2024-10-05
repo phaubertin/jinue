@@ -190,6 +190,181 @@ const Elf32_Phdr *elf_executable_program_header(const Elf32_Ehdr *ehdr) {
 }
 
 /**
+ * Initialize the arguments (argv) and environment variables string arrays
+ *
+ * This function is intended to initialize the string arrays for the command
+ * line arguments (argv) and environment variables. It does not initialize the
+ * terminating NULL entry, which needs to be intialized separately.
+ *
+ * This function intializes a fixed number of entries and assumes the
+ * NUL-terminated strings are concatenated.
+ *
+ * @param array array to initialize
+ * @param n number of entries to initialize
+ * @param str pointer to the first string
+ *
+ * */
+static void initialize_string_array(const char *array[], size_t n, const char *str) {
+    for(int idx = 0; idx < n; ++idx) {
+        /* Write address of current string. */
+        array[idx] = str;
+
+        /* skip to end of string */
+        while(*str != '\0') {
+            ++str;
+        }
+
+        /* skip terminator to get to next string */
+        ++str;
+    }
+}
+
+/**
+ * Get value of AT_PHDR axiliary vector
+ *
+ * AT_PHDR is the address of the program headers table in the user address space.
+ *
+ * @param ehdr ELF file header
+ * @return value of AT_PHDR
+ *
+ * */
+static addr_t get_at_phdr(const Elf32_Ehdr *ehdr) {
+    const Elf32_Phdr *phdrs     = program_header_table(ehdr);
+    Elf32_Off phdr_filestart    = ehdr->e_phoff;
+    Elf32_Off phdr_fileend      = ehdr->e_phoff + ehdr->e_phnum * ehdr->e_phentsize;
+
+    for(unsigned int idx = 0; idx < ehdr->e_phnum; ++idx) {
+        const Elf32_Phdr *phdr = &phdrs[idx];
+
+        if(phdr->p_type != PT_LOAD || (phdr->p_flags & PF_W)) {
+            continue;
+        }
+
+        Elf32_Off p_filestart   = phdr->p_offset;
+        Elf32_Off p_fileend     = phdr->p_offset + phdr->p_filesz;
+
+        if(p_filestart <= phdr_filestart && phdr_fileend <= p_fileend) {
+            /* We found the segment that completely contains the program headers table. */
+            return (addr_t)phdr->p_vaddr + ehdr->e_phoff - phdr->p_offset;
+        }
+    }
+
+    panic("Program headers address (AT_PHDR) could not be determined");
+}
+
+static int map_flags(Elf32_Word pflags) {
+    /* set flags */
+    int flags = 0;
+
+    if(pflags & PF_R) {
+        flags |= JINUE_PROT_READ;
+    }
+
+    if(pflags & PF_W) {
+        flags |= JINUE_PROT_WRITE;
+    }
+    else if(pflags & PF_X) {
+        flags |= JINUE_PROT_EXEC;
+    }
+
+    return flags;
+}
+
+static void load_segments(
+        elf_info_t      *elf_info,
+        Elf32_Ehdr      *ehdr,
+        process_t       *process) {
+
+    addr_space_t *addr_space = &process->addr_space;
+
+    const Elf32_Phdr *phdrs = program_header_table(ehdr);
+    elf_info->at_phdr       = get_at_phdr(ehdr);
+    elf_info->at_phnum      = ehdr->e_phnum;
+    elf_info->at_phent      = ehdr->e_phentsize;
+    elf_info->addr_space    = addr_space;
+    elf_info->entry         = (void *)ehdr->e_entry;
+
+    for(unsigned int idx = 0; idx < ehdr->e_phnum; ++idx) {
+        const Elf32_Phdr *phdr = &phdrs[idx];
+
+       if(phdr->p_type != PT_LOAD) {
+           continue;
+       }
+
+        /* check that the segment is not in the region reserved for kernel use */
+        if(! check_userspace_buffer((void *)phdr->p_vaddr, phdr->p_memsz)) {
+            panic("user space loader memory layout -- address of segment too low");
+        }
+
+        /* set start and end addresses for mapping and copying */
+        char *file_ptr  = (char *)ehdr + phdr->p_offset;
+        char *vptr      = (char *)phdr->p_vaddr;
+        char *vend      = vptr  + phdr->p_memsz;  /* limit for padding */
+        char *vfend     = vptr  + phdr->p_filesz; /* limit for copy */
+
+        /* align on page boundaries, be inclusive, note that vfend is not aligned */
+        file_ptr        = ALIGN_START_PTR(file_ptr, PAGE_SIZE);
+        vptr            = ALIGN_START_PTR(vptr,     PAGE_SIZE);
+        vend            = ALIGN_END_PTR(vend,       PAGE_SIZE);
+
+        bool is_writable    = !!(phdr->p_flags & PF_W);
+        bool needs_padding  = (phdr->p_filesz != phdr->p_memsz);
+
+        if(! (is_writable || needs_padding)) {
+            /* Since the segment has to be mapped read only and does not require
+             * padding, we can just map the original pages. */
+            while(vptr < vend) {
+                checked_map_userspace(
+                        addr_space,
+                        vptr,
+                        vm_lookup_kernel_paddr(file_ptr),
+                        map_flags(phdr->p_flags));
+
+                vptr     += PAGE_SIZE;
+                file_ptr += PAGE_SIZE;
+           }
+        }
+        else {
+            /* Segment is writable and/or needs padding. We need to allocate new
+             * pages for this segment. */
+            while(vptr < vend) {
+                char *stop;
+
+                /* start of this page and next page */
+                char *vnext = vptr + PAGE_SIZE;
+
+                /* allocate and map the new page */
+                void *page = page_alloc();
+                checked_map_userspace(
+                        addr_space,
+                        vptr,
+                        vm_lookup_kernel_paddr(page),
+                        map_flags(phdr->p_flags));
+
+                /* TODO transfer page ownership to userspace */
+
+                /* copy */
+                if(vnext > vfend) {
+                    stop = vfend;
+                }
+                else {
+                    stop = vnext;
+                }
+
+                while(vptr < stop) {
+                    *(vptr++) = *(file_ptr++);
+                }
+
+                /* pad */
+                while(vptr < vnext) {
+                    *(vptr++) = 0;
+                }
+           }
+       }
+    }
+}
+
+/**
  * Allocate the stack for ELF binary
  *
  * @param elf_info ELF information structure (output)
@@ -213,36 +388,6 @@ static void allocate_stack(elf_info_t *elf_info, boot_alloc_t *boot_alloc) {
                 JINUE_PROT_READ | JINUE_PROT_WRITE);
 
         /* TODO transfer page ownership to userspace */
-    }
-}
-
-/**
- * Initialize the arguments (argv) and environment variables string arrays
- *
- * This function is intended to initialize the string arrays for the command
- * line arguments (argv) and environment variables. It does not initialize the
- * terminating NULL entry, which needs to be intialized separately.
- *
- * This function intializes a fixed number of entries and assumes the
- * NUL-terminated strings are concatenated.
- *
- * @param array array to initialize
- * @param str pointer to the first string
- * @param n number of entries to initialize
- *
- * */
-static void initialize_string_array(const char *array[], const char *str, size_t n) {
-    for(int idx = 0; idx < n; ++idx) {
-        /* Write address of current string. */
-        array[idx] = str;
-
-        /* skip to end of string */
-        while(*str != '\0') {
-            ++str;
-        }
-
-        /* skip terminator to get to next string */
-        ++str;
     }
 }
 
@@ -280,7 +425,7 @@ static void initialize_stack(
     size_t nenv = cmdline_count_environ(cmdline);
     const char **envp = (const char **)sp;
     envp[nenv] = NULL;
-    sp += (nenv + 1);
+    sp += nenv + 1;
 
     /* Auxiliary vectors */
     Elf32_auxv_t *auxvp = (Elf32_auxv_t *)sp;
@@ -322,162 +467,17 @@ static void initialize_stack(
     cmdline_write_environ(envs, cmdline);
 
     /* Fill in content of pointer arrays argv and envp. */
-    initialize_string_array(argv, args, argc);
-    initialize_string_array(envp, envs, nenv);
+    initialize_string_array(argv, argc, args);
+    initialize_string_array(envp, nenv, envs);
 }
 
 static void initialize_descriptors(process_t *process) {
-    object_ref_t *ref = process_get_descriptor(process, JINUE_DESCRIPTOR_PROCESS);
+    object_ref_t *ref = process_get_descriptor(process, JINUE_SELF_PROCESS_DESCRIPTOR);
 
     object_addref(&process->header);
     ref->object = &process->header;
     ref->flags  = OBJECT_REF_FLAG_VALID;
     ref->cookie = 0;
-}
-
-static int map_flags(Elf32_Word pflags) {
-    /* set flags */
-    int flags = 0;
-
-    if(pflags & PF_R) {
-        flags |= JINUE_PROT_READ;
-    }
-
-    if(pflags & PF_W) {
-        flags |= JINUE_PROT_WRITE;
-    }
-    else if(pflags & PF_X) {
-        flags |= JINUE_PROT_EXEC;
-    }
-
-    return flags;
-}
-
-/**
- * Get value of AT_PHDR axiliary vector
- *
- * AT_PHDR is the address of the program headers table in the user address space.
- *
- * @param ehdr ELF file header
- * @return value of AT_PHDR
- *
- * */
-static addr_t get_at_phdr(const Elf32_Ehdr *ehdr) {
-    const Elf32_Phdr *phdr = program_header_table(ehdr);
-
-    Elf32_Off phdr_filestart    = ehdr->e_phoff;
-    Elf32_Off phdr_fileend      = ehdr->e_phoff + ehdr->e_phnum * ehdr->e_phentsize;
-
-    for(unsigned int idx = 0; idx < ehdr->e_phnum; ++idx) {
-        const Elf32_Phdr *p = &phdr[idx];
-
-        if(p->p_type != PT_LOAD || (p->p_flags & PF_W)) {
-            continue;
-        }
-
-        Elf32_Off p_filestart   = p->p_offset;
-        Elf32_Off p_fileend     = p->p_offset + p->p_filesz;
-
-        if(p_filestart <= phdr_filestart && phdr_fileend <= p_fileend) {
-            /* We found the segment that completely contains the program headers table. */
-            return (addr_t)p->p_vaddr + ehdr->e_phoff - p->p_offset;
-        }
-    }
-
-    panic("Program headers address (AT_PHDR) could not be determined");
-}
-
-static void load_segments(
-        elf_info_t      *elf_info,
-        Elf32_Ehdr      *ehdr,
-        process_t       *process) {
-
-    const Elf32_Phdr *phdr = program_header_table(ehdr);
-    addr_space_t *addr_space = &process->addr_space;
-
-    elf_info->at_phdr       = get_at_phdr(ehdr);
-    elf_info->at_phnum      = ehdr->e_phnum;
-    elf_info->at_phent      = ehdr->e_phentsize;
-    elf_info->addr_space    = addr_space;
-    elf_info->entry         = (void *)ehdr->e_entry;
-
-    for(unsigned int idx = 0; idx < ehdr->e_phnum; ++idx) {
-       if(phdr[idx].p_type != PT_LOAD) {
-           continue;
-       }
-
-       /* check that the segment is not in the region reserved for kernel use */
-       if(! check_userspace_buffer((void *)phdr[idx].p_vaddr, phdr[idx].p_memsz)) {
-           panic("user space loader memory layout -- address of segment too low");
-       }
-
-       /* set start and end addresses for mapping and copying */
-       char *file_ptr  = (char *)ehdr + phdr[idx].p_offset;
-       char *vptr      = (char *)phdr[idx].p_vaddr;
-       char *vend      = vptr  + phdr[idx].p_memsz;  /* limit for padding */
-       char *vfend     = vptr  + phdr[idx].p_filesz; /* limit for copy */
-
-       /* align on page boundaries, be inclusive,
-          note that vfend is not aligned        */
-       file_ptr        = ALIGN_START_PTR(file_ptr, PAGE_SIZE);
-       vptr            = ALIGN_START_PTR(vptr,     PAGE_SIZE);
-       vend            = ALIGN_END_PTR(vend,       PAGE_SIZE);
-
-       bool is_writable    = !!(phdr[idx].p_flags & PF_W);
-       bool needs_padding  = (phdr[idx].p_filesz != phdr[idx].p_memsz);
-
-        if(! (is_writable || needs_padding)) {
-           /* Since the segment has to be mapped read only and does not require
-            * padding, we can just map the original pages. */
-           while(vptr < vend) {
-               checked_map_userspace(
-                       addr_space,
-                       vptr,
-                       vm_lookup_kernel_paddr(file_ptr),
-                       map_flags(phdr[idx].p_flags));
-
-               vptr     += PAGE_SIZE;
-               file_ptr += PAGE_SIZE;
-           }
-       }
-       else {
-           /* Segment is writable and/or needs padding. We need to allocate new
-            * pages for this segment. */
-           while(vptr < vend) {
-               char *stop;
-
-               /* start of this page and next page */
-               char *vnext = vptr + PAGE_SIZE;
-
-               /* allocate and map the new page */
-               void *page = page_alloc();
-               checked_map_userspace(
-                       addr_space,
-                       vptr,
-                       vm_lookup_kernel_paddr(page),
-                       map_flags(phdr[idx].p_flags));
-
-               /* TODO transfer page ownership to userspace */
-
-               /* copy */
-               if(vnext > vfend) {
-                   stop = vfend;
-               }
-               else {
-                   stop = vnext;
-               }
-
-               while(vptr < stop) {
-                   *(vptr++) = *(file_ptr++);
-               }
-
-               /* pad */
-               while(vptr < vnext) {
-                   *(vptr++) = 0;
-               }
-           }
-       }
-    }
 }
 
 /**

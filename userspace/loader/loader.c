@@ -40,7 +40,7 @@
 
 #define MAP_BUFFER_SIZE         16384
 
-#define INIT_PROCESS_DESCRIPTOR (JINUE_DESCRIPTOR_PROCESS + 1)
+#define INIT_PROCESS_DESCRIPTOR (JINUE_SELF_PROCESS_DESCRIPTOR + 1)
 
 static jinue_mem_map_t *get_memory_map(void *buffer, size_t bufsize) {
     int status = jinue_get_user_memory((jinue_mem_map_t *)buffer, bufsize, NULL);
@@ -76,7 +76,7 @@ static const jinue_dirent_t *get_init(const jinue_dirent_t *root) {
     return dirent;
 }
 
-static int load_init(const jinue_dirent_t *init) {
+static int load_init(const jinue_dirent_t *init, int argc, char *argv[]) {
     jinue_info("Loading init program %s", init->name);
 
     int status = jinue_create_process(INIT_PROCESS_DESCRIPTOR, NULL);
@@ -87,7 +87,8 @@ static int load_init(const jinue_dirent_t *init) {
         return EXIT_FAILURE;
     }
 
-    status = load_elf(INIT_PROCESS_DESCRIPTOR, init);
+    elf_info_t elf_info;
+    status = load_elf(&elf_info, INIT_PROCESS_DESCRIPTOR, init, argc, argv);
 
     if(status != EXIT_SUCCESS) {
         return status;
@@ -135,7 +136,7 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    status = load_init(init);
+    status = load_init(init, argc, argv);
 
     if(status != EXIT_SUCCESS) {
         return status;
