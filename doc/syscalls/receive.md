@@ -6,7 +6,7 @@ Receive a message from an IPC endpoint. If no message is available, this call
 blocks until one becomes available.
 
 On a successful receive, this function sets the following members in the
-[jinue_message_t structure](../../include/libc/jinue/shared/ipc.h) passed as
+[jinue_message_t structure](../../include/jinue/shared/ipc.h) passed as
 argument:
 
 * `recv_function` is set to the function number that was specified by the sender
@@ -22,7 +22,7 @@ Function number (`arg0`) is 10.
 
 The descriptor that references the IPC endpoint is passed in `arg1`.
 
-A pointer to a [jinue_message_t structure](../../include/libc/jinue/shared/ipc.h)
+A pointer to a [jinue_message_t structure](../../include/jinue/shared/ipc.h)
 is passed in `arg2`. In this structure, the receive buffers must be set to
 where the message is to be written.
 

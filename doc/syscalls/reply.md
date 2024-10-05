@@ -10,7 +10,7 @@ processing of the message.
 
 Function number (`arg0`) is 11.
 
-A pointer to a [jinue_message_t structure](../../include/libc/jinue/shared/ipc.h)
+A pointer to a [jinue_message_t structure](../../include/jinue/shared/ipc.h)
 is passed in `arg2`. In this structure, the send buffers must be set to the
 reply data.
 
