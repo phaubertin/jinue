@@ -66,7 +66,7 @@ void *jinue_get_thread_local(void) {
     return (void *)jinue_syscall(&args);
 }
 
-int jinue_create_thread(int process, void (*entry)(), void *stack, int *perrno) {
+int jinue_create_thread(int process, void (*entry)(void), void *stack, int *perrno) {
     jinue_syscall_args_t args;
 
     args.arg0 = JINUE_SYS_CREATE_THREAD;

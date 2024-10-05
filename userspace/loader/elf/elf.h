@@ -36,7 +36,7 @@
 #include <stddef.h>
 
 typedef struct {
-    void    *entry;
+    void    (*entry)(void);
     void    *stack_addr;
     void    *at_phdr;
     int      at_phent;

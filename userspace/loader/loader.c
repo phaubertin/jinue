@@ -78,7 +78,7 @@ static const jinue_dirent_t *get_init(const jinue_dirent_t *root) {
     return dirent;
 }
 
-static int load_init(const jinue_dirent_t *init, int argc, char *argv[]) {
+static int load_init(elf_info_t *elf_info, const jinue_dirent_t *init, int argc, char *argv[]) {
     jinue_info("Loading init program %s", init->name);
 
     int status = jinue_create_process(INIT_PROCESS_DESCRIPTOR, NULL);
@@ -89,8 +89,7 @@ static int load_init(const jinue_dirent_t *init, int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    elf_info_t elf_info;
-    status = load_elf(&elf_info, INIT_PROCESS_DESCRIPTOR, init, argc, argv);
+    status = load_elf(elf_info, INIT_PROCESS_DESCRIPTOR, init, argc, argv);
 
     if(status != EXIT_SUCCESS) {
         return status;
@@ -98,29 +97,6 @@ static int load_init(const jinue_dirent_t *init, int argc, char *argv[]) {
 
     return EXIT_SUCCESS;
 }
-
-/* TODO remove this BEGIN */
-
-#define THREAD_STACK_SIZE 8192
-
-static char test_thread_stack[THREAD_STACK_SIZE];
-
-static void test_thread(void) {
-    jinue_info("B");
-    jinue_yield_thread();
-    jinue_info("B");
-    jinue_yield_thread();
-    jinue_info("B");
-    jinue_yield_thread();
-    jinue_info("B");
-    jinue_yield_thread();
-
-    jinue_info("Thread is exiting.");
-
-    jinue_exit_thread();
-}
-
-/* TODO remove this END */
 
 int main(int argc, char *argv[]) {
     jinue_info("Jinue user space loader (%s) started.", argv[0]);
@@ -161,7 +137,8 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    status = load_init(init, argc, argv);
+    elf_info_t elf_info;
+    status = load_init(&elf_info, init, argc, argv);
 
     if(status != EXIT_SUCCESS) {
         return status;
@@ -169,12 +146,10 @@ int main(int argc, char *argv[]) {
 
     jinue_info("---");
 
-    /* TODO remove this BEGIN */
-
     status = jinue_create_thread(
-        JINUE_SELF_PROCESS_DESCRIPTOR,
-        test_thread,
-        &test_thread_stack[THREAD_STACK_SIZE],
+        INIT_PROCESS_DESCRIPTOR,
+        elf_info.entry,
+        elf_info.stack_addr,
         &errno
     );
 
@@ -183,18 +158,8 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    jinue_info("A");
-    jinue_yield_thread();
-    jinue_info("A");
-    jinue_yield_thread();
-    jinue_info("A");
-    jinue_yield_thread();
-    jinue_info("A");
-    jinue_yield_thread();
-    jinue_info("A");
-    jinue_yield_thread();
-    jinue_info("A");
-    jinue_yield_thread();
+    /* TODO remove this BEGIN */
+
     jinue_info("A");
     jinue_yield_thread();
     jinue_info("A");
@@ -204,14 +169,5 @@ int main(int argc, char *argv[]) {
 
     /* TODO remove this END */
 
-    if(bool_getenv("DEBUG_DO_REBOOT")) {
-        jinue_info("Rebooting.");
-        jinue_reboot();
-    }
-
-    while (1) {
-        jinue_yield_thread();
-    }
-    
     return EXIT_SUCCESS;
 }
