@@ -55,9 +55,9 @@ void dump_call_stack(void) {
          * TODO can we do better than this? */
         return_addr -= 5;
         
-        const Elf32_Ehdr *elf_header = boot_info->kernel_start;
+        const Elf32_Ehdr *ehdr = boot_info->kernel_start;
         const Elf32_Sym *symbol = elf_find_function_symbol_by_address(
-                elf_header,
+                ehdr,
                 (Elf32_Addr)return_addr);
 
         if(symbol == NULL) {
@@ -65,7 +65,7 @@ void dump_call_stack(void) {
             continue;
         }
 
-        const char *name = elf_symbol_name(elf_header, symbol);
+        const char *name = elf_symbol_name(ehdr, symbol);
 
         if(name == NULL) {
             name = "[unknown]";

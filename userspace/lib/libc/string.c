@@ -29,8 +29,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <errno.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <string.h>
 
 void *memset(void *s, int c, size_t n) {
     size_t   idx;
@@ -91,15 +93,58 @@ int strcmp(const char *s1, const char *s2) {
 }
 
 char *strcpy(char *restrict dest, const char *restrict src) {
-    size_t       idx;
-    char        *cdest  = dest;
-    const char  *csrc   = src;
+    size_t idx;
 
-    for(idx = 0; csrc[idx] != '\0'; ++idx) {
-        cdest[idx] = csrc[idx];
+    for(idx = 0; src[idx] != '\0'; ++idx) {
+        dest[idx] = src[idx];
     }
 
     return dest;
+}
+
+#define STRERROR_MAXLENGTH 40
+
+char *strerror(int errnum) {
+    /* Note that the return type is *not* a const pointer, so returning a pointer to a string
+     * constant as strerror_const() does below won't do. However, the standard allows the
+     * returned string to be overwritten by a subsequent call to this function. */
+    static char buffer[STRERROR_MAXLENGTH];
+
+    strerror_r(errnum, buffer, sizeof(buffer));
+
+    return buffer;
+}
+
+static const char *strerror_const(int errnum) {
+    switch(errnum) {
+    case ENOMEM:
+        return "not enough space";
+    case ENOSYS:
+        return "function not supported";
+    case EINVAL:
+        return "invalid argument";
+    case EAGAIN:
+        return "resource unavailable, try again";
+    case EBADF:
+        return "bad file descriptor";
+    case EIO:
+        return "I/O error";
+    case EPERM:
+        return "operation not permitted";
+    case E2BIG:
+        return "argument list too long";
+    case ENOMSG:
+        return "no message of the desired type";
+    case ENOTSUP:
+        return "not supported";
+    default:
+        return "Unknown error";
+    }
+}
+
+int strerror_r(int errnum, char *strerrbuf, size_t buflen) {
+    strncpy(strerrbuf, strerror_const(errnum), buflen - 1);
+    return 0;
 }
 
 size_t strlen(const char *s) {
@@ -130,6 +175,20 @@ int strncmp(const char *s1, const char *s2, size_t n) {
     }
 
     return 0;
+}
+
+char *strncpy(char *restrict dest, const char *restrict src, size_t n){
+    size_t idx;
+
+    for(idx = 0; idx < n && src[idx] != '\0'; ++idx) {
+        dest[idx] = src[idx];
+    }
+
+    for(;idx < n; ++idx) {
+        dest[idx] = '\0';
+    }
+
+    return dest;
 }
 
 size_t strnlen(const char *s, size_t maxlen) {

@@ -32,6 +32,9 @@
 #ifndef JINUE_KERNEL_PANIC_H
 #define JINUE_KERNEL_PANIC_H
 
+#ifdef __GNUC__
+__attribute__((noreturn))
+#endif
 void panic(const char *message);
 
 #endif

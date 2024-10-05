@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2023 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,36 +29,46 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_ELF_H
-#define JINUE_KERNEL_ELF_H
+#include <jinue/loader.h>
+#include <stddef.h>
+#include <string.h>
 
-#include <kernel/types.h>
-#include <sys/elf.h>
+const jinue_dirent_t *jinue_dirent_get_first(const jinue_dirent_t *root) {
+    if(root == NULL || root->type == JINUE_DIRENT_TYPE_END) {
+        return NULL;
+    }
 
+    return root;
+}
 
-typedef struct {
-    void            *entry;
-    void            *stack_addr;
-    addr_t           at_phdr;
-    int              at_phent;
-    int              at_phnum;
-    addr_space_t    *addr_space;
-} elf_info_t;
+const jinue_dirent_t *jinue_dirent_get_next(const jinue_dirent_t *prev) {
+    if(prev == NULL || prev->type == JINUE_DIRENT_TYPE_END) {
+        return NULL;
+    }
 
-bool elf_check(Elf32_Ehdr *elf);
+    const jinue_dirent_t *current = prev + 1;
 
-const Elf32_Phdr *elf_executable_program_header(const Elf32_Ehdr *elf);
+    if(current->type == JINUE_DIRENT_TYPE_NEXT) {
+        current = current->next;
+    }
 
-void elf_load(
-        elf_info_t      *elf_info,
-        Elf32_Ehdr      *ehdr,
-        const char      *argv0,
-        const char      *cmdline,
-        process_t       *process,
-        boot_alloc_t    *boot_alloc);
+    if(current->type == JINUE_DIRENT_TYPE_END) {
+        return NULL;
+    }
 
-const char *elf_symbol_name(const Elf32_Ehdr *ehdr, const Elf32_Sym *symbol_header);
+    return current;
+}
 
-const Elf32_Sym *elf_find_function_symbol_by_address(const Elf32_Ehdr *ehdr, Elf32_Addr addr);
+const jinue_dirent_t *jinue_dirent_find_by_name(const jinue_dirent_t *root, const char *name) {
+    const jinue_dirent_t *dirent = jinue_dirent_get_first(root);
 
-#endif
+    while(dirent != NULL) {
+        if(strcmp(dirent->name, name) == 0) {
+            return dirent;
+        }
+
+        dirent = jinue_dirent_get_next(dirent);
+    }
+
+    return NULL;
+}

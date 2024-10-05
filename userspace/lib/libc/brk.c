@@ -113,7 +113,7 @@ int brk(void *addr) {
 
         int kernel_errno;
         int ret = jinue_mmap(
-                JINUE_DESCRIPTOR_PROCESS,
+                JINUE_SELF_PROCESS_DESCRIPTOR,
                 allocated_break,
                 size,
                 JINUE_PROT_READ | JINUE_PROT_WRITE,

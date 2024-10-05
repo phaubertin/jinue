@@ -44,9 +44,15 @@ int strcmp(const char *s1, const char *s2);
 
 char *strcpy(char *restrict dest, const char *restrict src);
 
+char *strerror(int errnum);
+
+int strerror_r(int errnum, char *strerrbuf, size_t buflen);
+
 size_t strlen(const char *s);
 
 int strncmp(const char *s1, const char *s2, size_t n);
+
+char *strncpy(char *restrict dest, const char *restrict src, size_t n);
 
 size_t strnlen(const char *s, size_t maxlen);
 

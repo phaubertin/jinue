@@ -84,7 +84,7 @@ int map_ramdisk(ramdisk_t *ramdisk, const jinue_mem_map_t *map) {
 
     /* TODO be more flexible on this */
     if((ramdisk_entry->addr & (PAGE_SIZE - 1)) != 0) {
-        jinue_error("error: RAM disk is not aligned on a page boundary.");
+        jinue_error("error: RAM disk is not aligned on a page boundary");
         return EXIT_FAILURE;
     }
 
@@ -101,7 +101,7 @@ int map_ramdisk(ramdisk_t *ramdisk, const jinue_mem_map_t *map) {
             ramdisk_entry->addr);
 
     if(addr == MAP_FAILED) {
-        jinue_error("error: could not map RAM disk (%i).", errno);
+        jinue_error("error: could not map RAM disk (%i)", errno);
         return NULL;
     }
 

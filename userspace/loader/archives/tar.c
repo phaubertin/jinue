@@ -257,7 +257,7 @@ const tar_header_t *extract_header(state_t *state) {
     }
 
     if(! is_checksum_valid(header)) {
-        jinue_error("error: bad checksum in tar header.");
+        jinue_error("error: bad checksum in tar header");
         return NULL;
     }
 
@@ -705,9 +705,8 @@ const jinue_dirent_t *tar_extract(stream_t *stream) {
             return NULL;
         case FILETYPE_GNU_LONGNAME:
         case FILETYPE_GNU_LONGLINK:
-            jinue_error("error: tar archive with GNU long names extensions supported");
+            jinue_error("error: tar archive with GNU long names extensions not supported");
             return NULL;
-            break;
         default:
             jinue_warning("warning: file with unrecognized type treated as a regular file: %s", filename);
             type = JINUE_DIRENT_TYPE_FILE;

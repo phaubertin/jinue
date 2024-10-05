@@ -342,7 +342,7 @@ static void run_ipc_test(void) {
     ret = jinue_reply(&reply, &errno);
 
     if(ret < 0) {
-        jinue_error("jinue_reply() failed with error: %i.", errno);
+        jinue_error("jinue_reply() failed with error: %i", errno);
     }
 
     jinue_info("Main thread is running.");
@@ -364,7 +364,7 @@ int main(int argc, char *argv[]) {
     status = jinue_get_user_memory((jinue_mem_map_t *)&call_buffer, sizeof(call_buffer), &errno);
 
     if(status != 0) {
-        jinue_error("error: could not get physical memory map from microkernel.");
+        jinue_error("error: could not get physical memory map from microkernel");
 
         return EXIT_FAILURE;
     }

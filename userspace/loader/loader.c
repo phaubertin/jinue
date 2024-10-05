@@ -29,200 +29,75 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sys/auxv.h>
-#include <sys/elf.h>
 #include <jinue/jinue.h>
+#include <jinue/loader.h>
 #include <jinue/util.h>
-#include <inttypes.h>
 #include <stdlib.h>
-#include <string.h>
+#include "elf/elf.h"
+#include "debug.h"
 #include "ramdisk.h"
+#include "util.h"
 
+#define MAP_BUFFER_SIZE         16384
 
-#define MAP_BUFFER_SIZE     16384
-
-#define MSG_FUNC_TEST       (JINUE_SYS_USER_BASE + 42)
-
-extern char **environ;
-
-extern const Elf32_auxv_t *_jinue_libc_auxv;
-
-static bool bool_getenv(const char *name) {
-    const char *value = getenv(name);
-
-    if(value == NULL) {
-        return false;
-    }
-
-    return  strcmp(value, "enable") == 0 ||
-            strcmp(value, "true") == 0 ||
-            strcmp(value, "yes") == 0 ||
-            strcmp(value, "1") == 0;
-}
-
-static const char *jinue_phys_mem_type_description(uint32_t type) {
-    switch(type) {
-    case JINUE_MEM_TYPE_AVAILABLE:
-        return "Available";
-    case JINUE_MEM_TYPE_BIOS_RESERVED:
-        return "Unavailable/Reserved";
-    case JINUE_MEM_TYPE_ACPI:
-        return "Unavailable/ACPI";
-    case JINUE_MEM_TYPE_RAMDISK:
-        return "Compressed RAM Disk";
-    case JINUE_MEM_TYPE_KERNEL_IMAGE:
-        return "Kernel Image";
-    case JINUE_MEM_TYPE_KERNEL_RESERVED:
-        return "Unavailable/Kernel Data";
-    case JINUE_MEM_TYPE_LOADER_AVAILABLE:
-        return "Available (Loader Hint)";
-    default:
-        return "Unavailable/???";
-    }
-}
-
-static void dump_phys_memory_map(const jinue_mem_map_t *map) {
-    const char *name    = "DEBUG_DUMP_MEMORY_MAP";
-    const char *value   = getenv(name);
-
-    if(value == NULL) {
-        return;
-    }
-
-    bool ram_only = true;
-
-    if(strcmp(value, "all") == 0) {
-        ram_only = false;
-    }
-    else if(! bool_getenv(name)) {
-        return;
-    }
-
-    jinue_info("Dump of the BIOS memory map%s:", ram_only?" (showing only available entries)":"");
-
-    for(int idx = 0; idx < map->num_entries; ++idx) {
-        const jinue_mem_entry_t *entry = &map->entry[idx];
-
-        if(entry->type == JINUE_MEM_TYPE_AVAILABLE || !ram_only) {
-            jinue_info(
-                    "  %c [%016" PRIx64 "-%016" PRIx64 "] %s",
-                    (entry->type==JINUE_MEM_TYPE_AVAILABLE)?'*':' ',
-                    entry->addr,
-                    entry->addr + entry->size - 1,
-                    jinue_phys_mem_type_description(entry->type)
-            );
-        }
-    }
-}
-
-static void dump_cmdline_arguments(int argc, char *argv[]) {
-    if(! bool_getenv("DEBUG_DUMP_CMDLINE_ARGS")) {
-        return;
-    }
-
-    jinue_info("Command line arguments:");
-
-    for(int idx = 0; idx < argc; ++idx) {
-        jinue_info("  %s", argv[idx]);
-    }
-}
-
-static void dump_environ(void) {
-    if(! bool_getenv("DEBUG_DUMP_ENVIRON")) {
-        return;
-    }
-
-    jinue_info("Environment variables:");
-
-    for(char **envvar = environ; *envvar != NULL; ++envvar) {
-        jinue_info("  %s", *envvar);
-    }
-}
-
-static const char *auxv_type_name(int type) {
-    const struct {
-        const char  *name;
-        int          type;
-    } *entry, mapping[] = {
-            {"AT_NULL",         JINUE_AT_NULL},
-            {"AT_IGNORE",       JINUE_AT_IGNORE},
-            {"AT_EXECFD",       JINUE_AT_EXECFD},
-            {"AT_PHDR",         JINUE_AT_PHDR},
-            {"AT_PHENT",        JINUE_AT_PHENT},
-            {"AT_PHNUM",        JINUE_AT_PHNUM},
-            {"AT_PAGESZ",       JINUE_AT_PAGESZ},
-            {"AT_BASE",         JINUE_AT_BASE},
-            {"AT_FLAGS",        JINUE_AT_FLAGS},
-            {"AT_ENTRY",        JINUE_AT_ENTRY},
-            {"AT_STACKBASE",    JINUE_AT_STACKBASE},
-            {"AT_HOWSYSCALL",   JINUE_AT_HOWSYSCALL},
-            {NULL, 0}
-    };
-
-    for(entry = mapping; entry->name != NULL; ++entry) {
-        if(entry->type == type) {
-            return entry->name;
-        }
-    }
-
-    return NULL;
-}
-
-static const char *syscall_implementation_name(int implementation) {
-    const char *names[] = {
-            [JINUE_SYSCALL_IMPL_INTERRUPT]      = "interrupt",
-            [JINUE_SYSCALL_IMPL_FAST_AMD]       = "SYSCALL/SYSRET (fast AMD)",
-            [JINUE_SYSCALL_IMPL_FAST_INTEL]     = "SYSENTER/SYSEXIT (fast Intel)"
-    };
-
-    if(implementation < 0 || implementation > JINUE_SYSCALL_IMPL_LAST) {
-        return "?";
-    }
-
-    return names[implementation];
-}
-
-static void dump_auxvec(void) {
-    if(! bool_getenv("DEBUG_DUMP_AUXV")) {
-        return;
-    }
-
-    jinue_info("Auxiliary vectors:");
-
-    for(const Elf32_auxv_t *entry = _jinue_libc_auxv; entry->a_type != JINUE_AT_NULL; ++entry) {
-        const char *name = auxv_type_name(entry->a_type);
-
-        if(name != NULL) {
-            jinue_info("  %s: %u/0x%" PRIx32, name, entry->a_un.a_val, entry->a_un.a_val);
-        }
-        else {
-            jinue_info("  (%u): %u/0x%" PRIx32, entry->a_type, entry->a_un.a_val, entry->a_un.a_val);
-        }
-    }
-}
-
-static void dump_syscall_implementation(void) {
-    if(! bool_getenv("DEBUG_DUMP_SYSCALL_IMPLEMENTATION")) {
-        return;
-    }
-
-    int howsyscall = getauxval(JINUE_AT_HOWSYSCALL);
-    jinue_info("Using system call implementation '%s'.", syscall_implementation_name(howsyscall));
-}
+#define INIT_PROCESS_DESCRIPTOR (JINUE_SELF_PROCESS_DESCRIPTOR + 1)
 
 static jinue_mem_map_t *get_memory_map(void *buffer, size_t bufsize) {
     int status = jinue_get_user_memory((jinue_mem_map_t *)buffer, bufsize, NULL);
 
     if(status != 0) {
-        jinue_error("error: could not get physical memory map from microkernel.");
+        /* TODO use errno to give more information */
+        jinue_error("error: could not get physical memory map from microkernel");
         return NULL;
     }
 
     return buffer;
 }
 
+static const jinue_dirent_t *get_init(const jinue_dirent_t *root) {
+    const char *init = getenv("init");
+
+    if(init == NULL) {
+        init = "/sbin/init";
+    }
+
+    const jinue_dirent_t *dirent = jinue_dirent_find_by_name(root, init);
+
+    if(dirent == NULL) {
+        jinue_error("error: init program not found: %s", init);
+        return NULL;
+    }
+
+    if(dirent->type != JINUE_DIRENT_TYPE_FILE) {
+        jinue_error("error: init program is not a regular file: %s", init);
+        return NULL;
+    }
+
+    return dirent;
+}
+
+static int load_init(const jinue_dirent_t *init, int argc, char *argv[]) {
+    jinue_info("Loading init program %s", init->name);
+
+    int status = jinue_create_process(INIT_PROCESS_DESCRIPTOR, NULL);
+
+    if(status != 0) {
+        /* TODO use errno to give more information */
+        jinue_error("error: could not create process for init program");
+        return EXIT_FAILURE;
+    }
+
+    elf_info_t elf_info;
+    status = load_elf(&elf_info, INIT_PROCESS_DESCRIPTOR, init, argc, argv);
+
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
+
+    return EXIT_SUCCESS;
+}
+
 int main(int argc, char *argv[]) {
-    /* Say hello. */
     jinue_info("Jinue user space loader (%s) started.", argv[0]);
 
     dump_cmdline_arguments(argc, argv);
@@ -252,6 +127,22 @@ int main(int argc, char *argv[]) {
     if(root == NULL) {
         return EXIT_FAILURE;
     }
+
+    dump_ramdisk(root);
+
+    const jinue_dirent_t *init = get_init(root);
+
+    if(init == NULL) {
+        return EXIT_FAILURE;
+    }
+
+    status = load_init(init, argc, argv);
+
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
+
+    jinue_info("---");
 
     if(bool_getenv("DEBUG_DO_REBOOT")) {
         jinue_info("Rebooting.");

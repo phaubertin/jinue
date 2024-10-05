@@ -12,7 +12,7 @@ number is passed to the receiving thread along with the message.
 
 The descriptor that references the IPC endpoint is passed in `arg1`. 
 
-A pointer to a [jinue_message_t structure](../../include/libc/jinue/shared/ipc.h)
+A pointer to a [jinue_message_t structure](../../include/jinue/shared/ipc.h)
 is passed in `arg2`. In this structure, the send buffers must be set to the
 message data to be sent while the receive buffers describe where to write the
 reply.

@@ -228,7 +228,7 @@ static bool is_separator(int c) {
 static void mutate_context(parse_context_t *context) {
     bool has_action = false;
 
-    context->has_argument   = false;
+    context->has_argument = false;
     context->has_option = false;
 
     while(!(has_action || context->done)) {
