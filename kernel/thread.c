@@ -67,7 +67,7 @@ int thread_create_syscall(
     process_t *process = (process_t *)object;
     const thread_t *thread = thread_create(process, entry, user_stack);
 
-    return (thread == NULL) ? JINUE_EAGAIN : 0;
+    return (thread == NULL) ? -JINUE_EAGAIN : 0;
 }
 
 static void thread_init(thread_t *thread, process_t *process) {

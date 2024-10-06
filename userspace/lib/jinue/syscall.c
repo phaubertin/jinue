@@ -229,3 +229,14 @@ int jinue_mclone(
 
     return jinue_syscall_with_usual_convention(&args, perrno);
 }
+
+int jinue_dup(int process, int src, int dest, int *perrno) {
+    jinue_syscall_args_t args;
+
+    args.arg0 = JINUE_SYS_DUP;
+    args.arg1 = process;
+    args.arg2 = src;
+    args.arg3 = dest;
+
+    return jinue_syscall_with_usual_convention(&args, perrno);
+}

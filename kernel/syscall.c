@@ -37,6 +37,7 @@
 #include <kernel/i686/thread.h>
 #include <kernel/i686/trap.h>
 #include <kernel/i686/vm.h>
+#include <kernel/dup.h>
 #include <kernel/ipc.h>
 #include <kernel/logging.h>
 #include <kernel/object.h>
@@ -399,6 +400,15 @@ static void sys_mclone(jinue_syscall_args_t *args) {
     set_return_value_or_error(args, retval);
 }
 
+static void sys_dup(jinue_syscall_args_t *args) {
+    int process_fd  = get_descriptor(args->arg1);
+    int src         = get_descriptor(args->arg2);
+    int dest        = get_descriptor(args->arg3);
+
+    int retval = dup(process_fd, src, dest);
+    set_return_value_or_error(args, retval);
+}
+
 /**
  * System call dispatching function
  *
@@ -464,6 +474,9 @@ void dispatch_syscall(trapframe_t *trapframe) {
             break;
         case JINUE_SYS_MCLONE:
             sys_mclone(args);
+            break;
+        case JINUE_SYS_DUP:
+            sys_dup(args);
             break;
         default:
             sys_nosys(args);

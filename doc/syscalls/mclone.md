@@ -1,4 +1,4 @@
-# MCLONE - Clone Memory Mapping
+# MCLONE - Clone a Memory Mapping
 
 ## Description
 

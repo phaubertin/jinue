@@ -92,4 +92,6 @@ int jinue_mclone(
         int      prot,
         int     *perrno);
 
+int jinue_dup(int process, int src, int dest, int *perrno);
+
 #endif

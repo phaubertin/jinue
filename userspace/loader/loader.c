@@ -81,11 +81,10 @@ static const jinue_dirent_t *get_init(const jinue_dirent_t *root) {
 static int load_init(elf_info_t *elf_info, const jinue_dirent_t *init, int argc, char *argv[]) {
     jinue_info("Loading init program %s", init->name);
 
-    int status = jinue_create_process(INIT_PROCESS_DESCRIPTOR, NULL);
+    int status = jinue_create_process(INIT_PROCESS_DESCRIPTOR, &errno);
 
     if(status != 0) {
-        /* TODO use errno to give more information */
-        jinue_error("error: could not create process for init program");
+        jinue_error("error: could not create process for init program: %s", strerror(errno));
         return EXIT_FAILURE;
     }
 
@@ -93,6 +92,18 @@ static int load_init(elf_info_t *elf_info, const jinue_dirent_t *init, int argc,
 
     if(status != EXIT_SUCCESS) {
         return status;
+    }
+
+    status = jinue_dup(
+        INIT_PROCESS_DESCRIPTOR,
+        INIT_PROCESS_DESCRIPTOR,
+        JINUE_SELF_PROCESS_DESCRIPTOR,
+        &errno
+    );
+
+    if (status != 0) {
+        jinue_error("error: could not create self process descriptor: %s", strerror(errno));
+        return EXIT_FAILURE;
     }
 
     return EXIT_SUCCESS;
