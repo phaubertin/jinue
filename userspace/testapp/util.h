@@ -29,9 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LOADER_DEBUG_H_
-#define LOADER_DEBUG_H_
+#ifndef TESTAPP_UTIL_H_
+#define TESTAPP_UTIL_H_
 
-void dump_ramdisk(const jinue_dirent_t *root);
+bool bool_getenv(const char *name);
 
 #endif

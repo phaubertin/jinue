@@ -29,9 +29,22 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LOADER_DEBUG_H_
-#define LOADER_DEBUG_H_
 
-void dump_ramdisk(const jinue_dirent_t *root);
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include "util.h"
 
-#endif
+bool bool_getenv(const char *name) {
+    const char *value = getenv(name);
+
+    if(value == NULL) {
+        return false;
+    }
+
+    return  strcmp(value, "enable") == 0 ||
+            strcmp(value, "true") == 0 ||
+            strcmp(value, "yes") == 0 ||
+            strcmp(value, "1") == 0;
+}

@@ -29,9 +29,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LOADER_DEBUG_H_
-#define LOADER_DEBUG_H_
+#ifndef TESTAPP_DEBUG_H_
+#define TESTAPP_DEBUG_H_
 
-void dump_ramdisk(const jinue_dirent_t *root);
+void dump_cmdline_arguments(int argc, char *argv[]);
+
+void dump_phys_memory_map(const jinue_mem_map_t *map);
+
+void dump_environ(void);
+
+void dump_auxvec(void);
+
+void dump_syscall_implementation(void);
 
 #endif
