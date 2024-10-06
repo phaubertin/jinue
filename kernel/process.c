@@ -33,6 +33,7 @@
 #include <kernel/i686/cpu_data.h>
 #include <kernel/i686/thread.h>
 #include <kernel/i686/vm.h>
+#include <kernel/descriptor.h>
 #include <kernel/panic.h>
 #include <kernel/process.h>
 #include <kernel/object.h>
@@ -90,65 +91,13 @@ void process_destroy(process_t *process) {
     slab_cache_free(process);
 }
 
-object_ref_t *process_get_descriptor(process_t *process, int fd) {
-    if(fd < 0 || fd > PROCESS_MAX_DESCRIPTORS) {
-        return NULL;
-    }
-
-    return &process->descriptors[fd];
-}
-
-/**
- * Get the object referenced by a descriptor
- *
- * @param ipc pointer to where to store the pointer to the object header
- * @param pref pointer to where to store the object reference pointer
- * @param fd descriptor
- * @param process process for which the descriptor is looked up
- * @return zero on success, negated error number on error
- *
- */
-int process_get_object_header(
-        object_header_t **pheader,
-        object_ref_t    **pref,
-        int               fd,
-        process_t       *process) {
-
-    object_ref_t *ref = process_get_descriptor(process, fd);
-
-    if(! object_ref_is_in_use(ref)) {
-        return -JINUE_EBADF;
-    }
-
-    if(object_ref_is_destroyed(ref)) {
-        return -JINUE_EIO;
-    }
-
-    object_header_t *header = ref->object;
-
-    if(object_is_destroyed(header)) {
-        ref->flags |= OBJECT_REF_FLAG_DESTROYED;
-        object_subref(header);
-        return -JINUE_EIO;
-    }
-
-    if(pref != NULL) {
-        *pref = ref;
-    }
-
-    if(pheader != NULL) {
-        *pheader = header;
-    }
-
-    return 0;
-}
-
 int process_create_syscall(int fd) {
-    thread_t *thread    = get_current_thread();
-    object_ref_t *ref   = process_get_descriptor(thread->process, fd);
+    object_ref_t *ref;
+    thread_t *thread = get_current_thread();
+    int status = dereference_unused_descriptor(&ref, thread->process, fd);
 
-    if(object_ref_is_in_use(ref)) {
-        return -JINUE_EBADF;
+    if(status < 0) {
+        return status;
     }
 
     process_t *process = process_create();

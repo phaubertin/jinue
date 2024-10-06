@@ -31,6 +31,7 @@
 
 #include <jinue/shared/asm/errno.h>
 #include <kernel/i686/thread.h>
+#include <kernel/descriptor.h>
 #include <kernel/dup.h>
 #include <kernel/object.h>
 #include <kernel/process.h>
@@ -38,11 +39,11 @@
 static int get_process(process_t **process, int process_fd) {
     object_header_t *object;
 
-    int status = process_get_object_header(
+    int status = dereference_object_descriptor(
             &object,
             NULL,
-            process_fd,
-            get_current_thread()->process
+            get_current_thread()->process,
+            process_fd
     );
 
     if(status < 0) {
@@ -66,16 +67,18 @@ int dup(int process_fd, int src, int dest) {
         return status;
     }
 
-    object_ref_t *src_ref = process_get_descriptor(get_current_thread()->process, src);
+    object_ref_t *src_ref;
+    status = dereference_object_descriptor(NULL, &src_ref, get_current_thread()->process, src);
 
-    if(!object_ref_is_in_use(src_ref)) {
-        return -JINUE_EBADF;
+    if(status < 0) {
+        return status;
     }
 
-    object_ref_t *dest_ref = process_get_descriptor(process, dest);
+    object_ref_t *dest_ref;
+    status = dereference_unused_descriptor(&dest_ref, process, dest);
 
-    if(object_ref_is_in_use(dest_ref)) {
-        return -JINUE_EBADF;
+    if(status < 0) {
+        return status;
     }
 
     object_addref(src_ref->object);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,20 +29,20 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_PROCESS_H
-#define JINUE_KERNEL_PROCESS_H
+#ifndef JINUE_KERNEL_DESCRIPTOR_H
+#define JINUE_KERNEL_DESCRIPTOR_H
 
 #include <kernel/types.h>
 
+int dereference_object_descriptor(
+        object_header_t **pobject,
+        object_ref_t    **pref,
+        process_t        *process,
+        int               fd);
 
-void process_boot_init(void);
-
-process_t *process_create(void);
-
-void process_destroy(process_t *process);
-
-int process_create_syscall(int fd);
-
-void process_switch_to(process_t *process);
+int dereference_unused_descriptor(
+        object_ref_t    **pref,
+        process_t        *process,
+        int               fd);
 
 #endif

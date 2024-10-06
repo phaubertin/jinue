@@ -110,6 +110,11 @@ static void sys_create_thread(jinue_syscall_args_t *args) {
     void *entry         = (void *)args->arg2;
     void *user_stack    = (void *)args->arg3;
 
+    if(process_fd < 0) {
+        set_return_value_or_error(args, process_fd);
+        return;
+    }
+
     if(!is_userspace_pointer(entry)) {
         syscall_args_set_error(args, JINUE_EINVAL);
         return;
@@ -169,7 +174,13 @@ static void sys_get_user_memory(jinue_syscall_args_t *args) {
 }
 
 static void sys_create_ipc(jinue_syscall_args_t *args) {
-    int fd = (int)args->arg1; 
+    int fd = get_descriptor(args->arg1);
+
+    if(fd < 0) {
+        set_return_value_or_error(args, fd);
+        return;  
+    }
+
     int retval = ipc_create_syscall(fd);
     set_return_value_or_error(args, retval);
 }
@@ -317,6 +328,11 @@ static void sys_mmap(jinue_syscall_args_t *args) {
     int process_fd      = get_descriptor(args->arg1);
     userspace_mmap_args = (void *)args->arg2;
 
+    if(process_fd < 0) {
+        set_return_value_or_error(args, process_fd);
+        return;
+    }
+
     if(! check_userspace_buffer(userspace_mmap_args, sizeof(userspace_mmap_args))) {
         syscall_args_set_error(args, JINUE_EINVAL);
         return;
@@ -354,7 +370,13 @@ static void sys_mmap(jinue_syscall_args_t *args) {
 }
 
 static void sys_create_process(jinue_syscall_args_t *args) {
-    int fd = (int)args->arg1;
+    int fd = get_descriptor(args->arg1);
+
+    if(fd < 0) {
+        set_return_value_or_error(args, fd);
+        return;
+    }
+
     int retval = process_create_syscall(fd);
     set_return_value_or_error(args, retval);
 }
@@ -365,6 +387,16 @@ static void sys_mclone(jinue_syscall_args_t *args) {
     int src                 = get_descriptor(args->arg1);
     int dest                = get_descriptor(args->arg2);
     userspace_mclone_args   = (void *)args->arg3;
+
+    if(src < 0) {
+        set_return_value_or_error(args, src);
+        return;
+    }
+
+    if(dest < 0) {
+        set_return_value_or_error(args, dest);
+        return;
+    }
 
     if(! check_userspace_buffer(userspace_mclone_args, sizeof(userspace_mclone_args))) {
         syscall_args_set_error(args, JINUE_EINVAL);
@@ -406,6 +438,21 @@ static void sys_dup(jinue_syscall_args_t *args) {
     int process_fd  = get_descriptor(args->arg1);
     int src         = get_descriptor(args->arg2);
     int dest        = get_descriptor(args->arg3);
+
+    if(process_fd < 0) {
+        set_return_value_or_error(args, process_fd);
+        return;
+    }
+
+    if(src < 0) {
+        set_return_value_or_error(args, src);
+        return;
+    }
+
+    if(dest < 0) {
+        set_return_value_or_error(args, dest);
+        return;
+    }
 
     int retval = dup(process_fd, src, dest);
     set_return_value_or_error(args, retval);

@@ -32,6 +32,7 @@
 #include <jinue/shared/asm/errno.h>
 #include <jinue/shared/ipc.h>
 #include <kernel/i686/thread.h>
+#include <kernel/descriptor.h>
 #include <kernel/ipc.h>
 #include <kernel/object.h>
 #include <kernel/panic.h>
@@ -98,11 +99,12 @@ static ipc_t *ipc_object_create(void) {
  *
  */
 int ipc_create_syscall(int fd) {
-    thread_t *thread    = get_current_thread();
-    object_ref_t *ref   = process_get_descriptor(thread->process, fd);
+    object_ref_t *ref;
+    thread_t *thread = get_current_thread();
+    int status = dereference_unused_descriptor(&ref, thread->process, fd);
 
-    if(object_ref_is_in_use(ref)) {
-        return -JINUE_EBADF;
+    if(status < 0) {
+        return status;
     }
 
     ipc_t *ipc = ipc_object_create();
@@ -303,10 +305,10 @@ int ipc_send(int fd, int function, const jinue_message_t *message) {
     }
 
     object_header_t *object;
-    int get_object_result = process_get_object_header(&object, NULL, fd, thread->process);
+    int status = dereference_object_descriptor(&object, NULL, thread->process, fd);
 
-    if(get_object_result < 0) {
-        return get_object_result;
+    if(status < 0) {
+        return status;
     }
 
     if(object->type != OBJECT_TYPE_IPC) {
@@ -378,10 +380,10 @@ int ipc_receive(int fd, jinue_message_t *message) {
 
     object_header_t *object;
     object_ref_t    *ref;
-    int get_object_result = process_get_object_header(&object, &ref, fd, thread->process);
+    int status = dereference_object_descriptor(&object, &ref, thread->process, fd);
 
-    if(get_object_result < 0) {
-        return get_object_result;
+    if(status < 0) {
+        return status;
     }
 
     if(object->type != OBJECT_TYPE_IPC) {

@@ -40,6 +40,7 @@
 #include <kernel/i686/vm_private.h>
 #include <kernel/i686/x86.h>
 #include <kernel/boot.h>
+#include <kernel/descriptor.h>
 #include <kernel/elf.h>
 #include <kernel/object.h>
 #include <kernel/page_alloc.h>
@@ -926,12 +927,11 @@ kern_paddr_t vm_lookup_kernel_paddr(void *addr) {
 
 static int get_addr_space_by_descriptor(addr_space_t **addr_space, int fd) {
     object_header_t *object;
-
-    int status = process_get_object_header(
+    int status = dereference_object_descriptor(
             &object,
             NULL,
-            fd,
-            get_current_thread()->process
+            get_current_thread()->process,
+            fd
     );
 
     if(status < 0) {

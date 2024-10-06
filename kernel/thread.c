@@ -34,6 +34,7 @@
 #include <kernel/i686/thread.h>
 #include <kernel/i686/vm.h>
 #include <kernel/boot.h>
+#include <kernel/descriptor.h>
 #include <kernel/list.h>
 #include <kernel/object.h>
 #include <kernel/process.h>
@@ -49,11 +50,11 @@ int thread_create_syscall(
         void            *user_stack) {
     object_header_t *object;
 
-    int status = process_get_object_header(
+    int status = dereference_object_descriptor(
             &object,
             NULL,
-            process_fd,
-            get_current_thread()->process
+            get_current_thread()->process,
+            process_fd
     );
 
     if(status < 0) {

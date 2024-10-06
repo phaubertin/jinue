@@ -75,6 +75,7 @@ sources.kernel.c = \
 	i686/vm_x86.c \
 	boot.c \
 	cmdline.c \
+	descriptor.c \
 	debug.c \
 	dup.c \
 	elf.c \
