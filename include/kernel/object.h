@@ -43,13 +43,11 @@
 
 #define OBJECT_REF_FLAG_NONE        0
 
-#define OBJECT_REF_FLAG_IN_USE       (1<<0)
+#define OBJECT_REF_FLAG_IN_USE      (1<<0)
 
-#define OBJECT_REF_FLAG_CLOSED      (1<<1)
+#define OBJECT_REF_FLAG_DESTROYED   (1<<1)
 
-#define OBJECT_REF_FLAG_DESTROYED   (1<<2)
-
-#define OBJECT_REF_FLAG_OWNER       (1<<3)
+#define OBJECT_REF_FLAG_OWNER       (1<<2)
 
 
 #define OBJECT_TYPE_THREAD          1
@@ -65,10 +63,6 @@ static inline bool object_is_destroyed(object_header_t *header) {
 
 static inline bool object_ref_is_in_use(object_ref_t *ref) {
     return ref != NULL && (ref->flags & OBJECT_REF_FLAG_IN_USE);
-}
-
-static inline bool object_ref_is_closed(object_ref_t *ref) {
-    return !!(ref->flags & OBJECT_REF_FLAG_CLOSED);
 }
 
 static inline bool object_ref_is_destroyed(object_ref_t *ref) {

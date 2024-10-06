@@ -68,7 +68,7 @@ int dup(int process_fd, int src, int dest) {
 
     object_ref_t *src_ref = process_get_descriptor(get_current_thread()->process, src);
 
-    if(!object_ref_is_in_use(src_ref) || object_ref_is_closed(src_ref)) {
+    if(!object_ref_is_in_use(src_ref)) {
         return -JINUE_EBADF;
     }
 

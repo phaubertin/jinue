@@ -120,10 +120,6 @@ int process_get_object_header(
         return -JINUE_EBADF;
     }
 
-    if(object_ref_is_closed(ref)) {
-        return -JINUE_EBADF;
-    }
-
     if(object_ref_is_destroyed(ref)) {
         return -JINUE_EIO;
     }
