@@ -509,7 +509,7 @@ static void initialize_descriptors(process_t *process) {
 
     object_addref(&process->header);
     ref->object = &process->header;
-    ref->flags  = OBJECT_REF_FLAG_VALID;
+    ref->flags  = OBJECT_REF_FLAG_IN_USE;
     ref->cookie = 0;
 }
 

@@ -116,7 +116,7 @@ int process_get_object_header(
 
     object_ref_t *ref = process_get_descriptor(process, fd);
 
-    if(! object_ref_is_valid(ref)) {
+    if(! object_ref_is_in_use(ref)) {
         return -JINUE_EBADF;
     }
 
@@ -151,7 +151,7 @@ int process_create_syscall(int fd) {
     thread_t *thread    = get_current_thread();
     object_ref_t *ref   = process_get_descriptor(thread->process, fd);
 
-    if(object_ref_is_valid(ref)) {
+    if(object_ref_is_in_use(ref)) {
         return -JINUE_EBADF;
     }
 
@@ -164,7 +164,7 @@ int process_create_syscall(int fd) {
     object_addref(&process->header);
 
     ref->object = &process->header;
-    ref->flags  = OBJECT_REF_FLAG_VALID | OBJECT_REF_FLAG_OWNER;
+    ref->flags  = OBJECT_REF_FLAG_IN_USE | OBJECT_REF_FLAG_OWNER;
     ref->cookie = 0;
 
     return 0;

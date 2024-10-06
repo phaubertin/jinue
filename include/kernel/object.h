@@ -43,7 +43,7 @@
 
 #define OBJECT_REF_FLAG_NONE        0
 
-#define OBJECT_REF_FLAG_VALID       (1<<0)
+#define OBJECT_REF_FLAG_IN_USE       (1<<0)
 
 #define OBJECT_REF_FLAG_CLOSED      (1<<1)
 
@@ -63,8 +63,8 @@ static inline bool object_is_destroyed(object_header_t *header) {
     return !!(header->flags & OBJECT_FLAG_DESTROYED);
 }
 
-static inline bool object_ref_is_valid(object_ref_t *ref) {
-    return ref != NULL && (ref->flags & OBJECT_REF_FLAG_VALID);
+static inline bool object_ref_is_in_use(object_ref_t *ref) {
+    return ref != NULL && (ref->flags & OBJECT_REF_FLAG_IN_USE);
 }
 
 static inline bool object_ref_is_closed(object_ref_t *ref) {
