@@ -32,16 +32,6 @@
 #ifndef LOADER_DEBUG_H_
 #define LOADER_DEBUG_H_
 
-void dump_cmdline_arguments(int argc, char *argv[]);
-
-void dump_phys_memory_map(const jinue_mem_map_t *map);
-
-void dump_environ(void);
-
-void dump_auxvec(void);
-
-void dump_syscall_implementation(void);
-
 void dump_ramdisk(const jinue_dirent_t *root);
 
 #endif

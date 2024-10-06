@@ -30,7 +30,7 @@
 jinue_root = ../..
 include $(jinue_root)/header.mk
 
-sources.c       	 = testapp.c
+sources.c       	 = tests/ipc.c debug.c testapp.c util.c
 testapp         	 = testapp
 temp_ramdisk_fs		 = ramdisk-tmp
 ramdisk 			 = jinue-initrd.tar.gz

@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2019-2023 Philippe Aubertin.
+ * Copyright (C) 2023 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,49 +29,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/jinue.h>
-#include <jinue/util.h>
-#include <errno.h>
-#include <stdlib.h>
-#include "tests/ipc.h"
-#include "debug.h"
-#include "util.h"
+#ifndef TESTAPP_DEBUG_H_
+#define TESTAPP_DEBUG_H_
 
-#define MAP_BUFFER_SIZE 16384
+void dump_cmdline_arguments(int argc, char *argv[]);
 
-int main(int argc, char *argv[]) {
-    char call_buffer[MAP_BUFFER_SIZE];
-    int status;
+void dump_phys_memory_map(const jinue_mem_map_t *map);
 
-    /* Say hello. */
-    jinue_info("Jinue test app (%s) started.", argv[0]);
+void dump_environ(void);
 
-    dump_cmdline_arguments(argc, argv);
-    dump_environ();
-    dump_auxvec();
-    dump_syscall_implementation();
+void dump_auxvec(void);
 
-    /* get free memory blocks from microkernel */
-    status = jinue_get_user_memory((jinue_mem_map_t *)&call_buffer, sizeof(call_buffer), &errno);
+void dump_syscall_implementation(void);
 
-    if(status != 0) {
-        jinue_error("error: could not get physical memory map from microkernel");
-
-        return EXIT_FAILURE;
-    }
-
-    dump_phys_memory_map((jinue_mem_map_t *)&call_buffer);
-
-    run_ipc_test();
-
-    if(bool_getenv("DEBUG_DO_REBOOT")) {
-        jinue_info("Rebooting.");
-        jinue_reboot();
-    }
-
-    while (1) {
-        jinue_yield_thread();
-    }
-    
-    return EXIT_SUCCESS;
-}
+#endif

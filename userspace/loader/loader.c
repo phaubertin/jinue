@@ -112,19 +112,12 @@ static int load_init(elf_info_t *elf_info, const jinue_dirent_t *init, int argc,
 int main(int argc, char *argv[]) {
     jinue_info("Jinue user space loader (%s) started.", argv[0]);
 
-    dump_cmdline_arguments(argc, argv);
-    dump_environ();
-    dump_auxvec();
-    dump_syscall_implementation();
-
     char map_buffer[MAP_BUFFER_SIZE];
     jinue_mem_map_t *map = get_memory_map(map_buffer, sizeof(map_buffer));
 
     if(map == NULL) {
         return EXIT_FAILURE;
     }
-
-    dump_phys_memory_map(map);
 
     ramdisk_t ramdisk;
 
