@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2023 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,16 +29,21 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <jinue/shared/asm/errno.h>
+#include <jinue/shared/asm/syscall.h>
 #include <kernel/i686/boot.h>
 #include <kernel/i686/cpu_data.h>
 #include <kernel/i686/memory.h>
+#include <kernel/i686/thread.h>
 #include <kernel/i686/vga.h>
 #include <kernel/i686/vm.h>
 #include <kernel/i686/vm_private.h>
 #include <kernel/i686/x86.h>
 #include <kernel/boot.h>
 #include <kernel/elf.h>
+#include <kernel/object.h>
 #include <kernel/page_alloc.h>
+#include <kernel/process.h>
 #include <kernel/panic.h>
 #include <kernel/util.h>
 #include <kernel/vmalloc.h>
@@ -608,16 +613,28 @@ static pte_t *vm_lookup_page_table(
 }
 
 /**
-    Lookup a page table entry for a specified address and address space.
-
-    If the create_as_needed argument is true, new page tables are allocated as
-    needed. Otherwise, NULL is returned if there is currently no page table for
-    the specified address and address space.
-
-    @param addr_space address space in which the address is looked up.
-    @param addr address to look up
-    @param create_as_needed whether a page table is allocated if it does not exist
-*/
+ * Lookup a page table entry for a specified address and address space.
+ *
+ * If the create_as_needed argument is true, new page tables are allocated as
+ * needed, and NULL is only returned if allocation of new page tables fail.
+ * If the create_as_needed argument is false, NULL is returned if there is
+ * currently no page table entry for the specified address and address space.
+ *
+ * If a new page table is allocated (when create_as_needed is true), CR3 may
+ * need to be reloaded. If it's the case, the boolean pointed to by reload_cr3
+ * is set to true. Initially setting this boolean to false it the caller's
+ * responsibility. The expected sequence of events is as follow:
+ *
+ * reload_cr3 must not be NULL if create_as_needed is true but is ignored and
+ * can be set to NULL if create_as_needed is false.
+ *
+ * @param addr_space address space in which the address is looked up.
+ * @param addr address to look up
+ * @param create_as_needed whether a page table is allocated if it does not exist
+ * @param reload_cr3 (out) set to true if CR3 needs to be reloaded
+ * @return pointer to page table entry on success, NULL otherwise
+ *
+ * */
 static pte_t *vm_lookup_page_table_entry(
         addr_space_t    *addr_space,
         void            *addr,
@@ -696,8 +713,8 @@ static void invalidate_mapping(
 /**
  * Translate architecture-independent protection flags to architecture-dependent flags
  *
- * Argument should be either VM_MAP_NONE (no access) or any combination of
- * VM_MAP_READ, VM_MAP_WRITE and/or VM_MAP_EXEC.
+ * Argument should be either JINUE_PROT_NONE (no access) or any combination of
+ * JINUE_PROT_READ, JINUE_PROT_WRITE and/or JINUE_PROT_EXEC.
  *
  * Return value is a combination of architecture-dependent flags appropriate to
  * be set directly in a page table entry (i.e. the X86_PTE_... constants).
@@ -707,7 +724,7 @@ static void invalidate_mapping(
  *
  */
 static uint64_t map_page_access_flags(int flags) {
-    const int rwe_mask = VM_MAP_READ | VM_MAP_WRITE | VM_MAP_EXEC;
+    const int rwe_mask = JINUE_PROT_READ | JINUE_PROT_WRITE | JINUE_PROT_EXEC;
 
     if(! (flags & rwe_mask)) {
         return X86_PTE_PROT_NONE;
@@ -715,11 +732,11 @@ static uint64_t map_page_access_flags(int flags) {
 
     int mapped_flags = X86_PTE_PRESENT;
 
-    if(flags & VM_MAP_WRITE) {
+    if(flags & JINUE_PROT_WRITE) {
         mapped_flags |= X86_PTE_READ_WRITE;
     }
 
-    if(! (flags & VM_MAP_EXEC)) {
+    if(! (flags & JINUE_PROT_EXEC)) {
         mapped_flags |= X86_PTE_NX;
     }
 
@@ -905,4 +922,117 @@ kern_paddr_t vm_lookup_kernel_paddr(void *addr) {
     assert(pte != NULL && pte_is_present(pte));
 
     return (kern_paddr_t)get_pte_paddr(pte);
+}
+
+static int get_addr_space_by_descriptor(addr_space_t **addr_space, int fd) {
+    object_header_t *object;
+
+    int status = process_get_object_header(
+            &object,
+            NULL,
+            fd,
+            get_current_thread()->process
+    );
+
+    if(status < 0) {
+        return status;
+    }
+
+    if(object->type != OBJECT_TYPE_PROCESS) {
+        return -JINUE_EBADF;
+    }
+
+    process_t *process  = (process_t *)object;
+    *addr_space         = &process->addr_space;
+
+    return 0;
+}
+
+/**
+ * Implementation for the MMAP system call
+ *
+ * Map a contiguous memory range into a process' address space.
+ *
+ * @param process_fd process descriptor number
+ * @param args MMAP system call arguments structure
+ * @return zero on success, negated error code on failure
+ *
+ */
+int vm_mmap_syscall(int process_fd, const jinue_mmap_args_t *args) {
+    addr_space_t *addr_space;
+
+    int status = get_addr_space_by_descriptor(&addr_space, process_fd);
+
+    if(status < 0) {
+        return status;
+    }
+
+    char *addr          = args->addr;
+    user_paddr_t paddr  = args->paddr;
+
+    for(size_t idx = 0; idx < args->length / PAGE_SIZE; ++idx) {
+        /* TODO We should be able to optimize by not looking up the page table
+         * for each entry. */
+        if(!vm_map_userspace(addr_space, addr, paddr, args->prot)) {
+            return -JINUE_ENOMEM;
+        }
+
+        addr += PAGE_SIZE;
+        paddr += PAGE_SIZE;
+    }
+
+    return 0;
+}
+
+/**
+ * Implementation for the MCLONE system call
+ *
+ * Clone memory mappings from one process to another.
+ *
+ * @param src source process descriptor number
+ * @param dest destination process descriptor number
+ * @param args MCLONE system call arguments structure
+ * @return zero on success, negated error code on failure
+ *
+ */
+int vm_mclone_syscall(int src, int dest, const jinue_mclone_args_t *args) {
+    addr_space_t *src_addr_space;
+    addr_space_t *dest_addr_space;
+
+    int status = get_addr_space_by_descriptor(&src_addr_space, src);
+
+    if(status < 0) {
+        return status;
+    }
+
+    status = get_addr_space_by_descriptor(&dest_addr_space, dest);
+
+    if(status < 0) {
+        return status;
+    }
+
+    char *src_addr  = args->src_addr;
+    char *dest_addr = args->dest_addr;
+
+    for(size_t idx = 0; idx < args->length / PAGE_SIZE; ++idx) {
+        /* TODO We should be able to optimize by not looking up the page table
+        * for each entry, both for source and destination. */
+        pte_t *src_pte = vm_lookup_page_table_entry(src_addr_space, src_addr, false, NULL);
+
+        if(src_pte == NULL || !pte_is_present(src_pte)) {
+            vm_unmap(dest_addr_space, dest_addr);
+        }
+        else {
+            user_paddr_t paddr = get_pte_paddr(src_pte);
+
+            if(!vm_map_userspace(dest_addr_space, dest_addr, paddr, args->prot)) {
+                return -JINUE_ENOMEM;
+            }
+        }
+
+        src_addr += PAGE_SIZE;
+        dest_addr += PAGE_SIZE;
+    }
+
+    return 0;
 }

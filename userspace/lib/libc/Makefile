@@ -32,8 +32,14 @@ include $(jinue_root)/header.mk
 
 sources.c        = \
 	assert-kernel.c \
+	brk.c \
+	errno.c \
 	getauxval.c \
 	getenv.c \
+	init.c \
+	malloc.c \
+	mmap.c \
+	physmem.c \
 	snprintf.c \
 	string.c \
 	vsnprintf.c
@@ -44,7 +50,7 @@ target.kernel    = libc-kernel.a
 targets          = $(target.user) $(target.kernel)
 
 objects.generic  = string.o snprintf.o vsnprintf.o
-objects.user     = crt.o getauxval.o getenv.o
+objects.user     = crt.o brk.o errno.o getauxval.o getenv.o init.o malloc.o mmap.o physmem.o
 objects.kernel   = assert-kernel.o
 
 include $(common)

@@ -1,4 +1,8 @@
 {
     "explorer.excludeGitIgnore": true,
-    "makefile.configureOnOpen": false
+    "cmake.configureOnOpen": false,
+    "makefile.configureOnOpen": false,
+    "files.associations": {
+        "*.h": "c"
+    }
 }

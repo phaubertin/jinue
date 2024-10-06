@@ -64,7 +64,9 @@ virtualbox           = $(devel)/virtualbox
 lib                  = $(userspace)/lib
 libjinue             = $(lib)/jinue
 libc                 = $(lib)/libc
+zlib                 = $(lib)/zlib
 loader               = $(userspace)/loader
+testapp              = $(userspace)/testapp
 
 # object files
 objects.c            = $(sources.c:%.c=%.o)

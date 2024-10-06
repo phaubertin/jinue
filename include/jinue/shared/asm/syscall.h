@@ -69,6 +69,18 @@
 /** destroy the current thread */
 #define JINUE_SYS_EXIT_THREAD           12
 
+/** map memory into the address space of a process */
+#define JINUE_SYS_MMAP                  13
+
+/** create a new process */
+#define JINUE_SYS_CREATE_PROCESS        14
+
+/** clone a memory mapping from the current process to another */
+#define JINUE_SYS_MCLONE                15
+
+/** duplicate a descriptor from the current process to another */
+#define JINUE_SYS_DUP                   16
+
 /** start of function numbers for user space messages */
 #define JINUE_SYS_USER_BASE             4096
 
@@ -97,5 +109,25 @@
 
 /** log level "error" for the PUTS system call */
 #define JINUE_PUTS_LOGLEVEL_ERROR       'E'
+
+
+/** map page with no access permission */
+#define JINUE_PROT_NONE         0
+
+/** map page with read permission */
+#define JINUE_PROT_READ         (1<<0)
+
+/** map page with write permission */
+#define JINUE_PROT_WRITE        (1<<1)
+
+/** map page with execution permission */
+#define JINUE_PROT_EXEC         (1<<2)
+
+
+/** descriptor assigned to refer to own process in loader and initial process
+ * 
+ * On a Unix system, the first three file descriptors typically represent
+ * stdout, stdin and stderr. Lets leave them unused to allow this usage. */
+#define JINUE_SELF_PROCESS_DESCRIPTOR 3
 
 #endif

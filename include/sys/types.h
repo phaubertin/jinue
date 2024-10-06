@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2023 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,43 +29,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_SYSCALL_H
-#define _JINUE_SYSCALL_H
+#ifndef _JINUE_LIBC_SYS_TYPES_H
+#define _JINUE_LIBC_SYS_TYPES_H
 
+#include <stdint.h>
 
-#include <jinue/shared/asm/e820.h>
-#include <jinue/shared/syscall.h>
-#include <jinue/shared/types.h>
-#include <stddef.h>
-
-static inline void jinue_set_errno(int *perrno, int errval) {
-    if(perrno != NULL) {
-        *perrno = errval;
-    }
-}
-
-uintptr_t jinue_syscall(jinue_syscall_args_t *args);
-
-intptr_t jinue_syscall_with_usual_convention(jinue_syscall_args_t *args, int *perrno);
-
-int jinue_set_syscall_implementation(int implementation, int *perrno);
-
-void jinue_reboot(void);
-
-void jinue_set_thread_local(void *addr, size_t size);
-
-void *jinue_get_thread_local(void);
-
-int jinue_create_thread(void (*entry)(), void *stack, int *perrno);
-
-void jinue_yield_thread(void);
-
-void jinue_exit_thread(void);
-
-void jinue_putc(char c);
-
-int jinue_puts(int loglevel, const char *str, size_t n, int *perrno);
-
-int jinue_get_user_memory(jinue_mem_map_t *buffer, size_t buffer_size, int *perrno);
+typedef int64_t off_t;
 
 #endif

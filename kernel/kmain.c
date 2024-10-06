@@ -75,10 +75,6 @@ static Elf32_Ehdr *get_userspace_loader_elf_header(const boot_info_t *boot_info)
 
     info("Found user space loader with size %" PRIu32 " bytes.", boot_info->loader_size);
 
-    if(! elf_check(boot_info->loader_start)) {
-        panic("user space loader ELF binary is invalid");
-    }
-
     return boot_info->loader_start;
 }
 
@@ -118,15 +114,13 @@ void kmain(void) {
     (void)boot_info_check(true);
 
     if(boot_info->ramdisk_start == 0 || boot_info->ramdisk_size == 0) {
-        /* TODO once user loader is implemented, this needs to be a kernel panic. */
-        warning("Warning: no initial RAM disk loaded.");
+        panic("No initial RAM disk loaded.");
     }
-    else {
-        info(
-            "Bootloader loaded RAM disk with size %" PRIu32 " bytes at address %#" PRIx32 ".",
-            boot_info->ramdisk_size,
-            boot_info->ramdisk_start);
-    }
+
+    info(
+        "Bootloader loaded RAM disk with size %" PRIu32 " bytes at address %#" PRIx32 ".",
+        boot_info->ramdisk_size,
+        boot_info->ramdisk_start);
 
     /* Initialize the boot allocator. */
     boot_alloc_t boot_alloc;
@@ -159,7 +153,7 @@ void kmain(void) {
             loader,
             "jinue-userspace-loader",
             boot_info->cmdline,
-            &process->addr_space,
+            process,
             &boot_alloc);
 
     /* create initial thread */

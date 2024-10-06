@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Philippe Aubertin.
+ * Copyright (C) 2023 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,21 +29,34 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_LOGGING_H
-#define _JINUE_LOGGING_H
+#ifndef LOADER_ARCHIVES_TAR_H_
+#define LOADER_ARCHIVES_TAR_H_
 
-#include <stdarg.h>
+#include <jinue/loader.h>
+#include <stdbool.h>
+#include "../streams/stream.h"
 
-void jinue_vinfo(const char *restrict format, va_list arg);
+typedef struct {
+    char name[100];
+    char mode[8];
+    char uid[8];
+    char gid[8];
+    char size[12];
+    char mtime[12];
+    char chksum[8];
+    char typeflag;
+    char linkname[100];
+    char magic[6];
+    char version[2];
+    char uname[32];
+    char gname[32];
+    char devmajor[8];
+    char devminor[8];
+    char prefix[155];
+} tar_header_t;
 
-void jinue_vwarning(const char *restrict format, va_list arg);
+bool is_tar(stream_t *stream);
 
-void jinue_verror(const char *restrict format, va_list arg);
-
-void jinue_info(const char *restrict format, ...);
-
-void jinue_warning(const char *restrict format, ...);
-
-void jinue_error(const char *restrict format, ...);
+const jinue_dirent_t *tar_extract(stream_t *stream);
 
 #endif

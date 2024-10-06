@@ -2,15 +2,16 @@
 
 ## Description
 
-Create a new thread in the current process.
+Create a new thread in a target process.
 
 ## Arguments
 
 Function number (`arg0`) is 4.
 
-The address where code execution will start is set in `arg1`.
+The descriptor number for the target process is set in `arg1`.
 
-The value of the initial stack pointe is set in `arg2`.
+The address where code execution will start is set in `arg2` and the
+value of the initial stack pointer is set in `arg3`.
 
 ```
     +----------------------------------------------------------------+
@@ -19,17 +20,17 @@ The value of the initial stack pointe is set in `arg2`.
     31                                                               0
     
     +----------------------------------------------------------------+
-    |                   code entry point address                     |  arg1
+    |                            process                             |  arg1
     +----------------------------------------------------------------+
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                      user stack address                        |  arg2
+    |                   code entry point address                     |  arg2
     +----------------------------------------------------------------+
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                         reserved (0)                           |  arg3
+    |                      user stack address                        |  arg3
     +----------------------------------------------------------------+
     31                                                               0
 ```
@@ -44,12 +45,10 @@ returns -1 and an error number is set (in `arg1`).
 * JINUE_EINVAL if the code entry point is set to a kernel address.
 * JINUE_EINVAL if the user stack address is set to a kernel address.
 * JINUE_EAGAIN if the thread could not be created because of needed resources.
+* JINUE_EBADF if the specified descriptor is invalid, or does not refer to a
+process, or is closed.
 
 ## Future Direction
 
-Currently, this system call can only create a thread in the current process.
-This will be changed so a thread can be created in another process, referred to
-by a descriptor.
-
-This system call will also be modified to bind the new thread to a descriptor
-so other system calls can refer to it e.g. to destroy it, join it, etc.
+This system call will be modified to bind the new thread to a descriptor so
+other system calls can refer to it e.g. to destroy it, join it, etc.

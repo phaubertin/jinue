@@ -29,14 +29,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <jinue/shared/asm/syscall.h>
 #include <kernel/i686/trap.h>
 #include <kernel/i686/vm.h>
 #include <kernel/boot.h>
 #include <kernel/cmdline.h>
 #include <kernel/elf.h>
 #include <kernel/logging.h>
+#include <kernel/object.h>
 #include <kernel/page_alloc.h>
 #include <kernel/panic.h>
+#include <kernel/process.h>
 #include <kernel/vmalloc.h>
 #include <kernel/util.h>
 #include <assert.h>
@@ -61,61 +64,61 @@ static bool check_failed(const char *message) {
 /**
  * Check the validity of an ELF binary
  *
- * @param elf ELF header, which is at the very beginning of the ELF binary
+ * @param ehdr ELF header, which is at the very beginning of the ELF binary
  * @return true if ELF binary is valid, false otherwise
  *
  * */
-bool elf_check(Elf32_Ehdr *elf) {
+bool elf_check(Elf32_Ehdr *ehdr) {
     /* check: valid ELF binary magic number */
-    if(     elf->e_ident[EI_MAG0] != ELF_MAGIC0 ||
-            elf->e_ident[EI_MAG1] != ELF_MAGIC1 ||
-            elf->e_ident[EI_MAG2] != ELF_MAGIC2 ||
-            elf->e_ident[EI_MAG3] != ELF_MAGIC3 ) {
+    if(     ehdr->e_ident[EI_MAG0] != ELF_MAGIC0 ||
+            ehdr->e_ident[EI_MAG1] != ELF_MAGIC1 ||
+            ehdr->e_ident[EI_MAG2] != ELF_MAGIC2 ||
+            ehdr->e_ident[EI_MAG3] != ELF_MAGIC3 ) {
         return check_failed("not an ELF binary (ELF identification/magic check)");
     }
     
     /* check: 32-bit objects */
-    if(elf->e_ident[EI_CLASS] != ELFCLASS32) {
+    if(ehdr->e_ident[EI_CLASS] != ELFCLASS32) {
         return check_failed("bad file class");
     }
     
     /* check: endianess */
-    if(elf->e_ident[EI_DATA] != ELFDATA2LSB) {
+    if(ehdr->e_ident[EI_DATA] != ELFDATA2LSB) {
         return check_failed("bad endianess");
     }
     
     /* check: version */
-    if(elf->e_version != 1 || elf->e_ident[EI_VERSION] != 1) {
+    if(ehdr->e_version != 1 || ehdr->e_ident[EI_VERSION] != 1) {
         return check_failed("not ELF version 1");
     }
     
     /* check: machine */
-    if(elf->e_machine != EM_386) {
+    if(ehdr->e_machine != EM_386) {
         return check_failed("not for x86 architecture");
     }
     
     /* check: the 32-bit Intel architecture defines no flags */
-    if(elf->e_flags != 0) {
+    if(ehdr->e_flags != 0) {
         return check_failed("invalid flags");
     }
     
     /* check: file type is executable */
-    if(elf->e_type != ET_EXEC) {
+    if(ehdr->e_type != ET_EXEC) {
         return check_failed("not an an executable");
     }
     
     /* check: must have a program header */
-    if(elf->e_phoff == 0 || elf->e_phnum == 0) {
+    if(ehdr->e_phoff == 0 || ehdr->e_phnum == 0) {
         return check_failed("no program headers");
     }
     
     /* check: must have an entry point */
-    if(elf->e_entry == 0) {
+    if(ehdr->e_entry == 0) {
         return check_failed("no entry point");
     }
     
     /* check: program header entry size */
-    if(elf->e_phentsize != sizeof(Elf32_Phdr)) {
+    if(ehdr->e_phentsize != sizeof(Elf32_Phdr)) {
         return check_failed("unsupported program header size");
     }
 
@@ -150,6 +153,17 @@ static void checked_map_userspace(
 }
 
 /**
+ * Get program header table
+ *
+ * @param ehdr ELF file header
+ * @return program header table
+ *
+ * */
+static const Elf32_Phdr *program_header_table(const Elf32_Ehdr *ehdr) {
+    return (Elf32_Phdr *)((char *)ehdr + ehdr->e_phoff);
+}
+
+/**
  * Get program header for executable segment
  *
  * This function leads to a kernel panic if the mapping fails because a
@@ -159,11 +173,10 @@ static void checked_map_userspace(
  * @return program header if found, NULL otherwise
  *
  * */
-const Elf32_Phdr *elf_executable_program_header(const Elf32_Ehdr *elf) {
-    /* get the program header table */
-    Elf32_Phdr *phdr = (Elf32_Phdr *)((char *)elf + elf->e_phoff);
+const Elf32_Phdr *elf_executable_program_header(const Elf32_Ehdr *ehdr) {
+    const Elf32_Phdr *phdr = program_header_table(ehdr);
 
-    for(int idx = 0; idx < elf->e_phnum; ++idx) {
+    for(int idx = 0; idx < ehdr->e_phnum; ++idx) {
         if(phdr[idx].p_type != PT_LOAD) {
             continue;
         }
@@ -177,177 +190,6 @@ const Elf32_Phdr *elf_executable_program_header(const Elf32_Ehdr *elf) {
 }
 
 /**
- * Load ELF binary
- *
- * This function is intended to be used to load the user space loader binary,
- * not arbitrary user binaries. It loads the loadable segments, sets up the
- * stack and fills an ELF information structure with information about the
- * binary.
- *
- * @param info ELF information structure (output)
- * @param elf ELF file header
- * @param argv0 name of binary
- * @param cmdline full kernel command line
- * @param addr_space address space
- * @param boot_alloc boot-time page allocator
- *
- * */
-void elf_load(
-        elf_info_t      *elf_info,
-        Elf32_Ehdr      *elf,
-        const char      *argv0,
-        const char      *cmdline,
-        addr_space_t    *addr_space,
-        boot_alloc_t    *boot_alloc) {
-    
-    /* get the program header table */
-    Elf32_Phdr *phdr = (Elf32_Phdr *)((char *)elf + elf->e_phoff);
-    
-    elf_info->at_phdr       = (addr_t)phdr;
-    elf_info->at_phnum      = elf->e_phnum;
-    elf_info->at_phent      = elf->e_phentsize;
-    elf_info->addr_space    = addr_space;
-    elf_info->entry         = (void *)elf->e_entry;
-    elf_info->argv0         = argv0;
-
-    for(unsigned int idx = 0; idx < elf->e_phnum; ++idx) {
-        if(phdr[idx].p_type != PT_LOAD) {
-            continue;
-        }
-        
-        /* check that the segment is not in the region reserved for kernel use */
-        if(! check_userspace_buffer((void *)phdr[idx].p_vaddr, phdr[idx].p_memsz)) {
-            panic("user space loader memory layout -- address of segment too low");
-        }
-        
-        /* set start and end addresses for mapping and copying */
-        char *file_ptr  = (char *)elf + phdr[idx].p_offset;
-        char *vptr      = (char *)phdr[idx].p_vaddr;
-        char *vend      = vptr  + phdr[idx].p_memsz;  /* limit for padding */
-        char *vfend     = vptr  + phdr[idx].p_filesz; /* limit for copy */
-                
-        /* align on page boundaries, be inclusive, 
-           note that vfend is not aligned        */
-        file_ptr        = ALIGN_START_PTR(file_ptr, PAGE_SIZE);
-        vptr            = ALIGN_START_PTR(vptr,     PAGE_SIZE);
-        vend            = ALIGN_END_PTR(vend,       PAGE_SIZE);
-
-        bool is_writable    = !!(phdr[idx].p_flags & PF_W);
-        bool needs_padding  = (phdr[idx].p_filesz != phdr[idx].p_memsz);
-
-        if(! (is_writable || needs_padding)) {
-            /* Since the segment has to be mapped read only and does not require
-             * padding, we can just map the original pages. */
-            int flags = 0;
-
-            if(phdr[idx].p_flags & PF_R) {
-                flags |= VM_MAP_READ;
-            }
-
-            if(phdr[idx].p_flags & PF_X) {
-                flags |= VM_MAP_EXEC;
-            }
-
-            while(vptr < vend) {
-                checked_map_userspace(
-                        addr_space,
-                        vptr,
-                        vm_lookup_kernel_paddr(file_ptr),
-                        flags);
-
-                vptr     += PAGE_SIZE;
-                file_ptr += PAGE_SIZE;
-            }
-        }
-        else {
-            /* Segment is writable and/or needs padding. We need to allocate new
-             * pages for this segment. */
-            while(vptr < vend) {
-                char *stop;
-
-                /* start of this page and next page */
-                char *vnext = vptr + PAGE_SIZE;
-                
-                /* set flags */
-                int flags = 0;
-
-                if(phdr[idx].p_flags & PF_R) {
-                    flags |= VM_MAP_READ;
-                }
-
-                if(phdr[idx].p_flags & PF_W) {
-                    flags |= VM_MAP_WRITE;
-                }
-
-                if(phdr[idx].p_flags & PF_X) {
-                    flags |= VM_MAP_EXEC;
-                }
-
-                /* allocate and map the new page */
-                void *page = page_alloc();
-                checked_map_userspace(
-                        addr_space,
-                        vptr,
-                        vm_lookup_kernel_paddr(page),
-                        flags);
-
-                /* TODO transfer page ownership to userspace */
-                                
-                /* copy */
-                if(vnext > vfend) {
-                    stop = vfend;
-                }
-                else {
-                    stop = vnext;
-                }
-                
-                while(vptr < stop) {
-                    *(vptr++) = *(file_ptr++);
-                }
-                
-                /* pad */
-                while(vptr < vnext) {
-                    *(vptr++) = 0;
-                }
-            }
-        }
-    }
-    
-    elf_allocate_stack(elf_info, boot_alloc);
-
-    elf_initialize_stack(elf_info, cmdline);
-    
-    info("ELF binary loaded.");
-}
-
-/**
- * Allocate the stack for ELF binary
- *
- * @param info ELF information structure (output)
- * @param boot_alloc boot-time page allocator
- *
- * */
-void elf_allocate_stack(elf_info_t *elf_info, boot_alloc_t *boot_alloc) {
-    /** TODO: check for overlap of stack with loaded segments */
-
-    for(addr_t vpage = (addr_t)STACK_START; vpage < (addr_t)STACK_BASE; vpage += PAGE_SIZE) {
-        void *page = page_alloc();
-
-        /* This newly allocated page may have data left from a previous boot
-         * which may contain sensitive information. Let's clear it. */
-        clear_page(page);
-
-        checked_map_userspace(
-                elf_info->addr_space,
-                vpage,
-                vm_lookup_kernel_paddr(page),
-                VM_MAP_READ | VM_MAP_WRITE);
-
-        /* TODO transfer page ownership to userspace */
-    }
-}
-
-/**
  * Initialize the arguments (argv) and environment variables string arrays
  *
  * This function is intended to initialize the string arrays for the command
@@ -358,11 +200,11 @@ void elf_allocate_stack(elf_info_t *elf_info, boot_alloc_t *boot_alloc) {
  * NUL-terminated strings are concatenated.
  *
  * @param array array to initialize
- * @param str pointer to the first string
  * @param n number of entries to initialize
+ * @param str pointer to the first string
  *
  * */
-static void initialize_string_array(const char *array[], const char *str, size_t n) {
+static void initialize_string_array(const char *array[], size_t n, const char *str) {
     for(int idx = 0; idx < n; ++idx) {
         /* Write address of current string. */
         array[idx] = str;
@@ -378,17 +220,217 @@ static void initialize_string_array(const char *array[], const char *str, size_t
 }
 
 /**
+ * Get value of AT_PHDR axiliary vector
+ *
+ * AT_PHDR is the address of the program headers table in the user address space.
+ *
+ * @param ehdr ELF file header
+ * @return value of AT_PHDR
+ *
+ * */
+static addr_t get_at_phdr(const Elf32_Ehdr *ehdr) {
+    const Elf32_Phdr *phdrs     = program_header_table(ehdr);
+    Elf32_Off phdr_filestart    = ehdr->e_phoff;
+    Elf32_Off phdr_fileend      = ehdr->e_phoff + ehdr->e_phnum * ehdr->e_phentsize;
+
+    for(unsigned int idx = 0; idx < ehdr->e_phnum; ++idx) {
+        const Elf32_Phdr *phdr = &phdrs[idx];
+
+        if(phdr->p_type != PT_LOAD || (phdr->p_flags & PF_W)) {
+            continue;
+        }
+
+        Elf32_Off p_filestart   = phdr->p_offset;
+        Elf32_Off p_fileend     = phdr->p_offset + phdr->p_filesz;
+
+        if(p_filestart <= phdr_filestart && phdr_fileend <= p_fileend) {
+            /* We found the segment that completely contains the program headers table. */
+            return (addr_t)phdr->p_vaddr + ehdr->e_phoff - phdr->p_offset;
+        }
+    }
+
+    panic("Program headers address (AT_PHDR) could not be determined");
+}
+
+/**
+ * Map the protection flags
+ * 
+ * Maps the protection flags in a program headers' p_flags member to the
+ * JINUE_PROT_READ, JINUE_PROT_WRITE and/or JINUE_PROT_EXEC protection
+ * flags.
+ * 
+ * @param p_flags flags
+ * @return start of stack in loader address space
+ *
+ * */
+static int map_flags(Elf32_Word p_flags) {
+    /* set flags */
+    int flags = 0;
+
+    if(p_flags & PF_R) {
+        flags |= JINUE_PROT_READ;
+    }
+
+    if(p_flags & PF_W) {
+        flags |= JINUE_PROT_WRITE;
+    }
+    else if(p_flags & PF_X) {
+        flags |= JINUE_PROT_EXEC;
+    }
+
+    return flags;
+}
+
+/**
+ * Load the loadable (PT_LOAD) segments from the ELF binary
+ * 
+ * This function is a wrapper around jinue_mclone() with debug logging if
+ * requested with the DEBUG_LOADER_VERBOSE_MCLONE environment variable.
+ * 
+ * src_addr, dest_addr and length must be aligned on a page boundary.
+ * 
+ * @param elf_info ELF information structure (output)
+ * @param ehdr ELF header
+ * @param process process in which to load the binary
+ *
+ * */
+static void load_segments(
+        elf_info_t      *elf_info,
+        Elf32_Ehdr      *ehdr,
+        process_t       *process) {
+
+    addr_space_t *addr_space = &process->addr_space;
+
+    const Elf32_Phdr *phdrs = program_header_table(ehdr);
+    elf_info->at_phdr       = get_at_phdr(ehdr);
+    elf_info->at_phnum      = ehdr->e_phnum;
+    elf_info->at_phent      = ehdr->e_phentsize;
+    elf_info->addr_space    = addr_space;
+    elf_info->entry         = (void *)ehdr->e_entry;
+
+    for(unsigned int idx = 0; idx < ehdr->e_phnum; ++idx) {
+        const Elf32_Phdr *phdr = &phdrs[idx];
+
+       if(phdr->p_type != PT_LOAD) {
+           continue;
+       }
+
+        /* check that the segment is not in the region reserved for kernel use */
+        if(! check_userspace_buffer((void *)phdr->p_vaddr, phdr->p_memsz)) {
+            panic("user space loader memory layout -- address of segment too low");
+        }
+
+        /* set start and end addresses for mapping and copying */
+        char *file_ptr  = (char *)ehdr + phdr->p_offset;
+        char *vptr      = (char *)phdr->p_vaddr;
+        char *vend      = vptr  + phdr->p_memsz;  /* limit for padding */
+        char *vfend     = vptr  + phdr->p_filesz; /* limit for copy */
+
+        /* align on page boundaries, be inclusive, note that vfend is not aligned */
+        file_ptr        = ALIGN_START_PTR(file_ptr, PAGE_SIZE);
+        vptr            = ALIGN_START_PTR(vptr,     PAGE_SIZE);
+        vend            = ALIGN_END_PTR(vend,       PAGE_SIZE);
+
+        bool is_writable    = !!(phdr->p_flags & PF_W);
+        bool needs_padding  = (phdr->p_filesz != phdr->p_memsz);
+
+        if(! (is_writable || needs_padding)) {
+            /* Since the segment has to be mapped read only and does not require
+             * padding, we can just map the original pages. */
+            while(vptr < vend) {
+                checked_map_userspace(
+                        addr_space,
+                        vptr,
+                        vm_lookup_kernel_paddr(file_ptr),
+                        map_flags(phdr->p_flags));
+
+                vptr     += PAGE_SIZE;
+                file_ptr += PAGE_SIZE;
+           }
+        }
+        else {
+            /* Segment is writable and/or needs padding. We need to allocate new
+             * pages for this segment. */
+            while(vptr < vend) {
+                char *stop;
+
+                /* start of this page and next page */
+                char *vnext = vptr + PAGE_SIZE;
+
+                /* allocate and map the new page */
+                void *page = page_alloc();
+                checked_map_userspace(
+                        addr_space,
+                        vptr,
+                        vm_lookup_kernel_paddr(page),
+                        map_flags(phdr->p_flags));
+
+                /* TODO transfer page ownership to userspace */
+
+                /* copy */
+                if(vnext > vfend) {
+                    stop = vfend;
+                }
+                else {
+                    stop = vnext;
+                }
+
+                while(vptr < stop) {
+                    *(vptr++) = *(file_ptr++);
+                }
+
+                /* pad */
+                while(vptr < vnext) {
+                    *(vptr++) = 0;
+                }
+           }
+       }
+    }
+}
+
+/**
+ * Allocate the stack for ELF binary
+ *
+ * @param elf_info ELF information structure (output)
+ * @param boot_alloc boot-time page allocator
+ *
+ * */
+static void allocate_stack(elf_info_t *elf_info, boot_alloc_t *boot_alloc) {
+    /** TODO: check for overlap of stack with loaded segments */
+
+    for(addr_t vpage = (addr_t)STACK_START; vpage < (addr_t)STACK_BASE; vpage += PAGE_SIZE) {
+        void *page = page_alloc();
+
+        /* This newly allocated page may have data left from a previous boot
+         * which may contain sensitive information. Let's clear it. */
+        clear_page(page);
+
+        checked_map_userspace(
+                elf_info->addr_space,
+                vpage,
+                vm_lookup_kernel_paddr(page),
+                JINUE_PROT_READ | JINUE_PROT_WRITE);
+
+        /* TODO transfer page ownership to userspace */
+    }
+}
+
+/**
  * Initialize stack for ELF binary
  *
  * Initializes the command line arguments, the environment variables and the
  * auxiliary vectors.
  *
- * @param info ELF information structure (output)
+ * @param elf_info ELF information structure (output)
  * @param cmdline full kernel command line
  *
  * */
-void elf_initialize_stack(elf_info_t *elf_info, const char *cmdline) {
-    uintptr_t *sp       = (uintptr_t *)(STACK_BASE - RESERVED_STACK_SIZE);
+static void initialize_stack(
+        elf_info_t *elf_info,
+        const char *cmdline,
+        const char *argv0) {
+
+    uintptr_t *sp           = (uintptr_t *)(STACK_BASE - RESERVED_STACK_SIZE);
     elf_info->stack_addr    = sp;
 
     /* We add 1 because argv[0] is the program name, which is not on the kernel
@@ -407,7 +449,7 @@ void elf_initialize_stack(elf_info_t *elf_info, const char *cmdline) {
     size_t nenv = cmdline_count_environ(cmdline);
     const char **envp = (const char **)sp;
     envp[nenv] = NULL;
-    sp += (nenv + 1);
+    sp += nenv + 1;
 
     /* Auxiliary vectors */
     Elf32_auxv_t *auxvp = (Elf32_auxv_t *)sp;
@@ -440,17 +482,103 @@ void elf_initialize_stack(elf_info_t *elf_info, const char *cmdline) {
     /* Write arguments and environment variables (i.e. the actual strings). */
     char *const args = (char *)sp;
 
-    strcpy(args, elf_info->argv0);
+    strcpy(args, argv0);
 
-    char *const arg1 = args + strlen(elf_info->argv0) + 1;
+    char *const arg1 = args + strlen(argv0) + 1;
 
     char *const envs = cmdline_write_arguments(arg1, cmdline);
 
     cmdline_write_environ(envs, cmdline);
 
     /* Fill in content of pointer arrays argv and envp. */
-    initialize_string_array(argv, args, argc);
-    initialize_string_array(envp, envs, nenv);
+    initialize_string_array(argv, argc, args);
+    initialize_string_array(envp, nenv, envs);
+}
+
+/**
+ * Initialize descriptors for user space loader
+ *
+ * This function initializes a single descriptor which references the process
+ * itself (JINUE_SELF_PROCESS_DESCRIPTOR).
+ * 
+ * @param process process in which the ELF binary is loaded
+ *
+ * */
+static void initialize_descriptors(process_t *process) {
+    object_ref_t *ref = process_get_descriptor(process, JINUE_SELF_PROCESS_DESCRIPTOR);
+
+    object_addref(&process->header);
+    ref->object = &process->header;
+    ref->flags  = OBJECT_REF_FLAG_VALID;
+    ref->cookie = 0;
+}
+
+/**
+ * Load ELF binary
+ *
+ * This function is intended to be used to load the user space loader binary,
+ * not arbitrary user binaries. It loads the loadable segments, sets up the
+ * stack and fills an ELF information structure with information about the
+ * binary.
+ *
+ * @param elf_info ELF information structure (output)
+ * @param ehdr ELF file header
+ * @param argv0 name of binary
+ * @param cmdline full kernel command line
+ * @param process process in which to load the ELF binary
+ * @param boot_alloc boot-time page allocator
+ *
+ * */
+void elf_load(
+        elf_info_t      *elf_info,
+        Elf32_Ehdr      *ehdr,
+        const char      *argv0,
+        const char      *cmdline,
+        process_t       *process,
+        boot_alloc_t    *boot_alloc) {
+    
+    if(! elf_check(ehdr)) {
+        panic("ELF binary is invalid");
+    }
+
+    load_segments(elf_info, ehdr, process);
+
+    allocate_stack(elf_info, boot_alloc);
+
+    initialize_stack(elf_info, cmdline, argv0);
+    
+    initialize_descriptors(process);
+
+    info("ELF binary loaded.");
+}
+
+/**
+ * Get pointer to ELF file as a bytes array
+ *
+ * @param ehdr ELF header of ELF binary
+ * @return start of ELF file bytes
+ *
+ * */
+static const char *elf_file_bytes(const Elf32_Ehdr *ehdr) {
+    return (const char *)ehdr;
+}
+
+/**
+ * Get an ELF section header by index
+ * 
+ * No bound check is performed. It is the caller's responsibility to ensure
+ * 0 <= index < ehdr->e_shnum.
+ *
+ * @param ehdr ELF header of ELF binary
+ * @param index index of the section header
+ * @return pointer on section header
+ *
+ * */
+static const Elf32_Shdr *elf_get_section_header(const Elf32_Ehdr *ehdr, int index) {
+    const char *elf_file        = elf_file_bytes(ehdr);
+    const char *section_table   = &elf_file[ehdr->e_shoff];
+    
+    return (const Elf32_Shdr *)&section_table[index * ehdr->e_shentsize];
 }
 
 /**
@@ -459,17 +587,17 @@ void elf_initialize_stack(elf_info_t *elf_info, const char *cmdline) {
  * If multiple sections of the same type are present, the first instance is
  * returned.
  *
- * @param elf_header ELF header of ELF binary
+ * @param ehdr ELF header of ELF binary
  * @param type type of symbol
  * @return pointer on section header if found, NULL otherwise
  *
  * */
 static const Elf32_Shdr *elf_find_section_header_by_type(
-        const Elf32_Ehdr    *elf_header,
+        const Elf32_Ehdr    *ehdr,
         Elf32_Word           type) {
 
-    for(int idx = 0; idx < elf_header->e_shnum; ++idx) {
-        const Elf32_Shdr *section_header = elf_get_section_header(elf_header, idx);
+    for(int idx = 0; idx < ehdr->e_shnum; ++idx) {
+        const Elf32_Shdr *section_header = elf_get_section_header(ehdr, idx);
 
         if(section_header->sh_type == type) {
             return section_header;
@@ -482,49 +610,43 @@ static const Elf32_Shdr *elf_find_section_header_by_type(
 /**
  * Find the section header for the symbol table
  *
- * @param elf_header ELF header of ELF binary
+ * @param ehdr ELF header of ELF binary
  * @return pointer on section header if found, NULL otherwise
  *
  * */
-static const Elf32_Shdr *elf_find_symtab_section_header(const Elf32_Ehdr *elf_header) {
-    return elf_find_section_header_by_type(elf_header, SHT_SYMTAB);
+static const Elf32_Shdr *elf_find_symtab_section_header(const Elf32_Ehdr *ehdr) {
+    return elf_find_section_header_by_type(ehdr, SHT_SYMTAB);
 }
 
 /**
  * Get the binary data of a section
  *
- * @param elf_header ELF header of ELF binary
+ * @param ehdr ELF header of ELF binary
  * @param section_header ELF section header
  * @return symbol name as a NUL-terminated string
  *
  * */
-static const char *elf_section_data(
-        const Elf32_Ehdr    *elf_header,
-        const Elf32_Shdr    *section_header) {
-
-    const char *elf_file = elf_file_bytes(elf_header);
+static const char *elf_section_data(const Elf32_Ehdr *ehdr, const Elf32_Shdr *section_header) {
+    const char *elf_file = elf_file_bytes(ehdr);
     return &elf_file[section_header->sh_offset];
 }
 
 /**
  * Look up the name of a symbol
  *
- * @param elf_header ELF header of ELF binary
+ * @param ehdr ELF header of ELF binary
  * @param symbol_header ELF symbol header
  * @return symbol name as a NUL-terminated string
  *
  * */
-const char *elf_symbol_name(
-        const Elf32_Ehdr    *elf_header,
-        const Elf32_Sym     *symbol_header) {
-
+const char *elf_symbol_name(const Elf32_Ehdr *ehdr, const Elf32_Sym *symbol_header) {
     /* Here, we can safely assume the symbol table exists because the symbol
      * header passed as argument had to be looked up there. */
     const Elf32_Shdr *string_section_header = elf_get_section_header(
-            elf_header,
-            elf_find_symtab_section_header(elf_header)->sh_link);
+            ehdr,
+            elf_find_symtab_section_header(ehdr)->sh_link);
 
-    const char *string_table = elf_section_data(elf_header, string_section_header);
+    const char *string_table = elf_section_data(ehdr, string_section_header);
 
     return &string_table[symbol_header->st_name];
 }
@@ -535,25 +657,25 @@ const char *elf_symbol_name(
  * Input is an address and a symbol type. The result contains the start address
  * and length of the symbol.
  *
- * @param elf_header ELF header of ELF binary
+ * @param ehdr ELF header of ELF binary
  * @param addr address to look up
  * @param type type of the symbol
  * @return symbol header if found, NULL otherwise
  *
  * */
-const Elf32_Sym *elf_find_symbol_by_address_and_type(
-        const Elf32_Ehdr    *elf_header,
+static const Elf32_Sym *find_symbol_by_address_and_type(
+        const Elf32_Ehdr    *ehdr,
         Elf32_Addr           addr,
         int                  type) {
 
-    const Elf32_Shdr *section_header = elf_find_symtab_section_header(elf_header);
+    const Elf32_Shdr *section_header = elf_find_symtab_section_header(ehdr);
 
     if(section_header == NULL) {
         /* no symbol table */
         return NULL;
     }
 
-    const char *symbols_table = elf_section_data(elf_header, section_header);
+    const char *symbols_table = elf_section_data(ehdr, section_header);
     
     for(int offset = 0; offset < section_header->sh_size; offset += section_header->sh_entsize) {
         const Elf32_Sym *symbol_header = (const Elf32_Sym *)&symbols_table[offset];
@@ -581,14 +703,11 @@ const Elf32_Sym *elf_find_symbol_by_address_and_type(
  * Input is an address and a symbol type. The result contains the start address
  * and length of the symbol.
  *
- * @param elf_header ELF header of ELF binary
+ * @param ehdr ELF header of ELF binary
  * @param addr address to look up
  * @return symbol header if found, NULL otherwise
  *
  * */
-const Elf32_Sym *elf_find_function_symbol_by_address(
-        const Elf32_Ehdr    *elf_header,
-        Elf32_Addr           addr) {
-
-    return elf_find_symbol_by_address_and_type(elf_header, addr, STT_FUNCTION);
+const Elf32_Sym *elf_find_function_symbol_by_address(const Elf32_Ehdr *ehdr, Elf32_Addr addr) {
+    return find_symbol_by_address_and_type(ehdr, addr, STT_FUNCTION);
 }
