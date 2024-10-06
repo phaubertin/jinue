@@ -75,8 +75,11 @@
 /** create a new process */
 #define JINUE_SYS_CREATE_PROCESS        14
 
-/** clone a memory mapping from one process to another */
+/** clone a memory mapping from the current process to another */
 #define JINUE_SYS_MCLONE                15
+
+/** duplicate a descriptor from the current process to another */
+#define JINUE_SYS_DUP                   16
 
 /** start of function numbers for user space messages */
 #define JINUE_SYS_USER_BASE             4096

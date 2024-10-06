@@ -37,6 +37,7 @@
 #include <kernel/i686/thread.h>
 #include <kernel/i686/trap.h>
 #include <kernel/i686/vm.h>
+#include <kernel/dup.h>
 #include <kernel/ipc.h>
 #include <kernel/logging.h>
 #include <kernel/object.h>
@@ -105,8 +106,9 @@ static void sys_puts(jinue_syscall_args_t *args) {
 }
 
 static void sys_create_thread(jinue_syscall_args_t *args) {
-    void *entry         = (void *)args->arg1;
-    void *user_stack    = (void *)args->arg2;
+    int process_fd      = get_descriptor(args->arg1);
+    void *entry         = (void *)args->arg2;
+    void *user_stack    = (void *)args->arg3;
 
     if(!is_userspace_pointer(entry)) {
         syscall_args_set_error(args, JINUE_EINVAL);
@@ -118,19 +120,9 @@ static void sys_create_thread(jinue_syscall_args_t *args) {
         return;
     }
 
-    thread_t *thread = thread_create(
-            /* TODO use arg1 as an address space reference if specified */
-            get_current_thread()->process,
-            entry,
-            user_stack);
-
     /** TODO return descriptor that represents thread */
-    if(thread == NULL) {
-        syscall_args_set_error(args, JINUE_EAGAIN);
-    }
-    else {
-        syscall_args_set_return(args, 0);
-    }
+    int retval = thread_create_syscall(process_fd, entry, user_stack);
+    set_return_value_or_error(args, retval);
 }
 
 static void sys_yield_thread(jinue_syscall_args_t *args) {
@@ -408,6 +400,15 @@ static void sys_mclone(jinue_syscall_args_t *args) {
     set_return_value_or_error(args, retval);
 }
 
+static void sys_dup(jinue_syscall_args_t *args) {
+    int process_fd  = get_descriptor(args->arg1);
+    int src         = get_descriptor(args->arg2);
+    int dest        = get_descriptor(args->arg3);
+
+    int retval = dup(process_fd, src, dest);
+    set_return_value_or_error(args, retval);
+}
+
 /**
  * System call dispatching function
  *
@@ -473,6 +474,9 @@ void dispatch_syscall(trapframe_t *trapframe) {
             break;
         case JINUE_SYS_MCLONE:
             sys_mclone(args);
+            break;
+        case JINUE_SYS_DUP:
+            sys_dup(args);
             break;
         default:
             sys_nosys(args);

@@ -286,7 +286,7 @@ static int load_segments(elf_info_t *elf_info, int fd, const Elf32_Ehdr *ehdr) {
 
     elf_info->at_phnum      = ehdr->e_phnum;
     elf_info->at_phent      = ehdr->e_phentsize;
-    elf_info->entry         = (void *)ehdr->e_entry;
+    elf_info->entry         = (void (*)(void))ehdr->e_entry;
 
     for(int idx = 0; idx < ehdr->e_phnum; ++idx) {
         const Elf32_Phdr *phdr = &phdrs[idx];

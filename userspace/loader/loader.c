@@ -32,7 +32,9 @@
 #include <jinue/jinue.h>
 #include <jinue/loader.h>
 #include <jinue/util.h>
+#include <errno.h>
 #include <stdlib.h>
+#include <string.h>
 #include "elf/elf.h"
 #include "debug.h"
 #include "ramdisk.h"
@@ -76,22 +78,32 @@ static const jinue_dirent_t *get_init(const jinue_dirent_t *root) {
     return dirent;
 }
 
-static int load_init(const jinue_dirent_t *init, int argc, char *argv[]) {
+static int load_init(elf_info_t *elf_info, const jinue_dirent_t *init, int argc, char *argv[]) {
     jinue_info("Loading init program %s", init->name);
 
-    int status = jinue_create_process(INIT_PROCESS_DESCRIPTOR, NULL);
+    int status = jinue_create_process(INIT_PROCESS_DESCRIPTOR, &errno);
 
     if(status != 0) {
-        /* TODO use errno to give more information */
-        jinue_error("error: could not create process for init program");
+        jinue_error("error: could not create process for init program: %s", strerror(errno));
         return EXIT_FAILURE;
     }
 
-    elf_info_t elf_info;
-    status = load_elf(&elf_info, INIT_PROCESS_DESCRIPTOR, init, argc, argv);
+    status = load_elf(elf_info, INIT_PROCESS_DESCRIPTOR, init, argc, argv);
 
     if(status != EXIT_SUCCESS) {
         return status;
+    }
+
+    status = jinue_dup(
+        INIT_PROCESS_DESCRIPTOR,
+        INIT_PROCESS_DESCRIPTOR,
+        JINUE_SELF_PROCESS_DESCRIPTOR,
+        &errno
+    );
+
+    if (status != 0) {
+        jinue_error("error: could not create self process descriptor: %s", strerror(errno));
+        return EXIT_FAILURE;
     }
 
     return EXIT_SUCCESS;
@@ -136,7 +148,8 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    status = load_init(init, argc, argv);
+    elf_info_t elf_info;
+    status = load_init(&elf_info, init, argc, argv);
 
     if(status != EXIT_SUCCESS) {
         return status;
@@ -144,14 +157,17 @@ int main(int argc, char *argv[]) {
 
     jinue_info("---");
 
-    if(bool_getenv("DEBUG_DO_REBOOT")) {
-        jinue_info("Rebooting.");
-        jinue_reboot();
+    status = jinue_create_thread(
+        INIT_PROCESS_DESCRIPTOR,
+        elf_info.entry,
+        elf_info.stack_addr,
+        &errno
+    );
+
+    if (status != 0) {
+        jinue_error("Could not create thread: %s", strerror(errno));
+        return EXIT_FAILURE;
     }
 
-    while (1) {
-        jinue_yield_thread();
-    }
-    
     return EXIT_SUCCESS;
 }
