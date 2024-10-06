@@ -147,11 +147,13 @@ int process_get_object_header(
     return 0;
 }
 
-int process_create_with_desc(int fd) {
+int process_create_syscall(int fd) {
     thread_t *thread    = get_current_thread();
     object_ref_t *ref   = process_get_descriptor(thread->process, fd);
 
-    /* TODO close descriptor if open */
+    if(object_ref_is_valid(ref)) {
+        return -JINUE_EBADF;
+    }
 
     process_t *process = process_create();
 
@@ -166,20 +168,6 @@ int process_create_with_desc(int fd) {
     ref->cookie = 0;
 
     return 0;
-}
-
-int process_unused_descriptor(process_t *process) {
-    int idx;
-
-    for(idx = 0; idx < PROCESS_MAX_DESCRIPTORS; ++idx) {
-        object_ref_t *ref = process_get_descriptor(process, idx);
-
-        if(! object_ref_is_valid(ref)) {
-            return idx;
-        }
-    }
-
-    return -1;
 }
 
 void process_switch_to(process_t *process) {

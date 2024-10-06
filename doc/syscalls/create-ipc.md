@@ -8,13 +8,7 @@ Create a new IPC endpoint.
 
 Function number (`arg0`) is 9.
 
-Flags are set in `arg1` as follow:
-
-* If bit 0 is set, then the created IPC endpoint is a "system" endpoint (see
-[Future Direction](#future-direction)).
-* If bit 1 is set, then, instead if creating a new IPC endpoint, it retrieves
-the special-purpose endpoint that allows the process to communicate with its
-creating parent. This is useful for service discovery.
+The descriptor number to bind to the new IPC endpoint is set in `arg1`.
 
 ```
     +----------------------------------------------------------------+
@@ -23,7 +17,7 @@ creating parent. This is useful for service discovery.
     31                                                               0
     
     +----------------------------------------------------------------+
-    |                            flags                               |  arg1
+    |                       descriptor number                        |  arg1
     +----------------------------------------------------------------+
     31                                                               0
 
@@ -45,16 +39,6 @@ On success, this function returns the descriptor number for the new IPC endpoint
 
 ## Errors
 
-* JINUE_EAGAIN if a descriptor number could not be allocated.
+* JINUE_EBADF if the specified descriptor is already in use.
 * JINUE_EAGAIN if the IPC endpoint could not be created because of insufficient
 resources.
-
-## Future Direction
-
-This function will be modified so the descriptor number is passed as an argument
-by the caller instead of being chosen by the microkernel and returned.
-
-A "system" IPC endpoint is currently no different than a regular IPC endpoint.
-The original intent behind the system flag in arguments was to enforce special
-access control rules for "system" endpoints. However, the flag will likely be
-deprecated instead.

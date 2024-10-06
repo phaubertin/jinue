@@ -169,8 +169,9 @@ static void sys_get_user_memory(jinue_syscall_args_t *args) {
 }
 
 static void sys_create_ipc(jinue_syscall_args_t *args) {
-    int fd = ipc_create_for_current_process((int)args->arg1);
-    set_return_value_or_error(args, fd);
+    int fd = (int)args->arg1; 
+    int retval = ipc_create_syscall(fd);
+    set_return_value_or_error(args, retval);
 }
 
 static int copy_message_struct_from_userspace(
@@ -353,7 +354,8 @@ static void sys_mmap(jinue_syscall_args_t *args) {
 }
 
 static void sys_create_process(jinue_syscall_args_t *args) {
-    int retval = process_create_with_desc((int)args->arg1);
+    int fd = (int)args->arg1;
+    int retval = process_create_syscall(fd);
     set_return_value_or_error(args, retval);
 }
 

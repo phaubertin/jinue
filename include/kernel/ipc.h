@@ -34,18 +34,9 @@
 
 #include <kernel/types.h>
 
-
-/* object header flag bits 0..7 are reserved for common flags, flag bits 8 and
- * up are usable as per object type flags */
-
-#define IPC_FLAG_NONE           0
-
-#define IPC_FLAG_SYSTEM         (1<<8)
-
-
 void ipc_boot_init(void);
 
-int ipc_create_for_current_process(int flags);
+int ipc_create_syscall(int fd);
 
 int ipc_send(int fd, int function, const jinue_message_t *message);
 

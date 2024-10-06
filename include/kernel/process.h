@@ -41,7 +41,7 @@ process_t *process_create(void);
 
 void process_destroy(process_t *process);
 
-int process_create_with_desc(int fd);
+int process_create_syscall(int fd);
 
 object_ref_t *process_get_descriptor(process_t *process, int fd);
 
@@ -50,8 +50,6 @@ int process_get_object_header(
         object_ref_t    **pref,
         int               fd,
         process_t       *process);
-
-int process_unused_descriptor(process_t *process);
 
 void process_switch_to(process_t *process);
 

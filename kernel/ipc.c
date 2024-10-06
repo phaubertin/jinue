@@ -46,8 +46,6 @@
 /** slab cache used for allocating IPC endpoint objects */
 static slab_cache_t ipc_object_cache;
 
-static ipc_t *loader_ipc = NULL;
-
 /**
  * Object constructor for IPC endpoint slab allocator
  *
@@ -78,40 +76,16 @@ void ipc_boot_init(void) {
             ipc_object_ctor,
             NULL,
             SLAB_DEFAULTS);
-
-    loader_ipc = slab_cache_alloc(&ipc_object_cache);
-
-    if(loader_ipc == NULL) {
-        panic("Cannot create user space loader IPC object.");
-    }
 }
 
 /**
  * Create a new IPC endpoint
  *
- * All currently recognized flags will be deprecated.
- *
- * @param flags flags
  * @return pointer to IPC endpoint on success, NULL on allocation failure
  *
  */
-static ipc_t *ipc_object_create(int flags) {
-    ipc_t *ipc = slab_cache_alloc(&ipc_object_cache);
-    
-    if(ipc != NULL) {
-        ipc->header.flags = flags;
-    }
-    
-    return ipc;
-}
-
-/** To be deprecated
- *
- * TODO get rid of this
- *
- * */
-static ipc_t *ipc_get_loader_endpoint(void) {
-    return loader_ipc;
+static ipc_t *ipc_object_create(void) {
+    return slab_cache_alloc(&ipc_object_cache);
 }
 
 /**
@@ -123,38 +97,21 @@ static ipc_t *ipc_get_loader_endpoint(void) {
  * @return IPC endpoint descriptor on success, negated error number on error
  *
  */
-int ipc_create_for_current_process(int flags) {
-    ipc_t *ipc;
+int ipc_create_syscall(int fd) {
+    thread_t *thread    = get_current_thread();
+    object_ref_t *ref   = process_get_descriptor(thread->process, fd);
 
-    thread_t *thread = get_current_thread();
+    if(object_ref_is_valid(ref)) {
+        return -JINUE_EBADF;
+    }
 
-    int fd = process_unused_descriptor(thread->process);
+    ipc_t *ipc = ipc_object_create();
 
-    if(fd < 0) {
+    if(ipc == NULL) {
         return -JINUE_EAGAIN;
     }
 
-    if(flags & JINUE_IPC_LOADER) {
-        ipc = ipc_get_loader_endpoint();
-    }
-    else {
-        int ipc_flags = IPC_FLAG_NONE;
-
-        if(flags & JINUE_IPC_SYSTEM) {
-            ipc_flags |= IPC_FLAG_SYSTEM;
-        }
-
-        ipc = ipc_object_create(ipc_flags);
-
-        if(ipc == NULL) {
-            return -JINUE_EAGAIN;
-        }
-    }
-
-    object_ref_t *ref = process_get_descriptor(thread->process, fd);
-
     object_addref(&ipc->header);
-
     ref->object = &ipc->header;
     ref->flags  = OBJECT_REF_FLAG_VALID | OBJECT_REF_FLAG_OWNER;
     ref->cookie = 0;

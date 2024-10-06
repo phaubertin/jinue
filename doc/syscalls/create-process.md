@@ -39,4 +39,5 @@ returns -1 and an error number is set (in `arg1`).
 
 ## Errors
 
+* JINUE_EBADF if the specified descriptor is already in use.
 * JINUE_EAGAIN if the process could not be created because of needed resources.

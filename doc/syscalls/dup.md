@@ -45,4 +45,4 @@ returns -1 and an error number is set (in `arg1`).
 * JINUE_EBADF if the specified target process descriptor is invalid, or does
 not refer to a process, or is closed.
 * JINUE_EBADF if the specified source descriptor is invalid or is closed.
-* JINUE_EBADF if the specified destination descriptor is invalid.
+* JINUE_EBADF if the specified destination descriptor is already in use.
