@@ -3,6 +3,6 @@
     "cmake.configureOnOpen": false,
     "makefile.configureOnOpen": false,
     "files.associations": {
-        "util.h": "c"
+        "*.h": "c"
     }
 }
