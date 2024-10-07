@@ -206,6 +206,10 @@ int destroy(int fd) {
         return status;
     }
 
+    if(!object_ref_is_owner(ref)) {
+        return -JINUE_EPERM;
+    }
+
     object_mark_destroyed(object);
 
     ref->flags = 0;
