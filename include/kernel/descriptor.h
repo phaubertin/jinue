@@ -45,4 +45,10 @@ int dereference_unused_descriptor(
         process_t        *process,
         int               fd);
 
+int dup(int process_fd, int src, int dest);
+
+int close(int fd);
+
+int destroy(int fd);
+
 #endif

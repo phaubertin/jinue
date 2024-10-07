@@ -81,6 +81,12 @@
 /** duplicate a descriptor from the current process to another */
 #define JINUE_SYS_DUP                   16
 
+/** close a descriptor in the current process */
+#define JINUE_SYS_CLOSE                 17
+
+/** destroy a kernel object through a descriptor in the current process */
+#define JINUE_SYS_DESTROY               18
+
 /** start of function numbers for user space messages */
 #define JINUE_SYS_USER_BASE             4096
 

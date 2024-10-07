@@ -42,6 +42,8 @@
 
 #define IPC_DESCRIPTOR      0
 
+#define CLIENT_DESCRIPTOR   1
+
 static char ipc_test_thread_stack[THREAD_STACK_SIZE];
 
 static void ipc_test_run_client(void) {
@@ -81,7 +83,7 @@ static void ipc_test_run_client(void) {
     message.recv_buffers        = reply_buffers;
     message.recv_buffers_length = 3;
 
-    intptr_t ret = jinue_send(IPC_DESCRIPTOR, MSG_FUNC_TEST, &message, &errno);
+    intptr_t ret = jinue_send(CLIENT_DESCRIPTOR, MSG_FUNC_TEST, &message, &errno);
 
     if(ret < 0) {
         jinue_error("jinue_send() failed with error: %s.", strerror(errno));
@@ -114,6 +116,13 @@ void run_ipc_test(void) {
 
     if(status < 0) {
         jinue_error("Could not create IPC object: %s", strerror(errno));
+        return;
+    }
+
+    status = jinue_dup(JINUE_SELF_PROCESS_DESCRIPTOR, IPC_DESCRIPTOR, CLIENT_DESCRIPTOR, &errno);
+
+    if(status < 0) {
+        jinue_error("jinue_dup() failed: %s", strerror(errno));
         return;
     }
 
@@ -172,7 +181,9 @@ void run_ipc_test(void) {
 
     if(ret < 0) {
         jinue_error("jinue_reply() failed with error: %s", strerror(errno));
+        return;
     }
 
     jinue_info("Main thread is running.");
+    jinue_info("Test passed.");
 }

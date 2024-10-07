@@ -77,7 +77,6 @@ sources.kernel.c = \
 	cmdline.c \
 	descriptor.c \
 	debug.c \
-	dup.c \
 	elf.c \
 	ipc.c \
 	kmain.c \

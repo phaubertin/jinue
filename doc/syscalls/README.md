@@ -23,7 +23,9 @@
 | 14      | [CREATE_PROCESS](create-process.md)     | Create Process                       |
 | 15      | [MCLONE](mclone.md)                     | Clone a Memory Mapping               |
 | 16      | [DUP](dup.md)                           | Duplicate a Descriptor               |
-| 17-4095 | -                                       | Reserved                             |
+| 17      | [CLOSE](close.md)                       | Close a Descriptor                   |
+| 18      | [DESTROY](destroy.md)                   | Destroy a Kernel Object              |
+| 19-4095 | -                                       | Reserved                             |
 | 4096+   | [SEND](send.md)                         | Send Message                         |
 
 #### Reserved Function Numbers

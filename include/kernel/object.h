@@ -57,6 +57,10 @@
 #define OBJECT_TYPE_PROCESS         3
 
 
+static inline void object_mark_destroyed(object_header_t *header) {
+    header->flags |= OBJECT_FLAG_DESTROYED;
+}
+
 static inline bool object_is_destroyed(object_header_t *header) {
     return !!(header->flags & OBJECT_FLAG_DESTROYED);
 }

@@ -1,36 +1,33 @@
-# DUP - Duplicate a Descriptor
+# DESTROY - Destroy a Kernel Object
 
 ## Description
 
-Create a copy of a descriptor from the current process in a target process.
+Destroy a kernel object.
 
 ## Arguments
 
-Function number (`arg0`) is 16.
+Function number (`arg0`) is 18.
 
-The descriptor number for the target process is set in `arg1`.
-
-The source descriptor is set in `arg2` and the destination descriptor is set in
-`arg3`.
+The descriptor number is set in `arg1`.
 
 ```
     +----------------------------------------------------------------+
-    |                        function = 16                           |  arg0
+    |                        function = 18                           |  arg0
     +----------------------------------------------------------------+
     31                                                               0
     
     +----------------------------------------------------------------+
-    |                           process                              |  arg1
+    |                      descriptor number                         |  arg1
     +----------------------------------------------------------------+
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                             src                                |  arg2
+    |                         reserved (0)                           |  arg2
     +----------------------------------------------------------------+
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                             dest                               |  arg3
+    |                         reserved (0)                           |  arg3
     +----------------------------------------------------------------+
     31                                                               0
 ```
@@ -42,7 +39,6 @@ returns -1 and an error number is set (in `arg1`).
 
 ## Errors
 
-* JINUE_EBADF if the specified target process descriptor is invalid, or does
-not refer to a process, or is closed.
-* JINUE_EBADF if the specified source descriptor is invalid or is closed.
-* JINUE_EBADF if the specified destination descriptor is already in use.
+* JINUE_EBADF if the specified target process descriptor is invalid or is
+already closed.
+* JINUE_EPERM is the descriptor does not have sufficient permissions.

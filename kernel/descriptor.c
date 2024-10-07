@@ -30,6 +30,7 @@
  */
 
 #include <jinue/shared/asm/errno.h>
+#include <kernel/i686/thread.h>
 #include <kernel/descriptor.h>
 #include <kernel/object.h>
 
@@ -125,6 +126,90 @@ int dereference_unused_descriptor(
     }
 
     *pref = ref;
+
+    return 0;
+}
+
+static int get_process(process_t **process, int process_fd) {
+    object_header_t *object;
+
+    int status = dereference_object_descriptor(
+            &object,
+            NULL,
+            get_current_thread()->process,
+            process_fd
+    );
+
+    if(status < 0) {
+        return status;
+    }
+
+    if(object->type != OBJECT_TYPE_PROCESS) {
+        return -JINUE_EBADF;
+    }
+
+    *process = (process_t *)object;
+    return 0;
+}
+
+int dup(int process_fd, int src, int dest) {
+    process_t *process;
+
+    int status = get_process(&process, process_fd);
+
+    if(status < 0) {
+        return status;
+    }
+
+    object_ref_t *src_ref;
+    status = dereference_object_descriptor(NULL, &src_ref, get_current_thread()->process, src);
+
+    if(status < 0) {
+        return status;
+    }
+
+    object_ref_t *dest_ref;
+    status = dereference_unused_descriptor(&dest_ref, process, dest);
+
+    if(status < 0) {
+        return status;
+    }
+
+    object_addref(src_ref->object);
+    dest_ref->object = src_ref->object;
+    dest_ref->flags  = src_ref->flags;
+    dest_ref->cookie = src_ref->cookie;
+
+    return 0;
+}
+
+int close(int fd) {
+    object_ref_t *ref;
+    int status = dereference_object_descriptor(NULL, &ref, get_current_thread()->process, fd);
+
+    if(status < 0) {
+        return status;
+    }
+
+    ref->flags = 0;
+    object_subref(ref->object);
+
+    return 0;
+}
+
+int destroy(int fd) {
+    object_header_t *object;
+    object_ref_t *ref;
+    int status = dereference_object_descriptor(&object, &ref, get_current_thread()->process, fd);
+
+    if(status < 0) {
+        return status;
+    }
+
+    object_mark_destroyed(object);
+
+    ref->flags = 0;
+    object_subref(ref->object);
 
     return 0;
 }
