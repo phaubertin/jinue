@@ -58,11 +58,11 @@ set in `arg1`.
 
 * JINUE_EBADF if the specified descriptor is invalid, or does not refer to an
 IPC endpoint, or is closed.
+* JINUE_EPERM if the descriptor does not have receive permissions on the IPC
+endpoint.
 * JINUE_EIO if the IPC endpoint no longer exists.
 * JINUE_E2BIG if a message was available but it was too large for the receive
 buffer.
-* JINUE_EPERM if the process to which the calling thread belongs is not the
-owner of the IPC endpoint.
 * JINUE_EINVAL in any of the following situations:
     * If any part of any of the receive buffers belongs to the kernel.
     * If the receive buffers array has more than 256 elements.

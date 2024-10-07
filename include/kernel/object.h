@@ -32,29 +32,30 @@
 #ifndef JINUE_KERNEL_OBJECT_H
 #define JINUE_KERNEL_OBJECT_H
 
+#include <jinue/shared/asm/descriptor.h>
 #include <kernel/types.h>
-
-/* flag bits 0..7 are common flags, flag bits 8 and up are per object type flags */
-
-#define OBJECT_FLAG_NONE            0
-
-#define OBJECT_FLAG_DESTROYED       (1<<0)
-
-
-#define OBJECT_REF_FLAG_NONE        0
-
-#define OBJECT_REF_FLAG_IN_USE      (1<<0)
-
-#define OBJECT_REF_FLAG_DESTROYED   (1<<1)
-
-#define OBJECT_REF_FLAG_OWNER       (1<<2)
-
 
 #define OBJECT_TYPE_THREAD          1
 
 #define OBJECT_TYPE_IPC             2
 
 #define OBJECT_TYPE_PROCESS         3
+
+
+#define OBJECT_FLAG_NONE            0
+
+#define OBJECT_FLAG_DESTROYED       (1<<0)
+
+
+/* Number reference flags downward starting at 31 to not conflict with PERM_... flags. */
+
+#define OBJECT_REF_FLAG_NONE        0
+
+#define OBJECT_REF_FLAG_IN_USE      (1<<31)
+
+#define OBJECT_REF_FLAG_DESTROYED   (1<<30)
+
+#define OBJECT_REF_FLAG_OWNER       (1<<29)
 
 
 static inline void object_mark_destroyed(object_header_t *header) {

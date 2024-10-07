@@ -29,27 +29,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_DESCRIPTOR_H
-#define JINUE_KERNEL_DESCRIPTOR_H
+#ifndef _JINUE_SHARED_ASM_DESCRIPTOR_H
+#define _JINUE_SHARED_ASM_DESCRIPTOR_H
 
-#include <jinue/shared/asm/descriptor.h>
-#include <kernel/types.h>
+#define JINUE_PERM_SEND     (1<<0)
 
-int dereference_object_descriptor(
-        object_header_t **pobject,
-        object_ref_t    **pref,
-        process_t        *process,
-        int               fd);
-
-int dereference_unused_descriptor(
-        object_ref_t    **pref,
-        process_t        *process,
-        int               fd);
-
-int dup(int process_fd, int src, int dest);
-
-int close(int fd);
-
-int destroy(int fd);
+#define JINUE_PERM_RECEIVE  (1<<1)
 
 #endif

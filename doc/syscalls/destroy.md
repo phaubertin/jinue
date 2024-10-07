@@ -2,7 +2,7 @@
 
 ## Description
 
-Destroy a kernel object.
+Close a descriptor and destroy the kernel object to which it refers.
 
 ## Arguments
 

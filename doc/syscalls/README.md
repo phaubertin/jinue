@@ -99,6 +99,6 @@ message, which allows a server thread to make use of it.
 
 The system call interface uses descriptors to refer to kernel resources, such as
 threads, processes and IPC endpoints. A descriptor, similar to a Unix
-[file descriptors](https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html#tag_03_166),
+[file descriptor](https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html#tag_03_166),
 is a per-process unique, non-negative integer. It can be specified as an
 argument to or be returned by system calls.

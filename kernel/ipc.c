@@ -115,7 +115,11 @@ int ipc_create_syscall(int fd) {
 
     object_addref(&ipc->header);
     ref->object = &ipc->header;
-    ref->flags  = OBJECT_REF_FLAG_IN_USE | OBJECT_REF_FLAG_OWNER;
+    ref->flags  =
+          OBJECT_REF_FLAG_IN_USE
+        | OBJECT_REF_FLAG_OWNER
+        | JINUE_PERM_SEND
+        | JINUE_PERM_RECEIVE;
     ref->cookie = 0;
 
     return fd;
@@ -286,14 +290,13 @@ static int scatter_message(thread_t *thread, const jinue_message_t *message) {
  *
  */
 int ipc_send(int fd, int function, const jinue_message_t *message) {
-    thread_t *thread = get_current_thread();
-
     int recv_buffer_size = get_receive_buffers_size(message);
 
     if(recv_buffer_size < 0) {
         return recv_buffer_size;
     }
 
+    thread_t *thread = get_current_thread();
     thread->recv_buffer_size    = recv_buffer_size;
     thread->reply_errno         = 0;
     thread->message_function    = function;
@@ -305,7 +308,8 @@ int ipc_send(int fd, int function, const jinue_message_t *message) {
     }
 
     object_header_t *object;
-    int status = dereference_object_descriptor(&object, NULL, thread->process, fd);
+    object_ref_t *ref;
+    int status = dereference_object_descriptor(&object, &ref, thread->process, fd);
 
     if(status < 0) {
         return status;
@@ -313,6 +317,10 @@ int ipc_send(int fd, int function, const jinue_message_t *message) {
 
     if(object->type != OBJECT_TYPE_IPC) {
         return -JINUE_EBADF;
+    }
+
+    if((ref->flags & JINUE_PERM_SEND) == 0) {
+        return -JINUE_EPERM;
     }
 
     ipc_t *ipc = (ipc_t *)object;
@@ -376,10 +384,9 @@ int ipc_receive(int fd, jinue_message_t *message) {
         return recv_buffer_size;
     }
 
-    thread_t *thread = get_current_thread();
-
     object_header_t *object;
     object_ref_t    *ref;
+    thread_t *thread = get_current_thread();
     int status = dereference_object_descriptor(&object, &ref, thread->process, fd);
 
     if(status < 0) {
@@ -390,11 +397,11 @@ int ipc_receive(int fd, jinue_message_t *message) {
         return -JINUE_EBADF;
     }
 
-    ipc_t *ipc = (ipc_t *)object;
-
-    if(! object_ref_is_owner(ref)) {
+    if((ref->flags & JINUE_PERM_RECEIVE) == 0) {
         return -JINUE_EPERM;
     }
+
+    ipc_t *ipc = (ipc_t *)object;
 
     thread_t *send_thread = jinue_node_entry(
         jinue_list_dequeue(&ipc->send_list),
