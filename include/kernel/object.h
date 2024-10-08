@@ -32,7 +32,7 @@
 #ifndef JINUE_KERNEL_OBJECT_H
 #define JINUE_KERNEL_OBJECT_H
 
-#include <jinue/shared/asm/descriptor.h>
+#include <jinue/shared/asm/permissions.h>
 #include <kernel/types.h>
 
 #define OBJECT_TYPE_THREAD          1

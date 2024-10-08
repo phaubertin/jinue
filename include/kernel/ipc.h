@@ -32,7 +32,10 @@
 #ifndef JINUE_KERNEL_IPC_H
 #define JINUE_KERNEL_IPC_H
 
+#include <jinue/shared/asm/permissions.h>
 #include <kernel/types.h>
+
+#define IPC_ALL_PERMISSIONS (JINUE_PERM_SEND | JINUE_PERM_RECEIVE)
 
 static inline void ipc_add_receiver(ipc_t *ipc) {
     ++ipc->receivers_count;

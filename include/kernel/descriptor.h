@@ -32,7 +32,7 @@
 #ifndef JINUE_KERNEL_DESCRIPTOR_H
 #define JINUE_KERNEL_DESCRIPTOR_H
 
-#include <jinue/shared/asm/descriptor.h>
+#include <jinue/shared/asm/permissions.h>
 #include <kernel/types.h>
 
 int dereference_object_descriptor(
@@ -47,6 +47,8 @@ int dereference_unused_descriptor(
         int               fd);
 
 int dup(int process_fd, int src, int dest);
+
+int mint(int owner, const jinue_mint_args_t *mint_args);
 
 int close(int fd);
 

@@ -87,6 +87,9 @@
 /** destroy a kernel object through a descriptor in the current process */
 #define JINUE_SYS_DESTROY               18
 
+/** create a descriptor with specified cookie and permissions */
+#define JINUE_SYS_MINT                  19
+
 /** start of function numbers for user space messages */
 #define JINUE_SYS_USER_BASE             4096
 

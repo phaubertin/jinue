@@ -262,3 +262,27 @@ int jinue_destroy(int fd, int *perrno) {
 
     return jinue_syscall_with_usual_convention(&args, perrno);
 }
+
+int jinue_mint(
+        int          owner,
+        int          process,
+        int          fd,
+        int          perms,
+        uintptr_t    cookie,
+        int         *perrno) {
+    
+    jinue_syscall_args_t args;
+    jinue_mint_args_t mint_args;
+
+    mint_args.process = process;
+    mint_args.fd = fd;
+    mint_args.perms = perms;
+    mint_args.cookie = cookie;
+
+    args.arg0 = JINUE_SYS_MINT;
+    args.arg1 = owner;
+    args.arg2 = (uintptr_t)&mint_args;
+    args.arg3 = 0;
+
+    return jinue_syscall_with_usual_convention(&args, perrno);
+}

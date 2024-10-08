@@ -117,11 +117,7 @@ int ipc_create_syscall(int fd) {
     object_addref(&ipc->header);
 
     ref->object = &ipc->header;
-    ref->flags  =
-          OBJECT_REF_FLAG_IN_USE
-        | OBJECT_REF_FLAG_OWNER
-        | JINUE_PERM_SEND
-        | JINUE_PERM_RECEIVE;
+    ref->flags  = OBJECT_REF_FLAG_IN_USE | OBJECT_REF_FLAG_OWNER | IPC_ALL_PERMISSIONS;
     ref->cookie = 0;
 
     ipc_add_receiver(ipc);
@@ -294,26 +290,10 @@ static int scatter_message(thread_t *thread, const jinue_message_t *message) {
  *
  */
 int ipc_send(int fd, int function, const jinue_message_t *message) {
-    int recv_buffer_size = get_receive_buffers_size(message);
-
-    if(recv_buffer_size < 0) {
-        return recv_buffer_size;
-    }
-
-    thread_t *thread = get_current_thread();
-    thread->recv_buffer_size    = recv_buffer_size;
-    thread->reply_errno         = 0;
-    thread->message_function    = function;
-
-    int gather_result = gather_message(thread, message);
-
-    if(gather_result < 0) {
-        return gather_result;
-    }
-
     object_header_t *object;
     object_ref_t *ref;
-    int status = dereference_object_descriptor(&object, &ref, thread->process, fd);
+    thread_t *thread    = get_current_thread();
+    int status          = dereference_object_descriptor(&object, &ref, thread->process, fd);
 
     if(status < 0) {
         return status;
@@ -325,6 +305,23 @@ int ipc_send(int fd, int function, const jinue_message_t *message) {
 
     if((ref->flags & JINUE_PERM_SEND) == 0) {
         return -JINUE_EPERM;
+    }
+
+    int recv_buffer_size = get_receive_buffers_size(message);
+
+    if(recv_buffer_size < 0) {
+        return recv_buffer_size;
+    }
+    
+    thread->recv_buffer_size    = recv_buffer_size;
+    thread->reply_errno         = 0;
+    thread->message_function    = function;
+    thread->message_cookie      = ref->cookie;
+
+    int gather_result = gather_message(thread, message);
+
+    if(gather_result < 0) {
+        return gather_result;
     }
 
     ipc_t *ipc = (ipc_t *)object;
@@ -382,16 +379,10 @@ int ipc_send(int fd, int function, const jinue_message_t *message) {
  *
  */
 int ipc_receive(int fd, jinue_message_t *message) {
-    int recv_buffer_size = get_receive_buffers_size(message);
-
-    if(recv_buffer_size < 0) {
-        return recv_buffer_size;
-    }
-
     object_header_t *object;
     object_ref_t    *ref;
-    thread_t *thread = get_current_thread();
-    int status = dereference_object_descriptor(&object, &ref, thread->process, fd);
+    thread_t *thread    = get_current_thread();
+    int status          = dereference_object_descriptor(&object, &ref, thread->process, fd);
 
     if(status < 0) {
         return status;
@@ -403,6 +394,12 @@ int ipc_receive(int fd, jinue_message_t *message) {
 
     if((ref->flags & JINUE_PERM_RECEIVE) == 0) {
         return -JINUE_EPERM;
+    }
+
+    int recv_buffer_size = get_receive_buffers_size(message);
+
+    if(recv_buffer_size < 0) {
+        return recv_buffer_size;
     }
 
     ipc_t *ipc = (ipc_t *)object;
@@ -446,7 +443,7 @@ int ipc_receive(int fd, jinue_message_t *message) {
     }
     
     message->recv_function  = send_thread->message_function;
-    message->recv_cookie    = ref->cookie;
+    message->recv_cookie    = send_thread->message_cookie;
     message->reply_max_size = send_thread->recv_buffer_size;
 
     return send_thread->message_size;

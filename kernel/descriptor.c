@@ -33,7 +33,6 @@
 #include <kernel/i686/thread.h>
 #include <kernel/descriptor.h>
 #include <kernel/ipc.h>
-#include <kernel/logging.h>
 #include <kernel/object.h>
 
 /**
@@ -171,6 +170,10 @@ int dup(int process_fd, int src, int dest) {
         return status;
     }
 
+    if(object_ref_is_owner(src_ref)) {
+        return -JINUE_EBADF;
+    }
+
     object_ref_t *dest_ref;
     status = dereference_unused_descriptor(&dest_ref, process, dest);
 
@@ -184,7 +187,90 @@ int dup(int process_fd, int src, int dest) {
     dest_ref->flags  = src_ref->flags;
     dest_ref->cookie = src_ref->cookie;
 
-    if(object->type == OBJECT_TYPE_IPC && object_ref_has_permissions(src_ref, JINUE_PERM_RECEIVE)) {
+    if(object->type == OBJECT_TYPE_IPC && object_ref_has_permissions(dest_ref, JINUE_PERM_RECEIVE)) {
+        ipc_t *ipc = (ipc_t *)object;
+        ipc_add_receiver(ipc);
+    }
+
+    return 0;
+}
+
+static int check_mint_permissions(const object_header_t *object, int perms) {
+    int mask = 0;
+
+    switch(object->type) {
+        case OBJECT_TYPE_IPC:
+            mask = IPC_ALL_PERMISSIONS;
+            break;
+        case OBJECT_TYPE_PROCESS:
+            /* TODO implement permissions for process */
+            return 0;
+        default:
+            return -JINUE_EINVAL;
+    }
+
+    if((perms & ~mask) != 0) {
+        return -JINUE_EINVAL;
+    }
+
+    if(perms == 0) {
+        return -JINUE_EINVAL;
+    }
+
+    return 0;
+}
+
+int mint(int owner, const jinue_mint_args_t *mint_args) {
+    object_header_t *object;
+    object_ref_t    *src_ref;
+    
+    int status = dereference_object_descriptor(
+        &object,
+        &src_ref,
+        get_current_thread()->process,
+        owner
+    );
+
+    if(status < 0) {
+        return status;
+    }
+
+    status = check_mint_permissions(object, mint_args->perms);
+
+    if(status < 0) {
+        return status;
+    }
+
+    if(!object_ref_is_owner(src_ref)) {
+        return -JINUE_EPERM;
+    }
+
+    process_t *process;
+
+    status = get_process(&process, mint_args->process);
+
+    if(status < 0) {
+        return status;
+    }
+
+    object_ref_t *dest_ref;
+    
+    status = dereference_unused_descriptor(&dest_ref, process, mint_args->fd);
+
+    if(status < 0) {
+        return status;
+    }
+
+    object_addref(object);
+
+    dest_ref->object = src_ref->object;
+    dest_ref->flags  =
+          mint_args->perms
+        | (src_ref->flags & OBJECT_FLAG_DESTROYED)
+        | OBJECT_REF_FLAG_IN_USE;
+    dest_ref->cookie = mint_args->cookie;
+
+    if(object->type == OBJECT_TYPE_IPC && object_ref_has_permissions(dest_ref, JINUE_PERM_RECEIVE)) {
         ipc_t *ipc = (ipc_t *)object;
         ipc_add_receiver(ipc);
     }

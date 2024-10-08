@@ -32,9 +32,9 @@
 #ifndef _JINUE_JINUE_H
 #define _JINUE_JINUE_H
 
-#include <jinue/shared/asm/descriptor.h>
 #include <jinue/shared/asm/errno.h>
 #include <jinue/shared/asm/memory.h>
+#include <jinue/shared/asm/permissions.h>
 #include <jinue/shared/ipc.h>
 #include <jinue/shared/syscall.h>
 #include <jinue/shared/types.h>
@@ -98,5 +98,13 @@ int jinue_dup(int process, int src, int dest, int *perrno);
 int jinue_close(int fd, int *perrno);
 
 int jinue_destroy(int fd, int *perrno);
+
+int jinue_mint(
+        int          owner,
+        int          process,
+        int          fd,
+        int          perms,
+        uintptr_t    cookie,
+        int         *perrno);
 
 #endif

@@ -4,6 +4,10 @@
 
 Close a descriptor and destroy the kernel object to which it refers.
 
+In order to use this function, the owner descriptor for the resource must be
+specified. The owner descriptor is the descriptor that was specified in the
+call to the function that created the resource (e.g. CREATE_IPC).
+
 ## Arguments
 
 Function number (`arg0`) is 18.
@@ -41,4 +45,4 @@ returns -1 and an error number is set (in `arg1`).
 
 * JINUE_EBADF if the specified target process descriptor is invalid or is
 already closed.
-* JINUE_EPERM is the descriptor does not have sufficient permissions.
+* JINUE_EPERM if the specified descriptor is not the owner descriptor.

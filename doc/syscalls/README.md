@@ -25,7 +25,8 @@
 | 16      | [DUP](dup.md)                           | Duplicate a Descriptor               |
 | 17      | [CLOSE](close.md)                       | Close a Descriptor                   |
 | 18      | [DESTROY](destroy.md)                   | Destroy a Kernel Object              |
-| 19-4095 | -                                       | Reserved                             |
+| 19      | [MINT](mint.md)                         | Mint a Descriptor                    |
+| 20-4095 | -                                       | Reserved                             |
 | 4096+   | [SEND](send.md)                         | Send Message                         |
 
 #### Reserved Function Numbers

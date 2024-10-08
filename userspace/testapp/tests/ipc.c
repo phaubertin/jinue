@@ -119,10 +119,17 @@ void run_ipc_test(void) {
         return;
     }
 
-    status = jinue_dup(JINUE_SELF_PROCESS_DESCRIPTOR, IPC_DESCRIPTOR, CLIENT_DESCRIPTOR, &errno);
+    status = jinue_mint(
+        IPC_DESCRIPTOR,
+        JINUE_SELF_PROCESS_DESCRIPTOR,
+        CLIENT_DESCRIPTOR,
+        JINUE_PERM_SEND,
+        0xca11ab1e,
+        &errno
+    );
 
     if(status < 0) {
-        jinue_error("jinue_dup() failed: %s", strerror(errno));
+        jinue_error("jinue_mint() failed: %s", strerror(errno));
         return;
     }
 
@@ -164,7 +171,7 @@ void run_ipc_test(void) {
     jinue_info("  data:             \"%s\"", recv_data);
     jinue_info("  size:             %" PRIuPTR, ret);
     jinue_info("  function:         %u (user base + %u)", function, function - JINUE_SYS_USER_BASE);
-    jinue_info("  cookie:           %" PRIuPTR, message.recv_cookie);
+    jinue_info("  cookie:           %#" PRIxPTR, message.recv_cookie);
     jinue_info("  reply max. size:  %" PRIuPTR, message.reply_max_size);
 
     const char reply_string[] = "Hi, Main Thread!";

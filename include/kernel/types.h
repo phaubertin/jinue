@@ -84,6 +84,7 @@ struct thread_t {
     size_t                   recv_buffer_size;
     int                      reply_errno;
     uintptr_t                message_function;
+    uintptr_t                message_cookie;
     size_t                   message_size;
     char                     message_buffer[JINUE_MAX_MESSAGE_SIZE];
 };
