@@ -56,13 +56,13 @@ static slab_cache_t ipc_object_cache;
  * @param size size in bytes of the IPC endpoint object (ignored)
  *
  */
-static void ipc_object_ctor(void *buffer, size_t size) {
-    ipc_t *ipc = buffer;
+static void ipc_endpoint_ctor(void *buffer, size_t size) {
+    ipc_endpoint_t *endpoint = buffer;
     
-    object_header_init(&ipc->header, OBJECT_TYPE_IPC);
-    jinue_list_init(&ipc->send_list);
-    jinue_list_init(&ipc->recv_list);
-    ipc->receivers_count = 0;
+    object_header_init(&endpoint->header, OBJECT_TYPE_IPC);
+    jinue_list_init(&endpoint->send_list);
+    jinue_list_init(&endpoint->recv_list);
+    endpoint->receivers_count = 0;
 }
 
 /**
@@ -73,9 +73,9 @@ void ipc_boot_init(void) {
     slab_cache_init(
             &ipc_object_cache,
             "ipc_object_cache",
-            sizeof(ipc_t),
+            sizeof(ipc_endpoint_t),
             0,
-            ipc_object_ctor,
+            ipc_endpoint_ctor,
             NULL,
             SLAB_DEFAULTS);
 }
@@ -86,7 +86,7 @@ void ipc_boot_init(void) {
  * @return pointer to IPC endpoint on success, NULL on allocation failure
  *
  */
-static ipc_t *ipc_object_create(void) {
+static ipc_endpoint_t *ipc_endpoint_create(void) {
     return slab_cache_alloc(&ipc_object_cache);
 }
 
@@ -99,7 +99,7 @@ static ipc_t *ipc_object_create(void) {
  * @return IPC endpoint descriptor on success, negated error number on error
  *
  */
-int ipc_create_syscall(int fd) {
+int ipc_endpoint_create_syscall(int fd) {
     object_ref_t *ref;
     thread_t *thread = get_current_thread();
     int status = dereference_unused_descriptor(&ref, thread->process, fd);
@@ -108,19 +108,19 @@ int ipc_create_syscall(int fd) {
         return status;
     }
 
-    ipc_t *ipc = ipc_object_create();
+    ipc_endpoint_t *endpoint = ipc_endpoint_create();
 
-    if(ipc == NULL) {
+    if(endpoint == NULL) {
         return -JINUE_EAGAIN;
     }
 
-    object_addref(&ipc->header);
+    object_addref(&endpoint->header);
 
-    ref->object = &ipc->header;
+    ref->object = &endpoint->header;
     ref->flags  = OBJECT_REF_FLAG_IN_USE | OBJECT_REF_FLAG_OWNER | IPC_ALL_PERMISSIONS;
     ref->cookie = 0;
 
-    ipc_add_receiver(ipc);
+    endpoint_add_receiver(endpoint);
 
     return fd;
 }
@@ -324,17 +324,17 @@ int ipc_send(int fd, int function, const jinue_message_t *message) {
         return gather_result;
     }
 
-    ipc_t *ipc = (ipc_t *)object;
+    ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
 
     thread_t *recv_thread = jinue_node_entry(
-            jinue_list_dequeue(&ipc->recv_list),
+            jinue_list_dequeue(&endpoint->recv_list),
             thread_t,
             thread_list);
 
     if(recv_thread == NULL) {
         /* No thread is waiting to receive this message, so we must wait on the
          * sender list. */
-        jinue_list_enqueue(&ipc->send_list, &thread->thread_list);
+        jinue_list_enqueue(&endpoint->send_list, &thread->thread_list);
         thread_block();
     }
     else {
@@ -402,17 +402,17 @@ int ipc_receive(int fd, jinue_message_t *message) {
         return recv_buffer_size;
     }
 
-    ipc_t *ipc = (ipc_t *)object;
+    ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
 
     thread_t *send_thread = jinue_node_entry(
-        jinue_list_dequeue(&ipc->send_list),
+        jinue_list_dequeue(&endpoint->send_list),
         thread_t,
         thread_list);
     
     if(send_thread == NULL) {
         /* No thread is waiting to send a message, so we must wait on the receive
          * list. */
-        jinue_list_enqueue(&ipc->recv_list, &thread->thread_list);
+        jinue_list_enqueue(&endpoint->recv_list, &thread->thread_list);
         thread_block();
         
         /* set by sending thread */

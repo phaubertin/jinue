@@ -58,7 +58,7 @@
 #define JINUE_SYS_GET_USER_MEMORY       8
 
 /** create an IPC object to receive messages */
-#define JINUE_SYS_CREATE_IPC            9
+#define JINUE_SYS_CREATE_ENDPOINT            9
 
 /** receive a message on an IPC object */
 #define JINUE_SYS_RECEIVE               10

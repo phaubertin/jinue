@@ -6,7 +6,7 @@ Create a copy of a descriptor from the current process in a target process.
 
 A owner descriptor cannot be duplicated with this (or any) function. A owner
 descriptor is the descriptor that was specified in the call to the function
-that created a kernel resource (e.g. [CREATE_IPC](create-ipc.md)) and that
+that created a kernel resource (e.g. [CREATE_ENDPOINT](create-endpoint.md)) and that
 can be used to [mint](mint.md) other descriptors to that resource.
 
 ## Arguments

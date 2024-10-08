@@ -1,4 +1,4 @@
-# CREATE_IPC - Create IPC Endpoint
+# CREATE_ENDPOINT - Create IPC Endpoint
 
 ## Description
 

@@ -112,7 +112,7 @@ void run_ipc_test(void) {
 
     jinue_info("Running threading and IPC test...");
 
-    int status = jinue_create_ipc(IPC_DESCRIPTOR, &errno);
+    int status = jinue_create_endpoint(IPC_DESCRIPTOR, &errno);
 
     if(status < 0) {
         jinue_error("Could not create IPC object: %s", strerror(errno));

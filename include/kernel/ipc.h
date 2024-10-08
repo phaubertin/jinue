@@ -37,21 +37,21 @@
 
 #define IPC_ALL_PERMISSIONS (JINUE_PERM_SEND | JINUE_PERM_RECEIVE)
 
-static inline void ipc_add_receiver(ipc_t *ipc) {
-    ++ipc->receivers_count;
+static inline void endpoint_add_receiver(ipc_endpoint_t *endpoint) {
+    ++endpoint->receivers_count;
 }
 
-static inline void ipc_sub_receiver(ipc_t *ipc) {
-    --ipc->receivers_count;
+static inline void endpoint_sub_receiver(ipc_endpoint_t *endpoint) {
+    --endpoint->receivers_count;
 }
 
-static inline bool ipc_has_receivers(const ipc_t *ipc) {
-    return ipc->receivers_count > 0;
+static inline bool endpoint_has_receivers(const ipc_endpoint_t *endpoint) {
+    return endpoint->receivers_count > 0;
 }
 
 void ipc_boot_init(void);
 
-int ipc_create_syscall(int fd);
+int ipc_endpoint_create_syscall(int fd);
 
 int ipc_send(int fd, int function, const jinue_message_t *message);
 

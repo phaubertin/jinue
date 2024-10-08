@@ -15,7 +15,7 @@
 | 6       | [SET_THREAD_LOCAL](set-thread-local.md) | Set Thread-Local Storage             |
 | 7       | [GET_THREAD_LOCAL](get-thread-local.md) | Get Thread-Local Storage Address     |
 | 8       | [GET_USER_MEMORY](get-user-memory.md)   | Get User Memory Map                  |
-| 9       | [CREATE_IPC](create-ipc.md)             | Create IPC Endpoint                  |
+| 9       | [CREATE_ENDPOINT](create-endpoint.md)   | Create IPC Endpoint                  |
 | 10      | [RECEIVE](receive.md)                   | Receive Message                      |
 | 11      | [REPLY](reply.md)                       | Reply to Message                     |
 | 12      | [EXIT_THREAD](exit-thread.md)           | Exit the Current Thread              |

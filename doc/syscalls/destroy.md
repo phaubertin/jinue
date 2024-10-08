@@ -6,7 +6,7 @@ Close a descriptor and destroy the kernel object to which it refers.
 
 In order to use this function, the owner descriptor for the resource must be
 specified. The owner descriptor is the descriptor that was specified in the
-call to the function that created the resource (e.g. CREATE_IPC).
+call to the function that created the resource (e.g. CREATE_ENDPOINT).
 
 ## Arguments
 

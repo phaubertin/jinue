@@ -80,7 +80,7 @@ intptr_t jinue_receive(int fd, const jinue_message_t *message, int *perrno);
 
 intptr_t jinue_reply(const jinue_message_t *message, int *perrno);
 
-int jinue_create_ipc(int fd, int *perrno);
+int jinue_create_endpoint(int fd, int *perrno);
 
 int jinue_create_process(int fd, int *perrno);
 

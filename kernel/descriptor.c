@@ -188,8 +188,8 @@ int dup(int process_fd, int src, int dest) {
     dest_ref->cookie = src_ref->cookie;
 
     if(object->type == OBJECT_TYPE_IPC && object_ref_has_permissions(dest_ref, JINUE_PERM_RECEIVE)) {
-        ipc_t *ipc = (ipc_t *)object;
-        ipc_add_receiver(ipc);
+        ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
+        endpoint_add_receiver(endpoint);
     }
 
     return 0;
@@ -271,8 +271,8 @@ int mint(int owner, const jinue_mint_args_t *mint_args) {
     dest_ref->cookie = mint_args->cookie;
 
     if(object->type == OBJECT_TYPE_IPC && object_ref_has_permissions(dest_ref, JINUE_PERM_RECEIVE)) {
-        ipc_t *ipc = (ipc_t *)object;
-        ipc_add_receiver(ipc);
+        ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
+        endpoint_add_receiver(endpoint);
     }
 
     return 0;
@@ -288,10 +288,10 @@ int close(int fd) {
     }
     
     if(object->type == OBJECT_TYPE_IPC && object_ref_has_permissions(ref, JINUE_PERM_RECEIVE)) {
-        ipc_t *ipc = (ipc_t *)object;
-        ipc_sub_receiver(ipc);
+        ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
+        endpoint_sub_receiver(endpoint);
 
-        if(!ipc_has_receivers(ipc)) {
+        if(!endpoint_has_receivers(endpoint)) {
             object_mark_destroyed(object);
         }
     }

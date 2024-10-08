@@ -181,7 +181,7 @@ static void sys_create_ipc(jinue_syscall_args_t *args) {
         return;  
     }
 
-    int retval = ipc_create_syscall(fd);
+    int retval = ipc_endpoint_create_syscall(fd);
     set_return_value_or_error(args, retval);
 }
 
@@ -562,7 +562,7 @@ void dispatch_syscall(trapframe_t *trapframe) {
         case JINUE_SYS_GET_USER_MEMORY:
             sys_get_user_memory(args);
             break;
-        case JINUE_SYS_CREATE_IPC:
+        case JINUE_SYS_CREATE_ENDPOINT:
             sys_create_ipc(args);
             break;
         case JINUE_SYS_RECEIVE:
