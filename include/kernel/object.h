@@ -47,6 +47,29 @@
 #define OBJECT_FLAG_DESTROYED       (1<<0)
 
 
+static inline void object_mark_destroyed(object_header_t *object) {
+    object->flags |= OBJECT_FLAG_DESTROYED;
+}
+
+static inline bool object_is_destroyed(object_header_t *object) {
+    return !!(object->flags & OBJECT_FLAG_DESTROYED);
+}
+
+static inline void object_header_init(object_header_t *object, int type) {
+    object->type        = type;
+    object->ref_count   = 0;
+    object->flags       = OBJECT_FLAG_NONE;
+}
+
+static inline void object_addref(object_header_t *object) {
+    ++object->ref_count;
+}
+
+static inline void object_subref(object_header_t *object) {
+    /** TODO free at zero */
+    --object->ref_count;
+}
+
 /* Number reference flags downward starting at 31 to not conflict with PERM_... flags. */
 
 #define OBJECT_REF_FLAG_NONE        0
@@ -56,15 +79,6 @@
 #define OBJECT_REF_FLAG_DESTROYED   (1<<30)
 
 #define OBJECT_REF_FLAG_OWNER       (1<<29)
-
-
-static inline void object_mark_destroyed(object_header_t *header) {
-    header->flags |= OBJECT_FLAG_DESTROYED;
-}
-
-static inline bool object_is_destroyed(object_header_t *header) {
-    return !!(header->flags & OBJECT_FLAG_DESTROYED);
-}
 
 static inline bool object_ref_is_in_use(object_ref_t *ref) {
     return ref != NULL && (ref->flags & OBJECT_REF_FLAG_IN_USE);
@@ -78,19 +92,8 @@ static inline bool object_ref_is_owner(object_ref_t *ref) {
     return !!(ref->flags & OBJECT_REF_FLAG_OWNER);
 }
 
-static inline void object_header_init(object_header_t *header, int type) {
-    header->type        = type;
-    header->ref_count   = 0;
-    header->flags       = OBJECT_FLAG_NONE;
-}
-
-static inline void object_addref(object_header_t *header) {
-    ++header->ref_count;
-}
-
-static inline void object_subref(object_header_t *header) {
-    /** TODO free at zero */
-    --header->ref_count;
+static inline bool object_ref_has_permissions(const object_ref_t *ref, int perms) {
+    return (ref->flags & perms) == perms;
 }
 
 #endif

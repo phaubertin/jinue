@@ -34,6 +34,18 @@
 
 #include <kernel/types.h>
 
+static inline void ipc_add_receiver(ipc_t *ipc) {
+    ++ipc->receivers_count;
+}
+
+static inline void ipc_sub_receiver(ipc_t *ipc) {
+    --ipc->receivers_count;
+}
+
+static inline bool ipc_has_receivers(const ipc_t *ipc) {
+    return ipc->receivers_count > 0;
+}
+
 void ipc_boot_init(void);
 
 int ipc_create_syscall(int fd);

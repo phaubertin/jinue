@@ -94,6 +94,7 @@ typedef struct {
     object_header_t header;
     jinue_list_t    send_list;
     jinue_list_t    recv_list;
+    int             receivers_count;
 } ipc_t;
 
 #endif

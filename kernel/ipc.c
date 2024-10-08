@@ -57,11 +57,12 @@ static slab_cache_t ipc_object_cache;
  *
  */
 static void ipc_object_ctor(void *buffer, size_t size) {
-    ipc_t *ipc_object = buffer;
+    ipc_t *ipc = buffer;
     
-    object_header_init(&ipc_object->header, OBJECT_TYPE_IPC);
-    jinue_list_init(&ipc_object->send_list);
-    jinue_list_init(&ipc_object->recv_list);
+    object_header_init(&ipc->header, OBJECT_TYPE_IPC);
+    jinue_list_init(&ipc->send_list);
+    jinue_list_init(&ipc->recv_list);
+    ipc->receivers_count = 0;
 }
 
 /**
@@ -114,6 +115,7 @@ int ipc_create_syscall(int fd) {
     }
 
     object_addref(&ipc->header);
+
     ref->object = &ipc->header;
     ref->flags  =
           OBJECT_REF_FLAG_IN_USE
@@ -121,6 +123,8 @@ int ipc_create_syscall(int fd) {
         | JINUE_PERM_SEND
         | JINUE_PERM_RECEIVE;
     ref->cookie = 0;
+
+    ipc_add_receiver(ipc);
 
     return fd;
 }

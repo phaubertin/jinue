@@ -32,6 +32,8 @@
 #include <jinue/shared/asm/errno.h>
 #include <kernel/i686/thread.h>
 #include <kernel/descriptor.h>
+#include <kernel/ipc.h>
+#include <kernel/logging.h>
 #include <kernel/object.h>
 
 /**
@@ -161,8 +163,9 @@ int dup(int process_fd, int src, int dest) {
         return status;
     }
 
+    object_header_t *object;
     object_ref_t *src_ref;
-    status = dereference_object_descriptor(NULL, &src_ref, get_current_thread()->process, src);
+    status = dereference_object_descriptor(&object, &src_ref, get_current_thread()->process, src);
 
     if(status < 0) {
         return status;
@@ -175,23 +178,39 @@ int dup(int process_fd, int src, int dest) {
         return status;
     }
 
-    object_addref(src_ref->object);
+    object_addref(object);
+
     dest_ref->object = src_ref->object;
     dest_ref->flags  = src_ref->flags;
     dest_ref->cookie = src_ref->cookie;
+
+    if(object->type == OBJECT_TYPE_IPC && object_ref_has_permissions(src_ref, JINUE_PERM_RECEIVE)) {
+        ipc_t *ipc = (ipc_t *)object;
+        ipc_add_receiver(ipc);
+    }
 
     return 0;
 }
 
 int close(int fd) {
+    object_header_t *object;
     object_ref_t *ref;
-    int status = dereference_object_descriptor(NULL, &ref, get_current_thread()->process, fd);
+    int status = dereference_object_descriptor(&object, &ref, get_current_thread()->process, fd);
 
     if(status < 0) {
         return status;
     }
+    
+    if(object->type == OBJECT_TYPE_IPC && object_ref_has_permissions(ref, JINUE_PERM_RECEIVE)) {
+        ipc_t *ipc = (ipc_t *)object;
+        ipc_sub_receiver(ipc);
 
-    ref->flags = 0;
+        if(!ipc_has_receivers(ipc)) {
+            object_mark_destroyed(object);
+        }
+    }
+
+    ref->flags = OBJECT_REF_FLAG_NONE;
     object_subref(ref->object);
 
     return 0;
