@@ -57,25 +57,33 @@ typedef struct slab_cache_t slab_cache_t;
 
 typedef void (*slab_ctor_t)(void *, size_t);
 
-typedef struct {
-    int          all_permissions;
-    char        *name;
-    size_t       size;
-    slab_ctor_t  cache_ctor;
-    slab_ctor_t  cache_dtor;
-} object_type_t;
+typedef struct object_ref_t object_ref_t;
+
+typedef struct object_header_t object_header_t;
+
+typedef void (*object_ref_func_t)(object_header_t *, const object_ref_t *);
 
 typedef struct {
+    int                  all_permissions;
+    char                *name;
+    size_t               size;
+    object_ref_func_t    open;
+    object_ref_func_t    close;
+    slab_ctor_t          cache_ctor;
+    slab_ctor_t          cache_dtor;
+} object_type_t;
+
+struct object_header_t {
     const object_type_t *type;
     int                  ref_count;
     int                  flags;
-} object_header_t;
+};
 
-typedef struct {
+struct object_ref_t {
     object_header_t *object;
     uintptr_t        flags;
     uintptr_t        cookie;
-} object_ref_t;
+};
 
 #define PROCESS_MAX_DESCRIPTORS     12
 

@@ -66,6 +66,10 @@ static inline void object_subref(object_header_t *object) {
 
 void object_cache_init(slab_cache_t *cache, const object_type_t *type);
 
+void object_open(object_header_t *object, const object_ref_t *ref);
+
+void object_close(object_header_t *object, const object_ref_t *ref);
+
 /* Number reference flags downward starting at 31 to not conflict with PERM_... flags. */
 
 #define OBJECT_REF_FLAG_NONE        0

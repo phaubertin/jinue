@@ -47,6 +47,8 @@ static const object_type_t object_type = {
     .all_permissions    = 0,
     .name               = "thread",
     .size               = sizeof(thread_t),
+    .open               = NULL,
+    .close              = NULL,
     .cache_ctor         = NULL,
     .cache_dtor         = NULL
 };

@@ -84,11 +84,11 @@ int dereference_object_descriptor(
         return -JINUE_EIO;
     }
 
-    object_header_t *header = ref->object;
+    object_header_t *object = ref->object;
 
-    if(object_is_destroyed(header)) {
+    if(object_is_destroyed(object)) {
         ref->flags |= OBJECT_REF_FLAG_DESTROYED;
-        object_subref(header);
+        object_close(object, ref);
         return -JINUE_EIO;
     }
 
@@ -97,7 +97,7 @@ int dereference_object_descriptor(
     }
 
     if(pobject != NULL) {
-        *pobject = header;
+        *pobject = object;
     }
 
     return 0;
@@ -182,16 +182,11 @@ int dup(int process_fd, int src, int dest) {
         return status;
     }
 
-    object_addref(object);
-
     dest_ref->object = src_ref->object;
     dest_ref->flags  = src_ref->flags;
     dest_ref->cookie = src_ref->cookie;
 
-    if(object->type == object_type_ipc_endpoint && object_ref_has_permissions(dest_ref, JINUE_PERM_RECEIVE)) {
-        ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
-        endpoint_add_receiver(endpoint);
-    }
+    object_open(object, dest_ref);
 
     return 0;
 }
@@ -254,8 +249,6 @@ int mint(int owner, const jinue_mint_args_t *mint_args) {
         return status;
     }
 
-    object_addref(object);
-
     dest_ref->object = src_ref->object;
     dest_ref->flags  =
           mint_args->perms
@@ -263,10 +256,7 @@ int mint(int owner, const jinue_mint_args_t *mint_args) {
         | OBJECT_REF_FLAG_IN_USE;
     dest_ref->cookie = mint_args->cookie;
 
-    if(object->type == object_type_ipc_endpoint && object_ref_has_permissions(dest_ref, JINUE_PERM_RECEIVE)) {
-        ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
-        endpoint_add_receiver(endpoint);
-    }
+    object_open(object, dest_ref);
 
     return 0;
 }
@@ -280,17 +270,9 @@ int close(int fd) {
         return status;
     }
     
-    if(object->type == object_type_ipc_endpoint && object_ref_has_permissions(ref, JINUE_PERM_RECEIVE)) {
-        ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
-        endpoint_sub_receiver(endpoint);
-
-        if(!endpoint_has_receivers(endpoint)) {
-            object_mark_destroyed(object);
-        }
-    }
+    object_close(object, ref);
 
     ref->flags = OBJECT_REF_FLAG_NONE;
-    object_subref(ref->object);
 
     return 0;
 }
@@ -308,10 +290,11 @@ int destroy(int fd) {
         return -JINUE_EPERM;
     }
 
+    object_close(object, ref);
+
     object_mark_destroyed(object);
 
-    ref->flags = 0;
-    object_subref(ref->object);
+    ref->flags = OBJECT_REF_FLAG_NONE;
 
     return 0;
 }

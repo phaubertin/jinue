@@ -46,11 +46,17 @@
 
 static void ipc_endpoint_ctor(void *buffer, size_t size);
 
+static void ipc_endpoint_open(object_header_t *object, const object_ref_t *ref);
+
+static void ipc_endpoint_close(object_header_t *object, const object_ref_t *ref);
+
 /** runtime type definition for an IPC endpoint */
 static const object_type_t object_type = {
     .all_permissions    = JINUE_PERM_SEND | JINUE_PERM_RECEIVE,
     .name               = "ipc_endpoint",
     .size               = sizeof(ipc_endpoint_t),
+    .open               = ipc_endpoint_open,
+    .close              = ipc_endpoint_close,
     .cache_ctor         = ipc_endpoint_ctor,
     .cache_dtor         = NULL
 };
@@ -76,6 +82,24 @@ static void ipc_endpoint_ctor(void *buffer, size_t size) {
     jinue_list_init(&endpoint->send_list);
     jinue_list_init(&endpoint->recv_list);
     endpoint->receivers_count = 0;
+}
+
+static void ipc_endpoint_open(object_header_t *object, const object_ref_t *ref) {
+    if(object_ref_has_permissions(ref, JINUE_PERM_RECEIVE)) {
+        ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
+        endpoint_add_receiver(endpoint);
+    }
+}
+
+static void ipc_endpoint_close(object_header_t *object, const object_ref_t *ref) {
+    if(object_ref_has_permissions(ref, JINUE_PERM_RECEIVE)) {
+        ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
+        endpoint_sub_receiver(endpoint);
+
+        if(!endpoint_has_receivers(endpoint)) {
+            object_mark_destroyed(object);
+        }
+    }
 }
 
 /**
@@ -120,8 +144,6 @@ int ipc_endpoint_create_syscall(int fd) {
         return -JINUE_EAGAIN;
     }
 
-    object_addref(&endpoint->header);
-
     ref->object = &endpoint->header;
     ref->flags  =
           OBJECT_REF_FLAG_IN_USE
@@ -129,7 +151,7 @@ int ipc_endpoint_create_syscall(int fd) {
         | object_type_ipc_endpoint->all_permissions;
     ref->cookie = 0;
 
-    endpoint_add_receiver(endpoint);
+    object_open(&endpoint->header, ref);
 
     return fd;
 }

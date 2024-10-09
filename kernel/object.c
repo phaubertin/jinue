@@ -43,3 +43,19 @@ void object_cache_init(slab_cache_t *cache, const object_type_t *type) {
         SLAB_DEFAULTS
     );
 }
+
+void object_open(object_header_t *object, const object_ref_t *ref) {
+    object_addref(object);
+
+    if(object->type->open != NULL) {
+        object->type->open(object, ref);
+    }
+}
+
+void object_close(object_header_t *object, const object_ref_t *ref) {
+    if(object->type->close != NULL) {
+        object->type->close(object, ref);
+    }
+
+    object_subref(object);
+}

@@ -48,6 +48,8 @@ static const object_type_t object_type = {
     .all_permissions    = 0,
     .name               = "process",
     .size               = sizeof(process_t),
+    .open               = NULL,
+    .close              = NULL,
     .cache_ctor         = process_ctor,
     .cache_dtor         = NULL
 };
@@ -112,11 +114,11 @@ int process_create_syscall(int fd) {
         return -JINUE_EAGAIN;
     }
 
-    object_addref(&process->header);
-
     ref->object = &process->header;
     ref->flags  = OBJECT_REF_FLAG_IN_USE | OBJECT_REF_FLAG_OWNER;
     ref->cookie = 0;
+
+    object_open(&process->header, ref);
 
     return 0;
 }
