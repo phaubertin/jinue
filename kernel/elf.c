@@ -32,7 +32,6 @@
 #include <jinue/shared/asm/syscall.h>
 #include <kernel/i686/trap.h>
 #include <kernel/i686/vm.h>
-#include <kernel/boot.h>
 #include <kernel/cmdline.h>
 #include <kernel/descriptor.h>
 #include <kernel/elf.h>
@@ -393,10 +392,9 @@ static void load_segments(
  * Allocate the stack for ELF binary
  *
  * @param elf_info ELF information structure (output)
- * @param boot_alloc boot-time page allocator
- *
+*
  * */
-static void allocate_stack(elf_info_t *elf_info, boot_alloc_t *boot_alloc) {
+static void allocate_stack(elf_info_t *elf_info) {
     /** TODO: check for overlap of stack with loaded segments */
 
     for(addr_t vpage = (addr_t)STACK_START; vpage < (addr_t)STACK_BASE; vpage += PAGE_SIZE) {
@@ -529,7 +527,6 @@ static void initialize_descriptors(process_t *process) {
  * @param argv0 name of binary
  * @param cmdline full kernel command line
  * @param process process in which to load the ELF binary
- * @param boot_alloc boot-time page allocator
  *
  * */
 void elf_load(
@@ -537,8 +534,7 @@ void elf_load(
         Elf32_Ehdr      *ehdr,
         const char      *argv0,
         const char      *cmdline,
-        process_t       *process,
-        boot_alloc_t    *boot_alloc) {
+        process_t       *process) {
     
     if(! elf_check(ehdr)) {
         panic("ELF binary is invalid");
@@ -546,7 +542,7 @@ void elf_load(
 
     load_segments(elf_info, ehdr, process);
 
-    allocate_stack(elf_info, boot_alloc);
+    allocate_stack(elf_info);
 
     initialize_stack(elf_info, cmdline, argv0);
     

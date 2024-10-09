@@ -33,7 +33,6 @@
 #include <kernel/i686/cpu_data.h>
 #include <kernel/i686/thread.h>
 #include <kernel/i686/vm.h>
-#include <kernel/boot.h>
 #include <kernel/descriptor.h>
 #include <kernel/list.h>
 #include <kernel/object.h>

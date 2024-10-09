@@ -30,6 +30,7 @@
  */
 
 #include <kernel/i686/boot.h>
+#include <kernel/i686/boot_alloc.h>
 #include <kernel/i686/cpu.h>
 #include <kernel/i686/cpu_data.h>
 #include <kernel/i686/descriptors.h>
@@ -44,7 +45,6 @@
 #include <kernel/i686/vm.h>
 #include <kernel/i686/vm_pae.h>
 #include <kernel/i686/x86.h>
-#include <kernel/boot.h>
 #include <kernel/cmdline.h>
 #include <kernel/logging.h>
 #include <kernel/panic.h>
@@ -247,7 +247,6 @@ static void select_syscall_implementation(void) {
 void machine_init(
         Elf32_Ehdr              *kernel_elf,
         const cmdline_opts_t    *cmdline_opts,
-        boot_alloc_t            *boot_alloc,
         const boot_info_t       *boot_info) {
 
     cpu_detect_features();
@@ -260,8 +259,11 @@ void machine_init(
 
     move_kernel_at_16mb(boot_info);
 
+    boot_alloc_t boot_alloc;
+    boot_alloc_init(&boot_alloc, boot_info);
+
     bool pae_enabled = maybe_enable_pae(
-            boot_alloc,
+            &boot_alloc,
             boot_info,
             cmdline_opts);
 
@@ -272,16 +274,14 @@ void machine_init(
      * Do this after enabling PAE: we want the temporary PAE page tables to be
      * allocated after 1MB because we won't need them anymore once the final
      * address space is created. */
-    boot_reinit_at_16mb(boot_alloc);
+    boot_reinit_at_16mb(&boot_alloc);
 
     /* allocate per-CPU data
      * 
      * We need to ensure that the Task State Segment (TSS) contained in this
      * memory block does not cross a page boundary. */
     assert(sizeof(cpu_data_t) < CPU_DATA_ALIGNMENT);
-    cpu_data_t *cpu_data = boot_heap_alloc(
-            boot_alloc,
-            cpu_data_t, CPU_DATA_ALIGNMENT);
+    cpu_data_t *cpu_data = boot_heap_alloc(&boot_alloc, cpu_data_t, CPU_DATA_ALIGNMENT);
     
     /* initialize per-CPU data */
     cpu_init_data(cpu_data);
@@ -298,16 +298,16 @@ void machine_init(
 
     addr_space_t *addr_space = vm_create_initial_addr_space(
             kernel_elf,
-            boot_alloc,
+            &boot_alloc,
             boot_info);
 
-    memory_initialize_array(boot_alloc, boot_info);
+    memory_initialize_array(&boot_alloc, boot_info);
 
     /* After this, VGA output is not possible until we switch to the
      * new address space (see the call to vm_switch_addr_space() below).
      * Attempting it will cause a kernel panic due to a page fault (and the
      * panic handler itself attempts to log). */
-    remap_text_video_memory(boot_alloc);
+    remap_text_video_memory(&boot_alloc);
 
     /* switch to new address space */
     vm_switch_addr_space(addr_space, cpu_data);
@@ -317,11 +317,11 @@ void machine_init(
     /* From this point, we are ready to switch to the new address space, so we
      * don't need to allocate any more pages from the boot allocator. Transfer
      * the remaining pages to the run-time page allocator. */
-    boot_reinit_at_klimit(boot_alloc);
-    initialize_page_allocator(boot_alloc);
+    boot_reinit_at_klimit(&boot_alloc);
+    initialize_page_allocator(&boot_alloc);
 
     /* Initialize GDT and TSS */
-    init_descriptors(cpu_data, boot_alloc);
+    init_descriptors(cpu_data, &boot_alloc);
 
     /* create slab cache to allocate PDPTs
      *

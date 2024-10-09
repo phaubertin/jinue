@@ -54,8 +54,7 @@ void elf_load(
         Elf32_Ehdr      *ehdr,
         const char      *argv0,
         const char      *cmdline,
-        process_t       *process,
-        boot_alloc_t    *boot_alloc);
+        process_t       *process);
 
 const char *elf_symbol_name(const Elf32_Ehdr *ehdr, const Elf32_Sym *symbol_header);
 

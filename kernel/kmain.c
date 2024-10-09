@@ -31,7 +31,6 @@
 
 #include <kernel/i686/boot.h>
 #include <kernel/i686/machine.h>
-#include <kernel/boot.h>
 #include <kernel/cmdline.h>
 #include <kernel/elf.h>
 #include <kernel/ipc.h>
@@ -120,15 +119,11 @@ void kmain(void) {
         boot_info->ramdisk_size,
         boot_info->ramdisk_start);
 
-    /* Initialize the boot allocator. */
-    boot_alloc_t boot_alloc;
-    boot_alloc_init(&boot_alloc, boot_info);
-
     /* Check and get kernel ELF header */
     Elf32_Ehdr *kernel = get_kernel_elf_header(boot_info);
 
     /* initialize machine-dependent code */
-    machine_init(kernel, cmdline_opts, &boot_alloc, boot_info);
+    machine_init(kernel, cmdline_opts, boot_info);
 
     /* initialize caches */
     ipc_boot_init();
@@ -151,8 +146,7 @@ void kmain(void) {
             loader,
             "jinue-userspace-loader",
             boot_info->cmdline,
-            process,
-            &boot_alloc);
+            process);
 
     /* create initial thread */
     thread_t *thread = thread_create(

@@ -32,13 +32,13 @@
 #include <jinue/shared/asm/errno.h>
 #include <jinue/shared/asm/syscall.h>
 #include <kernel/i686/boot.h>
+#include <kernel/i686/boot_alloc.h>
 #include <kernel/i686/cpu_data.h>
 #include <kernel/i686/memory.h>
 #include <kernel/i686/vga.h>
 #include <kernel/i686/vm.h>
 #include <kernel/i686/vm_private.h>
 #include <kernel/i686/x86.h>
-#include <kernel/boot.h>
 #include <kernel/descriptor.h>
 #include <kernel/elf.h>
 #include <kernel/object.h>
