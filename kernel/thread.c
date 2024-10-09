@@ -42,6 +42,16 @@
 #include <kernel/panic.h>
 #include <kernel/thread.h>
 
+/** runtime type definition for a thread */
+static const object_type_t object_type = {
+    .name       = "thread",
+    .size       = sizeof(thread_t),
+    .cache_ctor = NULL,
+    .cache_dtor = NULL
+};
+
+const object_type_t *object_type_thread = &object_type;
+
 static jinue_list_t ready_list = JINUE_LIST_STATIC;
 
 int thread_create_syscall(
@@ -61,7 +71,7 @@ int thread_create_syscall(
         return status;
     }
 
-    if(object->type != OBJECT_TYPE_PROCESS) {
+    if(object->type != object_type_process) {
         return -JINUE_EBADF;
     }
 
@@ -72,7 +82,7 @@ int thread_create_syscall(
 }
 
 static void thread_init(thread_t *thread, process_t *process) {
-    object_header_init(&thread->header, OBJECT_TYPE_THREAD);
+    object_header_init(&thread->header, object_type_thread);
 
     jinue_node_init(&thread->thread_list);
 

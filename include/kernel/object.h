@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -35,12 +35,6 @@
 #include <jinue/shared/asm/permissions.h>
 #include <kernel/types.h>
 
-#define OBJECT_TYPE_THREAD          1
-
-#define OBJECT_TYPE_IPC             2
-
-#define OBJECT_TYPE_PROCESS         3
-
 
 #define OBJECT_FLAG_NONE            0
 
@@ -55,8 +49,8 @@ static inline bool object_is_destroyed(object_header_t *object) {
     return !!(object->flags & OBJECT_FLAG_DESTROYED);
 }
 
-static inline void object_header_init(object_header_t *object, int type) {
-    object->type        = type;
+static inline void object_header_init(object_header_t *object, const object_type_t *type) {
+    object->type = type;
     object->ref_count   = 0;
     object->flags       = OBJECT_FLAG_NONE;
 }
@@ -69,6 +63,8 @@ static inline void object_subref(object_header_t *object) {
     /** TODO free at zero */
     --object->ref_count;
 }
+
+void object_cache_init(slab_cache_t *cache, const object_type_t *type);
 
 /* Number reference flags downward starting at 31 to not conflict with PERM_... flags. */
 

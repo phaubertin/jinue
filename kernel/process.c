@@ -41,24 +41,29 @@
 #include <stddef.h>
 #include <string.h>
 
+static void process_ctor(void *buffer, size_t ignore);
 
+/** runtime type definition for a process */
+static const object_type_t object_type = {
+    .name       = "process",
+    .size       = sizeof(process_t),
+    .cache_ctor = process_ctor,
+    .cache_dtor = NULL
+};
+
+const object_type_t *object_type_process = &object_type;
+
+/** slab cache used for allocating process objects */
 static slab_cache_t process_cache;
 
 static void process_ctor(void *buffer, size_t ignore) {
     process_t *process = buffer;
 
-    object_header_init(&process->header, OBJECT_TYPE_PROCESS);
+    object_header_init(&process->header, object_type_process);
 }
 
 void process_boot_init(void) {
-    slab_cache_init(
-            &process_cache,
-            "process_cache",
-            sizeof(process_t),
-            0,
-            process_ctor,
-            NULL,
-            SLAB_DEFAULTS);
+    object_cache_init(&process_cache, object_type_process);
 }
 
 static void process_init(process_t *process) {

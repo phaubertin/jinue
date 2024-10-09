@@ -44,8 +44,20 @@
 #include <stddef.h>
 #include <string.h>
 
+static void ipc_endpoint_ctor(void *buffer, size_t size);
+
+/** runtime type definition for an IPC endpoint */
+static const object_type_t object_type = {
+    .name       = "ipc_endpoint",
+    .size       = sizeof(ipc_endpoint_t),
+    .cache_ctor = ipc_endpoint_ctor,
+    .cache_dtor = NULL
+};
+
+const object_type_t *object_type_ipc_endpoint = &object_type;
+
 /** slab cache used for allocating IPC endpoint objects */
-static slab_cache_t ipc_object_cache;
+static slab_cache_t ipc_endpoint_cache;
 
 /**
  * Object constructor for IPC endpoint slab allocator
@@ -59,7 +71,7 @@ static slab_cache_t ipc_object_cache;
 static void ipc_endpoint_ctor(void *buffer, size_t size) {
     ipc_endpoint_t *endpoint = buffer;
     
-    object_header_init(&endpoint->header, OBJECT_TYPE_IPC);
+    object_header_init(&endpoint->header, object_type_ipc_endpoint);
     jinue_list_init(&endpoint->send_list);
     jinue_list_init(&endpoint->recv_list);
     endpoint->receivers_count = 0;
@@ -70,14 +82,7 @@ static void ipc_endpoint_ctor(void *buffer, size_t size) {
  *
  */
 void ipc_boot_init(void) {
-    slab_cache_init(
-            &ipc_object_cache,
-            "ipc_object_cache",
-            sizeof(ipc_endpoint_t),
-            0,
-            ipc_endpoint_ctor,
-            NULL,
-            SLAB_DEFAULTS);
+    object_cache_init(&ipc_endpoint_cache, object_type_ipc_endpoint);
 }
 
 /**
@@ -87,7 +92,7 @@ void ipc_boot_init(void) {
  *
  */
 static ipc_endpoint_t *ipc_endpoint_create(void) {
-    return slab_cache_alloc(&ipc_object_cache);
+    return slab_cache_alloc(&ipc_endpoint_cache);
 }
 
 /**
@@ -299,7 +304,7 @@ int ipc_send(int fd, int function, const jinue_message_t *message) {
         return status;
     }
 
-    if(object->type != OBJECT_TYPE_IPC) {
+    if(object->type != object_type_ipc_endpoint) {
         return -JINUE_EBADF;
     }
 
@@ -388,7 +393,7 @@ int ipc_receive(int fd, jinue_message_t *message) {
         return status;
     }
 
-    if(object->type != OBJECT_TYPE_IPC) {
+    if(object->type != object_type_ipc_endpoint) {
         return -JINUE_EBADF;
     }
 

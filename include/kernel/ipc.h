@@ -37,6 +37,8 @@
 
 #define IPC_ALL_PERMISSIONS (JINUE_PERM_SEND | JINUE_PERM_RECEIVE)
 
+extern const object_type_t *object_type_ipc_endpoint;
+
 static inline void endpoint_add_receiver(ipc_endpoint_t *endpoint) {
     ++endpoint->receivers_count;
 }

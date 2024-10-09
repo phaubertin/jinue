@@ -34,6 +34,7 @@
 #include <kernel/descriptor.h>
 #include <kernel/ipc.h>
 #include <kernel/object.h>
+#include <kernel/process.h>
 
 /**
  * Get an object reference by descriptor in a specified process
@@ -145,7 +146,7 @@ static int get_process(process_t **process, int process_fd) {
         return status;
     }
 
-    if(object->type != OBJECT_TYPE_PROCESS) {
+    if(object->type != object_type_process) {
         return -JINUE_EBADF;
     }
 
@@ -187,7 +188,7 @@ int dup(int process_fd, int src, int dest) {
     dest_ref->flags  = src_ref->flags;
     dest_ref->cookie = src_ref->cookie;
 
-    if(object->type == OBJECT_TYPE_IPC && object_ref_has_permissions(dest_ref, JINUE_PERM_RECEIVE)) {
+    if(object->type == object_type_ipc_endpoint && object_ref_has_permissions(dest_ref, JINUE_PERM_RECEIVE)) {
         ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
         endpoint_add_receiver(endpoint);
     }
@@ -198,15 +199,13 @@ int dup(int process_fd, int src, int dest) {
 static int check_mint_permissions(const object_header_t *object, int perms) {
     int mask = 0;
 
-    switch(object->type) {
-        case OBJECT_TYPE_IPC:
-            mask = IPC_ALL_PERMISSIONS;
-            break;
-        case OBJECT_TYPE_PROCESS:
-            /* TODO implement permissions for process */
-            return 0;
-        default:
-            return -JINUE_EINVAL;
+    if(object->type == object_type_ipc_endpoint) {
+        mask = IPC_ALL_PERMISSIONS;
+    } else if (object->type == object_type_process) {
+        /* TODO implement permissions for process */
+        return 0;
+    } else {
+        return -JINUE_EINVAL;
     }
 
     if((perms & ~mask) != 0) {
@@ -270,7 +269,7 @@ int mint(int owner, const jinue_mint_args_t *mint_args) {
         | OBJECT_REF_FLAG_IN_USE;
     dest_ref->cookie = mint_args->cookie;
 
-    if(object->type == OBJECT_TYPE_IPC && object_ref_has_permissions(dest_ref, JINUE_PERM_RECEIVE)) {
+    if(object->type == object_type_ipc_endpoint && object_ref_has_permissions(dest_ref, JINUE_PERM_RECEIVE)) {
         ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
         endpoint_add_receiver(endpoint);
     }
@@ -287,7 +286,7 @@ int close(int fd) {
         return status;
     }
     
-    if(object->type == OBJECT_TYPE_IPC && object_ref_has_permissions(ref, JINUE_PERM_RECEIVE)) {
+    if(object->type == object_type_ipc_endpoint && object_ref_has_permissions(ref, JINUE_PERM_RECEIVE)) {
         ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
         endpoint_sub_receiver(endpoint);
 

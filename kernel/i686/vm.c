@@ -938,7 +938,7 @@ static int get_addr_space_by_descriptor(addr_space_t **addr_space, int fd) {
         return status;
     }
 
-    if(object->type != OBJECT_TYPE_PROCESS) {
+    if(object->type != object_type_process) {
         return -JINUE_EBADF;
     }
 

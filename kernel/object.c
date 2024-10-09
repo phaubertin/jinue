@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,21 +29,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_PROCESS_H
-#define JINUE_KERNEL_PROCESS_H
+#include <kernel/object.h>
+#include <kernel/slab.h>
 
-#include <kernel/types.h>
-
-extern const object_type_t *object_type_process;
-
-void process_boot_init(void);
-
-process_t *process_create(void);
-
-void process_destroy(process_t *process);
-
-int process_create_syscall(int fd);
-
-void process_switch_to(process_t *process);
-
-#endif
+void object_cache_init(slab_cache_t *cache, const object_type_t *type) {
+    slab_cache_init(
+        cache,
+        type->name,
+        type->size,
+        0,
+        type->cache_ctor,
+        type->cache_dtor,
+        SLAB_DEFAULTS
+    );
+}

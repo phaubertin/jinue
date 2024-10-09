@@ -53,10 +53,21 @@ typedef struct {
     void                            *first_page_at_16mb;
 } boot_alloc_t;
 
+typedef struct slab_cache_t slab_cache_t;
+
+typedef void (*slab_ctor_t)(void *, size_t);
+
 typedef struct {
-    int type;
-    int ref_count;
-    int flags;
+    char        *name;
+    size_t       size;
+    slab_ctor_t  cache_ctor;
+    slab_ctor_t  cache_dtor;
+} object_type_t;
+
+typedef struct {
+    const object_type_t *type;
+    int                  ref_count;
+    int                  flags;
 } object_header_t;
 
 typedef struct {
