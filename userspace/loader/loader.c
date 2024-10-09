@@ -98,7 +98,7 @@ static int load_init(elf_info_t *elf_info, const jinue_dirent_t *init, int argc,
         INIT_PROCESS_DESCRIPTOR,
         INIT_PROCESS_DESCRIPTOR,
         JINUE_SELF_PROCESS_DESCRIPTOR,
-        /* TODO change this one permissions are implemented for process descriptors */
+        /* TODO change this once permissions are implemented for process descriptors */
         0,
         0,
         &errno
