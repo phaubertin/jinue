@@ -31,8 +31,6 @@
 
 #include <kernel/i686/boot.h>
 #include <kernel/i686/machine.h>
-#include <kernel/i686/memory.h>
-#include <kernel/i686/vm.h>
 #include <kernel/boot.h>
 #include <kernel/cmdline.h>
 #include <kernel/elf.h>
