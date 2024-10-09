@@ -128,3 +128,7 @@ void process_switch_to(process_t *process) {
             &process->addr_space,
             get_cpu_local_data());
 }
+
+process_t *get_current_process(void) {
+    return get_current_thread()->process;
+}

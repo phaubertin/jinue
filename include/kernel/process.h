@@ -46,4 +46,6 @@ int process_create_syscall(int fd);
 
 void process_switch_to(process_t *process);
 
+process_t *get_current_process(void);
+
 #endif
