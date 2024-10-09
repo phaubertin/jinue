@@ -37,12 +37,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define JINUE_IPC_NONE      0
-
-#define JINUE_IPC_SYSTEM    (1<<0)
-
-#define JINUE_IPC_LOADER    (1<<1)
-
 typedef struct {
     void        *addr;
     size_t       size;

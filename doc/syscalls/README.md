@@ -15,7 +15,7 @@
 | 6       | [SET_THREAD_LOCAL](set-thread-local.md) | Set Thread-Local Storage             |
 | 7       | [GET_THREAD_LOCAL](get-thread-local.md) | Get Thread-Local Storage Address     |
 | 8       | [GET_USER_MEMORY](get-user-memory.md)   | Get User Memory Map                  |
-| 9       | [CREATE_IPC](create-ipc.md)             | Create IPC Endpoint                  |
+| 9       | [CREATE_ENDPOINT](create-endpoint.md)   | Create IPC Endpoint                  |
 | 10      | [RECEIVE](receive.md)                   | Receive Message                      |
 | 11      | [REPLY](reply.md)                       | Reply to Message                     |
 | 12      | [EXIT_THREAD](exit-thread.md)           | Exit the Current Thread              |
@@ -23,7 +23,10 @@
 | 14      | [CREATE_PROCESS](create-process.md)     | Create Process                       |
 | 15      | [MCLONE](mclone.md)                     | Clone a Memory Mapping               |
 | 16      | [DUP](dup.md)                           | Duplicate a Descriptor               |
-| 17-4095 | -                                       | Reserved                             |
+| 17      | [CLOSE](close.md)                       | Close a Descriptor                   |
+| 18      | [DESTROY](destroy.md)                   | Destroy a Kernel Object              |
+| 19      | [MINT](mint.md)                         | Mint a Descriptor                    |
+| 20-4095 | -                                       | Reserved                             |
 | 4096+   | [SEND](send.md)                         | Send Message                         |
 
 #### Reserved Function Numbers
@@ -97,6 +100,6 @@ message, which allows a server thread to make use of it.
 
 The system call interface uses descriptors to refer to kernel resources, such as
 threads, processes and IPC endpoints. A descriptor, similar to a Unix
-[file descriptors](https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html#tag_03_166),
+[file descriptor](https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html#tag_03_166),
 is a per-process unique, non-negative integer. It can be specified as an
 argument to or be returned by system calls.

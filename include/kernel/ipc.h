@@ -32,20 +32,26 @@
 #ifndef JINUE_KERNEL_IPC_H
 #define JINUE_KERNEL_IPC_H
 
+#include <jinue/shared/asm/permissions.h>
 #include <kernel/types.h>
 
+extern const object_type_t *object_type_ipc_endpoint;
 
-/* object header flag bits 0..7 are reserved for common flags, flag bits 8 and
- * up are usable as per object type flags */
+static inline void endpoint_add_receiver(ipc_endpoint_t *endpoint) {
+    ++endpoint->receivers_count;
+}
 
-#define IPC_FLAG_NONE           0
+static inline void endpoint_sub_receiver(ipc_endpoint_t *endpoint) {
+    --endpoint->receivers_count;
+}
 
-#define IPC_FLAG_SYSTEM         (1<<8)
-
+static inline bool endpoint_has_receivers(const ipc_endpoint_t *endpoint) {
+    return endpoint->receivers_count > 0;
+}
 
 void ipc_boot_init(void);
 
-int ipc_create_for_current_process(int flags);
+int ipc_endpoint_create_syscall(int fd);
 
 int ipc_send(int fd, int function, const jinue_message_t *message);
 

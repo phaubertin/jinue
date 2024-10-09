@@ -183,11 +183,11 @@ intptr_t jinue_reply(const jinue_message_t *message, int *perrno) {
     return jinue_syscall_with_usual_convention(&args, perrno);
 }
 
-int jinue_create_ipc(int flags, int *perrno) {
+int jinue_create_endpoint(int fd, int *perrno) {
     jinue_syscall_args_t args;
 
-    args.arg0 = JINUE_SYS_CREATE_IPC;
-    args.arg1 = (uintptr_t)flags;
+    args.arg0 = JINUE_SYS_CREATE_ENDPOINT;
+    args.arg1 = fd;
     args.arg2 = 0;
     args.arg3 = 0;
 
@@ -237,6 +237,52 @@ int jinue_dup(int process, int src, int dest, int *perrno) {
     args.arg1 = process;
     args.arg2 = src;
     args.arg3 = dest;
+
+    return jinue_syscall_with_usual_convention(&args, perrno);
+}
+
+int jinue_close(int fd, int *perrno) {
+    jinue_syscall_args_t args;
+
+    args.arg0 = JINUE_SYS_CLOSE;
+    args.arg1 = fd;
+    args.arg2 = 0;
+    args.arg3 = 0;
+
+    return jinue_syscall_with_usual_convention(&args, perrno);
+}
+
+int jinue_destroy(int fd, int *perrno) {
+    jinue_syscall_args_t args;
+
+    args.arg0 = JINUE_SYS_DESTROY;
+    args.arg1 = fd;
+    args.arg2 = 0;
+    args.arg3 = 0;
+
+    return jinue_syscall_with_usual_convention(&args, perrno);
+}
+
+int jinue_mint(
+        int          owner,
+        int          process,
+        int          fd,
+        int          perms,
+        uintptr_t    cookie,
+        int         *perrno) {
+    
+    jinue_syscall_args_t args;
+    jinue_mint_args_t mint_args;
+
+    mint_args.process = process;
+    mint_args.fd = fd;
+    mint_args.perms = perms;
+    mint_args.cookie = cookie;
+
+    args.arg0 = JINUE_SYS_MINT;
+    args.arg1 = owner;
+    args.arg2 = (uintptr_t)&mint_args;
+    args.arg3 = 0;
 
     return jinue_syscall_with_usual_convention(&args, perrno);
 }

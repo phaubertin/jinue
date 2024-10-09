@@ -75,12 +75,13 @@ sources.kernel.c = \
 	i686/vm_x86.c \
 	boot.c \
 	cmdline.c \
+	descriptor.c \
 	debug.c \
-	dup.c \
 	elf.c \
 	ipc.c \
 	kmain.c \
 	logging.c \
+	object.c \
 	page_alloc.c \
 	panic.c \
 	process.c \

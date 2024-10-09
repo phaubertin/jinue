@@ -29,59 +29,33 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/errno.h>
-#include <kernel/i686/thread.h>
-#include <kernel/dup.h>
 #include <kernel/object.h>
-#include <kernel/process.h>
+#include <kernel/slab.h>
 
-static int get_process(process_t **process, int process_fd) {
-    object_header_t *object;
-
-    int status = process_get_object_header(
-            &object,
-            NULL,
-            process_fd,
-            get_current_thread()->process
+void object_cache_init(slab_cache_t *cache, const object_type_t *type) {
+    slab_cache_init(
+        cache,
+        type->name,
+        type->size,
+        0,
+        type->cache_ctor,
+        type->cache_dtor,
+        SLAB_DEFAULTS
     );
-
-    if(status < 0) {
-        return status;
-    }
-
-    if(object->type != OBJECT_TYPE_PROCESS) {
-        return -JINUE_EBADF;
-    }
-
-    *process = (process_t *)object;
-    return 0;
 }
 
-int dup(int process_fd, int src, int dest) {
-    process_t *process;
+void object_open(object_header_t *object, const object_ref_t *ref) {
+    object_addref(object);
 
-    int status = get_process(&process, process_fd);
+    if(object->type->open != NULL) {
+        object->type->open(object, ref);
+    }
+}
 
-    if(status < 0) {
-        return status;
+void object_close(object_header_t *object, const object_ref_t *ref) {
+    if(object->type->close != NULL) {
+        object->type->close(object, ref);
     }
 
-    object_ref_t *src_ref = process_get_descriptor(get_current_thread()->process, src);
-
-    if(!object_ref_is_valid(src_ref) || object_ref_is_closed(src_ref)) {
-        return -JINUE_EBADF;
-    }
-
-    object_ref_t *dest_ref = process_get_descriptor(process, dest);
-
-    if(object_ref_is_valid(dest_ref)) {
-        return -JINUE_EBADF;
-    }
-
-    object_addref(src_ref->object);
-    dest_ref->object = src_ref->object;
-    dest_ref->flags  = src_ref->flags;
-    dest_ref->cookie = src_ref->cookie;
-
-    return 0;
+    object_subref(object);
 }

@@ -34,6 +34,8 @@
 
 #include <kernel/types.h>
 
+extern const object_type_t *object_type_thread;
+
 int thread_create_syscall(
         int              process_fd,
         void            *entry,

@@ -1,23 +1,27 @@
-# CREATE_PROCESS - Create a Process
+# DESTROY - Destroy a Kernel Object
 
 ## Description
 
-Create a new process.
+Close a descriptor and destroy the kernel object to which it refers.
+
+In order to use this function, the owner descriptor for the resource must be
+specified. The owner descriptor is the descriptor that was specified in the
+call to the function that created the resource (e.g. CREATE_ENDPOINT).
 
 ## Arguments
 
-Function number (`arg0`) is 14.
+Function number (`arg0`) is 18.
 
-The descriptor number to bind to the new process is set in `arg1`.
+The descriptor number is set in `arg1`.
 
 ```
     +----------------------------------------------------------------+
-    |                         function = 14                          |  arg0
+    |                        function = 18                           |  arg0
     +----------------------------------------------------------------+
     31                                                               0
     
     +----------------------------------------------------------------+
-    |                       descriptor number                        |  arg1
+    |                      descriptor number                         |  arg1
     +----------------------------------------------------------------+
     31                                                               0
 
@@ -39,5 +43,6 @@ returns -1 and an error number is set (in `arg1`).
 
 ## Errors
 
-* JINUE_EBADF if the specified descriptor is already in use.
-* JINUE_EAGAIN if the process could not be created because of needed resources.
+* JINUE_EBADF if the specified target process descriptor is invalid or is
+already closed.
+* JINUE_EPERM if the specified descriptor is not the owner descriptor.

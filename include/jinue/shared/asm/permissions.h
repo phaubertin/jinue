@@ -29,9 +29,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_DUP_H
-#define JINUE_KERNEL_DUP_H
+#ifndef _JINUE_SHARED_ASM_PERMISSIONS_H
+#define _JINUE_SHARED_ASM_PERMISSIONS_H
 
-int dup(int process_fd, int src, int dest);
+#define JINUE_PERM_SEND     (1<<0)
+
+#define JINUE_PERM_RECEIVE  (1<<1)
 
 #endif

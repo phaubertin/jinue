@@ -34,6 +34,7 @@
 #include <kernel/i686/vm.h>
 #include <kernel/boot.h>
 #include <kernel/cmdline.h>
+#include <kernel/descriptor.h>
 #include <kernel/elf.h>
 #include <kernel/logging.h>
 #include <kernel/object.h>
@@ -505,12 +506,14 @@ static void initialize_stack(
  *
  * */
 static void initialize_descriptors(process_t *process) {
-    object_ref_t *ref = process_get_descriptor(process, JINUE_SELF_PROCESS_DESCRIPTOR);
+    object_ref_t *ref;
+    (void)dereference_unused_descriptor(&ref, process, JINUE_SELF_PROCESS_DESCRIPTOR);
 
-    object_addref(&process->header);
     ref->object = &process->header;
-    ref->flags  = OBJECT_REF_FLAG_VALID;
+    ref->flags  = OBJECT_REF_FLAG_IN_USE;
     ref->cookie = 0;
+
+    object_open(&process->header, ref);
 }
 
 /**

@@ -582,7 +582,7 @@ void vm_pae_copy_pte(pte_t *dest, const pte_t *src) {
 void vm_pae_create_pdpt_cache(void) {
     slab_cache_init(
             &pdpt_cache,
-            "vm_pae_pdpt_cache",
+            "pae_pdpt",
             sizeof(pdpt_t),
             sizeof(pdpt_t),
             NULL,

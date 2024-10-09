@@ -34,6 +34,7 @@
 
 #include <jinue/shared/asm/errno.h>
 #include <jinue/shared/asm/memory.h>
+#include <jinue/shared/asm/permissions.h>
 #include <jinue/shared/ipc.h>
 #include <jinue/shared/syscall.h>
 #include <jinue/shared/types.h>
@@ -79,7 +80,7 @@ intptr_t jinue_receive(int fd, const jinue_message_t *message, int *perrno);
 
 intptr_t jinue_reply(const jinue_message_t *message, int *perrno);
 
-int jinue_create_ipc(int flags, int *perrno);
+int jinue_create_endpoint(int fd, int *perrno);
 
 int jinue_create_process(int fd, int *perrno);
 
@@ -93,5 +94,17 @@ int jinue_mclone(
         int     *perrno);
 
 int jinue_dup(int process, int src, int dest, int *perrno);
+
+int jinue_close(int fd, int *perrno);
+
+int jinue_destroy(int fd, int *perrno);
+
+int jinue_mint(
+        int          owner,
+        int          process,
+        int          fd,
+        int          perms,
+        uintptr_t    cookie,
+        int         *perrno);
 
 #endif

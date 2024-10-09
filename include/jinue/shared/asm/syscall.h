@@ -58,7 +58,7 @@
 #define JINUE_SYS_GET_USER_MEMORY       8
 
 /** create an IPC object to receive messages */
-#define JINUE_SYS_CREATE_IPC            9
+#define JINUE_SYS_CREATE_ENDPOINT            9
 
 /** receive a message on an IPC object */
 #define JINUE_SYS_RECEIVE               10
@@ -80,6 +80,15 @@
 
 /** duplicate a descriptor from the current process to another */
 #define JINUE_SYS_DUP                   16
+
+/** close a descriptor in the current process */
+#define JINUE_SYS_CLOSE                 17
+
+/** destroy a kernel object through a descriptor in the current process */
+#define JINUE_SYS_DESTROY               18
+
+/** create a descriptor with specified cookie and permissions */
+#define JINUE_SYS_MINT                  19
 
 /** start of function numbers for user space messages */
 #define JINUE_SYS_USER_BASE             4096

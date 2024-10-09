@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,21 +29,29 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_PROCESS_H
-#define JINUE_KERNEL_PROCESS_H
+#ifndef JINUE_KERNEL_DESCRIPTOR_H
+#define JINUE_KERNEL_DESCRIPTOR_H
 
+#include <jinue/shared/asm/permissions.h>
 #include <kernel/types.h>
 
-extern const object_type_t *object_type_process;
+int dereference_object_descriptor(
+        object_header_t **pobject,
+        object_ref_t    **pref,
+        process_t        *process,
+        int               fd);
 
-void process_boot_init(void);
+int dereference_unused_descriptor(
+        object_ref_t    **pref,
+        process_t        *process,
+        int               fd);
 
-process_t *process_create(void);
+int dup(int process_fd, int src, int dest);
 
-void process_destroy(process_t *process);
+int mint(int owner, const jinue_mint_args_t *mint_args);
 
-int process_create_syscall(int fd);
+int close(int fd);
 
-void process_switch_to(process_t *process);
+int destroy(int fd);
 
 #endif

@@ -4,6 +4,11 @@
 
 Create a copy of a descriptor from the current process in a target process.
 
+A owner descriptor cannot be duplicated with this (or any) function. A owner
+descriptor is the descriptor that was specified in the call to the function
+that created a kernel resource (e.g. [CREATE_ENDPOINT](create-endpoint.md)) and that
+can be used to [mint](mint.md) other descriptors to that resource.
+
 ## Arguments
 
 Function number (`arg0`) is 16.
@@ -15,7 +20,7 @@ The source descriptor is set in `arg2` and the destination descriptor is set in
 
 ```
     +----------------------------------------------------------------+
-    |                         function = 4                           |  arg0
+    |                        function = 16                           |  arg0
     +----------------------------------------------------------------+
     31                                                               0
     
@@ -44,5 +49,6 @@ returns -1 and an error number is set (in `arg1`).
 
 * JINUE_EBADF if the specified target process descriptor is invalid, or does
 not refer to a process, or is closed.
-* JINUE_EBADF if the specified source descriptor is invalid or is closed.
-* JINUE_EBADF if the specified destination descriptor is invalid.
+* JINUE_EBADF if the specified source descriptor is invalid, or is a owner
+descriptor, or is closed.
+* JINUE_EBADF if the specified destination descriptor is already in use.

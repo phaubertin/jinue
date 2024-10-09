@@ -1,23 +1,23 @@
-# CREATE_PROCESS - Create a Process
+# CLOSE - Close a Descriptor
 
 ## Description
 
-Create a new process.
+Close a descriptor.
 
 ## Arguments
 
-Function number (`arg0`) is 14.
+Function number (`arg0`) is 17.
 
-The descriptor number to bind to the new process is set in `arg1`.
+The descriptor number is set in `arg1`.
 
 ```
     +----------------------------------------------------------------+
-    |                         function = 14                          |  arg0
+    |                        function = 17                           |  arg0
     +----------------------------------------------------------------+
     31                                                               0
     
     +----------------------------------------------------------------+
-    |                       descriptor number                        |  arg1
+    |                      descriptor number                         |  arg1
     +----------------------------------------------------------------+
     31                                                               0
 
@@ -39,5 +39,5 @@ returns -1 and an error number is set (in `arg1`).
 
 ## Errors
 
-* JINUE_EBADF if the specified descriptor is already in use.
-* JINUE_EAGAIN if the process could not be created because of needed resources.
+* JINUE_EBADF if the specified target process descriptor is invalid or is
+already closed.

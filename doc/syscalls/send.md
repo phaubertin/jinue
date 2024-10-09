@@ -49,6 +49,8 @@ failure, the return value set in `arg0` is -1 and an error number is set in
 
 * JINUE_EBADF if the specified descriptor is invalid, or does not refer to an
 IPC endpoint, or is closed.
+* JINUE_EPERM if the descriptor does not have send permissions on the IPC
+endpoint.
 * JINUE_EIO if the IPC endpoint no longer exists.
 * JINUE_E2BIG if a receiving thread attempted to receive the message but it was
 too large for its receive buffer(s).

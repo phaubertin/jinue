@@ -53,17 +53,37 @@ typedef struct {
     void                            *first_page_at_16mb;
 } boot_alloc_t;
 
-typedef struct {
-    int type;
-    int ref_count;
-    int flags;
-} object_header_t;
+typedef struct slab_cache_t slab_cache_t;
+
+typedef void (*slab_ctor_t)(void *, size_t);
+
+typedef struct object_ref_t object_ref_t;
+
+typedef struct object_header_t object_header_t;
+
+typedef void (*object_ref_func_t)(object_header_t *, const object_ref_t *);
 
 typedef struct {
+    int                  all_permissions;
+    char                *name;
+    size_t               size;
+    object_ref_func_t    open;
+    object_ref_func_t    close;
+    slab_ctor_t          cache_ctor;
+    slab_ctor_t          cache_dtor;
+} object_type_t;
+
+struct object_header_t {
+    const object_type_t *type;
+    int                  ref_count;
+    int                  flags;
+};
+
+struct object_ref_t {
     object_header_t *object;
     uintptr_t        flags;
     uintptr_t        cookie;
-} object_ref_t;
+};
 
 #define PROCESS_MAX_DESCRIPTORS     12
 
@@ -84,6 +104,7 @@ struct thread_t {
     size_t                   recv_buffer_size;
     int                      reply_errno;
     uintptr_t                message_function;
+    uintptr_t                message_cookie;
     size_t                   message_size;
     char                     message_buffer[JINUE_MAX_MESSAGE_SIZE];
 };
@@ -94,6 +115,7 @@ typedef struct {
     object_header_t header;
     jinue_list_t    send_list;
     jinue_list_t    recv_list;
-} ipc_t;
+    int             receivers_count;
+} ipc_endpoint_t;
 
 #endif

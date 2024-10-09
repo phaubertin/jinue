@@ -34,12 +34,26 @@
 #include <kernel/i686/thread.h>
 #include <kernel/i686/vm.h>
 #include <kernel/boot.h>
+#include <kernel/descriptor.h>
 #include <kernel/list.h>
 #include <kernel/object.h>
 #include <kernel/process.h>
 #include <kernel/page_alloc.h>
 #include <kernel/panic.h>
 #include <kernel/thread.h>
+
+/** runtime type definition for a thread */
+static const object_type_t object_type = {
+    .all_permissions    = 0,
+    .name               = "thread",
+    .size               = sizeof(thread_t),
+    .open               = NULL,
+    .close              = NULL,
+    .cache_ctor         = NULL,
+    .cache_dtor         = NULL
+};
+
+const object_type_t *object_type_thread = &object_type;
 
 static jinue_list_t ready_list = JINUE_LIST_STATIC;
 
@@ -49,18 +63,18 @@ int thread_create_syscall(
         void            *user_stack) {
     object_header_t *object;
 
-    int status = process_get_object_header(
+    int status = dereference_object_descriptor(
             &object,
             NULL,
-            process_fd,
-            get_current_thread()->process
+            get_current_thread()->process,
+            process_fd
     );
 
     if(status < 0) {
         return status;
     }
 
-    if(object->type != OBJECT_TYPE_PROCESS) {
+    if(object->type != object_type_process) {
         return -JINUE_EBADF;
     }
 
@@ -71,7 +85,7 @@ int thread_create_syscall(
 }
 
 static void thread_init(thread_t *thread, process_t *process) {
-    object_header_init(&thread->header, OBJECT_TYPE_THREAD);
+    object_header_init(&thread->header, object_type_thread);
 
     jinue_node_init(&thread->thread_list);
 

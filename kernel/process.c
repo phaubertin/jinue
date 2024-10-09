@@ -33,6 +33,7 @@
 #include <kernel/i686/cpu_data.h>
 #include <kernel/i686/thread.h>
 #include <kernel/i686/vm.h>
+#include <kernel/descriptor.h>
 #include <kernel/panic.h>
 #include <kernel/process.h>
 #include <kernel/object.h>
@@ -40,24 +41,32 @@
 #include <stddef.h>
 #include <string.h>
 
+static void process_ctor(void *buffer, size_t ignore);
 
+/** runtime type definition for a process */
+static const object_type_t object_type = {
+    .all_permissions    = 0,
+    .name               = "process",
+    .size               = sizeof(process_t),
+    .open               = NULL,
+    .close              = NULL,
+    .cache_ctor         = process_ctor,
+    .cache_dtor         = NULL
+};
+
+const object_type_t *object_type_process = &object_type;
+
+/** slab cache used for allocating process objects */
 static slab_cache_t process_cache;
 
 static void process_ctor(void *buffer, size_t ignore) {
     process_t *process = buffer;
 
-    object_header_init(&process->header, OBJECT_TYPE_PROCESS);
+    object_header_init(&process->header, object_type_process);
 }
 
 void process_boot_init(void) {
-    slab_cache_init(
-            &process_cache,
-            "process_cache",
-            sizeof(process_t),
-            0,
-            process_ctor,
-            NULL,
-            SLAB_DEFAULTS);
+    object_cache_init(&process_cache, object_type_process);
 }
 
 static void process_init(process_t *process) {
@@ -90,68 +99,14 @@ void process_destroy(process_t *process) {
     slab_cache_free(process);
 }
 
-object_ref_t *process_get_descriptor(process_t *process, int fd) {
-    if(fd < 0 || fd > PROCESS_MAX_DESCRIPTORS) {
-        return NULL;
+int process_create_syscall(int fd) {
+    object_ref_t *ref;
+    thread_t *thread = get_current_thread();
+    int status = dereference_unused_descriptor(&ref, thread->process, fd);
+
+    if(status < 0) {
+        return status;
     }
-
-    return &process->descriptors[fd];
-}
-
-/**
- * Get the object referenced by a descriptor
- *
- * @param ipc pointer to where to store the pointer to the object header
- * @param pref pointer to where to store the object reference pointer
- * @param fd descriptor
- * @param process process for which the descriptor is looked up
- * @return zero on success, negated error number on error
- *
- */
-int process_get_object_header(
-        object_header_t **pheader,
-        object_ref_t    **pref,
-        int               fd,
-        process_t       *process) {
-
-    object_ref_t *ref = process_get_descriptor(process, fd);
-
-    if(! object_ref_is_valid(ref)) {
-        return -JINUE_EBADF;
-    }
-
-    if(object_ref_is_closed(ref)) {
-        return -JINUE_EBADF;
-    }
-
-    if(object_ref_is_destroyed(ref)) {
-        return -JINUE_EIO;
-    }
-
-    object_header_t *header = ref->object;
-
-    if(object_is_destroyed(header)) {
-        ref->flags |= OBJECT_REF_FLAG_DESTROYED;
-        object_subref(header);
-        return -JINUE_EIO;
-    }
-
-    if(pref != NULL) {
-        *pref = ref;
-    }
-
-    if(pheader != NULL) {
-        *pheader = header;
-    }
-
-    return 0;
-}
-
-int process_create_with_desc(int fd) {
-    thread_t *thread    = get_current_thread();
-    object_ref_t *ref   = process_get_descriptor(thread->process, fd);
-
-    /* TODO close descriptor if open */
 
     process_t *process = process_create();
 
@@ -159,27 +114,13 @@ int process_create_with_desc(int fd) {
         return -JINUE_EAGAIN;
     }
 
-    object_addref(&process->header);
-
     ref->object = &process->header;
-    ref->flags  = OBJECT_REF_FLAG_VALID | OBJECT_REF_FLAG_OWNER;
+    ref->flags  = OBJECT_REF_FLAG_IN_USE | OBJECT_REF_FLAG_OWNER;
     ref->cookie = 0;
 
+    object_open(&process->header, ref);
+
     return 0;
-}
-
-int process_unused_descriptor(process_t *process) {
-    int idx;
-
-    for(idx = 0; idx < PROCESS_MAX_DESCRIPTORS; ++idx) {
-        object_ref_t *ref = process_get_descriptor(process, idx);
-
-        if(! object_ref_is_valid(ref)) {
-            return idx;
-        }
-    }
-
-    return -1;
 }
 
 void process_switch_to(process_t *process) {

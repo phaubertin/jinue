@@ -33,7 +33,7 @@
 #define JINUE_KERNEL_SLAB_H
 
 #include <jinue/shared/vm.h>
-#include <stddef.h>
+#include <kernel/types.h>
 
 #define SLAB_SIZE                   PAGE_SIZE
 
@@ -57,8 +57,6 @@
 #define SLAB_COMPACT                (1<<3)
 
 
-typedef void (*slab_ctor_t)(void *, size_t);
-
 struct slab_t;
 
 struct slab_cache_t {
@@ -78,8 +76,6 @@ struct slab_cache_t {
     char                *name;
     int                  flags;
 };
-
-typedef struct slab_cache_t slab_cache_t;
 
 struct slab_bufctl_t {
     struct slab_bufctl_t *next;

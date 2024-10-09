@@ -37,7 +37,7 @@
 #include <kernel/i686/thread.h>
 #include <kernel/i686/trap.h>
 #include <kernel/i686/vm.h>
-#include <kernel/dup.h>
+#include <kernel/descriptor.h>
 #include <kernel/ipc.h>
 #include <kernel/logging.h>
 #include <kernel/object.h>
@@ -110,6 +110,11 @@ static void sys_create_thread(jinue_syscall_args_t *args) {
     void *entry         = (void *)args->arg2;
     void *user_stack    = (void *)args->arg3;
 
+    if(process_fd < 0) {
+        set_return_value_or_error(args, process_fd);
+        return;
+    }
+
     if(!is_userspace_pointer(entry)) {
         syscall_args_set_error(args, JINUE_EINVAL);
         return;
@@ -169,8 +174,15 @@ static void sys_get_user_memory(jinue_syscall_args_t *args) {
 }
 
 static void sys_create_ipc(jinue_syscall_args_t *args) {
-    int fd = ipc_create_for_current_process((int)args->arg1);
-    set_return_value_or_error(args, fd);
+    int fd = get_descriptor(args->arg1);
+
+    if(fd < 0) {
+        set_return_value_or_error(args, fd);
+        return;  
+    }
+
+    int retval = ipc_endpoint_create_syscall(fd);
+    set_return_value_or_error(args, retval);
 }
 
 static int copy_message_struct_from_userspace(
@@ -316,7 +328,12 @@ static void sys_mmap(jinue_syscall_args_t *args) {
     int process_fd      = get_descriptor(args->arg1);
     userspace_mmap_args = (void *)args->arg2;
 
-    if(! check_userspace_buffer(userspace_mmap_args, sizeof(userspace_mmap_args))) {
+    if(process_fd < 0) {
+        set_return_value_or_error(args, process_fd);
+        return;
+    }
+
+    if(! check_userspace_buffer(userspace_mmap_args, sizeof(jinue_mmap_args_t))) {
         syscall_args_set_error(args, JINUE_EINVAL);
         return;
     }
@@ -353,7 +370,14 @@ static void sys_mmap(jinue_syscall_args_t *args) {
 }
 
 static void sys_create_process(jinue_syscall_args_t *args) {
-    int retval = process_create_with_desc((int)args->arg1);
+    int fd = get_descriptor(args->arg1);
+
+    if(fd < 0) {
+        set_return_value_or_error(args, fd);
+        return;
+    }
+
+    int retval = process_create_syscall(fd);
     set_return_value_or_error(args, retval);
 }
 
@@ -364,7 +388,17 @@ static void sys_mclone(jinue_syscall_args_t *args) {
     int dest                = get_descriptor(args->arg2);
     userspace_mclone_args   = (void *)args->arg3;
 
-    if(! check_userspace_buffer(userspace_mclone_args, sizeof(userspace_mclone_args))) {
+    if(src < 0) {
+        set_return_value_or_error(args, src);
+        return;
+    }
+
+    if(dest < 0) {
+        set_return_value_or_error(args, dest);
+        return;
+    }
+
+    if(! check_userspace_buffer(userspace_mclone_args, sizeof(jinue_mclone_args_t))) {
         syscall_args_set_error(args, JINUE_EINVAL);
         return;
     }
@@ -405,7 +439,81 @@ static void sys_dup(jinue_syscall_args_t *args) {
     int src         = get_descriptor(args->arg2);
     int dest        = get_descriptor(args->arg3);
 
+    if(process_fd < 0) {
+        set_return_value_or_error(args, process_fd);
+        return;
+    }
+
+    if(src < 0) {
+        set_return_value_or_error(args, src);
+        return;
+    }
+
+    if(dest < 0) {
+        set_return_value_or_error(args, dest);
+        return;
+    }
+
     int retval = dup(process_fd, src, dest);
+    set_return_value_or_error(args, retval);
+}
+
+static void sys_close(jinue_syscall_args_t *args) {
+    int fd = get_descriptor(args->arg1);
+
+    if(fd < 0) {
+        set_return_value_or_error(args, fd);
+        return;
+    }
+
+    int retval = close(fd);
+    set_return_value_or_error(args, retval);
+}
+
+static void sys_destroy(jinue_syscall_args_t *args) {
+    int fd = get_descriptor(args->arg1);
+
+    if(fd < 0) {
+        set_return_value_or_error(args, fd);
+        return;
+    }
+
+    int retval = destroy(fd);
+    set_return_value_or_error(args, retval);
+}
+
+static void sys_mint(jinue_syscall_args_t *args) {
+    const jinue_mint_args_t *userspace_mint_args;
+    int owner           = get_descriptor(args->arg1);
+    userspace_mint_args = (void *)args->arg2;
+
+    if(owner < 0) {
+        set_return_value_or_error(args, owner);
+        return;
+    }
+
+    if(! check_userspace_buffer(userspace_mint_args, sizeof(jinue_mint_args_t))) {
+        syscall_args_set_error(args, JINUE_EINVAL);
+        return;
+    }
+
+    jinue_mint_args_t mint_args;
+    mint_args.process   = get_descriptor(userspace_mint_args->process);
+    mint_args.fd        = get_descriptor(userspace_mint_args->fd);
+    mint_args.perms     = userspace_mint_args->perms;
+    mint_args.cookie    = userspace_mint_args->cookie;
+    
+    if(mint_args.process < 0) {
+        set_return_value_or_error(args, mint_args.process);
+        return;
+    }
+
+    if(mint_args.fd < 0) {
+        set_return_value_or_error(args, mint_args.fd);
+        return;
+    }
+
+    int retval = mint(owner, &mint_args);
     set_return_value_or_error(args, retval);
 }
 
@@ -454,7 +562,7 @@ void dispatch_syscall(trapframe_t *trapframe) {
         case JINUE_SYS_GET_USER_MEMORY:
             sys_get_user_memory(args);
             break;
-        case JINUE_SYS_CREATE_IPC:
+        case JINUE_SYS_CREATE_ENDPOINT:
             sys_create_ipc(args);
             break;
         case JINUE_SYS_RECEIVE:
@@ -477,6 +585,15 @@ void dispatch_syscall(trapframe_t *trapframe) {
             break;
         case JINUE_SYS_DUP:
             sys_dup(args);
+            break;
+        case JINUE_SYS_CLOSE:
+            sys_close(args);
+            break;
+        case JINUE_SYS_DESTROY:
+            sys_destroy(args);
+            break;
+        case JINUE_SYS_MINT:
+            sys_mint(args);
             break;
         default:
             sys_nosys(args);
