@@ -38,12 +38,13 @@
 void panic(const char *message) {
     static int enter_count = 0;
 
+    /* When things go seriously wrong, things that panic() does can themselves
+     * create a further kernel panic, for example by triggering a hardware
+     * exception. The enter_count static variable keeps count of the number of
+     * times panic() is entered recursively and is used to prevent an infinite
+     * recursive loop. */
     ++enter_count;
 
-    /* When things go seriously wrong, things that panic does itself can create
-     * a further panic, for example by triggering a hardware exception. The
-     * enter_count static variable keeps count of the number of times panic()
-     * is entered. */
     switch(enter_count) {
     case 1:
     case 2:
