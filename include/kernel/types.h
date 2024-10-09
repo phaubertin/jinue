@@ -58,6 +58,7 @@ typedef struct slab_cache_t slab_cache_t;
 typedef void (*slab_ctor_t)(void *, size_t);
 
 typedef struct {
+    int          all_permissions;
     char        *name;
     size_t       size;
     slab_ctor_t  cache_ctor;

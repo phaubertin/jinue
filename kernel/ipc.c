@@ -48,10 +48,11 @@ static void ipc_endpoint_ctor(void *buffer, size_t size);
 
 /** runtime type definition for an IPC endpoint */
 static const object_type_t object_type = {
-    .name       = "ipc_endpoint",
-    .size       = sizeof(ipc_endpoint_t),
-    .cache_ctor = ipc_endpoint_ctor,
-    .cache_dtor = NULL
+    .all_permissions    = JINUE_PERM_SEND | JINUE_PERM_RECEIVE,
+    .name               = "ipc_endpoint",
+    .size               = sizeof(ipc_endpoint_t),
+    .cache_ctor         = ipc_endpoint_ctor,
+    .cache_dtor         = NULL
 };
 
 const object_type_t *object_type_ipc_endpoint = &object_type;
@@ -122,7 +123,10 @@ int ipc_endpoint_create_syscall(int fd) {
     object_addref(&endpoint->header);
 
     ref->object = &endpoint->header;
-    ref->flags  = OBJECT_REF_FLAG_IN_USE | OBJECT_REF_FLAG_OWNER | IPC_ALL_PERMISSIONS;
+    ref->flags  =
+          OBJECT_REF_FLAG_IN_USE
+        | OBJECT_REF_FLAG_OWNER
+        | object_type_ipc_endpoint->all_permissions;
     ref->cookie = 0;
 
     endpoint_add_receiver(endpoint);
@@ -494,4 +498,3 @@ int ipc_reply(const jinue_message_t *message) {
 
     return 0;
 }
-

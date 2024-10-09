@@ -197,19 +197,13 @@ int dup(int process_fd, int src, int dest) {
 }
 
 static int check_mint_permissions(const object_header_t *object, int perms) {
-    int mask = 0;
-
-    if(object->type == object_type_ipc_endpoint) {
-        mask = IPC_ALL_PERMISSIONS;
-    } else if (object->type == object_type_process) {
-        /* TODO implement permissions for process */
-        return 0;
-    } else {
+    if((perms & ~object->type->all_permissions) != 0) {
         return -JINUE_EINVAL;
     }
 
-    if((perms & ~mask) != 0) {
-        return -JINUE_EINVAL;
+    /* TODO remove this once permissions are defined for process objects */
+    if(object->type == object_type_process) {
+        return 0;
     }
 
     if(perms == 0) {

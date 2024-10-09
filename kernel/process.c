@@ -45,10 +45,11 @@ static void process_ctor(void *buffer, size_t ignore);
 
 /** runtime type definition for a process */
 static const object_type_t object_type = {
-    .name       = "process",
-    .size       = sizeof(process_t),
-    .cache_ctor = process_ctor,
-    .cache_dtor = NULL
+    .all_permissions    = 0,
+    .name               = "process",
+    .size               = sizeof(process_t),
+    .cache_ctor         = process_ctor,
+    .cache_dtor         = NULL
 };
 
 const object_type_t *object_type_process = &object_type;

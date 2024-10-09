@@ -44,10 +44,11 @@
 
 /** runtime type definition for a thread */
 static const object_type_t object_type = {
-    .name       = "thread",
-    .size       = sizeof(thread_t),
-    .cache_ctor = NULL,
-    .cache_dtor = NULL
+    .all_permissions    = 0,
+    .name               = "thread",
+    .size               = sizeof(thread_t),
+    .cache_ctor         = NULL,
+    .cache_dtor         = NULL
 };
 
 const object_type_t *object_type_thread = &object_type;
