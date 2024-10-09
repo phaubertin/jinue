@@ -30,7 +30,6 @@
  */
 
 #include <jinue/shared/asm/errno.h>
-#include <kernel/i686/thread.h>
 #include <kernel/descriptor.h>
 #include <kernel/ipc.h>
 #include <kernel/object.h>
@@ -135,12 +134,7 @@ int dereference_unused_descriptor(
 static int get_process(process_t **process, int process_fd) {
     object_header_t *object;
 
-    int status = dereference_object_descriptor(
-            &object,
-            NULL,
-            get_current_thread()->process,
-            process_fd
-    );
+    int status = dereference_object_descriptor(&object, NULL, get_current_process(), process_fd);
 
     if(status < 0) {
         return status;
@@ -165,7 +159,7 @@ int dup(int process_fd, int src, int dest) {
 
     object_header_t *object;
     object_ref_t *src_ref;
-    status = dereference_object_descriptor(&object, &src_ref, get_current_thread()->process, src);
+    status = dereference_object_descriptor(&object, &src_ref, get_current_process(), src);
 
     if(status < 0) {
         return status;
@@ -212,12 +206,7 @@ int mint(int owner, const jinue_mint_args_t *mint_args) {
     object_header_t *object;
     object_ref_t    *src_ref;
     
-    int status = dereference_object_descriptor(
-        &object,
-        &src_ref,
-        get_current_thread()->process,
-        owner
-    );
+    int status = dereference_object_descriptor(&object, &src_ref, get_current_process(), owner);
 
     if(status < 0) {
         return status;
@@ -264,7 +253,7 @@ int mint(int owner, const jinue_mint_args_t *mint_args) {
 int close(int fd) {
     object_header_t *object;
     object_ref_t *ref;
-    int status = dereference_object_descriptor(&object, &ref, get_current_thread()->process, fd);
+    int status = dereference_object_descriptor(&object, &ref, get_current_process(), fd);
 
     if(status < 0) {
         return status;
@@ -280,7 +269,7 @@ int close(int fd) {
 int destroy(int fd) {
     object_header_t *object;
     object_ref_t *ref;
-    int status = dereference_object_descriptor(&object, &ref, get_current_thread()->process, fd);
+    int status = dereference_object_descriptor(&object, &ref, get_current_process(), fd);
 
     if(status < 0) {
         return status;

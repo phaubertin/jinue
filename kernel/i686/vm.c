@@ -34,7 +34,6 @@
 #include <kernel/i686/boot.h>
 #include <kernel/i686/cpu_data.h>
 #include <kernel/i686/memory.h>
-#include <kernel/i686/thread.h>
 #include <kernel/i686/vga.h>
 #include <kernel/i686/vm.h>
 #include <kernel/i686/vm_private.h>
@@ -927,12 +926,7 @@ kern_paddr_t vm_lookup_kernel_paddr(void *addr) {
 
 static int get_addr_space_by_descriptor(addr_space_t **addr_space, int fd) {
     object_header_t *object;
-    int status = dereference_object_descriptor(
-            &object,
-            NULL,
-            get_current_thread()->process,
-            fd
-    );
+    int status = dereference_object_descriptor(&object, NULL, get_current_process(), fd);
 
     if(status < 0) {
         return status;

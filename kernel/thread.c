@@ -63,12 +63,7 @@ int thread_create_syscall(
         void            *user_stack) {
     object_header_t *object;
 
-    int status = dereference_object_descriptor(
-            &object,
-            NULL,
-            get_current_thread()->process,
-            process_fd
-    );
+    int status = dereference_object_descriptor(&object, NULL, get_current_process(), process_fd);
 
     if(status < 0) {
         return status;
