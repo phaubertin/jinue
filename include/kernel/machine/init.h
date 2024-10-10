@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,17 +29,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_I686_MACHINE_H
-#define JINUE_KERNEL_I686_MACHINE_H
+#ifndef JINUE_KERNEL_MACHINE_INIT_H
 
-#include <kernel/i686/types.h>
 #include <kernel/cmdline.h>
-#include <sys/elf.h>
+#include <kernel/types.h>
 
-void machine_init(
-        Elf32_Ehdr              *kernel_elf,
-        const cmdline_opts_t    *cmdline_opts,
-        const boot_info_t       *boot_info);
+void machine_get_loader_elf(elf_file_t *elf);
+
+void machine_get_ramdisk(kern_mem_block_t *ramdisk);
+
+void machine_init(const cmdline_opts_t *cmdline_opts);
 
 #endif
 

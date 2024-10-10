@@ -63,8 +63,8 @@ sources.kernel.c = \
 	i686/boot_alloc.c \
 	i686/cpu.c \
 	i686/halt.c \
+	i686/init.c \
 	i686/interrupt.c \
-	i686/machine.c \
 	i686/memory.c \
 	i686/pic8259.c \
 	i686/reboot.c \

@@ -32,10 +32,21 @@
 #ifndef JINUE_KERNEL_I686_EXPORTS_H
 #define JINUE_KERNEL_I686_EXPORTS_H
 
+#include <inttypes.h>
 #include <stdint.h>
 
 /** Virtual memory address (pointer) with pointer arithmetic allowed */
 typedef unsigned char *addr_t;
+
+/** Physical memory address for use by the kernel */
+typedef uint32_t kern_paddr_t;
+
+/** Physical memory address for use by user space */
+typedef uint64_t user_paddr_t;
+
+#define PRIxKPADDR PRIx32
+
+#define PRIxUPADDR PRIx64
 
 /** incomplete structure declaration for a page table entry
  *

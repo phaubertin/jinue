@@ -37,6 +37,7 @@
 #include <jinue/shared/types.h>
 #include <kernel/machine/types.h>
 #include <kernel/list.h>
+#include <sys/elf.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -117,5 +118,15 @@ typedef struct {
     jinue_list_t    recv_list;
     int             receivers_count;
 } ipc_endpoint_t;
+
+typedef struct {
+    Elf32_Ehdr  *ehdr;
+    size_t       size;
+} elf_file_t;
+
+typedef struct {
+    kern_paddr_t    start;
+    size_t          size;
+} kern_mem_block_t;
 
 #endif

@@ -35,7 +35,6 @@
 #include <kernel/types.h>
 #include <sys/elf.h>
 
-
 typedef struct {
     void            *entry;
     void            *stack_addr;
@@ -47,7 +46,7 @@ typedef struct {
 
 bool elf_check(Elf32_Ehdr *elf);
 
-const Elf32_Phdr *elf_executable_program_header(const Elf32_Ehdr *elf);
+const Elf32_Phdr *elf_executable_program_header(const Elf32_Ehdr *ehdr);
 
 void elf_load(
         elf_info_t      *elf_info,

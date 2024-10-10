@@ -31,7 +31,6 @@
 #include <kernel/i686/asm/descriptors.h>
 #include <kernel/i686/asm/irq.h>
 
-
     bits 32
 
     extern dispatch_interrupt

@@ -896,9 +896,6 @@ static void process_name_value_pair(parse_context_t *context) {
 void cmdline_parse_options(const char *cmdline) {
     parse_context_t context;
 
-    /* This function is the first thing that gets called during kernel
-     * initialization. At this point, no validation has been done on the boot
-     * information structure which contains the command line argument pointer. */
     if(cmdline == NULL) {
         /* cmdline_errors keeps track of errors for later reporting by the
          * cmdline_process_errors() function. */
