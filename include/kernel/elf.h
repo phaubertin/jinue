@@ -41,7 +41,7 @@ typedef struct {
     addr_t           at_phdr;
     int              at_phent;
     int              at_phnum;
-    addr_space_t    *addr_space;
+    process_t       *process;
 } elf_info_t;
 
 bool elf_check(Elf32_Ehdr *elf);

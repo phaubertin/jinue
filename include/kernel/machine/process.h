@@ -40,5 +40,13 @@ bool machine_init_process(process_t *process);
 
 void machine_destroy_process(process_t *process);
 
+void machine_map_kernel(void *vaddr, kern_paddr_t paddr, int flags);
+
+void machine_unmap_kernel(void *addr);
+
+bool machine_map_userspace(process_t *process, void *vaddr, user_paddr_t paddr, int flags);
+
+void machine_unmap_userspace(process_t *process, void *addr);
+
 #endif
 

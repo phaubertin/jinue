@@ -31,6 +31,7 @@
 
 #include <jinue/shared/asm/syscall.h>
 #include <kernel/machine/auxv.h>
+#include <kernel/machine/process.h>
 #include <kernel/i686/vm.h>
 #include <kernel/cmdline.h>
 #include <kernel/descriptor.h>
@@ -131,14 +132,14 @@ bool elf_check(Elf32_Ehdr *ehdr) {
  * This function leads to a kernel panic if the mapping fails because a
  * translation table could not be allocated.
  *
- * @param addr_space address space for mapping
+ * @param process address space for the mapping
  * @param vadds virtual address of page
  * @param padds physical address of page frame
  * @param flags mapping flags
  *
  * */
 static void checked_map_userspace(
-        addr_space_t    *addr_space,
+        process_t       *process,
         void            *vaddr,
         user_paddr_t     paddr,
         int              flags) {
@@ -147,7 +148,7 @@ static void checked_map_userspace(
      *
      * This should not be necessary because we control the user loader binary,
      * but let's check anyway in case the build process breaks somehow. */
-    if(! vm_map_userspace(addr_space, vaddr, paddr, flags)) {
+    if(! machine_map_userspace(process, vaddr, paddr, flags)) {
         panic("Page table allocation error when loading ELF file");
     }
 }
@@ -299,13 +300,11 @@ static void load_segments(
         Elf32_Ehdr      *ehdr,
         process_t       *process) {
 
-    addr_space_t *addr_space = &process->addr_space;
-
     const Elf32_Phdr *phdrs = program_header_table(ehdr);
     elf_info->at_phdr       = get_at_phdr(ehdr);
     elf_info->at_phnum      = ehdr->e_phnum;
     elf_info->at_phent      = ehdr->e_phentsize;
-    elf_info->addr_space    = addr_space;
+    elf_info->process       = process;
     elf_info->entry         = (void *)ehdr->e_entry;
 
     for(unsigned int idx = 0; idx < ehdr->e_phnum; ++idx) {
@@ -339,7 +338,7 @@ static void load_segments(
              * padding, we can just map the original pages. */
             while(vptr < vend) {
                 checked_map_userspace(
-                        addr_space,
+                        process,
                         vptr,
                         vm_lookup_kernel_paddr(file_ptr),
                         map_flags(phdr->p_flags));
@@ -360,7 +359,7 @@ static void load_segments(
                 /* allocate and map the new page */
                 void *page = page_alloc();
                 checked_map_userspace(
-                        addr_space,
+                        process,
                         vptr,
                         vm_lookup_kernel_paddr(page),
                         map_flags(phdr->p_flags));
@@ -405,7 +404,7 @@ static void allocate_stack(elf_info_t *elf_info) {
         clear_page(page);
 
         checked_map_userspace(
-                elf_info->addr_space,
+                elf_info->process,
                 vpage,
                 vm_lookup_kernel_paddr(page),
                 JINUE_PROT_READ | JINUE_PROT_WRITE);

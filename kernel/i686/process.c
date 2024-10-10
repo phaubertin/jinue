@@ -46,3 +46,19 @@ bool machine_init_process(process_t *process) {
 void machine_destroy_process(process_t *process) {
     vm_destroy_addr_space(&process->addr_space);
 }
+
+void machine_map_kernel(void *vaddr, kern_paddr_t paddr, int flags) {
+    vm_map_kernel(vaddr, paddr, flags);
+}
+
+void machine_unmap_kernel(void *addr) {
+    vm_unmap_kernel(addr);
+}
+
+bool machine_map_userspace(process_t *process, void *vaddr, user_paddr_t paddr, int flags) {
+    return vm_map_userspace(&process->addr_space, vaddr, paddr, flags);
+}
+
+void machine_unmap_userspace(process_t *process, void *addr) {
+    vm_unmap_userspace(&process->addr_space, addr);
+}
