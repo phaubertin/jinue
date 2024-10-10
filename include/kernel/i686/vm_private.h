@@ -33,10 +33,10 @@
 #define JINUE_KERNEL_I686_VM_PRIVATE_H
 
 #include <jinue/shared/vm.h>
+#include <kernel/i686/types.h>
 #include <kernel/i686/vm.h>
 #include <kernel/i686/vm_pae.h>
 #include <kernel/i686/vm_x86.h>
-#include <kernel/types.h>
 #include <stdbool.h>
 #include <stdint.h>
 

@@ -29,10 +29,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_BOOT_ALLOC_H
-#define JINUE_KERNEL_BOOT_ALLOC_H
+#ifndef JINUE_KERNEL_I686_BOOT_ALLOC_H
+#define JINUE_KERNEL_I686_BOOT_ALLOC_H
 
-#include <kernel/types.h>
+#include <kernel/i686/types.h>
 
 void boot_alloc_init(boot_alloc_t *boot_alloc, const boot_info_t *boot_info);
 

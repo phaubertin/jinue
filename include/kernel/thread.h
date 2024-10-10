@@ -41,10 +41,7 @@ int thread_create_syscall(
         void            *entry,
         void            *user_stack);
 
-thread_t *thread_create(
-        process_t       *process,
-        void            *entry,
-        void            *user_stack);
+thread_t *thread_create(process_t *process, void *entry, void *user_stack);
 
 void thread_destroy(thread_t *thread);
         

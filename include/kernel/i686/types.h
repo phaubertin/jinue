@@ -33,13 +33,10 @@
 #define JINUE_KERNEL_I686_TYPES_H
 
 #include <kernel/i686/asm/descriptors.h>
+#include <kernel/i686/exports.h>
+#include <kernel/machine/types.h>
+#include <kernel/types.h>
 #include <sys/elf.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-
-/** Virtual memory address (pointer) with pointer arithmetic allowed */
-typedef unsigned char *addr_t;
 
 /** Physical memory address for use by the kernel */
 typedef uint32_t kern_paddr_t;
@@ -49,39 +46,6 @@ typedef uint64_t user_paddr_t;
 
 /** an invalid page frame address used as null value */
 #define PFNULL ((kern_paddr_t)-1)
-
-/** incomplete structure declaration for a page table entry
- *
- * There are actually two different definitions of this structure: one that
- * represents 32-bit entries for standard 32-bit paging, and one that represents
- * 64-bit entries for Physical Address Extension (PAE) paging. The right
- * definition to use is chosen at run time (i.e. during boot).
- *
- * Outside of the specific functions that are used to access information in
- * page table entries, functions are allowed to hold and pass around pointers to
- * page table entries, but are not allowed to dereference them. */
-struct pte_t;
-
-/** type of a page table entry */
-typedef struct pte_t pte_t;
-
-struct pdpt_t;
-
-typedef struct pdpt_t pdpt_t;
-
-typedef struct {
-    /* The assembly language thread switching code makes the assumption that
-     * saved_stack_pointer is the first member of this structure. */
-    addr_t saved_stack_pointer;
-} thread_context_t;
-
-typedef struct {
-    uint32_t     cr3;
-    union {
-        pte_t   *pd;   /* non-PAE: page directory */
-        pdpt_t  *pdpt; /* PAE: page directory pointer table */
-    } top_level;
-} addr_space_t;
 
 typedef struct {
     uint64_t addr;

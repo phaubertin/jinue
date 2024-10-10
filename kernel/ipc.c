@@ -31,7 +31,7 @@
 
 #include <jinue/shared/asm/errno.h>
 #include <jinue/shared/ipc.h>
-#include <kernel/i686/thread.h>
+#include <kernel/machine/thread.h>
 #include <kernel/descriptor.h>
 #include <kernel/ipc.h>
 #include <kernel/object.h>

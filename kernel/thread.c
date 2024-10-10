@@ -31,8 +31,8 @@
 
 #include <jinue/shared/asm/errno.h>
 #include <kernel/i686/cpu_data.h>
-#include <kernel/i686/thread.h>
 #include <kernel/i686/vm.h>
+#include <kernel/machine/thread.h>
 #include <kernel/descriptor.h>
 #include <kernel/list.h>
 #include <kernel/object.h>
@@ -78,7 +78,13 @@ int thread_create_syscall(
     return (thread == NULL) ? -JINUE_EAGAIN : 0;
 }
 
-static void thread_init(thread_t *thread, process_t *process) {
+thread_t *thread_create(process_t *process, void *entry, void *user_stack) {
+    thread_t *thread = machine_alloc_thread();
+
+    if(thread == NULL) {
+        return NULL;
+    }
+
     object_header_init(&thread->header, object_type_thread);
 
     jinue_node_init(&thread->thread_list);
@@ -88,30 +94,16 @@ static void thread_init(thread_t *thread, process_t *process) {
     thread->local_storage_addr  = NULL;
     thread->local_storage_size  = 0;
 
+    machine_init_thread(thread, entry, user_stack);
+
     thread_ready(thread);
-}
-
-thread_t *thread_create(
-        process_t       *process,
-        void            *entry,
-        void            *user_stack) {
-
-    void *thread_page = page_alloc();
-
-    if(thread_page == NULL) {
-        return NULL;
-    }
-
-    thread_t *thread = thread_page_init(thread_page, entry, user_stack);
-    thread_init(thread, process);
     
     return thread;
 }
 
-/* This function is called by assembled code. See thread_context_switch_stack(). */
+/* This function is called by assembly code. See thread_context_switch_stack(). */
 void thread_destroy(thread_t *thread) {
-    void * thread_page = (void *)((uintptr_t)thread & ~PAGE_MASK);
-    page_free(thread_page);
+    machine_free_thread(thread);
 }
 
 void thread_ready(thread_t *thread) {
@@ -120,40 +112,12 @@ void thread_ready(thread_t *thread) {
     jinue_list_enqueue(&ready_list, &thread->thread_list);
 }
 
-static void switch_thread(
-        thread_t    *from_thread,
-        thread_t    *to_thread,
-        bool         do_destroy) {
-
-    if(to_thread != from_thread) {
-        thread_context_t    *from_context;
-        process_t           *from_process;
-
-        if(from_thread == NULL) {
-            from_context = NULL;
-            from_process = NULL;
-        }
-        else {
-            from_context = &from_thread->thread_ctx;
-            from_process = from_thread->process;
-        }
-
-        if(from_process != to_thread->process) {
-            process_switch_to(to_thread->process);
-        }
-
-        thread_context_switch(
-            from_context,
-            &to_thread->thread_ctx,
-            do_destroy);
-    }
-}
-
 static thread_t *reschedule(bool current_can_run) {
     thread_t *to_thread = jinue_node_entry(
             jinue_list_dequeue(&ready_list),
             thread_t,
-            thread_list );
+            thread_list
+    );
     
     if(to_thread == NULL) {
         /* Special case to take into account: when scheduling the first thread,
@@ -171,6 +135,18 @@ static thread_t *reschedule(bool current_can_run) {
     }
 
     return to_thread;
+}
+
+static void switch_thread(thread_t *from, thread_t *to, bool destroy_from) {
+    if(to == from) {
+        return;
+    }
+
+    if(from == NULL || from->process != to->process) {
+        process_switch_to(to->process);
+    }
+
+    machine_switch_thread(from, to, destroy_from);
 }
 
 void thread_switch_to(thread_t *thread, bool blocked) {

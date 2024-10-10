@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,32 +29,19 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_I686_THREAD_H
-#define JINUE_KERNEL_I686_THREAD_H
+#ifndef JINUE_KERNEL_MACHINE_THREAD_H
+#define JINUE_KERNEL_MACHINE_THREAD_H
 
-#include <kernel/i686/asm/thread.h>
-#include <kernel/i686/x86.h>
 #include <kernel/types.h>
 
+thread_t *get_current_thread(void);
 
-static inline thread_t *get_current_thread(void) {
-    return (thread_t *)(get_esp() & THREAD_CONTEXT_MASK);
-}
+void machine_init_thread(thread_t *thread, void *entry, void *user_stack);
 
-static inline addr_t get_kernel_stack_base(thread_context_t *thread_ctx) {
-    thread_t *thread = (thread_t *)( (uintptr_t)thread_ctx & THREAD_CONTEXT_MASK );
-    
-    return (addr_t)thread + THREAD_CONTEXT_SIZE;
-}
+thread_t *machine_alloc_thread(void);
 
-thread_t *thread_page_init(
-        void            *thread_page,
-        void            *entry,
-        void            *user_stack);
+void machine_free_thread(thread_t *thread);
 
-void thread_context_switch(
-        thread_context_t    *from_ctx,
-        thread_context_t    *to_ctx,
-        bool                 destroy_from);
+void machine_switch_thread(thread_t *from, thread_t *to, bool destroy_from);
 
 #endif

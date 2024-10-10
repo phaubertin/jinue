@@ -39,7 +39,6 @@
 #include <kernel/i686/memory.h>
 #include <kernel/i686/pic8259.h>
 #include <kernel/i686/remap.h>
-#include <kernel/i686/thread.h>
 #include <kernel/i686/trap.h>
 #include <kernel/i686/vga.h>
 #include <kernel/i686/vm.h>

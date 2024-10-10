@@ -35,7 +35,7 @@
 #include <jinue/shared/ipc.h>
 #include <jinue/shared/syscall.h>
 #include <jinue/shared/types.h>
-#include <kernel/i686/types.h>
+#include <kernel/machine/types.h>
 #include <kernel/list.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -95,7 +95,7 @@ typedef struct {
 
 struct thread_t {
     object_header_t          header;
-    thread_context_t         thread_ctx;
+    machine_thread_t         thread_ctx;
     jinue_node_t             thread_list;
     process_t               *process;
     addr_t                   local_storage_addr;

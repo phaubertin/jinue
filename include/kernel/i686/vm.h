@@ -38,7 +38,7 @@
 #include <jinue/shared/vm.h>
 #include <kernel/i686/asm/boot.h>
 #include <kernel/i686/asm/vm.h>
-#include <kernel/types.h>
+#include <kernel/i686/types.h>
 #include <sys/elf.h>
 
 /** convert physical to virtual address for kernel loaded at 0x100000 (1MB) */

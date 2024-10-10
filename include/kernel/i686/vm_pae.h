@@ -36,7 +36,7 @@
  * hal/vm_pae.c. It is intended to be included by hal/vm.c and hal/vm_pae.c.
  * There should be no reason to include it anywhere else. */
 
-#include <kernel/types.h>
+#include <kernel/i686/types.h>
 
 void vm_pae_enable(boot_alloc_t *boot_alloc, const boot_info_t *boot_info);
 

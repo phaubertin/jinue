@@ -76,7 +76,7 @@ void cpu_init_data(cpu_data_t *data) {
     tss->ss1  = SEG_SELECTOR(GDT_KERNEL_DATA, RPL_KERNEL);
     tss->ss2  = SEG_SELECTOR(GDT_KERNEL_DATA, RPL_KERNEL);
 
-    /* kernel stack address is updated by thread_context_switch() */
+    /* kernel stack address is updated by machine_switch_thread() */
     tss->esp0 = NULL;
     tss->esp1 = NULL;
     tss->esp2 = NULL;

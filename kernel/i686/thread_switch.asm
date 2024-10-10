@@ -37,8 +37,8 @@
 ; ------------------------------------------------------------------------------
 ; FUNCTION: thread_context_switch_stack
 ; C PROTOTYPE: void thread_context_switch_stack(
-;               thread_context_t *from_ctx,
-;               thread_context_t *to_ctx,
+;               machine_thread_t *from_ctx,
+;               machine_thread_t *to_ctx,
 ;               bool destroy_from);
 ; ------------------------------------------------------------------------------
     global thread_context_switch_stack:function (thread_context_switch_stack.end - thread_context_switch_stack)

@@ -33,8 +33,8 @@
 #include <jinue/shared/vm.h>
 #include <kernel/i686/memory.h>
 #include <kernel/i686/reboot.h>
-#include <kernel/i686/thread.h>
 #include <kernel/i686/vm.h>
+#include <kernel/machine/thread.h>
 #include <kernel/descriptor.h>
 #include <kernel/ipc.h>
 #include <kernel/logging.h>
@@ -524,9 +524,7 @@ static void sys_mint(jinue_syscall_args_t *args) {
  * @param trapframe trap frame for current system call
  *
  */
-void dispatch_syscall(trapframe_t *trapframe) {
-    jinue_syscall_args_t *args = (jinue_syscall_args_t *)&trapframe->msg_arg0;
-    
+void dispatch_syscall(jinue_syscall_args_t *args) {
     intptr_t function = args->arg0;
     
     if(function < 0) {
