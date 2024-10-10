@@ -30,6 +30,7 @@
  */
 
 #ifndef JINUE_KERNEL_MACHINE_INIT_H
+#define JINUE_KERNEL_MACHINE_INIT_H
 
 #include <kernel/cmdline.h>
 #include <kernel/types.h>

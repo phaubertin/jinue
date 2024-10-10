@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,11 +29,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_DEBUG_H
-#define JINUE_KERNEL_DEBUG_H
+#ifndef JINUE_KERNEL_MACHINE_DEBUG_H
+#define JINUE_KERNEL_MACHINE_DEBUG_H
 
-
-void dump_call_stack(void);
+void machine_dump_call_stack(void);
 
 #endif
 

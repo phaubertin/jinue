@@ -29,9 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/i686/boot.h>
 #include <kernel/i686/halt.h>
-#include <kernel/debug.h>
+#include <kernel/machine/debug.h>
 #include <kernel/logging.h>
 #include <stdbool.h>
 
@@ -51,13 +50,7 @@ void panic(const char *message) {
         /* The first two times panic() is entered, a panic message is displayed
          * along with a full call stack dump. */
         error("KERNEL PANIC%s: %s", (enter_count == 1) ? "" : " (recursive)", message);
-
-        if( boot_info_check(false) ) {
-            dump_call_stack();
-        }
-        else {
-            warning("Cannot dump call stack because boot information structure is invalid.");
-        }
+        machine_dump_call_stack();
         break;
     case 3:
         /* The third time, a "recursive count exceeded" message is displayed. We

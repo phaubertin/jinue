@@ -32,14 +32,18 @@
 #include <jinue/shared/types.h>
 #include <kernel/i686/abi.h>
 #include <kernel/i686/boot.h>
-#include <kernel/debug.h>
+#include <kernel/machine/debug.h>
 #include <kernel/elf.h>
 #include <kernel/logging.h>
 #include <inttypes.h>
 #include <stddef.h>
 
-/** Dump the call stack to kernel logs */
-void dump_call_stack(void) {
+void machine_dump_call_stack(void) {
+    if(!boot_info_check(false)) {
+        warning("Cannot dump call stack because boot information structure is invalid.");
+        return;
+    }
+
     const boot_info_t *boot_info = get_boot_info();
 
     info("Call stack dump:");

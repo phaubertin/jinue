@@ -47,10 +47,7 @@
 void kmain(const char *cmdline) {
     /* The first thing we want to do is parse the command line options, before
      * we log anything, because some options affect logging, such as whether we
-     * need to log to VGA and/or serial port, the baud rate, etc.
-     *
-     * We won't even validate the boot information structure yet because
-     * boot_info_check() logs errors (actually panics) on failure. */
+     * need to log to VGA and/or serial port, the baud rate, etc. */
     cmdline_parse_options(cmdline);
 
     /* Now that we parsed the command line options, we can initialize logging

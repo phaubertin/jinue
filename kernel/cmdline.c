@@ -896,6 +896,8 @@ static void process_name_value_pair(parse_context_t *context) {
 void cmdline_parse_options(const char *cmdline) {
     parse_context_t context;
 
+    cmdline_errors = 0;
+
     if(cmdline == NULL) {
         /* cmdline_errors keeps track of errors for later reporting by the
          * cmdline_process_errors() function. */

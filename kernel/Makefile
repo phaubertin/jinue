@@ -62,6 +62,7 @@ sources.kernel.c = \
 	i686/boot.c \
 	i686/boot_alloc.c \
 	i686/cpu.c \
+	i686/debug.c \
 	i686/halt.c \
 	i686/init.c \
 	i686/interrupt.c \
@@ -76,7 +77,6 @@ sources.kernel.c = \
 	i686/vm_x86.c \
 	cmdline.c \
 	descriptor.c \
-	debug.c \
 	elf.c \
 	ipc.c \
 	kmain.c \
