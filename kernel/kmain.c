@@ -102,7 +102,8 @@ void kmain(const char *cmdline) {
     thread_t *thread = thread_create(
             process,
             elf_info.entry,
-            elf_info.stack_addr);
+            elf_info.stack_addr
+    );
     
     if(thread == NULL) {
         panic("Could not create initial thread.");

@@ -45,22 +45,14 @@ struct pte_t {
     uint32_t entry;
 };
 
-void vm_x86_create_initial_addr_space(
-        addr_space_t    *address_space,
-        pte_t           *page_directory) {
-
-    address_space->top_level.pd = (pte_t *)PHYS_TO_VIRT_AT_16MB(page_directory);
-    address_space->cr3          = (uintptr_t)page_directory;
+void vm_x86_create_initial_addr_space(addr_space_t *addr_space, pte_t *page_directory) {
+    addr_space->top_level.pd = (pte_t *)PHYS_TO_VIRT_AT_16MB(page_directory);
+    addr_space->cr3          = (uintptr_t)page_directory;
 }
 
-addr_space_t *vm_x86_create_addr_space(
-        addr_space_t    *addr_space,
-        pte_t           *page_directory) {
-
+void vm_x86_create_addr_space(addr_space_t *addr_space, pte_t *page_directory) {
     addr_space->top_level.pd = page_directory;
     addr_space->cr3          = vm_lookup_kernel_paddr(page_directory);
-
-    return addr_space;
 }
 
 void vm_x86_destroy_addr_space(addr_space_t *addr_space) {

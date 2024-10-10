@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,37 +29,20 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_I686_VM_X86_H
-#define JINUE_KERNEL_I686_VM_X86_H
+#include <kernel/i686/cpu_data.h>
+#include <kernel/i686/vm.h>
+#include <kernel/machine/process.h>
 
-/** This header file contains declarations for the non-PAE functions defined in
- * hal/vm_x86.c. It is intended to be included by hal/vm.c and hal/vm_x86.c.
- * There should be no reason to include it anywhere else. */
+void machine_switch_to_process(process_t *process) {
+    vm_switch_addr_space(
+            &process->addr_space,
+            get_cpu_local_data());
+}
 
-#include <kernel/i686/types.h>
+bool machine_init_process(process_t *process) {
+    return vm_create_addr_space(&process->addr_space);
+}
 
-void vm_x86_create_initial_addr_space(addr_space_t *addr_space, pte_t *page_directory);
-
-void vm_x86_create_addr_space(addr_space_t *addr_space, pte_t *page_directory);
-
-void vm_x86_destroy_addr_space(addr_space_t *addr_space);
-
-unsigned int vm_x86_page_table_offset_of(void *addr);
-
-unsigned int vm_x86_page_directory_offset_of(void *addr);
-
-pte_t *vm_x86_lookup_page_directory(addr_space_t *addr_space);
-
-pte_t *vm_x86_get_pte_with_offset(pte_t *pte, unsigned int offset);
-
-void vm_x86_set_pte(pte_t *pte, uint32_t paddr, uint64_t flags);
-
-void vm_x86_set_pte_flags(pte_t *pte, uint64_t flags);
-
-uint32_t vm_x86_get_pte_paddr(const pte_t *pte);
-
-void vm_x86_clear_pte(pte_t *pte);
-
-void vm_x86_copy_pte(pte_t *dest, const pte_t *src);
-
-#endif
+void machine_destroy_process(process_t *process) {
+    vm_destroy_addr_space(&process->addr_space);
+}

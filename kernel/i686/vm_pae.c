@@ -350,15 +350,12 @@ void vm_pae_create_initial_addr_space(
     address_space->cr3              = VIRT_TO_PHYS_AT_16MB(initial_pdpt);
 }
 
-addr_space_t *vm_pae_create_addr_space(
-        addr_space_t    *addr_space,
-        pte_t           *first_page_directory) {
-
+bool vm_pae_create_addr_space(addr_space_t *addr_space, pte_t *first_page_directory) {
     /* Create a PDPT for the new address space */
     pdpt_t *pdpt = slab_cache_alloc(&pdpt_cache);
 
     if(pdpt == NULL) {
-        return NULL;
+        return false;
     }
 
     clear_pdpt(pdpt);
@@ -383,7 +380,7 @@ addr_space_t *vm_pae_create_addr_space(
     addr_space->top_level.pdpt  = pdpt;
     addr_space->cr3             = pdpt_paddr;
 
-    return addr_space;
+    return true;
 }
 
 void vm_pae_destroy_addr_space(addr_space_t *addr_space) {

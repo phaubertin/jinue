@@ -30,8 +30,7 @@
  */
 
 #include <jinue/shared/asm/errno.h>
-#include <kernel/i686/cpu_data.h>
-#include <kernel/i686/vm.h>
+#include <kernel/machine/process.h>
 #include <kernel/machine/thread.h>
 #include <kernel/descriptor.h>
 #include <kernel/panic.h>
@@ -77,25 +76,21 @@ process_t *process_create(void) {
     process_t *process = slab_cache_alloc(&process_cache);
 
     if(process != NULL) {
-        addr_space_t *addr_space = vm_create_addr_space(&process->addr_space);
+        process_init(process);
 
-        /* The address space object is located inside the process object but the
-         * call to vm_create_addr_space() above can still fail if we cannot
-         * allocate the paging translation tables. */
-        if(addr_space == NULL) {
+        if(!machine_init_process(process)) {
             slab_cache_free(process);
             return NULL;
         }
-
-        process_init(process);
     }
 
     return process;
 }
 
 void process_destroy(process_t *process) {
+    /* TODO destroy remaining threads */
     /* TODO finalize descriptors */
-    vm_destroy_addr_space(&process->addr_space);
+    machine_destroy_process(process);
     slab_cache_free(process);
 }
 
@@ -124,9 +119,7 @@ int process_create_syscall(int fd) {
 }
 
 void process_switch_to(process_t *process) {
-    vm_switch_addr_space(
-            &process->addr_space,
-            get_cpu_local_data());
+    machine_switch_to_process(process);
 }
 
 process_t *get_current_process(void) {

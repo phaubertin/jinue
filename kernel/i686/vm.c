@@ -485,25 +485,25 @@ static void free_first_kernel_page_directory(pte_t *page_directory) {
     }
 }
 
-addr_space_t *vm_create_addr_space(addr_space_t *addr_space) {
+bool vm_create_addr_space(addr_space_t *addr_space) {
     pte_t *page_directory = clone_first_kernel_page_directory();
 
     if(page_directory == NULL) {
-        return NULL;
+        return false;
     }
 
-    if(pgtable_format_pae) {
-        addr_space_t *retval = vm_pae_create_addr_space(addr_space, page_directory);
-
-        if(retval == NULL) {
-            free_first_kernel_page_directory(page_directory);
-        }
-
-        return retval;
+    if(!pgtable_format_pae) {
+        vm_x86_create_addr_space(addr_space, page_directory);
+        return true;
     }
-    else {
-        return vm_x86_create_addr_space(addr_space, page_directory);
+
+    bool retval = vm_pae_create_addr_space(addr_space, page_directory);
+
+    if(!retval) {
+        free_first_kernel_page_directory(page_directory);
     }
+
+    return retval;
 }
 
 void vm_destroy_page_directory(void *page_directory, unsigned int last_index) {
