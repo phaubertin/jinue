@@ -59,6 +59,7 @@ unclean.extra    = \
 	$(setup32)
 
 sources.kernel.c = \
+	i686/auxv.c \
 	i686/boot.c \
 	i686/boot_alloc.c \
 	i686/cpu.c \

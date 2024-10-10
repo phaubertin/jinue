@@ -30,7 +30,7 @@
  */
 
 #include <jinue/shared/asm/syscall.h>
-#include <kernel/i686/trap.h>
+#include <kernel/machine/auxv.h>
 #include <kernel/i686/vm.h>
 #include <kernel/cmdline.h>
 #include <kernel/descriptor.h>
@@ -473,7 +473,7 @@ static void initialize_stack(
     auxvp[5].a_un.a_val = STACK_BASE;
 
     auxvp[6].a_type     = JINUE_AT_HOWSYSCALL;
-    auxvp[6].a_un.a_val = syscall_implementation;
+    auxvp[6].a_un.a_val = machine_at_howsyscall();
 
     auxvp[7].a_type     = JINUE_AT_NULL;
     auxvp[7].a_un.a_val = 0;
