@@ -33,7 +33,7 @@
 
     extern kmain
     extern boot_info
-    extern halt
+    extern machine_halt
     
     global _start:function (_start.end - _start)
 _start:
@@ -61,4 +61,4 @@ _start:
 
 .end:
 
-    call halt
+    call machine_halt

@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/i686/halt.h>
 #include <kernel/machine/debug.h>
+#include <kernel/machine/halt.h>
 #include <kernel/logging.h>
 #include <stdbool.h>
 
@@ -63,5 +63,5 @@ void panic(const char *message) {
         break;
     }
     
-    halt();
+    machine_halt();
 }
