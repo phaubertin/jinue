@@ -34,7 +34,7 @@
 
 #include <jinue/shared/asm/memory.h>
 #include <kernel/i686/asm/memory.h>
-#include <kernel/types.h>
+#include <kernel/i686/types.h>
 
 void check_memory(const boot_info_t *boot_info);
 

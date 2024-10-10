@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,10 +29,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_I686_HALT_H
-#define JINUE_KERNEL_I686_HALT_H
+#ifndef JINUE_KERNEL_MACHINE_AUXV_H
+#define JINUE_KERNEL_MACHINE_AUXV_H
 
-void halt(void);
+#include <stdint.h>
+
+uint32_t machine_at_howsyscall(void);
 
 #endif
 

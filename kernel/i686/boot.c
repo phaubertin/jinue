@@ -35,7 +35,7 @@
 #include <stddef.h>
 
 /* There is no extern declaration of this global variable in any header file but
- * it is set in startup.asm.  */
+ * it is set in kernel/i686/crt.asm. */
 const boot_info_t *boot_info;
 
 bool boot_info_check(bool panic_on_failure) {

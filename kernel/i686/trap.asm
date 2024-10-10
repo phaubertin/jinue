@@ -31,7 +31,6 @@
 #include <kernel/i686/asm/descriptors.h>
 #include <kernel/i686/asm/irq.h>
 
-
     bits 32
 
     extern dispatch_interrupt
@@ -210,7 +209,11 @@ fast_intel_entry:
     mov gs, ax
     
     ; set dispatch_syscall() function argument
-    push esp                ; First argument:  trapframe
+    ;
+    ; The message arguments, a ponter to which dispatch_syscall() takes
+    ; as argument are at the beginning of the trap frame, so we can just
+    ; pass the address of the trap frame.
+    push esp                ; First argument: message arguments
     
     call dispatch_syscall
     
@@ -297,7 +300,11 @@ fast_amd_entry:
     mov es, cx
     
     ; set dispatch_syscall() function argument
-    push esp                ; First argument:  trapframe
+    ;
+    ; The message arguments, a ponter to which dispatch_syscall() takes
+    ; as argument are at the beginning of the trap frame, so we can just
+    ; pass the address of the trap frame.
+    push esp                ; First argument: message arguments
     
     call dispatch_syscall
     

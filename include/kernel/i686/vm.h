@@ -38,7 +38,7 @@
 #include <jinue/shared/vm.h>
 #include <kernel/i686/asm/boot.h>
 #include <kernel/i686/asm/vm.h>
-#include <kernel/types.h>
+#include <kernel/i686/types.h>
 #include <sys/elf.h>
 
 /** convert physical to virtual address for kernel loaded at 0x100000 (1MB) */
@@ -70,7 +70,7 @@ addr_space_t *vm_create_initial_addr_space(
         boot_alloc_t        *boot_alloc,
         const boot_info_t   *boot_info);
 
-addr_space_t *vm_create_addr_space(addr_space_t *addr_space);
+bool vm_create_addr_space(addr_space_t *addr_space);
 
 void vm_destroy_addr_space(addr_space_t *addr_space);
 

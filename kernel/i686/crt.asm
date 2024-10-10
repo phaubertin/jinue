@@ -27,11 +27,13 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#include <kernel/i686/asm/boot.h>
+
     bits 32
 
     extern kmain
     extern boot_info
-    extern halt
+    extern machine_halt
     
     global _start:function (_start.end - _start)
 _start:
@@ -39,10 +41,24 @@ _start:
     ;
     ; See boot/setup32.asm.
     mov dword [boot_info], esi
+
+    ; Set command line address as first argument to kmain.
+    ; 
+    ; If address of boot information structure is NULL, set the command line
+    ; address to NULL instead of some offset from NULL so the situation can
+    ; be detected easily.
+    xor eax, eax
+    or esi, esi
+    jz .skip
+
+    mov eax, [esi + BOOT_INFO_CMDLINE]
+
+.skip:
+    push eax
     
     ; Call kernel
     call kmain
 
 .end:
 
-    call halt
+    call machine_halt

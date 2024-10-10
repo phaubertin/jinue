@@ -32,11 +32,11 @@
 #include <kernel/i686/interrupt.h>
 #include <kernel/i686/io.h>
 #include <kernel/i686/pic8259.h>
+#include <kernel/i686/types.h>
 #include <kernel/i686/x86.h>
 #include <kernel/logging.h>
 #include <kernel/panic.h>
 #include <kernel/syscall.h>
-#include <kernel/types.h>
 #include <inttypes.h>
 
 
@@ -60,7 +60,7 @@ void dispatch_interrupt(trapframe_t *trapframe) {
     
     if(ivt == JINUE_SYSCALL_IRQ) {
     	/* interrupt-based system call implementation */
-        dispatch_syscall(trapframe);
+        dispatch_syscall((jinue_syscall_args_t *)&trapframe->msg_arg0);
     }
     else if(ivt >= IDT_PIC8259_BASE && ivt < IDT_PIC8259_BASE + PIC8259_IRQ_COUNT) {
     	int irq = ivt - IDT_PIC8259_BASE;

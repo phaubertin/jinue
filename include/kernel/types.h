@@ -35,8 +35,9 @@
 #include <jinue/shared/ipc.h>
 #include <jinue/shared/syscall.h>
 #include <jinue/shared/types.h>
-#include <kernel/i686/types.h>
+#include <kernel/machine/types.h>
 #include <kernel/list.h>
+#include <sys/elf.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -95,7 +96,7 @@ typedef struct {
 
 struct thread_t {
     object_header_t          header;
-    thread_context_t         thread_ctx;
+    machine_thread_t         thread_ctx;
     jinue_node_t             thread_list;
     process_t               *process;
     addr_t                   local_storage_addr;
@@ -117,5 +118,15 @@ typedef struct {
     jinue_list_t    recv_list;
     int             receivers_count;
 } ipc_endpoint_t;
+
+typedef struct {
+    Elf32_Ehdr  *ehdr;
+    size_t       size;
+} elf_file_t;
+
+typedef struct {
+    kern_paddr_t    start;
+    size_t          size;
+} kern_mem_block_t;
 
 #endif

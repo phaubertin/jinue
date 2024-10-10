@@ -30,8 +30,6 @@
  */
 
 #include <kernel/i686/cpu.h>
-#include <kernel/i686/vm.h>
-#include <kernel/boot.h>
 #include <kernel/logging.h>
 #include <kernel/page_alloc.h>
 #include <kernel/slab.h>

@@ -35,27 +35,25 @@
 #include <kernel/types.h>
 #include <sys/elf.h>
 
-
 typedef struct {
     void            *entry;
     void            *stack_addr;
     addr_t           at_phdr;
     int              at_phent;
     int              at_phnum;
-    addr_space_t    *addr_space;
+    process_t       *process;
 } elf_info_t;
 
 bool elf_check(Elf32_Ehdr *elf);
 
-const Elf32_Phdr *elf_executable_program_header(const Elf32_Ehdr *elf);
+const Elf32_Phdr *elf_executable_program_header(const Elf32_Ehdr *ehdr);
 
 void elf_load(
         elf_info_t      *elf_info,
         Elf32_Ehdr      *ehdr,
         const char      *argv0,
         const char      *cmdline,
-        process_t       *process,
-        boot_alloc_t    *boot_alloc);
+        process_t       *process);
 
 const char *elf_symbol_name(const Elf32_Ehdr *ehdr, const Elf32_Sym *symbol_header);
 

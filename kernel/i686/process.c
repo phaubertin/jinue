@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,9 +29,36 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_I686_REBOOT_H_
-#define JINUE_KERNEL_I686_REBOOT_H_
+#include <kernel/i686/cpu_data.h>
+#include <kernel/i686/vm.h>
+#include <kernel/machine/process.h>
 
-void reboot(void);
+void machine_switch_to_process(process_t *process) {
+    vm_switch_addr_space(
+            &process->addr_space,
+            get_cpu_local_data());
+}
 
-#endif
+bool machine_init_process(process_t *process) {
+    return vm_create_addr_space(&process->addr_space);
+}
+
+void machine_destroy_process(process_t *process) {
+    vm_destroy_addr_space(&process->addr_space);
+}
+
+void machine_map_kernel(void *vaddr, kern_paddr_t paddr, int flags) {
+    vm_map_kernel(vaddr, paddr, flags);
+}
+
+void machine_unmap_kernel(void *addr) {
+    vm_unmap_kernel(addr);
+}
+
+bool machine_map_userspace(process_t *process, void *vaddr, user_paddr_t paddr, int flags) {
+    return vm_map_userspace(&process->addr_space, vaddr, paddr, flags);
+}
+
+void machine_unmap_userspace(process_t *process, void *addr) {
+    vm_unmap_userspace(&process->addr_space, addr);
+}

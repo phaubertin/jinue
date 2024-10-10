@@ -32,9 +32,9 @@
 #include <jinue/shared/asm/errno.h>
 #include <kernel/i686/asm/e820.h>
 #include <kernel/i686/boot.h>
+#include <kernel/i686/boot_alloc.h>
 #include <kernel/i686/memory.h>
 #include <kernel/i686/vm.h>
-#include <kernel/boot.h>
 #include <kernel/logging.h>
 #include <kernel/panic.h>
 #include <kernel/util.h>

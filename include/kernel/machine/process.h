@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,32 +29,24 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_I686_THREAD_H
-#define JINUE_KERNEL_I686_THREAD_H
+#ifndef JINUE_KERNEL_MACHINE_PROCESS_H
+#define JINUE_KERNEL_MACHINE_PROCESS_H
 
-#include <kernel/i686/asm/thread.h>
-#include <kernel/i686/x86.h>
 #include <kernel/types.h>
 
+void machine_switch_to_process(process_t *process);
 
-static inline thread_t *get_current_thread(void) {
-    return (thread_t *)(get_esp() & THREAD_CONTEXT_MASK);
-}
+bool machine_init_process(process_t *process);
 
-static inline addr_t get_kernel_stack_base(thread_context_t *thread_ctx) {
-    thread_t *thread = (thread_t *)( (uintptr_t)thread_ctx & THREAD_CONTEXT_MASK );
-    
-    return (addr_t)thread + THREAD_CONTEXT_SIZE;
-}
+void machine_destroy_process(process_t *process);
 
-thread_t *thread_page_init(
-        void            *thread_page,
-        void            *entry,
-        void            *user_stack);
+void machine_map_kernel(void *vaddr, kern_paddr_t paddr, int flags);
 
-void thread_context_switch(
-        thread_context_t    *from_ctx,
-        thread_context_t    *to_ctx,
-        bool                 destroy_from);
+void machine_unmap_kernel(void *addr);
+
+bool machine_map_userspace(process_t *process, void *vaddr, user_paddr_t paddr, int flags);
+
+void machine_unmap_userspace(process_t *process, void *addr);
 
 #endif
+
