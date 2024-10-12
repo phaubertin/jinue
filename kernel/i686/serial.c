@@ -29,11 +29,26 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <kernel/i686/asm/serial.h>
+#include <kernel/machine/serial.h>
 #include <kernel/i686/io.h>
-#include <kernel/i686/serial.h>
 
-void serial_init(int base_ioport, unsigned int baud_rate) {
-    unsigned int divisor = 115200 / baud_rate;
+static struct {
+    bool    enabled;
+    int     base_ioport;
+} config;
+
+void machine_serial_init(const cmdline_opts_t *cmdline_opts) {
+    config.enabled      = cmdline_opts->serial_enable;
+    config.base_ioport  = cmdline_opts->serial_ioport;
+
+    if(!config.enabled) {
+        return;
+    }
+
+    int base_ioport         = config.base_ioport;
+    unsigned int baud_rate  = cmdline_opts->serial_baud_rate;
+    unsigned int divisor    = 115200 / baud_rate;
 
     /* disable interrupts */
     outb(base_ioport + SERIAL_REG_INTR_ENABLE,  0);
@@ -58,17 +73,23 @@ void serial_init(int base_ioport, unsigned int baud_rate) {
     outb(base_ioport + SERIAL_REG_MODEM_CTRL,   0x03);
 }
 
-void serial_printn(int base_ioport, const char *message, size_t n) {
-    for(int idx = 0; idx < n && message[idx] != '\0'; ++idx) {
-        serial_putc(base_ioport, message[idx]);
-    }
+static void serial_putc(char c) {
+    int base_ioport = config.base_ioport;
 
-    serial_putc(base_ioport, '\n');
-}
-
-void serial_putc(int base_ioport, char c) {
     /* wait for the UART to be ready to accept a new character */
     while( (inb(base_ioport + SERIAL_REG_LINE_STATUS) & 0x20) == 0) {}
 
     outb(base_ioport + SERIAL_REG_DATA_BUFFER, c);
+}
+
+void machine_serial_printn(const char *message, size_t n) {
+    if(!config.enabled) {
+        return;
+    }
+
+    for(int idx = 0; idx < n && message[idx] != '\0'; ++idx) {
+        serial_putc(message[idx]);
+    }
+
+    serial_putc('\n');
 }

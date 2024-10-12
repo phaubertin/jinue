@@ -29,7 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/i686/serial.h>
+#include <kernel/i686/asm/serial.h>
 #include <kernel/cmdline.h>
 #include <kernel/logging.h>
 #include <kernel/panic.h>

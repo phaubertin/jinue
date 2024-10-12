@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,11 +29,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_I686_VGA_H
-#define JINUE_KERNEL_I686_VGA_H
+#ifndef JINUE_KERNEL_MACHINE_SERIAL_H
+#define JINUE_KERNEL_MACHINE_SERIAL_H
 
-#include <kernel/i686/asm/vga.h>
+#include <kernel/cmdline.h>
+#include <stddef.h>
 
-void vga_set_base_addr(void *base_addr);
+void machine_serial_init(const cmdline_opts_t *cmdline_opts);
+
+void machine_serial_printn(const char *message, size_t n);
 
 #endif

@@ -30,19 +30,15 @@
  */
 
 #include <jinue/shared/syscall.h>
-#include <kernel/i686/serial.h>
-#include <kernel/i686/vga.h>
+#include <kernel/machine/serial.h>
+#include <kernel/machine/vga.h>
 #include <kernel/cmdline.h>
 #include <kernel/logging.h>
 #include <stdio.h>
 
 void logging_init(const cmdline_opts_t *cmdline_opts) {
-    if(cmdline_opts->vga_enable) {
-        vga_init();
-    }
-    if(cmdline_opts->serial_enable) {
-        serial_init(cmdline_opts->serial_ioport, cmdline_opts->serial_baud_rate);
-    }
+    machine_vga_init(cmdline_opts);
+    machine_serial_init(cmdline_opts);
 }
 
 static void log_message(int loglevel, const char *restrict format, va_list args) {
@@ -57,14 +53,8 @@ static void log_message(int loglevel, const char *restrict format, va_list args)
 }
 
 void logging_add_message(int loglevel, const char *message, size_t n) {
-    const cmdline_opts_t *cmdline_opts = cmdline_get_options();
-
-    if(cmdline_opts->vga_enable) {
-        vga_printn(loglevel, message, n);
-    }
-    if(cmdline_opts->serial_enable) {
-        serial_printn(cmdline_opts->serial_ioport, message, n);
-    }
+    machine_vga_printn(loglevel, message, n);
+    machine_serial_printn(message, n);
 }
 
 void info(const char *restrict format, ...) {
