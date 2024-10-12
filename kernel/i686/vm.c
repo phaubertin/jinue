@@ -887,6 +887,54 @@ void vm_unmap_userspace(addr_space_t *addr_space, void *addr) {
 }
 
 /**
+ * Clone mapping range from one address space to another.
+ *
+ * After the operation, the range in the destination address space map the same
+ * memory as the range in the source address space. Any portion of the range
+ * that does not point to memory in the source address space is unmapped in the
+ * destination address space. The permissions of the new mappings are specified
+ * by the prot argument.
+ *
+ * @param dest_addr_space destination address space
+ * @param src_addr_space source address space
+ * @param dest_addr start of range in destination address space
+ * @param src_addr start of range in source address space
+ * @param length start of range in source address space
+ * @param prot protections flags
+ *
+ */
+bool vm_clone_range(
+        addr_space_t    *dest_addr_space,
+        addr_space_t    *src_addr_space,
+        addr_t           dest_addr,
+        addr_t           src_addr,
+        size_t           length,
+        int              prot) {
+
+    for(size_t idx = 0; idx < length / PAGE_SIZE; ++idx) {
+        /* TODO We should be able to optimize by not looking up the page table
+        * for each entry, both for source and destination. */
+        pte_t *src_pte = vm_lookup_page_table_entry(src_addr_space, src_addr, false, NULL);
+
+        if(src_pte == NULL || !pte_is_present(src_pte)) {
+            vm_unmap(dest_addr_space, dest_addr);
+        }
+        else {
+            user_paddr_t paddr = get_pte_paddr(src_pte);
+
+            if(!vm_map_userspace(dest_addr_space, dest_addr, paddr, prot)) {
+                return false;
+            }
+        }
+
+        src_addr += PAGE_SIZE;
+        dest_addr += PAGE_SIZE;
+    }
+
+    return true;
+}
+
+/**
  * Change the flags for the existing mapping of a single page.
  *
  * An example use case is to convert a read/write page mapping to a read-only
@@ -922,111 +970,4 @@ kern_paddr_t vm_lookup_kernel_paddr(void *addr) {
     assert(pte != NULL && pte_is_present(pte));
 
     return (kern_paddr_t)get_pte_paddr(pte);
-}
-
-static int get_addr_space_by_descriptor(addr_space_t **addr_space, int fd) {
-    object_header_t *object;
-    int status = dereference_object_descriptor(&object, NULL, get_current_process(), fd);
-
-    if(status < 0) {
-        return status;
-    }
-
-    if(object->type != object_type_process) {
-        return -JINUE_EBADF;
-    }
-
-    process_t *process  = (process_t *)object;
-    *addr_space         = &process->addr_space;
-
-    return 0;
-}
-
-/**
- * Implementation for the MMAP system call
- *
- * Map a contiguous memory range into a process' address space.
- *
- * @param process_fd process descriptor number
- * @param args MMAP system call arguments structure
- * @return zero on success, negated error code on failure
- *
- */
-int vm_mmap_syscall(int process_fd, const jinue_mmap_args_t *args) {
-    addr_space_t *addr_space;
-
-    int status = get_addr_space_by_descriptor(&addr_space, process_fd);
-
-    if(status < 0) {
-        return status;
-    }
-
-    char *addr          = args->addr;
-    user_paddr_t paddr  = args->paddr;
-
-    for(size_t idx = 0; idx < args->length / PAGE_SIZE; ++idx) {
-        /* TODO We should be able to optimize by not looking up the page table
-         * for each entry. */
-        if(!vm_map_userspace(addr_space, addr, paddr, args->prot)) {
-            return -JINUE_ENOMEM;
-        }
-
-        addr += PAGE_SIZE;
-        paddr += PAGE_SIZE;
-    }
-
-    return 0;
-}
-
-/**
- * Implementation for the MCLONE system call
- *
- * Clone memory mappings from one process to another.
- *
- * @param src source process descriptor number
- * @param dest destination process descriptor number
- * @param args MCLONE system call arguments structure
- * @return zero on success, negated error code on failure
- *
- */
-int vm_mclone_syscall(int src, int dest, const jinue_mclone_args_t *args) {
-    addr_space_t *src_addr_space;
-    addr_space_t *dest_addr_space;
-
-    int status = get_addr_space_by_descriptor(&src_addr_space, src);
-
-    if(status < 0) {
-        return status;
-    }
-
-    status = get_addr_space_by_descriptor(&dest_addr_space, dest);
-
-    if(status < 0) {
-        return status;
-    }
-
-    char *src_addr  = args->src_addr;
-    char *dest_addr = args->dest_addr;
-
-    for(size_t idx = 0; idx < args->length / PAGE_SIZE; ++idx) {
-        /* TODO We should be able to optimize by not looking up the page table
-        * for each entry, both for source and destination. */
-        pte_t *src_pte = vm_lookup_page_table_entry(src_addr_space, src_addr, false, NULL);
-
-        if(src_pte == NULL || !pte_is_present(src_pte)) {
-            vm_unmap(dest_addr_space, dest_addr);
-        }
-        else {
-            user_paddr_t paddr = get_pte_paddr(src_pte);
-
-            if(!vm_map_userspace(dest_addr_space, dest_addr, paddr, args->prot)) {
-                return -JINUE_ENOMEM;
-            }
-        }
-
-        src_addr += PAGE_SIZE;
-        dest_addr += PAGE_SIZE;
-    }
-
-    return 0;
 }

@@ -90,13 +90,17 @@ void vm_unmap_kernel(void *addr);
 
 void vm_unmap_userspace(addr_space_t *addr_space, void *addr);
 
+bool vm_clone_range(
+        addr_space_t    *dest_addr_space,
+        addr_space_t    *src_addr_space,
+        addr_t           dest_addr,
+        addr_t           src_addr,
+        size_t           length,
+        int              prot);
+
 void vm_change_flags(addr_space_t *addr_space, addr_t addr, int flags);
 
 kern_paddr_t vm_lookup_kernel_paddr(void *addr);
-
-int vm_mmap_syscall(int process_fd, const jinue_mmap_args_t *args);
-
-int vm_mclone_syscall(int src, int dest, const jinue_mclone_args_t *args);
 
 #endif
 

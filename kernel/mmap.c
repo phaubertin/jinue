@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,25 +29,33 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_PAGE_ALLOC_H
-#define JINUE_KERNEL_PAGE_ALLOC_H
+#include <jinue/shared/asm/errno.h>
+#include <kernel/machine/process.h>
+#include <kernel/descriptor.h>
+#include <kernel/mmap.h>
 
-#include <kernel/types.h>
+/**
+ * Implementation for the MMAP system call
+ *
+ * Map a contiguous memory range into a process' address space.
+ *
+ * @param process_fd process descriptor number
+ * @param args MMAP system call arguments structure
+ * @return zero on success, negated error code on failure
+ *
+ */
+int mmap(int process_fd, const jinue_mmap_args_t *args) {
+    process_t *process;
 
-#define PFNULL ((kern_paddr_t)-1)
+    int status = get_process(&process, process_fd);
 
-void *page_alloc(void);
+    if(status < 0) {
+        return status;
+    }
 
-void page_free(void *page);
+    if(! machine_mmap(process, args->addr, args->length, args->paddr, args->prot)) {
+        return -JINUE_ENOMEM;
+    }
 
-unsigned int get_page_count(void);
-
-bool add_page_frame(kern_paddr_t paddr);
-
-kern_paddr_t remove_page_frame(void);
-
-void clear_page(void *page);
-
-void clear_pages(void *first_page, int num_pages);
-
-#endif
+    return 0;
+}

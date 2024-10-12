@@ -82,6 +82,8 @@ sources.kernel.c = \
 	ipc.c \
 	kmain.c \
 	logging.c \
+	mmap.c \
+	mclone.c \
 	object.c \
 	page_alloc.c \
 	panic.c \

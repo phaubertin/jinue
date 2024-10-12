@@ -30,8 +30,6 @@
  */
 
 #include <jinue/shared/asm/errno.h>
-#include <kernel/i686/cpu_data.h>
-#include <kernel/i686/vm.h>
 #include <kernel/machine/thread.h>
 #include <kernel/descriptor.h>
 #include <kernel/list.h>

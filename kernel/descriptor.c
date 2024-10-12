@@ -131,7 +131,7 @@ int dereference_unused_descriptor(
     return 0;
 }
 
-static int get_process(process_t **process, int process_fd) {
+int get_process(process_t **process, int process_fd) {
     object_header_t *object;
 
     int status = dereference_object_descriptor(&object, NULL, get_current_process(), process_fd);

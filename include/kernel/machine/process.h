@@ -48,5 +48,16 @@ bool machine_map_userspace(process_t *process, void *vaddr, user_paddr_t paddr, 
 
 void machine_unmap_userspace(process_t *process, void *addr);
 
+/* TODO merge this with machine_map_userspace() */
+bool machine_mmap(process_t *process, void *vaddr, size_t length, user_paddr_t paddr, int prot);
+
+bool machine_mclone(
+        process_t   *dest_process,
+        process_t   *src_process,
+        void        *src_addr,
+        void        *dest_addr,
+        size_t       length,
+        int          prot);
+
 #endif
 

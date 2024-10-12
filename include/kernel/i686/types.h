@@ -38,9 +38,6 @@
 #include <kernel/types.h>
 #include <sys/elf.h>
 
-/** an invalid page frame address used as null value */
-#define PFNULL ((kern_paddr_t)-1)
-
 typedef struct {
     uint64_t addr;
     uint64_t size;

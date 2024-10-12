@@ -35,6 +35,9 @@
 #include <inttypes.h>
 #include <stdint.h>
 
+/* This file contains the machine-specific definitions that need to be visible
+ * outside the machine-specific parts of the code. */
+
 /** Virtual memory address (pointer) with pointer arithmetic allowed */
 typedef unsigned char *addr_t;
 
@@ -82,4 +85,3 @@ typedef struct {
 } addr_space_t;
 
 #endif
-
