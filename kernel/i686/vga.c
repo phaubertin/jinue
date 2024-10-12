@@ -35,16 +35,35 @@
 #include <kernel/i686/io.h>
 #include <kernel/i686/vga.h>
 #include <kernel/i686/vm.h>
+#include <kernel/logging.h>
+
+typedef unsigned int vga_pos_t;
+
+static void vga_printn(int loglevel, const char *message, size_t n);
+
+static logger_t logger = {
+    .log = vga_printn
+}; 
 
 /** base address of the VGA text video buffer */
 static unsigned char *video_base_addr = (void *)VGA_TEXT_VID_BASE;
 
-static vga_pos_t vga_raw_putc(char c, vga_pos_t pos, int colour);
+static void vga_clear(void) {
+    unsigned int idx = 0;
+    
+    while( idx < (VGA_LINES * VGA_WIDTH * 2) ) {
+        video_base_addr[idx++] = 0x20;
+        video_base_addr[idx++] = VGA_COLOR_ERASE;
+    }
+}
 
-void vga_init(void) {
-    unsigned char data;
+void vga_init(const cmdline_opts_t *cmdline_opts) {
+    if(! cmdline_opts->machine.vga_enable) {
+        return;
+    }
     
     /* Set address select bit in a known state: CRTC regs at 0x3dx */
+    unsigned char data;
     data = inb(VGA_MISC_OUT_RD);
     data |= 1;
     outb(VGA_MISC_OUT_WR, data);
@@ -57,37 +76,15 @@ void vga_init(void) {
     
     /* Clear the screen */
     vga_clear();
+
+    register_logger(&logger);
 }
 
 void vga_set_base_addr(void *base_addr) {
     video_base_addr = base_addr;
 }
 
-void vga_clear(void) {
-    unsigned int idx = 0;
-    
-    while( idx < (VGA_LINES * VGA_WIDTH * 2) ) {
-        video_base_addr[idx++] = 0x20;
-        video_base_addr[idx++] = VGA_COLOR_ERASE;
-    }
-}
-
-void vga_scroll(void) {
-    unsigned char *di = video_base_addr;
-    unsigned char *si = video_base_addr + 2 * VGA_WIDTH;
-    unsigned int idx;
-    
-    for(idx = 0; idx < 2 * VGA_WIDTH * (VGA_LINES - 1); ++idx) {
-        *(di++) = *(si++);
-    }
-    
-    for(idx = 0; idx < VGA_WIDTH; ++idx) {
-        *(di++) = 0x20;
-        *(di++) = VGA_COLOR_ERASE;
-    }
-}
-
-vga_pos_t vga_get_cursor_pos(void) {
+static vga_pos_t vga_get_cursor_pos(void) {
     unsigned char h, l;
     
     outb(VGA_CRTC_ADDR, 0x0e);
@@ -98,7 +95,7 @@ vga_pos_t vga_get_cursor_pos(void) {
     return (h << 8) | l;
 }
 
-void vga_set_cursor_pos(vga_pos_t pos) {
+static void vga_set_cursor_pos(vga_pos_t pos) {
     unsigned char h = pos >> 8;
     unsigned char l = pos;
     
@@ -121,18 +118,19 @@ static int get_colour(int loglevel) {
     }
 }
 
-void vga_printn(int loglevel, const char *message, size_t n) {
-    int colour = get_colour(loglevel);
-
-    unsigned short int pos  = vga_get_cursor_pos();
-
-    for(int idx = 0; idx < n && message[idx] != '\0'; ++idx) {
-        pos = vga_raw_putc(message[idx], pos, colour);
+static void vga_scroll(void) {
+    unsigned char *di = video_base_addr;
+    unsigned char *si = video_base_addr + 2 * VGA_WIDTH;
+    unsigned int idx;
+    
+    for(idx = 0; idx < 2 * VGA_WIDTH * (VGA_LINES - 1); ++idx) {
+        *(di++) = *(si++);
     }
     
-    pos = vga_raw_putc('\n', pos, colour);
-
-    vga_set_cursor_pos(pos);
+    for(idx = 0; idx < VGA_WIDTH; ++idx) {
+        *(di++) = 0x20;
+        *(di++) = VGA_COLOR_ERASE;
+    }
 }
 
 static vga_pos_t vga_raw_putc(char c, vga_pos_t pos, int colour) {
@@ -176,4 +174,18 @@ static vga_pos_t vga_raw_putc(char c, vga_pos_t pos, int colour) {
     }
     
     return pos;
+}
+
+static void vga_printn(int loglevel, const char *message, size_t n) {
+    int colour = get_colour(loglevel);
+
+    unsigned short int pos  = vga_get_cursor_pos();
+
+    for(int idx = 0; idx < n && message[idx] != '\0'; ++idx) {
+        pos = vga_raw_putc(message[idx], pos, colour);
+    }
+    
+    pos = vga_raw_putc('\n', pos, colour);
+
+    vga_set_cursor_pos(pos);
 }

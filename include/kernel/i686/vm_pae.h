@@ -36,7 +36,7 @@
  * hal/vm_pae.c. It is intended to be included by hal/vm.c and hal/vm_pae.c.
  * There should be no reason to include it anywhere else. */
 
-#include <kernel/types.h>
+#include <kernel/i686/types.h>
 
 void vm_pae_enable(boot_alloc_t *boot_alloc, const boot_info_t *boot_info);
 
@@ -45,9 +45,7 @@ void vm_pae_create_initial_addr_space(
         pte_t           *page_directories,
         boot_alloc_t    *boot_alloc);
 
-addr_space_t *vm_pae_create_addr_space(
-        addr_space_t    *addr_space,
-        pte_t           *first_page_directory);
+bool vm_pae_create_addr_space(addr_space_t *addr_space, pte_t *first_page_directory);
 
 void vm_pae_destroy_addr_space(addr_space_t *addr_space);
 

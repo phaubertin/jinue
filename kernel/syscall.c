@@ -31,15 +31,14 @@
 
 #include <jinue/shared/asm/errno.h>
 #include <jinue/shared/vm.h>
-#include <kernel/i686/cpu_data.h>
-#include <kernel/i686/memory.h>
-#include <kernel/i686/reboot.h>
-#include <kernel/i686/thread.h>
-#include <kernel/i686/trap.h>
-#include <kernel/i686/vm.h>
+#include <kernel/machine/halt.h>
+#include <kernel/machine/memory.h>
+#include <kernel/machine/thread.h>
 #include <kernel/descriptor.h>
 #include <kernel/ipc.h>
 #include <kernel/logging.h>
+#include <kernel/mclone.h>
+#include <kernel/mmap.h>
 #include <kernel/object.h>
 #include <kernel/process.h>
 #include <kernel/syscall.h>
@@ -78,7 +77,7 @@ static void sys_nosys(jinue_syscall_args_t *args) {
 }
 
 static void sys_reboot(jinue_syscall_args_t *args) {
-    reboot();
+    machine_reboot();
 }
 
 static void sys_puts(jinue_syscall_args_t *args) {
@@ -169,7 +168,7 @@ static void sys_get_user_memory(jinue_syscall_args_t *args) {
         return;
     }
 
-    int retval = memory_get_map(&buffer);
+    int retval = machine_get_memory_map(&buffer);
     set_return_value_or_error(args, retval);
 }
 
@@ -365,7 +364,7 @@ static void sys_mmap(jinue_syscall_args_t *args) {
         return;
     }
 
-    int retval = vm_mmap_syscall(process_fd, &mmap_args);
+    int retval = mmap(process_fd, &mmap_args);
     set_return_value_or_error(args, retval);
 }
 
@@ -430,7 +429,7 @@ static void sys_mclone(jinue_syscall_args_t *args) {
         return;
     }
 
-    int retval = vm_mclone_syscall(src, dest, &mclone_args);
+    int retval = mclone(src, dest, &mclone_args);
     set_return_value_or_error(args, retval);
 }
 
@@ -526,9 +525,7 @@ static void sys_mint(jinue_syscall_args_t *args) {
  * @param trapframe trap frame for current system call
  *
  */
-void dispatch_syscall(trapframe_t *trapframe) {
-    jinue_syscall_args_t *args = (jinue_syscall_args_t *)&trapframe->msg_arg0;
-    
+void dispatch_syscall(jinue_syscall_args_t *args) {
     intptr_t function = args->arg0;
     
     if(function < 0) {

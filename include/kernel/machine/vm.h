@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,39 +29,31 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/machine/debug.h>
-#include <kernel/machine/halt.h>
-#include <kernel/logging.h>
-#include <stdbool.h>
+#ifndef JINUE_KERNEL_MACHINE_VM_H
+#define JINUE_KERNEL_MACHINE_VM_H
 
-void panic(const char *message) {
-    static int enter_count = 0;
+#include <kernel/types.h>
 
-    /* When things go seriously wrong, things that panic() does can themselves
-     * create a further kernel panic, for example by triggering a hardware
-     * exception. The enter_count static variable keeps count of the number of
-     * times panic() is entered recursively and is used to prevent an infinite
-     * recursive loop. */
-    ++enter_count;
+void machine_map_kernel_page(void *vaddr, kern_paddr_t paddr, int prot);
 
-    switch(enter_count) {
-    case 1:
-    case 2:
-        /* The first two times panic() is entered, a panic message is displayed
-         * along with a full call stack dump. */
-        error("KERNEL PANIC%s: %s", (enter_count == 1) ? "" : " (recursive)", message);
-        machine_dump_call_stack();
-        break;
-    case 3:
-        /* The third time, a "recursive count exceeded" message is displayed. We
-         * try to limit the number of actions we take to limit the chances of a
-         * further panic. */
-        error("KERNEL PANIC (recursive count exceeded)");
-        break;
-    default:
-        /* The fourth time, we do nothing but halt the CPU. */
-        break;
-    }
-    
-    machine_halt();
-}
+void machine_unmap_kernel_page(void *addr);
+
+bool machine_map_userspace(
+        process_t       *process,
+        void            *vaddr,
+        size_t           length,
+        user_paddr_t     paddr,
+        int              prot);
+
+bool machine_clone_userspace_mapping(
+        process_t   *dest_process,
+        addr_t       dest_addr,
+        process_t   *src_process,
+        addr_t       src_addr,
+        size_t       length,
+        int          prot) ;
+
+kern_paddr_t machine_lookup_kernel_paddr(void *addr);
+
+#endif
+

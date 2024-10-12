@@ -32,9 +32,10 @@
 #include <jinue/shared/asm/errno.h>
 #include <kernel/i686/asm/e820.h>
 #include <kernel/i686/boot.h>
+#include <kernel/i686/boot_alloc.h>
 #include <kernel/i686/memory.h>
 #include <kernel/i686/vm.h>
-#include <kernel/boot.h>
+#include <kernel/machine/memory.h>
 #include <kernel/logging.h>
 #include <kernel/panic.h>
 #include <kernel/util.h>
@@ -398,10 +399,11 @@ static void find_range_for_loader(memory_range_t *dest, const boot_info_t *boot_
     }
 }
 
-int memory_get_map(const jinue_buffer_t *buffer) {
+int machine_get_memory_map(const jinue_buffer_t *buffer) {
     const boot_info_t *boot_info = get_boot_info();
 
-    const uintptr_t kernel_image_size = (uintptr_t)boot_info->image_top - (uintptr_t)boot_info->image_start;
+    const uintptr_t kernel_image_size =
+            (uintptr_t)boot_info->image_top - (uintptr_t)boot_info->image_start;
 
     memory_range_t loader_range;
     find_range_for_loader(&loader_range, boot_info);

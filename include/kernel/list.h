@@ -141,7 +141,8 @@ static inline void *jinue_node_entry_by_offset(jinue_node_t *node, size_t offset
 /** TODO move this to a more general-purpose header file */
 #define JINUE_OFFSETOF(type, member) ((size_t)(&((type *)0)->member))
 
-#define jinue_node_entry(node, type, member)   (jinue_node_entry_by_offset(node, JINUE_OFFSETOF(type, member)))
+#define jinue_node_entry(node, type, member) \
+    ( (type *)jinue_node_entry_by_offset(node, JINUE_OFFSETOF(type, member)) )
 
 static inline jinue_node_t *jinue_cursor_node(const jinue_cursor_t cur) {
     if(cur == NULL) {
@@ -155,7 +156,8 @@ static inline jinue_node_t *jinue_cursor_entry_by_offset(jinue_cursor_t cur, siz
     return jinue_node_entry_by_offset(*cur, offset);
 }
 
-#define jinue_cursor_entry(cur, type, member)   (jinue_cursor_entry_by_offset(cur, JINUE_OFFSETOF(type, member)))
+#define jinue_cursor_entry(cur, type, member) \
+    ( (type *)jinue_cursor_entry_by_offset(cur, JINUE_OFFSETOF(type, member)) )
 
 static inline jinue_cursor_t jinue_list_head_cursor(jinue_list_t *list) {
     return &(list->head);

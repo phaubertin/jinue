@@ -29,10 +29,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <jinue/shared/asm/machine.h>
 #include <jinue/shared/asm/syscall.h>
-#include <kernel/i686/trap.h>
-#include <kernel/i686/vm.h>
-#include <kernel/boot.h>
+#include <jinue/shared/vm.h>
+#include <kernel/machine/auxv.h>
+#include <kernel/machine/vm.h>
 #include <kernel/cmdline.h>
 #include <kernel/descriptor.h>
 #include <kernel/elf.h>
@@ -132,14 +133,14 @@ bool elf_check(Elf32_Ehdr *ehdr) {
  * This function leads to a kernel panic if the mapping fails because a
  * translation table could not be allocated.
  *
- * @param addr_space address space for mapping
+ * @param process address space for the mapping
  * @param vadds virtual address of page
  * @param padds physical address of page frame
  * @param flags mapping flags
  *
  * */
-static void checked_map_userspace(
-        addr_space_t    *addr_space,
+static void checked_map_userspace_page(
+        process_t       *process,
         void            *vaddr,
         user_paddr_t     paddr,
         int              flags) {
@@ -148,7 +149,7 @@ static void checked_map_userspace(
      *
      * This should not be necessary because we control the user loader binary,
      * but let's check anyway in case the build process breaks somehow. */
-    if(! vm_map_userspace(addr_space, vaddr, paddr, flags)) {
+    if(! machine_map_userspace(process, vaddr, PAGE_SIZE, paddr, flags)) {
         panic("Page table allocation error when loading ELF file");
     }
 }
@@ -300,13 +301,11 @@ static void load_segments(
         Elf32_Ehdr      *ehdr,
         process_t       *process) {
 
-    addr_space_t *addr_space = &process->addr_space;
-
     const Elf32_Phdr *phdrs = program_header_table(ehdr);
     elf_info->at_phdr       = get_at_phdr(ehdr);
     elf_info->at_phnum      = ehdr->e_phnum;
     elf_info->at_phent      = ehdr->e_phentsize;
-    elf_info->addr_space    = addr_space;
+    elf_info->process       = process;
     elf_info->entry         = (void *)ehdr->e_entry;
 
     for(unsigned int idx = 0; idx < ehdr->e_phnum; ++idx) {
@@ -339,10 +338,10 @@ static void load_segments(
             /* Since the segment has to be mapped read only and does not require
              * padding, we can just map the original pages. */
             while(vptr < vend) {
-                checked_map_userspace(
-                        addr_space,
+                checked_map_userspace_page(
+                        process,
                         vptr,
-                        vm_lookup_kernel_paddr(file_ptr),
+                        machine_lookup_kernel_paddr(file_ptr),
                         map_flags(phdr->p_flags));
 
                 vptr     += PAGE_SIZE;
@@ -353,22 +352,23 @@ static void load_segments(
             /* Segment is writable and/or needs padding. We need to allocate new
              * pages for this segment. */
             while(vptr < vend) {
-                char *stop;
-
                 /* start of this page and next page */
                 char *vnext = vptr + PAGE_SIZE;
 
                 /* allocate and map the new page */
                 void *page = page_alloc();
-                checked_map_userspace(
-                        addr_space,
+
+                checked_map_userspace_page(
+                        process,
                         vptr,
-                        vm_lookup_kernel_paddr(page),
+                        machine_lookup_kernel_paddr(page),
                         map_flags(phdr->p_flags));
 
                 /* TODO transfer page ownership to userspace */
 
                 /* copy */
+                char *stop;
+
                 if(vnext > vfend) {
                     stop = vfend;
                 }
@@ -393,10 +393,9 @@ static void load_segments(
  * Allocate the stack for ELF binary
  *
  * @param elf_info ELF information structure (output)
- * @param boot_alloc boot-time page allocator
- *
+*
  * */
-static void allocate_stack(elf_info_t *elf_info, boot_alloc_t *boot_alloc) {
+static void allocate_stack(elf_info_t *elf_info) {
     /** TODO: check for overlap of stack with loaded segments */
 
     for(addr_t vpage = (addr_t)STACK_START; vpage < (addr_t)STACK_BASE; vpage += PAGE_SIZE) {
@@ -406,10 +405,10 @@ static void allocate_stack(elf_info_t *elf_info, boot_alloc_t *boot_alloc) {
          * which may contain sensitive information. Let's clear it. */
         clear_page(page);
 
-        checked_map_userspace(
-                elf_info->addr_space,
+        checked_map_userspace_page(
+                elf_info->process,
                 vpage,
-                vm_lookup_kernel_paddr(page),
+                machine_lookup_kernel_paddr(page),
                 JINUE_PROT_READ | JINUE_PROT_WRITE);
 
         /* TODO transfer page ownership to userspace */
@@ -475,7 +474,7 @@ static void initialize_stack(
     auxvp[5].a_un.a_val = STACK_BASE;
 
     auxvp[6].a_type     = JINUE_AT_HOWSYSCALL;
-    auxvp[6].a_un.a_val = syscall_implementation;
+    auxvp[6].a_un.a_val = machine_at_howsyscall();
 
     auxvp[7].a_type     = JINUE_AT_NULL;
     auxvp[7].a_un.a_val = 0;
@@ -529,7 +528,6 @@ static void initialize_descriptors(process_t *process) {
  * @param argv0 name of binary
  * @param cmdline full kernel command line
  * @param process process in which to load the ELF binary
- * @param boot_alloc boot-time page allocator
  *
  * */
 void elf_load(
@@ -537,8 +535,7 @@ void elf_load(
         Elf32_Ehdr      *ehdr,
         const char      *argv0,
         const char      *cmdline,
-        process_t       *process,
-        boot_alloc_t    *boot_alloc) {
+        process_t       *process) {
     
     if(! elf_check(ehdr)) {
         panic("ELF binary is invalid");
@@ -546,7 +543,7 @@ void elf_load(
 
     load_segments(elf_info, ehdr, process);
 
-    allocate_stack(elf_info, boot_alloc);
+    allocate_stack(elf_info);
 
     initialize_stack(elf_info, cmdline, argv0);
     

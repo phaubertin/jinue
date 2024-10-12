@@ -30,28 +30,30 @@
  */
 
 #include <kernel/i686/boot.h>
+#include <kernel/i686/boot_alloc.h>
 #include <kernel/i686/cpu.h>
 #include <kernel/i686/cpu_data.h>
 #include <kernel/i686/descriptors.h>
 #include <kernel/i686/interrupt.h>
-#include <kernel/i686/machine.h>
 #include <kernel/i686/memory.h>
 #include <kernel/i686/pic8259.h>
 #include <kernel/i686/remap.h>
-#include <kernel/i686/thread.h>
+#include <kernel/i686/serial.h>
 #include <kernel/i686/trap.h>
 #include <kernel/i686/vga.h>
 #include <kernel/i686/vm.h>
 #include <kernel/i686/vm_pae.h>
 #include <kernel/i686/x86.h>
-#include <kernel/boot.h>
+#include <kernel/machine/init.h>
 #include <kernel/cmdline.h>
+#include <kernel/elf.h>
 #include <kernel/logging.h>
 #include <kernel/panic.h>
 #include <kernel/page_alloc.h>
 #include <kernel/syscall.h>
 #include <kernel/util.h>
 #include <assert.h>
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -94,10 +96,10 @@ static bool maybe_enable_pae(
     bool use_pae;
 
     if(cpu_has_feature(CPU_FEATURE_PAE)) {
-        use_pae = (cmdline_opts->pae != CMDLINE_OPT_PAE_DISABLE);
+        use_pae = (cmdline_opts->machine.pae != CMDLINE_OPT_PAE_DISABLE);
     }
     else {
-        if(cmdline_opts->pae == CMDLINE_OPT_PAE_REQUIRE) {
+        if(cmdline_opts->machine.pae == CMDLINE_OPT_PAE_REQUIRE) {
             panic("Option pae=require passed on kernel command line but PAE is not supported.");
         }
 
@@ -244,11 +246,67 @@ static void select_syscall_implementation(void) {
     }
 }
 
-void machine_init(
-        Elf32_Ehdr              *kernel_elf,
-        const cmdline_opts_t    *cmdline_opts,
-        boot_alloc_t            *boot_alloc,
-        const boot_info_t       *boot_info) {
+static void get_kernel_elf(elf_file_t *elf, const boot_info_t *boot_info) {
+    elf->ehdr = boot_info->kernel_start;
+    elf->size = boot_info->kernel_size;
+
+    if(elf->ehdr == NULL) {
+        panic("malformed boot image: no kernel ELF binary");
+    }
+
+    if(elf->size < sizeof(Elf32_Ehdr)) {
+        panic("kernel too small to be an ELF binary");
+    }
+
+    if(! elf_check(boot_info->kernel_start)) {
+        panic("kernel ELF binary is invalid");
+    }
+}
+
+static void get_loader_elf(elf_file_t *elf, const boot_info_t *boot_info) {
+    elf->ehdr = boot_info->loader_start;
+    elf->size = boot_info->loader_size;
+
+    if(elf->ehdr == NULL) {
+        panic("malformed boot image: no user space loader ELF binary");
+    }
+
+    if(elf->size < sizeof(Elf32_Ehdr)) {
+        panic("user space loader too small to be an ELF binary");
+    }
+
+    info("Found user space loader with size %" PRIu32 " bytes.", elf->size);
+}
+
+static void get_ramdisk(kern_mem_block_t *ramdisk, const boot_info_t *boot_info) {
+    ramdisk->start  = boot_info->ramdisk_start;
+    ramdisk->size   = boot_info->ramdisk_size;
+    
+    if(ramdisk->start == 0 || ramdisk->size == 0) {
+        panic("No initial RAM disk loaded.");
+    }
+}
+
+void machine_get_loader_elf(elf_file_t *elf) {
+    const boot_info_t *boot_info = get_boot_info();
+    get_loader_elf(elf, boot_info);
+}
+
+void machine_get_ramdisk(kern_mem_block_t *ramdisk) {
+    const boot_info_t *boot_info = get_boot_info();
+    get_ramdisk(ramdisk, boot_info);
+}
+
+void machine_init_logging(const cmdline_opts_t *cmdline_opts) {
+    serial_init(cmdline_opts);
+    vga_init(cmdline_opts);
+}
+
+void machine_init(const cmdline_opts_t *cmdline_opts) {
+    /* Validate the boot information structure before using it. */
+    (void)boot_info_check(true);
+
+    const boot_info_t *boot_info = get_boot_info();
 
     cpu_detect_features();
 
@@ -260,8 +318,11 @@ void machine_init(
 
     move_kernel_at_16mb(boot_info);
 
+    boot_alloc_t boot_alloc;
+    boot_alloc_init(&boot_alloc, boot_info);
+
     bool pae_enabled = maybe_enable_pae(
-            boot_alloc,
+            &boot_alloc,
             boot_info,
             cmdline_opts);
 
@@ -272,16 +333,14 @@ void machine_init(
      * Do this after enabling PAE: we want the temporary PAE page tables to be
      * allocated after 1MB because we won't need them anymore once the final
      * address space is created. */
-    boot_reinit_at_16mb(boot_alloc);
+    boot_reinit_at_16mb(&boot_alloc);
 
     /* allocate per-CPU data
      * 
      * We need to ensure that the Task State Segment (TSS) contained in this
      * memory block does not cross a page boundary. */
     assert(sizeof(cpu_data_t) < CPU_DATA_ALIGNMENT);
-    cpu_data_t *cpu_data = boot_heap_alloc(
-            boot_alloc,
-            cpu_data_t, CPU_DATA_ALIGNMENT);
+    cpu_data_t *cpu_data = boot_heap_alloc(&boot_alloc, cpu_data_t, CPU_DATA_ALIGNMENT);
     
     /* initialize per-CPU data */
     cpu_init_data(cpu_data);
@@ -296,18 +355,21 @@ void machine_init(
     /* Initialize programmable interrupt_controller. */
     pic8259_init();
 
+    elf_file_t kernel;
+    get_kernel_elf(&kernel, boot_info);
+
     addr_space_t *addr_space = vm_create_initial_addr_space(
-            kernel_elf,
-            boot_alloc,
+            kernel.ehdr,
+            &boot_alloc,
             boot_info);
 
-    memory_initialize_array(boot_alloc, boot_info);
+    memory_initialize_array(&boot_alloc, boot_info);
 
     /* After this, VGA output is not possible until we switch to the
      * new address space (see the call to vm_switch_addr_space() below).
      * Attempting it will cause a kernel panic due to a page fault (and the
      * panic handler itself attempts to log). */
-    remap_text_video_memory(boot_alloc);
+    remap_text_video_memory(&boot_alloc);
 
     /* switch to new address space */
     vm_switch_addr_space(addr_space, cpu_data);
@@ -317,11 +379,11 @@ void machine_init(
     /* From this point, we are ready to switch to the new address space, so we
      * don't need to allocate any more pages from the boot allocator. Transfer
      * the remaining pages to the run-time page allocator. */
-    boot_reinit_at_klimit(boot_alloc);
-    initialize_page_allocator(boot_alloc);
+    boot_reinit_at_klimit(&boot_alloc);
+    initialize_page_allocator(&boot_alloc);
 
     /* Initialize GDT and TSS */
-    init_descriptors(cpu_data, boot_alloc);
+    init_descriptors(cpu_data, &boot_alloc);
 
     /* create slab cache to allocate PDPTs
      *

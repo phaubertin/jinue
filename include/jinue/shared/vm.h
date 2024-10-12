@@ -32,7 +32,7 @@
 #ifndef _JINUE_SHARED_VM_H
 #define _JINUE_SHARED_VM_H
 
-#include <jinue/shared/asm/vm.h>
+#include <jinue/shared/asm/machine.h>
 
 #include <stdbool.h>
 #include <stdint.h>

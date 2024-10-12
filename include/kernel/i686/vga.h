@@ -33,22 +33,10 @@
 #define JINUE_KERNEL_I686_VGA_H
 
 #include <kernel/i686/asm/vga.h>
-#include <stddef.h>
+#include <kernel/cmdline.h>
 
-typedef unsigned int vga_pos_t;
-
-void vga_init(void);
+void vga_init(const cmdline_opts_t *cmdline_opts);
 
 void vga_set_base_addr(void *base_addr);
-
-void vga_clear(void);
-
-void vga_printn(int loglevel, const char *message, size_t n);
-
-void vga_scroll(void);
-
-vga_pos_t vga_get_cursor_pos(void);
-
-void vga_set_cursor_pos(vga_pos_t pos);
 
 #endif

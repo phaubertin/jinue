@@ -29,18 +29,25 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_I686_MACHINE_H
-#define JINUE_KERNEL_I686_MACHINE_H
+#ifndef JINUE_KERNEL_TYPEDEPS_H
+#define JINUE_KERNEL_TYPEDEPS_H
 
-#include <kernel/cmdline.h>
-#include <kernel/types.h>
-#include <sys/elf.h>
+#include <inttypes.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdbool.h>
 
-void machine_init(
-        Elf32_Ehdr              *kernel_elf,
-        const cmdline_opts_t    *cmdline_opts,
-        boot_alloc_t            *boot_alloc,
-        const boot_info_t       *boot_info);
+/** Virtual memory address (pointer) with pointer arithmetic allowed */
+typedef unsigned char *addr_t;
+
+typedef struct {
+    const char *start;
+    size_t      length;
+} cmdline_token_t;
+
+typedef struct {
+    const char  *name;
+    int          enum_value;
+} cmdline_enum_def_t;
 
 #endif
-

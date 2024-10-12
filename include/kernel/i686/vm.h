@@ -38,7 +38,7 @@
 #include <jinue/shared/vm.h>
 #include <kernel/i686/asm/boot.h>
 #include <kernel/i686/asm/vm.h>
-#include <kernel/types.h>
+#include <kernel/i686/types.h>
 #include <sys/elf.h>
 
 /** convert physical to virtual address for kernel loaded at 0x100000 (1MB) */
@@ -70,7 +70,7 @@ addr_space_t *vm_create_initial_addr_space(
         boot_alloc_t        *boot_alloc,
         const boot_info_t   *boot_info);
 
-addr_space_t *vm_create_addr_space(addr_space_t *addr_space);
+bool vm_create_addr_space(addr_space_t *addr_space);
 
 void vm_destroy_addr_space(addr_space_t *addr_space);
 
@@ -78,25 +78,19 @@ void vm_switch_addr_space(addr_space_t *addr_space, cpu_data_t *cpu_data);
 
 void vm_boot_map(void *addr, uint32_t paddr, int num_entries);
 
-void vm_map_kernel(void *vaddr, kern_paddr_t paddr, int flags);
+void vm_map_kernel_page(void *vaddr, kern_paddr_t paddr, int flags);
 
-bool vm_map_userspace(
-        addr_space_t    *addr_space,
-        void            *vaddr,
-        user_paddr_t     paddr,
-        int              flags);
-
-void vm_unmap_kernel(void *addr);
+void vm_unmap_kernel_page(void *addr);
 
 void vm_unmap_userspace(addr_space_t *addr_space, void *addr);
 
-void vm_change_flags(addr_space_t *addr_space, addr_t addr, int flags);
-
-kern_paddr_t vm_lookup_kernel_paddr(void *addr);
-
-int vm_mmap_syscall(int process_fd, const jinue_mmap_args_t *args);
-
-int vm_mclone_syscall(int src, int dest, const jinue_mclone_args_t *args);
+bool vm_clone_range(
+        addr_space_t    *dest_addr_space,
+        addr_space_t    *src_addr_space,
+        addr_t           dest_addr,
+        addr_t           src_addr,
+        size_t           length,
+        int              prot);
 
 #endif
 

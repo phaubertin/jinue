@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,51 +29,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/types.h>
-#include <kernel/i686/abi.h>
-#include <kernel/i686/boot.h>
-#include <kernel/debug.h>
-#include <kernel/elf.h>
-#include <kernel/logging.h>
-#include <inttypes.h>
-#include <stddef.h>
+#ifndef JINUE_KERNEL_MACHINE_CPU_H
+#define JINUE_KERNEL_MACHINE_CPU_H
 
-/** Dump the call stack to kernel logs */
-void dump_call_stack(void) {
-    const boot_info_t *boot_info = get_boot_info();
+unsigned int machine_get_cpu_dcache_alignment(void);
 
-    info("Call stack dump:");
+#endif
 
-    for(addr_t fptr = get_fpointer(); fptr != NULL; fptr = get_caller_fpointer(fptr)) {
-        addr_t return_addr = get_ret_addr(fptr);
-
-        if(return_addr == NULL) {
-            break;
-        }
-        
-        /* We assume e8 xx xx xx xx for call instruction encoding.
-         * TODO can we do better than this? */
-        return_addr -= 5;
-        
-        const Elf32_Ehdr *ehdr = boot_info->kernel_start;
-        const Elf32_Sym *symbol = elf_find_function_symbol_by_address(
-                ehdr,
-                (Elf32_Addr)return_addr);
-
-        if(symbol == NULL) {
-            info("  0x%x (unknown)", return_addr);
-            continue;
-        }
-
-        const char *name = elf_symbol_name(ehdr, symbol);
-
-        if(name == NULL) {
-            name = "[unknown]";
-        }
-
-        info(   "  %#p (%s+%" PRIuPTR ")",
-                return_addr,
-                name,
-                return_addr - symbol->st_value);
-    }
-}

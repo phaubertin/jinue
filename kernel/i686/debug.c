@@ -29,39 +29,55 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <jinue/shared/types.h>
+#include <kernel/i686/abi.h>
+#include <kernel/i686/boot.h>
 #include <kernel/machine/debug.h>
-#include <kernel/machine/halt.h>
+#include <kernel/elf.h>
 #include <kernel/logging.h>
-#include <stdbool.h>
+#include <inttypes.h>
+#include <stddef.h>
 
-void panic(const char *message) {
-    static int enter_count = 0;
-
-    /* When things go seriously wrong, things that panic() does can themselves
-     * create a further kernel panic, for example by triggering a hardware
-     * exception. The enter_count static variable keeps count of the number of
-     * times panic() is entered recursively and is used to prevent an infinite
-     * recursive loop. */
-    ++enter_count;
-
-    switch(enter_count) {
-    case 1:
-    case 2:
-        /* The first two times panic() is entered, a panic message is displayed
-         * along with a full call stack dump. */
-        error("KERNEL PANIC%s: %s", (enter_count == 1) ? "" : " (recursive)", message);
-        machine_dump_call_stack();
-        break;
-    case 3:
-        /* The third time, a "recursive count exceeded" message is displayed. We
-         * try to limit the number of actions we take to limit the chances of a
-         * further panic. */
-        error("KERNEL PANIC (recursive count exceeded)");
-        break;
-    default:
-        /* The fourth time, we do nothing but halt the CPU. */
-        break;
+void machine_dump_call_stack(void) {
+    if(!boot_info_check(false)) {
+        warning("Cannot dump call stack because boot information structure is invalid.");
+        return;
     }
-    
-    machine_halt();
+
+    const boot_info_t *boot_info = get_boot_info();
+
+    info("Call stack dump:");
+
+    for(addr_t fptr = get_fpointer(); fptr != NULL; fptr = get_caller_fpointer(fptr)) {
+        addr_t return_addr = get_ret_addr(fptr);
+
+        if(return_addr == NULL) {
+            break;
+        }
+        
+        /* We assume e8 xx xx xx xx for call instruction encoding.
+         * TODO can we do better than this? */
+        return_addr -= 5;
+        
+        const Elf32_Ehdr *ehdr = boot_info->kernel_start;
+        const Elf32_Sym *symbol = elf_find_function_symbol_by_address(
+                ehdr,
+                (Elf32_Addr)return_addr);
+
+        if(symbol == NULL) {
+            info("  0x%x (unknown)", return_addr);
+            continue;
+        }
+
+        const char *name = elf_symbol_name(ehdr, symbol);
+
+        if(name == NULL) {
+            name = "[unknown]";
+        }
+
+        info(   "  %#p (%s+%" PRIuPTR ")",
+                return_addr,
+                name,
+                return_addr - symbol->st_value);
+    }
 }

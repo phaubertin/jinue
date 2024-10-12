@@ -32,6 +32,6 @@
 #ifndef JINUE_KERNEL_KMAIN_H
 #define JINUE_KERNEL_KMAIN_H
 
-void kmain(void);
+void kmain(const char *cmdline);
 
-#endif /* CORE_H_ */
+#endif

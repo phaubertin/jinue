@@ -29,39 +29,37 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/machine/debug.h>
-#include <kernel/machine/halt.h>
-#include <kernel/logging.h>
-#include <stdbool.h>
+#ifndef _JINUE_KERNEL_I686_ASM_SHARED_H
+#define _JINUE_KERNEL_I686_ASM_SHARED_H
 
-void panic(const char *message) {
-    static int enter_count = 0;
+/* This file contains machine-specific definitions that need to be visible
+ * outside the machine-specific parts of the code, both in user space and
+ * the kernel. */
 
-    /* When things go seriously wrong, things that panic() does can themselves
-     * create a further kernel panic, for example by triggering a hardware
-     * exception. The enter_count static variable keeps count of the number of
-     * times panic() is entered recursively and is used to prevent an infinite
-     * recursive loop. */
-    ++enter_count;
+/** number of bits in virtual address for offset inside page */
+#define PAGE_BITS               12
 
-    switch(enter_count) {
-    case 1:
-    case 2:
-        /* The first two times panic() is entered, a panic message is displayed
-         * along with a full call stack dump. */
-        error("KERNEL PANIC%s: %s", (enter_count == 1) ? "" : " (recursive)", message);
-        machine_dump_call_stack();
-        break;
-    case 3:
-        /* The third time, a "recursive count exceeded" message is displayed. We
-         * try to limit the number of actions we take to limit the chances of a
-         * further panic. */
-        error("KERNEL PANIC (recursive count exceeded)");
-        break;
-    default:
-        /* The fourth time, we do nothing but halt the CPU. */
-        break;
-    }
-    
-    machine_halt();
-}
+/** size of page */
+#define PAGE_SIZE               (1<<PAGE_BITS) /* 4096 */
+
+/** bit mask for offset in page */
+#define PAGE_MASK               (PAGE_SIZE - 1)
+
+/** The virtual address range starting at KLIMIT is reserved by the kernel. The
+    region above KLIMIT has the same mapping in all address spaces. KLIMIT must
+    be aligned on a page directory boundary in PAE mode. */
+#define KLIMIT                  0xc0000000
+
+/** stack base address (stack top) */
+#define STACK_BASE              KLIMIT
+
+/** initial stack size */
+#define STACK_SIZE              (128 * KB)
+
+/** stack portion reserved for environment, arguments and auxiliary vectors */
+#define RESERVED_STACK_SIZE     (32 * KB)
+
+/** initial stack lower address */
+#define STACK_START             (STACK_BASE - STACK_SIZE)
+
+#endif

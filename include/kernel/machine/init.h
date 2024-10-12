@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,11 +29,19 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_DEBUG_H
-#define JINUE_KERNEL_DEBUG_H
+#ifndef JINUE_KERNEL_MACHINE_INIT_H
+#define JINUE_KERNEL_MACHINE_INIT_H
 
+#include <kernel/cmdline.h>
+#include <kernel/types.h>
 
-void dump_call_stack(void);
+void machine_get_loader_elf(elf_file_t *elf);
+
+void machine_get_ramdisk(kern_mem_block_t *ramdisk);
+
+void machine_init_logging(const cmdline_opts_t *cmdline_opts);
+
+void machine_init(const cmdline_opts_t *cmdline_opts);
 
 #endif
 

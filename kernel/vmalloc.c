@@ -29,17 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/i686/vm.h>
-#include <kernel/boot.h>
-#include <kernel/page_alloc.h>
+#include <jinue/shared/vm.h>
 #include <kernel/panic.h>
-#include <kernel/types.h>
-#include <kernel/util.h>
 #include <kernel/vmalloc.h>
-#include <assert.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <string.h>
 
 
 /**

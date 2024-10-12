@@ -33,10 +33,9 @@
 #define JINUE_KERNEL_LOGGING_H
 
 #include <kernel/cmdline.h>
-#include <stdarg.h>
-#include <stddef.h>
+#include <kernel/types.h>
 
-void logging_init(const cmdline_opts_t *cmdline_opts);
+void register_logger(logger_t *logger);
 
 void logging_add_message(int loglevel, const char *message, size_t n);
 

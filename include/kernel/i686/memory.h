@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -34,7 +34,7 @@
 
 #include <jinue/shared/asm/memory.h>
 #include <kernel/i686/asm/memory.h>
-#include <kernel/types.h>
+#include <kernel/i686/types.h>
 
 void check_memory(const boot_info_t *boot_info);
 
@@ -43,7 +43,5 @@ void memory_initialize_array(
         const boot_info_t   *boot_info);
 
 void *memory_lookup_page(uint64_t paddr);
-
-int memory_get_map(const jinue_buffer_t *buffer);
 
 #endif

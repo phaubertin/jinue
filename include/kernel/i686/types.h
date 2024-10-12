@@ -33,55 +33,10 @@
 #define JINUE_KERNEL_I686_TYPES_H
 
 #include <kernel/i686/asm/descriptors.h>
+#include <kernel/i686/exports.h>
+#include <kernel/machine/types.h>
+#include <kernel/types.h>
 #include <sys/elf.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-
-/** Virtual memory address (pointer) with pointer arithmetic allowed */
-typedef unsigned char *addr_t;
-
-/** Physical memory address for use by the kernel */
-typedef uint32_t kern_paddr_t;
-
-/** Physical memory address for use by user space */
-typedef uint64_t user_paddr_t;
-
-/** an invalid page frame address used as null value */
-#define PFNULL ((kern_paddr_t)-1)
-
-/** incomplete structure declaration for a page table entry
- *
- * There are actually two different definitions of this structure: one that
- * represents 32-bit entries for standard 32-bit paging, and one that represents
- * 64-bit entries for Physical Address Extension (PAE) paging. The right
- * definition to use is chosen at run time (i.e. during boot).
- *
- * Outside of the specific functions that are used to access information in
- * page table entries, functions are allowed to hold and pass around pointers to
- * page table entries, but are not allowed to dereference them. */
-struct pte_t;
-
-/** type of a page table entry */
-typedef struct pte_t pte_t;
-
-struct pdpt_t;
-
-typedef struct pdpt_t pdpt_t;
-
-typedef struct {
-    /* The assembly language thread switching code makes the assumption that
-     * saved_stack_pointer is the first member of this structure. */
-    addr_t saved_stack_pointer;
-} thread_context_t;
-
-typedef struct {
-    uint32_t     cr3;
-    union {
-        pte_t   *pd;   /* non-PAE: page directory */
-        pdpt_t  *pdpt; /* PAE: page directory pointer table */
-    } top_level;
-} addr_space_t;
 
 typedef struct {
     uint64_t addr;
@@ -91,19 +46,19 @@ typedef struct {
 
 /* This structure is used by the assembly language setup code to pass
  * information to the kernel. Whenever changes are made to this structure
- * declaration, the constants in the hal/asm/boot.h must be updated (member
- * offsets and structure size).
+ * declaration, the constants in the kernel/i686/asm/boot.h must be updated
+ * (member offsets and structure size).
  *
- * See also the setup code, i.e. boot/setup32.asm. */
+ * See also the setup code, i.e. kernel/i686/setup32.asm. */
 typedef struct {
     Elf32_Ehdr      *kernel_start;
-    uint32_t         kernel_size;
+    size_t           kernel_size;
     Elf32_Ehdr      *loader_start;
-    uint32_t         loader_size;
+    size_t           loader_size;
     void            *image_start;
     void            *image_top;
-    uint32_t	     ramdisk_start;
-    uint32_t	     ramdisk_size;
+    kern_paddr_t     ramdisk_start;
+    size_t	         ramdisk_size;
     uint32_t         e820_entries;
     const e820_t    *e820_map;
     void            *cmdline;
@@ -131,58 +86,58 @@ typedef struct {
 
 typedef struct {
     /* offset 0 */
-    uint16_t prev;
+    uint16_t    prev;
     /* offset 4 */
-    addr_t         esp0;
+    addr_t      esp0;
     /* offset 8 */
-    uint16_t ss0;
+    uint16_t    ss0;
     /* offset 12 */
-    addr_t         esp1;
+    addr_t      esp1;
     /* offset 16 */
-    uint16_t ss1;
+    uint16_t    ss1;
     /* offset 20 */
-    addr_t         esp2;
+    addr_t      esp2;
     /* offset 24 */
-    uint16_t ss2;
+    uint16_t    ss2;
     /* offset 28 */
-    uint32_t  cr3;
+    uint32_t    cr3;
     /* offset 32 */
-    uint32_t  eip;
+    uint32_t    eip;
     /* offset 36 */
-    uint32_t  eflags;
+    uint32_t    eflags;
     /* offset 40 */
-    uint32_t  eax;
+    uint32_t    eax;
     /* offset 44 */
-    uint32_t  ecx;
+    uint32_t    ecx;
     /* offset 48 */
-    uint32_t  edx;
+    uint32_t    edx;
     /* offset 52 */
-    uint32_t  ebx;
+    uint32_t    ebx;
     /* offset 56 */
-    uint32_t  esp;
+    uint32_t    esp;
     /* offset 60 */
-    uint32_t  ebp;
+    uint32_t    ebp;
     /* offset 64 */
-    uint32_t  esi;
+    uint32_t    esi;
     /* offset 68 */
-    uint32_t  edi;
+    uint32_t    edi;
     /* offset 72 */
-    uint16_t es;
+    uint16_t    es;
     /* offset 76 */
-    uint16_t cs;
+    uint16_t    cs;
     /* offset 80 */
-    uint16_t ss;
+    uint16_t    ss;
     /* offset 84 */
-    uint16_t ds;
+    uint16_t    ds;
     /* offset 88 */
-    uint16_t fs;
+    uint16_t    fs;
     /* offset 92 */
-    uint16_t gs;
+    uint16_t    gs;
     /* offset 96 */
-    uint16_t ldt;
+    uint16_t    ldt;
     /* offset 100 */
-    uint16_t debug;
-    uint16_t iomap;
+    uint16_t    debug;
+    uint16_t    iomap;
 } tss_t;
 
 struct cpu_data_t {

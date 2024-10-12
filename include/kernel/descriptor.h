@@ -54,4 +54,6 @@ int close(int fd);
 
 int destroy(int fd);
 
+int get_process(process_t **process, int process_fd);
+
 #endif

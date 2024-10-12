@@ -32,7 +32,7 @@
 #ifndef JINUE_KERNEL_I686_ASM_THREAD_H
 #define JINUE_KERNEL_I686_ASM_THREAD_H
 
-#include <jinue/shared/asm/vm.h>
+#include <jinue/shared/asm/machine.h>
 
 
 #define THREAD_CONTEXT_SIZE     PAGE_SIZE

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,12 +29,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <kernel/i686/asm/thread.h>
 #include <kernel/i686/cpu.h>
 #include <kernel/i686/cpu_data.h>
 #include <kernel/i686/descriptors.h>
-#include <kernel/i686/thread.h>
 #include <kernel/i686/trap.h>
 #include <kernel/i686/types.h>
+#include <kernel/machine/thread.h>
+#include <kernel/page_alloc.h>
 #include <assert.h>
 #include <stddef.h>
 #include <string.h>
@@ -42,21 +44,22 @@
 
 /* defined in thread_switch.asm */
 void thread_context_switch_stack(
-        thread_context_t *from_ctx,
-        thread_context_t *to_ctx,
+        machine_thread_t *from_ctx,
+        machine_thread_t *to_ctx,
         bool destroy_from);
 
 /* For each thread, a page is allocated which contains:
- *  - The thread structure (thread_t); and
- *  - This thread's kernel stack.
+ *  - The thread structure (thread_t), which includes the thread's message
+ *    buffer; and
+ *  - The thread's kernel stack.
  *
- * Switching thread context (see thread_context_switch()) basically means
+ * Switching thread context (see machine_switch_thread()) basically means
  * switching the kernel stack.
  *
  * The layout of this page is as follow:
  *
  *  +--------v-----------------v--------+ thread
- *  |                                   |   +(THREAD_CONTEXT_SIZE == PAGE_SIZE)
+ *  |                                   |  + (THREAD_CONTEXT_SIZE == PAGE_SIZE)
  *  |                                   |
  *  |                                   |
  *  |            Kernel stack           |
@@ -64,7 +67,7 @@ void thread_context_switch_stack(
  *  |                                   |
  *  |                                   |
  *  +-----------------------------------+ thread
- *  |                                   |   + sizeof(thread_t)
+ *  |                                   |  + sizeof(thread_t)
  *  |          Thread structure         |
  *  |             (thread_t)            |
  *  |                                   |
@@ -74,18 +77,19 @@ void thread_context_switch_stack(
  * base, can be found quickly by masking the least significant bits of the stack
  * pointer (with THREAD_CONTEXT_MASK).
  *
- * All members of the thread structure (thread_t) used by the HAL are grouped
- * in the thread context (sub-)structure (thread_context_t).
+ * All machine-specific members of the thread structure (thread_t) are grouped
+ * in the thread context (sub-)structure (machine_thread_t).
+ * 
  */
 
-thread_t *thread_page_init(
-        void            *thread_page,
-        void            *entry,
-        void            *user_stack) {
+static addr_t get_kernel_stack_base(machine_thread_t *thread_ctx) {
+    thread_t *thread = (thread_t *)( (uintptr_t)thread_ctx & THREAD_CONTEXT_MASK );
+    return (addr_t)thread + THREAD_CONTEXT_SIZE;
+}
 
+void machine_init_thread(thread_t *thread, void *entry, void *user_stack) {
     /* initialize fields */
-    thread_t *thread                = thread_page;
-    thread_context_t *thread_ctx    = &thread->thread_ctx;
+    machine_thread_t *thread_ctx = &thread->thread_ctx;
 
     /* setup stack for initial return to user space */
     void *kernel_stack_base = get_kernel_stack_base(thread_ctx);
@@ -113,37 +117,43 @@ thread_t *thread_page_init(
 
     /* set thread stack pointer */
     thread_ctx->saved_stack_pointer = (addr_t)kernel_context;
-
-    return thread;
 }
 
-void thread_context_switch(
-        thread_context_t    *from_ctx,
-        thread_context_t    *to_ctx,
-        bool                 destroy_from) {
+thread_t *machine_alloc_thread(void) {
+    return page_alloc();
+}
 
-    /** ASSERTION: to_ctx argument must not be NULL */
-    assert(to_ctx != NULL);
+void machine_free_thread(thread_t *thread) {
+    page_free(thread);
+}
+
+void machine_switch_thread(thread_t *from, thread_t *to, bool destroy_from) {
+    /** ASSERTION: to argument must not be NULL */
+    assert(to != NULL);
     
-    /** ASSERTION: from_ctx argument must not be NULL if destroy_from is true */
-    assert(from_ctx != NULL || ! destroy_from);
+    /** ASSERTION: from argument must not be NULL if destroy_from is true */
+    assert(from != NULL || !destroy_from);
 
-    /* nothing to do if this is already the current thread */
-    if(from_ctx != to_ctx) {
-        /* setup TSS with kernel stack base for this thread context */
-        addr_t kernel_stack_base = get_kernel_stack_base(to_ctx);
-        tss_t *tss = get_tss();
+    machine_thread_t *from_ctx  = (from == NULL) ? NULL : &from->thread_ctx;
+    machine_thread_t *to_ctx    = &to->thread_ctx;
 
-        tss->esp0 = kernel_stack_base;
-        tss->esp1 = kernel_stack_base;
-        tss->esp2 = kernel_stack_base;
+    /* setup TSS with kernel stack base for this thread context */
+    addr_t kernel_stack_base = get_kernel_stack_base(to_ctx);
+    tss_t *tss = get_tss();
 
-        /* update kernel stack address for SYSENTER instruction */
-        if(cpu_has_feature(CPU_FEATURE_SYSENTER)) {
-            wrmsr(MSR_IA32_SYSENTER_ESP, (uint64_t)(uintptr_t)kernel_stack_base);
-        }
+    tss->esp0 = kernel_stack_base;
+    tss->esp1 = kernel_stack_base;
+    tss->esp2 = kernel_stack_base;
 
-        /* switch thread context stack */
-        thread_context_switch_stack(from_ctx, to_ctx, destroy_from);
+    /* update kernel stack address for SYSENTER instruction */
+    if(cpu_has_feature(CPU_FEATURE_SYSENTER)) {
+        wrmsr(MSR_IA32_SYSENTER_ESP, (uint64_t)(uintptr_t)kernel_stack_base);
     }
+
+    /* switch thread context stack */
+    thread_context_switch_stack(from_ctx, to_ctx, destroy_from);
+}
+
+thread_t *get_current_thread(void) {
+    return (thread_t *)(get_esp() & THREAD_CONTEXT_MASK);
 }

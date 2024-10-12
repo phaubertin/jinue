@@ -35,25 +35,11 @@
 #include <kernel/asm/cmdline.h>
 #include <kernel/types.h>
 
-typedef enum {
-    CMDLINE_OPT_PAE_AUTO,
-    CMDLINE_OPT_PAE_DISABLE,
-    CMDLINE_OPT_PAE_REQUIRE
-} cmdline_opt_pae_t;
-
-typedef struct {
-    cmdline_opt_pae_t    pae;
-    bool                 serial_enable;
-    int                  serial_baud_rate;
-    int                  serial_ioport;
-    bool                 vga_enable;
-} cmdline_opts_t;
-
 void cmdline_parse_options(const char *cmdline);
 
 const cmdline_opts_t *cmdline_get_options(void);
 
-void cmdline_report_parsing_errors(void);
+void cmdline_report_errors(void);
 
 char *cmdline_write_arguments(char *buffer, const char *cmdline);
 
@@ -62,5 +48,14 @@ char *cmdline_write_environ(char *buffer, const char *cmdline);
 size_t cmdline_count_arguments(const char *cmdline);
 
 size_t cmdline_count_environ(const char *cmdline);
+
+bool cmdline_match_integer(int *ivalue, const cmdline_token_t *value);
+
+bool cmdline_match_enum(
+        int                         *value,
+        const cmdline_enum_def_t    *def,
+        const cmdline_token_t       *token);
+
+bool cmdline_match_boolean(bool *value, const cmdline_token_t *token);
 
 #endif

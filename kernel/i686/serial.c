@@ -31,9 +31,24 @@
 
 #include <kernel/i686/io.h>
 #include <kernel/i686/serial.h>
+#include <kernel/logging.h>
 
-void serial_init(int base_ioport, unsigned int baud_rate) {
-    unsigned int divisor = 115200 / baud_rate;
+static void serial_printn(int loglevel, const char *message, size_t n);
+
+static logger_t logger = {
+    .log = serial_printn
+}; 
+
+static int base_ioport;
+
+void serial_init(const cmdline_opts_t *cmdline_opts) {
+    if(! cmdline_opts->machine.serial_enable) {
+        return;
+    }
+
+    base_ioport             = cmdline_opts->machine.serial_ioport;
+    unsigned int baud_rate  = cmdline_opts->machine.serial_baud_rate;
+    unsigned int divisor    = 115200 / baud_rate;
 
     /* disable interrupts */
     outb(base_ioport + SERIAL_REG_INTR_ENABLE,  0);
@@ -56,19 +71,21 @@ void serial_init(int base_ioport, unsigned int baud_rate) {
 
     /* assert DTR and RTS */
     outb(base_ioport + SERIAL_REG_MODEM_CTRL,   0x03);
+
+    register_logger(&logger);
 }
 
-void serial_printn(int base_ioport, const char *message, size_t n) {
-    for(int idx = 0; idx < n && message[idx] != '\0'; ++idx) {
-        serial_putc(base_ioport, message[idx]);
-    }
-
-    serial_putc(base_ioport, '\n');
-}
-
-void serial_putc(int base_ioport, char c) {
+static void serial_putc(char c) {
     /* wait for the UART to be ready to accept a new character */
     while( (inb(base_ioport + SERIAL_REG_LINE_STATUS) & 0x20) == 0) {}
 
     outb(base_ioport + SERIAL_REG_DATA_BUFFER, c);
+}
+
+static void serial_printn(int loglevel, const char *message, size_t n) {
+    for(int idx = 0; idx < n && message[idx] != '\0'; ++idx) {
+        serial_putc(message[idx]);
+    }
+
+    serial_putc('\n');
 }

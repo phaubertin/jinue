@@ -30,7 +30,7 @@
  */
 
 #include <kernel/i686/vm.h>
-#include <kernel/boot.h>
+#include <kernel/i686/boot_alloc.h>
 #include <kernel/page_alloc.h>
 #include <kernel/panic.h>
 #include <kernel/util.h>

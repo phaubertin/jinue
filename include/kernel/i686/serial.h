@@ -29,16 +29,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef HAL_SERIAL_H_
-#define HAL_SERIAL_H_
+#ifndef JINUE_KERNEL_I686_SERIAL_H_
+#define JINUE_KERNEL_I686_SERIAL_H_
 
 #include <kernel/i686/asm/serial.h>
-#include <stddef.h>
+#include <kernel/cmdline.h>
 
-void serial_init(int base_ioport, unsigned int baud_rate);
-
-void serial_printn(int base_ioport, const char *message, size_t n);
-
-void serial_putc(int base_ioport, char c);
+void serial_init(const cmdline_opts_t *cmdline_opts);
 
 #endif

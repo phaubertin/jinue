@@ -34,6 +34,8 @@
 
 #include <kernel/types.h>
 
+#define PFNULL ((kern_paddr_t)-1)
+
 void *page_alloc(void);
 
 void page_free(void *page);

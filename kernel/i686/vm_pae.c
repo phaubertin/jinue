@@ -30,11 +30,11 @@
  */
 
 #include <kernel/i686/boot.h>
+#include <kernel/i686/boot_alloc.h>
 #include <kernel/i686/cpu.h>
 #include <kernel/i686/memory.h>
 #include <kernel/i686/vm_private.h>
 #include <kernel/i686/x86.h>
-#include <kernel/boot.h>
 #include <kernel/page_alloc.h>
 #include <kernel/panic.h>
 #include <kernel/slab.h>
@@ -350,15 +350,12 @@ void vm_pae_create_initial_addr_space(
     address_space->cr3              = VIRT_TO_PHYS_AT_16MB(initial_pdpt);
 }
 
-addr_space_t *vm_pae_create_addr_space(
-        addr_space_t    *addr_space,
-        pte_t           *first_page_directory) {
-
+bool vm_pae_create_addr_space(addr_space_t *addr_space, pte_t *first_page_directory) {
     /* Create a PDPT for the new address space */
     pdpt_t *pdpt = slab_cache_alloc(&pdpt_cache);
 
     if(pdpt == NULL) {
-        return NULL;
+        return false;
     }
 
     clear_pdpt(pdpt);
@@ -367,7 +364,7 @@ addr_space_t *vm_pae_create_addr_space(
 
     vm_pae_set_pte(
             &pdpt->pd[klimit_offset],
-            vm_lookup_kernel_paddr(first_page_directory),
+            machine_lookup_kernel_paddr(first_page_directory),
             X86_PTE_PRESENT);
 
     for(int idx = klimit_offset + 1; idx < PDPT_ENTRIES; ++idx) {
@@ -375,7 +372,7 @@ addr_space_t *vm_pae_create_addr_space(
     }
 
     /* Lookup the physical address of the page where the PDPT resides. */
-    kern_paddr_t pdpt_page_paddr = vm_lookup_kernel_paddr((addr_t)page_address_of(pdpt));
+    kern_paddr_t pdpt_page_paddr = machine_lookup_kernel_paddr((addr_t)page_address_of(pdpt));
 
     /* physical address of PDPT */
     kern_paddr_t pdpt_paddr = pdpt_page_paddr | page_offset_of(pdpt);
@@ -383,7 +380,7 @@ addr_space_t *vm_pae_create_addr_space(
     addr_space->top_level.pdpt  = pdpt;
     addr_space->cr3             = pdpt_paddr;
 
-    return addr_space;
+    return true;
 }
 
 void vm_pae_destroy_addr_space(addr_space_t *addr_space) {
@@ -466,7 +463,7 @@ pte_t *vm_pae_lookup_page_directory(
 
         vm_pae_set_pte(
                 pdpte,
-                vm_lookup_kernel_paddr(page_directory),
+                machine_lookup_kernel_paddr(page_directory),
                 X86_PTE_PRESENT);
 
         /* In 32-bit PAE mode, the CPU stores the four entries of the PDPT

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Philippe Aubertin.
+ * Copyright (C) 2022-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,13 +29,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/i686/halt.h>
+#include <kernel/i686/io.h>
 #include <kernel/i686/x86.h>
+#include <kernel/machine/halt.h>
 #include <stdbool.h>
 
-void halt(void) {
+void machine_halt(void) {
     while(true) {
         cli();
         hlt();
     }
+}
+
+void machine_reboot(void) {
+    outb(0x64, 0xfe);
 }

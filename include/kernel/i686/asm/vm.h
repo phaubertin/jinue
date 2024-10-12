@@ -32,7 +32,7 @@
 #ifndef JINUE_KERNEL_I686_ASM_VM_H
 #define JINUE_KERNEL_I686_ASM_VM_H
 
-#include <jinue/shared/asm/vm.h>
+#include <jinue/shared/asm/machine.h>
 #include <kernel/i686/asm/x86.h>
 
 /** Number of entries per page table/directory, PAE disabled */

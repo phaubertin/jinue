@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,35 +29,20 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_SHARED_ASM_VM_H
-#define _JINUE_SHARED_ASM_VM_H
+#include <kernel/i686/cpu_data.h>
+#include <kernel/i686/vm.h>
+#include <kernel/machine/process.h>
 
-#include <jinue/shared/asm/types.h>
+void machine_switch_to_process(process_t *process) {
+    vm_switch_addr_space(
+            &process->addr_space,
+            get_cpu_local_data());
+}
 
-/** number of bits in virtual address for offset inside page */
-#define PAGE_BITS               12
+bool machine_init_process(process_t *process) {
+    return vm_create_addr_space(&process->addr_space);
+}
 
-/** size of page */
-#define PAGE_SIZE               (1<<PAGE_BITS) /* 4096 */
-
-/** bit mask for offset in page */
-#define PAGE_MASK               (PAGE_SIZE - 1)
-
-/** The virtual address range starting at KLIMIT is reserved by the kernel. The
-    region above KLIMIT has the same mapping in all address spaces. KLIMIT must
-    be aligned on a page directory boundary in PAE mode. */
-#define KLIMIT                  0xc0000000
-
-/** stack base address (stack top) */
-#define STACK_BASE              KLIMIT
-
-/** initial stack size */
-#define STACK_SIZE              (128 * KB)
-
-/** stack portion reserved for environment, arguments and auxiliary vectors */
-#define RESERVED_STACK_SIZE     (32 * KB)
-
-/** initial stack lower address */
-#define STACK_START             (STACK_BASE - STACK_SIZE)
-
-#endif
+void machine_destroy_process(process_t *process) {
+    vm_destroy_addr_space(&process->addr_space);
+}

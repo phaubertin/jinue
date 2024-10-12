@@ -59,28 +59,32 @@ unclean.extra    = \
 	$(setup32)
 
 sources.kernel.c = \
+	i686/auxv.c \
 	i686/boot.c \
+	i686/boot_alloc.c \
+	i686/cmdline.c \
 	i686/cpu.c \
+	i686/debug.c \
 	i686/halt.c \
+	i686/init.c \
 	i686/interrupt.c \
-	i686/machine.c \
 	i686/memory.c \
 	i686/pic8259.c \
-	i686/reboot.c \
+	i686/process.c \
 	i686/serial.c \
 	i686/thread.c \
 	i686/vga.c \
 	i686/vm.c \
 	i686/vm_pae.c \
 	i686/vm_x86.c \
-	boot.c \
 	cmdline.c \
 	descriptor.c \
-	debug.c \
 	elf.c \
 	ipc.c \
 	kmain.c \
 	logging.c \
+	mmap.c \
+	mclone.c \
 	object.c \
 	page_alloc.c \
 	panic.c \

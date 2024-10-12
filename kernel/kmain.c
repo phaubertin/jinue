@@ -29,11 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/i686/boot.h>
-#include <kernel/i686/machine.h>
-#include <kernel/i686/memory.h>
-#include <kernel/i686/vm.h>
-#include <kernel/boot.h>
+#include <kernel/machine/init.h>
 #include <kernel/cmdline.h>
 #include <kernel/elf.h>
 #include <kernel/ipc.h>
@@ -48,89 +44,39 @@
 #include "build-info.gen.h"
 
 
-static Elf32_Ehdr *get_kernel_elf_header(const boot_info_t *boot_info) {
-    if(boot_info->kernel_start == NULL) {
-        panic("malformed boot image: no kernel ELF binary");
-    }
-
-    if(boot_info->kernel_size < sizeof(Elf32_Ehdr)) {
-        panic("kernel too small to be an ELF binary");
-    }
-
-    if(! elf_check(boot_info->kernel_start)) {
-        panic("kernel ELF binary is invalid");
-    }
-
-    return boot_info->kernel_start;
-}
-
-static Elf32_Ehdr *get_userspace_loader_elf_header(const boot_info_t *boot_info) {
-    if(boot_info->loader_start == NULL) {
-        panic("malformed boot image: no user space loader ELF binary");
-    }
-
-    if(boot_info->loader_size < sizeof(Elf32_Ehdr)) {
-        panic("user space loader too small to be an ELF binary");
-    }
-
-    info("Found user space loader with size %" PRIu32 " bytes.", boot_info->loader_size);
-
-    return boot_info->loader_start;
-}
-
-
-void kmain(void) {
-    elf_info_t elf_info;
-    
-    /* Retrieve the boot information structure, which contains information
-     * passed to the kernel by the setup code. */
-    const boot_info_t *boot_info = get_boot_info();
-
+void kmain(const char *cmdline) {
     /* The first thing we want to do is parse the command line options, before
      * we log anything, because some options affect logging, such as whether we
-     * need to log to VGA and/or serial port, the baud rate, etc.
-     *
-     * We won't even validate the boot information structure yet because
-     * boot_info_check() logs errors (actually panics) on failure. */
-    cmdline_parse_options(boot_info->cmdline);
+     * need to log to VGA and/or serial port, the baud rate, etc. */
+    cmdline_parse_options(cmdline);
 
     /* Now that we parsed the command line options, we can initialize logging
      * properly and say hello. */
     const cmdline_opts_t *cmdline_opts = cmdline_get_options();
-    logging_init(cmdline_opts);
+    machine_init_logging(cmdline_opts);
 
     info("Jinue microkernel started.");
     info("Kernel revision " GIT_REVISION " built " BUILD_TIME " on " BUILD_HOST);
     info("Kernel command line:");
-    info("%s", boot_info->cmdline);
+    info("%s", cmdline);
     info("---");
 
     /* If there were issues parsing the command line, these will be reported
      * here (i.e. panic), now that logging has been initialized and we can log
      * things. */
-    cmdline_report_parsing_errors();
-
-    /* Validate the boot information structure. */
-    (void)boot_info_check(true);
-
-    if(boot_info->ramdisk_start == 0 || boot_info->ramdisk_size == 0) {
-        panic("No initial RAM disk loaded.");
-    }
-
-    info(
-        "Bootloader loaded RAM disk with size %" PRIu32 " bytes at address %#" PRIx32 ".",
-        boot_info->ramdisk_size,
-        boot_info->ramdisk_start);
-
-    /* Initialize the boot allocator. */
-    boot_alloc_t boot_alloc;
-    boot_alloc_init(&boot_alloc, boot_info);
-
-    /* Check and get kernel ELF header */
-    Elf32_Ehdr *kernel = get_kernel_elf_header(boot_info);
+    cmdline_report_errors();
 
     /* initialize machine-dependent code */
-    machine_init(kernel, cmdline_opts, &boot_alloc, boot_info);
+    machine_init(cmdline_opts);
+
+    kern_mem_block_t ramdisk;
+    machine_get_ramdisk(&ramdisk);
+
+    info(
+        "Found RAM disk with size %zu bytes at address %#" PRIxKPADDR ".",
+        ramdisk.size,
+        ramdisk.start
+    );
 
     /* initialize caches */
     ipc_boot_init();
@@ -146,21 +92,18 @@ void kmain(void) {
     process_switch_to(process);
 
     /* load user space loader binary */
-    Elf32_Ehdr *loader = get_userspace_loader_elf_header(boot_info);
+    elf_file_t loader;
+    machine_get_loader_elf(&loader);
 
-    elf_load(
-            &elf_info,
-            loader,
-            "jinue-userspace-loader",
-            boot_info->cmdline,
-            process,
-            &boot_alloc);
+    elf_info_t elf_info;
+    elf_load(&elf_info, loader.ehdr, "jinue-userspace-loader", cmdline, process);
 
     /* create initial thread */
     thread_t *thread = thread_create(
             process,
             elf_info.entry,
-            elf_info.stack_addr);
+            elf_info.stack_addr
+    );
     
     if(thread == NULL) {
         panic("Could not create initial thread.");
