@@ -32,6 +32,7 @@
 #include <kernel/i686/cpu.h>
 #include <kernel/i686/descriptors.h>
 #include <kernel/i686/x86.h>
+#include <kernel/machine/cpu.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -230,4 +231,8 @@ void cpu_detect_features(void) {
             }
         }
     }
+}
+
+unsigned int machine_get_cpu_dcache_alignment(void) {
+    return cpu_info.dcache_alignment;
 }

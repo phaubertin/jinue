@@ -29,7 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/i686/cpu.h>
+#include <kernel/machine/cpu.h>
 #include <kernel/logging.h>
 #include <kernel/page_alloc.h>
 #include <kernel/slab.h>
@@ -163,9 +163,11 @@ void slab_cache_init(
     else {
         cache->alignment = alignment;
     }
+
+    unsigned int dcache_alignment = machine_get_cpu_dcache_alignment();
     
-    if((flags & SLAB_HWCACHE_ALIGN) && cache->alignment < cpu_info.dcache_alignment) {
-        cache->alignment = cpu_info.dcache_alignment;
+    if((flags & SLAB_HWCACHE_ALIGN) && cache->alignment < dcache_alignment) {
+        cache->alignment = dcache_alignment;
     }
     
     cache->alignment = ALIGN_END(cache->alignment, sizeof(uint32_t));
