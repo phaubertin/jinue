@@ -31,8 +31,8 @@
 
 #include <jinue/shared/asm/errno.h>
 #include <jinue/shared/vm.h>
-#include <kernel/i686/memory.h>
 #include <kernel/machine/halt.h>
+#include <kernel/machine/memory.h>
 #include <kernel/machine/thread.h>
 #include <kernel/descriptor.h>
 #include <kernel/ipc.h>
@@ -168,7 +168,7 @@ static void sys_get_user_memory(jinue_syscall_args_t *args) {
         return;
     }
 
-    int retval = memory_get_map(&buffer);
+    int retval = machine_get_memory_map(&buffer);
     set_return_value_or_error(args, retval);
 }
 
