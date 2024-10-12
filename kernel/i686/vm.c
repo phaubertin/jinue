@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -39,6 +39,7 @@
 #include <kernel/i686/vm.h>
 #include <kernel/i686/vm_private.h>
 #include <kernel/i686/x86.h>
+#include <kernel/machine/vm.h>
 #include <kernel/descriptor.h>
 #include <kernel/elf.h>
 #include <kernel/object.h>
@@ -719,24 +720,24 @@ static void invalidate_mapping(
  * Return value is a combination of architecture-dependent flags appropriate to
  * be set directly in a page table entry (i.e. the X86_PTE_... constants).
  *
- * @param pte flags architecture-independent protection flags
+ * @param prot architecture-independent protection flags
  * @return architecture-dependent flags
  *
  */
-static uint64_t map_page_access_flags(int flags) {
+static uint64_t map_page_access_flags(int prot) {
     const int rwe_mask = JINUE_PROT_READ | JINUE_PROT_WRITE | JINUE_PROT_EXEC;
 
-    if(! (flags & rwe_mask)) {
+    if(! (prot & rwe_mask)) {
         return X86_PTE_PROT_NONE;
     }
 
     int mapped_flags = X86_PTE_PRESENT;
 
-    if(flags & JINUE_PROT_WRITE) {
+    if(prot & JINUE_PROT_WRITE) {
         mapped_flags |= X86_PTE_READ_WRITE;
     }
 
-    if(! (flags & JINUE_PROT_EXEC)) {
+    if(! (prot & JINUE_PROT_EXEC)) {
         mapped_flags |= X86_PTE_NX;
     }
 
@@ -746,9 +747,9 @@ static uint64_t map_page_access_flags(int flags) {
 /**
  * Map a page frame (physical page) to a virtual memory page.
  *
- * This function is intended to be called by vm_map_userspace and vm_map_kernel().
- * Either of these functions should be called elsewhere instead of calling this
- * function directly.
+ * This function is intended to be called by vm_map_userspace_page()) and
+ * vm_map_kernel_page(). Either of these functions should be called elsewhere
+ * instead of calling this function directly.
  *
  * There is no need to specify an address space for kernel mappings since
  * kernel mappings are global.
@@ -763,7 +764,7 @@ static uint64_t map_page_access_flags(int flags) {
  * @return true on success, false on page table allocation error
  *
  */
-static bool vm_map(
+static bool vm_map_page(
         addr_space_t    *addr_space,
         void            *vaddr,
         user_paddr_t     paddr,
@@ -799,13 +800,12 @@ static bool vm_map(
  *
  * @param vaddr virtual address of mapping
  * @param paddr address of page frame
- * @param flags flags used for the mapping (see VM_FLAG_x constants in vm.h)
+ * @param prot protections flags
  *
  */
-void vm_map_kernel(void *vaddr, kern_paddr_t paddr, int flags) {
+void machine_map_kernel_page(void *vaddr, kern_paddr_t paddr, int prot) {
     assert(is_kernel_pointer(vaddr));
-
-    vm_map(NULL, vaddr, paddr, map_page_access_flags(flags) | X86_PTE_GLOBAL);
+    vm_map_page(NULL, vaddr, paddr, map_page_access_flags(prot) | X86_PTE_GLOBAL);
 }
 
 /**
@@ -821,15 +821,52 @@ void vm_map_kernel(void *vaddr, kern_paddr_t paddr, int flags) {
  * @return true on success, false on page table allocation error
  *
  */
-bool vm_map_userspace(
+static bool vm_map_userspace_page(
         addr_space_t    *addr_space,
         void            *vaddr,
         user_paddr_t     paddr,
-        int              flags) {
+        int              prot) {
 
     assert(is_userspace_pointer(vaddr));
+    return vm_map_page(addr_space, vaddr, paddr, map_page_access_flags(prot) | X86_PTE_USER);
+}
 
-    return vm_map(addr_space, vaddr, paddr, map_page_access_flags(flags) | X86_PTE_USER);
+/**
+ * Establish a userspace virtual memory mapping.
+ *
+ * Page tables are allocated as needed. If an allocation fails, this function
+ * returns false to indicate failure.
+ *
+ * @param process process in which to map
+ * @param vaddr start virtual address of mapping
+ * @param paddr start address in physical memory
+ * @param length length of mapping
+ * @param prot protection flags
+ * @return true on success, false on page table allocation error
+ *
+ */
+bool machine_map_userspace(
+        process_t       *process,
+        void            *vaddr,
+        size_t           length,
+        user_paddr_t     paddr,
+        int              prot) {
+
+    addr_t addr                 = vaddr;
+    addr_space_t *addr_space    = &process->addr_space;
+
+    for(size_t idx = 0; idx < length / PAGE_SIZE; ++idx) {
+        /* TODO We should be able to optimize by not looking up the page table
+         * for each entry. */
+        if(!vm_map_userspace_page(addr_space, addr, paddr, prot)) {
+            return false;
+        }
+
+        addr += PAGE_SIZE;
+        paddr += PAGE_SIZE;
+    }
+
+    return true;
 }
 
 /**
@@ -844,7 +881,7 @@ bool vm_map_userspace(
  * @param addr address of page to unmap
  *
  */
-static void vm_unmap(addr_space_t *addr_space, void *addr) {
+static void vm_unmap_page(addr_space_t *addr_space, void *addr) {
     /** ASSERTION: addr is aligned on a page boundary */
     assert( page_offset_of(addr) == 0 );
     
@@ -867,49 +904,38 @@ static void vm_unmap(addr_space_t *addr_space, void *addr) {
  * @param addr address of page to unmap
  *
  */
-void vm_unmap_kernel(void *addr) {
+void machine_unmap_kernel_page(void *addr) {
     assert(is_kernel_pointer(addr));
-    vm_unmap(NULL, addr);
+    vm_unmap_page(NULL, addr);
 }
 
 /**
- * Unmap a user space page from virtual memory.
+ * Clone mappings in range from one process' address space to another.
  *
- * This function does not perform any page table deallocation.
- *
- * @param addr_space address space from which to unmap
- * @param addr address of page to unmap
- *
- */
-void vm_unmap_userspace(addr_space_t *addr_space, void *addr) {
-    assert(is_userspace_pointer(addr));
-    vm_unmap(addr_space, addr);
-}
-
-/**
- * Clone mapping range from one address space to another.
- *
- * After the operation, the range in the destination address space map the same
+ * After the operation, the range in the destination address space maps the same
  * memory as the range in the source address space. Any portion of the range
  * that does not point to memory in the source address space is unmapped in the
  * destination address space. The permissions of the new mappings are specified
  * by the prot argument.
  *
- * @param dest_addr_space destination address space
- * @param src_addr_space source address space
+ * @param dest_process destination process
+ * @param src_process source process
  * @param dest_addr start of range in destination address space
  * @param src_addr start of range in source address space
- * @param length start of range in source address space
+ * @param length length of mapping range
  * @param prot protections flags
  *
  */
-bool vm_clone_range(
-        addr_space_t    *dest_addr_space,
-        addr_space_t    *src_addr_space,
-        addr_t           dest_addr,
-        addr_t           src_addr,
-        size_t           length,
-        int              prot) {
+bool machine_clone_userspace_mapping(
+        process_t   *dest_process,
+        addr_t       dest_addr,
+        process_t   *src_process,
+        addr_t       src_addr,
+        size_t       length,
+        int          prot) {
+    
+    addr_space_t *src_addr_space    = &src_process->addr_space;
+    addr_space_t *dest_addr_space   = &dest_process->addr_space;
 
     for(size_t idx = 0; idx < length / PAGE_SIZE; ++idx) {
         /* TODO We should be able to optimize by not looking up the page table
@@ -917,12 +943,12 @@ bool vm_clone_range(
         pte_t *src_pte = vm_lookup_page_table_entry(src_addr_space, src_addr, false, NULL);
 
         if(src_pte == NULL || !pte_is_present(src_pte)) {
-            vm_unmap(dest_addr_space, dest_addr);
+            vm_unmap_page(dest_addr_space, dest_addr);
         }
         else {
             user_paddr_t paddr = get_pte_paddr(src_pte);
 
-            if(!vm_map_userspace(dest_addr_space, dest_addr, paddr, prot)) {
+            if(!vm_map_userspace_page(dest_addr_space, dest_addr, paddr, prot)) {
                 return false;
             }
         }
@@ -935,27 +961,6 @@ bool vm_clone_range(
 }
 
 /**
- * Change the flags for the existing mapping of a single page.
- *
- * An example use case is to convert a read/write page mapping to a read-only
- * mapping or vice versa.
- *
- * @param addr_space address space of the existing mapping
- * @param addr address of page
- * @param flags new flags for mapping
- *
- */
-void vm_change_flags(addr_space_t *addr_space, addr_t addr, int flags) {
-    pte_t *pte = vm_lookup_page_table_entry(addr_space, addr, false, NULL);
-    
-    assert(pte != NULL && pte_is_present(pte));
-    
-    set_pte_flags(pte, map_page_access_flags(flags));
-    
-    invalidate_mapping(addr_space, addr, false);
-}
-
-/**
  * Look up the physical address of an existing kernel-mapped page frame.
  *
  * @param addr virtual address of kernel page
@@ -963,7 +968,7 @@ void vm_change_flags(addr_space_t *addr_space, addr_t addr, int flags) {
  *
  */
 kern_paddr_t vm_lookup_kernel_paddr(void *addr) {
-    assert( is_kernel_pointer(addr));
+    assert( is_kernel_pointer(addr) );
 
     pte_t *pte = vm_lookup_page_table_entry(NULL, addr, false, NULL);
 

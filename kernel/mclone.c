@@ -30,7 +30,7 @@
  */
 
 #include <jinue/shared/asm/errno.h>
-#include <kernel/machine/process.h>
+#include <kernel/machine/vm.h>
 #include <kernel/descriptor.h>
 #include <kernel/mclone.h>
 
@@ -61,11 +61,11 @@ int mclone(int src, int dest, const jinue_mclone_args_t *args) {
         return status;
     }
 
-    bool success = machine_mclone(
+    bool success = machine_clone_userspace_mapping(
         dest_process,
+        args->dest_addr,
         src_process,
         args->src_addr,
-        args->dest_addr,
         args->length,
         args->prot
     );

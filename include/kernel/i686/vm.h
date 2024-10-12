@@ -78,15 +78,9 @@ void vm_switch_addr_space(addr_space_t *addr_space, cpu_data_t *cpu_data);
 
 void vm_boot_map(void *addr, uint32_t paddr, int num_entries);
 
-void vm_map_kernel(void *vaddr, kern_paddr_t paddr, int flags);
+void vm_map_kernel_page(void *vaddr, kern_paddr_t paddr, int flags);
 
-bool vm_map_userspace(
-        addr_space_t    *addr_space,
-        void            *vaddr,
-        user_paddr_t     paddr,
-        int              flags);
-
-void vm_unmap_kernel(void *addr);
+void vm_unmap_kernel_page(void *addr);
 
 void vm_unmap_userspace(addr_space_t *addr_space, void *addr);
 
@@ -97,8 +91,6 @@ bool vm_clone_range(
         addr_t           src_addr,
         size_t           length,
         int              prot);
-
-void vm_change_flags(addr_space_t *addr_space, addr_t addr, int flags);
 
 kern_paddr_t vm_lookup_kernel_paddr(void *addr);
 

@@ -29,16 +29,29 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_MACHINE_PROCESS_H
-#define JINUE_KERNEL_MACHINE_PROCESS_H
+#ifndef JINUE_KERNEL_MACHINE_VM_H
+#define JINUE_KERNEL_MACHINE_VM_H
 
 #include <kernel/types.h>
 
-void machine_switch_to_process(process_t *process);
+void machine_map_kernel_page(void *vaddr, kern_paddr_t paddr, int prot);
 
-bool machine_init_process(process_t *process);
+void machine_unmap_kernel_page(void *addr);
 
-void machine_destroy_process(process_t *process);
+bool machine_map_userspace(
+        process_t       *process,
+        void            *vaddr,
+        size_t           length,
+        user_paddr_t     paddr,
+        int              prot);
+
+bool machine_clone_userspace_mapping(
+        process_t   *dest_process,
+        addr_t       dest_addr,
+        process_t   *src_process,
+        addr_t       src_addr,
+        size_t       length,
+        int          prot) ;
 
 #endif
 

@@ -30,7 +30,7 @@
  */
 
 #include <jinue/shared/asm/errno.h>
-#include <kernel/machine/process.h>
+#include <kernel/machine/vm.h>
 #include <kernel/descriptor.h>
 #include <kernel/mmap.h>
 
@@ -53,7 +53,7 @@ int mmap(int process_fd, const jinue_mmap_args_t *args) {
         return status;
     }
 
-    if(! machine_mmap(process, args->addr, args->length, args->paddr, args->prot)) {
+    if(! machine_map_userspace(process, args->addr, args->length, args->paddr, args->prot)) {
         return -JINUE_ENOMEM;
     }
 

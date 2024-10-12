@@ -31,7 +31,7 @@
 
 #include <jinue/shared/asm/syscall.h>
 #include <kernel/machine/auxv.h>
-#include <kernel/machine/process.h>
+#include <kernel/machine/vm.h>
 #include <kernel/i686/vm.h>
 #include <kernel/cmdline.h>
 #include <kernel/descriptor.h>
@@ -138,7 +138,7 @@ bool elf_check(Elf32_Ehdr *ehdr) {
  * @param flags mapping flags
  *
  * */
-static void checked_map_userspace(
+static void checked_map_userspace_page(
         process_t       *process,
         void            *vaddr,
         user_paddr_t     paddr,
@@ -148,7 +148,7 @@ static void checked_map_userspace(
      *
      * This should not be necessary because we control the user loader binary,
      * but let's check anyway in case the build process breaks somehow. */
-    if(! machine_map_userspace(process, vaddr, paddr, flags)) {
+    if(! machine_map_userspace(process, vaddr, PAGE_SIZE, paddr, flags)) {
         panic("Page table allocation error when loading ELF file");
     }
 }
@@ -337,7 +337,7 @@ static void load_segments(
             /* Since the segment has to be mapped read only and does not require
              * padding, we can just map the original pages. */
             while(vptr < vend) {
-                checked_map_userspace(
+                checked_map_userspace_page(
                         process,
                         vptr,
                         vm_lookup_kernel_paddr(file_ptr),
@@ -351,14 +351,13 @@ static void load_segments(
             /* Segment is writable and/or needs padding. We need to allocate new
              * pages for this segment. */
             while(vptr < vend) {
-                char *stop;
-
                 /* start of this page and next page */
                 char *vnext = vptr + PAGE_SIZE;
 
                 /* allocate and map the new page */
                 void *page = page_alloc();
-                checked_map_userspace(
+
+                checked_map_userspace_page(
                         process,
                         vptr,
                         vm_lookup_kernel_paddr(page),
@@ -367,6 +366,8 @@ static void load_segments(
                 /* TODO transfer page ownership to userspace */
 
                 /* copy */
+                char *stop;
+
                 if(vnext > vfend) {
                     stop = vfend;
                 }
@@ -403,7 +404,7 @@ static void allocate_stack(elf_info_t *elf_info) {
          * which may contain sensitive information. Let's clear it. */
         clear_page(page);
 
-        checked_map_userspace(
+        checked_map_userspace_page(
                 elf_info->process,
                 vpage,
                 vm_lookup_kernel_paddr(page),
