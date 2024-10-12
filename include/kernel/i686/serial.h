@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef HAL_SERIAL_H_
-#define HAL_SERIAL_H_
+#ifndef JINUE_KERNEL_I686_SERIAL_H_
+#define JINUE_KERNEL_I686_SERIAL_H_
 
 #include <kernel/i686/asm/serial.h>
 #include <stddef.h>
