@@ -32,14 +32,10 @@
 #ifndef JINUE_KERNEL_I686_EXPORTS_H
 #define JINUE_KERNEL_I686_EXPORTS_H
 
-#include <inttypes.h>
-#include <stdint.h>
+#include <kernel/typedeps.h>
 
 /* This file contains the machine-specific definitions that need to be visible
  * outside the machine-specific parts of the code. */
-
-/** Virtual memory address (pointer) with pointer arithmetic allowed */
-typedef unsigned char *addr_t;
 
 /** Physical memory address for use by the kernel */
 typedef uint32_t kern_paddr_t;
@@ -83,5 +79,19 @@ typedef struct {
         pdpt_t  *pdpt; /* PAE: page directory pointer table */
     } top_level;
 } addr_space_t;
+
+typedef enum {
+    CMDLINE_OPT_PAE_AUTO,
+    CMDLINE_OPT_PAE_DISABLE,
+    CMDLINE_OPT_PAE_REQUIRE
+} cmdline_opt_pae_t;
+
+typedef struct {
+    cmdline_opt_pae_t    pae;
+    bool                 serial_enable;
+    int                  serial_baud_rate;
+    int                  serial_ioport;
+    bool                 vga_enable;
+} machine_cmdline_opts_t;
 
 #endif

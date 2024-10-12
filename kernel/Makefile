@@ -62,6 +62,7 @@ sources.kernel.c = \
 	i686/auxv.c \
 	i686/boot.c \
 	i686/boot_alloc.c \
+	i686/cmdline.c \
 	i686/cpu.c \
 	i686/debug.c \
 	i686/halt.c \

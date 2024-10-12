@@ -64,7 +64,7 @@ void kmain(const char *cmdline) {
     /* If there were issues parsing the command line, these will be reported
      * here (i.e. panic), now that logging has been initialized and we can log
      * things. */
-    cmdline_report_parsing_errors();
+    cmdline_report_errors();
 
     /* initialize machine-dependent code */
     machine_init(cmdline_opts);

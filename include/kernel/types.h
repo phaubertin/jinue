@@ -36,11 +36,9 @@
 #include <jinue/shared/syscall.h>
 #include <jinue/shared/types.h>
 #include <kernel/machine/types.h>
+#include <kernel/typedeps.h>
 #include <kernel/list.h>
 #include <sys/elf.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdbool.h>
 
 struct boot_heap_pushed_state {
     struct boot_heap_pushed_state   *next;
@@ -133,5 +131,9 @@ typedef struct {
     jinue_node_t loggers;
     void (*log)(int loglevel, const char *message, size_t n);
 } logger_t;
+
+typedef struct {
+    machine_cmdline_opts_t  machine;
+} cmdline_opts_t;
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Philippe Aubertin.
+ * Copyright (C) 2022-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,7 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/i686/asm/serial.h>
+#include <kernel/machine/cmdline.h>
 #include <kernel/cmdline.h>
 #include <kernel/logging.h>
 #include <kernel/panic.h>
@@ -40,21 +40,9 @@
 
 #define CMDLINE_ERROR_IS_NULL                   (1<<1)
 
-#define CMDLINE_ERROR_INVALID_PAE               (1<<2)
+#define CMDLINE_ERROR_JUNK_AFTER_ENDQUOTE       (1<<2)
 
-#define CMDLINE_ERROR_INVALID_SERIAL_ENABLE     (1<<3)
-
-#define CMDLINE_ERROR_INVALID_SERIAL_BAUD_RATE  (1<<4)
-
-#define CMDLINE_ERROR_INVALID_SERIAL_IOPORT     (1<<5)
-
-#define CMDLINE_ERROR_INVALID_SERIAL_DEV        (1<<6)
-
-#define CMDLINE_ERROR_INVALID_VGA_ENABLE        (1<<7)
-
-#define CMDLINE_ERROR_JUNK_AFTER_ENDQUOTE       (1<<8)
-
-#define CMDLINE_ERROR_UNCLOSED_QUOTES           (1<<9)
+#define CMDLINE_ERROR_UNCLOSED_QUOTES           (1<<3)
 
 typedef enum {
     PARSE_STATE_START,
@@ -80,97 +68,21 @@ typedef enum {
 } parse_state_t;
 
 typedef struct {
-    const char *start;
-    size_t      length;
-} token_t;
-
-typedef struct {
-    const char  *name;
-    int          enum_value;
-} enum_def_t;
-
-typedef struct {
     const char      *cmdline;
     parse_state_t    state;
-    token_t          option;
-    token_t          value;
+    cmdline_token_t  option;
+    cmdline_token_t  value;
     int              position;
-    int              errors;
     bool             done;
     bool             has_option;
     bool             has_argument;
 } parse_context_t;
 
-typedef enum {
-    CMDLINE_OPT_NAME_PAE,
-    CMDLINE_OPT_NAME_SERIAL_ENABLE,
-    CMDLINE_OPT_NAME_SERIAL_BAUD_RATE,
-    CMDLINE_OPT_NAME_SERIAL_IOPORT,
-    CMDLINE_OPT_NAME_SERIAL_DEV,
-    CMDLINE_OPT_NAME_VGA_ENABLE,
-} cmdline_opt_names_t;
-
-static const enum_def_t kernel_option_names[] = {
-    {"pae",                 CMDLINE_OPT_NAME_PAE},
-    {"serial_enable",       CMDLINE_OPT_NAME_SERIAL_ENABLE},
-    {"serial_baud_rate",    CMDLINE_OPT_NAME_SERIAL_BAUD_RATE},
-    {"serial_ioport",       CMDLINE_OPT_NAME_SERIAL_IOPORT},
-    {"serial_dev",          CMDLINE_OPT_NAME_SERIAL_DEV},
-    {"vga_enable",          CMDLINE_OPT_NAME_VGA_ENABLE},
+static const cmdline_enum_def_t kernel_option_names[] = {
     {NULL, 0}
 };
 
-static const enum_def_t opt_pae_names[] = {
-    {"auto",        CMDLINE_OPT_PAE_AUTO},
-    {"disable",     CMDLINE_OPT_PAE_DISABLE},
-    {"require",     CMDLINE_OPT_PAE_REQUIRE},
-    {NULL, 0}
-};
-
-static const enum_def_t serial_ports[] = {
-    {"0",           SERIAL_COM1_IOPORT},
-    {"1",           SERIAL_COM2_IOPORT},
-    {"2",           SERIAL_COM3_IOPORT},
-    {"3",           SERIAL_COM4_IOPORT},
-
-    {"ttyS0",       SERIAL_COM1_IOPORT},
-    {"ttyS1",       SERIAL_COM2_IOPORT},
-    {"ttyS2",       SERIAL_COM3_IOPORT},
-    {"ttyS3",       SERIAL_COM4_IOPORT},
-
-    {"/dev/ttyS0",  SERIAL_COM1_IOPORT},
-    {"/dev/ttyS1",  SERIAL_COM2_IOPORT},
-    {"/dev/ttyS2",  SERIAL_COM3_IOPORT},
-    {"/dev/ttyS3",  SERIAL_COM4_IOPORT},
-
-    {"com1",        SERIAL_COM1_IOPORT},
-    {"com2",        SERIAL_COM2_IOPORT},
-    {"com3",        SERIAL_COM3_IOPORT},
-    {"com4",        SERIAL_COM4_IOPORT},
-
-    {"COM1",        SERIAL_COM1_IOPORT},
-    {"COM2",        SERIAL_COM2_IOPORT},
-    {"COM3",        SERIAL_COM3_IOPORT},
-    {"COM4",        SERIAL_COM4_IOPORT},
-    {NULL, 0}
-};
-
-static const enum_def_t serial_baud_rates[] = {
-    {"300",         300},
-    {"600",         600},
-    {"1200",        1200},
-    {"2400",        2400},
-    {"4800",        4800},
-    {"9600",        9600},
-    {"14400",       14400},
-    {"19200",       19200},
-    {"38400",       38400},
-    {"57600",       57600},
-    {"115200",      115200},
-    {NULL, 0}
-};
-
-static const enum_def_t bool_names[] = {
+static const cmdline_enum_def_t bool_names[] = {
     {"true",    true},
     {"yes",     true},
     {"enable",  true},
@@ -182,13 +94,7 @@ static const enum_def_t bool_names[] = {
     {NULL, 0}
 };
 
-static cmdline_opts_t cmdline_options = {
-    .pae                = CMDLINE_OPT_PAE_AUTO,
-    .serial_enable      = false,
-    .serial_baud_rate   = SERIAL_DEFAULT_BAUD_RATE,
-    .serial_ioport      = SERIAL_DEFAULT_IOPORT,
-    .vga_enable         = true,
-};
+static cmdline_opts_t cmdline_options;
 
 static int cmdline_errors;
 
@@ -196,7 +102,6 @@ static void initialize_context(parse_context_t *context, const char *cmdline) {
     context->cmdline        = cmdline;
     context->state          = PARSE_STATE_START;
     context->position       = 0;
-    context->errors         = 0;
     context->done           = false;
 
     context->option.start   = NULL;
@@ -243,7 +148,7 @@ static void mutate_context(parse_context_t *context) {
              * Let's still continue parsing though. We will report the command
              * line as being too long and panic, but let's improve our chances
              * to have the right logging options when we do. */
-            context->errors |= CMDLINE_ERROR_TOO_LONG;
+            cmdline_errors |= CMDLINE_ERROR_TOO_LONG;
 
             if(context->position >= CMDLINE_MAX_PARSE_LENGTH) {
                 /* The command line is *way* too long, probably because the
@@ -348,7 +253,7 @@ static void mutate_context(parse_context_t *context) {
                  * No need to do anything else than that because the NUL
                  * character leads to context->done being set for any state (see
                  * after this switch-case statement). */
-                context->errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
+                cmdline_errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
             }
             else {
                 context->value.start    = current;
@@ -365,7 +270,7 @@ static void mutate_context(parse_context_t *context) {
                 has_action              = true;
             }
             else if(c == '\0') {
-                context->errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
+                cmdline_errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
             }
             break;
         case PARSE_STATE_END_QUOTE:
@@ -378,7 +283,7 @@ static void mutate_context(parse_context_t *context) {
                 /* We found random junk after the quoted option/value. Let's
                  * flag the error and then try to continue parsing by assuming
                  * it's just a missing separator. */
-                context->errors |= CMDLINE_ERROR_JUNK_AFTER_ENDQUOTE;
+                cmdline_errors |= CMDLINE_ERROR_JUNK_AFTER_ENDQUOTE;
 
                 /* The following is the same logic as the PARSE_STATE_START
                  * state. */
@@ -433,7 +338,7 @@ static void mutate_context(parse_context_t *context) {
                 has_action              = true;
             }
             else if(c == '\0') {
-                context->errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
+                cmdline_errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
             }
             else {
                 context->state          = PARSE_STATE_QUOTED_ARGUMENT;
@@ -448,7 +353,7 @@ static void mutate_context(parse_context_t *context) {
                 has_action              = true;
             }
             else if(c == '\0') {
-                context->errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
+                cmdline_errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
             }
             break;
         case PARSE_STATE_AFTER2DASH_START:
@@ -513,7 +418,7 @@ static void mutate_context(parse_context_t *context) {
                 context->state  = PARSE_STATE_AFTER2DASH_VALUE_END_QUOTE;
             }
             else if(c == '\0') {
-                context->errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
+                cmdline_errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
             }
             break;
         case PARSE_STATE_AFTER2DASH_VALUE_END_QUOTE:
@@ -532,7 +437,7 @@ static void mutate_context(parse_context_t *context) {
                  * the error and then stop. Since we are after the --, there are
                  * no more kernel options coming, so there is no use in
                  * continuing parsing further. */
-                context->errors |= CMDLINE_ERROR_JUNK_AFTER_ENDQUOTE;
+                cmdline_errors |= CMDLINE_ERROR_JUNK_AFTER_ENDQUOTE;
                 context->done   = true;
             }
             break;
@@ -546,7 +451,7 @@ static void mutate_context(parse_context_t *context) {
                 has_action              = true;
             }
             else if(c == '\0') {
-                context->errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
+                cmdline_errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
             }
             else {
                 context->state          = PARSE_STATE_AFTER2DASH_QUOTED_ARGUMENT;
@@ -562,7 +467,7 @@ static void mutate_context(parse_context_t *context) {
                 has_action              = true;
             }
             else if(c == '\0') {
-                context->errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
+                cmdline_errors |= CMDLINE_ERROR_UNCLOSED_QUOTES;
             }
             break;
         case PARSE_STATE_AFTER2DASH_END_QUOTE:
@@ -575,7 +480,7 @@ static void mutate_context(parse_context_t *context) {
                  * the error and then stop. Since we are after the --, there are
                  * no more kernel options coming, so there is no use in
                  * continuing parsing further. */
-                context->errors |= CMDLINE_ERROR_JUNK_AFTER_ENDQUOTE;
+                cmdline_errors |= CMDLINE_ERROR_JUNK_AFTER_ENDQUOTE;
                 context->done   = true;
             }
             break;
@@ -603,11 +508,11 @@ static void mutate_context(parse_context_t *context) {
  * @return enum definition entry if found, NULL otherwise
  *
  * */
-static const enum_def_t *get_enum_entry_by_token(const enum_def_t *def, const token_t *token) {
+static const cmdline_enum_def_t *get_enum_entry_by_token(const cmdline_enum_def_t *def, const cmdline_token_t *token) {
     for(int def_index = 0; def[def_index].name != NULL; ++def_index) {
         int token_index;
 
-        const enum_def_t *def_entry = &def[def_index];
+        const cmdline_enum_def_t *def_entry = &def[def_index];
 
         /* Optimism, captain! */
         bool match = true;
@@ -662,8 +567,11 @@ static const enum_def_t *get_enum_entry_by_token(const enum_def_t *def, const to
  * @return true if an enum value was successfully matched, false otherwise
  *
  * */
-static bool match_enum(int *value, const enum_def_t *def, const token_t *token) {
-    const enum_def_t *entry = get_enum_entry_by_token(def, token);
+bool cmdline_match_enum(
+        int                         *value,
+        const cmdline_enum_def_t    *def,
+        const cmdline_token_t       *token) {
+    const cmdline_enum_def_t *entry = get_enum_entry_by_token(def, token);
 
     if(entry == NULL) {
         return false;
@@ -671,6 +579,26 @@ static bool match_enum(int *value, const enum_def_t *def, const token_t *token) 
 
     *value = entry->enum_value;
     return true;
+}
+
+/**
+ * Attempt to match a boolean value
+ *
+ * @param value set to boolean value only if there is a match
+ * @param token potential name representing a boolean value
+ * @return true if a boolean value was successfully matched, false otherwise
+ *
+ * */
+bool cmdline_match_boolean(bool *value, const cmdline_token_t *token) {
+    int ivalue;
+
+    bool matched = cmdline_match_enum(&ivalue, bool_names, token);
+
+    if(matched) {
+        *value = !!ivalue;
+    }
+
+    return matched;
 }
 
 /**
@@ -720,7 +648,7 @@ static int integer(int c) {
  * @return true if parsed successfully as an integer, false otherwise
  *
  * */
-static bool match_integer(int *ivalue, const token_t *value) {
+bool cmdline_match_integer(int *ivalue, const cmdline_token_t *value) {
     if(value->length < 1) {
         return false;
     }
@@ -805,68 +733,17 @@ static bool match_integer(int *ivalue, const token_t *value) {
  * */
 static void process_name_value_pair(parse_context_t *context) {
     int opt_name;
-    int opt_value;
 
-    if(! match_enum(&opt_name, kernel_option_names, &context->option)) {
-        /* Unknown option - ignore */
+    if(! cmdline_match_enum(&opt_name, kernel_option_names, &context->option)) {
+        machine_cmdline_process_option(
+            &cmdline_options.machine,
+            &context->option,
+            &context->value
+        );
         return;
     }
 
-    switch(opt_name) {
-    case CMDLINE_OPT_NAME_PAE:
-        if(match_enum(&opt_value, opt_pae_names, &context->value)) {
-            cmdline_options.pae = opt_value;
-        }
-        else {
-            context->errors |= CMDLINE_ERROR_INVALID_PAE;
-        }
-        break;
-    case CMDLINE_OPT_NAME_SERIAL_ENABLE:
-        if(match_enum(&opt_value, bool_names, &context->value)) {
-            cmdline_options.serial_enable = opt_value;
-        }
-        else {
-            context->errors |= CMDLINE_ERROR_INVALID_SERIAL_ENABLE;
-        }
-        break;
-    case CMDLINE_OPT_NAME_SERIAL_BAUD_RATE:
-        if(match_enum(&opt_value, serial_baud_rates, &context->value)) {
-            cmdline_options.serial_baud_rate = opt_value;
-        }
-        else {
-            context->errors |= CMDLINE_ERROR_INVALID_SERIAL_BAUD_RATE;
-        }
-        break;
-    case CMDLINE_OPT_NAME_SERIAL_IOPORT:
-        if(match_integer(&opt_value, &context->value)) {
-            if(opt_value > SERIAL_MAX_IOPORT) {
-                context->errors |= CMDLINE_ERROR_INVALID_SERIAL_IOPORT;
-            }
-            else {
-                cmdline_options.serial_ioport = opt_value;
-            }
-        }
-        else {
-            context->errors |= CMDLINE_ERROR_INVALID_SERIAL_IOPORT;
-        }
-        break;
-    case CMDLINE_OPT_NAME_SERIAL_DEV:
-        if(match_enum(&opt_value, serial_ports, &context->value)) {
-            cmdline_options.serial_ioport = opt_value;
-        }
-        else {
-            context->errors |= CMDLINE_ERROR_INVALID_SERIAL_DEV;
-        }
-        break;
-    case CMDLINE_OPT_NAME_VGA_ENABLE:
-        if(match_enum(&opt_value, bool_names, &context->value)) {
-            cmdline_options.vga_enable = opt_value;
-        }
-        else {
-            context->errors |= CMDLINE_ERROR_INVALID_VGA_ENABLE;
-        }
-        break;
-    }
+    /* TODO process machine-independent options here (there aren't any yet) */
 }
 
 /**
@@ -886,7 +763,7 @@ static void process_name_value_pair(parse_context_t *context) {
  *   errors are encountered, to maximize chances we will get the logging options
  *   right.
  * - The actual reporting of parsing errors is done by a separate function, i.e.
- *   cmdline_report_parsing_errors(). This makes it possible to first parse the
+ *   cmdline_report_errors(). This makes it possible to first parse the
  *   command line, then initialize logging with (hopefully) the right options,
  *   and then report parsing errors.
  *
@@ -895,6 +772,10 @@ static void process_name_value_pair(parse_context_t *context) {
  * */
 void cmdline_parse_options(const char *cmdline) {
     parse_context_t context;
+
+    machine_cmdline_start_parsing(&cmdline_options.machine);
+
+    /* TODO apply defaults for machine-independent options here (there aren't any yet) */
 
     cmdline_errors = 0;
 
@@ -914,8 +795,6 @@ void cmdline_parse_options(const char *cmdline) {
             process_name_value_pair(&context);
         }
     } while (!context.done);
-
-    cmdline_errors = context.errors;
 }
 
 /**
@@ -946,10 +825,12 @@ const cmdline_opts_t *cmdline_get_options(void) {
  * errors.
  *
  * */
-void cmdline_report_parsing_errors(void) {
-    if(cmdline_errors != 0) {
-        warning("There are issues with the kernel command line:");
+void cmdline_report_errors(void) {
+    if(cmdline_errors == 0 && !machine_cmdline_has_errors()) {
+        return;
     }
+
+    warning("There are issues with the kernel command line:");
 
     if(cmdline_errors & CMDLINE_ERROR_TOO_LONG) {
         warning("  Kernel command line is too long");
@@ -959,29 +840,7 @@ void cmdline_report_parsing_errors(void) {
         warning("  No kernel command line/command line is NULL");
     }
 
-    if(cmdline_errors & CMDLINE_ERROR_INVALID_PAE) {
-        warning("  Invalid value for argument 'pae'");
-    }
-
-    if(cmdline_errors & CMDLINE_ERROR_INVALID_SERIAL_ENABLE) {
-        warning("  Invalid value for argument 'serial_enable'");
-    }
-
-    if(cmdline_errors & CMDLINE_ERROR_INVALID_SERIAL_BAUD_RATE) {
-        warning("  Invalid value for argument 'serial_baud_rate'");
-    }
-
-    if(cmdline_errors & CMDLINE_ERROR_INVALID_SERIAL_IOPORT) {
-        warning("  Invalid value for argument 'serial_ioport'");
-    }
-
-    if(cmdline_errors & CMDLINE_ERROR_INVALID_SERIAL_DEV) {
-        warning("  Invalid value for argument 'serial_dev'");
-    }
-
-    if(cmdline_errors & CMDLINE_ERROR_INVALID_VGA_ENABLE) {
-        warning("  Invalid value for argument 'vga_enable'");
-    }
+    machine_cmdline_report_errors();
 
     if(cmdline_errors & CMDLINE_ERROR_JUNK_AFTER_ENDQUOTE) {
         warning("  Invalid character after closing quote, separator (e.g. space) expected");
@@ -991,9 +850,7 @@ void cmdline_report_parsing_errors(void) {
         warning("  Unclosed quotes at end of input. Is closing quote missing?");
     }
 
-    if(cmdline_errors != 0) {
-        panic("Invalid kernel command line");
-    }
+    panic("Invalid kernel command line");
 }
 
 /**
@@ -1017,7 +874,7 @@ static char *write_character(char *buffer, int c) {
  * @return pointer to first byte after written data
  *
  * */
-static char *write_token(char *buffer, const token_t *token) {
+static char *write_token(char *buffer, const cmdline_token_t *token) {
     memcpy(buffer, token->start, token->length);
     return buffer + token->length;
 }
@@ -1027,7 +884,7 @@ static char *write_token(char *buffer, const token_t *token) {
  *
  * This function assumes the command line is valid, i.e. that it has been
  * checked by earlier calls to cmdline_parse_options() and
- * cmdline_report_parsing_errors().
+ * cmdline_report_errors().
  *
  * @param buffer buffer where arguments are written
  * @param cmdline command line string
@@ -1060,7 +917,7 @@ char *cmdline_write_arguments(char *buffer, const char *cmdline) {
  * @return true if variable belongs in the user space environment, false otherwise
  *
  * */
-static bool filter_userspace_environ(const token_t *name) {
+static bool filter_userspace_environ(const cmdline_token_t *name) {
     /* Filter out kernel options from user space environment variables. */
     return get_enum_entry_by_token(kernel_option_names, name) == NULL;
 }
@@ -1070,7 +927,7 @@ static bool filter_userspace_environ(const token_t *name) {
  *
  * This function assumes the command line is valid, i.e. that it has been
  * checked by earlier calls to cmdline_parse_options() and
- * cmdline_report_parsing_errors().
+ * cmdline_report_errors().
  *
  * @param buffer buffer where the environment variables are written
  * @param cmdline command line string
@@ -1101,7 +958,7 @@ char *cmdline_write_environ(char *buffer, const char *cmdline) {
  *
  * This function assumes the command line is valid, i.e. that it has been
  * checked by earlier calls to cmdline_parse_options() and
- * cmdline_report_parsing_errors().
+ * cmdline_report_errors().
  *
  * @param cmdline command line string
  * @return number of arguments
@@ -1129,7 +986,7 @@ size_t cmdline_count_arguments(const char *cmdline) {
  *
  * This function assumes the command line is valid, i.e. that it has been
  * checked by earlier calls to cmdline_parse_options() and
- * cmdline_report_parsing_errors().
+ * cmdline_report_errors().
  *
  * @param cmdline command line string
  * @return number of environment variables

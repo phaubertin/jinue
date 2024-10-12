@@ -42,12 +42,12 @@ static logger_t logger = {
 static int base_ioport;
 
 void serial_init(const cmdline_opts_t *cmdline_opts) {
-    if(! cmdline_opts->serial_enable) {
+    if(! cmdline_opts->machine.serial_enable) {
         return;
     }
 
-    base_ioport             = cmdline_opts->serial_ioport;
-    unsigned int baud_rate  = cmdline_opts->serial_baud_rate;
+    base_ioport             = cmdline_opts->machine.serial_ioport;
+    unsigned int baud_rate  = cmdline_opts->machine.serial_baud_rate;
     unsigned int divisor    = 115200 / baud_rate;
 
     /* disable interrupts */
