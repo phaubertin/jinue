@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <jinue/shared/asm/machine.h>
 #include <jinue/shared/asm/syscall.h>
-#include <kernel/i686/vm.h>
 #include <kernel/machine/vm.h>
 #include <kernel/page_alloc.h>
 #include <kernel/vmalloc.h>

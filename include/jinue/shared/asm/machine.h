@@ -29,35 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_SHARED_ASM_VM_H
-#define _JINUE_SHARED_ASM_VM_H
+#ifndef _JINUE_SHARED_ASM_MACHINE_H
+#define _JINUE_SHARED_ASM_MACHINE_H
 
-#include <jinue/shared/asm/types.h>
-
-/** number of bits in virtual address for offset inside page */
-#define PAGE_BITS               12
-
-/** size of page */
-#define PAGE_SIZE               (1<<PAGE_BITS) /* 4096 */
-
-/** bit mask for offset in page */
-#define PAGE_MASK               (PAGE_SIZE - 1)
-
-/** The virtual address range starting at KLIMIT is reserved by the kernel. The
-    region above KLIMIT has the same mapping in all address spaces. KLIMIT must
-    be aligned on a page directory boundary in PAE mode. */
-#define KLIMIT                  0xc0000000
-
-/** stack base address (stack top) */
-#define STACK_BASE              KLIMIT
-
-/** initial stack size */
-#define STACK_SIZE              (128 * KB)
-
-/** stack portion reserved for environment, arguments and auxiliary vectors */
-#define RESERVED_STACK_SIZE     (32 * KB)
-
-/** initial stack lower address */
-#define STACK_START             (STACK_BASE - STACK_SIZE)
+#include <kernel/i686/asm/shared.h>
 
 #endif

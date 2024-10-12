@@ -32,8 +32,8 @@
 #ifndef JINUE_KERNEL_I686_ASM_BOOT_H
 #define JINUE_KERNEL_I686_ASM_BOOT_H
 
+#include <jinue/shared/asm/machine.h>
 #include <jinue/shared/asm/types.h>
-#include <jinue/shared/asm/vm.h>
 #include "memory.h"
 
 

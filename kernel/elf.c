@@ -29,10 +29,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <jinue/shared/asm/machine.h>
 #include <jinue/shared/asm/syscall.h>
+#include <jinue/shared/vm.h>
 #include <kernel/machine/auxv.h>
 #include <kernel/machine/vm.h>
-#include <kernel/i686/vm.h>
 #include <kernel/cmdline.h>
 #include <kernel/descriptor.h>
 #include <kernel/elf.h>
