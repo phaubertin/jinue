@@ -150,7 +150,7 @@ kern_paddr_t remove_page_frame(void) {
      * for exploiting vulnerabilities. */
     clear_page(page);
 
-    kern_paddr_t paddr = vm_lookup_kernel_paddr(page);
+    kern_paddr_t paddr = machine_lookup_kernel_paddr(page);
 
     machine_unmap_kernel_page(page);
 

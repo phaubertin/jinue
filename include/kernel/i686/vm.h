@@ -92,7 +92,5 @@ bool vm_clone_range(
         size_t           length,
         int              prot);
 
-kern_paddr_t vm_lookup_kernel_paddr(void *addr);
-
 #endif
 

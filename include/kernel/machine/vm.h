@@ -53,5 +53,7 @@ bool machine_clone_userspace_mapping(
         size_t       length,
         int          prot) ;
 
+kern_paddr_t machine_lookup_kernel_paddr(void *addr);
+
 #endif
 

@@ -364,7 +364,7 @@ bool vm_pae_create_addr_space(addr_space_t *addr_space, pte_t *first_page_direct
 
     vm_pae_set_pte(
             &pdpt->pd[klimit_offset],
-            vm_lookup_kernel_paddr(first_page_directory),
+            machine_lookup_kernel_paddr(first_page_directory),
             X86_PTE_PRESENT);
 
     for(int idx = klimit_offset + 1; idx < PDPT_ENTRIES; ++idx) {
@@ -372,7 +372,7 @@ bool vm_pae_create_addr_space(addr_space_t *addr_space, pte_t *first_page_direct
     }
 
     /* Lookup the physical address of the page where the PDPT resides. */
-    kern_paddr_t pdpt_page_paddr = vm_lookup_kernel_paddr((addr_t)page_address_of(pdpt));
+    kern_paddr_t pdpt_page_paddr = machine_lookup_kernel_paddr((addr_t)page_address_of(pdpt));
 
     /* physical address of PDPT */
     kern_paddr_t pdpt_paddr = pdpt_page_paddr | page_offset_of(pdpt);
@@ -463,7 +463,7 @@ pte_t *vm_pae_lookup_page_directory(
 
         vm_pae_set_pte(
                 pdpte,
-                vm_lookup_kernel_paddr(page_directory),
+                machine_lookup_kernel_paddr(page_directory),
                 X86_PTE_PRESENT);
 
         /* In 32-bit PAE mode, the CPU stores the four entries of the PDPT

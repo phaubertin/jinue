@@ -340,7 +340,7 @@ static void load_segments(
                 checked_map_userspace_page(
                         process,
                         vptr,
-                        vm_lookup_kernel_paddr(file_ptr),
+                        machine_lookup_kernel_paddr(file_ptr),
                         map_flags(phdr->p_flags));
 
                 vptr     += PAGE_SIZE;
@@ -360,7 +360,7 @@ static void load_segments(
                 checked_map_userspace_page(
                         process,
                         vptr,
-                        vm_lookup_kernel_paddr(page),
+                        machine_lookup_kernel_paddr(page),
                         map_flags(phdr->p_flags));
 
                 /* TODO transfer page ownership to userspace */
@@ -407,7 +407,7 @@ static void allocate_stack(elf_info_t *elf_info) {
         checked_map_userspace_page(
                 elf_info->process,
                 vpage,
-                vm_lookup_kernel_paddr(page),
+                machine_lookup_kernel_paddr(page),
                 JINUE_PROT_READ | JINUE_PROT_WRITE);
 
         /* TODO transfer page ownership to userspace */

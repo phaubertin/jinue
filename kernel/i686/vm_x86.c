@@ -52,7 +52,7 @@ void vm_x86_create_initial_addr_space(addr_space_t *addr_space, pte_t *page_dire
 
 void vm_x86_create_addr_space(addr_space_t *addr_space, pte_t *page_directory) {
     addr_space->top_level.pd = page_directory;
-    addr_space->cr3          = vm_lookup_kernel_paddr(page_directory);
+    addr_space->cr3          = machine_lookup_kernel_paddr(page_directory);
 }
 
 void vm_x86_destroy_addr_space(addr_space_t *addr_space) {

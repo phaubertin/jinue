@@ -607,7 +607,7 @@ static pte_t *vm_lookup_page_table(
             flags |= X86_PTE_USER;
         }
 
-        set_pte(pde, vm_lookup_kernel_paddr(page_table), flags);
+        set_pte(pde, machine_lookup_kernel_paddr(page_table), flags);
     }
 
     return page_table;
@@ -939,7 +939,7 @@ bool machine_clone_userspace_mapping(
 
     for(size_t idx = 0; idx < length / PAGE_SIZE; ++idx) {
         /* TODO We should be able to optimize by not looking up the page table
-        * for each entry, both for source and destination. */
+         * for each entry, both for source and destination. */
         pte_t *src_pte = vm_lookup_page_table_entry(src_addr_space, src_addr, false, NULL);
 
         if(src_pte == NULL || !pte_is_present(src_pte)) {
@@ -967,7 +967,7 @@ bool machine_clone_userspace_mapping(
  * @return physical address of page frame
  *
  */
-kern_paddr_t vm_lookup_kernel_paddr(void *addr) {
+kern_paddr_t machine_lookup_kernel_paddr(void *addr) {
     assert( is_kernel_pointer(addr) );
 
     pte_t *pte = vm_lookup_page_table_entry(NULL, addr, false, NULL);

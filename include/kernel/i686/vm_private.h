@@ -37,6 +37,7 @@
 #include <kernel/i686/vm.h>
 #include <kernel/i686/vm_pae.h>
 #include <kernel/i686/vm_x86.h>
+#include <kernel/machine/vm.h>
 #include <stdbool.h>
 #include <stdint.h>
 
