@@ -53,7 +53,7 @@ void kmain(const char *cmdline) {
     /* Now that we parsed the command line options, we can initialize logging
      * properly and say hello. */
     const cmdline_opts_t *cmdline_opts = cmdline_get_options();
-    logging_init(cmdline_opts);
+    machine_init_logging(cmdline_opts);
 
     info("Jinue microkernel started.");
     info("Kernel revision " GIT_REVISION " built " BUILD_TIME " on " BUILD_HOST);

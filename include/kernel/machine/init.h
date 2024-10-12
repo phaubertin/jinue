@@ -39,6 +39,8 @@ void machine_get_loader_elf(elf_file_t *elf);
 
 void machine_get_ramdisk(kern_mem_block_t *ramdisk);
 
+void machine_init_logging(const cmdline_opts_t *cmdline_opts);
+
 void machine_init(const cmdline_opts_t *cmdline_opts);
 
 #endif

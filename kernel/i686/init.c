@@ -38,6 +38,7 @@
 #include <kernel/i686/memory.h>
 #include <kernel/i686/pic8259.h>
 #include <kernel/i686/remap.h>
+#include <kernel/i686/serial.h>
 #include <kernel/i686/trap.h>
 #include <kernel/i686/vga.h>
 #include <kernel/i686/vm.h>
@@ -294,6 +295,11 @@ void machine_get_loader_elf(elf_file_t *elf) {
 void machine_get_ramdisk(kern_mem_block_t *ramdisk) {
     const boot_info_t *boot_info = get_boot_info();
     get_ramdisk(ramdisk, boot_info);
+}
+
+void machine_init_logging(const cmdline_opts_t *cmdline_opts) {
+    serial_init(cmdline_opts);
+    vga_init(cmdline_opts);
 }
 
 void machine_init(const cmdline_opts_t *cmdline_opts) {

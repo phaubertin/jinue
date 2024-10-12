@@ -129,4 +129,9 @@ typedef struct {
     size_t          size;
 } kern_mem_block_t;
 
+typedef struct {
+    jinue_node_t loggers;
+    void (*log)(int loglevel, const char *message, size_t n);
+} logger_t;
+
 #endif

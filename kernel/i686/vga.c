@@ -35,31 +35,30 @@
 #include <kernel/i686/io.h>
 #include <kernel/i686/vga.h>
 #include <kernel/i686/vm.h>
-#include <kernel/machine/vga.h>
+#include <kernel/logging.h>
 
 typedef unsigned int vga_pos_t;
 
-static struct {
-    bool    enabled;
-    addr_t  video_base_addr;
-} config;
+static void vga_printn(int loglevel, const char *message, size_t n);
 
-static vga_pos_t vga_raw_putc(char c, vga_pos_t pos, int colour);
+static logger_t logger = {
+    .log = vga_printn
+}; 
+
+/** base address of the VGA text video buffer */
+static unsigned char *video_base_addr = (void *)VGA_TEXT_VID_BASE;
 
 static void vga_clear(void) {
     unsigned int idx = 0;
     
     while( idx < (VGA_LINES * VGA_WIDTH * 2) ) {
-        config.video_base_addr[idx++] = 0x20;
-        config.video_base_addr[idx++] = VGA_COLOR_ERASE;
+        video_base_addr[idx++] = 0x20;
+        video_base_addr[idx++] = VGA_COLOR_ERASE;
     }
 }
 
-void machine_vga_init(const cmdline_opts_t *cmdline_opts) {
-    config.enabled          = cmdline_opts->vga_enable;
-    config.video_base_addr  = (void *)VGA_TEXT_VID_BASE;
-
-    if(!config.enabled) {
+void vga_init(const cmdline_opts_t *cmdline_opts) {
+    if(! cmdline_opts->vga_enable) {
         return;
     }
     
@@ -77,10 +76,12 @@ void machine_vga_init(const cmdline_opts_t *cmdline_opts) {
     
     /* Clear the screen */
     vga_clear();
+
+    register_logger(&logger);
 }
 
 void vga_set_base_addr(void *base_addr) {
-    config.video_base_addr = base_addr;
+    video_base_addr = base_addr;
 }
 
 static vga_pos_t vga_get_cursor_pos(void) {
@@ -117,27 +118,9 @@ static int get_colour(int loglevel) {
     }
 }
 
-void machine_vga_printn(int loglevel, const char *message, size_t n) {
-    if(!config.enabled) {
-        return;
-    }
-
-    int colour = get_colour(loglevel);
-
-    unsigned short int pos  = vga_get_cursor_pos();
-
-    for(int idx = 0; idx < n && message[idx] != '\0'; ++idx) {
-        pos = vga_raw_putc(message[idx], pos, colour);
-    }
-    
-    pos = vga_raw_putc('\n', pos, colour);
-
-    vga_set_cursor_pos(pos);
-}
-
 static void vga_scroll(void) {
-    unsigned char *di = config.video_base_addr;
-    unsigned char *si = config.video_base_addr + 2 * VGA_WIDTH;
+    unsigned char *di = video_base_addr;
+    unsigned char *si = video_base_addr + 2 * VGA_WIDTH;
     unsigned int idx;
     
     for(idx = 0; idx < 2 * VGA_WIDTH * (VGA_LINES - 1); ++idx) {
@@ -179,8 +162,8 @@ static vga_pos_t vga_raw_putc(char c, vga_pos_t pos, int colour) {
     
     default:
         if(c >= 0x20) {
-            config.video_base_addr[2 * pos]     = (unsigned char)c;
-            config.video_base_addr[2 * pos + 1] = colour;
+            video_base_addr[2 * pos]     = (unsigned char)c;
+            video_base_addr[2 * pos + 1] = colour;
             ++pos;
         }
     }
@@ -191,4 +174,18 @@ static vga_pos_t vga_raw_putc(char c, vga_pos_t pos, int colour) {
     }
     
     return pos;
+}
+
+static void vga_printn(int loglevel, const char *message, size_t n) {
+    int colour = get_colour(loglevel);
+
+    unsigned short int pos  = vga_get_cursor_pos();
+
+    for(int idx = 0; idx < n && message[idx] != '\0'; ++idx) {
+        pos = vga_raw_putc(message[idx], pos, colour);
+    }
+    
+    pos = vga_raw_putc('\n', pos, colour);
+
+    vga_set_cursor_pos(pos);
 }

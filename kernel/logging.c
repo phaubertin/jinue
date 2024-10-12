@@ -30,15 +30,16 @@
  */
 
 #include <jinue/shared/syscall.h>
-#include <kernel/machine/serial.h>
-#include <kernel/machine/vga.h>
 #include <kernel/cmdline.h>
+#include <kernel/list.h>
 #include <kernel/logging.h>
+#include <kernel/types.h>
 #include <stdio.h>
 
-void logging_init(const cmdline_opts_t *cmdline_opts) {
-    machine_vga_init(cmdline_opts);
-    machine_serial_init(cmdline_opts);
+jinue_list_t loggers = JINUE_LIST_STATIC;
+
+void register_logger(logger_t *logger) {
+    jinue_list_enqueue(&loggers, &logger->loggers);
 }
 
 static void log_message(int loglevel, const char *restrict format, va_list args) {
@@ -53,8 +54,19 @@ static void log_message(int loglevel, const char *restrict format, va_list args)
 }
 
 void logging_add_message(int loglevel, const char *message, size_t n) {
-    machine_vga_printn(loglevel, message, n);
-    machine_serial_printn(message, n);
+    jinue_cursor_t cur = jinue_list_head_cursor(&loggers);
+
+    while(true) {
+        logger_t *logger = jinue_cursor_entry(cur, logger_t, loggers);
+
+        if(logger == NULL) {
+            break;
+        }
+
+        logger->log(loglevel, message, n);
+
+        cur = jinue_cursor_next(cur);
+    }
 }
 
 void info(const char *restrict format, ...) {

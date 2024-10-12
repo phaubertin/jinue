@@ -33,6 +33,9 @@
 #define JINUE_KERNEL_I686_VGA_H
 
 #include <kernel/i686/asm/vga.h>
+#include <kernel/cmdline.h>
+
+void vga_init(const cmdline_opts_t *cmdline_opts);
 
 void vga_set_base_addr(void *base_addr);
 
