@@ -44,7 +44,7 @@ unclean_recursive	 = $(temp_ramdisk_fs)
 # in this regard on different machines with different versions of the
 # linker. By explicitly forcing _start as an undefined symbol, we
 # ensure the linker links the startup code.
-LDFLAGS         += -Wl,-u,_start -static-libgcc -m32 -march=i686
+LDFLAGS         += -Wl,-u,_start -m32 -march=i686
 LDLIBS           = -lgcc
 
 unclean.extra    = $(testapp)
