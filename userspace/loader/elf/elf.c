@@ -398,9 +398,9 @@ extern char **environ;
  *
  * */
 size_t count_environ(void) {
-    int n;
+    int n = 0;
 
-    for(n = 0; environ[n] != NULL; ++n) {
+    while(environ[n] != NULL) {
         ++n;
     }
 

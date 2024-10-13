@@ -35,7 +35,7 @@ image_ldscript   = i686/ld/image.ld
 build_info_h     = build-info.gen.h
 
 LDFLAGS         += -m32 -march=i686
-KERNEL_LDFLAGS   = -T $(kernel_ldscript) -static-libgcc
+KERNEL_LDFLAGS   = -T $(kernel_ldscript)
 KERNEL_LDLIBS    = -lgcc
 IMAGE_LDFLAGS    = -T $(image_ldscript)
 
