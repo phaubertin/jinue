@@ -3,10 +3,6 @@
     "cmake.configureOnOpen": false,
     "makefile.configureOnOpen": false,
     "files.associations": {
-        "*.h": "c",
-        "bitset": "c",
-        "memory": "c",
-        "random": "c",
-        "optional": "c"
+        "*.h": "c"
     }
 }
