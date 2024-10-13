@@ -216,4 +216,3 @@ int bzip2_stream_initialize(stream_t *stream, const void *addr, size_t size) {
 
     return STREAM_SUCCESS;
 }
- 
