@@ -33,7 +33,7 @@ include $(jinue_root)/header.mk
 sources.c        = \
 	archives/alloc.c \
 	archives/tar.c \
-	elf/elf.c \
+	binfmt/elf.c \
 	streams/gzip.c \
 	streams/raw.c \
 	streams/stream.c \
