@@ -66,10 +66,10 @@ $(libc)/libc.a: FORCE
 	$(MAKE) -C $(libc)
 
 $(zlib)/libz.a: FORCE
-	$(MAKE) -C $(zlib) libz.a
+	$(MAKE) CC=$(CC) -C $(zlib) libz.a
 
 $(bzip2)/libbz2.a: FORCE
-	$(MAKE) -C $(bzip2) libbz2.a
+	$(MAKE) CC=$(CC) -C $(bzip2) libbz2.a
 
 $(loader): $(objects) $(libjinue)/libjinue-util.a $(zlib)/libz.a $(bzip2)/libbz2.a $(libc)/libc.a $(libjinue)/libjinue-syscalls.a
 
