@@ -68,6 +68,9 @@ $(libc)/libc.a: FORCE
 $(zlib)/libz.a: FORCE
 	$(MAKE) -C $(zlib) libz.a
 
-$(loader): $(objects) $(libjinue)/libjinue-util.a $(zlib)/libz.a $(libc)/libc.a $(libjinue)/libjinue-syscalls.a
+$(bzip2)/libbz2.a: FORCE
+	$(MAKE) -C $(bzip2) libbz2.a
+
+$(loader): $(objects) $(libjinue)/libjinue-util.a $(zlib)/libz.a $(bzip2)/libbz2.a $(libc)/libc.a $(libjinue)/libjinue-syscalls.a
 
 $(target): $(loader)
