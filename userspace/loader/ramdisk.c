@@ -38,11 +38,22 @@
 #include <stdlib.h>
 #include <string.h>
 #include "archives/tar.h"
+#include "streams/bzip2.h"
 #include "streams/gzip.h"
 #include "streams/raw.h"
 #include "streams/stream.h"
 #include "ramdisk.h"
 
+struct stream_initializer {
+    const char *name;
+    int (*initialize)(stream_t *, const void *, size_t);
+};
+
+static struct stream_initializer stream_initializers[] = {
+    {"bzip2",   bzip2_stream_initialize},
+    {"gzip",    gzip_stream_initialize},
+    {NULL, NULL},
+};
 
 /**
  * Find the kernel memory map entry for the RAM disk image
@@ -123,15 +134,19 @@ int map_ramdisk(ramdisk_t *ramdisk, const jinue_mem_map_t *map) {
  *
  * */
 static int initialize_stream(stream_t *stream, const ramdisk_t *ramdisk) {
-    int status = gzip_stream_initialize(stream, ramdisk->addr, ramdisk->size);
+    for(int idx = 0; stream_initializers[idx].initialize != NULL; ++idx) {
+        const struct stream_initializer *initializer = &stream_initializers[idx];
 
-    if(status == STREAM_SUCCESS) {
-        jinue_info("RAM disk image is compressed with gzip.");
-        return STREAM_SUCCESS;
-    }
+        int status = initializer->initialize(stream, ramdisk->addr, ramdisk->size);
 
-    if(status != STREAM_FORMAT) {
-        return status;
+        if(status == STREAM_SUCCESS) {
+            jinue_info("RAM disk image is compressed with %s.", initializer->name);
+            return STREAM_SUCCESS;
+        }
+
+        if(status != STREAM_FORMAT) {
+            return status;
+        }
     }
 
     jinue_info("RAM disk image is uncompressed.");

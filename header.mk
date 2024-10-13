@@ -65,6 +65,7 @@ lib                  = $(userspace)/lib
 libjinue             = $(lib)/jinue
 libc                 = $(lib)/libc
 zlib                 = $(lib)/zlib
+bzip2                = $(lib)/bzip2
 loader               = $(userspace)/loader
 testapp              = $(userspace)/testapp
 

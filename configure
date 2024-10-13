@@ -30,6 +30,10 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ZLIB=userspace/lib/zlib
+BZIP2=userspace/lib/bzip2
+
+CFLAGS="-std=c99 -ffreestanding -I../../../include"
+ARCH="-m32"
 
 echo "Configuring zlib in $ZLIB"
 
@@ -45,4 +49,91 @@ fi
 echo "*** Please ignore any warning about vsnprintf() not being found in stdio.h."
 echo "*** Jinue does not use the part of the code in zlib where that warning is relevant."
 
-(cd $ZLIB; CFLAGS='-std=c99 -ffreestanding -I../../../include' ./configure --solo --static --warn --const --archs="-m32")
+(cd $ZLIB; CFLAGS="$CFLAGS" ./configure --solo --static --warn --const --archs="$ARCH")
+
+echo "Configuring bzip2 in $ZLIB"
+
+if [ ! -f "$BZIP2/bzlib.h" ]; then
+    echo ""
+    echo "*** ERROR: bzlib.h not found in $BZIP2."
+    echo "*** "
+    echo "*** Did you forget to initialize the git submodules when you cloned the repository? "
+    echo "*** See README.md for detail."
+    exit 1
+fi
+
+# There is no configure script for bzip2 but the CFLAGS are hardcoded in the
+# Makefile, so let's patch them there. Let's also remove code related to
+# compression to reduce size and the number of compiler warnings.
+(cd $BZIP2 ; (cat << "EOF") | sed -e "s@%%%-CFLAGS-%%%@$CFLAGS $ARCH@" | patch -Np1 -r-
+diff --git a/Makefile b/Makefile
+index b0fef95..4987a38 100644
+--- a/Makefile
++++ b/Makefile
+@@ -21,17 +21,15 @@ RANLIB=ranlib
+ LDFLAGS=
+ 
+ BIGFILES=-D_FILE_OFFSET_BITS=64
+-CFLAGS=-Wall -Winline -O2 -g $(BIGFILES)
++CFLAGS=%%%-CFLAGS-%%% -Wall -Winline -O2 -g $(BIGFILES) -DBZ_NO_STDIO
+ 
+ # Where you want it installed when you do 'make install'
+ PREFIX=/usr/local
+ 
+ 
+-OBJS= blocksort.o  \
+-      huffman.o    \
++OBJS= huffman.o    \
+       crctable.o   \
+       randtable.o  \
+-      compress.o   \
+       decompress.o \
+       bzlib.o
+ 
+diff --git a/bzlib.c b/bzlib.c
+index 100873c..2a9bc33 100644
+--- a/bzlib.c
++++ b/bzlib.c
+@@ -113,6 +113,7 @@ void default_bzfree ( void* opaque, void* addr )
+ 
+ 
+ /*---------------------------------------------------*/
++#if 0
+ static
+ void prepare_new_block ( EState* s )
+ {
+@@ -144,6 +145,7 @@ Bool isempty_RL ( EState* s )
+ }
+ 
+ 
++
+ /*---------------------------------------------------*/
+ int BZ_API(BZ2_bzCompressInit) 
+                     ( bz_stream* strm, 
+@@ -482,6 +484,7 @@ int BZ_API(BZ2_bzCompressEnd)  ( bz_stream *strm )
+ 
+    return BZ_OK;
+ }
++#endif
+ 
+ 
+ /*---------------------------------------------------*/
+@@ -1244,6 +1247,7 @@ void BZ_API(BZ2_bzReadGetUnused)
+ /*---------------------------------------------------*/
+ 
+ /*---------------------------------------------------*/
++#if 0
+ int BZ_API(BZ2_bzBuffToBuffCompress) 
+                          ( char*         dest, 
+                            unsigned int* destLen,
+@@ -1293,7 +1297,7 @@ int BZ_API(BZ2_bzBuffToBuffCompress)
+    BZ2_bzCompressEnd ( &strm );
+    return ret;
+ }
+-
++#endif
+ 
+ /*---------------------------------------------------*/
+ int BZ_API(BZ2_bzBuffToBuffDecompress) 
+EOF
+)

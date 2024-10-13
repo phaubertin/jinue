@@ -35,7 +35,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include "elf/elf.h"
+#include "binfmt/elf.h"
 #include "debug.h"
 #include "ramdisk.h"
 #include "util.h"

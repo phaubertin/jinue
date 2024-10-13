@@ -37,6 +37,7 @@ subdirs = \
 	$(libc) \
 	$(libjinue) \
 	$(zlib) \
+	$(bzip2) \
 	$(qemu) \
 	$(virtualbox)
 
