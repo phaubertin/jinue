@@ -46,7 +46,6 @@ loader           = loader
 target           = $(loader)-stripped
 
 CPPFLAGS        += -I$(zlib) -DZLIB_CONST -I$(bzip2) -DBZ_NO_STDIO
-BZ2CFLAGS		 = -std=c99 -ffreestanding -I../../../include -m32 -Wall -Winline -O2 -g -D_FILE_OFFSET_BITS=64 -DBZ_NO_STDIO
 
 # The linker might not link crt.o from libjinue.a, which is required to
 # provide the _start entry point but otherwise contains no symbol that
@@ -71,7 +70,7 @@ $(zlib)/libz.a: FORCE
 	$(MAKE) CC=$(CC) -C $(zlib) libz.a
 
 $(bzip2)/libbz2.a: FORCE
-	$(MAKE) CC=$(CC) CFLAGS="$(BZ2CFLAGS)" -C $(bzip2) libbz2.a
+	$(MAKE) CC=$(CC) -C $(bzip2) libbz2.a
 
 $(loader): $(objects) $(libjinue)/libjinue-util.a $(zlib)/libz.a $(bzip2)/libbz2.a $(libc)/libc.a $(libjinue)/libjinue-syscalls.a
 
