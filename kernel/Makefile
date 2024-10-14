@@ -44,7 +44,7 @@ loader.bin       = $(loader)/loader
 
 kernel           = i686/kernel
 stripped         = i686/kernel-stripped
-image            = i686/jinue
+image            = i686/$(notdir $(kernel_img))
 setup16          = i686/setup16.o
 setup32          = i686/setup32.o
 target           = $(image)

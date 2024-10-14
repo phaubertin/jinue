@@ -69,7 +69,7 @@ zlib                 = $(lib)/zlib
 bzip2                = $(lib)/bzip2
 loader               = $(userspace)/loader
 testapp              = $(userspace)/testapp
-testapp_initrd       = $(testapp)/jinue-initrd.tar.gz
+testapp_initrd       = $(testapp)/jinue-testapp-initrd.tar.gz
 
 # object files
 objects.c            = $(sources.c:%.c=%.o)
