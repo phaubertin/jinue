@@ -33,7 +33,7 @@ include $(jinue_root)/header.mk
 sources.c       	 = tests/ipc.c debug.c testapp.c util.c
 testapp         	 = testapp
 temp_ramdisk_fs		 = ramdisk-tmp
-ramdisk 			 = jinue-initrd.tar.gz
+ramdisk 			 = $(notdir $(testapp_initrd))
 
 target          	 = $(ramdisk)
 unclean_recursive	 = $(temp_ramdisk_fs)

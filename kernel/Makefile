@@ -44,19 +44,19 @@ loader.bin       = $(loader)/loader
 
 kernel           = i686/kernel
 stripped         = i686/kernel-stripped
-image            = i686/jinue
+image            = i686/$(notdir $(kernel_img))
 setup16          = i686/setup16.o
 setup32          = i686/setup32.o
-targets          = $(setup16) $(setup32) $(stripped)
+target           = $(image)
 
 unclean.extra    = \
 	$(kernel) \
-	$(image) \
 	$(build_info_h) \
 	$(kernel_ldscript) \
 	$(image_ldscript) \
 	$(setup16) \
-	$(setup32)
+	$(setup32) \
+	$(stripped)
 
 sources.kernel.c = \
 	i686/auxv.c \
@@ -116,6 +116,12 @@ include $(common)
 
 .PHONY: image
 image: $(image)
+
+.PHONY: kernel
+kernel: $(kernel)
+
+.PHONY: kernel-stripped
+kernel-stripped: $(stripped)
 
 $(build_info_h): FORCE
 	$(scripts)/gen_build_info_h.sh > $@
