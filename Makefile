@@ -113,3 +113,8 @@ image:
 .PHONY: loader
 loader:
 	$(MAKE) -C $(userspace)/loader
+
+# build the test application
+.PHONY: testapp
+testapp:
+	$(MAKE) -C $(userspace)/testapp
