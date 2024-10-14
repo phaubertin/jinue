@@ -7,28 +7,28 @@
 Overview of Build Artifacts
 ---------------------------
 
-The main build artifact provided by the code in this repository is the
-kernel image, which contains the kernel proper as well as the user space
-loader. The kernel image conforms to the
+The main build artifact that can be built from the code in this
+repository is the kernel image, which contains the kernel proper as well
+as the user space loader. The kernel image conforms to the
 [Linux x86 boot protocol](https://github.com/torvalds/linux/blob/master/Documentation/arch/x86/boot.rst)
 (version 2.06), which means it can be loaded by a bootloader intended
 for the Linux Kernel, such as GRUB.
 
 During the boot process, the user space loader expects an initial RAM
 disk to have been loaded in memory by the bootloader. This would usually
-be provided by the user in order to use the kernel. However, this
-repository allows an initial RAM disk with a test application to be
-built.
+be provided by the user in order to use the kernel. However, an initial
+RAM disk containing a test application can be built from this
+repository.
 
-This repository allows the kernel to be tested by running it in QEMU.
-For this purpose, a bootable ISO image is built with the kernel image
-and the test application.
+Finally, this repository makes it easy to run the kernel and test
+application in QEMU. For this purpose, it builds a bootable ISO image
+that contains the kernel image and the initial RAM disk.
 
 Build Requirements
 ------------------
 
 To build the kernel image and test application, you will need a Linux
-machine with GNU make and a C compiler that can create 32-bit x86
+machine with GNU make and a C compiler that can create 32-bit x86 ELF
 binaries. This software is known to build with GCC and clang.
 
 You will also need the Netwide Assembler (NASM).
