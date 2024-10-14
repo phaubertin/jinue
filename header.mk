@@ -57,6 +57,7 @@ jinue_root          ?= .
 devel                = $(jinue_root)/devel
 includes             = $(jinue_root)/include
 kernel               = $(jinue_root)/kernel
+kernel_img           = $(kernel)/i686/jinue
 scripts              = $(jinue_root)/scripts
 userspace            = $(jinue_root)/userspace
 qemu                 = $(devel)/qemu
@@ -68,6 +69,7 @@ zlib                 = $(lib)/zlib
 bzip2                = $(lib)/bzip2
 loader               = $(userspace)/loader
 testapp              = $(userspace)/testapp
+testapp_initrd       = $(testapp)/jinue-initrd.tar.gz
 
 # object files
 objects.c            = $(sources.c:%.c=%.o)

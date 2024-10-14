@@ -42,44 +42,49 @@ subdirs = \
 	$(virtualbox)
 
 # make all (default target) will build the kernel image
-targets.phony = image
+targets.phony = kernel
 
 # main targets
 include $(common)
 
 # install kernel image in /boot
 .PHONY: install
-install: $(kernel_img) kernel-image
+install: $(kernel_img)
+	install -m644 $< /boot
+
+# install testapp ramdisk in /boot
+.PHONY: install-testapp
+install-testapp: $(testapp_initrd)
 	install -m644 $< /boot
 
 # build the ISO file (CDROM image) needed by the VirtualBox VM
 .PHONY: vbox
-vbox: $(kernel_img)
+vbox:
 	make -C $(virtualbox)
 
 # build the ISO file for VirtualBox and run the VM with the debugger
 .PHONY: vbox-debug
-vbox-debug: $(kernel_img)
+vbox-debug:
 	make -C $(virtualbox) debug
 
 # build the ISO file for VirtualBox and run the VM (without the debugger)
 .PHONY: vbox-run
-vbox-run: $(kernel_img)
+vbox-run:
 	make -C $(virtualbox) run
 	
 # build the ISO file (CDROM image) needed by the QEMU
 .PHONY: qemu
-qemu: $(kernel_img)
+qemu:
 	make -C $(qemu)
 
 # build the ISO file for QEMU and run
 .PHONY: qemu-run
-qemu-run: $(kernel_img)
+qemu-run:
 	make -C $(qemu) run
 
 # build the ISO file for QEMU and run (without the debugger)
 .PHONY: qemu-run-no-display
-qemu-run-no-display: $(kernel_img)
+qemu-run-no-display:
 	make -C $(qemu) run-no-display
 
 # Run cppcheck on the kernel sources
@@ -99,15 +104,12 @@ doc:
 clean-doc:
 	$(MAKE) -C doc clean
 
-# build the kernel ELF file
+# build the kernel image (set up code + kernel ELF + user space loader ELF)
+$(kernel_img): kernel
+
 .PHONY: kernel
 kernel:
 	$(MAKE) -C kernel
-
-# build the kernel image (set up code + kernel ELF + user space loader ELF)
-.PHONY: image
-image:
-	$(MAKE) -C kernel image
 
 # build the user space loader
 .PHONY: loader
@@ -115,6 +117,8 @@ loader:
 	$(MAKE) -C $(userspace)/loader
 
 # build the test application
+$(testapp_initrd): testapp
+
 .PHONY: testapp
 testapp:
 	$(MAKE) -C $(userspace)/testapp

@@ -38,15 +38,13 @@ QEMU_MEM            ?= 128
 # TODO this should probably be configurable through some sort of configure script
 grub_modules         = /usr/lib/grub/i386-pc
 
-kernel_img           = $(jinue_root)/kernel/i686/jinue
-initrd               = $(testapp)/jinue-initrd.tar.gz
 temp_iso_fs          = iso-tmp
 grub_config          = grub.cfg
 jinue_iso            = jinue.iso
 grub_image_rel       = boot/grub/i386-pc/jinue.img
 grub_image           = $(temp_iso_fs)/$(grub_image_rel)
 kernel_img_copy      = $(temp_iso_fs)/boot/$(notdir $(kernel_img))
-initrd_copy          = $(temp_iso_fs)/boot/$(notdir $(initrd))
+initrd_copy          = $(temp_iso_fs)/boot/$(notdir $(testapp_initrd))
 
 target               = $(jinue_iso)
 unclean_recursive    = $(temp_iso_fs)
@@ -80,7 +78,7 @@ run-no-display: $(jinue_iso)
 
 .PHONY: kernel-image
 kernel-image:
-	make -C $(jinue_root)/kernel image
+	make -C $(jinue_root)/kernel
 
 .PHONY: testapp-initrd
 testapp-initrd:
@@ -88,7 +86,7 @@ testapp-initrd:
 
 $(kernel_img): kernel-image
 
-$(initrd): testapp-initrd
+$(testapp_initrd): testapp-initrd
 
 $(temp_iso_fs): $(grub_config)
 	mkdir -p $(temp_iso_fs)/boot/grub/i386-pc
@@ -99,7 +97,7 @@ $(temp_iso_fs): $(grub_config)
 $(kernel_img_copy): $(kernel_img) $(temp_iso_fs) kernel-image
 	cp $< $@
 
-$(initrd_copy): $(initrd) $(temp_iso_fs) testapp-initrd
+$(initrd_copy): $(testapp_initrd) $(temp_iso_fs) testapp-initrd
 	cp $< $@
 
 $(grub_image): $(initrd_copy) $(kernel_img_copy)
