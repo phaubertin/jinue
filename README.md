@@ -13,31 +13,57 @@ build with GCC and clang.
 
 You will also need the Netwide Assembler (NASM).
 
-If you wish to build an ISO image for use with VirtualBox, which is optional,
+If you wish to build an ISO image for use with QEMU, which is optional,
 you will need GRUB and GNU xorriso.
 
 Runtime Requirements
 --------------------
 
 To boot the Jinue microkernel, you will need either:
-* VirtualBox; or
+* QEMU; or
 * A x86 PC on which you have sufficient privileges to configure the boot manager
 to load Jinue.
 
 How to Build
 ------------
 
-To build the ISO image for use with VirtualBox, build the vbox target with make:
+This repository imports some dependencies as git submodules. To make sure these submodules are also cloned and initialized, make sure you pass the `--recurse-submodules` option when you clone the repository.
+
 ```
-make vbox
+git clone --recurse-submodules https://github.com/phaubertin/jinue.git
 ```
-If you will not be using VirtualBox, build only the kernel image, which is the
-default target:
+Alternatively, if you already cloned the repository without passing this option, you can clone and initialize the submodules separately with the following command:
+
+```
+git submodule update --init
+```
+
+Then, configure the source code and its dependencies. You only need to do this once and not for each build.
+```
+./configure
+```
+
+To build the ISO image for use with QEMU, build the `qemu` target with make:
+```
+make qemu
+```
+If you will not be using QEMU and only want to build the kernel image, this can be done with the default make target:
 ```
 make
 ```
 
-How to Run in VirtualBox
+How to Run in QEMU
+-------------------
+You can run the kernel and test application in QEMU using the `qemu-run` make target:
+```
+make qemu-run
+```
+Alternatively, if you don't want QEMU to show a window with the video output, or if you are on a machine without graphics capabilities, use the `qemu-run-no-display` target instead. The kernel logs to the serial port, which QEMU redirects to standard output.
+```
+make qemu-run-no-display
+```
+
+How to Run in VirtualBox (Unmaintained)
 ------------------------
 First build the vbox target as indicated above:
 ```
@@ -69,7 +95,7 @@ make vbox-debug
 How to Install
 --------------
 
-If you will not be using VirtualBox, you can copy the kernel image to /boot by
+If you will not be using VirtualBox, you can copy the kernel image to `/boot` by
 running the following:
 ```
 sudo make install
