@@ -12,7 +12,7 @@ repository is the kernel image, which contains the kernel proper as well
 as the user space loader. The kernel image conforms to the
 [Linux x86 boot protocol](https://github.com/torvalds/linux/blob/master/Documentation/arch/x86/boot.rst),
 which means it can be loaded by a bootloader intended
-for the Linux Kernel, such as GRUB.
+for the Linux kernel, such as GRUB.
 
 During the boot process, the user space loader expects an initial RAM
 disk to have been loaded in memory by the bootloader. This would usually
