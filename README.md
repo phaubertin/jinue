@@ -121,7 +121,7 @@ the 16-bit boot protocol
 ([linux16 command](devel/virtualbox/grub.cfg#L29) if using GRUB).
 
 For detail on the Linux boot protocol, see
-[Documentation/x86/boot.txt](https://www.kernel.org/doc/Documentation/x86/boot.rst)
+[Documentation/x86/boot.rst](https://www.kernel.org/doc/Documentation/x86/boot.rst)
 in the Linux source tree.
 
 Documentation
