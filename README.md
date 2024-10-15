@@ -10,8 +10,8 @@ Overview of Build Artifacts
 The main build artifact that can be built from the code in this
 repository is the kernel image, which contains the kernel proper as well
 as the user space loader. The kernel image conforms to the
-[Linux x86 boot protocol](https://github.com/torvalds/linux/blob/master/Documentation/arch/x86/boot.rst)
-(version 2.06), which means it can be loaded by a bootloader intended
+[Linux x86 boot protocol](https://github.com/torvalds/linux/blob/master/Documentation/arch/x86/boot.rst),
+which means it can be loaded by a bootloader intended
 for the Linux Kernel, such as GRUB.
 
 During the boot process, the user space loader expects an initial RAM
@@ -63,7 +63,7 @@ git submodule update --init
 ```
 
 Then, configure the source code and its dependencies. You only need to
-do this once and not for each build.
+do this oncen not each time you build.
 ```
 ./configure
 ```
@@ -121,7 +121,7 @@ the 16-bit boot protocol
 ([linux16 command](devel/virtualbox/grub.cfg#L29) if using GRUB).
 
 For detail on the Linux boot protocol, see
-[documentation/x86/boot.txt](https://www.kernel.org/doc/Documentation/x86/boot.txt)
+[Documentation/x86/boot.txt](https://www.kernel.org/doc/Documentation/x86/boot.txt)
 in the Linux source tree.
 
 Documentation
