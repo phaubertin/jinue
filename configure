@@ -42,6 +42,10 @@ if [ ! -f "$ZLIB/zlib.h" ]; then
     echo "*** ERROR: zlib.h not found in $ZLIB."
     echo "*** "
     echo "*** Did you forget to initialize the git submodules when you cloned the repository? "
+    echo "*** If so, you can clone and initialize them now with the following command:"
+    echo "***"
+    echo "***   git submodule update --init"
+    echo "***"
     echo "*** See README.md for detail."
     exit 1
 fi
@@ -58,9 +62,20 @@ if [ ! -f "$BZIP2/bzlib.h" ]; then
     echo "*** ERROR: bzlib.h not found in $BZIP2."
     echo "*** "
     echo "*** Did you forget to initialize the git submodules when you cloned the repository? "
+    echo "*** If so, you can clone and initialize them now with the following command:"
+    echo "***"
+    echo "***   git submodule update --init"
+    echo "***"
     echo "*** See README.md for detail."
     exit 1
 fi
+
+echo "*** If you re-run this configuration script after having already run it once, you will"
+echo "*** see warning messages similar to the following which you can safely ignore:"
+echo "***"
+echo "***   Reversed (or previously applied) patch detected!  Skipping patch."
+echo "***   5 out of 5 hunks ignored"
+echo "***"
 
 # There is no configure script for bzip2 but the CFLAGS are hardcoded in the
 # Makefile, so let's patch them there. Let's also remove code related to
