@@ -35,15 +35,15 @@
 OUTPUT_FORMAT("binary")
 
 TARGET("elf32-i386")
-INPUT("i686/setup16.o")
-INPUT("i686/setup32.o")
+INPUT("interface/i686/setup16.o")
+INPUT("interface/i686/setup32.o")
 
 /* Even though the next two input files are ELF binaries, we want to insert them
  * whole into the kernel image, hence why the TARGET is specified as binary. Both
  * are already linked. */
 TARGET("binary")
 INPUT("../userspace/loader/loader-stripped")
-INPUT("i686/kernel-stripped")
+INPUT("interface/i686/kernel-stripped")
 
 SECTIONS {
     /* The intent of this linker script is to create a kernel image that conforms
@@ -66,7 +66,7 @@ SECTIONS {
      * Needed symbols:                  setup_size_div512
      *                                  kernel_size_div16 */
     setup16 : {
-        i686/setup16.o
+        interface/i686/setup16.o
     }
     
     /* Everything below this point is loaded consecutively starting at 0x100000
@@ -102,7 +102,7 @@ SECTIONS {
      *                                  loader_start
      *                                  loader_size */
     setup32 BOOT_SETUP32_ADDR : AT(ADDR(setup16) + SIZEOF(setup16)) {
-        i686/setup32.o
+        interface/i686/setup32.o
     }
     
     /* The next section must start at a specific offset (BOOT_SETUP32_SIZE) from
@@ -118,7 +118,7 @@ SECTIONS {
     kernel_start = .;
     
     kernel : {
-        i686/kernel-stripped
+        interface/i686/kernel-stripped
         kernel_end = ABSOLUTE(.);
         
         . = ALIGN(PAGE_SIZE);

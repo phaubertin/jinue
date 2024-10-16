@@ -41,7 +41,7 @@
 #include <kernel/thread.h>
 #include <inttypes.h>
 #include <stddef.h>
-#include "build-info.gen.h"
+#include "../build-info.gen.h"
 
 
 void kmain(const char *cmdline) {
