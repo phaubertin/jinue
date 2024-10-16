@@ -83,7 +83,7 @@ void kmain(const char *cmdline) {
     process_boot_init();
 
     /* create process for user space loader */
-    process_t *process = process_create();
+    process_t *process = construct_process();
 
     if(process == NULL) {
         panic("Could not create initial process.");
@@ -99,7 +99,7 @@ void kmain(const char *cmdline) {
     elf_load(&elf_info, loader.ehdr, "jinue-userspace-loader", cmdline, process);
 
     /* create initial thread */
-    thread_t *thread = thread_create(
+    thread_t *thread = construct_thread(
             process,
             elf_info.entry,
             elf_info.stack_addr

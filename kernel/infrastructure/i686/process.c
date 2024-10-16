@@ -43,6 +43,6 @@ bool machine_init_process(process_t *process) {
     return vm_create_addr_space(&process->addr_space);
 }
 
-void machine_destroy_process(process_t *process) {
+void machine_finalize_process(process_t *process) {
     vm_destroy_addr_space(&process->addr_space);
 }

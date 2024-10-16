@@ -44,20 +44,20 @@
 #include <stddef.h>
 #include <string.h>
 
-static void ipc_endpoint_ctor(void *buffer, size_t size);
+static void cache_endpoint_ctor(void *buffer, size_t size);
 
-static void ipc_endpoint_open(object_header_t *object, const object_ref_t *ref);
+static void endpoint_open(object_header_t *object, const object_ref_t *ref);
 
-static void ipc_endpoint_close(object_header_t *object, const object_ref_t *ref);
+static void endpoint_close(object_header_t *object, const object_ref_t *ref);
 
 /** runtime type definition for an IPC endpoint */
 static const object_type_t object_type = {
     .all_permissions    = JINUE_PERM_SEND | JINUE_PERM_RECEIVE,
     .name               = "ipc_endpoint",
     .size               = sizeof(ipc_endpoint_t),
-    .open               = ipc_endpoint_open,
-    .close              = ipc_endpoint_close,
-    .cache_ctor         = ipc_endpoint_ctor,
+    .open               = endpoint_open,
+    .close              = endpoint_close,
+    .cache_ctor         = cache_endpoint_ctor,
     .cache_dtor         = NULL
 };
 
@@ -75,7 +75,7 @@ static slab_cache_t ipc_endpoint_cache;
  * @param size size in bytes of the IPC endpoint object (ignored)
  *
  */
-static void ipc_endpoint_ctor(void *buffer, size_t size) {
+static void cache_endpoint_ctor(void *buffer, size_t size) {
     ipc_endpoint_t *endpoint = buffer;
     
     object_header_init(&endpoint->header, object_type_ipc_endpoint);
@@ -84,14 +84,14 @@ static void ipc_endpoint_ctor(void *buffer, size_t size) {
     endpoint->receivers_count = 0;
 }
 
-static void ipc_endpoint_open(object_header_t *object, const object_ref_t *ref) {
+static void endpoint_open(object_header_t *object, const object_ref_t *ref) {
     if(object_ref_has_permissions(ref, JINUE_PERM_RECEIVE)) {
         ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
         endpoint_add_receiver(endpoint);
     }
 }
 
-static void ipc_endpoint_close(object_header_t *object, const object_ref_t *ref) {
+static void endpoint_close(object_header_t *object, const object_ref_t *ref) {
     if(object_ref_has_permissions(ref, JINUE_PERM_RECEIVE)) {
         ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
         endpoint_sub_receiver(endpoint);
@@ -111,12 +111,12 @@ void ipc_boot_init(void) {
 }
 
 /**
- * Create a new IPC endpoint
+ * Constructor for IPC endpoint object
  *
- * @return pointer to IPC endpoint on success, NULL on allocation failure
+ * @return pointer to endpoint on success, NULL on allocation failure
  *
  */
-static ipc_endpoint_t *ipc_endpoint_create(void) {
+static ipc_endpoint_t *construct_endpoint(void) {
     return slab_cache_alloc(&ipc_endpoint_cache);
 }
 
@@ -138,7 +138,7 @@ int ipc_endpoint_create_syscall(int fd) {
         return status;
     }
 
-    ipc_endpoint_t *endpoint = ipc_endpoint_create();
+    ipc_endpoint_t *endpoint = construct_endpoint();
 
     if(endpoint == NULL) {
         return -JINUE_EAGAIN;

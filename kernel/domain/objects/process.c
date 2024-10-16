@@ -40,7 +40,7 @@
 #include <stddef.h>
 #include <string.h>
 
-static void process_ctor(void *buffer, size_t ignore);
+static void cache_process_ctor(void *buffer, size_t ignore);
 
 /** runtime type definition for a process */
 static const object_type_t object_type = {
@@ -49,7 +49,7 @@ static const object_type_t object_type = {
     .size               = sizeof(process_t),
     .open               = NULL,
     .close              = NULL,
-    .cache_ctor         = process_ctor,
+    .cache_ctor         = cache_process_ctor,
     .cache_dtor         = NULL
 };
 
@@ -58,7 +58,7 @@ const object_type_t *object_type_process = &object_type;
 /** slab cache used for allocating process objects */
 static slab_cache_t process_cache;
 
-static void process_ctor(void *buffer, size_t ignore) {
+static void cache_process_ctor(void *buffer, size_t ignore) {
     process_t *process = buffer;
 
     object_header_init(&process->header, object_type_process);
@@ -72,7 +72,7 @@ static void process_init(process_t *process) {
     memset(&process->descriptors, 0, sizeof(process->descriptors));
 }
 
-process_t *process_create(void) {
+process_t *construct_process(void) {
     process_t *process = slab_cache_alloc(&process_cache);
 
     if(process != NULL) {
@@ -87,10 +87,10 @@ process_t *process_create(void) {
     return process;
 }
 
-void process_destroy(process_t *process) {
+void free_process(process_t *process) {
     /* TODO destroy remaining threads */
     /* TODO finalize descriptors */
-    machine_destroy_process(process);
+    machine_finalize_process(process);
     slab_cache_free(process);
 }
 
@@ -103,7 +103,7 @@ int process_create_syscall(int fd) {
         return status;
     }
 
-    process_t *process = process_create();
+    process_t *process = construct_process();
 
     if(process == NULL) {
         return -JINUE_EAGAIN;

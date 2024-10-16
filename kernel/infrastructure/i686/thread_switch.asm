@@ -32,7 +32,7 @@
 
     bits 32
     
-    extern thread_destroy
+    extern free_thread
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: thread_context_switch_stack
@@ -88,10 +88,10 @@ thread_context_switch_stack:
     
     ; Restore the saved registers.
     ;
-    ; We do this before calling thread_destroy(). Otherwise, the frame pointer
+    ; We do this before calling free_thread(). Otherwise, the frame pointer
     ; still refers to the thread stack for the previous thread, i.e. the one
-    ; we are potentially about to destroy, when thread_destroy() is called.
-    ; This is a problem if e.g. we try to dump the call stack from thread_destroy()
+    ; we are potentially about to destroy, when free_thread() is called.
+    ; This is a problem if e.g. we try to dump the call stack from free_thread()
     ; or one of its callees.
     pop edi
     pop esi
@@ -106,9 +106,9 @@ thread_context_switch_stack:
     ; destroy from thread context
     and ecx, THREAD_CONTEXT_MASK
     push ecx
-    call thread_destroy
+    call free_thread
     
-    ; cleanup thread_destroy() arguments from stack
+    ; cleanup free_thread() arguments from stack
     add esp, 4
 
 .skip_destroy:

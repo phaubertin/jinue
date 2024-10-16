@@ -38,9 +38,9 @@ extern const object_type_t *object_type_process;
 
 void process_boot_init(void);
 
-process_t *process_create(void);
+process_t *construct_process(void);
 
-void process_destroy(process_t *process);
+void free_process(process_t *process);
 
 int process_create_syscall(int fd);
 

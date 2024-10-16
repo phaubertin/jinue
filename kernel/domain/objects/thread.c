@@ -71,12 +71,12 @@ int thread_create_syscall(
     }
 
     process_t *process = (process_t *)object;
-    const thread_t *thread = thread_create(process, entry, user_stack);
+    const thread_t *thread = construct_thread(process, entry, user_stack);
 
     return (thread == NULL) ? -JINUE_EAGAIN : 0;
 }
 
-thread_t *thread_create(process_t *process, void *entry, void *user_stack) {
+thread_t *construct_thread(process_t *process, void *entry, void *user_stack) {
     thread_t *thread = machine_alloc_thread();
 
     if(thread == NULL) {
@@ -100,7 +100,7 @@ thread_t *thread_create(process_t *process, void *entry, void *user_stack) {
 }
 
 /* This function is called by assembly code. See thread_context_switch_stack(). */
-void thread_destroy(thread_t *thread) {
+void free_thread(thread_t *thread) {
     machine_free_thread(thread);
 }
 
