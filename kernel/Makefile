@@ -83,6 +83,14 @@ sources.kernel.c = \
 	domain/objects/object.c \
 	domain/objects/process.c \
 	domain/objects/thread.c \
+	domain/services/cmdline.c \
+	domain/services/elf.c \
+	domain/services/ipc.c \
+	domain/services/logging.c \
+	domain/services/page_alloc.c \
+	domain/services/panic.c \
+	domain/services/slab.c \
+	domain/services/vmalloc.c \
 	domain/syscalls/close.c \
 	domain/syscalls/create_endpoint.c \
 	domain/syscalls/create_process.c \
@@ -92,17 +100,9 @@ sources.kernel.c = \
 	domain/syscalls/mint.c \
 	domain/syscalls/mmap.c \
 	domain/syscalls/mclone.c \
-	domain/cmdline.c \
 	domain/descriptor.c \
-	domain/elf.c \
-	domain/ipc.c \
-	domain/kmain.c \
-	domain/logging.c \
-	domain/page_alloc.c \
-	domain/panic.c \
-	domain/slab.c \
-	domain/vmalloc.c
-	
+	domain/kmain.c
+
 sources.kernel.nasm = \
 	infrastructure/i686/abi.asm \
 	infrastructure/i686/io.asm \
