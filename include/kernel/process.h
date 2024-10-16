@@ -42,7 +42,7 @@ process_t *construct_process(void);
 
 void free_process(process_t *process);
 
-int process_create_syscall(int fd);
+int create_process(int fd);
 
 void process_switch_to(process_t *process);
 

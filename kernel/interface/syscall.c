@@ -125,7 +125,7 @@ static void sys_create_thread(jinue_syscall_args_t *args) {
     }
 
     /** TODO return descriptor that represents thread */
-    int retval = thread_create_syscall(process_fd, entry, user_stack);
+    int retval = create_thread(process_fd, entry, user_stack);
     set_return_value_or_error(args, retval);
 }
 
@@ -180,7 +180,7 @@ static void sys_create_ipc(jinue_syscall_args_t *args) {
         return;  
     }
 
-    int retval = ipc_endpoint_create_syscall(fd);
+    int retval = create_endpoint(fd);
     set_return_value_or_error(args, retval);
 }
 
@@ -376,7 +376,7 @@ static void sys_create_process(jinue_syscall_args_t *args) {
         return;
     }
 
-    int retval = process_create_syscall(fd);
+    int retval = create_process(fd);
     set_return_value_or_error(args, retval);
 }
 

@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,36 +29,43 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_IPC_H
-#define JINUE_KERNEL_IPC_H
+#include <jinue/shared/asm/errno.h>
+#include <kernel/descriptor.h>
+#include <kernel/ipc.h>
+#include <kernel/object.h>
+#include <kernel/process.h>
 
-#include <jinue/shared/asm/permissions.h>
-#include <kernel/types.h>
+/**
+ * Create an IPC endpoint owned by the current thread
+ *
+ * All currently recognized flags will be deprecated.
+ *
+ * @param flags flags
+ * @return IPC endpoint descriptor on success, negated error number on error
+ *
+ */
+int create_endpoint(int fd) {
+    object_ref_t *ref;
+    int status = dereference_unused_descriptor(&ref, get_current_process(), fd);
 
-extern const object_type_t *object_type_ipc_endpoint;
+    if(status < 0) {
+        return status;
+    }
 
-static inline void endpoint_add_receiver(ipc_endpoint_t *endpoint) {
-    ++endpoint->receivers_count;
+    ipc_endpoint_t *endpoint = construct_endpoint();
+
+    if(endpoint == NULL) {
+        return -JINUE_EAGAIN;
+    }
+
+    ref->object = &endpoint->header;
+    ref->flags  =
+          OBJECT_REF_FLAG_IN_USE
+        | OBJECT_REF_FLAG_OWNER
+        | object_type_ipc_endpoint->all_permissions;
+    ref->cookie = 0;
+
+    object_open(&endpoint->header, ref);
+
+    return fd;
 }
-
-static inline void endpoint_sub_receiver(ipc_endpoint_t *endpoint) {
-    --endpoint->receivers_count;
-}
-
-static inline bool endpoint_has_receivers(const ipc_endpoint_t *endpoint) {
-    return endpoint->receivers_count > 0;
-}
-
-void ipc_boot_init(void);
-
-ipc_endpoint_t *construct_endpoint(void);
-
-int create_endpoint(int fd);
-
-int ipc_send(int fd, int function, const jinue_message_t *message);
-
-int ipc_receive(int fd, jinue_message_t *message);
-
-int ipc_reply(const jinue_message_t *message);
-
-#endif

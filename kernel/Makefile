@@ -82,6 +82,13 @@ sources.kernel.c = \
 	domain/objects/object.c \
 	domain/objects/process.c \
 	domain/objects/thread.c \
+	domain/syscalls/close.c \
+	domain/syscalls/create_endpoint.c \
+	domain/syscalls/create_process.c \
+	domain/syscalls/create_thread.c \
+	domain/syscalls/destroy.c \
+	domain/syscalls/dup.c \
+	domain/syscalls/mint.c \
 	domain/syscalls/mmap.c \
 	domain/syscalls/mclone.c \
 	domain/cmdline.c \

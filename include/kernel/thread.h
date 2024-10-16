@@ -36,10 +36,7 @@
 
 extern const object_type_t *object_type_thread;
 
-int thread_create_syscall(
-        int              process_fd,
-        void            *entry,
-        void            *user_stack);
+int create_thread(int  process_fd, void *entry, void *user_stack);
 
 thread_t *construct_thread(process_t *process, void *entry, void *user_stack);
 

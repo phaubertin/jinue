@@ -94,30 +94,6 @@ void free_process(process_t *process) {
     slab_cache_free(process);
 }
 
-int process_create_syscall(int fd) {
-    object_ref_t *ref;
-    thread_t *thread = get_current_thread();
-    int status = dereference_unused_descriptor(&ref, thread->process, fd);
-
-    if(status < 0) {
-        return status;
-    }
-
-    process_t *process = construct_process();
-
-    if(process == NULL) {
-        return -JINUE_EAGAIN;
-    }
-
-    ref->object = &process->header;
-    ref->flags  = OBJECT_REF_FLAG_IN_USE | OBJECT_REF_FLAG_OWNER;
-    ref->cookie = 0;
-
-    object_open(&process->header, ref);
-
-    return 0;
-}
-
 void process_switch_to(process_t *process) {
     machine_switch_to_process(process);
 }

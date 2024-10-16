@@ -116,44 +116,8 @@ void ipc_boot_init(void) {
  * @return pointer to endpoint on success, NULL on allocation failure
  *
  */
-static ipc_endpoint_t *construct_endpoint(void) {
+ipc_endpoint_t *construct_endpoint(void) {
     return slab_cache_alloc(&ipc_endpoint_cache);
-}
-
-/**
- * Create an IPC endpoint owned by the current thread
- *
- * All currently recognized flags will be deprecated.
- *
- * @param flags flags
- * @return IPC endpoint descriptor on success, negated error number on error
- *
- */
-int ipc_endpoint_create_syscall(int fd) {
-    object_ref_t *ref;
-    thread_t *thread = get_current_thread();
-    int status = dereference_unused_descriptor(&ref, thread->process, fd);
-
-    if(status < 0) {
-        return status;
-    }
-
-    ipc_endpoint_t *endpoint = construct_endpoint();
-
-    if(endpoint == NULL) {
-        return -JINUE_EAGAIN;
-    }
-
-    ref->object = &endpoint->header;
-    ref->flags  =
-          OBJECT_REF_FLAG_IN_USE
-        | OBJECT_REF_FLAG_OWNER
-        | object_type_ipc_endpoint->all_permissions;
-    ref->cookie = 0;
-
-    object_open(&endpoint->header, ref);
-
-    return fd;
 }
 
 /**

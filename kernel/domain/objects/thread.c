@@ -54,28 +54,6 @@ const object_type_t *object_type_thread = &object_type;
 
 static jinue_list_t ready_list = JINUE_LIST_STATIC;
 
-int thread_create_syscall(
-        int              process_fd,
-        void            *entry,
-        void            *user_stack) {
-    object_header_t *object;
-
-    int status = dereference_object_descriptor(&object, NULL, get_current_process(), process_fd);
-
-    if(status < 0) {
-        return status;
-    }
-
-    if(object->type != object_type_process) {
-        return -JINUE_EBADF;
-    }
-
-    process_t *process = (process_t *)object;
-    const thread_t *thread = construct_thread(process, entry, user_stack);
-
-    return (thread == NULL) ? -JINUE_EAGAIN : 0;
-}
-
 thread_t *construct_thread(process_t *process, void *entry, void *user_stack) {
     thread_t *thread = machine_alloc_thread();
 
