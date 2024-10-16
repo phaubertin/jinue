@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,23 +29,29 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_PROCESS_H
-#define JINUE_KERNEL_PROCESS_H
+#ifndef JINUE_KERNEL_ENDPOINT_H
+#define JINUE_KERNEL_ENDPOINT_H
 
 #include <kernel/types.h>
 
-extern const object_type_t *object_type_process;
+extern const object_type_t *object_type_ipc_endpoint;
 
-void initialize_process_cache(void);
+static inline void endpoint_add_receiver(ipc_endpoint_t *endpoint) {
+    ++endpoint->receivers_count;
+}
 
-process_t *construct_process(void);
+static inline void endpoint_sub_receiver(ipc_endpoint_t *endpoint) {
+    --endpoint->receivers_count;
+}
 
-void free_process(process_t *process);
+static inline bool endpoint_has_receivers(const ipc_endpoint_t *endpoint) {
+    return endpoint->receivers_count > 0;
+}
 
-int create_process(int fd);
+void initialize_endpoint_cache(void);
 
-void process_switch_to(process_t *process);
+ipc_endpoint_t *construct_endpoint(void);
 
-process_t *get_current_process(void);
+int create_endpoint(int fd);
 
 #endif

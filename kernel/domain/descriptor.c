@@ -31,7 +31,6 @@
 
 #include <jinue/shared/asm/errno.h>
 #include <kernel/descriptor.h>
-#include <kernel/ipc.h>
 #include <kernel/object.h>
 #include <kernel/process.h>
 

@@ -32,7 +32,7 @@
 #include <kernel/machine/init.h>
 #include <kernel/cmdline.h>
 #include <kernel/elf.h>
-#include <kernel/ipc.h>
+#include <kernel/endpoint.h>
 #include <kernel/kmain.h>
 #include <kernel/logging.h>
 #include <kernel/panic.h>
@@ -79,8 +79,8 @@ void kmain(const char *cmdline) {
     );
 
     /* initialize caches */
-    ipc_boot_init();
-    process_boot_init();
+    initialize_endpoint_cache();
+    initialize_process_cache();
 
     /* create process for user space loader */
     process_t *process = construct_process();

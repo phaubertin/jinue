@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -30,95 +30,18 @@
  */
 
 #include <jinue/shared/asm/errno.h>
+#include <jinue/shared/asm/permissions.h>
 #include <jinue/shared/ipc.h>
+#include <jinue/shared/vm.h>
 #include <kernel/machine/thread.h>
 #include <kernel/descriptor.h>
+#include <kernel/endpoint.h>
 #include <kernel/ipc.h>
 #include <kernel/object.h>
-#include <kernel/panic.h>
 #include <kernel/object.h>
-#include <kernel/process.h>
-#include <kernel/slab.h>
-#include <kernel/syscall.h>
 #include <kernel/thread.h>
 #include <stddef.h>
 #include <string.h>
-
-static void cache_endpoint_ctor(void *buffer, size_t size);
-
-static void endpoint_open(object_header_t *object, const object_ref_t *ref);
-
-static void endpoint_close(object_header_t *object, const object_ref_t *ref);
-
-/** runtime type definition for an IPC endpoint */
-static const object_type_t object_type = {
-    .all_permissions    = JINUE_PERM_SEND | JINUE_PERM_RECEIVE,
-    .name               = "ipc_endpoint",
-    .size               = sizeof(ipc_endpoint_t),
-    .open               = endpoint_open,
-    .close              = endpoint_close,
-    .cache_ctor         = cache_endpoint_ctor,
-    .cache_dtor         = NULL
-};
-
-const object_type_t *object_type_ipc_endpoint = &object_type;
-
-/** slab cache used for allocating IPC endpoint objects */
-static slab_cache_t ipc_endpoint_cache;
-
-/**
- * Object constructor for IPC endpoint slab allocator
- *
- * All currently recognized flags will be deprecated.
- *
- * @param buffer IPC endpoint object being constructed
- * @param size size in bytes of the IPC endpoint object (ignored)
- *
- */
-static void cache_endpoint_ctor(void *buffer, size_t size) {
-    ipc_endpoint_t *endpoint = buffer;
-    
-    object_header_init(&endpoint->header, object_type_ipc_endpoint);
-    jinue_list_init(&endpoint->send_list);
-    jinue_list_init(&endpoint->recv_list);
-    endpoint->receivers_count = 0;
-}
-
-static void endpoint_open(object_header_t *object, const object_ref_t *ref) {
-    if(object_ref_has_permissions(ref, JINUE_PERM_RECEIVE)) {
-        ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
-        endpoint_add_receiver(endpoint);
-    }
-}
-
-static void endpoint_close(object_header_t *object, const object_ref_t *ref) {
-    if(object_ref_has_permissions(ref, JINUE_PERM_RECEIVE)) {
-        ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
-        endpoint_sub_receiver(endpoint);
-
-        if(!endpoint_has_receivers(endpoint)) {
-            object_mark_destroyed(object);
-        }
-    }
-}
-
-/**
- * Perform boot-time initialization for IPC
- *
- */
-void ipc_boot_init(void) {
-    object_cache_init(&ipc_endpoint_cache, object_type_ipc_endpoint);
-}
-
-/**
- * Constructor for IPC endpoint object
- *
- * @return pointer to endpoint on success, NULL on allocation failure
- *
- */
-ipc_endpoint_t *construct_endpoint(void) {
-    return slab_cache_alloc(&ipc_endpoint_cache);
-}
 
 /**
  * Check receive buffers and count receive buffer size

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -32,28 +32,7 @@
 #ifndef JINUE_KERNEL_IPC_H
 #define JINUE_KERNEL_IPC_H
 
-#include <jinue/shared/asm/permissions.h>
 #include <kernel/types.h>
-
-extern const object_type_t *object_type_ipc_endpoint;
-
-static inline void endpoint_add_receiver(ipc_endpoint_t *endpoint) {
-    ++endpoint->receivers_count;
-}
-
-static inline void endpoint_sub_receiver(ipc_endpoint_t *endpoint) {
-    --endpoint->receivers_count;
-}
-
-static inline bool endpoint_has_receivers(const ipc_endpoint_t *endpoint) {
-    return endpoint->receivers_count > 0;
-}
-
-void ipc_boot_init(void);
-
-ipc_endpoint_t *construct_endpoint(void);
-
-int create_endpoint(int fd);
 
 int ipc_send(int fd, int function, const jinue_message_t *message);
 

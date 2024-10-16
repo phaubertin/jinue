@@ -79,6 +79,7 @@ sources.kernel.c = \
 	infrastructure/i686/vm_x86.c \
 	interface/i686/interrupt.c \
 	interface/syscall.c \
+	domain/objects/endpoint.c \
 	domain/objects/object.c \
 	domain/objects/process.c \
 	domain/objects/thread.c \

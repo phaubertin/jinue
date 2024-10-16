@@ -64,7 +64,7 @@ static void cache_process_ctor(void *buffer, size_t ignore) {
     object_header_init(&process->header, object_type_process);
 }
 
-void process_boot_init(void) {
+void initialize_process_cache(void) {
     object_cache_init(&process_cache, object_type_process);
 }
 

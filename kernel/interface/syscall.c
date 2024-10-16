@@ -35,6 +35,7 @@
 #include <kernel/machine/memory.h>
 #include <kernel/machine/thread.h>
 #include <kernel/descriptor.h>
+#include <kernel/endpoint.h>
 #include <kernel/ipc.h>
 #include <kernel/logging.h>
 #include <kernel/mclone.h>
