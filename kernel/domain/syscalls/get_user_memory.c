@@ -29,35 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_SYSCALLS_H
-#define JINUE_KERNEL_SYSCALLS_H
+#include <kernel/domain/syscalls.h>
+#include <kernel/machine/memory.h>
 
-#include <kernel/types.h>
-
-int close(int fd);
-
-int create_endpoint(int fd);
-
-int create_process(int fd);
-
-int create_thread(int  process_fd, void *entry, void *user_stack);
-
-int destroy(int fd);
-
-int dup(int process_fd, int src, int dest);
-
-void *get_thread_local(void);
-
-int get_user_memory(const jinue_buffer_t *buffer);
-
-int mclone(int src, int dest, const jinue_mclone_args_t *args);
-
-int mint(int owner, const jinue_mint_args_t *mint_args);
-
-int mmap(int process_fd, const jinue_mmap_args_t *args);
-
-void reboot(void);
-
-void set_thread_local(void *addr, size_t size);
-
-#endif
+int get_user_memory(const jinue_buffer_t *buffer) {
+    return machine_get_memory_map(buffer);
+}

@@ -40,9 +40,6 @@
 #include <kernel/domain/services/logging.h>
 #include <kernel/domain/syscalls.h>
 #include <kernel/interface/syscall.h>
-#include <kernel/machine/halt.h>
-#include <kernel/machine/memory.h>
-#include <kernel/machine/thread.h>
 #include <kernel/utils/utils.h>
 #include <limits.h>
 #include <stddef.h>
@@ -99,7 +96,7 @@ static void sys_nosys(jinue_syscall_args_t *args) {
 }
 
 static void sys_reboot(jinue_syscall_args_t *args) {
-    machine_reboot();
+    reboot();
 }
 
 static void sys_puts(jinue_syscall_args_t *args) {
@@ -170,12 +167,12 @@ static void sys_set_thread_local(jinue_syscall_args_t *args) {
         return;
     }
 
-    thread_set_local_storage(get_current_thread(), addr, size);
+    set_thread_local(addr, size);
     set_return_value(args, 0);
 }
 
 static void sys_get_thread_local(jinue_syscall_args_t *args) {
-    addr_t tls = thread_get_local_storage(get_current_thread());
+    void *tls = get_thread_local();
     set_return_ptr(args, tls);
 }
 
@@ -190,11 +187,11 @@ static void sys_get_user_memory(jinue_syscall_args_t *args) {
         return;
     }
 
-    int retval = machine_get_memory_map(&buffer);
+    int retval = get_user_memory(&buffer);
     set_return_value_or_error(args, retval);
 }
 
-static void sys_create_ipc(jinue_syscall_args_t *args) {
+static void sys_create_endpoint(jinue_syscall_args_t *args) {
     int fd = get_descriptor(args->arg1);
 
     if(fd < 0) {
@@ -582,7 +579,7 @@ void dispatch_syscall(jinue_syscall_args_t *args) {
             sys_get_user_memory(args);
             break;
         case JINUE_SYS_CREATE_ENDPOINT:
-            sys_create_ipc(args);
+            sys_create_endpoint(args);
             break;
         case JINUE_SYS_RECEIVE:
             sys_receive(args);

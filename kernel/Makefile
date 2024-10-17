@@ -98,9 +98,13 @@ sources.kernel.c = \
 	domain/syscalls/create_thread.c \
 	domain/syscalls/destroy.c \
 	domain/syscalls/dup.c \
+	domain/syscalls/get_thread_local.c \
+	domain/syscalls/get_user_memory.c \
 	domain/syscalls/mint.c \
 	domain/syscalls/mmap.c \
 	domain/syscalls/mclone.c \
+	domain/syscalls/reboot.c \
+	domain/syscalls/set_thread_local.c \
 	domain/kmain.c
 
 sources.kernel.nasm = \
