@@ -31,8 +31,10 @@
 
 #include <jinue/shared/asm/errno.h>
 #include <kernel/descriptor.h>
+#include <kernel/endpoint.h>
 #include <kernel/object.h>
 #include <kernel/process.h>
+#include <kernel/thread.h>
 
 /**
  * Get an object reference by descriptor in a specified process
@@ -42,7 +44,7 @@
  * @return object reference on success, NULL if out of bound
  *
  */
-static object_ref_t *dereference_descriptor(process_t *process, int fd) {
+static descriptor_t *dereference_descriptor(process_t *process, int fd) {
     if(fd < 0 || fd > PROCESS_MAX_DESCRIPTORS) {
         return NULL;
     }
@@ -53,50 +55,40 @@ static object_ref_t *dereference_descriptor(process_t *process, int fd) {
 /**
  * Get the object referenced by a descriptor
  * 
- * pobject and pref can each be set to NULL if only one or the other is needed.
- * 
- * @param pobject pointer to where to store the pointer to the object header (out)
- * @param pref pointer to where to store the pointer to the object reference (out)
+ * @param pdesc pointer to where to store the pointer to the object reference (out)
  * @param process process for which the descriptor is looked up
  * @param fd descriptor
  * @return zero on success, negated error number on error
  *
  */
 int dereference_object_descriptor(
-        object_header_t **pobject,
-        object_ref_t    **pref,
+        descriptor_t    **pdesc,
         process_t        *process,
         int               fd) {
 
-    object_ref_t *ref = dereference_descriptor(process, fd);
+    descriptor_t *desc = dereference_descriptor(process, fd);
 
-    if(ref == NULL) {
+    if(desc == NULL) {
         return -JINUE_EBADF;
     }
 
-    if(! object_ref_is_in_use(ref)) {
+    if(! descriptor_is_in_use(desc)) {
         return -JINUE_EBADF;
     }
 
-    if(object_ref_is_destroyed(ref)) {
+    if(descriptor_is_destroyed(desc)) {
         return -JINUE_EIO;
     }
 
-    object_header_t *object = ref->object;
+    object_header_t *object = desc->object;
 
     if(object_is_destroyed(object)) {
-        ref->flags |= OBJECT_REF_FLAG_DESTROYED;
-        object_close(object, ref);
+        desc->flags |= DESCRIPTOR_FLAG_DESTROYED;
+        object_close(object, desc);
         return -JINUE_EIO;
     }
 
-    if(pref != NULL) {
-        *pref = ref;
-    }
-
-    if(pobject != NULL) {
-        *pobject = object;
-    }
+    *pdesc = desc;
 
     return 0;
 }
@@ -104,45 +96,58 @@ int dereference_object_descriptor(
 /**
  * Get an unused object reference by descriptor
  * 
- * @param pref pointer to where to store the pointer to the object reference (out)
+ * @param pdesc pointer to where to store the pointer to the object reference (out)
  * @param process process for which the descriptor is looked up
  * @param fd descriptor
  * @return zero on success, negated error number on error
  *
  */
 int dereference_unused_descriptor(
-        object_ref_t    **pref,
+        descriptor_t    **pdesc,
         process_t        *process,
         int               fd) {
 
-    object_ref_t *ref = dereference_descriptor(process, fd);
+    descriptor_t *desc = dereference_descriptor(process, fd);
 
-    if(ref == NULL) {
+    if(desc == NULL) {
         return -JINUE_EBADF;
     }
 
-    if(object_ref_is_in_use(ref)) {
+    if(descriptor_is_in_use(desc)) {
         return -JINUE_EBADF;
     }
 
-    *pref = ref;
+    *pdesc = desc;
 
     return 0;
 }
 
-int get_process(process_t **process, int process_fd) {
-    object_header_t *object;
+ipc_endpoint_t *get_endpoint_from_descriptor(descriptor_t *desc) {
+    object_header_t *object = desc->object;
 
-    int status = dereference_object_descriptor(&object, NULL, get_current_process(), process_fd);
-
-    if(status < 0) {
-        return status;
+    if(object->type != object_type_ipc_endpoint) {
+        return NULL;
     }
+
+    return (ipc_endpoint_t *)object;
+}
+
+process_t *get_process_from_descriptor(descriptor_t *desc) {
+    object_header_t *object = desc->object;
 
     if(object->type != object_type_process) {
-        return -JINUE_EBADF;
+        return NULL;
     }
 
-    *process = (process_t *)object;
-    return 0;
+    return (process_t *)object;
+}
+
+thread_t *get_thread_from_descriptor(descriptor_t *desc) {
+    object_header_t *object = desc->object;
+
+    if(object->type != object_type_thread) {
+        return NULL;
+    }
+
+    return (thread_t *)object;
 }

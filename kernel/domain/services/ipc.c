@@ -208,21 +208,23 @@ static int scatter_message(thread_t *thread, const jinue_message_t *message) {
  *
  */
 int ipc_send(int fd, int function, const jinue_message_t *message) {
-    object_header_t *object;
-    object_ref_t *ref;
-    thread_t *thread    = get_current_thread();
-    int status          = dereference_object_descriptor(&object, &ref, thread->process, fd);
+    thread_t *thread = get_current_thread();
+
+    descriptor_t *desc;
+    int status = dereference_object_descriptor(&desc, thread->process, fd);
 
     if(status < 0) {
         return status;
     }
 
-    if(object->type != object_type_ipc_endpoint) {
-        return -JINUE_EBADF;
+    if(!descriptor_has_permissions(desc, JINUE_PERM_SEND)) {
+        return -JINUE_EPERM;
     }
 
-    if((ref->flags & JINUE_PERM_SEND) == 0) {
-        return -JINUE_EPERM;
+    ipc_endpoint_t *endpoint = get_endpoint_from_descriptor(desc);
+
+    if(endpoint == NULL) {
+        return -JINUE_EBADF;
     }
 
     int recv_buffer_size = get_receive_buffers_size(message);
@@ -234,15 +236,13 @@ int ipc_send(int fd, int function, const jinue_message_t *message) {
     thread->recv_buffer_size    = recv_buffer_size;
     thread->reply_errno         = 0;
     thread->message_function    = function;
-    thread->message_cookie      = ref->cookie;
+    thread->message_cookie      = desc->cookie;
 
     int gather_result = gather_message(thread, message);
 
     if(gather_result < 0) {
         return gather_result;
     }
-
-    ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
 
     thread_t *recv_thread = jinue_node_entry(
             jinue_list_dequeue(&endpoint->recv_list),
@@ -297,21 +297,23 @@ int ipc_send(int fd, int function, const jinue_message_t *message) {
  *
  */
 int ipc_receive(int fd, jinue_message_t *message) {
-    object_header_t *object;
-    object_ref_t    *ref;
-    thread_t *thread    = get_current_thread();
-    int status          = dereference_object_descriptor(&object, &ref, thread->process, fd);
+    thread_t *thread = get_current_thread();
+
+    descriptor_t *desc;
+    int status = dereference_object_descriptor(&desc, thread->process, fd);
 
     if(status < 0) {
         return status;
     }
 
-    if(object->type != object_type_ipc_endpoint) {
-        return -JINUE_EBADF;
+    if(!descriptor_has_permissions(desc, JINUE_PERM_RECEIVE)) {
+        return -JINUE_EPERM;
     }
 
-    if((ref->flags & JINUE_PERM_RECEIVE) == 0) {
-        return -JINUE_EPERM;
+    ipc_endpoint_t *endpoint = get_endpoint_from_descriptor(desc);
+
+    if(endpoint == NULL) {
+        return -JINUE_EBADF;
     }
 
     int recv_buffer_size = get_receive_buffers_size(message);
@@ -319,8 +321,6 @@ int ipc_receive(int fd, jinue_message_t *message) {
     if(recv_buffer_size < 0) {
         return recv_buffer_size;
     }
-
-    ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
 
     thread_t *send_thread = jinue_node_entry(
         jinue_list_dequeue(&endpoint->send_list),

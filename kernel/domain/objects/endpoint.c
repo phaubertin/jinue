@@ -31,6 +31,7 @@
 
 #include <jinue/shared/asm/errno.h>
 #include <jinue/shared/asm/permissions.h>
+#include <kernel/descriptor.h>
 #include <kernel/endpoint.h>
 #include <kernel/object.h>
 #include <kernel/slab.h>
@@ -38,9 +39,9 @@
 
 static void cache_endpoint_ctor(void *buffer, size_t size);
 
-static void open_endpoint(object_header_t *object, const object_ref_t *ref);
+static void open_endpoint(object_header_t *object, const descriptor_t *desc);
 
-static void close_endpoint(object_header_t *object, const object_ref_t *ref);
+static void close_endpoint(object_header_t *object, const descriptor_t *desc);
 
 /** runtime type definition for an IPC endpoint */
 static const object_type_t object_type = {
@@ -76,19 +77,31 @@ static void cache_endpoint_ctor(void *buffer, size_t size) {
     endpoint->receivers_count = 0;
 }
 
-static void open_endpoint(object_header_t *object, const object_ref_t *ref) {
-    if(object_ref_has_permissions(ref, JINUE_PERM_RECEIVE)) {
+static void add_receiver(ipc_endpoint_t *endpoint) {
+    ++endpoint->receivers_count;
+}
+
+static void sub_receiver(ipc_endpoint_t *endpoint) {
+    --endpoint->receivers_count;
+}
+
+static bool has_receivers(const ipc_endpoint_t *endpoint) {
+    return endpoint->receivers_count > 0;
+}
+
+static void open_endpoint(object_header_t *object, const descriptor_t *desc) {
+    if(descriptor_has_permissions(desc, JINUE_PERM_RECEIVE)) {
         ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
-        endpoint_add_receiver(endpoint);
+        add_receiver(endpoint);
     }
 }
 
-static void close_endpoint(object_header_t *object, const object_ref_t *ref) {
-    if(object_ref_has_permissions(ref, JINUE_PERM_RECEIVE)) {
+static void close_endpoint(object_header_t *object, const descriptor_t *desc) {
+    if(descriptor_has_permissions(desc, JINUE_PERM_RECEIVE)) {
         ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
-        endpoint_sub_receiver(endpoint);
+        sub_receiver(endpoint);
 
-        if(!endpoint_has_receivers(endpoint)) {
+        if(!has_receivers(endpoint)) {
             object_mark_destroyed(object);
         }
     }

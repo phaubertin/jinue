@@ -36,19 +36,19 @@
 #include <kernel/thread.h>
 
 int create_thread(int  process_fd, void *entry, void *user_stack) {
-    object_header_t *object;
-
-    int status = dereference_object_descriptor(&object, NULL, get_current_process(), process_fd);
+    descriptor_t *desc;
+    int status = dereference_object_descriptor(&desc, get_current_process(), process_fd);
 
     if(status < 0) {
         return status;
     }
 
-    if(object->type != object_type_process) {
+    process_t *process = get_process_from_descriptor(desc);
+
+    if(process == NULL) {
         return -JINUE_EBADF;
     }
 
-    process_t *process = (process_t *)object;
     const thread_t *thread = construct_thread(process, entry, user_stack);
 
     return (thread == NULL) ? -JINUE_EAGAIN : 0;

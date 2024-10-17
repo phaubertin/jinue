@@ -35,14 +35,40 @@
 #include <jinue/shared/asm/permissions.h>
 #include <kernel/types.h>
 
+/* These flags are numbered downward starting at 31 to not conflict with PERM_... flags
+ * which share the same flags field. */
+
+#define DESCRIPTOR_FLAG_NONE        0
+
+#define DESCRIPTOR_FLAG_IN_USE      (1<<31)
+
+#define DESCRIPTOR_FLAG_DESTROYED   (1<<30)
+
+#define DESCRIPTOR_FLAG_OWNER       (1<<29)
+
+static inline bool descriptor_is_in_use(descriptor_t *desc) {
+    return desc != NULL && (desc->flags & DESCRIPTOR_FLAG_IN_USE);
+}
+
+static inline bool descriptor_is_destroyed(descriptor_t *desc) {
+    return !!(desc->flags & DESCRIPTOR_FLAG_DESTROYED);
+}
+
+static inline bool descriptor_is_owner(descriptor_t *desc) {
+    return !!(desc->flags & DESCRIPTOR_FLAG_OWNER);
+}
+
+static inline bool descriptor_has_permissions(const descriptor_t *desc, int perms) {
+    return (desc->flags & perms) == perms;
+}
+
 int dereference_object_descriptor(
-        object_header_t **pobject,
-        object_ref_t    **pref,
+        descriptor_t    **pdesc,
         process_t        *process,
         int               fd);
 
 int dereference_unused_descriptor(
-        object_ref_t    **pref,
+        descriptor_t    **pdesc,
         process_t        *process,
         int               fd);
 
@@ -54,6 +80,10 @@ int close(int fd);
 
 int destroy(int fd);
 
-int get_process(process_t **process, int process_fd);
+ipc_endpoint_t *get_endpoint_from_descriptor(descriptor_t *desc);
+
+process_t *get_process_from_descriptor(descriptor_t *desc);
+
+thread_t *get_thread_from_descriptor(descriptor_t *desc);
 
 #endif

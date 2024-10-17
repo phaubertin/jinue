@@ -35,8 +35,8 @@
 #include <kernel/process.h>
 
 int create_process(int fd) {
-    object_ref_t *ref;
-    int status = dereference_unused_descriptor(&ref, get_current_process(), fd);
+    descriptor_t *desc;
+    int status = dereference_unused_descriptor(&desc, get_current_process(), fd);
 
     if(status < 0) {
         return status;
@@ -48,11 +48,11 @@ int create_process(int fd) {
         return -JINUE_EAGAIN;
     }
 
-    ref->object = &process->header;
-    ref->flags  = OBJECT_REF_FLAG_IN_USE | OBJECT_REF_FLAG_OWNER;
-    ref->cookie = 0;
+    desc->object = &process->header;
+    desc->flags  = DESCRIPTOR_FLAG_IN_USE | DESCRIPTOR_FLAG_OWNER;
+    desc->cookie = 0;
 
-    object_open(&process->header, ref);
+    object_open(&process->header, desc);
 
     return 0;
 }

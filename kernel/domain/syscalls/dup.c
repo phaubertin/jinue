@@ -35,38 +35,46 @@
 #include <kernel/process.h>
 
 int dup(int process_fd, int src, int dest) {
-    process_t *process;
+    process_t *current_process = get_current_process();
 
-    int status = get_process(&process, process_fd);
-
+    descriptor_t *process_desc;
+    int status = dereference_object_descriptor(&process_desc, current_process, process_fd);
+    
     if(status < 0) {
         return status;
     }
+    
+    process_t *process = get_process_from_descriptor(process_desc);
 
-    object_header_t *object;
-    object_ref_t *src_ref;
-    status = dereference_object_descriptor(&object, &src_ref, get_current_process(), src);
-
-    if(status < 0) {
-        return status;
-    }
-
-    if(object_ref_is_owner(src_ref)) {
+    if(process == NULL) {
         return -JINUE_EBADF;
     }
 
-    object_ref_t *dest_ref;
-    status = dereference_unused_descriptor(&dest_ref, process, dest);
+    descriptor_t *src_desc;
+    status = dereference_object_descriptor(&src_desc, current_process, src);
 
     if(status < 0) {
         return status;
     }
 
-    dest_ref->object = src_ref->object;
-    dest_ref->flags  = src_ref->flags;
-    dest_ref->cookie = src_ref->cookie;
+    object_header_t *object = src_desc->object;
 
-    object_open(object, dest_ref);
+    if(descriptor_is_owner(src_desc)) {
+        return -JINUE_EBADF;
+    }
+
+    descriptor_t *dest_desc;
+    status = dereference_unused_descriptor(&dest_desc, process, dest);
+
+    if(status < 0) {
+        return status;
+    }
+
+    dest_desc->object = src_desc->object;
+    dest_desc->flags  = src_desc->flags;
+    dest_desc->cookie = src_desc->cookie;
+
+    object_open(object, dest_desc);
 
     return 0;
 }

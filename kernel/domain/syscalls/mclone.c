@@ -33,6 +33,7 @@
 #include <kernel/machine/vm.h>
 #include <kernel/descriptor.h>
 #include <kernel/mclone.h>
+#include <kernel/process.h>
 
 /**
  * Implementation for the MCLONE system call
@@ -46,19 +47,32 @@
  *
  */
 int mclone(int src, int dest, const jinue_mclone_args_t *args) {
-    process_t *src_process;
-    process_t *dest_process;
+    process_t *current_process = get_current_process();
 
-    int status = get_process(&src_process, src);
-
+    descriptor_t *src_desc;
+    int status = dereference_object_descriptor(&src_desc, current_process, src);
+    
     if(status < 0) {
         return status;
     }
+    
+    process_t *src_process = get_process_from_descriptor(src_desc);
 
-    status = get_process(&dest_process, dest);
-
+    if(src_process == NULL) {
+        return -JINUE_EBADF;
+    }
+    
+    descriptor_t *dest_desc;
+    status = dereference_object_descriptor(&dest_desc, current_process, dest);
+    
     if(status < 0) {
         return status;
+    }
+    
+    process_t *dest_process = get_process_from_descriptor(dest_desc);
+
+    if(dest_process == NULL) {
+        return -JINUE_EBADF;
     }
 
     bool success = machine_clone_userspace_mapping(

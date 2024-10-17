@@ -35,23 +35,24 @@
 #include <kernel/process.h>
 
 int destroy(int fd) {
-    object_header_t *object;
-    object_ref_t *ref;
-    int status = dereference_object_descriptor(&object, &ref, get_current_process(), fd);
+    descriptor_t *desc;
+    int status = dereference_object_descriptor(&desc, get_current_process(), fd);
 
     if(status < 0) {
         return status;
     }
 
-    if(!object_ref_is_owner(ref)) {
+    if(!descriptor_is_owner(desc)) {
         return -JINUE_EPERM;
     }
 
-    object_close(object, ref);
+    object_header_t *object = desc->object;
+
+    object_close(object, desc);
 
     object_mark_destroyed(object);
 
-    ref->flags = OBJECT_REF_FLAG_NONE;
+    desc->flags = DESCRIPTOR_FLAG_NONE;
 
     return 0;
 }

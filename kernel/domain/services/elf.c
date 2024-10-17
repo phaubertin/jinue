@@ -505,14 +505,14 @@ static void initialize_stack(
  *
  * */
 static void initialize_descriptors(process_t *process) {
-    object_ref_t *ref;
-    (void)dereference_unused_descriptor(&ref, process, JINUE_SELF_PROCESS_DESCRIPTOR);
+    descriptor_t *desc;
+    (void)dereference_unused_descriptor(&desc, process, JINUE_SELF_PROCESS_DESCRIPTOR);
 
-    ref->object = &process->header;
-    ref->flags  = OBJECT_REF_FLAG_IN_USE;
-    ref->cookie = 0;
+    desc->object = &process->header;
+    desc->flags  = DESCRIPTOR_FLAG_IN_USE;
+    desc->cookie = 0;
 
-    object_open(&process->header, ref);
+    object_open(&process->header, desc);
 }
 
 /**

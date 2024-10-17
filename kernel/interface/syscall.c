@@ -53,12 +53,34 @@
 
 #define WRITE_EXEC      (JINUE_PROT_WRITE | JINUE_PROT_EXEC)
 
+static void set_return_uintptr(jinue_syscall_args_t *args, uintptr_t retval) {
+	args->arg0	= retval;
+	args->arg1	= 0;
+	args->arg2	= 0;
+	args->arg3	= 0;
+}
+
+static void set_error(jinue_syscall_args_t *args, int error) {
+	args->arg0	= (uintptr_t)-1;
+	args->arg1	= (uintptr_t)error;
+	args->arg2	= 0;
+	args->arg3	= 0;
+}
+
+static void set_return_value(jinue_syscall_args_t *args, int retval) {
+	set_return_uintptr(args, (uintptr_t)retval);
+}
+
+static  void set_return_ptr(jinue_syscall_args_t *args, void *retval) {
+	set_return_uintptr(args, (uintptr_t)retval);
+}
+
 static void set_return_value_or_error(jinue_syscall_args_t *args, int retval) {
     if(retval < 0) {
-        syscall_args_set_error(args, -retval);
+        set_error(args, -retval);
     }
     else {
-        syscall_args_set_return(args, retval);
+        set_return_value(args, retval);
     }
 }
 
@@ -74,7 +96,7 @@ static int get_descriptor(uintptr_t value) {
 }
 
 static void sys_nosys(jinue_syscall_args_t *args) {
-    syscall_args_set_error(args, JINUE_ENOSYS);
+    set_error(args, JINUE_ENOSYS);
 }
 
 static void sys_reboot(jinue_syscall_args_t *args) {
@@ -87,7 +109,7 @@ static void sys_puts(jinue_syscall_args_t *args) {
     size_t length       = args->arg3;
 
     if(length > JINUE_PUTS_MAX_LENGTH) {
-        syscall_args_set_error(args, JINUE_EINVAL);
+        set_error(args, JINUE_EINVAL);
         return;
     }
 
@@ -97,12 +119,12 @@ static void sys_puts(jinue_syscall_args_t *args) {
     case JINUE_PUTS_LOGLEVEL_ERROR:
         break;
     default:
-        syscall_args_set_error(args, JINUE_EINVAL);
+        set_error(args, JINUE_EINVAL);
         return;
     }
 
     logging_add_message(loglevel, message, length);
-    syscall_args_set_return(args, 0);
+    set_return_value(args, 0);
 }
 
 static void sys_create_thread(jinue_syscall_args_t *args) {
@@ -116,12 +138,12 @@ static void sys_create_thread(jinue_syscall_args_t *args) {
     }
 
     if(!is_userspace_pointer(entry)) {
-        syscall_args_set_error(args, JINUE_EINVAL);
+        set_error(args, JINUE_EINVAL);
         return;
     }
 
     if(!is_userspace_pointer(user_stack)) {
-        syscall_args_set_error(args, JINUE_EINVAL);
+        set_error(args, JINUE_EINVAL);
         return;
     }
 
@@ -132,12 +154,12 @@ static void sys_create_thread(jinue_syscall_args_t *args) {
 
 static void sys_yield_thread(jinue_syscall_args_t *args) {
     thread_yield();
-    syscall_args_set_return(args, 0);
+    set_return_value(args, 0);
 }
 
 static void sys_exit_thread(jinue_syscall_args_t *args) {
     thread_exit();
-    syscall_args_set_return(args, 0);
+    set_return_value(args, 0);
 }
 
 static void sys_set_thread_local(jinue_syscall_args_t *args) {
@@ -145,17 +167,17 @@ static void sys_set_thread_local(jinue_syscall_args_t *args) {
     size_t size = (size_t)args->arg2;
 
     if(! check_userspace_buffer(addr, size)) {
-        syscall_args_set_error(args, JINUE_EINVAL);
+        set_error(args, JINUE_EINVAL);
         return;
     }
 
     thread_set_local_storage(get_current_thread(), addr, size);
-    syscall_args_set_return(args, 0);
+    set_return_value(args, 0);
 }
 
 static void sys_get_thread_local(jinue_syscall_args_t *args) {
     addr_t tls = thread_get_local_storage(get_current_thread());
-    syscall_args_set_return_ptr(args, tls);
+    set_return_ptr(args, tls);
 }
 
 static void sys_get_user_memory(jinue_syscall_args_t *args) {
@@ -165,7 +187,7 @@ static void sys_get_user_memory(jinue_syscall_args_t *args) {
     buffer.size     = args->arg2;
 
     if(! check_userspace_buffer(buffer.addr, buffer.size)) {
-        syscall_args_set_error(args, JINUE_EINVAL);
+        set_error(args, JINUE_EINVAL);
         return;
     }
 
@@ -334,34 +356,34 @@ static void sys_mmap(jinue_syscall_args_t *args) {
     }
 
     if(! check_userspace_buffer(userspace_mmap_args, sizeof(jinue_mmap_args_t))) {
-        syscall_args_set_error(args, JINUE_EINVAL);
+        set_error(args, JINUE_EINVAL);
         return;
     }
 
     jinue_mmap_args_t mmap_args = *userspace_mmap_args;
 
     if(OFFSET_OF_PTR(mmap_args.addr, PAGE_SIZE) != 0) {
-        syscall_args_set_error(args, JINUE_EINVAL);
+        set_error(args, JINUE_EINVAL);
         return;
     }
 
     if((mmap_args.length & (PAGE_SIZE -1)) != 0) {
-        syscall_args_set_error(args, JINUE_EINVAL);
+        set_error(args, JINUE_EINVAL);
         return;
     }
 
     if((mmap_args.paddr & (PAGE_SIZE -1)) != 0) {
-        syscall_args_set_error(args, JINUE_EINVAL);
+        set_error(args, JINUE_EINVAL);
         return;
     }
 
     if((mmap_args.prot & ~ALL_PROT_FLAGS) != 0) {
-        syscall_args_set_error(args, JINUE_EINVAL);
+        set_error(args, JINUE_EINVAL);
         return;
     }
 
     if((mmap_args.prot & WRITE_EXEC) == WRITE_EXEC) {
-        syscall_args_set_error(args, JINUE_ENOTSUP);
+        set_error(args, JINUE_ENOTSUP);
         return;
     }
 
@@ -399,34 +421,34 @@ static void sys_mclone(jinue_syscall_args_t *args) {
     }
 
     if(! check_userspace_buffer(userspace_mclone_args, sizeof(jinue_mclone_args_t))) {
-        syscall_args_set_error(args, JINUE_EINVAL);
+        set_error(args, JINUE_EINVAL);
         return;
     }
 
     jinue_mclone_args_t mclone_args = *userspace_mclone_args;
 
     if(OFFSET_OF_PTR(mclone_args.src_addr, PAGE_SIZE) != 0) {
-        syscall_args_set_error(args, JINUE_EINVAL);
+        set_error(args, JINUE_EINVAL);
         return;
     }
 
     if(OFFSET_OF_PTR(mclone_args.dest_addr, PAGE_SIZE) != 0) {
-        syscall_args_set_error(args, JINUE_EINVAL);
+        set_error(args, JINUE_EINVAL);
         return;
     }
 
     if((mclone_args.length & (PAGE_SIZE -1)) != 0) {
-        syscall_args_set_error(args, JINUE_EINVAL);
+        set_error(args, JINUE_EINVAL);
         return;
     }
 
     if((mclone_args.prot & ~ALL_PROT_FLAGS) != 0) {
-        syscall_args_set_error(args, JINUE_EINVAL);
+        set_error(args, JINUE_EINVAL);
         return;
     }
 
     if((mclone_args.prot & WRITE_EXEC) == WRITE_EXEC) {
-        syscall_args_set_error(args, JINUE_ENOTSUP);
+        set_error(args, JINUE_ENOTSUP);
         return;
     }
 
@@ -493,7 +515,7 @@ static void sys_mint(jinue_syscall_args_t *args) {
     }
 
     if(! check_userspace_buffer(userspace_mint_args, sizeof(jinue_mint_args_t))) {
-        syscall_args_set_error(args, JINUE_EINVAL);
+        set_error(args, JINUE_EINVAL);
         return;
     }
 
@@ -534,7 +556,7 @@ void dispatch_syscall(jinue_syscall_args_t *args) {
          * important for the return value of the ipc_receive() system call because,
          * when the system call returns, a negative value (specifically -1), means
          * the call failed. */
-        syscall_args_set_error(args, JINUE_EINVAL);
+        set_error(args, JINUE_EINVAL);
     }
     else if(function < JINUE_SYS_USER_BASE) {
         /* microkernel system calls */

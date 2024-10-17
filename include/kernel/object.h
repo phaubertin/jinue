@@ -66,34 +66,8 @@ static inline void object_subref(object_header_t *object) {
 
 void object_cache_init(slab_cache_t *cache, const object_type_t *type);
 
-void object_open(object_header_t *object, const object_ref_t *ref);
+void object_open(object_header_t *object, const descriptor_t *desc);
 
-void object_close(object_header_t *object, const object_ref_t *ref);
-
-/* Number reference flags downward starting at 31 to not conflict with PERM_... flags. */
-
-#define OBJECT_REF_FLAG_NONE        0
-
-#define OBJECT_REF_FLAG_IN_USE      (1<<31)
-
-#define OBJECT_REF_FLAG_DESTROYED   (1<<30)
-
-#define OBJECT_REF_FLAG_OWNER       (1<<29)
-
-static inline bool object_ref_is_in_use(object_ref_t *ref) {
-    return ref != NULL && (ref->flags & OBJECT_REF_FLAG_IN_USE);
-}
-
-static inline bool object_ref_is_destroyed(object_ref_t *ref) {
-    return !!(ref->flags & OBJECT_REF_FLAG_DESTROYED);
-}
-
-static inline bool object_ref_is_owner(object_ref_t *ref) {
-    return !!(ref->flags & OBJECT_REF_FLAG_OWNER);
-}
-
-static inline bool object_ref_has_permissions(const object_ref_t *ref, int perms) {
-    return (ref->flags & perms) == perms;
-}
+void object_close(object_header_t *object, const descriptor_t *desc);
 
 #endif

@@ -52,14 +52,16 @@ static int check_mint_permissions(const object_header_t *object, int perms) {
 }
 
 int mint(int owner, const jinue_mint_args_t *mint_args) {
-    object_header_t *object;
-    object_ref_t    *src_ref;
-    
-    int status = dereference_object_descriptor(&object, &src_ref, get_current_process(), owner);
+    process_t *current_process = get_current_process();
+
+    descriptor_t *src_desc;
+    int status = dereference_object_descriptor(&src_desc, current_process, owner);
 
     if(status < 0) {
         return status;
     }
+
+    object_header_t *object = src_desc->object;
 
     status = check_mint_permissions(object, mint_args->perms);
 
@@ -67,34 +69,34 @@ int mint(int owner, const jinue_mint_args_t *mint_args) {
         return status;
     }
 
-    if(!object_ref_is_owner(src_ref)) {
+    if(!descriptor_is_owner(src_desc)) {
         return -JINUE_EPERM;
     }
 
-    process_t *process;
+    descriptor_t *process_desc;
+    status = dereference_object_descriptor(&process_desc, current_process, mint_args->process);
 
-    status = get_process(&process, mint_args->process);
+    process_t *process = get_process_from_descriptor(process_desc);
+
+    if(process == NULL) {
+        return -JINUE_EBADF;
+    }
+
+    descriptor_t *dest_desc;
+    status = dereference_unused_descriptor(&dest_desc, process, mint_args->fd);
 
     if(status < 0) {
         return status;
     }
 
-    object_ref_t *dest_ref;
-    
-    status = dereference_unused_descriptor(&dest_ref, process, mint_args->fd);
-
-    if(status < 0) {
-        return status;
-    }
-
-    dest_ref->object = src_ref->object;
-    dest_ref->flags  =
+    dest_desc->object = src_desc->object;
+    dest_desc->flags  =
           mint_args->perms
-        | (src_ref->flags & OBJECT_FLAG_DESTROYED)
-        | OBJECT_REF_FLAG_IN_USE;
-    dest_ref->cookie = mint_args->cookie;
+        | (src_desc->flags & OBJECT_FLAG_DESTROYED)
+        | DESCRIPTOR_FLAG_IN_USE;
+    dest_desc->cookie = mint_args->cookie;
 
-    object_open(object, dest_ref);
+    object_open(object, dest_desc);
 
     return 0;
 }

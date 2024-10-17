@@ -35,17 +35,18 @@
 #include <kernel/process.h>
 
 int close(int fd) {
-    object_header_t *object;
-    object_ref_t *ref;
-    int status = dereference_object_descriptor(&object, &ref, get_current_process(), fd);
+    descriptor_t *desc;
+    int status = dereference_object_descriptor(&desc, get_current_process(), fd);
 
     if(status < 0) {
         return status;
     }
-    
-    object_close(object, ref);
 
-    ref->flags = OBJECT_REF_FLAG_NONE;
+    object_header_t *object = desc->object;
+    
+    object_close(object, desc);
+
+    desc->flags = DESCRIPTOR_FLAG_NONE;
 
     return 0;
 }

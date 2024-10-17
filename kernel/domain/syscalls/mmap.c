@@ -33,6 +33,7 @@
 #include <kernel/machine/vm.h>
 #include <kernel/descriptor.h>
 #include <kernel/mmap.h>
+#include <kernel/process.h>
 
 /**
  * Implementation for the MMAP system call
@@ -45,12 +46,17 @@
  *
  */
 int mmap(int process_fd, const jinue_mmap_args_t *args) {
-    process_t *process;
-
-    int status = get_process(&process, process_fd);
+    descriptor_t *desc;
+    int status = dereference_object_descriptor(&desc, get_current_process(), process_fd);
 
     if(status < 0) {
         return status;
+    }
+
+    process_t *process = get_process_from_descriptor(desc);
+
+    if(process == NULL) {
+        return -JINUE_EBADF;
     }
 
     if(! machine_map_userspace(process, args->addr, args->length, args->paddr, args->prot)) {

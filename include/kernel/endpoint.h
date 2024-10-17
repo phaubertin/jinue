@@ -36,18 +36,6 @@
 
 extern const object_type_t *object_type_ipc_endpoint;
 
-static inline void endpoint_add_receiver(ipc_endpoint_t *endpoint) {
-    ++endpoint->receivers_count;
-}
-
-static inline void endpoint_sub_receiver(ipc_endpoint_t *endpoint) {
-    --endpoint->receivers_count;
-}
-
-static inline bool endpoint_has_receivers(const ipc_endpoint_t *endpoint) {
-    return endpoint->receivers_count > 0;
-}
-
 void initialize_endpoint_cache(void);
 
 ipc_endpoint_t *construct_endpoint(void);

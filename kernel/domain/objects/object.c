@@ -44,17 +44,17 @@ void object_cache_init(slab_cache_t *cache, const object_type_t *type) {
     );
 }
 
-void object_open(object_header_t *object, const object_ref_t *ref) {
+void object_open(object_header_t *object, const descriptor_t *desc) {
     object_addref(object);
 
     if(object->type->open != NULL) {
-        object->type->open(object, ref);
+        object->type->open(object, desc);
     }
 }
 
-void object_close(object_header_t *object, const object_ref_t *ref) {
+void object_close(object_header_t *object, const descriptor_t *desc) {
     if(object->type->close != NULL) {
-        object->type->close(object, ref);
+        object->type->close(object, desc);
     }
 
     object_subref(object);
