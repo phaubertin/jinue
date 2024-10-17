@@ -29,9 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/i686/io.h>
-#include <kernel/i686/serial.h>
-#include <kernel/logging.h>
+#include <kernel/domain/services/logging.h>
+#include <kernel/infrastructure/i686/io.h>
+#include <kernel/infrastructure/i686/serial.h>
 
 static void serial_printn(int loglevel, const char *message, size_t n);
 

@@ -27,8 +27,8 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include <kernel/i686/asm/descriptors.h>
-#include <kernel/i686/asm/thread.h>
+#include <kernel/infrastructure/i686/asm/descriptors.h>
+#include <kernel/infrastructure/i686/asm/thread.h>
 
     bits 32
     

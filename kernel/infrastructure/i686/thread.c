@@ -29,14 +29,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/i686/asm/thread.h>
-#include <kernel/i686/cpu.h>
-#include <kernel/i686/cpu_data.h>
-#include <kernel/i686/descriptors.h>
-#include <kernel/i686/trap.h>
-#include <kernel/i686/types.h>
+#include <kernel/domain/services/page_alloc.h>
+#include <kernel/infrastructure/i686/asm/thread.h>
+#include <kernel/infrastructure/i686/cpu.h>
+#include <kernel/infrastructure/i686/cpu_data.h>
+#include <kernel/infrastructure/i686/descriptors.h>
+#include <kernel/infrastructure/i686/types.h>
+#include <kernel/interface/i686/trap.h>
 #include <kernel/machine/thread.h>
-#include <kernel/page_alloc.h>
 #include <assert.h>
 #include <stddef.h>
 #include <string.h>

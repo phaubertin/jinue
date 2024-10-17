@@ -29,12 +29,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <kernel/domain/services/logging.h>
+#include <kernel/domain/services/page_alloc.h>
+#include <kernel/domain/services/slab.h>
 #include <kernel/machine/cpu.h>
-#include <kernel/logging.h>
-#include <kernel/page_alloc.h>
-#include <kernel/slab.h>
+#include <kernel/utils/utils.h>
 #include <kernel/types.h>
-#include <kernel/util.h>
 #include <assert.h>
 #include <inttypes.h>
 #include <stdbool.h>

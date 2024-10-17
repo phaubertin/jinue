@@ -30,10 +30,10 @@
  */
 
 #include <jinue/shared/asm/errno.h>
+#include <kernel/domain/entities/descriptor.h>
+#include <kernel/domain/entities/process.h>
+#include <kernel/domain/syscalls.h>
 #include <kernel/machine/vm.h>
-#include <kernel/descriptor.h>
-#include <kernel/mclone.h>
-#include <kernel/process.h>
 
 /**
  * Implementation for the MCLONE system call

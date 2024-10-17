@@ -30,7 +30,7 @@
  */
 
 #include <jinue/shared/asm/machine.h>
-#include <kernel/i686/asm/boot.h>
+#include <kernel/interface/i686/asm/boot.h>
 
 OUTPUT_FORMAT("elf32-i386", "elf32-i386", "elf32-i386")
 OUTPUT_ARCH("i386")

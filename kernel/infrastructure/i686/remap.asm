@@ -27,8 +27,8 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include <kernel/i686/asm/memory.h>
-#include <kernel/i686/asm/vm.h>
+#include <kernel/infrastructure/i686/asm/memory.h>
+#include <kernel/infrastructure/i686/asm/vm.h>
 
     bits 32
 

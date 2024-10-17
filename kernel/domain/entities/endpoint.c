@@ -31,10 +31,10 @@
 
 #include <jinue/shared/asm/errno.h>
 #include <jinue/shared/asm/permissions.h>
-#include <kernel/descriptor.h>
-#include <kernel/endpoint.h>
-#include <kernel/object.h>
-#include <kernel/slab.h>
+#include <kernel/domain/entities/descriptor.h>
+#include <kernel/domain/entities/endpoint.h>
+#include <kernel/domain/entities/object.h>
+#include <kernel/domain/services/slab.h>
 #include <stddef.h>
 
 static void cache_endpoint_ctor(void *buffer, size_t size);

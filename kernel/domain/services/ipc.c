@@ -33,13 +33,12 @@
 #include <jinue/shared/asm/permissions.h>
 #include <jinue/shared/ipc.h>
 #include <jinue/shared/vm.h>
+#include <kernel/domain/entities/descriptor.h>
+#include <kernel/domain/entities/endpoint.h>
+#include <kernel/domain/entities/object.h>
+#include <kernel/domain/entities/thread.h>
+#include <kernel/domain/services/ipc.h>
 #include <kernel/machine/thread.h>
-#include <kernel/descriptor.h>
-#include <kernel/endpoint.h>
-#include <kernel/ipc.h>
-#include <kernel/object.h>
-#include <kernel/object.h>
-#include <kernel/thread.h>
 #include <stddef.h>
 #include <string.h>
 

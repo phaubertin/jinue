@@ -29,9 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/i686/cpu.h>
-#include <kernel/i686/descriptors.h>
-#include <kernel/i686/x86.h>
+#include <kernel/infrastructure/i686/cpu.h>
+#include <kernel/infrastructure/i686/descriptors.h>
+#include <kernel/infrastructure/i686/x86.h>
 #include <kernel/machine/cpu.h>
 #include <stdint.h>
 #include <string.h>

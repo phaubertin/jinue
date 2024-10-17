@@ -29,14 +29,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/i686/interrupt.h>
-#include <kernel/i686/io.h>
-#include <kernel/i686/pic8259.h>
-#include <kernel/i686/types.h>
-#include <kernel/i686/x86.h>
-#include <kernel/logging.h>
-#include <kernel/panic.h>
-#include <kernel/syscall.h>
+#include <kernel/domain/services/logging.h>
+#include <kernel/domain/services/panic.h>
+#include <kernel/infrastructure/i686/io.h>
+#include <kernel/infrastructure/i686/pic8259.h>
+#include <kernel/infrastructure/i686/types.h>
+#include <kernel/infrastructure/i686/x86.h>
+#include <kernel/interface/i686/interrupt.h>
+#include <kernel/interface/syscall.h>
 #include <inttypes.h>
 
 

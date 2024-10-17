@@ -30,9 +30,8 @@
  */
 
 #include <jinue/shared/syscall.h>
-#include <kernel/cmdline.h>
-#include <kernel/list.h>
-#include <kernel/logging.h>
+#include <kernel/domain/services/logging.h>
+#include <kernel/utils/list.h>
 #include <kernel/types.h>
 #include <stdio.h>
 

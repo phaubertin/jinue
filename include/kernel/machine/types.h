@@ -32,6 +32,6 @@
 #ifndef JINUE_KERNEL_MACHINE_TYPES_H
 #define JINUE_KERNEL_MACHINE_TYPES_H
 
-#include <kernel/i686/exports.h>
+#include <kernel/infrastructure/i686/exports.h>
 
 #endif

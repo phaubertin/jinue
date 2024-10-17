@@ -29,10 +29,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <kernel/domain/services/cmdline.h>
+#include <kernel/domain/services/logging.h>
+#include <kernel/domain/services/panic.h>
 #include <kernel/machine/cmdline.h>
-#include <kernel/cmdline.h>
-#include <kernel/logging.h>
-#include <kernel/panic.h>
 #include <ctype.h>
 #include <string.h>
 

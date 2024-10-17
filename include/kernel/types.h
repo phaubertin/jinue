@@ -36,8 +36,8 @@
 #include <jinue/shared/syscall.h>
 #include <jinue/shared/types.h>
 #include <kernel/machine/types.h>
+#include <kernel/utils/list.h>
 #include <kernel/typedeps.h>
-#include <kernel/list.h>
 #include <sys/elf.h>
 
 struct boot_heap_pushed_state {

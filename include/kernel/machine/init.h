@@ -32,7 +32,7 @@
 #ifndef JINUE_KERNEL_MACHINE_INIT_H
 #define JINUE_KERNEL_MACHINE_INIT_H
 
-#include <kernel/cmdline.h>
+#include <kernel/domain/services/cmdline.h>
 #include <kernel/types.h>
 
 void machine_get_loader_elf(elf_file_t *elf);

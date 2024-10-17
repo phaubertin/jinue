@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/i686/io.h>
-#include <kernel/i686/x86.h>
+#include <kernel/infrastructure/i686/io.h>
+#include <kernel/infrastructure/i686/x86.h>
 #include <kernel/machine/halt.h>
 #include <stdbool.h>
 

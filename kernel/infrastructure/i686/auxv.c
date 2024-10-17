@@ -29,7 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/i686/trap.h>
+#include <kernel/interface/i686/trap.h>
 #include <kernel/machine/auxv.h>
 
 uint32_t machine_at_howsyscall(void) {

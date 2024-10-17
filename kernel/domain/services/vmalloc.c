@@ -30,8 +30,8 @@
  */
 
 #include <jinue/shared/vm.h>
-#include <kernel/panic.h>
-#include <kernel/vmalloc.h>
+#include <kernel/domain/services/panic.h>
+#include <kernel/domain/services/vmalloc.h>
 
 
 /**

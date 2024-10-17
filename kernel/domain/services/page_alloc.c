@@ -31,9 +31,9 @@
 
 #include <jinue/shared/asm/machine.h>
 #include <jinue/shared/asm/syscall.h>
+#include <kernel/domain/services/page_alloc.h>
+#include <kernel/domain/services/vmalloc.h>
 #include <kernel/machine/vm.h>
-#include <kernel/page_alloc.h>
-#include <kernel/vmalloc.h>
 #include <string.h>
 
 

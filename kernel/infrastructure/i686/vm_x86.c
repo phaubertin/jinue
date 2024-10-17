@@ -29,9 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/i686/boot_alloc.h>
-#include <kernel/i686/vm_private.h>
-#include <kernel/vmalloc.h>
+#include <kernel/domain/services/vmalloc.h>
+#include <kernel/infrastructure/i686/boot_alloc.h>
+#include <kernel/infrastructure/i686/vm_private.h>
 #include <assert.h>
 
 /* This file contains non-Physical Address Extension (PAE) memory management

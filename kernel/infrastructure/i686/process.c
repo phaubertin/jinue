@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/i686/cpu_data.h>
-#include <kernel/i686/vm.h>
+#include <kernel/infrastructure/i686/cpu_data.h>
+#include <kernel/infrastructure/i686/vm.h>
 #include <kernel/machine/process.h>
 
 void machine_switch_to_process(process_t *process) {

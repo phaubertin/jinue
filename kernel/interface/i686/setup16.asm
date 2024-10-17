@@ -28,11 +28,11 @@
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <jinue/shared/asm/machine.h>
-#include <kernel/asm/cmdline.h>
-#include <kernel/i686/asm/boot.h>
-#include <kernel/i686/asm/descriptors.h>
-#include <kernel/i686/asm/e820.h>
-#include <kernel/i686/asm/pic8259.h>
+#include <kernel/domain/services/asm/cmdline.h>
+#include <kernel/infrastructure/i686/asm/descriptors.h>
+#include <kernel/infrastructure/i686/asm/pic8259.h>
+#include <kernel/interface/i686/asm/boot.h>
+#include <kernel/interface/i686/asm/e820.h>
 
 %define CODE_SEG        1
 %define DATA_SEG        2

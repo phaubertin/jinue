@@ -30,9 +30,10 @@
  */
 
 #include <jinue/shared/asm/errno.h>
-#include <kernel/descriptor.h>
-#include <kernel/object.h>
-#include <kernel/process.h>
+#include <kernel/domain/entities/descriptor.h>
+#include <kernel/domain/entities/object.h>
+#include <kernel/domain/entities/process.h>
+#include <kernel/domain/syscalls.h>
 
 static int check_mint_permissions(const object_header_t *object, int perms) {
     if((perms & ~object->type->all_permissions) != 0) {

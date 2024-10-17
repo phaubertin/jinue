@@ -29,10 +29,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/i686/asm/serial.h>
+#include <kernel/domain/services/cmdline.h>
+#include <kernel/domain/services/logging.h>
+#include <kernel/infrastructure/i686/asm/serial.h>
 #include <kernel/machine/cmdline.h>
-#include <kernel/cmdline.h>
-#include <kernel/logging.h>
 
 #define CMDLINE_ERROR_INVALID_PAE               (1<<0)
 

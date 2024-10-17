@@ -29,17 +29,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/i686/boot.h>
-#include <kernel/i686/boot_alloc.h>
-#include <kernel/i686/cpu.h>
-#include <kernel/i686/memory.h>
-#include <kernel/i686/vm_private.h>
-#include <kernel/i686/x86.h>
-#include <kernel/page_alloc.h>
-#include <kernel/panic.h>
-#include <kernel/slab.h>
-#include <kernel/util.h>
-#include <kernel/vmalloc.h>
+#include <kernel/interface/i686/boot.h>
+#include <kernel/domain/services/page_alloc.h>
+#include <kernel/domain/services/panic.h>
+#include <kernel/domain/services/slab.h>
+#include <kernel/domain/services/vmalloc.h>
+#include <kernel/infrastructure/i686/boot_alloc.h>
+#include <kernel/infrastructure/i686/cpu.h>
+#include <kernel/infrastructure/i686/memory.h>
+#include <kernel/infrastructure/i686/vm_private.h>
+#include <kernel/infrastructure/i686/x86.h>
+#include <kernel/utils/utils.h>
 #include <assert.h>
 #include <string.h>
 

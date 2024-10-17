@@ -29,16 +29,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <kernel/domain/entities/endpoint.h>
+#include <kernel/domain/entities/process.h>
+#include <kernel/domain/entities/thread.h>
+#include <kernel/domain/services/cmdline.h>
+#include <kernel/domain/services/elf.h>
+#include <kernel/domain/services/logging.h>
+#include <kernel/domain/services/panic.h>
 #include <kernel/machine/init.h>
-#include <kernel/cmdline.h>
-#include <kernel/elf.h>
-#include <kernel/endpoint.h>
 #include <kernel/kmain.h>
-#include <kernel/logging.h>
-#include <kernel/panic.h>
-#include <kernel/process.h>
-#include <kernel/syscall.h>
-#include <kernel/thread.h>
 #include <inttypes.h>
 #include <stddef.h>
 #include "../build-info.gen.h"

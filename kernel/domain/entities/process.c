@@ -30,13 +30,13 @@
  */
 
 #include <jinue/shared/asm/errno.h>
+#include <kernel/domain/entities/descriptor.h>
+#include <kernel/domain/entities/process.h>
+#include <kernel/domain/entities/object.h>
+#include <kernel/domain/services/panic.h>
+#include <kernel/domain/services/slab.h>
 #include <kernel/machine/process.h>
 #include <kernel/machine/thread.h>
-#include <kernel/descriptor.h>
-#include <kernel/panic.h>
-#include <kernel/process.h>
-#include <kernel/object.h>
-#include <kernel/slab.h>
 #include <stddef.h>
 #include <string.h>
 

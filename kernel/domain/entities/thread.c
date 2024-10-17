@@ -30,14 +30,14 @@
  */
 
 #include <jinue/shared/asm/errno.h>
+#include <kernel/domain/entities/descriptor.h>
+#include <kernel/domain/entities/object.h>
+#include <kernel/domain/entities/process.h>
+#include <kernel/domain/entities/thread.h>
+#include <kernel/domain/services/page_alloc.h>
+#include <kernel/domain/services/panic.h>
 #include <kernel/machine/thread.h>
-#include <kernel/descriptor.h>
-#include <kernel/list.h>
-#include <kernel/object.h>
-#include <kernel/process.h>
-#include <kernel/page_alloc.h>
-#include <kernel/panic.h>
-#include <kernel/thread.h>
+#include <kernel/utils/list.h>
 
 /** runtime type definition for a thread */
 static const object_type_t object_type = {
