@@ -79,11 +79,11 @@ sources.kernel.c = \
 	infrastructure/i686/vm_x86.c \
 	interface/i686/interrupt.c \
 	interface/syscall.c \
-	domain/objects/descriptor.c \
-	domain/objects/endpoint.c \
-	domain/objects/object.c \
-	domain/objects/process.c \
-	domain/objects/thread.c \
+	domain/entities/descriptor.c \
+	domain/entities/endpoint.c \
+	domain/entities/object.c \
+	domain/entities/process.c \
+	domain/entities/thread.c \
 	domain/services/cmdline.c \
 	domain/services/elf.c \
 	domain/services/ipc.c \
