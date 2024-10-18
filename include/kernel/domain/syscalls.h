@@ -46,6 +46,8 @@ int destroy(int fd);
 
 int dup(int process_fd, int src, int dest);
 
+void exit_thread(void);
+
 void *get_thread_local(void);
 
 int get_user_memory(const jinue_buffer_t *buffer);
@@ -56,6 +58,8 @@ int mint(int owner, const jinue_mint_args_t *mint_args);
 
 int mmap(int process_fd, const jinue_mmap_args_t *args);
 
+int puts(int loglevel, const char *str, size_t length);
+
 void reboot(void);
 
 int receive(int fd, jinue_message_t *message);
@@ -65,5 +69,7 @@ int reply(const jinue_message_t *message);
 int send(int fd, int function, const jinue_message_t *message);
 
 void set_thread_local(void *addr, size_t size);
+
+void yield_thread(void);
 
 #endif
