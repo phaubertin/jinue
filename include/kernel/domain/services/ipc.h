@@ -34,10 +34,15 @@
 
 #include <kernel/types.h>
 
-int ipc_send(int fd, int function, const jinue_message_t *message);
+int send_message(
+        ipc_endpoint_t          *endpoint,
+        thread_t                *sender,
+        int                      function,
+        uintptr_t                cookie,
+        const jinue_message_t   *message);
 
-int ipc_receive(int fd, jinue_message_t *message);
+int receive_message(ipc_endpoint_t *endpoint, thread_t *receiver,jinue_message_t *message);
 
-int ipc_reply(const jinue_message_t *message);
+int send_reply(thread_t *replier, const jinue_message_t *message);
 
 #endif

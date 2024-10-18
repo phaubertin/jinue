@@ -30,15 +30,12 @@
  */
 
 #include <jinue/shared/asm/errno.h>
-#include <jinue/shared/asm/permissions.h>
 #include <jinue/shared/ipc.h>
 #include <jinue/shared/vm.h>
-#include <kernel/domain/entities/descriptor.h>
 #include <kernel/domain/entities/endpoint.h>
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/thread.h>
 #include <kernel/domain/services/ipc.h>
-#include <kernel/machine/thread.h>
 #include <stddef.h>
 #include <string.h>
 
@@ -186,7 +183,7 @@ static int scatter_message(thread_t *thread, const jinue_message_t *message) {
 }
 
 /**
- * Implementation of the SEND system call
+ * Send a message to an IPC endpoint.
  *
  * This function sends a message to an IPC endpoint so it can be received by
  * another thread, possibly in another process.
@@ -200,31 +197,20 @@ static int scatter_message(thread_t *thread, const jinue_message_t *message) {
  * contain the message to be sent. The receive buffers will be used to store the
  * reply from the receiving thread.
  *
- * @param fd descriptor for the IPC endpoint
+ * @param endpoint IPC endpoint to which the message is sent
+ * @param sender thread sending the message
  * @param function function number of the message
+ * @param cookie cookie value sent with the message
  * @param message structure describing the message
  * @return message size in bytes on success, negated error number on error
  *
  */
-int ipc_send(int fd, int function, const jinue_message_t *message) {
-    thread_t *thread = get_current_thread();
-
-    descriptor_t *desc;
-    int status = dereference_object_descriptor(&desc, thread->process, fd);
-
-    if(status < 0) {
-        return status;
-    }
-
-    if(!descriptor_has_permissions(desc, JINUE_PERM_SEND)) {
-        return -JINUE_EPERM;
-    }
-
-    ipc_endpoint_t *endpoint = get_endpoint_from_descriptor(desc);
-
-    if(endpoint == NULL) {
-        return -JINUE_EBADF;
-    }
+int send_message(
+        ipc_endpoint_t          *endpoint,
+        thread_t                *sender,
+        int                      function,
+        uintptr_t                cookie,
+        const jinue_message_t   *message) {
 
     int recv_buffer_size = get_receive_buffers_size(message);
 
@@ -232,52 +218,52 @@ int ipc_send(int fd, int function, const jinue_message_t *message) {
         return recv_buffer_size;
     }
     
-    thread->recv_buffer_size    = recv_buffer_size;
-    thread->reply_errno         = 0;
-    thread->message_function    = function;
-    thread->message_cookie      = desc->cookie;
+    sender->recv_buffer_size    = recv_buffer_size;
+    sender->reply_errno         = 0;
+    sender->message_function    = function;
+    sender->message_cookie      = cookie;
 
-    int gather_result = gather_message(thread, message);
+    int gather_result = gather_message(sender, message);
 
     if(gather_result < 0) {
         return gather_result;
     }
 
-    thread_t *recv_thread = jinue_node_entry(
+    thread_t *receiver = jinue_node_entry(
             jinue_list_dequeue(&endpoint->recv_list),
             thread_t,
             thread_list);
 
-    if(recv_thread == NULL) {
+    if(receiver == NULL) {
         /* No thread is waiting to receive this message, so we must wait on the
          * sender list. */
-        jinue_list_enqueue(&endpoint->send_list, &thread->thread_list);
+        jinue_list_enqueue(&endpoint->send_list, &sender->thread_list);
         thread_block();
     }
     else {
-        object_addref(&thread->header);
-        recv_thread->sender = thread;
+        object_addref(&sender->header);
+        receiver->sender = sender;
 
         /* switch to receiver thread, which will resume inside syscall_receive() */
-        thread_switch_to(recv_thread, true);
+        thread_switch_to(receiver, true);
     }
     
-    if(thread->reply_errno != 0) {
-        return -thread->reply_errno;
+    if(sender->reply_errno != 0) {
+        return -sender->reply_errno;
     }
 
     /* copy reply to user space buffer */
-    int scatter_result = scatter_message(thread, message);
+    int scatter_result = scatter_message(sender, message);
 
     if(scatter_result < 0) {
         return scatter_result;
     }
 
-    return thread->message_size;
+    return sender->message_size;
 }
 
 /**
- * Implementation of the RECEIVE system call
+ * Receive a message from an IPC endpoint
  *
  * This function receives a message that another thread, probably in another
  * process, sent to a specific IPC endpoint.
@@ -290,84 +276,66 @@ int ipc_send(int fd, int function, const jinue_message_t *message) {
  * The receive buffers pointed to by the message structure passed as argument
  * will be used to receive the message.
  *
- * @param fd descriptor for the IPC endpoint
+ * @param endpoint IPC endpoint from which to receive a message
+ * @param receiver thread receiving the message
  * @param message structure describing the receive buffers
  * @return received message size in bytes on success, negated error number on error
  *
  */
-int ipc_receive(int fd, jinue_message_t *message) {
-    thread_t *thread = get_current_thread();
-
-    descriptor_t *desc;
-    int status = dereference_object_descriptor(&desc, thread->process, fd);
-
-    if(status < 0) {
-        return status;
-    }
-
-    if(!descriptor_has_permissions(desc, JINUE_PERM_RECEIVE)) {
-        return -JINUE_EPERM;
-    }
-
-    ipc_endpoint_t *endpoint = get_endpoint_from_descriptor(desc);
-
-    if(endpoint == NULL) {
-        return -JINUE_EBADF;
-    }
-
+int receive_message(ipc_endpoint_t *endpoint, thread_t *receiver,jinue_message_t *message) {
     int recv_buffer_size = get_receive_buffers_size(message);
 
     if(recv_buffer_size < 0) {
         return recv_buffer_size;
     }
 
-    thread_t *send_thread = jinue_node_entry(
+    thread_t *sender = jinue_node_entry(
         jinue_list_dequeue(&endpoint->send_list),
         thread_t,
         thread_list);
     
-    if(send_thread == NULL) {
+    if(sender == NULL) {
         /* No thread is waiting to send a message, so we must wait on the receive
          * list. */
-        jinue_list_enqueue(&endpoint->recv_list, &thread->thread_list);
+        jinue_list_enqueue(&endpoint->recv_list, &receiver->thread_list);
         thread_block();
         
         /* set by sending thread */
-        send_thread = thread->sender;
+        sender = receiver->sender;
     }
     else {
-        object_addref(&send_thread->header);
-        thread->sender = send_thread;
+        object_addref(&sender->header);
+        receiver->sender = sender;
     }
 
-    if(send_thread->message_size > recv_buffer_size) {
+    if(sender->message_size > recv_buffer_size) {
         /* message is too big for the receive buffer */
-        send_thread->reply_errno = JINUE_E2BIG;
-        object_subref(&send_thread->header);
-        thread->sender = NULL;
+        sender->reply_errno = JINUE_E2BIG;
+        object_subref(&sender->header);
+        receiver->sender = NULL;
         
         /* switch back to sender thread to return from call immediately */
-        thread_switch_to(send_thread, false);
+        thread_switch_to(sender, false);
                 
         return -JINUE_E2BIG;
     }
     
     /* copy reply to user space buffer */
-    int scatter_result = scatter_message(send_thread, message);
+    int scatter_result = scatter_message(sender, message);
 
     if(scatter_result < 0) {
         return scatter_result;
     }
     
-    message->recv_function  = send_thread->message_function;
-    message->recv_cookie    = send_thread->message_cookie;
-    message->reply_max_size = send_thread->recv_buffer_size;
+    message->recv_function  = sender->message_function;
+    message->recv_cookie    = sender->message_cookie;
+    message->reply_max_size = sender->recv_buffer_size;
 
-    return send_thread->message_size;
+    return sender->message_size;
 }
 
 /**
- * Implementation of the REPLY system call
+ * Reply to a message
  *
  * This function is called by a receiving thread to end processing of the
  * current message and send the reply to the sending thread.
@@ -375,34 +343,34 @@ int ipc_receive(int fd, jinue_message_t *message) {
  * The send buffers pointed to by the message structure passed as argument
  * contain the reply.
  *
- * @param message structure describing the message
+ * @param replier thread replying to the message
+ * @param message structure describing the reply message
  * @return zero on success, negated error number on error
  *
  */
-int ipc_reply(const jinue_message_t *message) {
-    thread_t *thread        = get_current_thread();
-    thread_t *send_thread   = thread->sender;
+int send_reply(thread_t *replier, const jinue_message_t *message) {
+    thread_t *replyto = replier->sender;
 
-    if(send_thread == NULL) {
+    if(replyto == NULL) {
         return -JINUE_ENOMSG;
     }
 
-    int gather_result = gather_message(send_thread, message);
+    int gather_result = gather_message(replyto, message);
 
     if(gather_result < 0) {
         return gather_result;
     }
 
     /* the reply must fit in the sender's receive buffer */
-    if(send_thread->message_size > send_thread->recv_buffer_size) {
+    if(replyto->message_size > replyto->recv_buffer_size) {
         return -JINUE_E2BIG;
     }
 
-    object_subref(&send_thread->header);
-    thread->sender = NULL;
+    object_subref(&replyto->header);
+    replier->sender = NULL;
     
     /* switch back to sender thread to return from call immediately */
-    thread_switch_to(send_thread, false);
+    thread_switch_to(replyto, false);
 
     return 0;
 }

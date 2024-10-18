@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,41 +29,32 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_SYSCALLS_H
-#define JINUE_KERNEL_SYSCALLS_H
+#include <jinue/shared/asm/errno.h>
+#include <jinue/shared/asm/permissions.h>
+#include <kernel/domain/entities/descriptor.h>
+#include <kernel/domain/services/ipc.h>
+#include <kernel/domain/syscalls.h>
+#include <kernel/machine/thread.h>
 
-#include <kernel/types.h>
+int send(int fd, int function, const jinue_message_t *message) {
+    thread_t *sender = get_current_thread();
 
-int close(int fd);
+    descriptor_t *desc;
+    int status = dereference_object_descriptor(&desc, sender->process, fd);
 
-int create_endpoint(int fd);
+    if(status < 0) {
+        return status;
+    }
 
-int create_process(int fd);
+    if(!descriptor_has_permissions(desc, JINUE_PERM_SEND)) {
+        return -JINUE_EPERM;
+    }
 
-int create_thread(int  process_fd, void *entry, void *user_stack);
+    ipc_endpoint_t *endpoint = get_endpoint_from_descriptor(desc);
 
-int destroy(int fd);
+    if(endpoint == NULL) {
+        return -JINUE_EBADF;
+    }
 
-int dup(int process_fd, int src, int dest);
-
-void *get_thread_local(void);
-
-int get_user_memory(const jinue_buffer_t *buffer);
-
-int mclone(int src, int dest, const jinue_mclone_args_t *args);
-
-int mint(int owner, const jinue_mint_args_t *mint_args);
-
-int mmap(int process_fd, const jinue_mmap_args_t *args);
-
-void reboot(void);
-
-int receive(int fd, jinue_message_t *message);
-
-int reply(const jinue_message_t *message);
-
-int send(int fd, int function, const jinue_message_t *message);
-
-void set_thread_local(void *addr, size_t size);
-
-#endif
+    return send_message(endpoint, sender, function, desc->cookie, message);
+}

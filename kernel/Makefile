@@ -104,6 +104,9 @@ sources.kernel.c = \
 	domain/syscalls/mmap.c \
 	domain/syscalls/mclone.c \
 	domain/syscalls/reboot.c \
+	domain/syscalls/receive.c \
+	domain/syscalls/reply.c \
+	domain/syscalls/send.c \
 	domain/syscalls/set_thread_local.c \
 	domain/kmain.c
 

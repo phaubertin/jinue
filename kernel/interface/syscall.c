@@ -36,7 +36,6 @@
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/entities/thread.h>
-#include <kernel/domain/services/ipc.h>
 #include <kernel/domain/services/logging.h>
 #include <kernel/domain/syscalls.h>
 #include <kernel/interface/syscall.h>
@@ -274,7 +273,7 @@ static void sys_send(jinue_syscall_args_t *args) {
         return;
     }
 
-    int retval = ipc_send(fd, function, &message);
+    int retval = send(fd, function, &message);
     set_return_value_or_error(args, retval);
 }
 
@@ -305,7 +304,7 @@ static void sys_receive(jinue_syscall_args_t *args) {
         return;
     }
 
-    int retval = ipc_receive(fd, &message);
+    int retval = receive(fd, &message);
     set_return_value_or_error(args, retval);
 
     if(retval >= 0) {
@@ -336,7 +335,7 @@ static void sys_reply(jinue_syscall_args_t *args) {
         return;
     }
 
-    int retval = ipc_reply(&message);
+    int retval = reply(&message);
     set_return_value_or_error(args, retval);
 }
 
@@ -548,10 +547,6 @@ void dispatch_syscall(jinue_syscall_args_t *args) {
     intptr_t function = args->arg0;
     
     if(function < 0) {
-        /* The function number is expected to be non-negative. This is especially
-         * important for the return value of the ipc_receive() system call because,
-         * when the system call returns, a negative value (specifically -1), means
-         * the call failed. */
         set_error(args, JINUE_EINVAL);
     }
     else if(function < JINUE_SYS_USER_BASE) {
