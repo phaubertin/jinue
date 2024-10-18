@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -35,8 +35,6 @@
 #include <kernel/domain/entities/endpoint.h>
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
-#include <kernel/domain/entities/thread.h>
-#include <kernel/domain/services/logging.h>
 #include <kernel/domain/syscalls.h>
 #include <kernel/interface/syscall.h>
 #include <kernel/utils/utils.h>
@@ -99,27 +97,12 @@ static void sys_reboot(jinue_syscall_args_t *args) {
 }
 
 static void sys_puts(jinue_syscall_args_t *args) {
-    int loglevel        = args->arg1;
-    const char *message = (const char *)args->arg2;
-    size_t length       = args->arg3;
+    int loglevel    = args->arg1;
+    const char *str = (const char *)args->arg2;
+    size_t length   = args->arg3;
 
-    if(length > JINUE_PUTS_MAX_LENGTH) {
-        set_error(args, JINUE_EINVAL);
-        return;
-    }
-
-    switch(loglevel) {
-    case JINUE_PUTS_LOGLEVEL_INFO:
-    case JINUE_PUTS_LOGLEVEL_WARNING:
-    case JINUE_PUTS_LOGLEVEL_ERROR:
-        break;
-    default:
-        set_error(args, JINUE_EINVAL);
-        return;
-    }
-
-    logging_add_message(loglevel, message, length);
-    set_return_value(args, 0);
+    int retval = puts(loglevel, str, length);
+    set_return_value_or_error(args, retval);
 }
 
 static void sys_create_thread(jinue_syscall_args_t *args) {
@@ -142,18 +125,17 @@ static void sys_create_thread(jinue_syscall_args_t *args) {
         return;
     }
 
-    /** TODO return descriptor that represents thread */
     int retval = create_thread(process_fd, entry, user_stack);
     set_return_value_or_error(args, retval);
 }
 
 static void sys_yield_thread(jinue_syscall_args_t *args) {
-    thread_yield();
+    yield_thread();
     set_return_value(args, 0);
 }
 
 static void sys_exit_thread(jinue_syscall_args_t *args) {
-    thread_exit();
+    exit_thread();
     set_return_value(args, 0);
 }
 
