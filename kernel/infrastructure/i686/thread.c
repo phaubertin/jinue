@@ -87,7 +87,7 @@ static addr_t get_kernel_stack_base(machine_thread_t *thread_ctx) {
     return (addr_t)thread + THREAD_CONTEXT_SIZE;
 }
 
-void machine_init_thread(thread_t *thread, void *entry, void *user_stack) {
+void machine_init_thread(thread_t *thread, const thread_params_t *params) {
     /* initialize fields */
     machine_thread_t *thread_ctx = &thread->thread_ctx;
 
@@ -98,8 +98,8 @@ void machine_init_thread(thread_t *thread, void *entry, void *user_stack) {
 
     memset(trapframe, 0, sizeof(trapframe_t));
 
-    trapframe->eip      = (uint32_t)entry;
-    trapframe->esp      = (uint32_t)user_stack;
+    trapframe->eip      = (uint32_t)params->entry;
+    trapframe->esp      = (uint32_t)params->stack_addr;
     trapframe->eflags   = 2;
     trapframe->cs       = SEG_SELECTOR(GDT_USER_CODE, RPL_USER);
     trapframe->ss       = SEG_SELECTOR(GDT_USER_DATA, RPL_USER);

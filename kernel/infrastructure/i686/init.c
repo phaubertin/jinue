@@ -30,7 +30,7 @@
  */
 
 #include <kernel/domain/services/cmdline.h>
-#include <kernel/domain/services/elf.h>
+#include <kernel/infrastructure/elf.h>
 #include <kernel/domain/services/logging.h>
 #include <kernel/domain/services/panic.h>
 #include <kernel/domain/services/page_alloc.h>
@@ -89,17 +89,17 @@ static void move_kernel_at_16mb(const boot_info_t *boot_info) {
 }
 
 static bool maybe_enable_pae(
-        boot_alloc_t            *boot_alloc,
-        const boot_info_t       *boot_info,
-        const cmdline_opts_t    *cmdline_opts) {
+        boot_alloc_t        *boot_alloc,
+        const boot_info_t   *boot_info,
+        const config_t      *config) {
 
     bool use_pae;
 
     if(cpu_has_feature(CPU_FEATURE_PAE)) {
-        use_pae = (cmdline_opts->machine.pae != CMDLINE_OPT_PAE_DISABLE);
+        use_pae = (config->machine.pae != CMDLINE_OPT_PAE_DISABLE);
     }
     else {
-        if(cmdline_opts->machine.pae == CMDLINE_OPT_PAE_REQUIRE) {
+        if(config->machine.pae == CMDLINE_OPT_PAE_REQUIRE) {
             panic("Option pae=require passed on kernel command line but PAE is not supported.");
         }
 
@@ -246,15 +246,15 @@ static void select_syscall_implementation(void) {
     }
 }
 
-static void get_kernel_elf(elf_file_t *elf, const boot_info_t *boot_info) {
-    elf->ehdr = boot_info->kernel_start;
-    elf->size = boot_info->kernel_size;
+static void get_kernel_exec_file(exec_file_t *kernel, const boot_info_t *boot_info) {
+    kernel->start   = boot_info->kernel_start;
+    kernel->size    = boot_info->kernel_size;
 
-    if(elf->ehdr == NULL) {
+    if(kernel->start == NULL) {
         panic("malformed boot image: no kernel ELF binary");
     }
 
-    if(elf->size < sizeof(Elf32_Ehdr)) {
+    if(kernel->size < sizeof(Elf32_Ehdr)) {
         panic("kernel too small to be an ELF binary");
     }
 
@@ -263,19 +263,19 @@ static void get_kernel_elf(elf_file_t *elf, const boot_info_t *boot_info) {
     }
 }
 
-static void get_loader_elf(elf_file_t *elf, const boot_info_t *boot_info) {
-    elf->ehdr = boot_info->loader_start;
-    elf->size = boot_info->loader_size;
+static void get_loader_elf(exec_file_t *loader, const boot_info_t *boot_info) {
+    loader->start   = boot_info->loader_start;
+    loader->size    = boot_info->loader_size;
 
-    if(elf->ehdr == NULL) {
+    if(loader->start == NULL) {
         panic("malformed boot image: no user space loader ELF binary");
     }
 
-    if(elf->size < sizeof(Elf32_Ehdr)) {
+    if(loader->size < sizeof(Elf32_Ehdr)) {
         panic("user space loader too small to be an ELF binary");
     }
 
-    info("Found user space loader with size %" PRIu32 " bytes.", elf->size);
+    info("Found user space loader with size %" PRIu32 " bytes.", loader->size);
 }
 
 static void get_ramdisk(kern_mem_block_t *ramdisk, const boot_info_t *boot_info) {
@@ -287,7 +287,7 @@ static void get_ramdisk(kern_mem_block_t *ramdisk, const boot_info_t *boot_info)
     }
 }
 
-void machine_get_loader_elf(elf_file_t *elf) {
+void machine_get_loader(exec_file_t *elf) {
     const boot_info_t *boot_info = get_boot_info();
     get_loader_elf(elf, boot_info);
 }
@@ -297,12 +297,12 @@ void machine_get_ramdisk(kern_mem_block_t *ramdisk) {
     get_ramdisk(ramdisk, boot_info);
 }
 
-void machine_init_logging(const cmdline_opts_t *cmdline_opts) {
-    serial_init(cmdline_opts);
-    vga_init(cmdline_opts);
+void machine_init_logging(const config_t *config) {
+    serial_init(config);
+    vga_init(config);
 }
 
-void machine_init(const cmdline_opts_t *cmdline_opts) {
+void machine_init(const config_t *config) {
     /* Validate the boot information structure before using it. */
     (void)boot_info_check(true);
 
@@ -321,10 +321,7 @@ void machine_init(const cmdline_opts_t *cmdline_opts) {
     boot_alloc_t boot_alloc;
     boot_alloc_init(&boot_alloc, boot_info);
 
-    bool pae_enabled = maybe_enable_pae(
-            &boot_alloc,
-            boot_info,
-            cmdline_opts);
+    bool pae_enabled = maybe_enable_pae(&boot_alloc, boot_info, config);
 
     /* Re-initialize the boot page allocator to allocate following the kernel
      * image at 16MB rather than at 1MB, now that the kernel has been moved
@@ -355,13 +352,10 @@ void machine_init(const cmdline_opts_t *cmdline_opts) {
     /* Initialize programmable interrupt_controller. */
     pic8259_init();
 
-    elf_file_t kernel;
-    get_kernel_elf(&kernel, boot_info);
+    exec_file_t kernel;
+    get_kernel_exec_file(&kernel, boot_info);
 
-    addr_space_t *addr_space = vm_create_initial_addr_space(
-            kernel.ehdr,
-            &boot_alloc,
-            boot_info);
+    addr_space_t *addr_space = vm_create_initial_addr_space(&kernel, &boot_alloc, boot_info);
 
     memory_initialize_array(&boot_alloc, boot_info);
 

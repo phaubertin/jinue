@@ -117,15 +117,8 @@ static const cmdline_enum_def_t serial_baud_rates[] = {
     {NULL, 0}
 };
 
-void machine_cmdline_start_parsing(machine_cmdline_opts_t *cmdline_opts) {
+void machine_cmdline_start_parsing(machine_config_t *config) {
     cmdline_errors = 0;
-
-    /* defaults */
-    cmdline_opts->pae               = CMDLINE_OPT_PAE_AUTO;
-    cmdline_opts->serial_enable     = false;
-    cmdline_opts->serial_baud_rate  = SERIAL_DEFAULT_BAUD_RATE;
-    cmdline_opts->serial_ioport     = SERIAL_DEFAULT_IOPORT;
-    cmdline_opts->vga_enable        = true;
 }
 
 bool machine_cmdline_has_errors(void) {
@@ -133,7 +126,7 @@ bool machine_cmdline_has_errors(void) {
 }
 
 void machine_cmdline_process_option(
-        machine_cmdline_opts_t  *cmdline_opts,
+        machine_config_t        *config,
         const cmdline_token_t   *option,
         const cmdline_token_t   *value) {
 
@@ -146,17 +139,17 @@ void machine_cmdline_process_option(
 
     switch(opt_name) {
     case CMDLINE_OPT_NAME_PAE:
-        if(!cmdline_match_enum((int *)&(cmdline_opts->pae), opt_pae_names, value)) {
+        if(!cmdline_match_enum((int *)&(config->pae), opt_pae_names, value)) {
             cmdline_errors |= CMDLINE_ERROR_INVALID_PAE;
         }
         break;
     case CMDLINE_OPT_NAME_SERIAL_ENABLE:
-        if(!cmdline_match_boolean(&(cmdline_opts->serial_enable), value)) {
+        if(!cmdline_match_boolean(&(config->serial_enable), value)) {
             cmdline_errors |= CMDLINE_ERROR_INVALID_SERIAL_ENABLE;
         }
         break;
     case CMDLINE_OPT_NAME_SERIAL_BAUD_RATE:
-        if(!cmdline_match_enum(&(cmdline_opts->serial_baud_rate), serial_baud_rates, value)) {
+        if(!cmdline_match_enum(&(config->serial_baud_rate), serial_baud_rates, value)) {
             cmdline_errors |= CMDLINE_ERROR_INVALID_SERIAL_BAUD_RATE;
         }
         break;
@@ -166,7 +159,7 @@ void machine_cmdline_process_option(
                 cmdline_errors |= CMDLINE_ERROR_INVALID_SERIAL_IOPORT;
             }
             else {
-                cmdline_opts->serial_ioport = ivalue;
+                config->serial_ioport = ivalue;
             }
         }
         else {
@@ -174,12 +167,12 @@ void machine_cmdline_process_option(
         }
         break;
     case CMDLINE_OPT_NAME_SERIAL_DEV:
-        if(!cmdline_match_enum(&(cmdline_opts->serial_ioport), serial_ports, value)) {
+        if(!cmdline_match_enum(&(config->serial_ioport), serial_ports, value)) {
             cmdline_errors |= CMDLINE_ERROR_INVALID_SERIAL_DEV;
         }
         break;
     case CMDLINE_OPT_NAME_VGA_ENABLE:
-        if(!cmdline_match_boolean(&(cmdline_opts->vga_enable), value)) {
+        if(!cmdline_match_boolean(&(config->vga_enable), value)) {
             cmdline_errors |= CMDLINE_ERROR_INVALID_VGA_ENABLE;
         }
         break;

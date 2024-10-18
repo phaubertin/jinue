@@ -60,32 +60,13 @@ unclean.extra    = \
 	$(stripped)
 
 sources.kernel.c = \
-	infrastructure/i686/auxv.c \
-	infrastructure/i686/boot.c \
-	infrastructure/i686/boot_alloc.c \
-	infrastructure/i686/cmdline.c \
-	infrastructure/i686/cpu.c \
-	infrastructure/i686/debug.c \
-	infrastructure/i686/halt.c \
-	infrastructure/i686/init.c \
-	infrastructure/i686/memory.c \
-	infrastructure/i686/pic8259.c \
-	infrastructure/i686/process.c \
-	infrastructure/i686/serial.c \
-	infrastructure/i686/thread.c \
-	infrastructure/i686/vga.c \
-	infrastructure/i686/vm.c \
-	infrastructure/i686/vm_pae.c \
-	infrastructure/i686/vm_x86.c \
-	interface/i686/interrupt.c \
-	interface/syscall.c \
 	domain/entities/descriptor.c \
 	domain/entities/endpoint.c \
 	domain/entities/object.c \
 	domain/entities/process.c \
 	domain/entities/thread.c \
 	domain/services/cmdline.c \
-	domain/services/elf.c \
+	domain/services/exec.c \
 	domain/services/ipc.c \
 	domain/services/logging.c \
 	domain/services/page_alloc.c \
@@ -111,7 +92,29 @@ sources.kernel.c = \
 	domain/syscalls/send.c \
 	domain/syscalls/set_thread_local.c \
 	domain/syscalls/yield_thread.c \
-	domain/kmain.c
+	domain/config.c \
+	domain/kmain.c \
+	infrastructure/i686/auxv.c \
+	infrastructure/i686/boot.c \
+	infrastructure/i686/boot_alloc.c \
+	infrastructure/i686/cmdline.c \
+	infrastructure/i686/config.c \
+	infrastructure/i686/cpu.c \
+	infrastructure/i686/debug.c \
+	infrastructure/i686/halt.c \
+	infrastructure/i686/init.c \
+	infrastructure/i686/memory.c \
+	infrastructure/i686/pic8259.c \
+	infrastructure/i686/process.c \
+	infrastructure/i686/serial.c \
+	infrastructure/i686/thread.c \
+	infrastructure/i686/vga.c \
+	infrastructure/i686/vm.c \
+	infrastructure/i686/vm_pae.c \
+	infrastructure/i686/vm_x86.c \
+	infrastructure/elf.c \
+	interface/i686/interrupt.c \
+	interface/syscall.c
 
 sources.kernel.nasm = \
 	infrastructure/i686/abi.asm \

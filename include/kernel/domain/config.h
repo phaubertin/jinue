@@ -29,20 +29,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_MACHINE_CMDLINE_H
-#define JINUE_KERNEL_MACHINE_CMDLINE_H
+#ifndef JINUE_KERNEL_DOMAIN_CONFIG_H
+#define JINUE_KERNEL_DOMAIN_CONFIG_H
 
 #include <kernel/types.h>
 
-void machine_cmdline_start_parsing(machine_config_t *opts);
+config_t *get_config(void);
 
-void machine_cmdline_process_option(
-        machine_config_t        *config,
-        const cmdline_token_t   *option,
-        const cmdline_token_t   *value);
-
-bool machine_cmdline_has_errors(void);
-
-void machine_cmdline_report_errors(void);
+void apply_config_defaults(config_t *config);
 
 #endif

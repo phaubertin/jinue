@@ -34,7 +34,7 @@
 #include <kernel/domain/entities/descriptor.h>
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
-#include <kernel/domain/services/elf.h>
+#include <kernel/infrastructure/elf.h>
 #include <kernel/domain/services/page_alloc.h>
 #include <kernel/domain/services/panic.h>
 #include <kernel/domain/services/vmalloc.h>
@@ -48,6 +48,7 @@
 #include <kernel/interface/i686/boot.h>
 #include <kernel/machine/vm.h>
 #include <kernel/utils/utils.h>
+#include <sys/elf.h>
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -342,7 +343,7 @@ void vm_write_protect_kernel_image(const boot_info_t *boot_info) {
 
 static void initialize_initial_page_tables(
         pte_t               *page_tables,
-        Elf32_Ehdr          *kernel_elf,
+        Elf32_Ehdr          *ehdr,
         const boot_info_t   *boot_info) {
 
     size_t image_size  = (char *)boot_info->image_top - (char *)boot_info->image_start;
@@ -363,7 +364,7 @@ static void initialize_initial_page_tables(
             BOOT_SIZE_AT_16MB / PAGE_SIZE - image_pages);
 
     /* make kernel code segment executable */
-    const Elf32_Phdr *phdr = elf_executable_program_header(kernel_elf);
+    const Elf32_Phdr *phdr = elf_executable_program_header(ehdr);
 
     if(phdr == NULL) {
         panic("could not find kernel executable segment");
@@ -404,9 +405,11 @@ static void initialize_initial_page_directories(
 }
 
 addr_space_t *vm_create_initial_addr_space(
-        Elf32_Ehdr          *kernel_elf,
+        const exec_file_t   *kernel,
         boot_alloc_t        *boot_alloc,
         const boot_info_t   *boot_info) {
+    
+    Elf32_Ehdr *ehdr = kernel->start;
 
     /* Pre-allocate all the kernel page tables. */
     int num_pages           = (ADDR_4GB - KLIMIT) / PAGE_SIZE;
@@ -420,7 +423,7 @@ addr_space_t *vm_create_initial_addr_space(
     pte_t *page_tables      = boot_page_alloc_n(boot_alloc, num_page_tables);
     pte_t *page_directories = boot_page_alloc_n(boot_alloc, num_page_dirs);
 
-    initialize_initial_page_tables(page_tables, kernel_elf, boot_info);
+    initialize_initial_page_tables(page_tables, ehdr, boot_info);
     initialize_initial_page_directories(page_directories, page_tables, num_page_tables);
 
     kernel_page_tables      = (pte_t *)PHYS_TO_VIRT_AT_16MB(page_tables);

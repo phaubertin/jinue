@@ -35,9 +35,7 @@
 #include <kernel/domain/services/asm/cmdline.h>
 #include <kernel/types.h>
 
-void cmdline_parse_options(const char *cmdline);
-
-const cmdline_opts_t *cmdline_get_options(void);
+void cmdline_parse_options(config_t *config, const char *cmdline);
 
 void cmdline_report_errors(void);
 

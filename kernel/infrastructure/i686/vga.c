@@ -57,8 +57,8 @@ static void vga_clear(void) {
     }
 }
 
-void vga_init(const cmdline_opts_t *cmdline_opts) {
-    if(! cmdline_opts->machine.vga_enable) {
+void vga_init(const config_t *config) {
+    if(! config->machine.vga_enable) {
         return;
     }
     

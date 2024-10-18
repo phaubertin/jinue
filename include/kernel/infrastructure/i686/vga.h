@@ -35,7 +35,7 @@
 #include <kernel/domain/services/cmdline.h>
 #include <kernel/infrastructure/i686/asm/vga.h>
 
-void vga_init(const cmdline_opts_t *cmdline_opts);
+void vga_init(const config_t *config);
 
 void vga_set_base_addr(void *base_addr);
 

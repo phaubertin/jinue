@@ -36,7 +36,7 @@
 #include <kernel/domain/entities/thread.h>
 #include <kernel/domain/syscalls.h>
 
-int create_thread(int  process_fd, void *entry, void *user_stack) {
+int create_thread(int  process_fd, const thread_params_t *params) {
     descriptor_t *desc;
     int status = dereference_object_descriptor(&desc, get_current_process(), process_fd);
 
@@ -50,7 +50,7 @@ int create_thread(int  process_fd, void *entry, void *user_stack) {
         return -JINUE_EBADF;
     }
 
-    const thread_t *thread = construct_thread(process, entry, user_stack);
+    const thread_t *thread = construct_thread(process, params);
 
     /** TODO associate new thread to a free descriptor */
     return (thread == NULL) ? -JINUE_EAGAIN : 0;

@@ -35,6 +35,6 @@
 #include <kernel/domain/services/cmdline.h>
 #include <kernel/infrastructure/i686/asm/serial.h>
 
-void serial_init(const cmdline_opts_t *cmdline_opts);
+void serial_init(const config_t *config);
 
 #endif

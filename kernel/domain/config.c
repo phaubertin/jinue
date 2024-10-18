@@ -5,18 +5,18 @@
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,20 +29,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_MACHINE_CMDLINE_H
-#define JINUE_KERNEL_MACHINE_CMDLINE_H
+#include <kernel/domain/config.h>
+#include <kernel/machine/config.h>
 
-#include <kernel/types.h>
+static config_t config;
 
-void machine_cmdline_start_parsing(machine_config_t *opts);
+config_t *get_config(void) {
+    return &config;
+}
 
-void machine_cmdline_process_option(
-        machine_config_t        *config,
-        const cmdline_token_t   *option,
-        const cmdline_token_t   *value);
-
-bool machine_cmdline_has_errors(void);
-
-void machine_cmdline_report_errors(void);
-
-#endif
+void apply_config_defaults(config_t *config) {
+    /* TODO apply defaults for machine-independent options here (there aren't any yet) */
+    machine_apply_config_defaults(&config->machine);
+}

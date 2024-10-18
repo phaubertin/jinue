@@ -36,7 +36,7 @@
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/services/cmdline.h>
-#include <kernel/domain/services/elf.h>
+#include <kernel/infrastructure/elf.h>
 #include <kernel/domain/services/logging.h>
 #include <kernel/domain/services/page_alloc.h>
 #include <kernel/domain/services/panic.h>
@@ -297,9 +297,9 @@ static int map_flags(Elf32_Word p_flags) {
  *
  * */
 static void load_segments(
-        elf_info_t      *elf_info,
-        Elf32_Ehdr      *ehdr,
-        process_t       *process) {
+        elf_info_t          *elf_info,
+        process_t           *process,
+        const Elf32_Ehdr    *ehdr) {
 
     const Elf32_Phdr *phdrs = program_header_table(ehdr);
     elf_info->at_phdr       = get_at_phdr(ehdr);
@@ -523,33 +523,39 @@ static void initialize_descriptors(process_t *process) {
  * stack and fills an ELF information structure with information about the
  * binary.
  *
- * @param elf_info ELF information structure (output)
- * @param ehdr ELF file header
+ * @param thread_params initial thread parameters (output)
+ * @param process process in which to load the ELF binary
+ * @param exec_file executable ELF file
  * @param argv0 name of binary
  * @param cmdline full kernel command line
- * @param process process in which to load the ELF binary
  *
  * */
-void elf_load(
-        elf_info_t      *elf_info,
-        Elf32_Ehdr      *ehdr,
-        const char      *argv0,
-        const char      *cmdline,
-        process_t       *process) {
+void machine_load_exec(
+        thread_params_t     *thread_params,
+        process_t           *process,
+        const exec_file_t   *exec_file,
+        const char          *argv0,
+        const char          *cmdline) {
     
+    Elf32_Ehdr *ehdr = exec_file->start;
+
     if(! elf_check(ehdr)) {
         panic("ELF binary is invalid");
     }
 
-    load_segments(elf_info, ehdr, process);
+    elf_info_t elf_info;
+    load_segments(&elf_info, process, ehdr);
 
-    allocate_stack(elf_info);
+    allocate_stack(&elf_info);
 
-    initialize_stack(elf_info, cmdline, argv0);
+    initialize_stack(&elf_info, cmdline, argv0);
     
     initialize_descriptors(process);
 
     info("ELF binary loaded.");
+
+    thread_params->entry        = elf_info.entry;
+    thread_params->stack_addr   = elf_info.stack_addr;
 }
 
 /**

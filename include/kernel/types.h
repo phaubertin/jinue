@@ -111,6 +111,11 @@ struct thread_t {
 typedef struct thread_t thread_t;
 
 typedef struct {
+    void *entry;
+    void *stack_addr;
+} thread_params_t;
+
+typedef struct {
     object_header_t header;
     jinue_list_t    send_list;
     jinue_list_t    recv_list;
@@ -118,9 +123,9 @@ typedef struct {
 } ipc_endpoint_t;
 
 typedef struct {
-    Elf32_Ehdr  *ehdr;
-    size_t       size;
-} elf_file_t;
+    void    *start;
+    size_t   size;
+} exec_file_t;
 
 typedef struct {
     kern_paddr_t    start;
@@ -133,7 +138,7 @@ typedef struct {
 } logger_t;
 
 typedef struct {
-    machine_cmdline_opts_t  machine;
-} cmdline_opts_t;
+    machine_config_t machine;
+} config_t;
 
 #endif

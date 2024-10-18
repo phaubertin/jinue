@@ -5,18 +5,18 @@
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,20 +29,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_MACHINE_CMDLINE_H
-#define JINUE_KERNEL_MACHINE_CMDLINE_H
+#include <kernel/infrastructure/i686/asm/serial.h>
+#include <kernel/machine/config.h>
 
-#include <kernel/types.h>
-
-void machine_cmdline_start_parsing(machine_config_t *opts);
-
-void machine_cmdline_process_option(
-        machine_config_t        *config,
-        const cmdline_token_t   *option,
-        const cmdline_token_t   *value);
-
-bool machine_cmdline_has_errors(void);
-
-void machine_cmdline_report_errors(void);
-
-#endif
+void machine_apply_config_defaults(machine_config_t *config) {
+    config->pae               = CMDLINE_OPT_PAE_AUTO;
+    config->serial_enable     = false;
+    config->serial_baud_rate  = SERIAL_DEFAULT_BAUD_RATE;
+    config->serial_ioport     = SERIAL_DEFAULT_IOPORT;
+    config->vga_enable        = true;
+}

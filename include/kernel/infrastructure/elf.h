@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2019 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,20 +29,27 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_MACHINE_CMDLINE_H
-#define JINUE_KERNEL_MACHINE_CMDLINE_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_ELF_H
+#define JINUE_KERNEL_INFRASTRUCTURE_ELF_H
 
 #include <kernel/types.h>
+#include <sys/elf.h>
 
-void machine_cmdline_start_parsing(machine_config_t *opts);
+typedef struct {
+    void            *entry;
+    void            *stack_addr;
+    addr_t           at_phdr;
+    int              at_phent;
+    int              at_phnum;
+    process_t       *process;
+} elf_info_t;
 
-void machine_cmdline_process_option(
-        machine_config_t        *config,
-        const cmdline_token_t   *option,
-        const cmdline_token_t   *value);
+bool elf_check(Elf32_Ehdr *elf);
 
-bool machine_cmdline_has_errors(void);
+const Elf32_Phdr *elf_executable_program_header(const Elf32_Ehdr *ehdr);
 
-void machine_cmdline_report_errors(void);
+const char *elf_symbol_name(const Elf32_Ehdr *ehdr, const Elf32_Sym *symbol_header);
+
+const Elf32_Sym *elf_find_function_symbol_by_address(const Elf32_Ehdr *ehdr, Elf32_Addr addr);
 
 #endif

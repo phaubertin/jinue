@@ -94,8 +94,6 @@ static const cmdline_enum_def_t bool_names[] = {
     {NULL, 0}
 };
 
-static cmdline_opts_t cmdline_options;
-
 static int cmdline_errors;
 
 static void initialize_context(parse_context_t *context, const char *cmdline) {
@@ -731,12 +729,12 @@ bool cmdline_match_integer(int *ivalue, const cmdline_token_t *value) {
  * @param value token representing the option value
  *
  * */
-static void process_name_value_pair(parse_context_t *context) {
+static void process_name_value_pair(config_t *config, parse_context_t *context) {
     int opt_name;
 
     if(! cmdline_match_enum(&opt_name, kernel_option_names, &context->option)) {
         machine_cmdline_process_option(
-            &cmdline_options.machine,
+            &config->machine,
             &context->option,
             &context->value
         );
@@ -747,10 +745,7 @@ static void process_name_value_pair(parse_context_t *context) {
 }
 
 /**
- * Parse the kernel command line options
- *
- * After this function is called, the options can be retrieved by calling
- * cmdline_get_options().
+ * Parse the kernel command line options into the kernel configuration
  *
  * This function is fairly permissive. Unrecognized options or options without
  * and equal sign do not make the command line invalid. These options are
@@ -767,17 +762,14 @@ static void process_name_value_pair(parse_context_t *context) {
  *   command line, then initialize logging with (hopefully) the right options,
  *   and then report parsing errors.
  *
+ * @param config kernel configuration
  * @param cmdline command line string
  *
  * */
-void cmdline_parse_options(const char *cmdline) {
-    parse_context_t context;
-
-    machine_cmdline_start_parsing(&cmdline_options.machine);
-
-    /* TODO apply defaults for machine-independent options here (there aren't any yet) */
-
+void cmdline_parse_options(config_t *config, const char *cmdline) {
     cmdline_errors = 0;
+
+    machine_cmdline_start_parsing(&config->machine);
 
     if(cmdline == NULL) {
         /* cmdline_errors keeps track of errors for later reporting by the
@@ -786,28 +778,16 @@ void cmdline_parse_options(const char *cmdline) {
         return;
     }
 
+    parse_context_t context;
     initialize_context(&context, cmdline);
 
     do {
         mutate_context(&context);
 
         if(context.has_option) {
-            process_name_value_pair(&context);
+            process_name_value_pair(config, &context);
         }
     } while (!context.done);
-}
-
-/**
- * Get the kernel command line options parsed with cmdline_parse_options().
- *
- * If called before cmdline_parse_options(), the returned options structure
- * contains the defaults.
- *
- * @return options parsed from kernel command line
- *
- * */
-const cmdline_opts_t *cmdline_get_options(void) {
-    return &cmdline_options;
 }
 
 /**

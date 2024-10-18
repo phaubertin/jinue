@@ -35,13 +35,13 @@
 #include <kernel/domain/services/cmdline.h>
 #include <kernel/types.h>
 
-void machine_get_loader_elf(elf_file_t *elf);
+void machine_get_loader(exec_file_t *elf);
 
 void machine_get_ramdisk(kern_mem_block_t *ramdisk);
 
-void machine_init_logging(const cmdline_opts_t *cmdline_opts);
+void machine_init_logging(const config_t *config);
 
-void machine_init(const cmdline_opts_t *cmdline_opts);
+void machine_init(const config_t *config);
 
 #endif
 

@@ -33,9 +33,10 @@
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/entities/thread.h>
 #include <kernel/domain/services/cmdline.h>
-#include <kernel/domain/services/elf.h>
+#include <kernel/domain/services/exec.h>
 #include <kernel/domain/services/logging.h>
 #include <kernel/domain/services/panic.h>
+#include <kernel/domain/config.h>
 #include <kernel/machine/init.h>
 #include <kernel/kmain.h>
 #include <inttypes.h>
@@ -44,15 +45,17 @@
 
 
 void kmain(const char *cmdline) {
+    config_t *config = get_config();
+    apply_config_defaults(config);
+
     /* The first thing we want to do is parse the command line options, before
      * we log anything, because some options affect logging, such as whether we
      * need to log to VGA and/or serial port, the baud rate, etc. */
-    cmdline_parse_options(cmdline);
+    cmdline_parse_options(config, cmdline);
 
     /* Now that we parsed the command line options, we can initialize logging
      * properly and say hello. */
-    const cmdline_opts_t *cmdline_opts = cmdline_get_options();
-    machine_init_logging(cmdline_opts);
+    machine_init_logging(config);
 
     info("Jinue microkernel started.");
     info("Kernel revision " GIT_REVISION " built " BUILD_TIME " on " BUILD_HOST);
@@ -62,11 +65,11 @@ void kmain(const char *cmdline) {
 
     /* If there were issues parsing the command line, these will be reported
      * here (i.e. panic), now that logging has been initialized and we can log
-     * things. */
+     * things to the right places. */
     cmdline_report_errors();
 
     /* initialize machine-dependent code */
-    machine_init(cmdline_opts);
+    machine_init(config);
 
     kern_mem_block_t ramdisk;
     machine_get_ramdisk(&ramdisk);
@@ -91,30 +94,18 @@ void kmain(const char *cmdline) {
     process_switch_to(process);
 
     /* load user space loader binary */
-    elf_file_t loader;
-    machine_get_loader_elf(&loader);
+    exec_file_t loader;
+    machine_get_loader(&loader);
 
-    elf_info_t elf_info;
-    elf_load(&elf_info, loader.ehdr, "jinue-userspace-loader", cmdline, process);
-
-    /* create initial thread */
-    thread_t *thread = construct_thread(
-            process,
-            elf_info.entry,
-            elf_info.stack_addr
-    );
-    
-    if(thread == NULL) {
-        panic("Could not create initial thread.");
-    }
+    exec(process, &loader, "jinue-userspace-loader", cmdline);
 
     /* This should be the last thing the kernel prints before passing control
      * to the user space loader. */
     info("---");
 
     /* Start first thread */
-    thread_start_first();
+    start_first_thread();
 
     /* should never happen */
-    panic("thread_start_first() returned in kmain()");
+    panic("start_first_thread() returned in kmain()");
 }

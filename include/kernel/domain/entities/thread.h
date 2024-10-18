@@ -36,7 +36,7 @@
 
 extern const object_type_t *object_type_thread;
 
-thread_t *construct_thread(process_t *process, void *entry, void *user_stack);
+thread_t *construct_thread(process_t *process, const thread_params_t *params);
 
 void free_thread(thread_t *thread);
         
@@ -44,7 +44,7 @@ void thread_ready(thread_t *thread);
 
 void thread_switch_to(thread_t *thread, bool blocked);
 
-void thread_start_first(void);
+void start_first_thread(void);
 
 void thread_yield(void);
 

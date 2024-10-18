@@ -92,6 +92,6 @@ typedef struct {
     int                  serial_baud_rate;
     int                  serial_ioport;
     bool                 vga_enable;
-} machine_cmdline_opts_t;
+} machine_config_t;
 
 #endif

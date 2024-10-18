@@ -54,7 +54,7 @@ const object_type_t *object_type_thread = &object_type;
 
 static jinue_list_t ready_list = JINUE_LIST_STATIC;
 
-thread_t *construct_thread(process_t *process, void *entry, void *user_stack) {
+thread_t *construct_thread(process_t *process, const thread_params_t *params) {
     thread_t *thread = machine_alloc_thread();
 
     if(thread == NULL) {
@@ -70,7 +70,7 @@ thread_t *construct_thread(process_t *process, void *entry, void *user_stack) {
     thread->local_storage_addr  = NULL;
     thread->local_storage_size  = 0;
 
-    machine_init_thread(thread, entry, user_stack);
+    machine_init_thread(thread, params);
 
     thread_ready(thread);
     
@@ -138,7 +138,7 @@ void thread_switch_to(thread_t *thread, bool blocked) {
             false);             /* don't destroy current thread */
 }
 
-void thread_start_first(void) {
+void start_first_thread(void) {
     switch_thread(
             NULL,
             reschedule(false),
