@@ -32,6 +32,6 @@
 #ifndef _JINUE_SHARED_ASM_MACHINE_H
 #define _JINUE_SHARED_ASM_MACHINE_H
 
-#include <kernel/i686/asm/shared.h>
+#include <kernel/infrastructure/i686/asm/shared.h>
 
 #endif
