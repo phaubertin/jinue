@@ -1,4 +1,4 @@
-; Copyright (C) 2019 Philippe Aubertin.
+; Copyright (C) 2019-2024 Philippe Aubertin.
 ; All rights reserved.
 ;
 ; Redistribution and use in source and binary forms, with or without
@@ -41,41 +41,41 @@
 ; completes and passes control to the kernel, the memory layout looks like this
 ; (see doc/layout.md for detail):
 
-; +===================================+ boot_info.boot_end      ===
+; +===================================+ bootinfo.boot_end       ===
 ; |      initial page directory       |                          ^
-; +-----------------------------------+ boot_info.page_directory |
+; +-----------------------------------+ bootinfo.page_directory  |
 ; |       initial page tables         |                          |
 ; |         (PAE disabled)            |                          |
-; +-----------------------------------+ boot_info.page_table     | setup code
+; +-----------------------------------+ bootinfo.page_table      | setup code
 ; |       kernel command line         |                          | allocations
-; +-----------------------------------+ boot_info.cmdline        |
+; +-----------------------------------+ bootinfo.cmdline         |
 ; |     BIOS physical memory map      |                          |
-; +-----------------------------------+ boot_info.e820_map       |
+; +-----------------------------------+ bootinfo.e820_map        |
 ; |       kernel data segment         |                          |
 ; |     (copied from ELF binary)      |                          v
-; +-----------------------------------+ boot_info.data_physaddr ---
+; +-----------------------------------+ bootinfo.data_physaddr ---
 ; |        kernel stack (boot)        |                          ^
 ; +-----v-----------------------v-----+ (stack pointer)          |
 ; |                                   |                          |
 ; |              . . .                |                          | kernel boot
 ; |                                   |                          | stack/heap
-; +-----^-----------------------^-----+ boot_info.boot_heap      |
-; |            boot_info              |                          v
-; +===================================+ boot_info.image_top     ===
+; +-----^-----------------------^-----+ bootinfo.boot_heap       |
+; |            bootinfo              |                           v
+; +===================================+ bootinfo.image_top      ===
 ; |                                   |                          ^
 ; |      user space loader (ELF)      |                          |
 ; |                                   |                          |
-; +-----------------------------------+ boot_info.loader_start   |
+; +-----------------------------------+ bootinfo.loader_start    |
 ; |                                   |                          | kernel image
 ; |         microkernel (ELF)         |                          |
 ; |                                   |                          |
-; +-----------------------------------+ boot_info.kernel_start   |
+; +-----------------------------------+ bootinfo.kernel_start    |
 ; |         32-bit setup code         |                          |
 ; |         (i.e. this code)          |                          v
-; +===================================+ boot_info.image_start   ===
+; +===================================+ bootinfo.image_start   ===
 ;                                           0x100000 (1MB)
 ;
-; The boot information structure (boot_info) is a data structure this setup code
+; The boot information structure (bootinfo) is a data structure this setup code
 ; allocates on the boot heap and uses to pass information to the kernel. It is
 ; declared in the hal/types.h header file, with matching constant declarations
 ; in hal/asm/boot.h that specify the offset of each member of the structure.
@@ -148,7 +148,7 @@
 ;   |   |                                       |                       |   |
 ;   |   |^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^|                       |   |
 ;   |   |           initial allocations         | <---------------------+   |
-;   |   +---------------------------------------+ boot_info.image_top       |
+;   |   +---------------------------------------+ bootinfo.image_top       |
 ;   |   |             kernel image              |                           |
 ;   |   |             (read only)               | <-------------------------+
 ;       +---------------------------------------+ 0x100000 (1MB)
@@ -163,13 +163,13 @@
 ;   v   |                                       |
 ;  ===  +=======================================+ 0
 
-/* TODO check this #include */
-#include <sys/asm/elf.h>
 #include <kernel/domain/services/asm/cmdline.h>
 #include <kernel/infrastructure/i686/asm/memory.h>
 #include <kernel/infrastructure/i686/asm/vm.h>
 #include <kernel/infrastructure/i686/asm/x86.h>
 #include <kernel/interface/i686/asm/boot.h>
+#include <kernel/interface/i686/asm/bootinfo.h>
+#include <sys/asm/elf.h>
 
 ; Stack frame variables and size
 #define VAR_ZERO_PAGE       0
@@ -215,17 +215,17 @@ start:
     add eax, BOOT_SETUP32_ADDR
 
     ; We put the boot heap immediately after the kernel image and allocate
-    ; the boot_info_t structure on that heap.
+    ; the bootinfo_t structure on that heap.
     ;
-    ; Set ebp to the start of the boot_info_t structure. All accesses to that
+    ; Set ebp to the start of the bootinfo_t structure. All accesses to that
     ; structure will be relative to ebp.
     mov ebp, eax
     
-    ; Set heap pointer taking into account allocation of boot_info_t structure.
-    add eax, BOOT_INFO_SIZE
+    ; Set heap pointer taking into account allocation of bootinfo_t structure.
+    add eax, BOOTINFO_SIZE
     add eax, 7                      ; align address up...
     and eax, ~7                     ; ... to an eight-byte boundary
-    mov dword [ebp + BOOT_INFO_BOOT_HEAP], eax
+    mov dword [ebp + BOOTINFO_BOOT_HEAP], eax
 
     ; setup boot stack and heap, then use new stack
     mov eax, ebp
@@ -252,13 +252,13 @@ start:
     ; Store real mode code start/zero-page address for later use.
     mov dword [esp + VAR_ZERO_PAGE], esi
 
-    ; Initialize most fields in boot_info_t structure. The rest are initialized
+    ; Initialize most fields in bootinfo_t structure. The rest are initialized
     ; later, except for the location of the boot heap which was already
     ; initialized above.
-    call initialize_boot_info
+    call initialize_bootinfo
 
     ; copy data segment and set fields regarding its size and location in the
-    ; boot_info_t structure.
+    ; bootinfo_t structure.
     call prepare_data_segment
 
     ; copy BIOS memory map
@@ -273,7 +273,7 @@ start:
     call allocate_page_tables
 
     ; This is the end of allocations made by this setup code.
-    mov dword [ebp + BOOT_INFO_BOOT_END], edi
+    mov dword [ebp + BOOTINFO_BOOT_END], edi
 
     ; Initialize initial page tables.
     call initialize_page_tables
@@ -287,14 +287,14 @@ start:
 
     ; adjust the pointers in the boot information structure so they point in the
     ; kernel alias
-    add dword [ebp + BOOT_INFO_KERNEL_START],   BOOT_OFFSET_FROM_1MB
-    add dword [ebp + BOOT_INFO_LOADER_START],   BOOT_OFFSET_FROM_1MB
-    add dword [ebp + BOOT_INFO_IMAGE_START],    BOOT_OFFSET_FROM_1MB
-    add dword [ebp + BOOT_INFO_IMAGE_TOP],      BOOT_OFFSET_FROM_1MB
-    add dword [ebp + BOOT_INFO_E820_MAP],       BOOT_OFFSET_FROM_1MB
-    add dword [ebp + BOOT_INFO_CMDLINE],        BOOT_OFFSET_FROM_1MB
-    add dword [ebp + BOOT_INFO_BOOT_HEAP],      BOOT_OFFSET_FROM_1MB
-    add dword [ebp + BOOT_INFO_BOOT_END],       BOOT_OFFSET_FROM_1MB
+    add dword [ebp + BOOTINFO_KERNEL_START],   BOOT_OFFSET_FROM_1MB
+    add dword [ebp + BOOTINFO_LOADER_START],   BOOT_OFFSET_FROM_1MB
+    add dword [ebp + BOOTINFO_IMAGE_START],    BOOT_OFFSET_FROM_1MB
+    add dword [ebp + BOOTINFO_IMAGE_TOP],      BOOT_OFFSET_FROM_1MB
+    add dword [ebp + BOOTINFO_E820_MAP],       BOOT_OFFSET_FROM_1MB
+    add dword [ebp + BOOTINFO_CMDLINE],        BOOT_OFFSET_FROM_1MB
+    add dword [ebp + BOOTINFO_BOOT_HEAP],      BOOT_OFFSET_FROM_1MB
+    add dword [ebp + BOOTINFO_BOOT_END],       BOOT_OFFSET_FROM_1MB
 
     ; We won't be using the stack anymore
     deallocate_stack_frame()
@@ -340,20 +340,20 @@ just_right_here:
     ; Arguments:
     ;       esi real mode code start/zero-page address
     ;       edi copy destination
-    ;       ebp address of the boot_info_t structure
+    ;       ebp address of the bootinfo_t structure
     ;
     ; Returns:
     ;       edi end of memory map
     ;       ecx, esi are caller saved
 copy_e820_memory_map:
-    ; Set memory map address in boot_info_t structure
-    mov dword [ebp + BOOT_INFO_E820_MAP], edi
+    ; Set memory map address in bootinfo_t structure
+    mov dword [ebp + BOOTINFO_E820_MAP], edi
 
     ; Source address
     add esi, BOOT_E820_MAP
 
     ; Compute size to copy
-    mov ecx, dword [ebp + BOOT_INFO_E820_ENTRIES]
+    mov ecx, dword [ebp + BOOTINFO_E820_ENTRIES]
     lea ecx, [5 * ecx]              ; times 20 (size of one entry), which is 5 ...
     shl ecx, 2                      ; ... times 2^2
 
@@ -370,19 +370,19 @@ copy_e820_memory_map:
     ; Arguments:
     ;       esi real mode code start/zero-page address
     ;       edi copy destination
-    ;       ebp address of the boot_info_t structure
+    ;       ebp address of the bootinfo_t structure
     ;
     ; Returns:
     ;       edi end of kernel command line
     ;       eax, ecx, esi are caller saved
 copy_cmdline:
-    mov dword [ebp + BOOT_INFO_CMDLINE], empty_string
+    mov dword [ebp + BOOTINFO_CMDLINE], empty_string
 
     mov esi, dword [esi + BOOT_CMD_LINE_PTR]
     or esi, esi                     ; if command line pointer is NULL...
     jz .skip                        ; ... skip copy and keep empty string
 
-    mov dword [ebp + BOOT_INFO_CMDLINE], edi
+    mov dword [ebp + BOOTINFO_CMDLINE], edi
     mov ecx, CMDLINE_MAX_PARSE_LENGTH
 .copy:
     lodsb                           ; load next character
@@ -403,52 +403,52 @@ copy_cmdline:
     ret
 
     ; --------------------------------------------------------------------------
-    ; Function: initialize_boot_info
+    ; Function: initialize_bootinfo
     ; --------------------------------------------------------------------------
-    ; Initialize most fields in the boot_info_t structure, specifically:
+    ; Initialize most fields in the bootinfo_t structure, specifically:
     ;
-    ;       kernel_start    (ebp + BOOT_INFO_KERNEL_START)
-    ;       kernel_size     (ebp + BOOT_INFO_KERNEL_SIZE)
-    ;       loader_start    (ebp + BOOT_INFO_LOADER_START)
-    ;       loader_size     (ebp + BOOT_INFO_LOADER_SIZE)
-    ;       image_start     (ebp + BOOT_INFO_IMAGE_START)
-    ;       image_top       (ebp + BOOT_INFO_IMAGE_TOP)
-    ;       ramdisk_start   (ebp + BOOT_INFO_RAMDISK_START)
-    ;       ramdisk_size    (ebp + BOOT_INFO_RAMDISK_SIZE)
-    ;       setup_signature (ebp + BOOT_INFO_SETUP_SIGNATURE)
-    ;       e820_entries    (ebp + BOOT_INFO_E820_ENTRIES)
+    ;       kernel_start    (ebp + BOOTINFO_KERNEL_START)
+    ;       kernel_size     (ebp + BOOTINFO_KERNEL_SIZE)
+    ;       loader_start    (ebp + BOOTINFO_LOADER_START)
+    ;       loader_size     (ebp + BOOTINFO_LOADER_SIZE)
+    ;       image_start     (ebp + BOOTINFO_IMAGE_START)
+    ;       image_top       (ebp + BOOTINFO_IMAGE_TOP)
+    ;       ramdisk_start   (ebp + BOOTINFO_RAMDISK_START)
+    ;       ramdisk_size    (ebp + BOOTINFO_RAMDISK_SIZE)
+    ;       setup_signature (ebp + BOOTINFO_SETUP_SIGNATURE)
+    ;       e820_entries    (ebp + BOOTINFO_E820_ENTRIES)
     ;
     ; Arguments:
     ;       esi real mode code start/zero-page address
-    ;       ebp address of the boot_info_t structure
+    ;       ebp address of the bootinfo_t structure
     ;
     ; Returns:
     ;       eax is caller saved
-initialize_boot_info:
+initialize_bootinfo:
     ; Values provided by linker.
-    mov dword [ebp + BOOT_INFO_KERNEL_START], kernel_start
-    mov dword [ebp + BOOT_INFO_KERNEL_SIZE], kernel_size
-    mov dword [ebp + BOOT_INFO_LOADER_START], loader_start
-    mov dword [ebp + BOOT_INFO_LOADER_SIZE], loader_size
-    mov dword [ebp + BOOT_INFO_IMAGE_START], image_start
+    mov dword [ebp + BOOTINFO_KERNEL_START], kernel_start
+    mov dword [ebp + BOOTINFO_KERNEL_SIZE], kernel_size
+    mov dword [ebp + BOOTINFO_LOADER_START], loader_start
+    mov dword [ebp + BOOTINFO_LOADER_SIZE], loader_size
+    mov dword [ebp + BOOTINFO_IMAGE_START], image_start
 
     ; set pointer to top of kernel image
-    mov dword [ebp + BOOT_INFO_IMAGE_TOP], ebp
+    mov dword [ebp + BOOTINFO_IMAGE_TOP], ebp
 
     ; Copy initial RAM disk address and size
     mov eax, dword [esi + BOOT_RAMDISK_IMAGE]
-    mov dword [ebp + BOOT_INFO_RAMDISK_START], eax
+    mov dword [ebp + BOOTINFO_RAMDISK_START], eax
     mov eax, dword [esi + BOOT_RAMDISK_SIZE]
-    mov dword [ebp + BOOT_INFO_RAMDISK_SIZE], eax
+    mov dword [ebp + BOOTINFO_RAMDISK_SIZE], eax
 
     ; Copy signature so it can be checked by the kernel
     mov eax, dword [esi + BOOT_SETUP_HEADER]
-    mov dword [ebp + BOOT_INFO_SETUP_SIGNATURE], eax
+    mov dword [ebp + BOOTINFO_SETUP_SIGNATURE], eax
 
     ; Number of entries in BIOS memory map
     mov al, byte [esi + BOOT_E820_ENTRIES]
     movzx eax, al
-    mov dword [ebp + BOOT_INFO_E820_ENTRIES], eax
+    mov dword [ebp + BOOTINFO_E820_ENTRIES], eax
 
     ret
 
@@ -456,12 +456,12 @@ initialize_boot_info:
     ; Function: prepare_data_segment
     ; --------------------------------------------------------------------------
     ; Find and copy the kernel's data segment, add zero padding for
-    ; uninitialized data and set its location and size in the boot_info_t
+    ; uninitialized data and set its location and size in the bootinfo_t
     ; structure.
     ;
     ; Arguments:
     ;       edi address where data segment will be copied
-    ;       ebp address of the boot_info_t structure
+    ;       ebp address of the bootinfo_t structure
     ;
     ; Returns:
     ;       edi address of top of copied data segment (for subsequent allocations)
@@ -483,8 +483,8 @@ prepare_data_segment:
     jnz .fail
 
     ; Put destination address (edi) in the physical address of data segment
-    ; field in the boot_info_t structure.
-    mov dword [ebp + BOOT_INFO_DATA_PHYSADDR], edi
+    ; field in the bootinfo_t structure.
+    mov dword [ebp + BOOTINFO_DATA_PHYSADDR], edi
 
     ; ecx is the loop counter when iterating on program headers. Set to number
     ; of program headers.
@@ -508,15 +508,15 @@ prepare_data_segment:
 
     ; We found the segment we were looking for.
 
-    ; Set segment start address in boot_info_t structure
+    ; Set segment start address in bootinfo_t structure
     mov eax, dword [edx + ELF_P_VADDR]      ; Start of data segment
-    mov dword [ebp + BOOT_INFO_DATA_START], eax
+    mov dword [ebp + BOOTINFO_DATA_START], eax
 
-    ; Set segment size in boot_info_t structure
+    ; Set segment size in bootinfo_t structure
     mov eax, dword [edx + ELF_P_MEMSZ]      ; Size of data segment in memory
     add eax, PAGE_SIZE - 1                  ; align address up...
     and eax, ~PAGE_MASK                     ; ... to a page boundary
-    mov dword [ebp + BOOT_INFO_DATA_SIZE], eax
+    mov dword [ebp + BOOTINFO_DATA_SIZE], eax
 
     ; Set source address of data segment copy
     mov esi, kernel_start                   ; kernel start
@@ -552,9 +552,9 @@ prepare_data_segment:
     ; means something is seriously wrong. Set all data segment-related fields to
     ; zero and let the kernel deal with this error condition later.
     xor eax, eax
-    mov dword [ebp + BOOT_INFO_DATA_START], eax
-    mov dword [ebp + BOOT_INFO_DATA_SIZE], eax
-    mov dword [ebp + BOOT_INFO_DATA_PHYSADDR], eax
+    mov dword [ebp + BOOTINFO_DATA_START], eax
+    mov dword [ebp + BOOTINFO_DATA_SIZE], eax
+    mov dword [ebp + BOOTINFO_DATA_PHYSADDR], eax
 
     ; Return value: edi is unchanged
     ret
@@ -573,7 +573,7 @@ prepare_data_segment:
     ;
     ; Arguments:
     ;       edi address where tables are allocated
-    ;       ebp address of the boot_info_t structure
+    ;       ebp address of the bootinfo_t structure
     ;
     ; Returns:
     ;       edi end of allocations
@@ -583,19 +583,19 @@ allocate_page_tables:
     and edi, ~PAGE_MASK                 ; ... to a page boundary
 
     ; One page for the first 2MB of memory
-    mov dword [ebp + BOOT_INFO_PAGE_TABLE_1MB], edi
+    mov dword [ebp + BOOTINFO_PAGE_TABLE_1MB], edi
     add edi, PAGE_SIZE
 
     ; Page tables for mapping at 0x1000000 (i.e. at 16MB)
-    mov dword [ebp + BOOT_INFO_PAGE_TABLE_16MB], edi
+    mov dword [ebp + BOOTINFO_PAGE_TABLE_16MB], edi
     add edi, PAGE_SIZE * BOOT_PTES_AT_16MB / VM_X86_PAGE_TABLE_PTES
 
     ; One page table for mapping at KLIMIT
-    mov dword [ebp + BOOT_INFO_PAGE_TABLE_KLIMIT], edi
+    mov dword [ebp + BOOTINFO_PAGE_TABLE_KLIMIT], edi
     add edi, PAGE_SIZE
 
     ; Page directory
-    mov dword [ebp + BOOT_INFO_PAGE_DIRECTORY], edi
+    mov dword [ebp + BOOTINFO_PAGE_DIRECTORY], edi
     add edi, PAGE_SIZE
 
     ret
@@ -608,29 +608,29 @@ allocate_page_tables:
     ;
     ; Arguments:
     ;       edi address of first page table entry
-    ;       ebp address of the boot_info_t structure
+    ;       ebp address of the bootinfo_t structure
     ;
     ; Returns:
     ;       edi address of first page table entry after mapped 1MB
     ;       eax, ebx, ecx are caller saved
 map_kernel_image_1mb:
     ; Compute number of entries to map kernel image
-    mov ecx, dword [ebp + BOOT_INFO_IMAGE_TOP]      ; end of image
-    sub ecx, dword [ebp + BOOT_INFO_IMAGE_START]    ; minus start of image
+    mov ecx, dword [ebp + BOOTINFO_IMAGE_TOP]      ; end of image
+    sub ecx, dword [ebp + BOOTINFO_IMAGE_START]    ; minus start of image
     shr ecx, PAGE_BITS                              ; divide by page size
 
     ; remember number of entries in ebx.
     mov ebx, ecx
 
     ; map kernel image read only
-    mov eax, dword [ebp + BOOT_INFO_IMAGE_START]
+    mov eax, dword [ebp + BOOTINFO_IMAGE_START]
     call map_linear
 
     ; map remaining of MB read/write. This includes boot stack/heap and initial
     ; allocations.
     mov eax, ebx
     shl eax, PAGE_BITS                              ; image size
-    add eax, dword [ebp + BOOT_INFO_IMAGE_START]    ; image end = size + offset
+    add eax, dword [ebp + BOOTINFO_IMAGE_START]    ; image end = size + offset
     or eax, X86_PTE_READ_WRITE                      ; access flags
 
     mov ecx, 256                                    ; number of entries for 1MB
@@ -648,7 +648,7 @@ map_kernel_image_1mb:
     ;
     ; Arguments:
     ;       edi address of first page table entry
-    ;       ebp address of the boot_info_t structure
+    ;       ebp address of the bootinfo_t structure
     ;
     ; Returns:
     ;       edi address of first page table entry after mapped 1MB
@@ -662,12 +662,12 @@ map_kernel:
     ; ----------------------------------------------
 
     ; compute number of entries to map kernel image
-    mov ecx, dword [ebp + BOOT_INFO_IMAGE_TOP]      ; end of image
-    sub ecx, dword [ebp + BOOT_INFO_IMAGE_START]    ; minus start of image
+    mov ecx, dword [ebp + BOOTINFO_IMAGE_TOP]      ; end of image
+    sub ecx, dword [ebp + BOOTINFO_IMAGE_START]    ; minus start of image
     shr ecx, PAGE_BITS                              ; divide by page size
 
     ; start address, read only
-    mov eax, dword [ebp + BOOT_INFO_IMAGE_START]
+    mov eax, dword [ebp + BOOTINFO_IMAGE_START]
 
     ; Check if we were able to find and copy the data segment earlier. If we
     ; weren't, let's just map the whole kernel image read/write and let the
@@ -675,7 +675,7 @@ map_kernel:
     ;
     ; If we weren't able to find the data segment, its size has been set to
     ; zero.
-    mov ebx, dword [ebp + BOOT_INFO_DATA_SIZE]
+    mov ebx, dword [ebp + BOOTINFO_DATA_SIZE]
     or ebx, ebx
     jnz .readonly
 
@@ -697,18 +697,18 @@ map_kernel:
     jz .skip_data
 
     ; start page table entry for data segment
-    mov eax, dword [ebp + BOOT_INFO_DATA_START]     ; data segment start
+    mov eax, dword [ebp + BOOTINFO_DATA_START]     ; data segment start
     sub eax, BOOT_OFFSET_FROM_1MB                   ; remove mapping offset
-    sub eax, dword [ebp + BOOT_INFO_IMAGE_START]    ; minus image start (offset)
+    sub eax, dword [ebp + BOOTINFO_IMAGE_START]    ; minus image start (offset)
     shr eax, (PAGE_BITS - 2)    ; divide by page size, multiply by entry size
     add edi, eax                ; and add offset
 
     ; number of page table entries in data segment
-    mov ecx, dword [ebp + BOOT_INFO_DATA_SIZE]      ; size of data segment
+    mov ecx, dword [ebp + BOOTINFO_DATA_SIZE]      ; size of data segment
     shr ecx, PAGE_BITS                              ; divide by page size
 
     ; map data segment read/write
-    mov eax, dword [ebp + BOOT_INFO_DATA_PHYSADDR]  ; physical address
+    mov eax, dword [ebp + BOOTINFO_DATA_PHYSADDR]  ; physical address
     or eax, X86_PTE_READ_WRITE                      ; access flags
 
     call map_linear
@@ -724,10 +724,10 @@ map_kernel:
     pop edi
 
     ; physical address
-    mov eax, dword [ebp + BOOT_INFO_IMAGE_TOP]
+    mov eax, dword [ebp + BOOTINFO_IMAGE_TOP]
 
     ; number of entries
-    mov ecx, dword [ebp + BOOT_INFO_PAGE_TABLE_1MB] ; address of page tables
+    mov ecx, dword [ebp + BOOTINFO_PAGE_TABLE_1MB] ; address of page tables
     sub ecx, eax                                    ; minus image top
     shr ecx, PAGE_BITS                              ; divide by page size
 
@@ -741,8 +741,8 @@ map_kernel:
     ; ----------------------------------------------
 
     ; number of entries already mapped
-    mov eax, dword [ebp + BOOT_INFO_PAGE_TABLE_1MB] ; address of page tables
-    sub eax, dword [ebp + BOOT_INFO_IMAGE_TOP]      ; minus image start
+    mov eax, dword [ebp + BOOTINFO_PAGE_TABLE_1MB] ; address of page tables
+    sub eax, dword [ebp + BOOTINFO_IMAGE_TOP]      ; minus image start
     shr eax, PAGE_BITS                              ; divide by page size
 
     ; number of entries
@@ -759,7 +759,7 @@ map_kernel:
     ; Initialize initial non-PAE page tables.
     ;
     ; Arguments:
-    ;       ebp address of the boot_info_t structure
+    ;       ebp address of the bootinfo_t structure
     ;
     ; Returns:
     ;       eax, ebx, ecx, edi are caller saved
@@ -770,7 +770,7 @@ initialize_page_tables:
 
     ; Map first 1MB read/write. This includes video memory.
     mov eax, X86_PTE_READ_WRITE                     ; start address is 0
-    mov edi, dword [ebp + BOOT_INFO_PAGE_TABLE_1MB] ; write address
+    mov edi, dword [ebp + BOOTINFO_PAGE_TABLE_1MB] ; write address
     mov ecx, 256                                    ; number of entries
     call map_linear
 
@@ -808,32 +808,32 @@ initialize_page_tables:
     ; Initialize initial non-PAE page directory.
     ;
     ; Arguments:
-    ;       ebp address of the boot_info_t structure
+    ;       ebp address of the bootinfo_t structure
     ;
     ; Returns:
     ;       eax, ecx, edi are caller saved
 initialize_page_directory:
     ; clear initial page directory
-    mov edi, dword [ebp + BOOT_INFO_PAGE_DIRECTORY] ; write address
+    mov edi, dword [ebp + BOOTINFO_PAGE_DIRECTORY] ; write address
     mov ecx, 1024                       ; write 1024 entries (full table)
     call clear_ptes
 
     ; add entry for the first page table
-    mov edi, dword [ebp + BOOT_INFO_PAGE_DIRECTORY]
-    mov eax, dword [ebp + BOOT_INFO_PAGE_TABLE_1MB]
+    mov edi, dword [ebp + BOOTINFO_PAGE_DIRECTORY]
+    mov eax, dword [ebp + BOOTINFO_PAGE_TABLE_1MB]
     or eax, X86_PTE_READ_WRITE | X86_PTE_PRESENT
     mov dword [edi], eax
 
     ; add entries for page tables for memory at 16MB
-    mov eax, dword [ebp + BOOT_INFO_PAGE_TABLE_16MB]
+    mov eax, dword [ebp + BOOTINFO_PAGE_TABLE_16MB]
     or eax, X86_PTE_READ_WRITE
     lea edi, [edi + 4 * (MEMORY_ADDR_16MB >> 22)]
     mov ecx, BOOT_PTES_AT_16MB / VM_X86_PAGE_TABLE_PTES
     call map_linear
 
     ; add entry for the last page table
-    mov edi, dword [ebp + BOOT_INFO_PAGE_DIRECTORY]
-    mov eax, dword [ebp + BOOT_INFO_PAGE_TABLE_KLIMIT]
+    mov edi, dword [ebp + BOOTINFO_PAGE_DIRECTORY]
+    mov eax, dword [ebp + BOOTINFO_PAGE_TABLE_KLIMIT]
     or eax, X86_PTE_READ_WRITE | X86_PTE_PRESENT
     mov dword [edi + 4 * (KLIMIT >> 22)], eax
 
@@ -846,13 +846,13 @@ initialize_page_directory:
     ; kernel.
     ;
     ; Arguments:
-    ;       ebp address of the boot_info_t structure
+    ;       ebp address of the bootinfo_t structure
     ;
     ; Returns:
     ;       eax is caller saved
 enable_paging:
     ; set page directory address in CR3
-    mov eax, [ebp + BOOT_INFO_PAGE_DIRECTORY]
+    mov eax, [ebp + BOOTINFO_PAGE_DIRECTORY]
     mov cr3, eax
 
     ; enable paging (PG), prevent kernel from writing to read-only pages (WP)

@@ -39,12 +39,12 @@
 #include <stddef.h>
 
 void machine_dump_call_stack(void) {
-    if(!boot_info_check(false)) {
+    if(!check_bootinfo(false)) {
         warning("Cannot dump call stack because boot information structure is invalid.");
         return;
     }
 
-    const boot_info_t *boot_info = get_boot_info();
+    const bootinfo_t *bootinfo = get_bootinfo();
 
     info("Call stack dump:");
 
@@ -59,7 +59,7 @@ void machine_dump_call_stack(void) {
          * TODO can we do better than this? */
         return_addr -= 5;
         
-        const Elf32_Ehdr *ehdr = boot_info->kernel_start;
+        const Elf32_Ehdr *ehdr = bootinfo->kernel_start;
         const Elf32_Sym *symbol = elf_find_function_symbol_by_address(
                 ehdr,
                 (Elf32_Addr)return_addr);

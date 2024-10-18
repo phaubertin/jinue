@@ -61,36 +61,36 @@
 /** Specifies the entry point to use for system calls */
 int syscall_implementation;
 
-static void check_data_segment(const boot_info_t *boot_info) {
-    if(     boot_info->data_start == 0 ||
-            boot_info->data_size == 0 ||
-            boot_info->data_physaddr == 0) {
+static void check_data_segment(const bootinfo_t *bootinfo) {
+    if(     bootinfo->data_start == 0 ||
+            bootinfo->data_size == 0 ||
+            bootinfo->data_physaddr == 0) {
         panic("Setup code wasn't able to load kernel data segment");
     }
 }
 
-static void check_alignment(const boot_info_t *boot_info) {
-    if(page_offset_of(boot_info->image_start) != 0) {
+static void check_alignment(const bootinfo_t *bootinfo) {
+    if(page_offset_of(bootinfo->image_start) != 0) {
         panic("Kernel image start is not aligned on a page boundary");
     }
 
-    if(page_offset_of(boot_info->image_top) != 0) {
+    if(page_offset_of(bootinfo->image_top) != 0) {
         panic("Top of kernel image is not aligned on a page boundary");
     }
 }
 
-static void move_kernel_at_16mb(const boot_info_t *boot_info) {
+static void move_kernel_at_16mb(const bootinfo_t *bootinfo) {
     move_and_remap_kernel(
-            (addr_t)boot_info->page_table_1mb,
-            (addr_t)boot_info->page_table_klimit,
-            (uint32_t)boot_info->page_directory);
+            (addr_t)bootinfo->page_table_1mb,
+            (addr_t)bootinfo->page_table_klimit,
+            (uint32_t)bootinfo->page_directory);
 
-    vm_write_protect_kernel_image(boot_info);
+    vm_write_protect_kernel_image(bootinfo);
 }
 
 static bool maybe_enable_pae(
         boot_alloc_t        *boot_alloc,
-        const boot_info_t   *boot_info,
+        const bootinfo_t   *bootinfo,
         const config_t      *config) {
 
     bool use_pae;
@@ -112,7 +112,7 @@ static bool maybe_enable_pae(
     }
     else {
         info("Enabling Physical Address Extension (PAE).");
-        vm_pae_enable(boot_alloc, boot_info);
+        vm_pae_enable(boot_alloc, bootinfo);
     }
 
     return use_pae;
@@ -246,9 +246,9 @@ static void select_syscall_implementation(void) {
     }
 }
 
-static void get_kernel_exec_file(exec_file_t *kernel, const boot_info_t *boot_info) {
-    kernel->start   = boot_info->kernel_start;
-    kernel->size    = boot_info->kernel_size;
+static void get_kernel_exec_file(exec_file_t *kernel, const bootinfo_t *bootinfo) {
+    kernel->start   = bootinfo->kernel_start;
+    kernel->size    = bootinfo->kernel_size;
 
     if(kernel->start == NULL) {
         panic("malformed boot image: no kernel ELF binary");
@@ -258,14 +258,14 @@ static void get_kernel_exec_file(exec_file_t *kernel, const boot_info_t *boot_in
         panic("kernel too small to be an ELF binary");
     }
 
-    if(! elf_check(boot_info->kernel_start)) {
+    if(! elf_check(bootinfo->kernel_start)) {
         panic("kernel ELF binary is invalid");
     }
 }
 
-static void get_loader_elf(exec_file_t *loader, const boot_info_t *boot_info) {
-    loader->start   = boot_info->loader_start;
-    loader->size    = boot_info->loader_size;
+static void get_loader_elf(exec_file_t *loader, const bootinfo_t *bootinfo) {
+    loader->start   = bootinfo->loader_start;
+    loader->size    = bootinfo->loader_size;
 
     if(loader->start == NULL) {
         panic("malformed boot image: no user space loader ELF binary");
@@ -278,9 +278,9 @@ static void get_loader_elf(exec_file_t *loader, const boot_info_t *boot_info) {
     info("Found user space loader with size %" PRIu32 " bytes.", loader->size);
 }
 
-static void get_ramdisk(kern_mem_block_t *ramdisk, const boot_info_t *boot_info) {
-    ramdisk->start  = boot_info->ramdisk_start;
-    ramdisk->size   = boot_info->ramdisk_size;
+static void get_ramdisk(kern_mem_block_t *ramdisk, const bootinfo_t *bootinfo) {
+    ramdisk->start  = bootinfo->ramdisk_start;
+    ramdisk->size   = bootinfo->ramdisk_size;
     
     if(ramdisk->start == 0 || ramdisk->size == 0) {
         panic("No initial RAM disk loaded.");
@@ -288,13 +288,13 @@ static void get_ramdisk(kern_mem_block_t *ramdisk, const boot_info_t *boot_info)
 }
 
 void machine_get_loader(exec_file_t *elf) {
-    const boot_info_t *boot_info = get_boot_info();
-    get_loader_elf(elf, boot_info);
+    const bootinfo_t *bootinfo = get_bootinfo();
+    get_loader_elf(elf, bootinfo);
 }
 
 void machine_get_ramdisk(kern_mem_block_t *ramdisk) {
-    const boot_info_t *boot_info = get_boot_info();
-    get_ramdisk(ramdisk, boot_info);
+    const bootinfo_t *bootinfo = get_bootinfo();
+    get_ramdisk(ramdisk, bootinfo);
 }
 
 void machine_init_logging(const config_t *config) {
@@ -304,24 +304,24 @@ void machine_init_logging(const config_t *config) {
 
 void machine_init(const config_t *config) {
     /* Validate the boot information structure before using it. */
-    (void)boot_info_check(true);
+    (void)check_bootinfo(true);
 
-    const boot_info_t *boot_info = get_boot_info();
+    const bootinfo_t *bootinfo = get_bootinfo();
 
     cpu_detect_features();
 
-    check_data_segment(boot_info);
+    check_data_segment(bootinfo);
 
-    check_alignment(boot_info);
+    check_alignment(bootinfo);
 
-    check_memory(boot_info);
+    check_memory(bootinfo);
 
-    move_kernel_at_16mb(boot_info);
+    move_kernel_at_16mb(bootinfo);
 
     boot_alloc_t boot_alloc;
-    boot_alloc_init(&boot_alloc, boot_info);
+    boot_alloc_init(&boot_alloc, bootinfo);
 
-    bool pae_enabled = maybe_enable_pae(&boot_alloc, boot_info, config);
+    bool pae_enabled = maybe_enable_pae(&boot_alloc, bootinfo, config);
 
     /* Re-initialize the boot page allocator to allocate following the kernel
      * image at 16MB rather than at 1MB, now that the kernel has been moved
@@ -353,11 +353,11 @@ void machine_init(const config_t *config) {
     pic8259_init();
 
     exec_file_t kernel;
-    get_kernel_exec_file(&kernel, boot_info);
+    get_kernel_exec_file(&kernel, bootinfo);
 
-    addr_space_t *addr_space = vm_create_initial_addr_space(&kernel, &boot_alloc, boot_info);
+    addr_space_t *addr_space = vm_create_initial_addr_space(&kernel, &boot_alloc, bootinfo);
 
-    memory_initialize_array(&boot_alloc, boot_info);
+    memory_initialize_array(&boot_alloc, bootinfo);
 
     /* After this, VGA output is not possible until we switch to the
      * new address space (see the call to vm_switch_addr_space() below).

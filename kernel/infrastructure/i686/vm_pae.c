@@ -107,9 +107,9 @@ static void initialize_boot_mapping_at_1mb(pte_t *page_table_1mb) {
  * */
 static void initialize_boot_mapping_at_16mb(
         pte_t               *page_table_16mb,
-        const boot_info_t   *boot_info) {
+        const bootinfo_t   *bootinfo) {
 
-    size_t image_size = (char *)boot_info->image_top - (char *)boot_info->image_start;
+    size_t image_size = (char *)bootinfo->image_top - (char *)bootinfo->image_start;
     size_t image_pages = image_size / PAGE_SIZE;
 
     /* map kernel image read only */
@@ -135,12 +135,12 @@ static void initialize_boot_mapping_at_16mb(
  * */
 static void initialize_boot_mapping_at_klimit(
         pte_t               *page_table_klimit,
-        const boot_info_t   *boot_info) {
+        const bootinfo_t   *bootinfo) {
 
-    uint32_t size_at_16mb = (uint32_t)boot_info->page_table_1mb - MEMORY_ADDR_1MB;
+    uint32_t size_at_16mb = (uint32_t)bootinfo->page_table_1mb - MEMORY_ADDR_1MB;
     uint32_t num_entries_at_16mb = size_at_16mb / PAGE_SIZE;
 
-    size_t image_size = (char *)boot_info->image_top - (char *)boot_info->image_start;
+    size_t image_size = (char *)bootinfo->image_top - (char *)bootinfo->image_start;
     size_t image_pages = image_size / PAGE_SIZE;
 
     /* map kernel image read only */
@@ -151,13 +151,13 @@ static void initialize_boot_mapping_at_klimit(
             image_pages);
 
     /* map kernel data segment */
-    size_t offset = ((uintptr_t)boot_info->data_start - KLIMIT) / PAGE_SIZE;
+    size_t offset = ((uintptr_t)bootinfo->data_start - KLIMIT) / PAGE_SIZE;
 
     vm_initialize_page_table_linear(
             vm_pae_get_pte_with_offset(page_table_klimit, offset),
-            boot_info->data_physaddr + MEMORY_ADDR_16MB - MEMORY_ADDR_1MB,
+            bootinfo->data_physaddr + MEMORY_ADDR_16MB - MEMORY_ADDR_1MB,
             X86_PTE_READ_WRITE,
-            boot_info->data_size / PAGE_SIZE);
+            bootinfo->data_size / PAGE_SIZE);
 
     /* map rest of region read/write */
     vm_initialize_page_table_linear(
@@ -260,12 +260,12 @@ static void initialize_boot_pdpt(
  * so we need two page directories.
  *
  * @param boot_alloc state of the boot-time allocator
- * @param boot_info boot information structure
+ * @param bootinfo boot information structure
  *
  * */
 static pdpt_t *initialize_boot_page_tables(
         boot_alloc_t        *boot_alloc,
-        const boot_info_t   *boot_info) {
+        const bootinfo_t   *bootinfo) {
 
     /* First mapping */
     pte_t *page_table_1mb = boot_page_alloc(boot_alloc);
@@ -277,12 +277,12 @@ static pdpt_t *initialize_boot_page_tables(
             boot_alloc,
             BOOT_PTES_AT_16MB / PAGE_TABLE_ENTRIES);
 
-    initialize_boot_mapping_at_16mb(page_table_16mb, boot_info);
+    initialize_boot_mapping_at_16mb(page_table_16mb, bootinfo);
 
     /* Third mapping */
     pte_t *page_table_klimit = boot_page_alloc(boot_alloc);
 
-    initialize_boot_mapping_at_klimit(page_table_klimit, boot_info);
+    initialize_boot_mapping_at_klimit(page_table_klimit, bootinfo);
 
     /* Page directory for first two mappings */
     pte_t *low_page_directory = boot_page_alloc(boot_alloc);
@@ -313,15 +313,15 @@ static pdpt_t *initialize_boot_page_tables(
  * Allocate and initialize boot-time page tables, then enable PAE.
  *
  * @param boot_alloc state of the boot-time allocator
- * @param boot_info boot information structure
+ * @param bootinfo boot information structure
  *
  * */
-void vm_pae_enable(boot_alloc_t *boot_alloc, const boot_info_t *boot_info) {
+void vm_pae_enable(boot_alloc_t *boot_alloc, const bootinfo_t *bootinfo) {
     pgtable_format_pae      = true;
     entries_per_page_table  = VM_PAE_PAGE_TABLE_PTES;
     page_frame_number_mask  = ((UINT64_C(1) << cpu_info.maxphyaddr) - 1) & (~PAGE_MASK);
 
-    pdpt_t *pdpt = initialize_boot_page_tables(boot_alloc, boot_info);
+    pdpt_t *pdpt = initialize_boot_page_tables(boot_alloc, bootinfo);
 
     x86_enable_pae(PTR_TO_PHYS_ADDR_AT_16MB(pdpt));
 

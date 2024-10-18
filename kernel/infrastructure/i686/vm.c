@@ -325,28 +325,28 @@ pte_t *vm_initialize_page_table_linear(
  * moved from address 0x100000 (1MB) to address 0x1000000 (16MB) to ensure the
  * new copy is read only.
  *
- * @param boot_info boot information structure
+ * @param bootinfo boot information structure
  *
  */
-void vm_write_protect_kernel_image(const boot_info_t *boot_info) {
-    size_t image_size = (char *)boot_info->image_top - (char *)boot_info->image_start;
+void vm_write_protect_kernel_image(const bootinfo_t *bootinfo) {
+    size_t image_size = (char *)bootinfo->image_top - (char *)bootinfo->image_start;
     size_t image_pages = image_size / PAGE_SIZE;
 
     for(int idx = 0; idx < image_pages; ++idx) {
         set_pte_flags(
-                get_pte_with_offset(boot_info->page_table_16mb, idx),
+                get_pte_with_offset(bootinfo->page_table_16mb, idx),
                 X86_PTE_PRESENT); /* read only */
     }
 
-    set_cr3((uintptr_t)boot_info->page_directory);
+    set_cr3((uintptr_t)bootinfo->page_directory);
 }
 
 static void initialize_initial_page_tables(
         pte_t               *page_tables,
         Elf32_Ehdr          *ehdr,
-        const boot_info_t   *boot_info) {
+        const bootinfo_t   *bootinfo) {
 
-    size_t image_size  = (char *)boot_info->image_top - (char *)boot_info->image_start;
+    size_t image_size  = (char *)bootinfo->image_top - (char *)bootinfo->image_start;
     size_t image_pages = image_size / PAGE_SIZE;
 
     /* map kernel image read only, not executable */
@@ -381,13 +381,13 @@ static void initialize_initial_page_tables(
             code_size / PAGE_SIZE);
 
     /* map kernel data segment */
-    size_t data_offset = ((uintptr_t)boot_info->data_start - KLIMIT) / PAGE_SIZE;
+    size_t data_offset = ((uintptr_t)bootinfo->data_start - KLIMIT) / PAGE_SIZE;
 
     vm_initialize_page_table_linear(
             get_pte_with_offset(page_tables, data_offset),
-            boot_info->data_physaddr + MEMORY_ADDR_16MB - MEMORY_ADDR_1MB,
+            bootinfo->data_physaddr + MEMORY_ADDR_16MB - MEMORY_ADDR_1MB,
             X86_PTE_GLOBAL | X86_PTE_READ_WRITE | X86_PTE_NX,
-            boot_info->data_size / PAGE_SIZE);
+            bootinfo->data_size / PAGE_SIZE);
 }
 
 static void initialize_initial_page_directories(
@@ -407,7 +407,7 @@ static void initialize_initial_page_directories(
 addr_space_t *vm_create_initial_addr_space(
         const exec_file_t   *kernel,
         boot_alloc_t        *boot_alloc,
-        const boot_info_t   *boot_info) {
+        const bootinfo_t    *bootinfo) {
     
     Elf32_Ehdr *ehdr = kernel->start;
 
@@ -423,7 +423,7 @@ addr_space_t *vm_create_initial_addr_space(
     pte_t *page_tables      = boot_page_alloc_n(boot_alloc, num_page_tables);
     pte_t *page_directories = boot_page_alloc_n(boot_alloc, num_page_dirs);
 
-    initialize_initial_page_tables(page_tables, ehdr, boot_info);
+    initialize_initial_page_tables(page_tables, ehdr, bootinfo);
     initialize_initial_page_directories(page_directories, page_tables, num_page_tables);
 
     kernel_page_tables      = (pte_t *)PHYS_TO_VIRT_AT_16MB(page_tables);

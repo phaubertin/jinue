@@ -95,7 +95,6 @@ sources.kernel.c = \
 	domain/config.c \
 	domain/kmain.c \
 	infrastructure/i686/auxv.c \
-	infrastructure/i686/boot.c \
 	infrastructure/i686/boot_alloc.c \
 	infrastructure/i686/cmdline.c \
 	infrastructure/i686/config.c \
@@ -113,6 +112,7 @@ sources.kernel.c = \
 	infrastructure/i686/vm_pae.c \
 	infrastructure/i686/vm_x86.c \
 	infrastructure/elf.c \
+	interface/i686/bootinfo.c \
 	interface/i686/interrupt.c \
 	interface/syscall.c
 

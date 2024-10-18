@@ -36,25 +36,29 @@
 
 /* There is no extern declaration of this global variable in any header file but
  * it is set in kernel/i686/crt.asm. */
-const boot_info_t *boot_info;
+bootinfo_t *bootinfo;
 
-bool boot_info_check(bool panic_on_failure) {
+const bootinfo_t *get_bootinfo(void) {
+    return bootinfo;
+}
+
+bool check_bootinfo(bool panic_on_failure) {
     const char *error_description = NULL;
 
     /* This data structure is accessed early during the boot process, when the
      * first two megabytes of memory are still identity mapped. This means, if
-     * boot_info is NULL and we dereference it, it does *not* cause a page fault
+     * bootinfo is NULL and we dereference it, it does *not* cause a page fault
      * or any other CPU exception. */
-    if(boot_info == NULL) {
+    if(bootinfo == NULL) {
         error_description = "Boot information structure pointer is NULL.";
     }
-    else if(boot_info->setup_signature != BOOT_SETUP_MAGIC) {
+    else if(bootinfo->setup_signature != BOOT_SETUP_MAGIC) {
         error_description = "Bad setup header signature.";
     }
-    else if(page_offset_of(boot_info->image_start) != 0) {
+    else if(page_offset_of(bootinfo->image_start) != 0) {
         error_description = "Bad image alignment.";
     }
-    else if(page_offset_of(boot_info->kernel_start) != 0) {
+    else if(page_offset_of(bootinfo->kernel_start) != 0) {
         error_description = "Bad kernel alignment.";
     }
     else {
@@ -66,8 +70,4 @@ bool boot_info_check(bool panic_on_failure) {
     }
 
     return false;
-}
-
-const boot_info_t *get_boot_info(void) {
-    return boot_info;
 }

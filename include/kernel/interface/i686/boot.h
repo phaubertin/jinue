@@ -34,9 +34,10 @@
 
 #include <kernel/infrastructure/i686/types.h>
 #include <kernel/interface/i686/asm/boot.h>
+#include <kernel/interface/i686/types.h>
 
-bool boot_info_check(bool panic_on_failure);
+bool check_bootinfo(bool panic_on_failure);
 
-const boot_info_t *get_boot_info(void);
+const bootinfo_t *get_bootinfo(void);
 
 #endif

@@ -38,7 +38,6 @@
 #include <kernel/machine/types.h>
 #include <kernel/utils/list.h>
 #include <kernel/typedeps.h>
-#include <sys/elf.h>
 
 struct boot_heap_pushed_state {
     struct boot_heap_pushed_state   *next;

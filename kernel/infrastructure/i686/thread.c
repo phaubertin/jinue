@@ -36,6 +36,7 @@
 #include <kernel/infrastructure/i686/descriptors.h>
 #include <kernel/infrastructure/i686/types.h>
 #include <kernel/interface/i686/trap.h>
+#include <kernel/interface/i686/types.h>
 #include <kernel/machine/thread.h>
 #include <assert.h>
 #include <stddef.h>

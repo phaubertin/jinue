@@ -33,8 +33,9 @@
 #define JINUE_KERNEL_INFRASTRUCTURE_I686_BOOT_ALLOC_H
 
 #include <kernel/infrastructure/i686/types.h>
+#include <kernel/interface/i686/types.h>
 
-void boot_alloc_init(boot_alloc_t *boot_alloc, const boot_info_t *boot_info);
+void boot_alloc_init(boot_alloc_t *boot_alloc, const bootinfo_t *bootinfo);
 
 void boot_reinit_at_16mb(boot_alloc_t *boot_alloc);
 

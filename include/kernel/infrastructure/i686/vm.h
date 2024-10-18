@@ -39,6 +39,7 @@
 #include <kernel/infrastructure/i686/asm/vm.h>
 #include <kernel/infrastructure/i686/types.h>
 #include <kernel/interface/i686/asm/boot.h>
+#include <kernel/interface/i686/types.h>
 
 /** convert physical to virtual address for kernel loaded at 0x100000 (1MB) */
 #define PHYS_TO_VIRT_AT_1MB(x)      (((uintptr_t)(x)) + BOOT_OFFSET_FROM_1MB)
@@ -62,12 +63,12 @@
 
 void vm_set_no_pae(void);
 
-void vm_write_protect_kernel_image(const boot_info_t *boot_info);
+void vm_write_protect_kernel_image(const bootinfo_t *bootinfo);
 
 addr_space_t *vm_create_initial_addr_space(
         const exec_file_t   *kernel,
         boot_alloc_t        *boot_alloc,
-        const boot_info_t   *boot_info) ;
+        const bootinfo_t    *bootinfo) ;
 
 bool vm_create_addr_space(addr_space_t *addr_space);
 

@@ -1,4 +1,4 @@
-; Copyright (C) 2019 Philippe Aubertin.
+; Copyright (C) 2019-2024 Philippe Aubertin.
 ; All rights reserved.
 ;
 ; Redistribution and use in source and binary forms, with or without
@@ -27,12 +27,12 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include <kernel/interface/i686/asm/boot.h>
+#include <kernel/interface/i686/asm/bootinfo.h>
 
     bits 32
 
     extern kmain
-    extern boot_info
+    extern bootinfo
     extern machine_halt
     
     global _start:function (_start.end - _start)
@@ -40,7 +40,7 @@ _start:
     ; The 32-bit setup code sets esi to the boot information structure.
     ;
     ; See boot/setup32.asm.
-    mov dword [boot_info], esi
+    mov dword [bootinfo], esi
 
     ; Set command line address as first argument to kmain.
     ; 
@@ -51,7 +51,7 @@ _start:
     or esi, esi
     jz .skip
 
-    mov eax, [esi + BOOT_INFO_CMDLINE]
+    mov eax, [esi + BOOTINFO_CMDLINE]
 
 .skip:
     push eax

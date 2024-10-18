@@ -35,12 +35,13 @@
 #include <jinue/shared/asm/memory.h>
 #include <kernel/infrastructure/i686/asm/memory.h>
 #include <kernel/infrastructure/i686/types.h>
+#include <kernel/interface/i686/types.h>
 
-void check_memory(const boot_info_t *boot_info);
+void check_memory(const bootinfo_t *bootinfo);
 
 void memory_initialize_array(
         boot_alloc_t        *boot_alloc,
-        const boot_info_t   *boot_info);
+        const bootinfo_t   *bootinfo);
 
 void *memory_lookup_page(uint64_t paddr);
 

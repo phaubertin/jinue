@@ -37,8 +37,9 @@
  * There should be no reason to include it anywhere else. */
 
 #include <kernel/infrastructure/i686/types.h>
+#include <kernel/interface/i686/types.h>
 
-void vm_pae_enable(boot_alloc_t *boot_alloc, const boot_info_t *boot_info);
+void vm_pae_enable(boot_alloc_t *boot_alloc, const bootinfo_t *bootinfo);
 
 void vm_pae_create_initial_addr_space(
         addr_space_t    *address_space,

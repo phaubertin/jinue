@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -43,36 +43,6 @@ typedef struct {
     uint64_t size;
     uint32_t type;
 } e820_t;
-
-/* This structure is used by the assembly language setup code to pass
- * information to the kernel. Whenever changes are made to this structure
- * declaration, the constants in the kernel/interface/i686/asm/boot.h must be updated
- * (member offsets and structure size).
- *
- * See also the setup code, i.e. kernel/i686/setup32.asm. */
-typedef struct {
-    Elf32_Ehdr      *kernel_start;
-    size_t           kernel_size;
-    Elf32_Ehdr      *loader_start;
-    size_t           loader_size;
-    void            *image_start;
-    void            *image_top;
-    kern_paddr_t     ramdisk_start;
-    size_t	         ramdisk_size;
-    uint32_t         e820_entries;
-    const e820_t    *e820_map;
-    void            *cmdline;
-    void            *boot_heap;
-    void            *boot_end;
-    pte_t           *page_table_1mb;
-    pte_t           *page_table_16mb;
-    pte_t           *page_table_klimit;
-    pte_t           *page_directory;
-    uint32_t         setup_signature;
-    void            *data_start;
-    size_t           data_size;
-    size_t           data_physaddr;
-} boot_info_t;
 
 typedef uint64_t seg_descriptor_t;
 
@@ -151,32 +121,6 @@ struct cpu_data_t {
 };
 
 typedef struct cpu_data_t cpu_data_t;
-
-typedef struct {
-    /* The following four registers are the system call arguments. */
-#define msg_arg0 eax
-    uint32_t    eax;
-#define msg_arg1 ebx
-    uint32_t    ebx;
-#define msg_arg2 esi
-    uint32_t    esi;
-#define msg_arg3 edi
-    uint32_t    edi;
-    uint32_t    edx;
-    uint32_t    ecx;
-    uint32_t    ds;
-    uint32_t    es;
-    uint32_t    fs;
-    uint32_t    gs;
-    uint32_t    errcode;
-    uint32_t    ivt;
-    uint32_t    ebp;
-    uint32_t    eip;
-    uint32_t    cs;
-    uint32_t    eflags;
-    uint32_t    esp;
-    uint32_t    ss;
-} trapframe_t;
 
 typedef struct {
     uint32_t    edi;

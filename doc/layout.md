@@ -86,43 +86,43 @@ binary's entry point, the physical memory starting at address 0x100000 (1MB)
 looks like this:
 
 ```
-  +=======================================+ boot_info.boot_end          -+-
+  +=======================================+ bootinfo.boot_end           -+-
   |        initial page directory         |                              | 
-  +---------------------------------------+ boot_info.page_directory     |
+  +---------------------------------------+ bootinfo.page_directory      |
   |                                       |                              |
-  |         initial page tables           | boot_info.page_table_klimit  |
-  |           (PAE disabled)              | boot_info.page_table_16mb    |
-  +---------------------------------------+ boot_info.page_table_1mb     | setup code
+  |         initial page tables           | bootinfo.page_table_klimit   |
+  |           (PAE disabled)              | bootinfo.page_table_16mb     |
+  +---------------------------------------+ bootinfo.page_table_1mb      | setup code
   |         kernel command line           |                              | allocations
-  +---------------------------------------+ boot_info.cmdline            |
+  +---------------------------------------+ bootinfo.cmdline             |
   |       BIOS physical memory map        |                              |
-  +---------------------------------------+ boot_info.e820_map           |    
+  +---------------------------------------+ bootinfo.e820_map            |    
   |         kernel data segment           |                              |                ^
   |                                       |                              |                |
-  +---------------------------------------+ boot_info.data_physaddr     -+-       address |
+  +---------------------------------------+ bootinfo.data_physaddr     -+-       address |
   |          kernel stack (boot)          |                              |      increases |
   +-----v---------------------------v-----+ (stack pointer)              |                |
   |                                       |                              |                |
   |                . . .                  |                              |
   |                                       |                              | kernel boot
-  +-----^---------------------------^-----+ boot_info.boot_heap          | stack/heap
+  +-----^---------------------------^-----+ bootinfo.boot_heap           | stack/heap
   |          kernel heap (boot)           |                              |   
-  |              boot_info                |                              |
-  +=======================================+ boot_info.image_top         -+-
+  |              bootinfo                |                               |
+  +=======================================+ bootinfo.image_top          -+-
   |                                       |                              |
   |        user space loader (ELF)        |                              |
   |                                       |                              |
-  +---------------------------------------+ boot_info.proc_start         |
+  +---------------------------------------+ bootinfo.proc_start          |
   |                                       |                              | kernel image
   |           microkernel (ELF)           |                              |
   |                                       |                              |
-  +---------------------------------------+ boot_info.kernel_start       |
+  +---------------------------------------+ bootinfo.kernel_start        |
   |           32-bit setup code           |                              |
-  +---------------------------------------+ boot_info.image_start       -+-
+  +---------------------------------------+ bootinfo.image_start        -+-
                                             0x100000 (1MB)
 ```
 
-The boot information structure (`boot_info`) is a data structure allocated on the
+The boot information structure (`bootinfo`) is a data structure allocated on the
 boot heap by the 32-bit setup code. It is used to pass information related to
 the boot process to the kernel.
 
@@ -224,9 +224,9 @@ ISA DMA limit.
         |                                       |
         +=======================================+ 0x200000 (2MB)
         |    Memory available for allocation    |
-        +---------------------------------------+ boot_info.boot_end
+        +---------------------------------------+ bootinfo.boot_end
         | Initial page tables/page directory    |
-        +---------------------------------------+ boot_info.page_table_1mb
+        +---------------------------------------+ bootinfo.page_table_1mb
         |               Unused                  |
         |  (moved to address 0x1000000, 16MB)   |
         +---------------------------------------+ 0x100000 (1MB)
@@ -259,28 +259,28 @@ address 0x1000000 (16MB).
   |                                       |
   |       initial PAE page tables         |
   |                                       |
-  +=======================================+ boot_info.boot_end          -+-
+  +=======================================+ bootinfo.boot_end          -+-
   |        initial page directory         |                              |
   |           (PAE disabled)              |                              |
-  +---------------------------------------+ boot_info.page_directory     |
+  +---------------------------------------+ bootinfo.page_directory     |
   |                                       |                              |
-  |         initial page tables           | boot_info.page_table_klimit  | setup code
-  |           (PAE disabled)              | boot_info.page_table_16mb    | allocations
-  +---------------------------------------+ boot_info.page_table_1mb     |
+  |         initial page tables           | bootinfo.page_table_klimit  | setup code
+  |           (PAE disabled)              | bootinfo.page_table_16mb    | allocations
+  +---------------------------------------+ bootinfo.page_table_1mb     |
   |                                       |                              |
   |                                       |                              |
-  +                                       + boot_info.data_physaddr     -+-
+  +                                       + bootinfo.data_physaddr     -+-
   |                                       |                              |
   |                                       |                              | original
   |               Unused                  |                              | kernel boot
   |  (moved to address 0x1000000, 16MB)   |                              | stack/heap
   |                                       |                              |
-  +                                       + boot_info.image_top         -+-
+  +                                       + bootinfo.image_top         -+-
   |                                       |                              |
   |                                       |                              | original
   |                                       |                              | kernel image
   |                                       |                              |
-  +---------------------------------------+ boot_info.image_start       -+-
+  +---------------------------------------+ bootinfo.image_start       -+-
                                             0x100000 (1MB)
 ```
 

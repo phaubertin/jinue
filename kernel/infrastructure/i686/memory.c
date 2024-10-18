@@ -70,14 +70,14 @@ static bool memory_ranges_overlap(
 
 static bool range_is_in_available_memory(
         const memory_range_t    *range,
-        const boot_info_t       *boot_info) {
+        const bootinfo_t       *bootinfo) {
 
     bool retval = false;
 
-    for(int idx = 0; idx < boot_info->e820_entries; ++idx) {
+    for(int idx = 0; idx < bootinfo->e820_entries; ++idx) {
         memory_range_t entry_range;
 
-        const e820_t *entry = &boot_info->e820_map[idx];
+        const e820_t *entry = &bootinfo->e820_map[idx];
         entry_range.start   = entry->addr;
         entry_range.end     = entry->addr + entry->size;
 
@@ -118,10 +118,10 @@ static bool range_is_in_available_memory(
  *
  * If any of these checks fail, the result is a kernel panic.
  *
- * @param boot_info boot information structure
+ * @param bootinfo boot information structure
  *
  * */
-void check_memory(const boot_info_t *boot_info) {
+void check_memory(const bootinfo_t *bootinfo) {
     const memory_range_t range_at_1mb = {
             .start  = MEMORY_ADDR_1MB,
             .end    = MEMORY_ADDR_1MB + 1 * MB
@@ -131,24 +131,24 @@ void check_memory(const boot_info_t *boot_info) {
             .end    = MEMORY_ADDR_16MB + BOOT_SIZE_AT_16MB
     };
 
-    if(! range_is_in_available_memory(&range_at_16mb, boot_info)) {
+    if(! range_is_in_available_memory(&range_at_16mb, bootinfo)) {
         panic("Insufficient or no memory at 0x1000000 (i.e. at 16MB)");
     }
 
-    if(! range_is_in_available_memory(&range_at_1mb, boot_info)) {
+    if(! range_is_in_available_memory(&range_at_1mb, bootinfo)) {
         panic("Insufficient or no memory at 0x100000 (i.e. at 1MB)");
     }
 
-    if(boot_info->ramdisk_start) {
+    if(bootinfo->ramdisk_start) {
         memory_range_t ramdisk_range;
-        ramdisk_range.start = boot_info->ramdisk_start;
-        ramdisk_range.end   = boot_info->ramdisk_start + boot_info->ramdisk_size;
+        ramdisk_range.start = bootinfo->ramdisk_start;
+        ramdisk_range.end   = bootinfo->ramdisk_start + bootinfo->ramdisk_size;
 
-        if(! range_is_in_available_memory(&ramdisk_range, boot_info)) {
+        if(! range_is_in_available_memory(&ramdisk_range, bootinfo)) {
             panic("Initial RAM disk was loaded in unavailable or reserved memory");
         }
 
-        if(boot_info->ramdisk_start < range_at_16mb.end) {
+        if(bootinfo->ramdisk_start < range_at_16mb.end) {
             panic("Initial RAM disk was loaded in memory reserved for the kernel");
         }
     }
@@ -166,14 +166,14 @@ void check_memory(const boot_info_t *boot_info) {
  * complexity of having to allocate in the first 4GB only for specific
  * allocations.
  *
- * @param boot_info boot information structure
+ * @param bootinfo boot information structure
  * @return top of memory usable by kernel
  * */
-static uint64_t memory_find_top(const boot_info_t *boot_info) {
+static uint64_t memory_find_top(const bootinfo_t *bootinfo) {
     uint64_t memory_top = 0;
 
-    for(int idx = 0; idx < boot_info->e820_entries; ++idx) {
-        const e820_t *entry = &boot_info->e820_map[idx];
+    for(int idx = 0; idx < bootinfo->e820_entries; ++idx) {
+        const e820_t *entry = &bootinfo->e820_map[idx];
 
         /* Only consider available memory entries. */
         if(entry->type != E820_RAM) {
@@ -205,17 +205,17 @@ static uint64_t memory_find_top(const boot_info_t *boot_info) {
 /**
  * Initialize the array used by memory_lookup_page()
  *
- * @param boot_info boot information structure
+ * @param bootinfo boot information structure
  * @param boot_alloc the boot allocator state
  *
  * */
 void memory_initialize_array(
         boot_alloc_t        *boot_alloc,
-        const boot_info_t   *boot_info) {
+        const bootinfo_t   *bootinfo) {
 
     const size_t entries_per_page = PAGE_SIZE / sizeof(uintptr_t);
 
-    const uint64_t memory_top   = memory_find_top(boot_info);
+    const uint64_t memory_top   = memory_find_top(bootinfo);
     const size_t num_pages      = memory_top / PAGE_SIZE;
     const size_t array_entries  = ALIGN_END(num_pages, entries_per_page);
     const size_t array_pages    = array_entries / entries_per_page;
@@ -317,9 +317,9 @@ static void clip_memory_range(memory_range_t *dest, const memory_range_t *clippi
     dest->end = clipping->start;
 }
 
-static void clip_available_range(memory_range_t *dest, const boot_info_t *boot_info) {
-    for(int idx = 0; idx < boot_info->e820_entries; ++idx) {
-        const e820_t *entry = &boot_info->e820_map[idx];
+static void clip_available_range(memory_range_t *dest, const bootinfo_t *bootinfo) {
+    for(int idx = 0; idx < bootinfo->e820_entries; ++idx) {
+        const e820_t *entry = &bootinfo->e820_map[idx];
 
         if(entry->type == E820_RAM) {
             continue;
@@ -331,19 +331,19 @@ static void clip_available_range(memory_range_t *dest, const boot_info_t *boot_i
     }
 
     memory_range_t ramdisk = {
-        .start  = boot_info->ramdisk_start,
-        .end    = boot_info->ramdisk_start + boot_info->ramdisk_size
+        .start  = bootinfo->ramdisk_start,
+        .end    = bootinfo->ramdisk_start + bootinfo->ramdisk_size
     };
     align_range(&ramdisk, false);
     clip_memory_range(dest, &ramdisk);
 }
 
-static void find_range_for_loader(memory_range_t *dest, const boot_info_t *boot_info) {
+static void find_range_for_loader(memory_range_t *dest, const bootinfo_t *bootinfo) {
     /* First, find the largest available range over the 4GB mark. */
     memory_range_t largest_over_4gb = {0};
 
-    for(int idx = 0; idx < boot_info->e820_entries; ++idx) {
-        const e820_t *entry = &boot_info->e820_map[idx];
+    for(int idx = 0; idx < bootinfo->e820_entries; ++idx) {
+        const e820_t *entry = &bootinfo->e820_map[idx];
 
         if(entry->type != E820_RAM) {
             continue;
@@ -355,7 +355,7 @@ static void find_range_for_loader(memory_range_t *dest, const boot_info_t *boot_
 
         memory_range_t available;
         assign_and_align_entry(&available, entry);
-        clip_available_range(&available, boot_info);
+        clip_available_range(&available, bootinfo);
 
         uint64_t available_size = available.end - available.start;
         uint64_t largest_size = largest_over_4gb.end - largest_over_4gb.start;
@@ -368,8 +368,8 @@ static void find_range_for_loader(memory_range_t *dest, const boot_info_t *boot_
     /* Then, compare this to the region just above the kernel data. */
     memory_range_t under_4gb = {0};
 
-    for(int idx = 0; idx < boot_info->e820_entries; ++idx) {
-        const e820_t *entry = &boot_info->e820_map[idx];
+    for(int idx = 0; idx < bootinfo->e820_entries; ++idx) {
+        const e820_t *entry = &bootinfo->e820_map[idx];
 
         if(entry->type != E820_RAM) {
             continue;
@@ -384,7 +384,7 @@ static void find_range_for_loader(memory_range_t *dest, const boot_info_t *boot_
         under_4gb.start = start;
         under_4gb.end   = entry->addr + entry->size;
         align_range(&under_4gb, true);
-        clip_available_range(&under_4gb, boot_info);
+        clip_available_range(&under_4gb, bootinfo);
         break;
     }
 
@@ -400,27 +400,27 @@ static void find_range_for_loader(memory_range_t *dest, const boot_info_t *boot_
 }
 
 int machine_get_memory_map(const jinue_buffer_t *buffer) {
-    const boot_info_t *boot_info = get_boot_info();
+    const bootinfo_t *bootinfo = get_bootinfo();
 
     const uintptr_t kernel_image_size =
-            (uintptr_t)boot_info->image_top - (uintptr_t)boot_info->image_start;
+            (uintptr_t)bootinfo->image_top - (uintptr_t)bootinfo->image_start;
 
     memory_range_t loader_range;
-    find_range_for_loader(&loader_range, boot_info);
+    find_range_for_loader(&loader_range, bootinfo);
 
     const jinue_mem_entry_t kernel_regions[] = {
         {
-            .addr = boot_info->ramdisk_start,
-            .size = boot_info->ramdisk_size,
+            .addr = bootinfo->ramdisk_start,
+            .size = bootinfo->ramdisk_size,
             .type = JINUE_MEM_TYPE_RAMDISK
         },
         {
-            .addr = VIRT_TO_PHYS_AT_16MB(boot_info->image_start),
+            .addr = VIRT_TO_PHYS_AT_16MB(bootinfo->image_start),
             .size = kernel_image_size,
             .type = JINUE_MEM_TYPE_KERNEL_IMAGE
         },
         {
-            .addr = VIRT_TO_PHYS_AT_16MB(boot_info->image_top),
+            .addr = VIRT_TO_PHYS_AT_16MB(bootinfo->image_top),
             .size = BOOT_SIZE_AT_16MB - kernel_image_size,
             .type = JINUE_MEM_TYPE_KERNEL_RESERVED
         },
@@ -431,7 +431,7 @@ int machine_get_memory_map(const jinue_buffer_t *buffer) {
         }
     };
 
-    const size_t e820_entries       = boot_info->e820_entries;
+    const size_t e820_entries       = bootinfo->e820_entries;
     const size_t kernel_entries     = sizeof(kernel_regions) / sizeof(kernel_regions[0]);
     const size_t total_entries      = e820_entries + kernel_entries;
     const size_t result_size        =
@@ -448,9 +448,9 @@ int machine_get_memory_map(const jinue_buffer_t *buffer) {
     }
 
     for(unsigned int idx = 0; idx < e820_entries; ++idx) {
-        map->entry[idx].addr = boot_info->e820_map[idx].addr;
-        map->entry[idx].size = boot_info->e820_map[idx].size;
-        map->entry[idx].type = map_memory_type(boot_info->e820_map[idx].type);
+        map->entry[idx].addr = bootinfo->e820_map[idx].addr;
+        map->entry[idx].size = bootinfo->e820_map[idx].size;
+        map->entry[idx].type = map_memory_type(bootinfo->e820_map[idx].type);
     }
 
     for(unsigned int idx = 0; idx < kernel_entries; ++idx) {
