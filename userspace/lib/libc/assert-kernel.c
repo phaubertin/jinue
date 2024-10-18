@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/logging.h>
-#include <kernel/panic.h>
+#include <kernel/domain/services/logging.h>
+#include <kernel/domain/services/panic.h>
 
 #ifndef NDEBUG
 void __assert_failed(
@@ -46,4 +46,3 @@ void __assert_failed(
     panic("Assertion failed.");
 }
 #endif
-
