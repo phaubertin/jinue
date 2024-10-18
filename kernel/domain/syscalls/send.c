@@ -46,14 +46,14 @@ int send(int fd, int function, const jinue_message_t *message) {
         return status;
     }
 
-    if(!descriptor_has_permissions(desc, JINUE_PERM_SEND)) {
-        return -JINUE_EPERM;
-    }
-
     ipc_endpoint_t *endpoint = get_endpoint_from_descriptor(desc);
 
     if(endpoint == NULL) {
         return -JINUE_EBADF;
+    }
+
+    if(!descriptor_has_permissions(desc, JINUE_PERM_SEND)) {
+        return -JINUE_EPERM;
     }
 
     return send_message(endpoint, sender, function, desc->cookie, message);
