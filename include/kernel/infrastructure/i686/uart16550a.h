@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2019 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,22 +29,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_SERIAL_H_
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_SERIAL_H_
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_UART16550A_H_
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_UART16550A_H_
 
-#define SERIAL_COM1_IOPORT          0x3f8
+#include <kernel/types.h>
 
-#define SERIAL_COM2_IOPORT          0x2f8
-
-#define SERIAL_COM3_IOPORT          0x3e8
-
-#define SERIAL_COM4_IOPORT          0x2e8
-
-
-#define SERIAL_DEFAULT_IOPORT       SERIAL_COM1_IOPORT
-
-#define SERIAL_MAX_IOPORT           (0x10000 - 8)
-
-#define SERIAL_DEFAULT_BAUD_RATE    115200
+void init_uart16550a(const config_t *config);
 
 #endif
