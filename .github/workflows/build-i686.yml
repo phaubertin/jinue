@@ -1,0 +1,31 @@
+name: Build for i686
+
+on:
+  push:
+    branches: [ $default-branch ]
+  pull_request:
+    branches: [ '*' ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Install dependencies
+      run: sudo apt-get install -y gcc-multilib
+
+    - uses: ilammy/setup-nasm@v1
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: configure
+      run: ./configure
+
+    - name: make
+      run: make
+
+    - name: make testapp
+      run: make testapp
