@@ -41,6 +41,7 @@ For user space environment variables, the behaviour is undefined.
 
 | Name             | Type    | Description                                                  |
 |------------------|---------|--------------------------------------------------------------|
+| on_panic         | string  | Action to take after a kernel panic                          |
 | pae              | string  | Controls whether Physical Address Extension (PAE) is enabled |
 | serial_enable    | boolean | Enable/disable logging on the serial port                    |
 | serial_baud_rate | integer | Baud rate for serial port logging                            |
@@ -57,6 +58,22 @@ For boolean options:
 Integer option values can be specified as a decimal number without any leading
 zero (e.g. `42` but not `042`) or as an hexadecimal number prepended with `0x`
 (e.g. `0x3f8`).
+
+### Kernel Panic Action - `on_panic`
+
+Action to take after a kernel panic.
+
+Type: string
+
+The following values are recognized:
+
+* `halt` (default) halt CPU.
+* `reboot` reboot the system.
+
+Rebooting after a kernel panic can be helpful when testing the kernel in a virtual
+machine, as some virtual machine hosts can be set to exit when a reboot is triggered.
+If the test hangs instead of exiting, it can cause issues, particularly in automated
+testing environments.
 
 ### Physical Address Extension - `pae`
 
