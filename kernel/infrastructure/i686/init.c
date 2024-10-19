@@ -40,7 +40,7 @@
 #include <kernel/infrastructure/i686/memory.h>
 #include <kernel/infrastructure/i686/pic8259.h>
 #include <kernel/infrastructure/i686/remap.h>
-#include <kernel/infrastructure/i686/serial.h>
+#include <kernel/infrastructure/i686/uart16550a.h>
 #include <kernel/infrastructure/i686/vga.h>
 #include <kernel/infrastructure/i686/vm.h>
 #include <kernel/infrastructure/i686/vm_pae.h>
@@ -298,7 +298,7 @@ void machine_get_ramdisk(kern_mem_block_t *ramdisk) {
 }
 
 void machine_init_logging(const config_t *config) {
-    serial_init(config);
+    init_uart16550a(config);
     vga_init(config);
 }
 

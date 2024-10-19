@@ -105,8 +105,8 @@ sources.kernel.c = \
 	infrastructure/i686/memory.c \
 	infrastructure/i686/pic8259.c \
 	infrastructure/i686/process.c \
-	infrastructure/i686/serial.c \
 	infrastructure/i686/thread.c \
+	infrastructure/i686/uart16550a.c \
 	infrastructure/i686/vga.c \
 	infrastructure/i686/vm.c \
 	infrastructure/i686/vm_pae.c \
