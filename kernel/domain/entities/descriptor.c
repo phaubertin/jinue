@@ -145,7 +145,7 @@ process_t *get_process_from_descriptor(descriptor_t *desc) {
 thread_t *get_thread_from_descriptor(descriptor_t *desc) {
     object_header_t *object = desc->object;
 
-    if(object->type != object_tythread) {
+    if(object->type != object_type_thread) {
         return NULL;
     }
 
