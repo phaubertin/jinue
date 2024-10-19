@@ -39,6 +39,6 @@ config_t *get_config(void) {
 }
 
 void apply_config_defaults(config_t *config) {
-    /* TODO apply defaults for machine-independent options here (there aren't any yet) */
+    config->on_panic = CONFIG_ON_PANIC_HALT;
     machine_apply_config_defaults(&config->machine);
 }

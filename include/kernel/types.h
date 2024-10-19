@@ -136,8 +136,14 @@ typedef struct {
     void (*log)(int loglevel, const char *message, size_t n);
 } logger_t;
 
+typedef enum {
+    CONFIG_ON_PANIC_HALT,
+    CONFIG_ON_PANIC_REBOOT
+} config_on_panic_t;
+
 typedef struct {
-    machine_config_t machine;
+    machine_config_t    machine;
+    config_on_panic_t   on_panic;
 } config_t;
 
 #endif
