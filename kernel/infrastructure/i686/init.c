@@ -29,10 +29,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <kernel/domain/alloc/page_alloc.h>
 #include <kernel/domain/services/cmdline.h>
 #include <kernel/domain/services/logging.h>
 #include <kernel/domain/services/panic.h>
-#include <kernel/domain/services/page_alloc.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
 #include <kernel/infrastructure/i686/cpu.h>
 #include <kernel/infrastructure/i686/cpu_data.h>

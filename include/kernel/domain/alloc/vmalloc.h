@@ -29,56 +29,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/vm.h>
-#include <kernel/domain/services/panic.h>
-#include <kernel/domain/services/vmalloc.h>
+#ifndef JINUE_KERNEL_DOMAIN_VMALLOC_H
+#define JINUE_KERNEL_DOMAIN_VMALLOC_H
 
+#include <kernel/types.h>
 
-/**
- * @file
- *
- * Virtual address allocator
- *
- * This allocator (specifically vmalloc()) is used to allocate a free virtual
- * address in the kernel's address space to which a page frame can be mapped.
- *
- * If you want to allocate a mapped page ready to use, use the page allocator
- * instead, i.e. page_alloc().
- *
- * */
+addr_t vmalloc(void);
 
-/**
- * Allocate a page of virtual address space.
- *
- * @return address of allocated page or NULL if allocation failed
- *
- * */
-addr_t vmalloc(void) {
-    /* TODO implement this */
-    panic("vmalloc(): not implemented");
+void vmfree(addr_t page);
 
-    /* never reached */
-    return NULL;
-}
+bool vmalloc_is_in_range(addr_t page);
 
-/**
- * Free a page of virtual address space.
- *
- * @param page the address of the page to free
- *
- * */
-void vmfree(addr_t page) {
-    /* TODO implement this */
-    panic("vmfree(): not implemented");
-}
-
-/**
- * Check whether the specified page is in the region managed by the allocator.
- *
- * @param page the address of the page
- * @return true if it is in the region, false otherwise
- *
- * */
-bool vmalloc_is_in_range(addr_t page) {
-    return is_kernel_pointer(page);
-}
+#endif

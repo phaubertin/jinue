@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <kernel/domain/alloc/slab.h>
 #include <kernel/domain/entities/object.h>
-#include <kernel/domain/services/slab.h>
 
 void init_object_cache(slab_cache_t *cache, const object_type_t *type) {
     slab_cache_init(

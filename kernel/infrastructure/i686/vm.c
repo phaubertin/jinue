@@ -31,12 +31,12 @@
 
 #include <jinue/shared/asm/errno.h>
 #include <jinue/shared/asm/syscall.h>
+#include <kernel/domain/alloc/page_alloc.h>
+#include <kernel/domain/alloc/vmalloc.h>
 #include <kernel/domain/entities/descriptor.h>
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
-#include <kernel/domain/services/page_alloc.h>
 #include <kernel/domain/services/panic.h>
-#include <kernel/domain/services/vmalloc.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
 #include <kernel/infrastructure/i686/cpu_data.h>
 #include <kernel/infrastructure/i686/memory.h>

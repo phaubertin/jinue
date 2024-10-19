@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_SERVICES_SLAB_H
-#define JINUE_KERNEL_SERVICES_SLAB_H
+#ifndef JINUE_KERNEL_DOMAIN_SLAB_H
+#define JINUE_KERNEL_DOMAIN_SLAB_H
 
 #include <jinue/shared/vm.h>
 #include <kernel/types.h>

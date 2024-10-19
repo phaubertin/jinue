@@ -29,9 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/domain/services/page_alloc.h>
+#include <kernel/domain/alloc/page_alloc.h>
+#include <kernel/domain/alloc/vmalloc.h>
 #include <kernel/domain/services/panic.h>
-#include <kernel/domain/services/vmalloc.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
 #include <kernel/infrastructure/i686/vm.h>
 #include <kernel/utils/utils.h>

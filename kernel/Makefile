@@ -80,6 +80,9 @@ sources.kernel.c = \
 	application/syscalls/set_thread_local.c \
 	application/syscalls/yield_thread.c \
 	application/kmain.c \
+	domain/alloc/page_alloc.c \
+	domain/alloc/slab.c \
+	domain/alloc/vmalloc.c \
 	domain/entities/descriptor.c \
 	domain/entities/endpoint.c \
 	domain/entities/object.c \
@@ -89,10 +92,7 @@ sources.kernel.c = \
 	domain/services/exec.c \
 	domain/services/ipc.c \
 	domain/services/logging.c \
-	domain/services/page_alloc.c \
 	domain/services/panic.c \
-	domain/services/slab.c \
-	domain/services/vmalloc.c \
 	domain/config.c \
 	infrastructure/i686/auxv.c \
 	infrastructure/i686/boot_alloc.c \
