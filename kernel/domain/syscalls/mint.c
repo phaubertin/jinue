@@ -97,7 +97,7 @@ int mint(int owner, const jinue_mint_args_t *mint_args) {
         | DESCRIPTOR_FLAG_IN_USE;
     dest_desc->cookie = mint_args->cookie;
 
-    object_open(object, dest_desc);
+    open_object(object, dest_desc);
 
     return 0;
 }

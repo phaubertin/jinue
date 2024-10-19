@@ -512,7 +512,7 @@ static void initialize_descriptors(process_t *process) {
     desc->flags  = DESCRIPTOR_FLAG_IN_USE;
     desc->cookie = 0;
 
-    object_open(&process->header, desc);
+    open_object(&process->header, desc);
 }
 
 /**

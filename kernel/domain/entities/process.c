@@ -61,14 +61,14 @@ static slab_cache_t process_cache;
 static void cache_process_ctor(void *buffer, size_t ignore) {
     process_t *process = buffer;
 
-    object_header_init(&process->header, object_type_process);
+    init_object_header(&process->header, object_type_process);
 }
 
 void initialize_process_cache(void) {
-    object_cache_init(&process_cache, object_type_process);
+    init_object_cache(&process_cache, object_type_process);
 }
 
-static void process_init(process_t *process) {
+static void init_process(process_t *process) {
     memset(&process->descriptors, 0, sizeof(process->descriptors));
 }
 
@@ -76,7 +76,7 @@ process_t *construct_process(void) {
     process_t *process = slab_cache_alloc(&process_cache);
 
     if(process != NULL) {
-        process_init(process);
+        init_process(process);
 
         if(!machine_init_process(process)) {
             slab_cache_free(process);
@@ -94,7 +94,7 @@ void free_process(process_t *process) {
     slab_cache_free(process);
 }
 
-void process_switch_to(process_t *process) {
+void switch_to_process(process_t *process) {
     machine_switch_to_process(process);
 }
 

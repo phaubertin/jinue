@@ -66,7 +66,7 @@ int create_endpoint(int fd) {
         | object_type_ipc_endpoint->all_permissions;
     desc->cookie = 0;
 
-    object_open(&endpoint->header, desc);
+    open_object(&endpoint->header, desc);
 
     return fd;
 }

@@ -61,7 +61,7 @@ thread_t *construct_thread(process_t *process, const thread_params_t *params) {
         return NULL;
     }
 
-    object_header_init(&thread->header, object_type_thread);
+    init_object_header(&thread->header, object_type_thread);
 
     jinue_node_init(&thread->thread_list);
 
@@ -72,7 +72,7 @@ thread_t *construct_thread(process_t *process, const thread_params_t *params) {
 
     machine_init_thread(thread, params);
 
-    thread_ready(thread);
+    ready_thread(thread);
     
     return thread;
 }
@@ -82,7 +82,7 @@ void free_thread(thread_t *thread) {
     machine_free_thread(thread);
 }
 
-void thread_ready(thread_t *thread) {
+void ready_thread(thread_t *thread) {
     /* add thread to the tail of the ready list to give other threads a chance
      * to run */
     jinue_list_enqueue(&ready_list, &thread->thread_list);
@@ -119,60 +119,61 @@ static void switch_thread(thread_t *from, thread_t *to, bool destroy_from) {
     }
 
     if(from == NULL || from->process != to->process) {
-        process_switch_to(to->process);
+        switch_to_process(to->process);
     }
 
     machine_switch_thread(from, to, destroy_from);
 }
 
-void thread_switch_to(thread_t *thread, bool blocked) {
+void switch_thread_to(thread_t *thread, bool blocked) {
     thread_t *current = get_current_thread();
 
     if (!blocked) {
-        thread_ready(current);
+        ready_thread(current);
     }
 
     switch_thread(
             current,
             thread,
-            false);             /* don't destroy current thread */
+            false               /* don't destroy current thread */
+    );
 }
 
 void start_first_thread(void) {
     switch_thread(
             NULL,
             reschedule(false),
-            false);             /* don't destroy current thread */
+            false               /* don't destroy current thread */
+    );
 }
 
-void thread_yield(void) {
-    thread_switch_to(
+void switch_thread_yield(void) {
+    switch_thread_to(
             reschedule(true),   /* current thread can run */
-            false);             /* don't block current thread */
+            false               /* don't block current thread */
+    );
 }
 
-void thread_block(void) {
-    thread_switch_to(
+void switch_thread_block(void) {
+    switch_thread_to(
             reschedule(false),  /* current thread cannot run */
-            true);              /* do block current thread */
+            true                /* do block current thread */
+    );
 }
 
-void thread_exit(void) {
+void switch_thread_exit(void) {
     switch_thread(
             get_current_thread(),
             reschedule(false),
-            true);              /* do destroy the thread */
+            true                /* do destroy the thread */
+    );
 }
 
-void thread_set_local_storage(
-        thread_t    *thread,
-        addr_t       addr,
-        size_t       size) {
-
-    thread->local_storage_addr  = addr;
-    thread->local_storage_size  = size;
+void set_thread_local_storage(thread_t *thread, addr_t addr, size_t size) {
+    thread->local_storage_addr = addr;
+    thread->local_storage_size = size;
 }
 
-addr_t thread_get_local_storage(const thread_t *thread) {
+addr_t get_thread_local_storage(const thread_t *thread) {
     return thread->local_storage_addr;
 }

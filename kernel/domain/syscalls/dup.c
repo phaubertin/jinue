@@ -75,7 +75,7 @@ int dup(int process_fd, int src, int dest) {
     dest_desc->flags  = src_desc->flags;
     dest_desc->cookie = src_desc->cookie;
 
-    object_open(object, dest_desc);
+    open_object(object, dest_desc);
 
     return 0;
 }

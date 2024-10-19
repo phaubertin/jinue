@@ -53,7 +53,7 @@ int create_process(int fd) {
     desc->flags  = DESCRIPTOR_FLAG_IN_USE | DESCRIPTOR_FLAG_OWNER;
     desc->cookie = 0;
 
-    object_open(&process->header, desc);
+    open_object(&process->header, desc);
 
     return 0;
 }

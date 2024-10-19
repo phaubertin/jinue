@@ -33,5 +33,5 @@
 #include <kernel/domain/syscalls.h>
 
 void yield_thread(void) {
-    thread_yield();
+    switch_thread_yield();
 }

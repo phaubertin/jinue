@@ -84,7 +84,7 @@ int dereference_object_descriptor(
 
     if(object_is_destroyed(object)) {
         desc->flags |= DESCRIPTOR_FLAG_DESTROYED;
-        object_close(object, desc);
+        close_object(object, desc);
         return -JINUE_EIO;
     }
 

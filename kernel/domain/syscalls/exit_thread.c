@@ -33,5 +33,5 @@
 #include <kernel/domain/syscalls.h>
 
 void exit_thread(void) {
-    thread_exit();
+    switch_thread_exit();
 }

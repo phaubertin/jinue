@@ -42,7 +42,7 @@ process_t *construct_process(void);
 
 void free_process(process_t *process);
 
-void process_switch_to(process_t *process);
+void switch_to_process(process_t *process);
 
 process_t *get_current_process(void);
 

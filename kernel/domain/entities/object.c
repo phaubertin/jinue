@@ -32,7 +32,7 @@
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/services/slab.h>
 
-void object_cache_init(slab_cache_t *cache, const object_type_t *type) {
+void init_object_cache(slab_cache_t *cache, const object_type_t *type) {
     slab_cache_init(
         cache,
         type->name,
@@ -44,18 +44,18 @@ void object_cache_init(slab_cache_t *cache, const object_type_t *type) {
     );
 }
 
-void object_open(object_header_t *object, const descriptor_t *desc) {
-    object_addref(object);
+void open_object(object_header_t *object, const descriptor_t *desc) {
+    add_ref_to_object(object);
 
     if(object->type->open != NULL) {
         object->type->open(object, desc);
     }
 }
 
-void object_close(object_header_t *object, const descriptor_t *desc) {
+void close_object(object_header_t *object, const descriptor_t *desc) {
     if(object->type->close != NULL) {
         object->type->close(object, desc);
     }
 
-    object_subref(object);
+    sub_ref_to_object(object);
 }

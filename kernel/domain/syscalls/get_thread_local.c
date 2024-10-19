@@ -34,5 +34,5 @@
 #include <kernel/machine/thread.h>
 
 void *get_thread_local(void) {
-    return thread_get_local_storage(get_current_thread());
+    return get_thread_local_storage(get_current_thread());
 }

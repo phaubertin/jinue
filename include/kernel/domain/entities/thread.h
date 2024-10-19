@@ -40,23 +40,20 @@ thread_t *construct_thread(process_t *process, const thread_params_t *params);
 
 void free_thread(thread_t *thread);
         
-void thread_ready(thread_t *thread);
+void ready_thread(thread_t *thread);
 
-void thread_switch_to(thread_t *thread, bool blocked);
+void switch_thread_to(thread_t *thread, bool blocked);
 
 void start_first_thread(void);
 
-void thread_yield(void);
+void switch_thread_yield(void);
 
-void thread_block(void);
+void switch_thread_block(void);
 
-void thread_exit(void);
+void switch_thread_exit(void);
 
-void thread_set_local_storage(
-        thread_t    *thread,
-        addr_t       addr,
-        size_t       size);
+void set_thread_local_storage(thread_t *thread, addr_t addr, size_t size);
 
-addr_t thread_get_local_storage(const thread_t *thread);
+addr_t get_thread_local_storage(const thread_t *thread);
 
 #endif

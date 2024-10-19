@@ -49,9 +49,9 @@ int destroy(int fd) {
 
     object_header_t *object = desc->object;
 
-    object_close(object, desc);
+    close_object(object, desc);
 
-    object_mark_destroyed(object);
+    mark_object_destroyed(object);
 
     desc->flags = DESCRIPTOR_FLAG_NONE;
 

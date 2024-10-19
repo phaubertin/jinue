@@ -238,14 +238,14 @@ int send_message(
         /* No thread is waiting to receive this message, so we must wait on the
          * sender list. */
         jinue_list_enqueue(&endpoint->send_list, &sender->thread_list);
-        thread_block();
+        switch_thread_block();
     }
     else {
-        object_addref(&sender->header);
+        add_ref_to_object(&sender->header);
         receiver->sender = sender;
 
         /* switch to receiver thread, which will resume inside syscall_receive() */
-        thread_switch_to(receiver, true);
+        switch_thread_to(receiver, true);
     }
     
     if(sender->reply_errno != 0) {
@@ -298,24 +298,24 @@ int receive_message(ipc_endpoint_t *endpoint, thread_t *receiver,jinue_message_t
         /* No thread is waiting to send a message, so we must wait on the receive
          * list. */
         jinue_list_enqueue(&endpoint->recv_list, &receiver->thread_list);
-        thread_block();
+        switch_thread_block();
         
         /* set by sending thread */
         sender = receiver->sender;
     }
     else {
-        object_addref(&sender->header);
+        add_ref_to_object(&sender->header);
         receiver->sender = sender;
     }
 
     if(sender->message_size > recv_buffer_size) {
         /* message is too big for the receive buffer */
         sender->reply_errno = JINUE_E2BIG;
-        object_subref(&sender->header);
+        sub_ref_to_object(&sender->header);
         receiver->sender = NULL;
         
         /* switch back to sender thread to return from call immediately */
-        thread_switch_to(sender, false);
+        switch_thread_to(sender, false);
                 
         return -JINUE_E2BIG;
     }
@@ -366,11 +366,11 @@ int send_reply(thread_t *replier, const jinue_message_t *message) {
         return -JINUE_E2BIG;
     }
 
-    object_subref(&replyto->header);
+    sub_ref_to_object(&replyto->header);
     replier->sender = NULL;
     
     /* switch back to sender thread to return from call immediately */
-    thread_switch_to(replyto, false);
+    switch_thread_to(replyto, false);
 
     return 0;
 }

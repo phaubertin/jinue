@@ -71,7 +71,7 @@ static slab_cache_t ipc_endpoint_cache;
 static void cache_endpoint_ctor(void *buffer, size_t size) {
     ipc_endpoint_t *endpoint = buffer;
     
-    object_header_init(&endpoint->header, object_type_ipc_endpoint);
+    init_object_header(&endpoint->header, object_type_ipc_endpoint);
     jinue_list_init(&endpoint->send_list);
     jinue_list_init(&endpoint->recv_list);
     endpoint->receivers_count = 0;
@@ -102,7 +102,7 @@ static void close_endpoint(object_header_t *object, const descriptor_t *desc) {
         sub_receiver(endpoint);
 
         if(!has_receivers(endpoint)) {
-            object_mark_destroyed(object);
+            mark_object_destroyed(object);
         }
     }
 }
@@ -112,7 +112,7 @@ static void close_endpoint(object_header_t *object, const descriptor_t *desc) {
  *
  */
 void initialize_endpoint_cache(void) {
-    object_cache_init(&ipc_endpoint_cache, object_type_ipc_endpoint);
+    init_object_cache(&ipc_endpoint_cache, object_type_ipc_endpoint);
 }
 
 /**

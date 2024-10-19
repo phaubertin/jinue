@@ -91,7 +91,7 @@ void kmain(const char *cmdline) {
         panic("Could not create initial process.");
     }
 
-    process_switch_to(process);
+    switch_to_process(process);
 
     /* load user space loader binary */
     exec_file_t loader;
