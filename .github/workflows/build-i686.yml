@@ -47,3 +47,4 @@ jobs:
 
     - name: make testapp
       run: make testapp
+
