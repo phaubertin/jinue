@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -30,31 +30,25 @@
  */
 
 #include <jinue/shared/asm/errno.h>
-#include <jinue/shared/asm/permissions.h>
+#include <kernel/application/syscalls.h>
 #include <kernel/domain/entities/descriptor.h>
-#include <kernel/domain/services/ipc.h>
-#include <kernel/domain/syscalls.h>
-#include <kernel/machine/thread.h>
+#include <kernel/domain/entities/object.h>
+#include <kernel/domain/entities/process.h>
 
-int send(int fd, int function, const jinue_message_t *message) {
-    thread_t *sender = get_current_thread();
 
+int close(int fd) {
     descriptor_t *desc;
-    int status = dereference_object_descriptor(&desc, sender->process, fd);
+    int status = dereference_object_descriptor(&desc, get_current_process(), fd);
 
     if(status < 0) {
         return status;
     }
 
-    ipc_endpoint_t *endpoint = get_endpoint_from_descriptor(desc);
+    object_header_t *object = desc->object;
+    
+    close_object(object, desc);
 
-    if(endpoint == NULL) {
-        return -JINUE_EBADF;
-    }
+    desc->flags = DESCRIPTOR_FLAG_NONE;
 
-    if(!descriptor_has_permissions(desc, JINUE_PERM_SEND)) {
-        return -JINUE_EPERM;
-    }
-
-    return send_message(endpoint, sender, function, desc->cookie, message);
+    return 0;
 }

@@ -45,7 +45,7 @@ loader.bin       = $(loader)/loader
 kernel_elf       = interface/i686/kernel
 stripped         = interface/i686/kernel-stripped
 image            = interface/i686/$(notdir $(kernel_img))
-kmain			 = domain/kmain.o
+kmain			 = application/kmain.o
 setup16          = interface/i686/setup16.o
 setup32          = interface/i686/setup32.o
 target           = $(image)
@@ -60,6 +60,26 @@ unclean.extra    = \
 	$(stripped)
 
 sources.kernel.c = \
+	application/syscalls/close.c \
+	application/syscalls/create_endpoint.c \
+	application/syscalls/create_process.c \
+	application/syscalls/create_thread.c \
+	application/syscalls/destroy.c \
+	application/syscalls/dup.c \
+	application/syscalls/exit_thread.c \
+	application/syscalls/get_thread_local.c \
+	application/syscalls/get_user_memory.c \
+	application/syscalls/mint.c \
+	application/syscalls/mmap.c \
+	application/syscalls/mclone.c \
+	application/syscalls/puts.c \
+	application/syscalls/reboot.c \
+	application/syscalls/receive.c \
+	application/syscalls/reply.c \
+	application/syscalls/send.c \
+	application/syscalls/set_thread_local.c \
+	application/syscalls/yield_thread.c \
+	application/kmain.c \
 	domain/entities/descriptor.c \
 	domain/entities/endpoint.c \
 	domain/entities/object.c \
@@ -73,27 +93,7 @@ sources.kernel.c = \
 	domain/services/panic.c \
 	domain/services/slab.c \
 	domain/services/vmalloc.c \
-	domain/syscalls/close.c \
-	domain/syscalls/create_endpoint.c \
-	domain/syscalls/create_process.c \
-	domain/syscalls/create_thread.c \
-	domain/syscalls/destroy.c \
-	domain/syscalls/dup.c \
-	domain/syscalls/exit_thread.c \
-	domain/syscalls/get_thread_local.c \
-	domain/syscalls/get_user_memory.c \
-	domain/syscalls/mint.c \
-	domain/syscalls/mmap.c \
-	domain/syscalls/mclone.c \
-	domain/syscalls/puts.c \
-	domain/syscalls/reboot.c \
-	domain/syscalls/receive.c \
-	domain/syscalls/reply.c \
-	domain/syscalls/send.c \
-	domain/syscalls/set_thread_local.c \
-	domain/syscalls/yield_thread.c \
 	domain/config.c \
-	domain/kmain.c \
 	infrastructure/i686/auxv.c \
 	infrastructure/i686/boot_alloc.c \
 	infrastructure/i686/cmdline.c \

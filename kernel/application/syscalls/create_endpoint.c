@@ -30,74 +30,43 @@
  */
 
 #include <jinue/shared/asm/errno.h>
+#include <kernel/application/syscalls.h>
 #include <kernel/domain/entities/descriptor.h>
+#include <kernel/domain/entities/endpoint.h>
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
-#include <kernel/domain/syscalls.h>
 
-static int check_mint_permissions(const object_header_t *object, int perms) {
-    if((perms & ~object->type->all_permissions) != 0) {
-        return -JINUE_EINVAL;
-    }
-
-    /* TODO remove this once permissions are defined for process objects */
-    if(object->type == object_type_process) {
-        return 0;
-    }
-
-    if(perms == 0) {
-        return -JINUE_EINVAL;
-    }
-
-    return 0;
-}
-
-int mint(int owner, const jinue_mint_args_t *mint_args) {
-    process_t *current_process = get_current_process();
-
-    descriptor_t *src_desc;
-    int status = dereference_object_descriptor(&src_desc, current_process, owner);
+/**
+ * Create an IPC endpoint owned by the current thread
+ *
+ * All currently recognized flags will be deprecated.
+ *
+ * @param flags flags
+ * @return IPC endpoint descriptor on success, negated error number on error
+ *
+ */
+int create_endpoint(int fd) {
+    descriptor_t *desc;
+    int status = dereference_unused_descriptor(&desc, get_current_process(), fd);
 
     if(status < 0) {
         return status;
     }
 
-    object_header_t *object = src_desc->object;
+    ipc_endpoint_t *endpoint = construct_endpoint();
 
-    status = check_mint_permissions(object, mint_args->perms);
-
-    if(status < 0) {
-        return status;
+    if(endpoint == NULL) {
+        return -JINUE_EAGAIN;
     }
 
-    if(!descriptor_is_owner(src_desc)) {
-        return -JINUE_EPERM;
-    }
+    desc->object = &endpoint->header;
+    desc->flags  =
+          DESCRIPTOR_FLAG_IN_USE
+        | DESCRIPTOR_FLAG_OWNER
+        | object_type_ipc_endpoint->all_permissions;
+    desc->cookie = 0;
 
-    descriptor_t *process_desc;
-    status = dereference_object_descriptor(&process_desc, current_process, mint_args->process);
+    open_object(&endpoint->header, desc);
 
-    process_t *process = get_process_from_descriptor(process_desc);
-
-    if(process == NULL) {
-        return -JINUE_EBADF;
-    }
-
-    descriptor_t *dest_desc;
-    status = dereference_unused_descriptor(&dest_desc, process, mint_args->fd);
-
-    if(status < 0) {
-        return status;
-    }
-
-    dest_desc->object = src_desc->object;
-    dest_desc->flags  =
-          mint_args->perms
-        | (src_desc->flags & OBJECT_FLAG_DESTROYED)
-        | DESCRIPTOR_FLAG_IN_USE;
-    dest_desc->cookie = mint_args->cookie;
-
-    open_object(object, dest_desc);
-
-    return 0;
+    return fd;
 }

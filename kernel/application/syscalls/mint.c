@@ -30,28 +30,74 @@
  */
 
 #include <jinue/shared/asm/errno.h>
+#include <kernel/application/syscalls.h>
 #include <kernel/domain/entities/descriptor.h>
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
-#include <kernel/domain/entities/thread.h>
-#include <kernel/domain/syscalls.h>
 
-int create_thread(int  process_fd, const thread_params_t *params) {
-    descriptor_t *desc;
-    int status = dereference_object_descriptor(&desc, get_current_process(), process_fd);
+static int check_mint_permissions(const object_header_t *object, int perms) {
+    if((perms & ~object->type->all_permissions) != 0) {
+        return -JINUE_EINVAL;
+    }
+
+    /* TODO remove this once permissions are defined for process objects */
+    if(object->type == object_type_process) {
+        return 0;
+    }
+
+    if(perms == 0) {
+        return -JINUE_EINVAL;
+    }
+
+    return 0;
+}
+
+int mint(int owner, const jinue_mint_args_t *mint_args) {
+    process_t *current_process = get_current_process();
+
+    descriptor_t *src_desc;
+    int status = dereference_object_descriptor(&src_desc, current_process, owner);
 
     if(status < 0) {
         return status;
     }
 
-    process_t *process = get_process_from_descriptor(desc);
+    object_header_t *object = src_desc->object;
+
+    status = check_mint_permissions(object, mint_args->perms);
+
+    if(status < 0) {
+        return status;
+    }
+
+    if(!descriptor_is_owner(src_desc)) {
+        return -JINUE_EPERM;
+    }
+
+    descriptor_t *process_desc;
+    status = dereference_object_descriptor(&process_desc, current_process, mint_args->process);
+
+    process_t *process = get_process_from_descriptor(process_desc);
 
     if(process == NULL) {
         return -JINUE_EBADF;
     }
 
-    const thread_t *thread = construct_thread(process, params);
+    descriptor_t *dest_desc;
+    status = dereference_unused_descriptor(&dest_desc, process, mint_args->fd);
 
-    /** TODO associate new thread to a free descriptor */
-    return (thread == NULL) ? -JINUE_EAGAIN : 0;
+    if(status < 0) {
+        return status;
+    }
+
+    dest_desc->object = src_desc->object;
+    dest_desc->flags  =
+          mint_args->perms
+        | (src_desc->flags & OBJECT_FLAG_DESTROYED)
+        | DESCRIPTOR_FLAG_IN_USE;
+    dest_desc->cookie = mint_args->cookie;
+
+    open_object(object, dest_desc);
+
+    return 0;
 }

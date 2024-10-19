@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -30,43 +30,31 @@
  */
 
 #include <jinue/shared/asm/errno.h>
+#include <jinue/shared/asm/permissions.h>
+#include <kernel/application/syscalls.h>
 #include <kernel/domain/entities/descriptor.h>
-#include <kernel/domain/entities/endpoint.h>
-#include <kernel/domain/entities/object.h>
-#include <kernel/domain/entities/process.h>
-#include <kernel/domain/syscalls.h>
+#include <kernel/domain/services/ipc.h>
+#include <kernel/machine/thread.h>
 
-/**
- * Create an IPC endpoint owned by the current thread
- *
- * All currently recognized flags will be deprecated.
- *
- * @param flags flags
- * @return IPC endpoint descriptor on success, negated error number on error
- *
- */
-int create_endpoint(int fd) {
+int receive(int fd, jinue_message_t *message) {
+    thread_t *receiver = get_current_thread();
+
     descriptor_t *desc;
-    int status = dereference_unused_descriptor(&desc, get_current_process(), fd);
+    int status = dereference_object_descriptor(&desc, receiver->process, fd);
 
     if(status < 0) {
         return status;
     }
 
-    ipc_endpoint_t *endpoint = construct_endpoint();
+    ipc_endpoint_t *endpoint = get_endpoint_from_descriptor(desc);
 
     if(endpoint == NULL) {
-        return -JINUE_EAGAIN;
+        return -JINUE_EBADF;
     }
 
-    desc->object = &endpoint->header;
-    desc->flags  =
-          DESCRIPTOR_FLAG_IN_USE
-        | DESCRIPTOR_FLAG_OWNER
-        | object_type_ipc_endpoint->all_permissions;
-    desc->cookie = 0;
+    if(!descriptor_has_permissions(desc, JINUE_PERM_RECEIVE)) {
+        return -JINUE_EPERM;
+    }
 
-    open_object(&endpoint->header, desc);
-
-    return fd;
+    return receive_message(endpoint, receiver, message);
 }

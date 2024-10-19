@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,47 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_SYSCALLS_H
-#define JINUE_KERNEL_SYSCALLS_H
+#include <kernel/application/syscalls.h>
+#include <kernel/domain/entities/thread.h>
 
-#include <kernel/types.h>
-
-int close(int fd);
-
-int create_endpoint(int fd);
-
-int create_process(int fd);
-
-int create_thread(int  process_fd, const thread_params_t *params);
-
-int destroy(int fd);
-
-int dup(int process_fd, int src, int dest);
-
-void exit_thread(void);
-
-void *get_thread_local(void);
-
-int get_user_memory(const jinue_buffer_t *buffer);
-
-int mclone(int src, int dest, const jinue_mclone_args_t *args);
-
-int mint(int owner, const jinue_mint_args_t *mint_args);
-
-int mmap(int process_fd, const jinue_mmap_args_t *args);
-
-int puts(int loglevel, const char *str, size_t length);
-
-void reboot(void);
-
-int receive(int fd, jinue_message_t *message);
-
-int reply(const jinue_message_t *message);
-
-int send(int fd, int function, const jinue_message_t *message);
-
-void set_thread_local(void *addr, size_t size);
-
-void yield_thread(void);
-
-#endif
+void exit_thread(void) {
+    switch_thread_exit();
+}

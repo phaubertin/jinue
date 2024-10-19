@@ -30,30 +30,52 @@
  */
 
 #include <jinue/shared/asm/errno.h>
+#include <kernel/application/syscalls.h>
 #include <kernel/domain/entities/descriptor.h>
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
-#include <kernel/domain/syscalls.h>
 
-int create_process(int fd) {
-    descriptor_t *desc;
-    int status = dereference_unused_descriptor(&desc, get_current_process(), fd);
+int dup(int process_fd, int src, int dest) {
+    process_t *current_process = get_current_process();
+
+    descriptor_t *process_desc;
+    int status = dereference_object_descriptor(&process_desc, current_process, process_fd);
+    
+    if(status < 0) {
+        return status;
+    }
+    
+    process_t *process = get_process_from_descriptor(process_desc);
+
+    if(process == NULL) {
+        return -JINUE_EBADF;
+    }
+
+    descriptor_t *src_desc;
+    status = dereference_object_descriptor(&src_desc, current_process, src);
 
     if(status < 0) {
         return status;
     }
 
-    process_t *process = construct_process();
+    object_header_t *object = src_desc->object;
 
-    if(process == NULL) {
-        return -JINUE_EAGAIN;
+    if(descriptor_is_owner(src_desc)) {
+        return -JINUE_EBADF;
     }
 
-    desc->object = &process->header;
-    desc->flags  = DESCRIPTOR_FLAG_IN_USE | DESCRIPTOR_FLAG_OWNER;
-    desc->cookie = 0;
+    descriptor_t *dest_desc;
+    status = dereference_unused_descriptor(&dest_desc, process, dest);
 
-    open_object(&process->header, desc);
+    if(status < 0) {
+        return status;
+    }
+
+    dest_desc->object = src_desc->object;
+    dest_desc->flags  = src_desc->flags;
+    dest_desc->cookie = src_desc->cookie;
+
+    open_object(object, dest_desc);
 
     return 0;
 }

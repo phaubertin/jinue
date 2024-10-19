@@ -31,11 +31,11 @@
 
 #include <jinue/shared/asm/errno.h>
 #include <jinue/shared/vm.h>
+#include <kernel/application/syscalls.h>
 #include <kernel/domain/entities/descriptor.h>
 #include <kernel/domain/entities/endpoint.h>
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
-#include <kernel/domain/syscalls.h>
 #include <kernel/interface/syscall.h>
 #include <kernel/utils/utils.h>
 #include <limits.h>

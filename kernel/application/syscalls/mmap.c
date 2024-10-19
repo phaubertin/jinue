@@ -29,10 +29,39 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/domain/entities/thread.h>
-#include <kernel/domain/syscalls.h>
-#include <kernel/machine/thread.h>
+#include <jinue/shared/asm/errno.h>
+#include <kernel/application/syscalls.h>
+#include <kernel/domain/entities/descriptor.h>
+#include <kernel/domain/entities/process.h>
+#include <kernel/machine/vm.h>
 
-void set_thread_local(void *addr, size_t size) {
-    set_thread_local_storage(get_current_thread(), addr, size);
+/**
+ * Implementation for the MMAP system call
+ *
+ * Map a contiguous memory range into a process' address space.
+ *
+ * @param process_fd process descriptor number
+ * @param args MMAP system call arguments structure
+ * @return zero on success, negated error code on failure
+ *
+ */
+int mmap(int process_fd, const jinue_mmap_args_t *args) {
+    descriptor_t *desc;
+    int status = dereference_object_descriptor(&desc, get_current_process(), process_fd);
+
+    if(status < 0) {
+        return status;
+    }
+
+    process_t *process = get_process_from_descriptor(desc);
+
+    if(process == NULL) {
+        return -JINUE_EBADF;
+    }
+
+    if(! machine_map_userspace(process, args->addr, args->length, args->paddr, args->prot)) {
+        return -JINUE_ENOMEM;
+    }
+
+    return 0;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -30,63 +30,12 @@
  */
 
 #include <jinue/shared/asm/errno.h>
-#include <kernel/domain/entities/descriptor.h>
-#include <kernel/domain/entities/process.h>
-#include <kernel/domain/syscalls.h>
-#include <kernel/machine/vm.h>
+#include <jinue/shared/asm/permissions.h>
+#include <kernel/application/syscalls.h>
+#include <kernel/domain/services/ipc.h>
+#include <kernel/machine/thread.h>
 
-/**
- * Implementation for the MCLONE system call
- *
- * Clone memory mappings from one process to another.
- *
- * @param src source process descriptor number
- * @param dest destination process descriptor number
- * @param args MCLONE system call arguments structure
- * @return zero on success, negated error code on failure
- *
- */
-int mclone(int src, int dest, const jinue_mclone_args_t *args) {
-    process_t *current_process = get_current_process();
-
-    descriptor_t *src_desc;
-    int status = dereference_object_descriptor(&src_desc, current_process, src);
-    
-    if(status < 0) {
-        return status;
-    }
-    
-    process_t *src_process = get_process_from_descriptor(src_desc);
-
-    if(src_process == NULL) {
-        return -JINUE_EBADF;
-    }
-    
-    descriptor_t *dest_desc;
-    status = dereference_object_descriptor(&dest_desc, current_process, dest);
-    
-    if(status < 0) {
-        return status;
-    }
-    
-    process_t *dest_process = get_process_from_descriptor(dest_desc);
-
-    if(dest_process == NULL) {
-        return -JINUE_EBADF;
-    }
-
-    bool success = machine_clone_userspace_mapping(
-        dest_process,
-        args->dest_addr,
-        src_process,
-        args->src_addr,
-        args->length,
-        args->prot
-    );
-
-    if(!success) {
-        return -JINUE_ENOMEM;
-    }
-
-    return 0;
+int reply(const jinue_message_t *message) {
+    thread_t *replier = get_current_thread();
+    return send_reply(replier, message);
 }

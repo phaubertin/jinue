@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -30,12 +30,30 @@
  */
 
 #include <jinue/shared/asm/errno.h>
-#include <jinue/shared/asm/permissions.h>
-#include <kernel/domain/services/ipc.h>
-#include <kernel/domain/syscalls.h>
-#include <kernel/machine/thread.h>
+#include <kernel/application/syscalls.h>
+#include <kernel/domain/entities/descriptor.h>
+#include <kernel/domain/entities/object.h>
+#include <kernel/domain/entities/process.h>
 
-int reply(const jinue_message_t *message) {
-    thread_t *replier = get_current_thread();
-    return send_reply(replier, message);
+int create_process(int fd) {
+    descriptor_t *desc;
+    int status = dereference_unused_descriptor(&desc, get_current_process(), fd);
+
+    if(status < 0) {
+        return status;
+    }
+
+    process_t *process = construct_process();
+
+    if(process == NULL) {
+        return -JINUE_EAGAIN;
+    }
+
+    desc->object = &process->header;
+    desc->flags  = DESCRIPTOR_FLAG_IN_USE | DESCRIPTOR_FLAG_OWNER;
+    desc->cookie = 0;
+
+    open_object(&process->header, desc);
+
+    return 0;
 }
