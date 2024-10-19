@@ -42,7 +42,8 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-       path: |
+        name: artifact-${{ matrix.cc }}
+        path: |
           kernel/interface/i686/jinue
           userspace/testapp/testapp
     
