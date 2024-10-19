@@ -192,5 +192,4 @@ void run_ipc_test(void) {
     }
 
     jinue_info("Main thread is running.");
-    jinue_info("Test passed.");
 }
