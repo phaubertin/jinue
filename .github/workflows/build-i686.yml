@@ -9,7 +9,14 @@ on:
 jobs:
   build:
 
+    strategy:
+      matrix:
+        cc: [gcc, clang]
+
     runs-on: ubuntu-latest
+
+    env:
+      MAKE: make CC="${{ matrix.cc }} -Werror"
 
     steps:
 
@@ -24,13 +31,13 @@ jobs:
       run: ./configure
 
     - name: make
-      run: make
+      run: ${{ env.MAKE }}
 
     - name: make testapp
-      run: make testapp
+      run: ${{ env.MAKE }} testapp
     
     - name: make qemu
-      run: make qemu
+      run: ${{ env.MAKE }} qemu
     
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
@@ -40,4 +47,4 @@ jobs:
           userspace/testapp/testapp
     
     - name: make qemu-check
-      run: make qemu-check
+      run: ${{ env.MAKE }} qemu-check
