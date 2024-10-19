@@ -36,9 +36,8 @@
 #include <jinue/shared/syscall.h>
 #include <jinue/shared/types.h>
 #include <kernel/machine/types.h>
+#include <kernel/utils/list.h>
 #include <kernel/typedeps.h>
-#include <kernel/list.h>
-#include <sys/elf.h>
 
 struct boot_heap_pushed_state {
     struct boot_heap_pushed_state   *next;
@@ -56,18 +55,18 @@ typedef struct slab_cache_t slab_cache_t;
 
 typedef void (*slab_ctor_t)(void *, size_t);
 
-typedef struct object_ref_t object_ref_t;
+typedef struct descriptor_t descriptor_t;
 
 typedef struct object_header_t object_header_t;
 
-typedef void (*object_ref_func_t)(object_header_t *, const object_ref_t *);
+typedef void (*descriptor_func_t)(object_header_t *, const descriptor_t *);
 
 typedef struct {
     int                  all_permissions;
     char                *name;
     size_t               size;
-    object_ref_func_t    open;
-    object_ref_func_t    close;
+    descriptor_func_t    open;
+    descriptor_func_t    close;
     slab_ctor_t          cache_ctor;
     slab_ctor_t          cache_dtor;
 } object_type_t;
@@ -78,7 +77,7 @@ struct object_header_t {
     int                  flags;
 };
 
-struct object_ref_t {
+struct descriptor_t {
     object_header_t *object;
     uintptr_t        flags;
     uintptr_t        cookie;
@@ -89,7 +88,7 @@ struct object_ref_t {
 typedef struct {
     object_header_t header;
     addr_space_t    addr_space;
-    object_ref_t    descriptors[PROCESS_MAX_DESCRIPTORS];
+    descriptor_t    descriptors[PROCESS_MAX_DESCRIPTORS];
 } process_t;
 
 struct thread_t {
@@ -111,6 +110,11 @@ struct thread_t {
 typedef struct thread_t thread_t;
 
 typedef struct {
+    void *entry;
+    void *stack_addr;
+} thread_params_t;
+
+typedef struct {
     object_header_t header;
     jinue_list_t    send_list;
     jinue_list_t    recv_list;
@@ -118,9 +122,9 @@ typedef struct {
 } ipc_endpoint_t;
 
 typedef struct {
-    Elf32_Ehdr  *ehdr;
-    size_t       size;
-} elf_file_t;
+    void    *start;
+    size_t   size;
+} exec_file_t;
 
 typedef struct {
     kern_paddr_t    start;
@@ -133,7 +137,7 @@ typedef struct {
 } logger_t;
 
 typedef struct {
-    machine_cmdline_opts_t  machine;
-} cmdline_opts_t;
+    machine_config_t machine;
+} config_t;
 
 #endif

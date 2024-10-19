@@ -30,8 +30,8 @@
 jinue_root = ..
 include $(jinue_root)/header.mk
 
-kernel_ldscript  = i686/ld/kernel.ld
-image_ldscript   = i686/ld/image.ld
+kernel_ldscript  = interface/i686/ld/kernel.ld
+image_ldscript   = interface/i686/ld/image.ld
 build_info_h     = build-info.gen.h
 
 LDFLAGS         += -m32 -march=i686
@@ -42,15 +42,16 @@ IMAGE_LDFLAGS    = -T $(image_ldscript)
 c.lib            = $(libc)/libc-kernel.a
 loader.bin       = $(loader)/loader
 
-kernel           = i686/kernel
-stripped         = i686/kernel-stripped
-image            = i686/$(notdir $(kernel_img))
-setup16          = i686/setup16.o
-setup32          = i686/setup32.o
+kernel_elf       = interface/i686/kernel
+stripped         = interface/i686/kernel-stripped
+image            = interface/i686/$(notdir $(kernel_img))
+kmain			 = application/kmain.o
+setup16          = interface/i686/setup16.o
+setup32          = interface/i686/setup32.o
 target           = $(image)
 
 unclean.extra    = \
-	$(kernel) \
+	$(kernel_elf) \
 	$(build_info_h) \
 	$(kernel_ldscript) \
 	$(image_ldscript) \
@@ -59,53 +60,74 @@ unclean.extra    = \
 	$(stripped)
 
 sources.kernel.c = \
-	i686/auxv.c \
-	i686/boot.c \
-	i686/boot_alloc.c \
-	i686/cmdline.c \
-	i686/cpu.c \
-	i686/debug.c \
-	i686/halt.c \
-	i686/init.c \
-	i686/interrupt.c \
-	i686/memory.c \
-	i686/pic8259.c \
-	i686/process.c \
-	i686/serial.c \
-	i686/thread.c \
-	i686/vga.c \
-	i686/vm.c \
-	i686/vm_pae.c \
-	i686/vm_x86.c \
-	cmdline.c \
-	descriptor.c \
-	elf.c \
-	ipc.c \
-	kmain.c \
-	logging.c \
-	mmap.c \
-	mclone.c \
-	object.c \
-	page_alloc.c \
-	panic.c \
-	process.c \
-	slab.c \
-	syscall.c \
-	thread.c \
-	vmalloc.c
-	
+	application/syscalls/close.c \
+	application/syscalls/create_endpoint.c \
+	application/syscalls/create_process.c \
+	application/syscalls/create_thread.c \
+	application/syscalls/destroy.c \
+	application/syscalls/dup.c \
+	application/syscalls/exit_thread.c \
+	application/syscalls/get_thread_local.c \
+	application/syscalls/get_user_memory.c \
+	application/syscalls/mint.c \
+	application/syscalls/mmap.c \
+	application/syscalls/mclone.c \
+	application/syscalls/puts.c \
+	application/syscalls/reboot.c \
+	application/syscalls/receive.c \
+	application/syscalls/reply.c \
+	application/syscalls/send.c \
+	application/syscalls/set_thread_local.c \
+	application/syscalls/yield_thread.c \
+	application/kmain.c \
+	domain/alloc/page_alloc.c \
+	domain/alloc/slab.c \
+	domain/alloc/vmalloc.c \
+	domain/entities/descriptor.c \
+	domain/entities/endpoint.c \
+	domain/entities/object.c \
+	domain/entities/process.c \
+	domain/entities/thread.c \
+	domain/services/cmdline.c \
+	domain/services/exec.c \
+	domain/services/ipc.c \
+	domain/services/logging.c \
+	domain/services/panic.c \
+	domain/config.c \
+	infrastructure/i686/auxv.c \
+	infrastructure/i686/boot_alloc.c \
+	infrastructure/i686/cmdline.c \
+	infrastructure/i686/config.c \
+	infrastructure/i686/cpu.c \
+	infrastructure/i686/debug.c \
+	infrastructure/i686/halt.c \
+	infrastructure/i686/init.c \
+	infrastructure/i686/memory.c \
+	infrastructure/i686/pic8259.c \
+	infrastructure/i686/process.c \
+	infrastructure/i686/serial.c \
+	infrastructure/i686/thread.c \
+	infrastructure/i686/vga.c \
+	infrastructure/i686/vm.c \
+	infrastructure/i686/vm_pae.c \
+	infrastructure/i686/vm_x86.c \
+	infrastructure/elf.c \
+	interface/i686/bootinfo.c \
+	interface/i686/interrupt.c \
+	interface/syscall.c
+
 sources.kernel.nasm = \
-	i686/abi.asm \
-	i686/crt.asm \
-	i686/io.asm \
-	i686/remap.asm \
-	i686/trap.asm \
-	i686/thread_switch.asm \
-	i686/x86.asm
+	infrastructure/i686/abi.asm \
+	infrastructure/i686/io.asm \
+	infrastructure/i686/remap.asm \
+	infrastructure/i686/thread_switch.asm \
+	infrastructure/i686/x86.asm \
+	interface/i686/crt.asm \
+	interface/i686/trap.asm
 
 sources.setup.nasm = \
-	i686/setup16.asm \
-	i686/setup32.asm
+	interface/i686/setup16.asm \
+	interface/i686/setup32.asm
 
 sources.c = $(sources.kernel.c)
 sources.nasm = $(sources.kernel.nasm) $(sources.setup.nasm)
@@ -118,7 +140,7 @@ include $(common)
 image: $(image)
 
 .PHONY: kernel
-kernel: $(kernel)
+kernel: $(kernel_elf)
 
 .PHONY: kernel-stripped
 kernel-stripped: $(stripped)
@@ -126,16 +148,16 @@ kernel-stripped: $(stripped)
 $(build_info_h): FORCE
 	$(scripts)/gen_build_info_h.sh > $@
 	
-kmain.o: kmain.c $(build_info_h)
+$(kmain): $(kmain:%.o=%.c) $(build_info_h)
 
-$(setup16): i686/setup16.asm
+$(setup16): $(setup16:%.o=%.asm)
 
-$(setup32): i686/setup32.asm
+$(setup32): $(setup32:%.o=%.asm)
 
-$(kernel): $(objects.kernel) $(kernel_ldscript) libc
+$(kernel_elf): $(objects.kernel) $(kernel_ldscript) libc
 	$(LINK.o) $(KERNEL_LDFLAGS) $(objects.kernel) $(c.lib) $(KERNEL_LDLIBS) -o $@
 
-$(image): $(setup16) $(setup32) $(kernel)-stripped loader $(image_ldscript)
+$(image): $(setup16) $(setup32) $(kernel_elf)-stripped loader $(image_ldscript)
 	$(LINK.o) $(IMAGE_LDFLAGS) -o $@
 
 .PHONY: libc

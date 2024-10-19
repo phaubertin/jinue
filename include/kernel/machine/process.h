@@ -38,7 +38,7 @@ void machine_switch_to_process(process_t *process);
 
 bool machine_init_process(process_t *process);
 
-void machine_destroy_process(process_t *process);
+void machine_finalize_process(process_t *process);
 
 #endif
 

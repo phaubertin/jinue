@@ -34,10 +34,10 @@
 
 #include <kernel/types.h>
 
-void machine_cmdline_start_parsing(machine_cmdline_opts_t *opts);
+void machine_cmdline_start_parsing(machine_config_t *opts);
 
 void machine_cmdline_process_option(
-        machine_cmdline_opts_t  *cmdline_opts,
+        machine_config_t        *config,
         const cmdline_token_t   *option,
         const cmdline_token_t   *value);
 
