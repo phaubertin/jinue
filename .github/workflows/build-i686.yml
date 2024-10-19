@@ -24,7 +24,9 @@ jobs:
       uses: actions/cache@v3
       with:
         key: 'nasm-${{ env.nasmVersion }}'
-        path: '~/nasm'
+        path: |
+          ~/nasm/nasm
+          ~/nasm/ndisasm
 
     - if: ${{ steps.cache-nasm.outputs.cache-hit != 'true' }}
       name: Install NASM
