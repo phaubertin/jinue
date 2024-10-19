@@ -32,7 +32,6 @@
 #ifndef JINUE_KERNEL_SERVICES_LOGGING_H
 #define JINUE_KERNEL_SERVICES_LOGGING_H
 
-#include <kernel/domain/services/cmdline.h>
 #include <kernel/types.h>
 
 void register_logger(logger_t *logger);

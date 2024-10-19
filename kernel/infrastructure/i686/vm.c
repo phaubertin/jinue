@@ -34,7 +34,6 @@
 #include <kernel/domain/entities/descriptor.h>
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
-#include <kernel/infrastructure/elf.h>
 #include <kernel/domain/services/page_alloc.h>
 #include <kernel/domain/services/panic.h>
 #include <kernel/domain/services/vmalloc.h>
@@ -45,6 +44,7 @@
 #include <kernel/infrastructure/i686/vm.h>
 #include <kernel/infrastructure/i686/vm_private.h>
 #include <kernel/infrastructure/i686/x86.h>
+#include <kernel/infrastructure/elf.h>
 #include <kernel/interface/i686/boot.h>
 #include <kernel/machine/vm.h>
 #include <kernel/utils/utils.h>

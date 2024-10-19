@@ -36,11 +36,11 @@
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/services/cmdline.h>
-#include <kernel/infrastructure/elf.h>
 #include <kernel/domain/services/logging.h>
 #include <kernel/domain/services/page_alloc.h>
 #include <kernel/domain/services/panic.h>
 #include <kernel/domain/services/vmalloc.h>
+#include <kernel/infrastructure/elf.h>
 #include <kernel/machine/auxv.h>
 #include <kernel/machine/vm.h>
 #include <kernel/utils/utils.h>

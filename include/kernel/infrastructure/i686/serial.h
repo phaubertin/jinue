@@ -32,8 +32,8 @@
 #ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_SERIAL_H_
 #define JINUE_KERNEL_INFRASTRUCTURE_I686_SERIAL_H_
 
-#include <kernel/domain/services/cmdline.h>
 #include <kernel/infrastructure/i686/asm/serial.h>
+#include <kernel/types.h>
 
 void serial_init(const config_t *config);
 

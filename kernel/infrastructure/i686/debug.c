@@ -32,8 +32,8 @@
 #include <jinue/shared/types.h>
 #include <kernel/infrastructure/i686/abi.h>
 #include <kernel/interface/i686/boot.h>
-#include <kernel/infrastructure/elf.h>
 #include <kernel/domain/services/logging.h>
+#include <kernel/infrastructure/elf.h>
 #include <kernel/machine/debug.h>
 #include <inttypes.h>
 #include <stddef.h>

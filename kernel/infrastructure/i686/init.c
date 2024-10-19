@@ -30,7 +30,6 @@
  */
 
 #include <kernel/domain/services/cmdline.h>
-#include <kernel/infrastructure/elf.h>
 #include <kernel/domain/services/logging.h>
 #include <kernel/domain/services/panic.h>
 #include <kernel/domain/services/page_alloc.h>
@@ -46,6 +45,7 @@
 #include <kernel/infrastructure/i686/vm.h>
 #include <kernel/infrastructure/i686/vm_pae.h>
 #include <kernel/infrastructure/i686/x86.h>
+#include <kernel/infrastructure/elf.h>
 #include <kernel/interface/i686/boot.h>
 #include <kernel/interface/i686/interrupt.h>
 #include <kernel/interface/i686/trap.h>

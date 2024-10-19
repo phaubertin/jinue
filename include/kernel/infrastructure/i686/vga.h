@@ -32,8 +32,8 @@
 #ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_VGA_H
 #define JINUE_KERNEL_INFRASTRUCTURE_I686_VGA_H
 
-#include <kernel/domain/services/cmdline.h>
 #include <kernel/infrastructure/i686/asm/vga.h>
+#include <kernel/types.h>
 
 void vga_init(const config_t *config);
 
