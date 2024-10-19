@@ -81,13 +81,13 @@ typedef struct {
 } addr_space_t;
 
 typedef enum {
-    CMDLINE_OPT_PAE_AUTO,
-    CMDLINE_OPT_PAE_DISABLE,
-    CMDLINE_OPT_PAE_REQUIRE
-} cmdline_opt_pae_t;
+    CONFIG_PAE_AUTO,
+    CONFIG_PAE_DISABLE,
+    CONFIG_PAE_REQUIRE
+} config_i686_pae_t;
 
 typedef struct {
-    cmdline_opt_pae_t    pae;
+    config_i686_pae_t    pae;
     bool                 serial_enable;
     int                  serial_baud_rate;
     int                  serial_ioport;
