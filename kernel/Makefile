@@ -103,6 +103,7 @@ sources.kernel.c = \
 	infrastructure/i686/halt.c \
 	infrastructure/i686/init.c \
 	infrastructure/i686/memory.c \
+	infrastructure/i686/pic8259.c \
 	infrastructure/i686/process.c \
 	infrastructure/i686/thread.c \
 	infrastructure/i686/uart16550a.c \
