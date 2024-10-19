@@ -97,9 +97,6 @@ void kmain(const char *cmdline) {
     exec_file_t loader;
     machine_get_loader(&loader);
 
-    // TODO remove this
-    *(int *)0 = 42;
-
     exec(process, &loader, "jinue-userspace-loader", cmdline);
 
     /* This should be the last thing the kernel prints before passing control
