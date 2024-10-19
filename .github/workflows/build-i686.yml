@@ -40,4 +40,3 @@ jobs:
        path: |
           kernel/interface/i686/jinue
           userspace/testapp/testapp
-          devel/qemu/jinue.iso
