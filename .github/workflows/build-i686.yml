@@ -13,8 +13,13 @@ jobs:
 
     steps:
     - uses: ilammy/setup-nasm@v1
+
     - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
     - name: configure
       run: ./configure
+
     - name: make
       run: make
