@@ -63,7 +63,7 @@ run: $(jinue_iso)
 	-serial stdio                                   \
 	-smp 1                                          \
 	-usb                                            \
-	-vga std
+	-vga std | tee $(run_log)
 
 .PHONY: run-no-display
 run-no-display: $(jinue_iso)
@@ -76,7 +76,7 @@ run-no-display: $(jinue_iso)
 	-display none                                   \
 	-smp 1                                          \
 	-usb                                            \
-	-vga std
+	-vga std | tee $(run_log)
 
 .PHONY: check
 check: $(run_log)
@@ -134,14 +134,4 @@ $(jinue_iso): $(grub_image)
 		--sort-weight 1 \
 		/boot
 
-$(run_log): $(jinue_iso)
-	qemu-system-i386                                \
-	-cpu $(QEMU_CPU)                                \
-	-m $(QEMU_MEM)                                  \
-	-no-reboot                                      \
-	-drive format=raw,media=cdrom,file=$(jinue_iso) \
-	-serial stdio                                   \
-	-display none                                   \
-	-smp 1                                          \
-	-usb                                            \
-	-vga std | tee $@
+$(run_log): run-no-display
