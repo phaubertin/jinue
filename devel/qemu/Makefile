@@ -45,6 +45,8 @@ grub_image_rel       = boot/grub/i386-pc/jinue.img
 grub_image           = $(temp_iso_fs)/$(grub_image_rel)
 kernel_img_copy      = $(temp_iso_fs)/boot/$(notdir $(kernel_img))
 initrd_copy          = $(temp_iso_fs)/boot/$(notdir $(testapp_initrd))
+run_log              = run-jinue.log
+check_script         = check-log.sh
 
 target               = $(jinue_iso)
 unclean_recursive    = $(temp_iso_fs)
@@ -61,7 +63,7 @@ run: $(jinue_iso)
 	-serial stdio                                   \
 	-smp 1                                          \
 	-usb                                            \
-	-vga std
+	-vga std | tee $(run_log)
 
 .PHONY: run-no-display
 run-no-display: $(jinue_iso)
@@ -74,7 +76,11 @@ run-no-display: $(jinue_iso)
 	-display none                                   \
 	-smp 1                                          \
 	-usb                                            \
-	-vga std
+	-vga std | tee $(run_log)
+
+.PHONY: check
+check: $(run_log)
+	./$(check_script) $<
 
 .PHONY: kernel-image
 kernel-image:
@@ -127,3 +133,5 @@ $(jinue_iso): $(grub_image)
 		/ \
 		--sort-weight 1 \
 		/boot
+
+$(run_log): run-no-display

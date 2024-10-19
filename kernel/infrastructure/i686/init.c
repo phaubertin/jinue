@@ -96,10 +96,10 @@ static bool maybe_enable_pae(
     bool use_pae;
 
     if(cpu_has_feature(CPU_FEATURE_PAE)) {
-        use_pae = (config->machine.pae != CMDLINE_OPT_PAE_DISABLE);
+        use_pae = (config->machine.pae != CONFIG_PAE_DISABLE);
     }
     else {
-        if(config->machine.pae == CMDLINE_OPT_PAE_REQUIRE) {
+        if(config->machine.pae == CONFIG_PAE_REQUIRE) {
             panic("Option pae=require passed on kernel command line but PAE is not supported.");
         }
 

@@ -44,6 +44,8 @@
 
 #define CMDLINE_ERROR_UNCLOSED_QUOTES           (1<<3)
 
+#define CMDLINE_ERROR_INVALID_ON_PANIC          (1<<4)
+
 typedef enum {
     PARSE_STATE_START,
     PARSE_STATE_NAME,
@@ -78,7 +80,12 @@ typedef struct {
     bool             has_argument;
 } parse_context_t;
 
+typedef enum {
+    CMDLINE_OPT_ON_PANIC
+} cmdline_opt_names_t;
+
 static const cmdline_enum_def_t kernel_option_names[] = {
+    {"on_panic",    CMDLINE_OPT_ON_PANIC},
     {NULL, 0}
 };
 
@@ -91,6 +98,12 @@ static const cmdline_enum_def_t bool_names[] = {
     {"no",      false},
     {"disable", false},
     {"0",       false},
+    {NULL, 0}
+};
+
+static const cmdline_enum_def_t opt_on_panic_names[] = {
+    {"halt",    CONFIG_ON_PANIC_HALT},
+    {"reboot",  CONFIG_ON_PANIC_REBOOT},
     {NULL, 0}
 };
 
@@ -741,7 +754,13 @@ static void process_name_value_pair(config_t *config, parse_context_t *context) 
         return;
     }
 
-    /* TODO process machine-independent options here (there aren't any yet) */
+    switch(opt_name) {
+        case CMDLINE_OPT_ON_PANIC:
+            if(!cmdline_match_enum((int *)&(config->on_panic), opt_on_panic_names, &context->value)) {
+                cmdline_errors |= CMDLINE_ERROR_INVALID_ON_PANIC;
+            }
+            break;
+    }
 }
 
 /**
@@ -818,6 +837,10 @@ void cmdline_report_errors(void) {
 
     if(cmdline_errors & CMDLINE_ERROR_IS_NULL) {
         warning("  No kernel command line/command line is NULL");
+    }
+
+    if(cmdline_errors & CMDLINE_ERROR_INVALID_ON_PANIC) {
+         warning("  Invalid value for argument 'on_panic'");
     }
 
     machine_cmdline_report_errors();

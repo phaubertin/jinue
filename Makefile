@@ -82,10 +82,15 @@ qemu:
 qemu-run:
 	make -C $(qemu) run
 
-# build the ISO file for QEMU and run (without the debugger)
+# build the ISO file for QEMU and run (without VGA display)
 .PHONY: qemu-run-no-display
 qemu-run-no-display:
 	make -C $(qemu) run-no-display
+
+# build the ISO file for QEMU, run and check the output
+.PHONY: qemu-check
+qemu-check:
+	make -C $(qemu) check
 
 # Run cppcheck on the kernel sources
 # Note: there are known failures

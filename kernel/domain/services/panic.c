@@ -30,6 +30,7 @@
  */
 
 #include <kernel/domain/services/logging.h>
+#include <kernel/domain/config.h>
 #include <kernel/machine/debug.h>
 #include <kernel/machine/halt.h>
 #include <stdbool.h>
@@ -61,6 +62,12 @@ void panic(const char *message) {
     default:
         /* The fourth time, we do nothing but halt the CPU. */
         break;
+    }
+
+    const config_t *config = get_config();
+
+    if(config->on_panic == CONFIG_ON_PANIC_REBOOT) {
+        machine_reboot();
     }
     
     machine_halt();

@@ -68,9 +68,9 @@ static const cmdline_enum_def_t kernel_option_names[] = {
 };
 
 static const cmdline_enum_def_t opt_pae_names[] = {
-    {"auto",        CMDLINE_OPT_PAE_AUTO},
-    {"disable",     CMDLINE_OPT_PAE_DISABLE},
-    {"require",     CMDLINE_OPT_PAE_REQUIRE},
+    {"auto",        CONFIG_PAE_AUTO},
+    {"disable",     CONFIG_PAE_DISABLE},
+    {"require",     CONFIG_PAE_REQUIRE},
     {NULL, 0}
 };
 

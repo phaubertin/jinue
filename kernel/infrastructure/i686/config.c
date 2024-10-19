@@ -33,7 +33,7 @@
 #include <kernel/machine/config.h>
 
 void machine_apply_config_defaults(machine_config_t *config) {
-    config->pae               = CMDLINE_OPT_PAE_AUTO;
+    config->pae               = CONFIG_PAE_AUTO;
     config->serial_enable     = false;
     config->serial_baud_rate  = SERIAL_DEFAULT_BAUD_RATE;
     config->serial_ioport     = SERIAL_DEFAULT_IOPORT;
