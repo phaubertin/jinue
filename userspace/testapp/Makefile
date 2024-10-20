@@ -32,6 +32,7 @@ include $(jinue_root)/header.mk
 
 sources.c       	 = tests/ipc.c debug.c testapp.c util.c
 testapp         	 = testapp
+stripped             = $(testapp)-stripped
 temp_ramdisk_fs		 = ramdisk-tmp
 ramdisk 			 = $(notdir $(testapp_initrd))
 
@@ -47,7 +48,7 @@ unclean_recursive	 = $(temp_ramdisk_fs)
 LDFLAGS         += -Wl,-u,_start -m32 -march=i686
 LDLIBS           = -lgcc
 
-unclean.extra    = $(testapp)
+unclean.extra    = $(testapp) $(stripped)
 
 include $(common)
 
@@ -59,9 +60,11 @@ $(libc)/libc.a: FORCE
 
 $(testapp): $(objects) $(libjinue)/libjinue-util.a $(libc)/libc.a $(libjinue)/libjinue-syscalls.a
 
-$(temp_ramdisk_fs): $(testapp)
+$(stripped): $(testapp)
+
+$(temp_ramdisk_fs): $(stripped)
 	mkdir -p $(temp_ramdisk_fs)/sbin
-	cp $(testapp) $(temp_ramdisk_fs)/sbin/init
+	cp $(stripped) $(temp_ramdisk_fs)/sbin/init
 	touch $(temp_ramdisk_fs)
 
 $(ramdisk): $(temp_ramdisk_fs)

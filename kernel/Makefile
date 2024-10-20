@@ -43,7 +43,7 @@ c.lib            = $(libc)/libc-kernel.a
 loader.bin       = $(loader)/loader
 
 kernel_elf       = interface/i686/kernel
-stripped         = interface/i686/kernel-stripped
+stripped         = $(kernel_elf)-stripped
 image            = interface/i686/$(notdir $(kernel_img))
 kmain			 = application/kmain.o
 setup16          = interface/i686/setup16.o
