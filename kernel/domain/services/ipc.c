@@ -30,7 +30,8 @@
  */
 
 #include <jinue/shared/asm/errno.h>
-#include <jinue/shared/ipc.h>
+#include <jinue/shared/asm/ipc.h>
+#include <jinue/shared/types.h>
 #include <jinue/shared/vm.h>
 #include <kernel/domain/entities/endpoint.h>
 #include <kernel/domain/entities/object.h>
