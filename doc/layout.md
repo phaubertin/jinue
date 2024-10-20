@@ -70,10 +70,10 @@ prints debugging information.)
 
 ## 32-bit Setup Code
 
-The [32-bit setup code](../boot/setup32.asm) is the first part of the kernel
-to run (after the 16-bit setup code if the 16-bit boot protocol is used). It
-performs a few tasks necessary to provide the kernel proper the execution
-environment it needs. These tasks include:
+The [32-bit setup code](../kernel/interface/i686/setup32.asm) is the first part
+of the kernel to run (after the 16-bit setup code if the 16-bit boot protocol
+is used). It performs a few tasks necessary to provide the kernel proper the
+execution environment it needs. These tasks include:
 
 * Allocating a boot-time stack and heap;
 * Copying the BIOS memory map and the kernel command line;
@@ -137,16 +137,16 @@ address = physical address). This mapping contains the kernel image, other data
 set up by the bootloader as well as the VGA text video memory. The kernel image
 is mapped read only while the rest of the memory is mapped read/write.
 2. Starting at address 0x1000000 (i.e. 16MB), a few megabytes of memory
-(size [BOOT_SIZE_AT_16MB](../include/hal/asm/boot.h)) are also identity mapped.
-Early in the initialization process, the kernel move its own image there. This
-region is mapped read/write.
+(size [BOOT_SIZE_AT_16MB](../include/kernel/interface/i686//asm/boot.h)) are
+also identity mapped. Early in the initialization process, the kernel move its
+own image there. This region is mapped read/write.
 3. The kernel image as well as some of the initial memory allocations, up to but
 excluding the initial page tables, are mapped at address 0xc000000 (3GB,
-aka. [KLIMIT](../include/jinue-common/asm/vm.h)). This is the address where the
-kernel expects to be loaded and ran. This is a linear mapping with one
-exception: the kernel's data segment is a copy of the content in the ELF binary,
-with appropriate zero-padding for uninitialized data (i.e. the .bss section) and
-the copy is mapped read/write at the address where the kernel expects to find
+aka. [KLIMIT](../include/kernel/infrastructure/i686/asm/shared.h)). This is the
+address where the kernel expects to be loaded and ran. This is a linear mapping
+with one exception: the kernel's data segment is a copy of the content in the ELF
+binary, with appropriate zero-padding for uninitialized data (i.e. the .bss section)
+and the copy is mapped read/write at the address where the kernel expects to find
 it. The rest of the kernel image is mapped read only and the rest of the region
 (initial allocations) is read/write.
 
