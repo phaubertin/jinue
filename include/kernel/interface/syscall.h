@@ -32,7 +32,7 @@
 #ifndef JINUE_KERNEL_INTERFACE_SYSCALL_H
 #define JINUE_KERNEL_INTERFACE_SYSCALL_H
 
-#include <jinue/shared/syscall.h>
+#include <jinue/shared/types.h>
 
 void dispatch_syscall(jinue_syscall_args_t *args);
 

@@ -35,8 +35,8 @@
 #include <jinue/shared/asm/errno.h>
 #include <jinue/shared/asm/memory.h>
 #include <jinue/shared/asm/permissions.h>
+#include <jinue/shared/asm/syscall.h>
 #include <jinue/shared/ipc.h>
-#include <jinue/shared/syscall.h>
 #include <jinue/shared/types.h>
 #include <jinue/shared/vm.h>
 #include <stddef.h>

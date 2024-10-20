@@ -33,7 +33,6 @@
 #define JINUE_KERNEL_TYPES_H
 
 #include <jinue/shared/ipc.h>
-#include <jinue/shared/syscall.h>
 #include <jinue/shared/types.h>
 #include <kernel/machine/types.h>
 #include <kernel/utils/list.h>

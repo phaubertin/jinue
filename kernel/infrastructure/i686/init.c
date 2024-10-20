@@ -29,6 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <jinue/shared/asm/syscall.h>
 #include <kernel/domain/alloc/page_alloc.h>
 #include <kernel/domain/services/cmdline.h>
 #include <kernel/domain/services/logging.h>

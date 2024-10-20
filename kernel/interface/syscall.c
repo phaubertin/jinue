@@ -30,6 +30,7 @@
  */
 
 #include <jinue/shared/asm/errno.h>
+#include <jinue/shared/asm/syscall.h>
 #include <jinue/shared/vm.h>
 #include <kernel/application/syscalls.h>
 #include <kernel/domain/entities/descriptor.h>

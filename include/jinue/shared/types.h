@@ -36,6 +36,32 @@
 #include <stddef.h>
 #include <stdint.h>
 
+/** Arguments and return values for system calls
+ *
+ * When invoking a system call, arg0 contains the call number and arg1 to arg3
+ * contain the arguments for the call. Call numbers SYSCALL_USER_BASE and up all
+ * identify the send system call and the call number is passed to the message
+ * recipient.
+ *
+ * On return from a system call, the contents of arg0 to arg3 depends on the
+ * call. Most, but not all, system calls follow the following convention:
+ *
+ *  - arg0 contains a return value which should be cast as a signed integer
+ *    (type int - see jinue_get_return()). If the value is positive (including
+ *    zero), then the call was successful. A non-zero negative value indicates
+ *    an error has occurred.
+ *  - If the call failed, as indicated by the value in arg0, arg1 contains the
+ *    error number.
+ *  - arg2 and arg3 are reserved and should be ignored.
+ *
+ *  */
+typedef struct {
+    uintptr_t arg0;
+    uintptr_t arg1;
+    uintptr_t arg2;
+    uintptr_t arg3;
+} jinue_syscall_args_t;
+
 typedef struct {
 	uint64_t	addr;
 	uint64_t	size;
