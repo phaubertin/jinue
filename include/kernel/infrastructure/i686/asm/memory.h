@@ -32,7 +32,7 @@
 #ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_MEMORY_H
 #define JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_MEMORY_H
 
-#include <kernel/asm/utils.h>
+#include <kernel/utils/asm/utils.h>
 
 #define MEMORY_ADDR_1MB         (1 * MB)
 
