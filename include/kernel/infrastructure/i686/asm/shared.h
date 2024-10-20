@@ -54,10 +54,10 @@
 #define STACK_BASE              KLIMIT
 
 /** initial stack size */
-#define STACK_SIZE              (128 * KB)
+#define STACK_SIZE              (128 * 1024)
 
 /** stack portion reserved for environment, arguments and auxiliary vectors */
-#define RESERVED_STACK_SIZE     (32 * KB)
+#define RESERVED_STACK_SIZE     (32 * 1024)
 
 /** initial stack lower address */
 #define STACK_START             (STACK_BASE - STACK_SIZE)

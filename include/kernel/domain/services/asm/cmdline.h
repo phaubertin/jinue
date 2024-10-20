@@ -32,7 +32,7 @@
 #ifndef JINUE_KERNEL_SERVICES_ASM_CMDLINE_H
 #define JINUE_KERNEL_SERVICES_ASM_CMDLINE_H
 
-#include <jinue/shared/asm/types.h>
+#include <kernel/asm/utils.h>
 
 /** Maximum valid command line length
  *

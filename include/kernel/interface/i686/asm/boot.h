@@ -33,7 +33,7 @@
 #define JINUE_KERNEL_I686_ASM_BOOT_H
 
 #include <jinue/shared/asm/machine.h>
-#include <jinue/shared/asm/types.h>
+#include <kernel/asm/utils.h>
 #include <kernel/infrastructure/i686/asm/memory.h>
 
 #define BOOT_E820_ENTRIES       0x1e8

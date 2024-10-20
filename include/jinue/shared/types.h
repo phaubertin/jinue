@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -32,7 +32,6 @@
 #ifndef _JINUE_SHARED_TYPES_H
 #define _JINUE_SHARED_TYPES_H
 
-#include <jinue/shared/asm/types.h>
 #include <stddef.h>
 #include <stdint.h>
 

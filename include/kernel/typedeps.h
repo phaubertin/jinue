@@ -32,6 +32,23 @@
 #ifndef JINUE_KERNEL_TYPEDEPS_H
 #define JINUE_KERNEL_TYPEDEPS_H
 
+/** This header file exists to resolve circular dependencies. <kernel/types.h>
+ * includes a machine-dependent type definitions header file through
+ * <kernel/machine/types.h>. This header file contain definitions needed by
+ * both and isn't intended to be included elsewhere.
+ * 
+ *      <kernel/typedeps.h>
+ *          ^       ^
+ *          |       |
+ *          |   e.g. <kernel/infrastructure/i686/exports.h> for i686
+ *          |       ^
+ *          |       |
+ *          |   <kernel/machine/types.h>
+ *          |       ^
+ *          |       |
+ *      <kernel/types.h>
+ * */
+
 #include <inttypes.h>
 #include <stddef.h>
 #include <stdint.h>
