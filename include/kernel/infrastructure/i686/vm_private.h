@@ -41,8 +41,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-/** This header file contains private definitions shared by hal/vm.c, hal/vm_pae.c
- *  and hal/vm_x86.c. There should be no reason to include it anywhere else. */
+/** This header file contains private definitions shared by vm.c, vm_pae.c
+ * and vm_x86.c in kernel/infrastructure/i686/. There should be no reason to
+ * include it anywhere else. */
 
 /** bit mask for page table or page directory offset */
 #define PAGE_TABLE_MASK (PAGE_TABLE_ENTRIES - 1)

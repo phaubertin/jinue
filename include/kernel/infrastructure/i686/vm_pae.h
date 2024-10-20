@@ -33,8 +33,8 @@
 #define JINUE_KERNEL_INFRASTRUCTURE_I686_VM_PAE_H
 
 /** This header file contains declarations for the PAE functions defined in
- * hal/vm_pae.c. It is intended to be included by hal/vm.c and hal/vm_pae.c.
- * There should be no reason to include it anywhere else. */
+ * kernel/infrastructure/i686/vm_pae.c. It is intended to be included by vm.c
+ * and vm_pae.c. There should be no reason to include it anywhere else. */
 
 #include <kernel/infrastructure/i686/types.h>
 #include <kernel/interface/i686/types.h>

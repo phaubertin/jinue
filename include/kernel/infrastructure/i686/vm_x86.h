@@ -33,8 +33,8 @@
 #define JINUE_KERNEL_INFRASTRUCTURE_I686_VM_X86_H
 
 /** This header file contains declarations for the non-PAE functions defined in
- * hal/vm_x86.c. It is intended to be included by hal/vm.c and hal/vm_x86.c.
- * There should be no reason to include it anywhere else. */
+ * kernel/infrastructure/i686/vm_x86.c. It is intended to be included by vm.c
+ * and vm_x86.c. There should be no reason to include it anywhere else. */
 
 #include <kernel/infrastructure/i686/types.h>
 
