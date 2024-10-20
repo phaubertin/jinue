@@ -45,7 +45,7 @@ jobs:
         name: artifact-${{ matrix.cc }}
         path: |
           kernel/interface/i686/jinue
-          userspace/testapp/testapp
+          userspace/testapp/jinue-testapp-initrd.tar.gz
     
     - name: make qemu-check
       run: ${{ env.MAKE }} qemu-check
