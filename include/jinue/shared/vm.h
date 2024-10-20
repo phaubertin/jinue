@@ -49,17 +49,17 @@
 
 /** Check whether a pointer points to kernel space */
 static inline bool is_kernel_pointer(const void *addr) {
-    return (uintptr_t)addr >= KLIMIT;
+    return (uintptr_t)addr >= JINUE_KLIMIT;
 }
 
 /** Check whether a pointer points to user space */
 static inline bool is_userspace_pointer(const void *addr) {
-    return (uintptr_t)addr < KLIMIT;
+    return (uintptr_t)addr < JINUE_KLIMIT;
 }
 
 /** Maximum size of user buffer starting at specified address */
 static inline uintptr_t user_pointer_max_size(const void *addr) {
-    return (uintptr_t)KLIMIT - (uintptr_t)addr;
+    return (uintptr_t)JINUE_KLIMIT - (uintptr_t)addr;
 }
 
 /** Check that a buffer is completely in user space */

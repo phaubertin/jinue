@@ -29,10 +29,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/machine.h>
 #include <jinue/shared/asm/syscall.h>
 #include <kernel/domain/alloc/page_alloc.h>
 #include <kernel/domain/alloc/vmalloc.h>
+#include <kernel/machine/asm/machine.h>
 #include <kernel/machine/vm.h>
 #include <string.h>
 

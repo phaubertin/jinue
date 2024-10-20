@@ -29,7 +29,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/machine.h>
 #include <jinue/shared/asm/syscall.h>
 #include <jinue/shared/vm.h>
 #include <kernel/domain/alloc/page_alloc.h>
@@ -41,6 +40,7 @@
 #include <kernel/domain/services/logging.h>
 #include <kernel/domain/services/panic.h>
 #include <kernel/infrastructure/elf.h>
+#include <kernel/machine/asm/machine.h>
 #include <kernel/machine/auxv.h>
 #include <kernel/machine/vm.h>
 #include <kernel/utils/utils.h>
@@ -398,7 +398,7 @@ static void load_segments(
 static void allocate_stack(elf_info_t *elf_info) {
     /** TODO: check for overlap of stack with loaded segments */
 
-    for(addr_t vpage = (addr_t)STACK_START; vpage < (addr_t)STACK_BASE; vpage += PAGE_SIZE) {
+    for(addr_t vpage = (addr_t)JINUE_STACK_START; vpage < (addr_t)JINUE_STACK_BASE; vpage += PAGE_SIZE) {
         void *page = page_alloc();
 
         /* This newly allocated page may have data left from a previous boot
@@ -430,7 +430,7 @@ static void initialize_stack(
         const char *cmdline,
         const char *argv0) {
 
-    uintptr_t *sp           = (uintptr_t *)(STACK_BASE - RESERVED_STACK_SIZE);
+    uintptr_t *sp           = (uintptr_t *)(JINUE_STACK_BASE - JINUE_RESERVED_STACK_SIZE);
     elf_info->stack_addr    = sp;
 
     /* We add 1 because argv[0] is the program name, which is not on the kernel
@@ -471,7 +471,7 @@ static void initialize_stack(
     auxvp[4].a_un.a_val = (uint32_t)elf_info->entry;
 
     auxvp[5].a_type     = JINUE_AT_STACKBASE;
-    auxvp[5].a_un.a_val = STACK_BASE;
+    auxvp[5].a_un.a_val = JINUE_STACK_BASE;
 
     auxvp[6].a_type     = JINUE_AT_HOWSYSCALL;
     auxvp[6].a_un.a_val = machine_at_howsyscall();

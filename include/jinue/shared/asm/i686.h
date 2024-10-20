@@ -29,37 +29,43 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_KERNEL_I686_ASM_SHARED_H
-#define _JINUE_KERNEL_I686_ASM_SHARED_H
+#ifndef _JINUE_SHARED_ASM_I686_H
+#define _JINUE_SHARED_ASM_I686_H
 
-/* This file contains machine-specific definitions that need to be visible
+/** This file contains machine-specific definitions that need to be visible
  * outside the machine-specific parts of the code, both in user space and
- * the kernel. */
+ * the kernel.
+ * 
+ * It is OK to include this file from i686-specific code in the kernel.
+ * Otherwise, it should be included through either <jinue/jinue.h> or
+ * or <kernel/types.h> (which includes <kernel/machine/types.h>). */
 
-/** number of bits in virtual address for offset inside page */
-#define PAGE_BITS               12
 
-/** size of page */
-#define PAGE_SIZE               (1<<PAGE_BITS) /* 4096 */
+/** number of bits in a virtual address that represent the offset within a page */
+#define JINUE_PAGE_BITS               12
 
-/** bit mask for offset in page */
-#define PAGE_MASK               (PAGE_SIZE - 1)
+/** size of a page */
+#define JINUE_PAGE_SIZE               (1<<JINUE_PAGE_BITS)  /* 4096 */
 
-/** The virtual address range starting at KLIMIT is reserved by the kernel. The
-    region above KLIMIT has the same mapping in all address spaces. KLIMIT must
-    be aligned on a page directory boundary in PAE mode. */
-#define KLIMIT                  0xc0000000
+/** bit mask for offset in a page */
+#define JINUE_PAGE_MASK               (JINUE_PAGE_SIZE - 1)
+
+/** The virtual address range starting at JINUE_KLIMIT is reserved by the
+ * kernel. The region above JINUE_KLIMIT has the same mapping in all address
+ * spaces. JINUE_KLIMIT must be aligned on a page directory boundary in PAE
+ * mode. */
+#define JINUE_KLIMIT                0xc0000000
 
 /** stack base address (stack top) */
-#define STACK_BASE              KLIMIT
+#define JINUE_STACK_BASE            JINUE_KLIMIT
 
 /** initial stack size */
-#define STACK_SIZE              (128 * 1024)
+#define JINUE_STACK_SIZE            (128 * 1024)
 
 /** stack portion reserved for environment, arguments and auxiliary vectors */
-#define RESERVED_STACK_SIZE     (32 * 1024)
+#define JINUE_RESERVED_STACK_SIZE   (32 * 1024)
 
 /** initial stack lower address */
-#define STACK_START             (STACK_BASE - STACK_SIZE)
+#define JINUE_STACK_START           (JINUE_STACK_BASE - JINUE_STACK_SIZE)
 
 #endif

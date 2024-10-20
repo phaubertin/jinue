@@ -586,7 +586,7 @@ static int copy_file_data(state_t *state, jinue_dirent_t *dirent) {
         return -1;
     }
 
-    size_t page_aligned_size = (dirent->size + PAGE_SIZE - 1) & ~((size_t)PAGE_SIZE - 1);
+    size_t page_aligned_size = (dirent->size + JINUE_PAGE_SIZE - 1) & ~((size_t)JINUE_PAGE_SIZE - 1);
 
     /* clear padding */
     if(page_aligned_size > dirent->size) {

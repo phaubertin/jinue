@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,14 +29,21 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_THREAD_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_THREAD_H
+#ifndef JINUE_KERNEL_MACHINE_ASM_MACHINE_H
+#define JINUE_KERNEL_MACHINE_ASM_MACHINE_H
 
-#include <kernel/machine/asm/machine.h>
+#include <jinue/shared/asm/machine.h>
 
+/** number of bits in a virtual address that represent the offset within a page */
+#define PAGE_BITS   JINUE_PAGE_BITS
 
-#define THREAD_CONTEXT_SIZE     PAGE_SIZE
+/** size of a page */
+#define PAGE_SIZE   JINUE_PAGE_SIZE
 
-#define THREAD_CONTEXT_MASK     (~(THREAD_CONTEXT_SIZE - 1))
+/** bit mask for offset in a page */
+#define PAGE_MASK   JINUE_PAGE_MASK
+
+/** start of kernel in virtual memory */
+#define KLIMIT      JINUE_KLIMIT
 
 #endif

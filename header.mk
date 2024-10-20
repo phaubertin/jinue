@@ -107,8 +107,9 @@ endif
 #
 # These flags are used when preprocessing C and assembly language files.
 CPPFLAGS.includes    = -I$(includes)
+CPPFLAGS.arch          = -m32 -march=i686
 CPPFLAGS.others      = -nostdinc
-CPPFLAGS             = $(CPPFLAGS.includes) $(CPPFLAGS.debug) $(CPPFLAGS.others) $(CPPFLAGS.extra)
+CPPFLAGS             = $(CPPFLAGS.arch) $(CPPFLAGS.includes) $(CPPFLAGS.debug) $(CPPFLAGS.others) $(CPPFLAGS.extra)
 
 # C compiler flags
 CFLAGS.warnings      = -std=c99 -pedantic -Wall -Werror=implicit -Werror=uninitialized -Werror=return-type

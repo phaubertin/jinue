@@ -4,5 +4,6 @@
     "makefile.configureOnOpen": false,
     "files.associations": {
         "*.h": "c"
-    }
+    },
+    "C_Cpp.default.intelliSenseMode": "linux-gcc-x86"
 }

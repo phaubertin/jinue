@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -32,6 +32,8 @@
 #ifndef _JINUE_SHARED_ASM_MACHINE_H
 #define _JINUE_SHARED_ASM_MACHINE_H
 
-#include <kernel/infrastructure/i686/asm/shared.h>
+#ifdef __i686__
+#include <jinue/shared/asm/i686.h>
+#endif
 
 #endif

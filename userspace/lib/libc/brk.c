@@ -85,7 +85,7 @@ int brk_init(void) {
 
     reported_break  = (void *)(phdr->p_vaddr + phdr->p_memsz);
     bottom_break    = reported_break;
-    allocated_break = (void *)(((uintptr_t)reported_break + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1));
+    allocated_break = (void *)(((uintptr_t)reported_break + JINUE_PAGE_SIZE - 1) & ~(JINUE_PAGE_SIZE - 1));
 
     return EXIT_SUCCESS;
 }
@@ -102,7 +102,7 @@ int brk(void *addr) {
     }
 
     if((uintptr_t)addr > (uintptr_t)allocated_break) {
-        uintptr_t new_allocated = ((uintptr_t)addr + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
+        uintptr_t new_allocated = ((uintptr_t)addr + JINUE_PAGE_SIZE - 1) & ~(JINUE_PAGE_SIZE - 1);
         size_t size             = new_allocated - (uintptr_t)allocated_break;
         intptr_t physaddr       = physmem_alloc(size);
 

@@ -74,10 +74,10 @@ void *mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off) {
         return MAP_FAILED;
     }
 
-    size_t aligned_length = (len + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
+    size_t aligned_length = (len + JINUE_PAGE_SIZE - 1) & ~(JINUE_PAGE_SIZE - 1);
 
     if(flags & MAP_FIXED) {
-        if(addr == NULL || ((uintptr_t)addr & (PAGE_SIZE - 1)) != 0) {
+        if(addr == NULL || ((uintptr_t)addr & (JINUE_PAGE_SIZE - 1)) != 0) {
             errno = EINVAL;
             return MAP_FAILED;
         }
@@ -86,7 +86,7 @@ void *mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off) {
         addr = alloc_addr;
     }
 
-    if((uintptr_t)addr >= KLIMIT || KLIMIT - (uintptr_t)addr < aligned_length) {
+    if((uintptr_t)addr >= JINUE_KLIMIT || JINUE_KLIMIT - (uintptr_t)addr < aligned_length) {
         if(flags & MAP_FIXED) {
             errno = EINVAL;
         }
@@ -96,7 +96,7 @@ void *mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off) {
         return MAP_FAILED;
     }
 
-    if(off < 0 || (off & (PAGE_SIZE - 1)) != 0) {
+    if(off < 0 || (off & (JINUE_PAGE_SIZE - 1)) != 0) {
         errno = EINVAL;
         return MAP_FAILED;
     }

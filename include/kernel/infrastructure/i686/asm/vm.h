@@ -32,8 +32,8 @@
 #ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_VM_H
 #define JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_VM_H
 
-#include <jinue/shared/asm/machine.h>
 #include <kernel/infrastructure/i686/asm/x86.h>
+#include <kernel/machine/asm/machine.h>
 
 /** Number of entries per page table/directory, PAE disabled */
 #define VM_X86_PAGE_TABLE_PTES  1024

@@ -38,6 +38,7 @@
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
 #include <kernel/interface/syscall.h>
+#include <kernel/machine/asm/machine.h>
 #include <kernel/utils/utils.h>
 #include <limits.h>
 #include <stddef.h>
