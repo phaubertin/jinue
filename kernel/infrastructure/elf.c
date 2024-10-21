@@ -30,7 +30,6 @@
  */
 
 #include <jinue/shared/asm/syscall.h>
-#include <jinue/shared/vm.h>
 #include <kernel/domain/alloc/page_alloc.h>
 #include <kernel/domain/alloc/vmalloc.h>
 #include <kernel/domain/entities/descriptor.h>
@@ -44,6 +43,7 @@
 #include <kernel/machine/auxv.h>
 #include <kernel/machine/vm.h>
 #include <kernel/utils/utils.h>
+#include <kernel/utils/vm.h>
 #include <assert.h>
 #include <string.h>
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,10 +29,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_SHARED_VM_H
-#define _JINUE_SHARED_VM_H
+#ifndef JINUE_KERNEL_UTILS_VM_H
+#define JINUE_KERNEL_UTILS_VM_H
 
-#include <jinue/shared/asm/machine.h>
+#include <kernel/machine/asm/machine.h>
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -49,17 +49,17 @@
 
 /** Check whether a pointer points to kernel space */
 static inline bool is_kernel_pointer(const void *addr) {
-    return (uintptr_t)addr >= JINUE_KLIMIT;
+    return (uintptr_t)addr >= KLIMIT;
 }
 
 /** Check whether a pointer points to user space */
 static inline bool is_userspace_pointer(const void *addr) {
-    return (uintptr_t)addr < JINUE_KLIMIT;
+    return (uintptr_t)addr < KLIMIT;
 }
 
 /** Maximum size of user buffer starting at specified address */
 static inline uintptr_t user_pointer_max_size(const void *addr) {
-    return (uintptr_t)JINUE_KLIMIT - (uintptr_t)addr;
+    return (uintptr_t)KLIMIT - (uintptr_t)addr;
 }
 
 /** Check that a buffer is completely in user space */

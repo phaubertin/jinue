@@ -32,13 +32,13 @@
 #ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_VM_PRIVATE_H
 #define JINUE_KERNEL_INFRASTRUCTURE_I686_VM_PRIVATE_H
 
-#include <jinue/shared/vm.h>
 #include <kernel/infrastructure/i686/types.h>
 #include <kernel/infrastructure/i686/vm.h>
 #include <kernel/infrastructure/i686/vm_pae.h>
 #include <kernel/infrastructure/i686/vm_x86.h>
 #include <kernel/machine/asm/machine.h>
 #include <kernel/machine/vm.h>
+#include <kernel/utils/vm.h>
 #include <stdbool.h>
 #include <stdint.h>
 

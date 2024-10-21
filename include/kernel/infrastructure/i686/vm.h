@@ -36,11 +36,11 @@
  * i686-specific code of the low-level page table management functions defined
  * in vm.c and vm_pae.c located in kernel/infrastructure/i686/. */
 
-#include <jinue/shared/vm.h>
 #include <kernel/infrastructure/i686/asm/vm.h>
 #include <kernel/infrastructure/i686/types.h>
 #include <kernel/interface/i686/asm/boot.h>
 #include <kernel/interface/i686/types.h>
+#include <kernel/utils/vm.h>
 
 /** convert physical to virtual address for kernel loaded at 0x100000 (1MB) */
 #define PHYS_TO_VIRT_AT_1MB(x)      (((uintptr_t)(x)) + BOOT_OFFSET_FROM_1MB)

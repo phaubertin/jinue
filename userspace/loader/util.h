@@ -32,6 +32,8 @@
 #ifndef LOADER_UTIL_H_
 #define LOADER_UTIL_H_
 
+#include <stdbool.h>
+
 bool bool_getenv(const char *name);
 
 #endif

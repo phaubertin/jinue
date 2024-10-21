@@ -32,11 +32,11 @@
 #include <jinue/shared/asm/errno.h>
 #include <jinue/shared/asm/ipc.h>
 #include <jinue/shared/types.h>
-#include <jinue/shared/vm.h>
 #include <kernel/domain/entities/endpoint.h>
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/thread.h>
 #include <kernel/domain/services/ipc.h>
+#include <kernel/utils/vm.h>
 #include <stddef.h>
 #include <string.h>
 
