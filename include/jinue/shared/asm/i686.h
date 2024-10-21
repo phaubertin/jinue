@@ -68,4 +68,7 @@
 /** initial stack lower address */
 #define JINUE_STACK_START           (JINUE_STACK_BASE - JINUE_STACK_SIZE)
 
+/** interrupt vector for system call software interrupt */
+#define JINUE_X86_SYSCALL_IRQ       0x80
+
 #endif

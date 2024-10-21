@@ -29,7 +29,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/syscalls.h>
 #include <kernel/domain/services/logging.h>
 #include <kernel/domain/services/panic.h>
 #include <kernel/infrastructure/i686/io.h>
@@ -37,6 +36,7 @@
 #include <kernel/infrastructure/i686/x86.h>
 #include <kernel/interface/i686/interrupt.h>
 #include <kernel/interface/syscalls.h>
+#include <kernel/machine/asm/machine.h>
 #include <inttypes.h>
 
 
@@ -58,7 +58,7 @@ void dispatch_interrupt(trapframe_t *trapframe) {
         panic("caught exception");
     }
     
-    if(ivt == JINUE_SYSCALL_IRQ) {
+    if(ivt == JINUE_X86_SYSCALL_IRQ) {
     	/* interrupt-based system call implementation */
         dispatch_syscall((jinue_syscall_args_t *)&trapframe->msg_arg0);
     }

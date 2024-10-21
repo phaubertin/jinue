@@ -51,6 +51,7 @@
 #include <kernel/interface/i686/interrupt.h>
 #include <kernel/interface/i686/trap.h>
 #include <kernel/interface/syscalls.h>
+#include <kernel/machine/asm/machine.h>
 #include <kernel/machine/init.h>
 #include <kernel/utils/utils.h>
 #include <assert.h>
@@ -128,7 +129,7 @@ static void init_idt(void) {
         /* set interrupt gate flags */
         unsigned int flags = SEG_TYPE_INTERRUPT_GATE | SEG_FLAG_NORMAL_GATE;
 
-        if(idx == JINUE_SYSCALL_IRQ) {
+        if(idx == JINUE_X86_SYSCALL_IRQ) {
             flags |= SEG_FLAG_USER;
         }
         else {
