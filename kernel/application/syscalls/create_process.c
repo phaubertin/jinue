@@ -50,7 +50,10 @@ int create_process(int fd) {
     }
 
     desc->object = &process->header;
-    desc->flags  = DESCRIPTOR_FLAG_IN_USE | DESCRIPTOR_FLAG_OWNER;
+    desc->flags  =
+          DESCRIPTOR_FLAG_IN_USE
+        | DESCRIPTOR_FLAG_OWNER
+        | object_type_process->all_permissions;
     desc->cookie = 0;
 
     open_object(&process->header, desc);

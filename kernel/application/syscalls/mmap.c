@@ -59,6 +59,10 @@ int mmap(int process_fd, const jinue_mmap_args_t *args) {
         return -JINUE_EBADF;
     }
 
+    if(!descriptor_has_permissions(desc, JINUE_PERM_MAP)) {
+        return -JINUE_EPERM;
+    }
+
     if(! machine_map_userspace(process, args->addr, args->length, args->paddr, args->prot)) {
         return -JINUE_ENOMEM;
     }

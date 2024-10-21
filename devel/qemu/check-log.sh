@@ -46,8 +46,11 @@ echo "* Check log file exists"
 echo "* Check kernel started"
 grep -F "Jinue microkernel started." $1 || fail
 
+echo "* Check no error occurred"
+grep -E "^error:" $1 && fail
+
 echo "* Check kernel did not panic"
-grep -F  -A 20 "KERNEL PANIC" $1 && fail
+grep -F -A 20 "KERNEL PANIC" $1 && fail
 
 echo "* Check user space loader started"
 grep -F "Jinue user space loader (jinue-userspace-loader) started." $1 || fail

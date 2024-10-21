@@ -44,7 +44,11 @@ static void cache_process_ctor(void *buffer, size_t ignore);
 
 /** runtime type definition for a process */
 static const object_type_t object_type = {
-    .all_permissions    = 0,
+    .all_permissions    =
+              JINUE_PERM_CLOSE
+            | JINUE_PERM_CREATE_THREAD
+            | JINUE_PERM_MAP
+            | JINUE_PERM_OPEN,
     .name               = "process",
     .size               = sizeof(process_t),
     .open               = NULL,

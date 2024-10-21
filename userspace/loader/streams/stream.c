@@ -34,7 +34,7 @@
 
 int stream_read(stream_t *stream, void *dest, size_t size) {
     if(stream->ops.read == NULL) {
-        jinue_error("Stream read op not set (internal error)");
+        jinue_error("error: stream read op not set (internal error)");
         return STREAM_ERROR;
     }
     return stream->ops.read(stream, dest, size);
@@ -42,7 +42,7 @@ int stream_read(stream_t *stream, void *dest, size_t size) {
 
 int stream_reset(stream_t *stream) {
     if(stream->ops.reset == NULL) {
-        jinue_error("Stream reset op not set (internal error)");
+        jinue_error("error: stream reset op not set (internal error)");
         return STREAM_ERROR;
     }
     return stream->ops.reset(stream);

@@ -32,8 +32,16 @@
 #ifndef _JINUE_SHARED_ASM_PERMISSIONS_H
 #define _JINUE_SHARED_ASM_PERMISSIONS_H
 
-#define JINUE_PERM_SEND     (1<<0)
+#define JINUE_PERM_SEND             (1<<0)
 
-#define JINUE_PERM_RECEIVE  (1<<1)
+#define JINUE_PERM_RECEIVE          (1<<1)
+
+#define JINUE_PERM_MAP              (1<<2)
+
+#define JINUE_PERM_OPEN             (1<<3)
+
+#define JINUE_PERM_CLOSE            (1<<4)
+
+#define JINUE_PERM_CREATE_THREAD    (1<<5)
 
 #endif

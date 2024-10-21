@@ -50,6 +50,10 @@ int create_thread(int  process_fd, const thread_params_t *params) {
         return -JINUE_EBADF;
     }
 
+    if(!descriptor_has_permissions(desc, JINUE_PERM_CREATE_THREAD)) {
+        return -JINUE_EPERM;
+    }
+
     const thread_t *thread = construct_thread(process, params);
 
     /** TODO associate new thread to a free descriptor */

@@ -84,7 +84,7 @@ int map_ramdisk(ramdisk_t *ramdisk, const jinue_mem_map_t *map) {
     const jinue_mem_entry_t *ramdisk_entry = get_ramdisk_entry(map);
 
     if(ramdisk_entry == NULL || ramdisk_entry->addr == 0 || ramdisk_entry->size == 0) {
-        jinue_error("No initial RAM disk found.");
+        jinue_error("error: no initial RAM disk found.");
         return EXIT_FAILURE;
     }
 
@@ -112,8 +112,8 @@ int map_ramdisk(ramdisk_t *ramdisk, const jinue_mem_map_t *map) {
             ramdisk_entry->addr);
 
     if(addr == MAP_FAILED) {
-        jinue_error("error: could not map RAM disk (%i)", errno);
-        return NULL;
+        jinue_error("error: could not map RAM disk: %s", strerror(errno));
+        return EXIT_FAILURE;
     }
 
     ramdisk->addr = addr;

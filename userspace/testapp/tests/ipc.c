@@ -86,7 +86,7 @@ static void ipc_test_run_client(void) {
     intptr_t ret = jinue_send(CLIENT_DESCRIPTOR, MSG_FUNC_TEST, &message, &errno);
 
     if(ret < 0) {
-        jinue_error("jinue_send() failed with error: %s.", strerror(errno));
+        jinue_error("error: jinue_send() failed: %s.", strerror(errno));
         return;
     }
 
@@ -115,7 +115,7 @@ void run_ipc_test(void) {
     int status = jinue_create_endpoint(IPC_DESCRIPTOR, &errno);
 
     if(status < 0) {
-        jinue_error("Could not create IPC object: %s", strerror(errno));
+        jinue_error("error: could not create IPC object: %s", strerror(errno));
         return;
     }
 
@@ -129,7 +129,7 @@ void run_ipc_test(void) {
     );
 
     if(status < 0) {
-        jinue_error("jinue_mint() failed: %s", strerror(errno));
+        jinue_error("error: jinue_mint() failed: %s", strerror(errno));
         return;
     }
 
@@ -141,7 +141,7 @@ void run_ipc_test(void) {
     );
 
     if (status != 0) {
-        jinue_error("Could not create thread: %s", strerror(errno));
+        jinue_error("error: could not create thread: %s", strerror(errno));
         return;
     }
 
@@ -156,14 +156,14 @@ void run_ipc_test(void) {
     intptr_t ret = jinue_receive(IPC_DESCRIPTOR, &message, &errno);
 
     if(ret < 0) {
-        jinue_error("jinue_receive() failed with error: %s.", strerror(errno));
+        jinue_error("error: jinue_receive() failed: %s.", strerror(errno));
         return;
     }
 
     int function = message.recv_function;
 
     if(function != MSG_FUNC_TEST) {
-        jinue_error("jinue_receive() unexpected function number: %i.", function);
+        jinue_error("error: jinue_receive() unexpected function number: %i.", function);
         return;
     }
 
@@ -187,7 +187,7 @@ void run_ipc_test(void) {
     ret = jinue_reply(&reply, &errno);
 
     if(ret < 0) {
-        jinue_error("jinue_reply() failed with error: %s", strerror(errno));
+        jinue_error("error: jinue_reply() failed: %s", strerror(errno));
         return;
     }
 
