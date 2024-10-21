@@ -29,11 +29,43 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INTERFACE_SYSCALL_H
-#define JINUE_KERNEL_INTERFACE_SYSCALL_H
+#ifndef _JINUE_SHARED_ASM_I686_H
+#define _JINUE_SHARED_ASM_I686_H
 
-#include <jinue/shared/syscall.h>
+/** This file contains machine-specific definitions that need to be visible
+ * outside the machine-specific parts of the code, both in user space and
+ * the kernel.
+ * 
+ * It is OK to include this file from i686-specific code in the kernel.
+ * Otherwise, it should be included through either <jinue/jinue.h> or
+ * or <kernel/types.h> (which includes <kernel/machine/types.h>). */
 
-void dispatch_syscall(jinue_syscall_args_t *args);
+
+/** number of bits in a virtual address that represent the offset within a page */
+#define JINUE_PAGE_BITS               12
+
+/** size of a page */
+#define JINUE_PAGE_SIZE               (1<<JINUE_PAGE_BITS)  /* 4096 */
+
+/** bit mask for offset in a page */
+#define JINUE_PAGE_MASK               (JINUE_PAGE_SIZE - 1)
+
+/** The virtual address range starting at JINUE_KLIMIT is reserved by the
+ * kernel. The region above JINUE_KLIMIT has the same mapping in all address
+ * spaces. JINUE_KLIMIT must be aligned on a page directory boundary in PAE
+ * mode. */
+#define JINUE_KLIMIT                0xc0000000
+
+/** stack base address (stack top) */
+#define JINUE_STACK_BASE            JINUE_KLIMIT
+
+/** initial stack size */
+#define JINUE_STACK_SIZE            (128 * 1024)
+
+/** stack portion reserved for environment, arguments and auxiliary vectors */
+#define JINUE_RESERVED_STACK_SIZE   (32 * 1024)
+
+/** initial stack lower address */
+#define JINUE_STACK_START           (JINUE_STACK_BASE - JINUE_STACK_SIZE)
 
 #endif

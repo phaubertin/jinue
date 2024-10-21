@@ -31,14 +31,14 @@
 
 #include <jinue/jinue.h>
 #include <jinue/loader.h>
-#include <jinue/util.h>
+#include <jinue/utils.h>
 #include <sys/auxv.h>
 #include <sys/elf.h>
 #include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
 #include "debug.h"
-#include "util.h"
+#include "utils.h"
 
 extern char **environ;
 

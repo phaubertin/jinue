@@ -31,9 +31,9 @@
 
 #include <jinue/jinue.h>
 #include <jinue/loader.h>
-#include <jinue/util.h>
+#include <jinue/utils.h>
 #include "debug.h"
-#include "util.h"
+#include "utils.h"
 
 
 #define PRETTY_MODE_SIZE 11

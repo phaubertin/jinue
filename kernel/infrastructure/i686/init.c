@@ -29,6 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <jinue/shared/asm/syscalls.h>
 #include <kernel/domain/alloc/page_alloc.h>
 #include <kernel/domain/services/cmdline.h>
 #include <kernel/domain/services/logging.h>
@@ -49,7 +50,7 @@
 #include <kernel/interface/i686/boot.h>
 #include <kernel/interface/i686/interrupt.h>
 #include <kernel/interface/i686/trap.h>
-#include <kernel/interface/syscall.h>
+#include <kernel/interface/syscalls.h>
 #include <kernel/machine/init.h>
 #include <kernel/utils/utils.h>
 #include <assert.h>

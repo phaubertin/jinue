@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_SHARED_ASM_SYSCALL_H
-#define _JINUE_SHARED_ASM_SYSCALL_H
+#ifndef _JINUE_SHARED_ASM_SYSCALLS_H
+#define _JINUE_SHARED_ASM_SYSCALLS_H
 
 /** interrupt vector for system call software interrupt */
 #define JINUE_SYSCALL_IRQ               0x80

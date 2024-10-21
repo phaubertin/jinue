@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,13 +29,21 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_SHARED_ASM_TYPES_H
-#define _JINUE_SHARED_ASM_TYPES_H
+#ifndef JINUE_KERNEL_MACHINE_ASM_MACHINE_H
+#define JINUE_KERNEL_MACHINE_ASM_MACHINE_H
 
-#define KB      (1024)
+#include <jinue/shared/asm/machine.h>
 
-#define MB      (1024 * KB)
+/** number of bits in a virtual address that represent the offset within a page */
+#define PAGE_BITS   JINUE_PAGE_BITS
 
-#define GB      (1024 * MB)
+/** size of a page */
+#define PAGE_SIZE   JINUE_PAGE_SIZE
+
+/** bit mask for offset in a page */
+#define PAGE_MASK   JINUE_PAGE_MASK
+
+/** start of kernel in virtual memory */
+#define KLIMIT      JINUE_KLIMIT
 
 #endif

@@ -29,9 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/vm.h>
 #include <kernel/domain/alloc/vmalloc.h>
 #include <kernel/domain/services/panic.h>
+#include <kernel/utils/vm.h>
 
 
 /**

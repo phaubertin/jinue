@@ -31,14 +31,14 @@
 
 #include <jinue/jinue.h>
 #include <jinue/loader.h>
-#include <jinue/util.h>
+#include <jinue/utils.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #include "binfmt/elf.h"
 #include "debug.h"
 #include "ramdisk.h"
-#include "util.h"
+#include "utils.h"
 
 #define MAP_BUFFER_SIZE         16384
 

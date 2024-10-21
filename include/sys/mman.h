@@ -32,7 +32,7 @@
 #ifndef _JINUE_LIBC_SYS_MMAN_H
 #define _JINUE_LIBC_SYS_MMAN_H
 
-#include <jinue/shared/asm/syscall.h>
+#include <jinue/shared/asm/syscalls.h>
 #include <sys/types.h>
 #include <stddef.h>
 

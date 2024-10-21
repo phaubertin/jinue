@@ -32,26 +32,34 @@
 #ifndef _JINUE_SHARED_ASM_ERRNO_H
 #define _JINUE_SHARED_ASM_ERRNO_H
 
+/** not enough space */
 #define JINUE_ENOMEM    1
 
+/** function not supported */
 #define JINUE_ENOSYS    2
 
+/** invalid argument */
 #define JINUE_EINVAL    3
 
+/** resource unavailable, try again */
 #define JINUE_EAGAIN    4
 
+/** bad descriptor */
 #define JINUE_EBADF     5
 
+/** I/O error */
 #define JINUE_EIO       6
 
+/** operation not permitted */
 #define JINUE_EPERM     7
 
+/** argument list too long */
 #define JINUE_E2BIG     8
 
+/** no message of the desired type */
 #define JINUE_ENOMSG    9
 
+/** not supported */
 #define JINUE_ENOTSUP   10
-
-#define _JINUE_ELAST    10
 
 #endif

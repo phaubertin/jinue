@@ -29,13 +29,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/syscall.h>
-#include <jinue/shared/vm.h>
+#include <jinue/shared/asm/syscalls.h>
 #include <kernel/domain/services/logging.h>
 #include <kernel/infrastructure/i686/io.h>
 #include <kernel/infrastructure/i686/vga.h>
 #include <kernel/infrastructure/i686/vm.h>
 #include <kernel/utils/asm/ascii.h>
+#include <kernel/utils/vm.h>
 
 typedef unsigned int vga_pos_t;
 

@@ -30,12 +30,12 @@
  */
 
 #include <jinue/jinue.h>
-#include <jinue/util.h>
+#include <jinue/utils.h>
 #include <errno.h>
 #include <stdlib.h>
 #include "tests/ipc.h"
 #include "debug.h"
-#include "util.h"
+#include "utils.h"
 
 #define MAP_BUFFER_SIZE 16384
 

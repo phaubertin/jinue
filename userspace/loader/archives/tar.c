@@ -31,7 +31,7 @@
 
 #include <jinue/jinue.h>
 #include <jinue/loader.h>
-#include <jinue/util.h>
+#include <jinue/utils.h>
 #include <sys/mman.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -586,7 +586,7 @@ static int copy_file_data(state_t *state, jinue_dirent_t *dirent) {
         return -1;
     }
 
-    size_t page_aligned_size = (dirent->size + PAGE_SIZE - 1) & ~((size_t)PAGE_SIZE - 1);
+    size_t page_aligned_size = (dirent->size + JINUE_PAGE_SIZE - 1) & ~((size_t)JINUE_PAGE_SIZE - 1);
 
     /* clear padding */
     if(page_aligned_size > dirent->size) {

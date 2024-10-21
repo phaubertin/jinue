@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Philippe Aubertin.
+ * Copyright (C) 2022 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,9 +29,21 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TESTAPP_UTIL_H_
-#define TESTAPP_UTIL_H_
+#ifndef _JINUE_UTILS_H
+#define _JINUE_UTILS_H
 
-bool bool_getenv(const char *name);
+#include <stdarg.h>
+
+void jinue_vinfo(const char *restrict format, va_list arg);
+
+void jinue_vwarning(const char *restrict format, va_list arg);
+
+void jinue_verror(const char *restrict format, va_list arg);
+
+void jinue_info(const char *restrict format, ...);
+
+void jinue_warning(const char *restrict format, ...);
+
+void jinue_error(const char *restrict format, ...);
 
 #endif

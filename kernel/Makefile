@@ -114,7 +114,7 @@ sources.kernel.c = \
 	infrastructure/elf.c \
 	interface/i686/bootinfo.c \
 	interface/i686/interrupt.c \
-	interface/syscall.c
+	interface/syscalls.c
 
 sources.kernel.nasm = \
 	infrastructure/i686/abi.asm \

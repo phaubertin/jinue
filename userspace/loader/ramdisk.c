@@ -30,7 +30,7 @@
  */
 
 #include <jinue/jinue.h>
-#include <jinue/util.h>
+#include <jinue/utils.h>
 #include <sys/mman.h>
 #include <errno.h>
 #include <inttypes.h>
@@ -94,7 +94,7 @@ int map_ramdisk(ramdisk_t *ramdisk, const jinue_mem_map_t *map) {
         ramdisk_entry->addr);
 
     /* TODO be more flexible on this */
-    if((ramdisk_entry->addr & (PAGE_SIZE - 1)) != 0) {
+    if((ramdisk_entry->addr & (JINUE_PAGE_SIZE - 1)) != 0) {
         jinue_error("error: RAM disk is not aligned on a page boundary");
         return EXIT_FAILURE;
     }
