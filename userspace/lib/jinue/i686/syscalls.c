@@ -34,15 +34,15 @@
 #include "stubs.h"
 
 static jinue_syscall_stub_t syscall_stubs[] = {
-        [JINUE_X86_HOWSYSCALL_INTERRUPT]    = jinue_syscall_intr,
-        [JINUE_X86_HOWSYSCALL_FAST_AMD]     = jinue_syscall_fast_amd,
-        [JINUE_X86_HOWSYSCALL_FAST_INTEL]   = jinue_syscall_fast_intel
+        [JINUE_I686_HOWSYSCALL_INTERRUPT]    = jinue_syscall_intr,
+        [JINUE_I686_HOWSYSCALL_FAST_AMD]     = jinue_syscall_fast_amd,
+        [JINUE_I686_HOWSYSCALL_FAST_INTEL]   = jinue_syscall_fast_intel
 };
 
-static int syscall_stub_index = JINUE_X86_HOWSYSCALL_INTERRUPT;
+static int syscall_stub_index = JINUE_I686_HOWSYSCALL_INTERRUPT;
 
 int jinue_init(int implementation, int *perrno) {
-    if(implementation < 0 || implementation > JINUE_X86_HOWSYSCALL_LAST) {
+    if(implementation < 0 || implementation > JINUE_I686_HOWSYSCALL_LAST) {
         *perrno = JINUE_EINVAL;
         return -1;
     }

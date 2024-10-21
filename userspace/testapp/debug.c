@@ -154,12 +154,12 @@ static const char *auxv_type_name(int type) {
 
 static const char *syscall_implementation_name(int implementation) {
     const char *names[] = {
-            [JINUE_X86_HOWSYSCALL_INTERRUPT]      = "interrupt",
-            [JINUE_X86_HOWSYSCALL_FAST_AMD]       = "SYSCALL/SYSRET (fast AMD)",
-            [JINUE_X86_HOWSYSCALL_FAST_INTEL]     = "SYSENTER/SYSEXIT (fast Intel)"
+            [JINUE_I686_HOWSYSCALL_INTERRUPT]      = "interrupt",
+            [JINUE_I686_HOWSYSCALL_FAST_AMD]       = "SYSCALL/SYSRET (fast AMD)",
+            [JINUE_I686_HOWSYSCALL_FAST_INTEL]     = "SYSENTER/SYSEXIT (fast Intel)"
     };
 
-    if(implementation < 0 || implementation > JINUE_X86_HOWSYSCALL_LAST) {
+    if(implementation < 0 || implementation > JINUE_I686_HOWSYSCALL_LAST) {
         return "?";
     }
 

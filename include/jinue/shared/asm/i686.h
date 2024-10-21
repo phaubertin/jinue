@@ -69,18 +69,18 @@
 #define JINUE_STACK_START               (JINUE_STACK_BASE - JINUE_STACK_SIZE)
 
 /** interrupt vector for system call software interrupt */
-#define JINUE_X86_SYSCALL_IRQ           0x80
+#define JINUE_I686_SYSCALL_IRQ              0x80
 
 /** slow/safe interrupt-based system call implementation */
-#define JINUE_X86_HOWSYSCALL_INTERRUPT  0
+#define JINUE_I686_HOWSYSCALL_INTERRUPT     0
 
 /** AMD's fast system call implementation (SYSCALL/SYSLEAVE) */
-#define JINUE_X86_HOWSYSCALL_FAST_AMD   1
+#define JINUE_I686_HOWSYSCALL_FAST_AMD      1
 
 /** Intel's fast system call implementation (SYSENTER/SYSEXIT) */
-#define JINUE_X86_HOWSYSCALL_FAST_INTEL 2
+#define JINUE_I686_HOWSYSCALL_FAST_INTEL    2
 
 /** last system call implementation index */
-#define JINUE_X86_HOWSYSCALL_LAST       2
+#define JINUE_I686_HOWSYSCALL_LAST          2
 
 #endif
