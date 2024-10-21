@@ -34,7 +34,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include "util.h"
+#include "utils.h"
 
 bool bool_getenv(const char *name) {
     const char *value = getenv(name);

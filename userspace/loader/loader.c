@@ -38,7 +38,7 @@
 #include "binfmt/elf.h"
 #include "debug.h"
 #include "ramdisk.h"
-#include "util.h"
+#include "utils.h"
 
 #define MAP_BUFFER_SIZE         16384
 

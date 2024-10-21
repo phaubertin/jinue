@@ -33,7 +33,7 @@
 #include <jinue/loader.h>
 #include <jinue/util.h>
 #include "debug.h"
-#include "util.h"
+#include "utils.h"
 
 
 #define PRETTY_MODE_SIZE 11

@@ -38,7 +38,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "debug.h"
-#include "util.h"
+#include "utils.h"
 
 extern char **environ;
 

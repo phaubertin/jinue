@@ -29,11 +29,22 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TESTAPP_UTIL_H_
-#define TESTAPP_UTIL_H_
 
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include "utils.h"
 
-bool bool_getenv(const char *name);
+bool bool_getenv(const char *name) {
+    const char *value = getenv(name);
 
-#endif
+    if(value == NULL) {
+        return false;
+    }
+
+    return  strcmp(value, "enable") == 0 ||
+            strcmp(value, "true") == 0 ||
+            strcmp(value, "yes") == 0 ||
+            strcmp(value, "1") == 0;
+}

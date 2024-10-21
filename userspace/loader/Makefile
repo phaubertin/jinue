@@ -41,7 +41,7 @@ sources.c        = \
 	debug.c \
 	loader.c \
 	ramdisk.c \
-	util.c
+	utils.c
 loader           = loader
 target           = $(loader)-stripped
 

@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LOADER_UTIL_H_
-#define LOADER_UTIL_H_
+#ifndef TESTAPP_UTILS_H_
+#define TESTAPP_UTILS_H_
 
 #include <stdbool.h>
 

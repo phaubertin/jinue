@@ -29,22 +29,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifndef LOADER_UTILS_H_
+#define LOADER_UTILS_H_
 
 #include <stdbool.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include "util.h"
 
-bool bool_getenv(const char *name) {
-    const char *value = getenv(name);
+bool bool_getenv(const char *name);
 
-    if(value == NULL) {
-        return false;
-    }
-
-    return  strcmp(value, "enable") == 0 ||
-            strcmp(value, "true") == 0 ||
-            strcmp(value, "yes") == 0 ||
-            strcmp(value, "1") == 0;
-}
+#endif

@@ -34,7 +34,7 @@
 #include <errno.h>
 #include <inttypes.h>
 #include <string.h>
-#include "../util.h"
+#include "../utils.h"
 
 #define THREAD_STACK_SIZE   4096
 

@@ -38,7 +38,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../util.h"
+#include "../utils.h"
 #include "elf.h"
 
 /**
