@@ -98,8 +98,7 @@ static int load_init(elf_info_t *elf_info, const jinue_dirent_t *init, int argc,
         INIT_PROCESS_DESCRIPTOR,
         INIT_PROCESS_DESCRIPTOR,
         JINUE_DESC_SELF_PROCESS,
-        /* TODO change this once permissions are implemented for process descriptors */
-        0,
+        JINUE_PERM_CLOSE | JINUE_PERM_CREATE_THREAD | JINUE_PERM_MAP | JINUE_PERM_OPEN,
         0,
         &errno
     );
@@ -161,7 +160,7 @@ int main(int argc, char *argv[]) {
     );
 
     if (status != 0) {
-        jinue_error("Could not create thread: %s", strerror(errno));
+        jinue_error("error: could not create thread: %s", strerror(errno));
         return EXIT_FAILURE;
     }
 

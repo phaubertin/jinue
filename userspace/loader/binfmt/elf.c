@@ -159,7 +159,7 @@ static void *get_at_phdr(const Elf32_Ehdr *ehdr) {
         }
     }
 
-    jinue_error("Program headers address (AT_PHDR) could not be determined");
+    jinue_error("error: program headers address (AT_PHDR) could not be determined");
     return NULL;
 }
 
@@ -254,7 +254,7 @@ static int clone_mapping(
     );
 
     if(status != 0) {
-        jinue_error("jinue_mclone() failed: %s", strerror(errno));
+        jinue_error("error: jinue_mclone() failed: %s", strerror(errno));
         return EXIT_FAILURE;
     }
 
@@ -320,7 +320,7 @@ static int load_segments(elf_info_t *elf_info, int fd, const Elf32_Ehdr *ehdr) {
             );
 
             if(segment == MAP_FAILED) {
-                jinue_error("mmap() failed: %s", strerror(errno));
+                jinue_error("error: mmap() failed: %s", strerror(errno));
                 return EXIT_FAILURE;
             }
 
@@ -344,7 +344,6 @@ static int load_segments(elf_info_t *elf_info, int fd, const Elf32_Ehdr *ehdr) {
         );
 
         if(status != EXIT_SUCCESS) {
-            jinue_error("jinue_mclone() failed: %s", strerror(errno));
             return status;
         }
     }

@@ -33,6 +33,7 @@
 #include <kernel/application/syscalls.h>
 #include <kernel/domain/entities/descriptor.h>
 #include <kernel/domain/entities/process.h>
+#include <kernel/domain/services/logging.h>
 #include <kernel/machine/vm.h>
 
 /**
@@ -61,6 +62,9 @@ int mclone(int src, int dest, const jinue_mclone_args_t *args) {
     if(src_process == NULL) {
         return -JINUE_EBADF;
     }
+
+    /* TODO what permissions do we need on the source for this? Should the
+     * source just implicitly be the current process? */
     
     descriptor_t *dest_desc;
     status = dereference_object_descriptor(&dest_desc, current_process, dest);
@@ -73,6 +77,10 @@ int mclone(int src, int dest, const jinue_mclone_args_t *args) {
 
     if(dest_process == NULL) {
         return -JINUE_EBADF;
+    }
+
+    if(!descriptor_has_permissions(dest_desc, JINUE_PERM_OPEN)) {
+        return -JINUE_EPERM;
     }
 
     bool success = machine_clone_userspace_mapping(

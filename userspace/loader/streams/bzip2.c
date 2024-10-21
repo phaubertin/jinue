@@ -46,7 +46,7 @@ static const char block_magic[] = {0x31, 0x41, 0x59, 0x26, 0x53, 0x59};
 
 /* libbz2 has a dependency on this function, by name. */
 void bz_internal_error(int errcode) {
-    jinue_error("bz_internal_error(%s)", errcode);
+    jinue_error("error: bz_internal_error(%s)", errcode);
 }
 
 static const char *bzip2_strerror(int status) {

@@ -51,6 +51,10 @@ int dup(int process_fd, int src, int dest) {
         return -JINUE_EBADF;
     }
 
+    if(!descriptor_has_permissions(process_desc, JINUE_PERM_OPEN)) {
+        return -JINUE_EPERM;
+    }
+
     descriptor_t *src_desc;
     status = dereference_object_descriptor(&src_desc, current_process, src);
 

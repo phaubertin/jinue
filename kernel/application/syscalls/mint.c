@@ -40,11 +40,6 @@ static int check_mint_permissions(const object_header_t *object, int perms) {
         return -JINUE_EINVAL;
     }
 
-    /* TODO remove this once permissions are defined for process objects */
-    if(object->type == object_type_process) {
-        return 0;
-    }
-
     if(perms == 0) {
         return -JINUE_EINVAL;
     }
@@ -81,6 +76,10 @@ int mint(int owner, const jinue_mint_args_t *mint_args) {
 
     if(process == NULL) {
         return -JINUE_EBADF;
+    }
+
+    if(!descriptor_has_permissions(process_desc, JINUE_PERM_OPEN)) {
+        return -JINUE_EPERM;
     }
 
     descriptor_t *dest_desc;

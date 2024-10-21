@@ -510,7 +510,7 @@ static void initialize_descriptors(process_t *process) {
     (void)dereference_unused_descriptor(&desc, process, JINUE_DESC_SELF_PROCESS);
 
     desc->object = &process->header;
-    desc->flags  = DESCRIPTOR_FLAG_IN_USE;
+    desc->flags  = DESCRIPTOR_FLAG_IN_USE | object_type_process->all_permissions;
     desc->cookie = 0;
 
     open_object(&process->header, desc);
