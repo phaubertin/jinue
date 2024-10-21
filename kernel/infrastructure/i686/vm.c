@@ -30,7 +30,7 @@
  */
 
 #include <jinue/shared/asm/errno.h>
-#include <jinue/shared/asm/syscalls.h>
+#include <jinue/shared/asm/mman.h>
 #include <kernel/domain/alloc/page_alloc.h>
 #include <kernel/domain/alloc/vmalloc.h>
 #include <kernel/domain/entities/descriptor.h>

@@ -31,6 +31,7 @@
 
 #include <jinue/shared/asm/errno.h>
 #include <jinue/shared/asm/syscalls.h>
+#include <jinue/shared/asm/mman.h>
 #include <kernel/application/syscalls.h>
 #include <kernel/domain/entities/descriptor.h>
 #include <kernel/domain/entities/endpoint.h>

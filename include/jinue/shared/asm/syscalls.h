@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -88,51 +88,5 @@
 
 /** start of function numbers for user space messages */
 #define JINUE_SYS_USER_BASE             4096
-
-
-/** slow/safe interrupt-based system call implementation */
-#define JINUE_SYSCALL_IMPL_INTERRUPT    0
-
-/** AMD's fast system call implementation (SYSCALL/SYSLEAVE) */
-#define JINUE_SYSCALL_IMPL_FAST_AMD     1
-
-/** Intel's fast system call implementation (SYSENTER/SYSEXIT) */
-#define JINUE_SYSCALL_IMPL_FAST_INTEL   2
-
-/** last system call implementation index */
-#define JINUE_SYSCALL_IMPL_LAST         2
-
-
-/** maximum string length for the PUTS system call */
-#define JINUE_PUTS_MAX_LENGTH           120
-
-/** log level "info" for the PUTS system call */
-#define JINUE_PUTS_LOGLEVEL_INFO        'I'
-
-/** log level "warning" for the PUTS system call */
-#define JINUE_PUTS_LOGLEVEL_WARNING     'W'
-
-/** log level "error" for the PUTS system call */
-#define JINUE_PUTS_LOGLEVEL_ERROR       'E'
-
-
-/** map page with no access permission */
-#define JINUE_PROT_NONE         0
-
-/** map page with read permission */
-#define JINUE_PROT_READ         (1<<0)
-
-/** map page with write permission */
-#define JINUE_PROT_WRITE        (1<<1)
-
-/** map page with execution permission */
-#define JINUE_PROT_EXEC         (1<<2)
-
-
-/** descriptor assigned to refer to own process in loader and initial process
- * 
- * On a Unix system, the first three file descriptors typically represent
- * stdout, stdin and stderr. Lets leave them unused to allow this usage. */
-#define JINUE_SELF_PROCESS_DESCRIPTOR 3
 
 #endif
