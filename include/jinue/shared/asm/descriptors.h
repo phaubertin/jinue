@@ -36,6 +36,6 @@
  * stdout, stdin and stderr. Lets leave them unused to allow this usage. */
 
 /** descriptor assigned to refer to own process in loader and initial process */
-#define JINUE_SELF_PROCESS_DESCRIPTOR 3
+#define JINUE_DESC_SELF_PROCESS 3
 
 #endif

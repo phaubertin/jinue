@@ -500,14 +500,14 @@ static void initialize_stack(
  * Initialize descriptors for user space loader
  *
  * This function initializes a single descriptor which references the process
- * itself (JINUE_SELF_PROCESS_DESCRIPTOR).
+ * itself (JINUE_DESC_SELF_PROCESS).
  * 
  * @param process process in which the ELF binary is loaded
  *
  * */
 static void initialize_descriptors(process_t *process) {
     descriptor_t *desc;
-    (void)dereference_unused_descriptor(&desc, process, JINUE_SELF_PROCESS_DESCRIPTOR);
+    (void)dereference_unused_descriptor(&desc, process, JINUE_DESC_SELF_PROCESS);
 
     desc->object = &process->header;
     desc->flags  = DESCRIPTOR_FLAG_IN_USE;

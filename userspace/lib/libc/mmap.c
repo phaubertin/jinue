@@ -117,7 +117,7 @@ void *mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off) {
 
     int kernel_errno;
     int ret = jinue_mmap(
-            JINUE_SELF_PROCESS_DESCRIPTOR,
+            JINUE_DESC_SELF_PROCESS,
             addr,
             aligned_length,
             prot,

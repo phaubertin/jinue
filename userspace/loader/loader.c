@@ -42,7 +42,7 @@
 
 #define MAP_BUFFER_SIZE         16384
 
-#define INIT_PROCESS_DESCRIPTOR (JINUE_SELF_PROCESS_DESCRIPTOR + 1)
+#define INIT_PROCESS_DESCRIPTOR (JINUE_DESC_SELF_PROCESS + 1)
 
 static jinue_mem_map_t *get_memory_map(void *buffer, size_t bufsize) {
     int status = jinue_get_user_memory((jinue_mem_map_t *)buffer, bufsize, NULL);
@@ -97,7 +97,7 @@ static int load_init(elf_info_t *elf_info, const jinue_dirent_t *init, int argc,
     status = jinue_mint(
         INIT_PROCESS_DESCRIPTOR,
         INIT_PROCESS_DESCRIPTOR,
-        JINUE_SELF_PROCESS_DESCRIPTOR,
+        JINUE_DESC_SELF_PROCESS,
         /* TODO change this once permissions are implemented for process descriptors */
         0,
         0,

@@ -234,7 +234,7 @@ static int clone_mapping(
     if(bool_getenv("DEBUG_LOADER_VERBOSE_MCLONE")) {
         jinue_info(
             "jinue_mclone(%d, %d, %#p, %#p, %#x, %s, &errno)",
-            JINUE_SELF_PROCESS_DESCRIPTOR,
+            JINUE_DESC_SELF_PROCESS,
             fd,
             src_addr,
             dest_addr,
@@ -244,7 +244,7 @@ static int clone_mapping(
     }
 
     int status = jinue_mclone(
-        JINUE_SELF_PROCESS_DESCRIPTOR,
+        JINUE_DESC_SELF_PROCESS,
         fd,
         src_addr,
         dest_addr,

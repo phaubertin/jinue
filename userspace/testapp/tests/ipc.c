@@ -121,7 +121,7 @@ void run_ipc_test(void) {
 
     status = jinue_mint(
         IPC_DESCRIPTOR,
-        JINUE_SELF_PROCESS_DESCRIPTOR,
+        JINUE_DESC_SELF_PROCESS,
         CLIENT_DESCRIPTOR,
         JINUE_PERM_SEND,
         0xca11ab1e,
@@ -134,7 +134,7 @@ void run_ipc_test(void) {
     }
 
     status = jinue_create_thread(
-        JINUE_SELF_PROCESS_DESCRIPTOR,
+        JINUE_DESC_SELF_PROCESS,
         ipc_test_client_thread,
         &ipc_test_thread_stack[THREAD_STACK_SIZE],
         &errno
