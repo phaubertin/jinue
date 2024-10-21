@@ -29,7 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/syscall.h>
+#include <jinue/shared/asm/syscalls.h>
 #include <kernel/domain/services/logging.h>
 #include <kernel/utils/list.h>
 #include <kernel/types.h>

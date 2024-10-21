@@ -30,13 +30,13 @@
  */
 
 #include <jinue/shared/asm/errno.h>
-#include <jinue/shared/asm/syscall.h>
+#include <jinue/shared/asm/syscalls.h>
 #include <kernel/application/syscalls.h>
 #include <kernel/domain/entities/descriptor.h>
 #include <kernel/domain/entities/endpoint.h>
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
-#include <kernel/interface/syscall.h>
+#include <kernel/interface/syscalls.h>
 #include <kernel/machine/asm/machine.h>
 #include <kernel/utils/utils.h>
 #include <kernel/utils/vm.h>

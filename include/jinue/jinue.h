@@ -36,7 +36,7 @@
 #include <jinue/shared/asm/machine.h>
 #include <jinue/shared/asm/memory.h>
 #include <jinue/shared/asm/permissions.h>
-#include <jinue/shared/asm/syscall.h>
+#include <jinue/shared/asm/syscalls.h>
 #include <jinue/shared/types.h>
 #include <stddef.h>
 #include <stdint.h>
