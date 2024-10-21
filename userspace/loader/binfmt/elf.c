@@ -30,7 +30,7 @@
  */
 
 #include <jinue/jinue.h>
-#include <jinue/util.h>
+#include <jinue/utils.h>
 #include <sys/auxv.h>
 #include <sys/elf.h>
 #include <sys/mman.h>

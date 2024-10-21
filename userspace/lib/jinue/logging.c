@@ -30,7 +30,7 @@
  */
 
 #include <jinue/jinue.h>
-#include <jinue/util.h>
+#include <jinue/utils.h>
 #include <stdio.h>
 #include <string.h>
 

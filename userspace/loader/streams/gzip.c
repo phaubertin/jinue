@@ -29,7 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/util.h>
+#include <jinue/utils.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <zlib.h>

@@ -31,7 +31,7 @@
 
 #include <jinue/jinue.h>
 #include <jinue/loader.h>
-#include <jinue/util.h>
+#include <jinue/utils.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>

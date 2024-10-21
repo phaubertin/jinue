@@ -31,7 +31,7 @@
 
 #include <jinue/jinue.h>
 #include <jinue/loader.h>
-#include <jinue/util.h>
+#include <jinue/utils.h>
 #include "debug.h"
 #include "utils.h"
 

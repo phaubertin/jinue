@@ -29,7 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/util.h>
+#include <jinue/utils.h>
 #include "stream.h"
 
 int stream_read(stream_t *stream, void *dest, size_t size) {
