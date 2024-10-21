@@ -42,30 +42,45 @@
 
 
 /** number of bits in a virtual address that represent the offset within a page */
-#define JINUE_PAGE_BITS               12
+#define JINUE_PAGE_BITS                 12
 
 /** size of a page */
-#define JINUE_PAGE_SIZE               (1<<JINUE_PAGE_BITS)  /* 4096 */
+#define JINUE_PAGE_SIZE                 (1<<JINUE_PAGE_BITS)  /* 4096 */
 
 /** bit mask for offset in a page */
-#define JINUE_PAGE_MASK               (JINUE_PAGE_SIZE - 1)
+#define JINUE_PAGE_MASK                 (JINUE_PAGE_SIZE - 1)
 
 /** The virtual address range starting at JINUE_KLIMIT is reserved by the
  * kernel. The region above JINUE_KLIMIT has the same mapping in all address
  * spaces. JINUE_KLIMIT must be aligned on a page directory boundary in PAE
  * mode. */
-#define JINUE_KLIMIT                0xc0000000
+#define JINUE_KLIMIT                    0xc0000000
 
 /** stack base address (stack top) */
-#define JINUE_STACK_BASE            JINUE_KLIMIT
+#define JINUE_STACK_BASE                JINUE_KLIMIT
 
 /** initial stack size */
-#define JINUE_STACK_SIZE            (128 * 1024)
+#define JINUE_STACK_SIZE                (128 * 1024)
 
 /** stack portion reserved for environment, arguments and auxiliary vectors */
-#define JINUE_RESERVED_STACK_SIZE   (32 * 1024)
+#define JINUE_RESERVED_STACK_SIZE       (32 * 1024)
 
 /** initial stack lower address */
-#define JINUE_STACK_START           (JINUE_STACK_BASE - JINUE_STACK_SIZE)
+#define JINUE_STACK_START               (JINUE_STACK_BASE - JINUE_STACK_SIZE)
+
+/** interrupt vector for system call software interrupt */
+#define JINUE_I686_SYSCALL_IRQ              0x80
+
+/** slow/safe interrupt-based system call implementation */
+#define JINUE_I686_HOWSYSCALL_INTERRUPT     0
+
+/** AMD's fast system call implementation (SYSCALL/SYSLEAVE) */
+#define JINUE_I686_HOWSYSCALL_FAST_AMD      1
+
+/** Intel's fast system call implementation (SYSENTER/SYSEXIT) */
+#define JINUE_I686_HOWSYSCALL_FAST_INTEL    2
+
+/** last system call implementation index */
+#define JINUE_I686_HOWSYSCALL_LAST          2
 
 #endif

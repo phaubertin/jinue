@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2019-2023 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,26 +29,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/errno.h>
-#include <jinue/shared/asm/logging.h>
-#include <kernel/application/syscalls.h>
-#include <kernel/domain/services/logging.h>
+#ifndef LIBJINUE_MACHINE_H
+#define LIBJINUE_MACHINE_H
 
-int puts(int loglevel, const char *str, size_t length) {
-    if(length > JINUE_PUTS_MAX_LENGTH) {
-        return -JINUE_EINVAL;
-    }
+#include <jinue/jinue.h>
 
-    switch(loglevel) {
-    case JINUE_PUTS_LOGLEVEL_INFO:
-    case JINUE_PUTS_LOGLEVEL_WARNING:
-    case JINUE_PUTS_LOGLEVEL_ERROR:
-        break;
-    default:
-        return -JINUE_EINVAL;
-    }
+uintptr_t jinue_syscall(jinue_syscall_args_t *args);
 
-    logging_add_message(loglevel, str, length);
+intptr_t jinue_syscall_with_usual_convention(jinue_syscall_args_t *args, int *perrno);
 
-    return 0;
-}
+#endif

@@ -29,26 +29,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/errno.h>
-#include <jinue/shared/asm/logging.h>
-#include <kernel/application/syscalls.h>
-#include <kernel/domain/services/logging.h>
+#ifndef _JINUE_SHARED_ASM_DESCRIPTORS_H
+#define _JINUE_SHARED_ASM_DESCRIPTORS_H
 
-int puts(int loglevel, const char *str, size_t length) {
-    if(length > JINUE_PUTS_MAX_LENGTH) {
-        return -JINUE_EINVAL;
-    }
+/* On a Unix system, the first three file descriptors typically represent
+ * stdout, stdin and stderr. Lets leave them unused to allow this usage. */
 
-    switch(loglevel) {
-    case JINUE_PUTS_LOGLEVEL_INFO:
-    case JINUE_PUTS_LOGLEVEL_WARNING:
-    case JINUE_PUTS_LOGLEVEL_ERROR:
-        break;
-    default:
-        return -JINUE_EINVAL;
-    }
+/** descriptor assigned to refer to own process in loader and initial process */
+#define JINUE_DESC_SELF_PROCESS 3
 
-    logging_add_message(loglevel, str, length);
-
-    return 0;
-}
+#endif

@@ -27,6 +27,8 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#include <jinue/shared/asm/i686.h>
+
     bits 32
     
     section .text
@@ -178,7 +180,7 @@ jinue_syscall_intr:
     mov esi, [edi+ 8]   ; arg2 (message pointer)
     mov edi, [edi+12]   ; arg3 (message size)
 
-    int 0x80
+    int JINUE_I686_SYSCALL_IRQ
     
     ; restore arguments structure pointer
     mov ebp, [esp+20]

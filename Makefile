@@ -116,6 +116,11 @@ $(kernel_img): kernel
 kernel:
 	$(MAKE) -C kernel
 
+# build the user space API library
+.PHONY: libjinue
+libjinue:
+	$(MAKE) -C $(libjinue)
+
 # build the user space loader
 .PHONY: loader
 loader:

@@ -29,11 +29,44 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LIBJINUE_IMPLEMENTATIONS_H
-#define LIBJINUE_IMPLEMENTATIONS_H
+#include <jinue/jinue.h>
+#include "../machine.h"
+#include "stubs.h"
 
-uintptr_t jinue_syscall(jinue_syscall_args_t *args);
+static jinue_syscall_stub_t syscall_stubs[] = {
+        [JINUE_I686_HOWSYSCALL_INTERRUPT]    = jinue_syscall_intr,
+        [JINUE_I686_HOWSYSCALL_FAST_AMD]     = jinue_syscall_fast_amd,
+        [JINUE_I686_HOWSYSCALL_FAST_INTEL]   = jinue_syscall_fast_intel
+};
 
-intptr_t jinue_syscall_with_usual_convention(jinue_syscall_args_t *args, int *perrno);
+static int syscall_stub_index = JINUE_I686_HOWSYSCALL_INTERRUPT;
 
-#endif
+int jinue_init(int implementation, int *perrno) {
+    if(implementation < 0 || implementation > JINUE_I686_HOWSYSCALL_LAST) {
+        *perrno = JINUE_EINVAL;
+        return -1;
+    }
+
+    syscall_stub_index = implementation;
+    return 0;
+}
+
+uintptr_t jinue_syscall(jinue_syscall_args_t *args) {
+    return syscall_stubs[syscall_stub_index](args);
+}
+
+static inline void jinue_set_errno(int *perrno, int errval) {
+    if(perrno != NULL) {
+        *perrno = errval;
+    }
+}
+
+intptr_t jinue_syscall_with_usual_convention(jinue_syscall_args_t *args, int *perrno) {
+    const intptr_t retval = (intptr_t)jinue_syscall(args);
+
+    if(retval < 0) {
+        jinue_set_errno(perrno, args->arg1);
+    }
+
+    return retval;
+}

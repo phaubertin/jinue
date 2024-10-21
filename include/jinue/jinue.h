@@ -32,8 +32,11 @@
 #ifndef _JINUE_JINUE_H
 #define _JINUE_JINUE_H
 
+#include <jinue/shared/asm/descriptors.h>
 #include <jinue/shared/asm/errno.h>
+#include <jinue/shared/asm/logging.h>
 #include <jinue/shared/asm/machine.h>
+#include <jinue/shared/asm/mman.h>
 #include <jinue/shared/asm/memory.h>
 #include <jinue/shared/asm/permissions.h>
 #include <jinue/shared/asm/syscalls.h>

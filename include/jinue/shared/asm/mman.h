@@ -29,26 +29,19 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/errno.h>
-#include <jinue/shared/asm/logging.h>
-#include <kernel/application/syscalls.h>
-#include <kernel/domain/services/logging.h>
+#ifndef _JINUE_SHARED_ASM_MMAN_H
+#define _JINUE_SHARED_ASM_MMAN_H
 
-int puts(int loglevel, const char *str, size_t length) {
-    if(length > JINUE_PUTS_MAX_LENGTH) {
-        return -JINUE_EINVAL;
-    }
+/** map page with no access permission */
+#define JINUE_PROT_NONE         0
 
-    switch(loglevel) {
-    case JINUE_PUTS_LOGLEVEL_INFO:
-    case JINUE_PUTS_LOGLEVEL_WARNING:
-    case JINUE_PUTS_LOGLEVEL_ERROR:
-        break;
-    default:
-        return -JINUE_EINVAL;
-    }
+/** map page with read permission */
+#define JINUE_PROT_READ         (1<<0)
 
-    logging_add_message(loglevel, str, length);
+/** map page with write permission */
+#define JINUE_PROT_WRITE        (1<<1)
 
-    return 0;
-}
+/** map page with execution permission */
+#define JINUE_PROT_EXEC         (1<<2)
+
+#endif
