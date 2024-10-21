@@ -29,8 +29,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LIBJINUE_IMPLEMENTATIONS_H
-#define LIBJINUE_IMPLEMENTATIONS_H
+#ifndef LIBJINUE_MACHINE_H
+#define LIBJINUE_MACHINE_H
+
+#include <jinue/jinue.h>
 
 uintptr_t jinue_syscall(jinue_syscall_args_t *args);
 

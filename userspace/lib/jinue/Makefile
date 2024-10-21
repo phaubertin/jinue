@@ -30,14 +30,14 @@
 jinue_root = ../../..
 include $(jinue_root)/header.mk
 
-sources.c           = implementations.c loader.c logging.c syscalls.c
-sources.nasm        = stubs.asm
+sources.c           = i686/syscalls.c loader.c logging.c syscalls.c
+sources.nasm        = i686/stubs.asm
 
 target.syscalls     = libjinue-syscalls.a
 target.util         = libjinue-util.a
 targets             = $(target.syscalls) $(target.util)
 
-objects.syscalls    = implementations.o stubs.o syscalls.o
+objects.syscalls    = i686/stubs.o i686/syscalls.o syscalls.o
 objects.util        = loader.o logging.o
 
 include $(common)

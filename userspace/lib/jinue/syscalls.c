@@ -31,7 +31,7 @@
 
 #include <jinue/jinue.h>
 #include <stdbool.h>
-#include "implementations.h"
+#include "machine.h"
 
 void jinue_reboot(void) {
     jinue_syscall_args_t args;

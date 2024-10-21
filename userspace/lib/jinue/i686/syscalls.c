@@ -30,6 +30,7 @@
  */
 
 #include <jinue/jinue.h>
+#include "../machine.h"
 #include "stubs.h"
 
 static jinue_syscall_stub_t syscall_stubs[] = {
