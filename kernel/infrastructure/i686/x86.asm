@@ -27,7 +27,6 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include <jinue/shared/asm/i686.h>
 #include <kernel/infrastructure/i686/asm/x86.h>
 #include <kernel/interface/i686/asm/boot.h>
 
