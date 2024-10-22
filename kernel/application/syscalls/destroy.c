@@ -32,6 +32,7 @@
 #include <jinue/shared/asm/errno.h>
 #include <kernel/application/syscalls.h>
 #include <kernel/domain/entities/descriptor.h>
+#include <kernel/domain/entities/endpoint.h>
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
 
@@ -43,15 +44,20 @@ int destroy(int fd) {
         return status;
     }
 
+    object_header_t *object = desc->object;
+
+    /* TODO support other object types */
+    if(object->type != object_type_ipc_endpoint) {
+        return -JINUE_EBADF;
+    }
+
     if(!descriptor_is_owner(desc)) {
         return -JINUE_EPERM;
     }
 
-    object_header_t *object = desc->object;
+    destroy_object(object);
 
     close_object(object, desc);
-
-    mark_object_destroyed(object);
 
     desc->flags = DESCRIPTOR_FLAG_NONE;
 

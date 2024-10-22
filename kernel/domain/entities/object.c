@@ -59,3 +59,29 @@ void close_object(object_header_t *object, const descriptor_t *desc) {
 
     sub_ref_to_object(object);
 }
+
+void destroy_object(object_header_t *object) {
+    if(object_is_destroyed(object)) {
+        return;
+    }
+
+    mark_object_destroyed(object);
+
+    if(object->type->destroy != NULL) {
+        object->type->destroy(object);
+    }
+}
+
+void sub_ref_to_object(object_header_t *object) {
+    --object->ref_count;
+
+    if(object->ref_count > 0) {
+        return;
+    }
+
+    destroy_object(object);
+
+    if(object->type->free != NULL) {
+        object->type->free(object);
+    }
+}

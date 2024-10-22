@@ -37,5 +37,5 @@
 
 int reply(const jinue_message_t *message) {
     thread_t *replier = get_current_thread();
-    return send_reply(replier, message);
+    return reply_to_message(replier, message);
 }

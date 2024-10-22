@@ -35,6 +35,8 @@
 #include <kernel/domain/entities/descriptor.h>
 #include <kernel/domain/entities/endpoint.h>
 #include <kernel/domain/entities/object.h>
+#include <kernel/domain/services/ipc.h>
+#include <kernel/utils/list.h>
 #include <stddef.h>
 
 static void cache_endpoint_ctor(void *buffer, size_t size);
@@ -43,6 +45,10 @@ static void open_endpoint(object_header_t *object, const descriptor_t *desc);
 
 static void close_endpoint(object_header_t *object, const descriptor_t *desc);
 
+static void destroy_endpoint(object_header_t *object);
+
+static void free_endpoint(object_header_t *object);
+
 /** runtime type definition for an IPC endpoint */
 static const object_type_t object_type = {
     .all_permissions    = JINUE_PERM_SEND | JINUE_PERM_RECEIVE,
@@ -50,6 +56,8 @@ static const object_type_t object_type = {
     .size               = sizeof(ipc_endpoint_t),
     .open               = open_endpoint,
     .close              = close_endpoint,
+    .destroy            = destroy_endpoint,
+    .free               = free_endpoint,
     .cache_ctor         = cache_endpoint_ctor,
     .cache_dtor         = NULL
 };
@@ -102,7 +110,7 @@ static void close_endpoint(object_header_t *object, const descriptor_t *desc) {
         sub_receiver(endpoint);
 
         if(!has_receivers(endpoint)) {
-            mark_object_destroyed(object);
+            destroy_object(object);
         }
     }
 }
@@ -123,4 +131,38 @@ void initialize_endpoint_cache(void) {
  */
 ipc_endpoint_t *construct_endpoint(void) {
     return slab_cache_alloc(&ipc_endpoint_cache);
+}
+
+static void destroy_endpoint(object_header_t *object) {
+    ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
+
+    while(true) {
+        thread_t *sender = jinue_node_entry(
+            jinue_list_dequeue(&endpoint->send_list),
+            thread_t,
+            thread_list);
+        
+        if(sender == NULL) {
+            break;
+        }
+
+        abort_message(sender, JINUE_EIO);
+    }
+
+    while(true) {
+        thread_t *receiver = jinue_node_entry(
+            jinue_list_dequeue(&endpoint->recv_list),
+            thread_t,
+            thread_list);
+        
+        if(receiver == NULL) {
+            break;
+        }
+
+        abort_message(receiver, JINUE_EIO);
+    }
+}
+
+static void free_endpoint(object_header_t *object) {
+    slab_cache_free(object);
 }

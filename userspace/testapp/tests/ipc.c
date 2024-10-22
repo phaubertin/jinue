@@ -93,6 +93,25 @@ static void ipc_test_run_client(void) {
     jinue_info("Client thread got reply from main thread:");
     jinue_info("  data:             \"%s%s%s\"", reply1, reply2, reply3);
     jinue_info("  size:             %" PRIuPTR, ret);
+
+    jinue_info("Client thread is re-sending message.");
+
+    message.recv_buffers        = NULL;
+    message.recv_buffers_length = 0;
+
+    ret = jinue_send(CLIENT_DESCRIPTOR, MSG_FUNC_TEST, &message, &errno);
+
+    if(ret >= 0) {
+        jinue_error("error: jinue_send() unexpectedly succeeded");
+        return;
+    }
+
+    if(errno != JINUE_EIO) {
+        jinue_error("error: jinue_send() failed: %s.", strerror(errno));
+        return;
+    }
+
+   jinue_info("expected: jinue_send() set errno to: %s.", strerror(errno));
 }
 
 static void ipc_test_client_thread(void) {
@@ -133,6 +152,30 @@ void run_ipc_test(void) {
         return;
     }
 
+    jinue_buffer_t recv_buffer;
+    recv_buffer.addr = recv_data;
+    recv_buffer.size = sizeof(recv_data);
+
+    jinue_message_t message;
+    message.recv_buffers        = &recv_buffer;
+    message.recv_buffers_length = 1;
+
+    jinue_info("Attempting to call jinue_receive() on the send-only descriptor.");
+
+    intptr_t ret = jinue_receive(CLIENT_DESCRIPTOR, &message, &errno);
+
+    if(ret >= 0) {
+        jinue_error("error: jinue_receive() unuexpectedly succeeded.");
+        return;
+    }
+
+    if(errno != JINUE_EPERM) {
+        jinue_error("error: jinue_receive() failed: %s.", strerror(errno));
+        return;
+    }
+
+    jinue_info("expected: jinue_receive() set errno to: %s.", strerror(errno));
+
     status = jinue_create_thread(
         JINUE_DESC_SELF_PROCESS,
         ipc_test_client_thread,
@@ -145,15 +188,7 @@ void run_ipc_test(void) {
         return;
     }
 
-    jinue_buffer_t recv_buffer;
-    recv_buffer.addr = recv_data;
-    recv_buffer.size = sizeof(recv_data);
-
-    jinue_message_t message;
-    message.recv_buffers        = &recv_buffer;
-    message.recv_buffers_length = 1;
-
-    intptr_t ret = jinue_receive(IPC_DESCRIPTOR, &message, &errno);
+    ret = jinue_receive(IPC_DESCRIPTOR, &message, &errno);
 
     if(ret < 0) {
         jinue_error("error: jinue_receive() failed: %s.", strerror(errno));
@@ -190,6 +225,19 @@ void run_ipc_test(void) {
         jinue_error("error: jinue_reply() failed: %s", strerror(errno));
         return;
     }
+
+    jinue_info("Closing receiver descriptor.");
+
+    status = jinue_close(IPC_DESCRIPTOR, &errno);
+
+    if(status < 0) {
+        jinue_error("error: jinue_close() failed: %s", strerror(errno));
+        return;
+    }
+
+    /* Give a chance to the client thread to notice that its second call to
+     * jinue_send() failed. */
+    jinue_yield_thread();
 
     jinue_info("Main thread is running.");
 }
