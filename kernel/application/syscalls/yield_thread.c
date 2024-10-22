@@ -33,5 +33,5 @@
 #include <kernel/domain/entities/thread.h>
 
 void yield_thread(void) {
-    switch_thread_yield();
+    yield_current_thread();
 }

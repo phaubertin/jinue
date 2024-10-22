@@ -35,6 +35,7 @@
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/entities/thread.h>
+#include <kernel/domain/services/ipc.h>
 #include <kernel/domain/services/panic.h>
 #include <kernel/machine/thread.h>
 #include <kernel/utils/list.h>
@@ -127,7 +128,7 @@ static void switch_thread(thread_t *from, thread_t *to, bool destroy_from) {
     machine_switch_thread(from, to, destroy_from);
 }
 
-void switch_thread_to(thread_t *thread, bool blocked) {
+void switch_to_thread(thread_t *thread, bool blocked) {
     thread_t *current = get_current_thread();
 
     if (!blocked) {
@@ -149,24 +150,30 @@ void start_first_thread(void) {
     );
 }
 
-void switch_thread_yield(void) {
-    switch_thread_to(
+void yield_current_thread(void) {
+    switch_to_thread(
             reschedule(true),   /* current thread can run */
             false               /* don't block current thread */
     );
 }
 
-void switch_thread_block(void) {
-    switch_thread_to(
+void block_current_thread(void) {
+    switch_to_thread(
             reschedule(false),  /* current thread cannot run */
             true                /* do block current thread */
     );
 }
 
-void switch_thread_exit(void) {
+void exit_current_thread(void) {
+    thread_t *current = get_current_thread();
+
+    if(current->sender != NULL) {
+        abort_message(current->sender, JINUE_EIO);
+    }
+
     switch_thread(
-            get_current_thread(),
-            reschedule(false),
+            current,
+            reschedule(false),  /* current thread cannot run */
             true                /* do destroy the thread */
     );
 }
