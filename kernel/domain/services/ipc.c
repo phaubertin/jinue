@@ -396,6 +396,9 @@ int reply_to_message(thread_t *replier, const jinue_message_t *message) {
  *
  */
 void abort_message(thread_t *thread, int errno) {
-    thread->message_errno = errno;
+    thread->message_errno   = errno;
+    /* TODO fix thread servicing message itself sending a message
+     * (i.e. don't clear sender when aborting as send) */
+    thread->sender          = NULL;
     ready_thread(thread);
 }

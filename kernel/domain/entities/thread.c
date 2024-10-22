@@ -164,8 +164,14 @@ void block_current_thread(void) {
 }
 
 void exit_current_thread(void) {
+    thread_t *current = get_current_thread();
+
+    if(current->sender != NULL) {
+        abort_message(current->sender, JINUE_EIO);
+    }
+
     switch_thread(
-            get_current_thread(),
+            current,
             reschedule(false),  /* current thread cannot run */
             true                /* do destroy the thread */
     );
