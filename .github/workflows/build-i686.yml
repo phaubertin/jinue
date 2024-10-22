@@ -49,7 +49,7 @@ jobs:
         path: |
           kernel/interface/i686/jinue
           userspace/lib/jinue/libjinue-syscalls.a
-          userspace/lib/jinue/libjinue-util.a
+          userspace/lib/jinue/libjinue-utils.a
           userspace/testapp/jinue-testapp-initrd.tar.gz
     
     - name: make qemu-check

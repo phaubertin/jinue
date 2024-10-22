@@ -52,13 +52,13 @@ unclean.extra    = $(testapp) $(stripped)
 
 include $(common)
 
-$(libjinue)/libjinue-syscalls.a $(libjinue)/libjinue-util.a: FORCE
+$(libjinue)/libjinue-syscalls.a $(libjinue)/libjinue-utils.a: FORCE
 	$(MAKE) -C $(libjinue)
 	
 $(libc)/libc.a: FORCE
 	$(MAKE) -C $(libc)
 
-$(testapp): $(objects) $(libjinue)/libjinue-util.a $(libc)/libc.a $(libjinue)/libjinue-syscalls.a
+$(testapp): $(objects) $(libjinue)/libjinue-utils.a $(libc)/libc.a $(libjinue)/libjinue-syscalls.a
 
 $(stripped): $(testapp)
 

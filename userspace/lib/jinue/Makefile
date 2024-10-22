@@ -34,8 +34,8 @@ sources.c           = i686/syscalls.c loader.c logging.c syscalls.c
 sources.nasm        = i686/stubs.asm
 
 target.syscalls     = libjinue-syscalls.a
-target.util         = libjinue-util.a
-targets             = $(target.syscalls) $(target.util)
+target.utils        = libjinue-utils.a
+targets             = $(target.syscalls) $(target.utils)
 
 objects.syscalls    = i686/stubs.o i686/syscalls.o syscalls.o
 objects.util        = loader.o logging.o
@@ -44,7 +44,7 @@ include $(common)
 
 $(target.syscalls): $(objects.syscalls)
 
-$(target.util): $(objects.util)
+$(target.utils): $(objects.util)
 
 %.a:
 	ar rcs $@ $^
