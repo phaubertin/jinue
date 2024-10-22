@@ -35,6 +35,7 @@
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/entities/thread.h>
+#include <kernel/domain/services/ipc.h>
 #include <kernel/domain/services/panic.h>
 #include <kernel/machine/thread.h>
 #include <kernel/utils/list.h>
