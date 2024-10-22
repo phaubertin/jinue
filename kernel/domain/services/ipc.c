@@ -312,7 +312,8 @@ int receive_message(ipc_endpoint_t *endpoint, thread_t *receiver, jinue_message_
     }
 
     if(receiver->message_errno != 0) {
-        return -sender->message_errno;
+        receiver->sender = NULL;
+        return -receiver->message_errno;
     }
 
     if(sender->message_size > recv_buffer_size) {
@@ -331,6 +332,7 @@ int receive_message(ipc_endpoint_t *endpoint, thread_t *receiver, jinue_message_
     int scatter_result = scatter_message(sender, message);
 
     if(scatter_result < 0) {
+        receiver->sender = NULL;
         return scatter_result;
     }
     
