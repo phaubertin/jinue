@@ -239,14 +239,14 @@ int send_message(
         /* No thread is waiting to receive this message, so we must wait on the
          * sender list. */
         jinue_list_enqueue(&endpoint->send_list, &sender->thread_list);
-        switch_thread_block();
+        block_current_thread();
     }
     else {
         add_ref_to_object(&sender->header);
         receiver->sender = sender;
 
         /* switch to receiver thread, which will resume inside syscall_receive() */
-        switch_thread_to(receiver, true);
+        switch_to_thread(receiver, true);
     }
     
     if(sender->message_errno != 0) {
@@ -301,7 +301,7 @@ int receive_message(ipc_endpoint_t *endpoint, thread_t *receiver, jinue_message_
         /* No thread is waiting to send a message, so we must wait on the receive
          * list. */
         jinue_list_enqueue(&endpoint->recv_list, &receiver->thread_list);
-        switch_thread_block();
+        block_current_thread();
         
         /* set by sending thread */
         sender = receiver->sender;
@@ -322,7 +322,7 @@ int receive_message(ipc_endpoint_t *endpoint, thread_t *receiver, jinue_message_
         receiver->sender = NULL;
         
         /* switch back to sender thread to return from call immediately */
-        switch_thread_to(sender, false);
+        switch_to_thread(sender, false);
                 
         return -JINUE_E2BIG;
     }
@@ -377,7 +377,7 @@ int reply_to_message(thread_t *replier, const jinue_message_t *message) {
     replier->sender = NULL;
     
     /* switch back to sender thread to return from call immediately */
-    switch_thread_to(replyto, false);
+    switch_to_thread(replyto, false);
 
     return 0;
 }

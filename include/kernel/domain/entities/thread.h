@@ -42,15 +42,15 @@ void free_thread(thread_t *thread);
         
 void ready_thread(thread_t *thread);
 
-void switch_thread_to(thread_t *thread, bool blocked);
+void switch_to_thread(thread_t *thread, bool blocked);
 
 void start_first_thread(void);
 
-void switch_thread_yield(void);
+void yield_current_thread(void);
 
-void switch_thread_block(void);
+void block_current_thread(void);
 
-void switch_thread_exit(void);
+void exit_current_thread(void);
 
 void set_thread_local_storage(thread_t *thread, addr_t addr, size_t size);
 
