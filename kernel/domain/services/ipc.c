@@ -220,7 +220,7 @@ int send_message(
     }
     
     sender->recv_buffer_size    = recv_buffer_size;
-    sender->reply_errno         = 0;
+    sender->message_errno       = 0;
     sender->message_function    = function;
     sender->message_cookie      = cookie;
 
@@ -249,8 +249,8 @@ int send_message(
         switch_thread_to(receiver, true);
     }
     
-    if(sender->reply_errno != 0) {
-        return -sender->reply_errno;
+    if(sender->message_errno != 0) {
+        return -sender->message_errno;
     }
 
     /* copy reply to user space buffer */
@@ -283,12 +283,14 @@ int send_message(
  * @return received message size in bytes on success, negated error number on error
  *
  */
-int receive_message(ipc_endpoint_t *endpoint, thread_t *receiver,jinue_message_t *message) {
+int receive_message(ipc_endpoint_t *endpoint, thread_t *receiver, jinue_message_t *message) {
     int recv_buffer_size = get_receive_buffers_size(message);
 
     if(recv_buffer_size < 0) {
         return recv_buffer_size;
     }
+
+    receiver->message_errno = 0;
 
     thread_t *sender = jinue_node_entry(
         jinue_list_dequeue(&endpoint->send_list),
@@ -309,9 +311,13 @@ int receive_message(ipc_endpoint_t *endpoint, thread_t *receiver,jinue_message_t
         receiver->sender = sender;
     }
 
+    if(receiver->message_errno != 0) {
+        return -sender->message_errno;
+    }
+
     if(sender->message_size > recv_buffer_size) {
         /* message is too big for the receive buffer */
-        sender->reply_errno = JINUE_E2BIG;
+        sender->message_errno = JINUE_E2BIG;
         sub_ref_to_object(&sender->header);
         receiver->sender = NULL;
         
@@ -349,7 +355,7 @@ int receive_message(ipc_endpoint_t *endpoint, thread_t *receiver,jinue_message_t
  * @return zero on success, negated error number on error
  *
  */
-int send_reply(thread_t *replier, const jinue_message_t *message) {
+int reply_to_message(thread_t *replier, const jinue_message_t *message) {
     thread_t *replyto = replier->sender;
 
     if(replyto == NULL) {
@@ -374,4 +380,20 @@ int send_reply(thread_t *replier, const jinue_message_t *message) {
     switch_thread_to(replyto, false);
 
     return 0;
+}
+
+/**
+ * Abort a send or receive operation in progress
+ *
+ * This function should only be called on a blocked thread that was just
+ * dequeued from an IPC endpoint's send or receive queue. The send or receive
+ * operation is aborted and the IPC system call returns specified error number.
+ *
+ * @param thread blocked thread requeued from send or receive queue
+ * @param errno error number
+ *
+ */
+void abort_message(thread_t *thread, int errno) {
+    thread->message_errno = errno;
+    ready_thread(thread);
 }

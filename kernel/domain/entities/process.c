@@ -42,6 +42,10 @@
 
 static void cache_process_ctor(void *buffer, size_t ignore);
 
+static void destroy_process(object_header_t *object);
+
+static void free_process(object_header_t *object);
+
 /** runtime type definition for a process */
 static const object_type_t object_type = {
     .all_permissions    =
@@ -53,6 +57,8 @@ static const object_type_t object_type = {
     .size               = sizeof(process_t),
     .open               = NULL,
     .close              = NULL,
+    .destroy            = destroy_process,
+    .free               = free_process,
     .cache_ctor         = cache_process_ctor,
     .cache_dtor         = NULL
 };
@@ -91,11 +97,15 @@ process_t *construct_process(void) {
     return process;
 }
 
-void free_process(process_t *process) {
+static void destroy_process(object_header_t *object) {
+    process_t *process = (process_t *)object;
     /* TODO destroy remaining threads */
     /* TODO finalize descriptors */
     machine_finalize_process(process);
-    slab_cache_free(process);
+}
+
+static void free_process(object_header_t *object) {
+    slab_cache_free(object);
 }
 
 void switch_to_process(process_t *process) {

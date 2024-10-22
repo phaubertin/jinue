@@ -60,12 +60,16 @@ typedef struct object_header_t object_header_t;
 
 typedef void (*descriptor_func_t)(object_header_t *, const descriptor_t *);
 
+typedef void (*object_func_t)(object_header_t *);
+
 typedef struct {
     int                  all_permissions;
     char                *name;
     size_t               size;
     descriptor_func_t    open;
     descriptor_func_t    close;
+    object_func_t        destroy;
+    object_func_t        free;
     slab_ctor_t          cache_ctor;
     slab_ctor_t          cache_dtor;
 } object_type_t;
@@ -99,7 +103,7 @@ struct thread_t {
     size_t                   local_storage_size;
     struct thread_t         *sender;
     size_t                   recv_buffer_size;
-    int                      reply_errno;
+    int                      message_errno;
     uintptr_t                message_function;
     uintptr_t                message_cookie;
     size_t                   message_size;

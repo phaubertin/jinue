@@ -61,21 +61,28 @@ grep -F "Jinue test app (/sbin/init) started." $1 || fail
 echo "* Check threading and IPC test ran"
 grep -F "Running threading and IPC test" $1 || fail
 
+echo "* Check the main thread tried to receive on the send-only descriptor"
+grep -F "Attempting to call jinue_receive() on the send-only descriptor." $1 || fail
+
+echo "* Check errno was set to JINUE_EPERM"
+RESULT=`grep -F -A 1 "Attempting to call jinue_receive() on the send-only descriptor." $1`
+echo "$RESULT" | grep -F 'operation not permitted' || fail
+
 echo "* Check main thread received message from client thread"
 grep -F "Main thread received message" $1 || fail
 
 MESSAGE=`grep -F -A 5 "Main thread received message:" $1`
 
-echo "* Checking message data"
+echo "* Check message data"
 echo "$MESSAGE" | grep -E 'data:[ ]+"Hello World!"' || fail
 
-echo "* Checking message size"
+echo "* Check message size"
 echo "$MESSAGE" | grep -E 'size:[ ]+13$' || fail
 
-echo "* Checking function number"
+echo "* Check function number"
 echo "$MESSAGE" | grep -E 'function:[ ]+4138\b' || fail
 
-echo "* Checking cookie"
+echo "* Check cookie"
 echo "$MESSAGE" | grep -E 'cookie:[ ]+0xca11ab1e$' || fail
 
 echo "* Check client thread received reply from main thread"
@@ -83,10 +90,28 @@ grep -F "Client thread got reply from main thread" $1 || fail
 
 REPLY=`grep -F -A 2 "Client thread got reply from main thread:" $1`
 
-echo "* Checking reply data"
+echo "* Check reply data"
 echo "$REPLY" | grep -E 'data:[ ]+"Hi, Main Thread!"' || fail
 
-echo "* Checking message size"
+echo "* Check message size"
 echo "$REPLY" | grep -E 'size:[ ]+17$' || fail
+
+echo "* Check client thread attempted to send the message a second time"
+grep -F "Client thread is re-sending message." $1 || fail
+
+echo "* Check main thread closed the receive descriptor while the client was send blocked"
+RESULT=`grep -F -A 1 "Client thread is re-sending message." $1`
+echo "$RESULT" | grep -F 'Closing receiver descriptor.' || fail
+
+echo "* Check closing the receive descriptor caused JINUE_EIO in the send-blocked thread"
+RESULT=`grep -F -A 1 "Closing receiver descriptor." $1`
+echo "$RESULT" | grep -F 'I/O error' || fail
+
+echo "* Check client thread exited cleanly"
+grep -F "Client thread is exiting." $1 || fail
+
+echo "* Check the main thread initiated the reboot"
+grep -F "Main thread is running." $1 || fail
+grep -F "Rebooting." $1 || fail
 
 echo "[ PASS ]"

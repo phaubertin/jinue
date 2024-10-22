@@ -43,6 +43,8 @@ int send_message(
 
 int receive_message(ipc_endpoint_t *endpoint, thread_t *receiver,jinue_message_t *message);
 
-int send_reply(thread_t *replier, const jinue_message_t *message);
+int reply_to_message(thread_t *replier, const jinue_message_t *message);
+
+void abort_message(thread_t *thread, int errno);
 
 #endif
