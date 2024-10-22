@@ -36,16 +36,12 @@
 
 void exec(
         process_t           *process,
+        thread_t            *thread,
         const exec_file_t   *exec_file,
         const char          *argv0,
         const char          *cmdline) {
     
     thread_params_t thread_params;
     machine_load_exec(&thread_params, process, exec_file, argv0, cmdline);
-
-    thread_t *thread = construct_thread(process, &thread_params);
-    
-    if(thread == NULL) {
-        panic("Thread creation failed.");
-    }
+    prepare_thread(thread, &thread_params);
 }

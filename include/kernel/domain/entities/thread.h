@@ -36,15 +36,17 @@
 
 extern const object_type_t *object_type_thread;
 
-thread_t *construct_thread(process_t *process, const thread_params_t *params);
+thread_t *construct_thread(process_t *process);
 
 void free_thread(thread_t *thread);
-        
+
+void prepare_thread(thread_t *thread, const thread_params_t *params);
+       
 void ready_thread(thread_t *thread);
 
 void switch_to_thread(thread_t *thread, bool blocked);
 
-void start_first_thread(void);
+void start_first_thread(thread_t *thread);
 
 void yield_current_thread(void);
 

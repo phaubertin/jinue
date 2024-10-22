@@ -88,7 +88,7 @@ static addr_t get_kernel_stack_base(machine_thread_t *thread_ctx) {
     return (addr_t)thread + THREAD_CONTEXT_SIZE;
 }
 
-void machine_init_thread(thread_t *thread, const thread_params_t *params) {
+void machine_prepare_thread(thread_t *thread, const thread_params_t *params) {
     /* initialize fields */
     machine_thread_t *thread_ctx = &thread->thread_ctx;
 

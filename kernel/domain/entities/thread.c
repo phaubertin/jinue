@@ -57,7 +57,7 @@ const object_type_t *object_type_thread = &object_type;
 
 static jinue_list_t ready_list = JINUE_LIST_STATIC;
 
-thread_t *construct_thread(process_t *process, const thread_params_t *params) {
+thread_t *construct_thread(process_t *process) {
     thread_t *thread = machine_alloc_thread();
 
     if(thread == NULL) {
@@ -72,17 +72,17 @@ thread_t *construct_thread(process_t *process, const thread_params_t *params) {
     thread->sender              = NULL;
     thread->local_storage_addr  = NULL;
     thread->local_storage_size  = 0;
-
-    machine_init_thread(thread, params);
-
-    ready_thread(thread);
-    
+ 
     return thread;
 }
 
 /* This function is called by assembly code. See thread_context_switch_stack(). */
 void free_thread(thread_t *thread) {
     machine_free_thread(thread);
+}
+
+void prepare_thread(thread_t *thread, const thread_params_t *params) {
+    machine_prepare_thread(thread, params);
 }
 
 void ready_thread(thread_t *thread) {
@@ -142,10 +142,10 @@ void switch_to_thread(thread_t *thread, bool blocked) {
     );
 }
 
-void start_first_thread(void) {
+void start_first_thread(thread_t *thread) {
     switch_thread(
             NULL,
-            reschedule(false),
+            thread,
             false               /* don't destroy current thread */
     );
 }

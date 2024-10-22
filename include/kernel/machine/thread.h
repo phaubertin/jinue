@@ -36,7 +36,7 @@
 
 thread_t *get_current_thread(void);
 
-void machine_init_thread(thread_t *thread, const thread_params_t *params);
+void machine_prepare_thread(thread_t *thread, const thread_params_t *params);
 
 thread_t *machine_alloc_thread(void);
 

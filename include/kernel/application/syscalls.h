@@ -40,7 +40,7 @@ int create_endpoint(int fd);
 
 int create_process(int fd);
 
-int create_thread(int  process_fd, const thread_params_t *params);
+int create_thread(int process_fd, const thread_params_t *params);
 
 int destroy(int fd);
 

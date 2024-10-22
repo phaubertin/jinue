@@ -36,7 +36,7 @@
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/entities/thread.h>
 
-int create_thread(int  process_fd, const thread_params_t *params) {
+int create_thread(int process_fd, const thread_params_t *params) {
     descriptor_t *desc;
     int status = dereference_object_descriptor(&desc, get_current_process(), process_fd);
 
@@ -54,8 +54,16 @@ int create_thread(int  process_fd, const thread_params_t *params) {
         return -JINUE_EPERM;
     }
 
-    const thread_t *thread = construct_thread(process, params);
+    thread_t *thread = construct_thread(process);
+
+    if(thread == 0) {
+        return -JINUE_ENOMEM;
+    }
+
+    prepare_thread(thread, params);
+
+    ready_thread(thread);
 
     /** TODO associate new thread to a free descriptor */
-    return (thread == NULL) ? -JINUE_EAGAIN : 0;
+    return 0;
 }
