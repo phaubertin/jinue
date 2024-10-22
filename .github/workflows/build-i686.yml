@@ -33,6 +33,9 @@ jobs:
     - name: make
       run: ${{ env.MAKE }}
 
+    - name: libjinue
+      run: ${{ env.MAKE }} libjinue
+
     - name: make testapp
       run: ${{ env.MAKE }} testapp
     
@@ -45,6 +48,8 @@ jobs:
         name: artifact-${{ matrix.cc }}
         path: |
           kernel/interface/i686/jinue
+          userspace/lib/jinue/libjinue-syscalls.a
+          userspace/lib/jinue/libjinue-utils.a
           userspace/testapp/jinue-testapp-initrd.tar.gz
     
     - name: make qemu-check
