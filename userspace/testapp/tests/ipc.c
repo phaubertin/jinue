@@ -198,6 +198,8 @@ void run_ipc_test(void) {
         return;
     }
 
+    jinue_info("Closing client thread descriptor.");
+
     status = jinue_close(CLIENT_THREAD_DESCRIPTOR, &errno);
 
     if(status < 0) {
