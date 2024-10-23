@@ -68,5 +68,5 @@ int create_endpoint(int fd) {
 
     open_object(&endpoint->header, desc);
 
-    return fd;
+    return 0;
 }

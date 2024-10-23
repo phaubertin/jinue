@@ -1,24 +1,23 @@
-# CREATE_THREAD - Create a Thread
+# START_THREAD - Start a Thread
 
 ## Description
 
-Create a new thread in a target process.
+Set the entry point and stack address on a non-running thread and allow it to
+start running.
 
 ## Arguments
 
-Function number (`arg0`) is 4.
+Function number (`arg0`) is 20.
 
-The descriptor number to bind to the new thread is set in `arg1`.
+The descriptor number for the target thread is set in `arg1`. This descriptor
+must have the necessary permissions (JINUE_PERM_START).
 
-The descriptor number for the target process is set in `arg2`. This descriptor
-must have the necessary permissions to create a thread in the target process
-(JINUE_PERM_CREATE_THREAD) and to bind a descriptor in the target process
-(JINUE_PERM_OPEN).
-
+The address where code execution will start is set in `arg2` and the
+value of the initial stack pointer is set in `arg3`.
 
 ```
     +----------------------------------------------------------------+
-    |                         function = 4                           |  arg0
+    |                         function = 20                          |  arg0
     +----------------------------------------------------------------+
     31                                                               0
     
@@ -28,12 +27,12 @@ must have the necessary permissions to create a thread in the target process
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                            process                             |  arg2
+    |                   code entry point address                     |  arg2
     +----------------------------------------------------------------+
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                         reserved (0)                           |  arg3
+    |                      user stack address                        |  arg3
     +----------------------------------------------------------------+
     31                                                               0
 ```
@@ -45,8 +44,14 @@ returns -1 and an error number is set (in `arg1`).
 
 ## Errors
 
-* JINUE_EBADF if the specified descriptor is already in use.
-* JINUE_EBADF if the target process descriptor is invalid, or does not refer to
-a process, or is closed.
-* JINUE_EPERM if the target process descriptor does not have the needed
+* JINUE_EINVAL if the code entry point is set to a kernel address.
+* JINUE_EINVAL if the user stack address is set to a kernel address.
+* JINUE_EBADF if the specified descriptor is invalid, or does not refer to a
+thread, or is closed.
+* JINUE_EPERM if the target thread descriptor does not have the needed
 permissions.
+
+## Future Direction
+
+This system call will be modified to allow a pointer argument to be passed to
+the started thread.

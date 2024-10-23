@@ -38,11 +38,14 @@
 
 #define THREAD_STACK_SIZE   4096
 
-#define MSG_FUNC_TEST       (JINUE_SYS_USER_BASE + 42)
+#define MSG_FUNC_TEST               (JINUE_SYS_USER_BASE + 42)
 
-#define IPC_DESCRIPTOR      0
+#define ENDPOINT_DESCRIPTOR         0
 
-#define CLIENT_DESCRIPTOR   1
+#define CLIENT_ENDPOINT_DESCRIPTOR  1
+
+#define CLIENT_THREAD_DESCRIPTOR    2
+
 
 static char ipc_test_thread_stack[THREAD_STACK_SIZE];
 
@@ -83,7 +86,7 @@ static void ipc_test_run_client(void) {
     message.recv_buffers        = reply_buffers;
     message.recv_buffers_length = 3;
 
-    intptr_t ret = jinue_send(CLIENT_DESCRIPTOR, MSG_FUNC_TEST, &message, &errno);
+    intptr_t ret = jinue_send(CLIENT_ENDPOINT_DESCRIPTOR, MSG_FUNC_TEST, &message, &errno);
 
     if(ret < 0) {
         jinue_error("error: jinue_send() failed: %s.", strerror(errno));
@@ -99,7 +102,7 @@ static void ipc_test_run_client(void) {
     message.recv_buffers        = NULL;
     message.recv_buffers_length = 0;
 
-    ret = jinue_send(CLIENT_DESCRIPTOR, MSG_FUNC_TEST, &message, &errno);
+    ret = jinue_send(CLIENT_ENDPOINT_DESCRIPTOR, MSG_FUNC_TEST, &message, &errno);
 
     if(ret >= 0) {
         jinue_error("error: jinue_send() unexpectedly succeeded");
@@ -131,7 +134,7 @@ void run_ipc_test(void) {
 
     jinue_info("Running threading and IPC test...");
 
-    int status = jinue_create_endpoint(IPC_DESCRIPTOR, &errno);
+    int status = jinue_create_endpoint(ENDPOINT_DESCRIPTOR, &errno);
 
     if(status < 0) {
         jinue_error("error: could not create IPC object: %s", strerror(errno));
@@ -139,9 +142,9 @@ void run_ipc_test(void) {
     }
 
     status = jinue_mint(
-        IPC_DESCRIPTOR,
+        ENDPOINT_DESCRIPTOR,
         JINUE_DESC_SELF_PROCESS,
-        CLIENT_DESCRIPTOR,
+        CLIENT_ENDPOINT_DESCRIPTOR,
         JINUE_PERM_SEND,
         0xca11ab1e,
         &errno
@@ -162,7 +165,7 @@ void run_ipc_test(void) {
 
     jinue_info("Attempting to call jinue_receive() on the send-only descriptor.");
 
-    intptr_t ret = jinue_receive(CLIENT_DESCRIPTOR, &message, &errno);
+    intptr_t ret = jinue_receive(CLIENT_ENDPOINT_DESCRIPTOR, &message, &errno);
 
     if(ret >= 0) {
         jinue_error("error: jinue_receive() unuexpectedly succeeded.");
@@ -176,19 +179,27 @@ void run_ipc_test(void) {
 
     jinue_info("expected: jinue_receive() set errno to: %s.", strerror(errno));
 
-    status = jinue_create_thread(
-        JINUE_DESC_SELF_PROCESS,
-        ipc_test_client_thread,
-        &ipc_test_thread_stack[THREAD_STACK_SIZE],
-        &errno
-    );
+    status = jinue_create_thread(CLIENT_THREAD_DESCRIPTOR, JINUE_DESC_SELF_PROCESS, &errno);
 
     if (status != 0) {
         jinue_error("error: could not create thread: %s", strerror(errno));
         return;
     }
 
-    ret = jinue_receive(IPC_DESCRIPTOR, &message, &errno);
+    status = jinue_start_thread(
+        CLIENT_THREAD_DESCRIPTOR,
+        ipc_test_client_thread,
+        &ipc_test_thread_stack[THREAD_STACK_SIZE],
+        &errno
+    );
+
+    if (status != 0) {
+        jinue_error("error: could not start thread: %s", strerror(errno));
+        return;
+    }
+
+
+    ret = jinue_receive(ENDPOINT_DESCRIPTOR, &message, &errno);
 
     if(ret < 0) {
         jinue_error("error: jinue_receive() failed: %s.", strerror(errno));
@@ -228,7 +239,7 @@ void run_ipc_test(void) {
 
     jinue_info("Closing receiver descriptor.");
 
-    status = jinue_close(IPC_DESCRIPTOR, &errno);
+    status = jinue_close(ENDPOINT_DESCRIPTOR, &errno);
 
     if(status < 0) {
         jinue_error("error: jinue_close() failed: %s", strerror(errno));
@@ -238,6 +249,8 @@ void run_ipc_test(void) {
     /* Give a chance to the client thread to notice that its second call to
      * jinue_send() failed. */
     jinue_yield_thread();
+
+    /* TODO close thread descriptor */
 
     jinue_info("Main thread is running.");
 }

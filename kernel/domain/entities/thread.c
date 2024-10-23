@@ -42,7 +42,7 @@
 
 /** runtime type definition for a thread */
 static const object_type_t object_type = {
-    .all_permissions    = 0,
+    .all_permissions    = JINUE_PERM_START,
     .name               = "thread",
     .size               = sizeof(thread_t),
     .open               = NULL,

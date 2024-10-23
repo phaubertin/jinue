@@ -26,7 +26,8 @@
 | 17      | [CLOSE](close.md)                       | Close a Descriptor                   |
 | 18      | [DESTROY](destroy.md)                   | Destroy a Kernel Object              |
 | 19      | [MINT](mint.md)                         | Mint a Descriptor                    |
-| 20-4095 | -                                       | Reserved                             |
+| 20      | [START_THREAD](start-thread.md)         | Start a Thread                       |
+| 21-4095 | -                                       | Reserved                             |
 | 4096+   | [SEND](send.md)                         | Send Message                         |
 
 #### Reserved Function Numbers

@@ -40,8 +40,8 @@
 
 #define JINUE_PERM_OPEN             (1<<3)
 
-#define JINUE_PERM_CLOSE            (1<<4)
+#define JINUE_PERM_CREATE_THREAD    (1<<4)
 
-#define JINUE_PERM_CREATE_THREAD    (1<<5)
+#define JINUE_PERM_START            (1<<5)
 
 #endif

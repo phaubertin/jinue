@@ -34,8 +34,8 @@ The descriptor number to bind to the new IPC endpoint is set in `arg1`.
 
 ## Return Value
 
-On success, this function returns the descriptor number for the new IPC endpoint
-(in `arg0`). On failure, it returns -1 and an error number is set (in `arg1`).
+On success, this function returns 0 (in `arg0`). On failure, this function
+returns -1 and an error number is set (in `arg1`).
 
 ## Errors
 

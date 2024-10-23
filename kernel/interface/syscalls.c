@@ -109,27 +109,20 @@ static void sys_puts(jinue_syscall_args_t *args) {
 }
 
 static void sys_create_thread(jinue_syscall_args_t *args) {
-    thread_params_t thread_params;
-    int process_fd              = get_descriptor(args->arg1);
-    thread_params.entry         = (void *)args->arg2;
-    thread_params.stack_addr    = (void *)args->arg3;
+    int fd          = get_descriptor(args->arg1);
+    int process_fd  = get_descriptor(args->arg2);
+
+    if(fd < 0) {
+        set_return_value_or_error(args, fd);
+        return;
+    }
 
     if(process_fd < 0) {
         set_return_value_or_error(args, process_fd);
         return;
     }
 
-    if(!is_userspace_pointer(thread_params.entry)) {
-        set_error(args, JINUE_EINVAL);
-        return;
-    }
-
-    if(!is_userspace_pointer(thread_params.stack_addr)) {
-        set_error(args, JINUE_EINVAL);
-        return;
-    }
-
-    int retval = create_thread(process_fd, &thread_params);
+    int retval = create_thread(fd, process_fd);
     set_return_value_or_error(args, retval);
 }
 
@@ -520,6 +513,31 @@ static void sys_mint(jinue_syscall_args_t *args) {
     set_return_value_or_error(args, retval);
 }
 
+static void sys_start_thread(jinue_syscall_args_t *args) {
+    thread_params_t thread_params;
+    int fd                      = get_descriptor(args->arg1);
+    thread_params.entry         = (void *)args->arg2;
+    thread_params.stack_addr    = (void *)args->arg3;
+
+    if(fd < 0) {
+        set_return_value_or_error(args, fd);
+        return;
+    }
+
+    if(!is_userspace_pointer(thread_params.entry)) {
+        set_error(args, JINUE_EINVAL);
+        return;
+    }
+
+    if(!is_userspace_pointer(thread_params.stack_addr)) {
+        set_error(args, JINUE_EINVAL);
+        return;
+    }
+
+    int retval = start_thread(fd, &thread_params);
+    set_return_value_or_error(args, retval);
+}
+
 /**
  * System call dispatching function
  *
@@ -591,6 +609,9 @@ void dispatch_syscall(jinue_syscall_args_t *args) {
             break;
         case JINUE_SYS_MINT:
             sys_mint(args);
+            break;
+        case JINUE_SYS_START_THREAD:
+            sys_start_thread(args);
             break;
         default:
             sys_nosys(args);
