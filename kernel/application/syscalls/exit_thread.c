@@ -39,7 +39,8 @@ void exit_thread(int status) {
     thread_t *thread = get_current_thread();
 
     if(thread->sender != NULL) {
-        abort_message(thread->sender, JINUE_EIO);
+        abort_message(thread->sender);
+        thread->sender = NULL;
     }
 
     thread->exit_status = status;
