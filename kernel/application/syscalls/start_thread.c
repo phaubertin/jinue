@@ -56,6 +56,13 @@ int start_thread(int fd, const thread_params_t *params) {
 
     prepare_thread(thread, params);
 
+    /* TODO protect against the case where the trhead is already running */
+
+    /* Add a reference on the thread while it is running so it is allowed to
+     * run to completion even if all descriptors that reference it are
+     * closed. */
+    add_ref_to_object(&thread->header);
+
     ready_thread(thread);
 
     return 0;

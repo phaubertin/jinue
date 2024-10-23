@@ -198,6 +198,12 @@ void run_ipc_test(void) {
         return;
     }
 
+    status = jinue_close(CLIENT_THREAD_DESCRIPTOR, &errno);
+
+    if(status < 0) {
+        jinue_error("error: failed to close client thread descriptor: %s", strerror(errno));
+        return;
+    }
 
     ret = jinue_receive(ENDPOINT_DESCRIPTOR, &message, &errno);
 
@@ -242,15 +248,13 @@ void run_ipc_test(void) {
     status = jinue_close(ENDPOINT_DESCRIPTOR, &errno);
 
     if(status < 0) {
-        jinue_error("error: jinue_close() failed: %s", strerror(errno));
+        jinue_error("error: failed to close endpoint descriptor: %s", strerror(errno));
         return;
     }
 
     /* Give a chance to the client thread to notice that its second call to
      * jinue_send() failed. */
     jinue_yield_thread();
-
-    /* TODO close thread descriptor */
 
     jinue_info("Main thread is running.");
 }

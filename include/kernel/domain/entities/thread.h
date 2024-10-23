@@ -38,8 +38,6 @@ extern const object_type_t *object_type_thread;
 
 thread_t *construct_thread(process_t *process);
 
-void free_thread(thread_t *thread);
-
 void prepare_thread(thread_t *thread, const thread_params_t *params);
        
 void ready_thread(thread_t *thread);
@@ -52,7 +50,7 @@ void yield_current_thread(void);
 
 void block_current_thread(void);
 
-void exit_current_thread(void);
+void switch_from_exiting_thread(thread_t *current);
 
 void set_thread_local_storage(thread_t *thread, addr_t addr, size_t size);
 

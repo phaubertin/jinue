@@ -32,7 +32,7 @@
 
     bits 32
     
-    extern free_thread
+    extern sub_ref_to_object
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: thread_context_switch_stack
@@ -88,11 +88,11 @@ thread_context_switch_stack:
     
     ; Restore the saved registers.
     ;
-    ; We do this before calling free_thread(). Otherwise, the frame pointer
-    ; still refers to the thread stack for the previous thread, i.e. the one
-    ; we are potentially about to destroy, when free_thread() is called.
-    ; This is a problem if e.g. we try to dump the call stack from free_thread()
-    ; or one of its callees.
+    ; We do this before calling sub_ref_to_object(). Otherwise, the frame
+    ; pointer still refers to the thread stack for the previous thread, i.e.
+    ; the one we are potentially about to destroy when sub_ref_to_object() is
+    ; called. This is a problem if e.g. we try to dump the call stack from
+    ; sub_ref_to_object() or one of its callees.
     pop edi
     pop esi
     pop ebx
@@ -106,9 +106,9 @@ thread_context_switch_stack:
     ; destroy from thread context
     and ecx, THREAD_CONTEXT_MASK
     push ecx
-    call free_thread
+    call sub_ref_to_object
     
-    ; cleanup free_thread() arguments from stack
+    ; cleanup sub_ref_to_object() arguments from stack
     add esp, 4
 
 .skip_destroy:

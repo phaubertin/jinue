@@ -72,6 +72,7 @@ void destroy_object(object_header_t *object) {
     }
 }
 
+/* This function is called by assembly code. See thread_context_switch_stack(). */
 void sub_ref_to_object(object_header_t *object) {
     --object->ref_count;
 

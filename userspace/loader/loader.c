@@ -173,7 +173,12 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    /* TODO close thread descriptor */
+    status = jinue_close(INIT_THREAD_DESCRIPTOR, &errno);
+
+    if (status != 0) {
+        jinue_error("error: could not close thread descriptor: %s", strerror(errno));
+        return EXIT_FAILURE;
+    }
 
     return EXIT_SUCCESS;
 }

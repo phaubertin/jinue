@@ -29,16 +29,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/errno.h>
 #include <kernel/domain/alloc/page_alloc.h>
 #include <kernel/domain/entities/descriptor.h>
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/entities/thread.h>
-#include <kernel/domain/services/ipc.h>
 #include <kernel/domain/services/panic.h>
 #include <kernel/machine/thread.h>
 #include <kernel/utils/list.h>
+
+static void free_thread(object_header_t *object);
 
 /** runtime type definition for a thread */
 static const object_type_t object_type = {
@@ -48,7 +48,7 @@ static const object_type_t object_type = {
     .open               = NULL,
     .close              = NULL,
     .destroy            = NULL,
-    .free               = NULL,
+    .free               = free_thread,
     .cache_ctor         = NULL,
     .cache_dtor         = NULL
 };
@@ -76,8 +76,8 @@ thread_t *construct_thread(process_t *process) {
     return thread;
 }
 
-/* This function is called by assembly code. See thread_context_switch_stack(). */
-void free_thread(thread_t *thread) {
+static void free_thread(object_header_t *object) {
+    thread_t *thread = (thread_t *)object;
     machine_free_thread(thread);
 }
 
@@ -164,15 +164,9 @@ void block_current_thread(void) {
     );
 }
 
-void exit_current_thread(void) {
-    thread_t *current = get_current_thread();
-
-    if(current->sender != NULL) {
-        abort_message(current->sender, JINUE_EIO);
-    }
-
+void switch_from_exiting_thread(thread_t *thread) {
     switch_thread(
-            current,
+            thread,
             reschedule(false),  /* current thread cannot run */
             true                /* do destroy the thread */
     );
