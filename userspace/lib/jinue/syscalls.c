@@ -88,11 +88,11 @@ void jinue_yield_thread(void) {
     jinue_syscall(&args);
 }
 
-void jinue_exit_thread(void) {
+void jinue_exit_thread(int status) {
     jinue_syscall_args_t args;
 
     args.arg0 = JINUE_SYS_EXIT_THREAD;
-    args.arg1 = 0;
+    args.arg1 = status;
     args.arg2 = 0;
     args.arg3 = 0;
 

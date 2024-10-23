@@ -35,12 +35,14 @@
 #include <kernel/domain/services/ipc.h>
 #include <kernel/machine/thread.h>
 
-void exit_thread(void) {
+void exit_thread(int status) {
     thread_t *thread = get_current_thread();
 
     if(thread->sender != NULL) {
         abort_message(thread->sender, JINUE_EIO);
     }
+
+    thread->exit_status = status;
 
     /* When we started the thread in start_thread(), we incremented the
      * reference count on it to ensure it continues running even if all

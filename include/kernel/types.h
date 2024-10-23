@@ -94,14 +94,23 @@ typedef struct {
     descriptor_t    descriptors[PROCESS_MAX_DESCRIPTORS];
 } process_t;
 
+typedef enum {
+    THREAD_STATE_ZOMBIE,
+    THREAD_STATE_READY,
+    THREAD_STATE_RUNNING,
+    THREAD_STATE_BLOCKED
+} thread_state_t;
+
 struct thread_t {
     object_header_t          header;
     machine_thread_t         thread_ctx;
     jinue_node_t             thread_list;
+    thread_state_t           state;
+    int                      exit_status;
     process_t               *process;
+    struct thread_t         *sender;
     addr_t                   local_storage_addr;
     size_t                   local_storage_size;
-    struct thread_t         *sender;
     size_t                   recv_buffer_size;
     int                      message_errno;
     uintptr_t                message_function;

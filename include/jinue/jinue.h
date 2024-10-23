@@ -56,7 +56,7 @@ int jinue_create_thread(int fd, int process, int *perrno);
 
 void jinue_yield_thread(void);
 
-void jinue_exit_thread(void);
+void jinue_exit_thread(int status);
 
 void jinue_putc(char c);
 

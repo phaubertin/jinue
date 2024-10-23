@@ -62,4 +62,7 @@
 /** not supported */
 #define JINUE_ENOTSUP   10
 
+/** device or resource busy */
+#define JINUE_EBUSY     11
+
 #endif

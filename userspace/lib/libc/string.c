@@ -137,8 +137,10 @@ static const char *strerror_const(int errnum) {
         return "no message of the desired type";
     case ENOTSUP:
         return "not supported";
+    case EBUSY:
+        return "device or resource busy";
     default:
-        return "Unknown error";
+        return "unknown error";
     }
 }
 

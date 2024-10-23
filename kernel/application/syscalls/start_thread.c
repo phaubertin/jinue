@@ -54,9 +54,11 @@ int start_thread(int fd, const thread_params_t *params) {
         return -JINUE_EPERM;
     }
 
-    prepare_thread(thread, params);
+    if(thread->state != THREAD_STATE_ZOMBIE) {
+        return -JINUE_EBUSY;
+    }
 
-    /* TODO protect against the case where the trhead is already running */
+    prepare_thread(thread, params);
 
     /* Add a reference on the thread while it is running so it is allowed to
      * run to completion even if all descriptors that reference it are

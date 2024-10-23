@@ -68,6 +68,7 @@ thread_t *construct_thread(process_t *process) {
 
     jinue_node_init(&thread->thread_list);
 
+    thread->state               = THREAD_STATE_ZOMBIE;
     thread->process             = process;
     thread->sender              = NULL;
     thread->local_storage_addr  = NULL;
@@ -82,12 +83,14 @@ static void free_thread(object_header_t *object) {
 }
 
 void prepare_thread(thread_t *thread, const thread_params_t *params) {
+    thread->exit_status = 0;
     machine_prepare_thread(thread, params);
 }
 
 void ready_thread(thread_t *thread) {
-    /* add thread to the tail of the ready list to give other threads a chance
-     * to run */
+    thread->state = THREAD_STATE_READY;
+
+    /* add thread to the tail of the ready list to give other threads a chance to run */
     jinue_list_enqueue(&ready_list, &thread->thread_list);
 }
 
@@ -125,13 +128,17 @@ static void switch_thread(thread_t *from, thread_t *to, bool destroy_from) {
         switch_to_process(to->process);
     }
 
+    to->state = THREAD_STATE_RUNNING;
+
     machine_switch_thread(from, to, destroy_from);
 }
 
 void switch_to_thread(thread_t *thread, bool blocked) {
     thread_t *current = get_current_thread();
 
-    if (!blocked) {
+    if (blocked) {
+        current->state = THREAD_STATE_BLOCKED;
+    } else {
         ready_thread(current);
     }
 
@@ -165,6 +172,8 @@ void block_current_thread(void) {
 }
 
 void switch_from_exiting_thread(thread_t *thread) {
+    thread->state = THREAD_STATE_ZOMBIE;
+
     switch_thread(
             thread,
             reschedule(false),  /* current thread cannot run */

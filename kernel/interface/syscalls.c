@@ -132,7 +132,9 @@ static void sys_yield_thread(jinue_syscall_args_t *args) {
 }
 
 static void sys_exit_thread(jinue_syscall_args_t *args) {
-    exit_thread();
+    int status = (int)(args->arg1 & 0xff);
+
+    exit_thread(status);
     set_return_value(args, 0);
 }
 

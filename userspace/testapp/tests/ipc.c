@@ -122,7 +122,7 @@ static void ipc_test_client_thread(void) {
 
     jinue_info("Client thread is exiting.");
 
-    jinue_exit_thread();
+    jinue_exit_thread(42);
 }
 
 void run_ipc_test(void) {
