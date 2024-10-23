@@ -35,7 +35,7 @@
 #include <kernel/domain/services/ipc.h>
 #include <kernel/machine/thread.h>
 
-void exit_thread(int status) {
+void exit_thread(void *exit_value) {
     thread_t *thread = get_current_thread();
 
     if(thread->sender != NULL) {
@@ -43,7 +43,7 @@ void exit_thread(int status) {
         thread->sender = NULL;
     }
 
-    thread->exit_status = status;
+    thread->exit_value = exit_value;
 
     /* When we started the thread in start_thread(), we incremented the
      * reference count on it to ensure it continues running even if all

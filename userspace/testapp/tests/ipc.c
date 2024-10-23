@@ -46,6 +46,7 @@
 
 #define CLIENT_THREAD_DESCRIPTOR    2
 
+static int client_thread_retval = 42;
 
 static char ipc_test_thread_stack[THREAD_STACK_SIZE];
 
@@ -122,7 +123,7 @@ static void ipc_test_client_thread(void) {
 
     jinue_info("Client thread is exiting.");
 
-    jinue_exit_thread(42);
+    jinue_exit_thread(&client_thread_retval);
 }
 
 void run_ipc_test(void) {

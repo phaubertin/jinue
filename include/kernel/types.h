@@ -106,7 +106,7 @@ struct thread_t {
     machine_thread_t         thread_ctx;
     jinue_node_t             thread_list;
     thread_state_t           state;
-    int                      exit_status;
+    void                    *exit_value;
     process_t               *process;
     struct thread_t         *sender;
     addr_t                   local_storage_addr;

@@ -2,13 +2,14 @@
 
 ## Description
 
-Exit the current thread.
+Terminate the current thread and make available a pointer-sized argument to any
+thread that successfully joins the terminating thread.
 
 ## Arguments
 
 Function number (`arg0`) is 12.
 
-The exit status is set in `arg1`.
+`arg1` is set to value made available to the joining thread.
 
 ```
     +----------------------------------------------------------------+
@@ -17,7 +18,7 @@ The exit status is set in `arg1`.
     31                                                               0
     
     +----------------------------------------------------------------+
-    |                         exit status                            |  arg1
+    |                         exit value                             |  arg1
     +----------------------------------------------------------------+
     31                                                               0
 
@@ -34,7 +35,7 @@ The exit status is set in `arg1`.
 
 ## Return Value
 
-This function exits the current thread and does not return.
+This function terminates the current thread and does not return.
 
 ## Errors
 

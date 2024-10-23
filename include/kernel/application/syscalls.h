@@ -46,7 +46,7 @@ int destroy(int fd);
 
 int dup(int process_fd, int src, int dest);
 
-void exit_thread(int status);
+void exit_thread(void *exit_value);
 
 void *get_thread_local(void);
 

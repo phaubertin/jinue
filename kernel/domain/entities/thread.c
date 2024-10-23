@@ -83,7 +83,7 @@ static void free_thread(object_header_t *object) {
 }
 
 void prepare_thread(thread_t *thread, const thread_params_t *params) {
-    thread->exit_status = 0;
+    thread->exit_value = 0;
     machine_prepare_thread(thread, params);
 }
 
