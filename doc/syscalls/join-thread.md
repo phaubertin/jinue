@@ -1,4 +1,4 @@
-# START_THREAD - Wait for a Thread to Exit
+# JOIN_THREAD - Wait for a Thread to Exit
 
 ## Description
 
@@ -15,7 +15,7 @@ must have the necessary permissions (JINUE_PERM_JOIN).
 
 ```
     +----------------------------------------------------------------+
-    |                         function = 22                          |  arg0
+    |                         function = 21                          |  arg0
     +----------------------------------------------------------------+
     31                                                               0
     

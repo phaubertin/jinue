@@ -2,7 +2,7 @@
 
 ## Description
 
-Terminate the current thread and make available a pointer-sized argument to any
+Terminate the current thread and make available a pointer-sized value to any
 thread that successfully joins the terminating thread by calling
 [JOIN_THREAD](join-thread.md).
 
@@ -10,7 +10,7 @@ thread that successfully joins the terminating thread by calling
 
 Function number (`arg0`) is 12.
 
-`arg1` is set to value made available to the joining thread.
+The value made available to the joining thread is set in `arg1`.
 
 ```
     +----------------------------------------------------------------+
