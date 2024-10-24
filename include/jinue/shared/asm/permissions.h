@@ -44,4 +44,6 @@
 
 #define JINUE_PERM_START            (1<<5)
 
+#define JINUE_PERM_JOIN             (1<<6)
+
 #endif

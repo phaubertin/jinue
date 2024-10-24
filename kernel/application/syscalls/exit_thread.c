@@ -45,6 +45,10 @@ void exit_thread(void *exit_value) {
 
     thread->exit_value = exit_value;
 
+    if(thread->joined != NULL) {
+        ready_thread(thread->joined);
+    }
+
     /* When we started the thread in start_thread(), we incremented the
      * reference count on it to ensure it continues running even if all
      * descriptors that reference it are closed. This call here will safely

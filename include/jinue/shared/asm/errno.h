@@ -65,4 +65,10 @@
 /** device or resource busy */
 #define JINUE_EBUSY     11
 
+/** no such process */
+#define JINUE_ESRCH     12
+
+/** resource deadlock would occur */
+#define JINUE_EDEADLK   13
+
 #endif

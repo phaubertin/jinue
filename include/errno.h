@@ -58,4 +58,8 @@ extern int errno;
 
 #define EBUSY       JINUE_EBUSY
 
+#define ESRCH       JINUE_ESRCH
+
+#define EDEADLK     JINUE_EDEADLK
+
 #endif

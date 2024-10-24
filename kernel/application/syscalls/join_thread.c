@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,13 +29,54 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LIBJINUE_MACHINE_H
-#define LIBJINUE_MACHINE_H
+#include <jinue/shared/asm/errno.h>
+#include <kernel/application/syscalls.h>
+#include <kernel/domain/entities/descriptor.h>
+#include <kernel/domain/entities/object.h>
+#include <kernel/domain/entities/process.h>
+#include <kernel/domain/entities/thread.h>
+#include <kernel/machine/thread.h>
 
-#include <jinue/jinue.h>
+int join_thread(int fd, void **exit_value) {
+    descriptor_t *desc;
+    int status = dereference_object_descriptor(&desc, get_current_process(), fd);
 
-uintptr_t jinue_syscall(jinue_syscall_args_t *args);
+    if(status < 0) {
+        return -JINUE_EBADF;
+    }
 
-intptr_t jinue_syscall_with_usual_convention(jinue_syscall_args_t *args, int *perrno);
+    thread_t *thread = get_thread_from_descriptor(desc);
 
-#endif
+    if(thread == NULL) {
+        return -JINUE_EBADF;
+    }
+
+    if(!descriptor_has_permissions(desc, JINUE_PERM_JOIN)) {
+        return -JINUE_EPERM;
+    }
+
+    thread_t *current = get_current_thread();
+
+    if(thread == current) {
+        return -JINUE_EDEADLK;
+    }
+
+    if(thread->joined != NULL) {
+        return -JINUE_ESRCH;
+    }
+
+    thread->joined = current;
+
+    /* Keep the thread around until we actually read the exit value. */
+    add_ref_to_object(&thread->header);
+
+    if(thread->state != THREAD_STATE_ZOMBIE) {
+        block_current_thread();
+    }
+
+    *exit_value = thread->exit_value;
+
+    sub_ref_to_object(&thread->header);
+
+    return 0;
+}

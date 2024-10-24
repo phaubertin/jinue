@@ -31,7 +31,35 @@
 
 #include <jinue/jinue.h>
 #include <stdbool.h>
-#include "machine.h"
+
+static inline void set_errno(int *perrno, int errval) {
+    if(perrno != NULL) {
+        *perrno = errval;
+    }
+}
+
+static intptr_t call_with_usual_convention(jinue_syscall_args_t *args, int *perrno) {
+    const intptr_t retval = (intptr_t)jinue_syscall(args);
+
+    if(retval < 0) {
+        set_errno(perrno, args->arg1);
+    }
+
+    return retval;
+}
+
+static intptr_t call_with_pointer_convention(jinue_syscall_args_t *args, void **ptr, int *perrno) {
+
+    const intptr_t retval = (intptr_t)jinue_syscall(args);
+
+    if(retval < 0) {
+        set_errno(perrno, args->arg1);
+    } else {
+        *ptr = (void *)args->arg1;
+    }
+
+    return retval;
+}
 
 void jinue_reboot(void) {
     jinue_syscall_args_t args;
@@ -55,7 +83,7 @@ void jinue_set_thread_local(void *addr, size_t size) {
     jinue_syscall(&args);
 }
 
-void *jinue_get_thread_local(void) {
+int jinue_get_thread_local(void **thread_local) {
     jinue_syscall_args_t args;
 
     args.arg0 = JINUE_SYS_GET_THREAD_LOCAL;
@@ -63,7 +91,7 @@ void *jinue_get_thread_local(void) {
     args.arg2 = 0;
     args.arg3 = 0;
 
-    return (void *)jinue_syscall(&args);
+    return call_with_pointer_convention(&args, thread_local, NULL);
 }
 
 int jinue_create_thread(int fd, int process, int *perrno) {
@@ -74,7 +102,7 @@ int jinue_create_thread(int fd, int process, int *perrno) {
     args.arg2 = process;
     args.arg3 = 0;
 
-    return jinue_syscall_with_usual_convention(&args, perrno);
+    return call_with_usual_convention(&args, perrno);
 }
 
 void jinue_yield_thread(void) {
@@ -107,7 +135,7 @@ int jinue_puts(int loglevel, const char *str, size_t n, int *perrno) {
     args.arg2 = (uintptr_t)str;
     args.arg3 = n;
 
-    return jinue_syscall_with_usual_convention(&args, perrno);
+    return call_with_usual_convention(&args, perrno);
 }
 
 int jinue_get_user_memory(jinue_mem_map_t *buffer, size_t buffer_size, int *perrno) {
@@ -118,7 +146,7 @@ int jinue_get_user_memory(jinue_mem_map_t *buffer, size_t buffer_size, int *perr
     args.arg2 = buffer_size;
     args.arg3 = 0;
 
-    return jinue_syscall_with_usual_convention(&args, perrno);
+    return call_with_usual_convention(&args, perrno);
 }
 
 int jinue_mmap(
@@ -142,7 +170,7 @@ int jinue_mmap(
     args.arg2 = (uintptr_t)&mmap_args;
     args.arg3 = 0;
 
-    return jinue_syscall_with_usual_convention(&args, perrno);
+    return call_with_usual_convention(&args, perrno);
 }
 
 intptr_t jinue_send(
@@ -158,7 +186,7 @@ intptr_t jinue_send(
     args.arg2 = (uintptr_t)message;
     args.arg3 = 0;
 
-    return jinue_syscall_with_usual_convention(&args, perrno);
+    return call_with_usual_convention(&args, perrno);
 }
 
 intptr_t jinue_receive(int fd, const jinue_message_t *message, int *perrno){
@@ -169,7 +197,7 @@ intptr_t jinue_receive(int fd, const jinue_message_t *message, int *perrno){
     args.arg2 = (uintptr_t)message;
     args.arg3 = 0;
 
-    return jinue_syscall_with_usual_convention(&args, perrno);
+    return call_with_usual_convention(&args, perrno);
 }
 
 intptr_t jinue_reply(const jinue_message_t *message, int *perrno) {
@@ -180,7 +208,7 @@ intptr_t jinue_reply(const jinue_message_t *message, int *perrno) {
     args.arg2 = (uintptr_t)message;
     args.arg3 = 0;
 
-    return jinue_syscall_with_usual_convention(&args, perrno);
+    return call_with_usual_convention(&args, perrno);
 }
 
 int jinue_create_endpoint(int fd, int *perrno) {
@@ -191,7 +219,7 @@ int jinue_create_endpoint(int fd, int *perrno) {
     args.arg2 = 0;
     args.arg3 = 0;
 
-    return jinue_syscall_with_usual_convention(&args, perrno);
+    return call_with_usual_convention(&args, perrno);
 }
 
 int jinue_create_process(int fd, int *perrno) {
@@ -202,7 +230,7 @@ int jinue_create_process(int fd, int *perrno) {
     args.arg2 = 0;
     args.arg3 = 0;
 
-    return jinue_syscall_with_usual_convention(&args, perrno);
+    return call_with_usual_convention(&args, perrno);
 }
 
 int jinue_mclone(
@@ -227,7 +255,7 @@ int jinue_mclone(
     args.arg2 = dest;
     args.arg3 = (uintptr_t)&mclone_args;
 
-    return jinue_syscall_with_usual_convention(&args, perrno);
+    return call_with_usual_convention(&args, perrno);
 }
 
 int jinue_dup(int process, int src, int dest, int *perrno) {
@@ -238,7 +266,7 @@ int jinue_dup(int process, int src, int dest, int *perrno) {
     args.arg2 = src;
     args.arg3 = dest;
 
-    return jinue_syscall_with_usual_convention(&args, perrno);
+    return call_with_usual_convention(&args, perrno);
 }
 
 int jinue_close(int fd, int *perrno) {
@@ -249,7 +277,7 @@ int jinue_close(int fd, int *perrno) {
     args.arg2 = 0;
     args.arg3 = 0;
 
-    return jinue_syscall_with_usual_convention(&args, perrno);
+    return call_with_usual_convention(&args, perrno);
 }
 
 int jinue_destroy(int fd, int *perrno) {
@@ -260,7 +288,7 @@ int jinue_destroy(int fd, int *perrno) {
     args.arg2 = 0;
     args.arg3 = 0;
 
-    return jinue_syscall_with_usual_convention(&args, perrno);
+    return call_with_usual_convention(&args, perrno);
 }
 
 int jinue_mint(
@@ -284,7 +312,7 @@ int jinue_mint(
     args.arg2 = (uintptr_t)&mint_args;
     args.arg3 = 0;
 
-    return jinue_syscall_with_usual_convention(&args, perrno);
+    return call_with_usual_convention(&args, perrno);
 }
 
 int jinue_start_thread(int fd, void (*entry)(void), void *stack, int *perrno) {
@@ -295,5 +323,16 @@ int jinue_start_thread(int fd, void (*entry)(void), void *stack, int *perrno) {
     args.arg2 = (uintptr_t)entry;
     args.arg3 = (uintptr_t)stack;
 
-    return jinue_syscall_with_usual_convention(&args, perrno);
+    return call_with_usual_convention(&args, perrno);
+}
+
+int jinue_join_thread(int fd, void **exit_value, int *perrno) {
+    jinue_syscall_args_t args;
+
+    args.arg0 = JINUE_SYS_JOIN_THREAD;
+    args.arg1 = fd;
+    args.arg2 = 0;
+    args.arg3 = 0;
+
+    return call_with_pointer_convention(&args, exit_value, NULL);
 }

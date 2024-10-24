@@ -49,9 +49,17 @@
 
 #define WRITE_EXEC      (JINUE_PROT_WRITE | JINUE_PROT_EXEC)
 
-static void set_return_uintptr(jinue_syscall_args_t *args, uintptr_t retval) {
-	args->arg0	= retval;
+
+static void set_return_value(jinue_syscall_args_t *args, int retval) {
+    args->arg0	= (uintptr_t)retval;
 	args->arg1	= 0;
+	args->arg2	= 0;
+	args->arg3	= 0;
+}
+
+static void set_return_pointer(jinue_syscall_args_t *args, void *ptr) {
+    args->arg0	= 0;
+	args->arg1	= (uintptr_t)ptr;
 	args->arg2	= 0;
 	args->arg3	= 0;
 }
@@ -63,20 +71,21 @@ static void set_error(jinue_syscall_args_t *args, int error) {
 	args->arg3	= 0;
 }
 
-static void set_return_value(jinue_syscall_args_t *args, int retval) {
-	set_return_uintptr(args, (uintptr_t)retval);
-}
-
-static  void set_return_ptr(jinue_syscall_args_t *args, void *retval) {
-	set_return_uintptr(args, (uintptr_t)retval);
-}
-
 static void set_return_value_or_error(jinue_syscall_args_t *args, int retval) {
     if(retval < 0) {
         set_error(args, -retval);
     }
     else {
         set_return_value(args, retval);
+    }
+}
+
+static void set_return_pointer_or_error(jinue_syscall_args_t *args, int retval, void *ptr) {
+    if(retval < 0) {
+        set_error(args, -retval);
+    }
+    else {
+        set_return_pointer(args, ptr);
     }
 }
 
@@ -153,7 +162,7 @@ static void sys_set_thread_local(jinue_syscall_args_t *args) {
 
 static void sys_get_thread_local(jinue_syscall_args_t *args) {
     void *tls = get_thread_local();
-    set_return_ptr(args, tls);
+    set_return_pointer(args, tls);
 }
 
 static void sys_get_user_memory(jinue_syscall_args_t *args) {
@@ -540,6 +549,19 @@ static void sys_start_thread(jinue_syscall_args_t *args) {
     set_return_value_or_error(args, retval);
 }
 
+static void sys_join_thread(jinue_syscall_args_t *args) {
+    int fd                      = get_descriptor(args->arg1);
+
+    if(fd < 0) {
+        set_return_value_or_error(args, fd);
+        return;
+    }
+
+    void *exit_value;
+    int retval = join_thread(fd, &exit_value);
+    set_return_pointer_or_error(args, retval, exit_value);
+}
+
 /**
  * System call dispatching function
  *
@@ -614,6 +636,9 @@ void dispatch_syscall(jinue_syscall_args_t *args) {
             break;
         case JINUE_SYS_START_THREAD:
             sys_start_thread(args);
+            break;
+        case JINUE_SYS_JOIN_THREAD:
+            sys_join_thread(args);
             break;
         default:
             sys_nosys(args);

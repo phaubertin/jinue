@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -46,11 +46,13 @@
 
 int jinue_init(int implementation, int *perrno);
 
+uintptr_t jinue_syscall(jinue_syscall_args_t *args);
+
 void jinue_reboot(void);
 
 void jinue_set_thread_local(void *addr, size_t size);
 
-void *jinue_get_thread_local(void);
+int jinue_get_thread_local(void **thread_local);
 
 int jinue_create_thread(int fd, int process, int *perrno);
 
@@ -110,5 +112,7 @@ int jinue_mint(
         int         *perrno);
 
 int jinue_start_thread(int fd, void (*entry)(void), void *stack, int *perrno);
+
+int jinue_join_thread(int fd, void **exit_value, int *perrno);
 
 #endif

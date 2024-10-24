@@ -139,6 +139,10 @@ static const char *strerror_const(int errnum) {
         return "not supported";
     case EBUSY:
         return "device or resource busy";
+    case ESRCH:
+        return "no such process";
+    case EDEADLK:
+        return "resource deadlock would occur";
     default:
         return "unknown error";
     }

@@ -23,12 +23,12 @@ must have the necessary permissions to create a thread in the target process
     31                                                               0
     
     +----------------------------------------------------------------+
-    |                       descriptor number                        |  arg1
+    |                    thread descriptor number                    |  arg1
     +----------------------------------------------------------------+
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                            process                             |  arg2
+    |                    process descriptor number                   |  arg2
     +----------------------------------------------------------------+
     31                                                               0
 

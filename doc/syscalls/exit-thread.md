@@ -3,7 +3,8 @@
 ## Description
 
 Terminate the current thread and make available a pointer-sized argument to any
-thread that successfully joins the terminating thread.
+thread that successfully joins the terminating thread by calling
+[JOIN_THREAD](join-thread.md).
 
 ## Arguments
 

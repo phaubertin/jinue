@@ -52,6 +52,8 @@ void *get_thread_local(void);
 
 int get_user_memory(const jinue_buffer_t *buffer);
 
+int join_thread(int fd, void **exit_value);
+
 int mclone(int src, int dest, const jinue_mclone_args_t *args);
 
 int mint(int owner, const jinue_mint_args_t *mint_args);

@@ -109,6 +109,7 @@ struct thread_t {
     void                    *exit_value;
     process_t               *process;
     struct thread_t         *sender;
+    struct thread_t         *joined;
     addr_t                   local_storage_addr;
     size_t                   local_storage_size;
     size_t                   recv_buffer_size;

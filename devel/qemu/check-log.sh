@@ -110,6 +110,9 @@ echo "$RESULT" | grep -F 'I/O error' || fail
 echo "* Check client thread exited cleanly"
 grep -F "Client thread is exiting." $1 || fail
 
+echo "* Check main thread joined the client thread and retreived its exit value"
+grep -F "Client thread exit value is 42." $1 || fail
+
 echo "* Check the main thread initiated the reboot"
 grep -F "Main thread is running." $1 || fail
 grep -F "Rebooting." $1 || fail

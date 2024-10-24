@@ -46,8 +46,6 @@
 
 #define CLIENT_THREAD_DESCRIPTOR    2
 
-static int client_thread_retval = 42;
-
 static char ipc_test_thread_stack[THREAD_STACK_SIZE];
 
 static void ipc_test_run_client(void) {
@@ -123,7 +121,7 @@ static void ipc_test_client_thread(void) {
 
     jinue_info("Client thread is exiting.");
 
-    jinue_exit_thread(&client_thread_retval);
+    jinue_exit_thread((void *)(uintptr_t)42);
 }
 
 void run_ipc_test(void) {
@@ -199,15 +197,6 @@ void run_ipc_test(void) {
         return;
     }
 
-    jinue_info("Closing client thread descriptor.");
-
-    status = jinue_close(CLIENT_THREAD_DESCRIPTOR, &errno);
-
-    if(status < 0) {
-        jinue_error("error: failed to close client thread descriptor: %s", strerror(errno));
-        return;
-    }
-
     ret = jinue_receive(ENDPOINT_DESCRIPTOR, &message, &errno);
 
     if(ret < 0) {
@@ -255,9 +244,14 @@ void run_ipc_test(void) {
         return;
     }
 
-    /* Give a chance to the client thread to notice that its second call to
-     * jinue_send() failed. */
-    jinue_yield_thread();
-
+    void *client_exit_value;
+    status = jinue_join_thread(CLIENT_THREAD_DESCRIPTOR, &client_exit_value, &errno);
+    
+    if(status < 0) {
+        jinue_error("error: failed to join client thread: %s", strerror(errno));
+        return;
+    }
+    
+    jinue_info("Client thread exit value is %" PRIuPTR ".", (uintptr_t)client_exit_value);
     jinue_info("Main thread is running.");
 }
