@@ -2,7 +2,7 @@
 
 ## Description
 
-Set the entry point and stack address on a non-running thread specified by a
+Set the entry point and stack address of a non-running thread specified by a
 descriptor number and then start the thread.
 
 For this operation to succeed, the thread descriptor must have the
@@ -53,8 +53,3 @@ thread, or is closed.
 * JINUE_EPERM if the thread descriptor does not have the permission to start
 the thread.
 * JINUE_EBUSY if the thread is already running.
-
-## Future Direction
-
-This system call will be modified to allow a pointer argument to be passed to
-the started thread.
