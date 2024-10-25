@@ -48,6 +48,8 @@ int jinue_init(int implementation, int *perrno);
 
 uintptr_t jinue_syscall(jinue_syscall_args_t *args);
 
+void jinue_thread_entry(void);
+
 void jinue_reboot(void);
 
 void jinue_set_thread_local(void *addr, size_t size);

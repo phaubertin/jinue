@@ -30,13 +30,12 @@
  */
 
 #include <jinue/jinue.h>
+#include <jinue/threads.h>
 #include <jinue/utils.h>
 #include <errno.h>
 #include <inttypes.h>
 #include <string.h>
 #include "../utils.h"
-
-#define THREAD_STACK_SIZE   4096
 
 #define MSG_FUNC_TEST               (JINUE_SYS_USER_BASE + 42)
 
@@ -45,8 +44,6 @@
 #define CLIENT_ENDPOINT_DESCRIPTOR  1
 
 #define CLIENT_THREAD_DESCRIPTOR    2
-
-static char ipc_test_thread_stack[THREAD_STACK_SIZE];
 
 static void ipc_test_run_client(void) {
     /* The order of these buffers is shuffled on purpose because they will be
@@ -116,12 +113,14 @@ static void ipc_test_run_client(void) {
    jinue_info("expected: jinue_send() set errno to: %s.", strerror(errno));
 }
 
-static void ipc_test_client_thread(void) {
+static void *ipc_test_client_thread(void *arg) {
+    jinue_info("Client thread is starting with argument: %#p", arg);
+    
     ipc_test_run_client();
 
     jinue_info("Client thread is exiting.");
 
-    jinue_exit_thread((void *)(uintptr_t)42);
+    return (void *)(uintptr_t)0xdeadbeef;
 }
 
 void run_ipc_test(void) {
@@ -178,19 +177,15 @@ void run_ipc_test(void) {
 
     jinue_info("expected: jinue_receive() set errno to: %s.", strerror(errno));
 
-    status = jinue_create_thread(CLIENT_THREAD_DESCRIPTOR, JINUE_DESC_SELF_PROCESS, &errno);
+    jinue_thread_t client_thread;
+    status = jinue_thread_init(&client_thread, CLIENT_THREAD_DESCRIPTOR, 4096);
 
     if (status != 0) {
         jinue_error("error: could not create thread: %s", strerror(errno));
         return;
     }
 
-    status = jinue_start_thread(
-        CLIENT_THREAD_DESCRIPTOR,
-        ipc_test_client_thread,
-        &ipc_test_thread_stack[THREAD_STACK_SIZE],
-        &errno
-    );
+    status = jinue_thread_start(client_thread, ipc_test_client_thread, (void *)(uintptr_t) 0xb01dface);
 
     if (status != 0) {
         jinue_error("error: could not start thread: %s", strerror(errno));
@@ -245,13 +240,21 @@ void run_ipc_test(void) {
     }
 
     void *client_exit_value;
-    status = jinue_join_thread(CLIENT_THREAD_DESCRIPTOR, &client_exit_value, &errno);
+    status = jinue_thread_join(client_thread, &client_exit_value);
     
     if(status < 0) {
         jinue_error("error: failed to join client thread: %s", strerror(errno));
         return;
     }
     
-    jinue_info("Client thread exit value is %" PRIuPTR ".", (uintptr_t)client_exit_value);
+    jinue_info("Client thread exit value is %#p.", client_exit_value);
+
+    status = jinue_thread_destroy(client_thread);
+    
+    if(status < 0) {
+        jinue_error("error: failed to destroy client thread: %s", strerror(errno));
+        return;
+    }
+
     jinue_info("Main thread is running.");
 }
