@@ -4,6 +4,9 @@
 
 Map a contiguous block of memory into the address space of a process.
 
+For this operation to succeed, the process descriptor must have the
+[JINUE_PERM_MAP](../include/jinue/shared/asm/permissions.h) permission.
+
 ## Arguments
 
 Function number (`arg0`) is 13.
@@ -66,15 +69,19 @@ returns -1 and an error number is set (in `arg1`).
 
 ## Errors
 
-* JINUE_EINVAL if `addr`, `length` and/or `paddr` are not aligned to a page boundary.
-* JINUE_EINVAL if any part of the mmap arguments structure as specified by `arg2`
-belongs to the kernel.
-* JINUE_EINVAL if `prot` is not `JINUE_PROT_NONE` or a bitwise or combination of
-`JINUE_PROT_READ`, `JINUE_PROT_WRITE` and/or `JINUE_PROT_EXEC`.
+* JINUE_EINVAL if `addr`, `length` and/or `paddr` are not aligned to a page
+boundary.
+* JINUE_EINVAL if any part of the mmap arguments structure as specified by
+`arg2` belongs to the kernel.
+* JINUE_EINVAL if `prot` is not `JINUE_PROT_NONE` or a bitwise or combination
+of `JINUE_PROT_READ`, `JINUE_PROT_WRITE` and/or `JINUE_PROT_EXEC`.
 * JINUE_EBADF if the specified descriptor is invalid, or does not refer to a
 process, or is closed.
 * JINUE_EIO if the process no longer exists.
-* JINUE_ENOMEM if not enough memory is available to allocate needed page tables.
+* JINUE_ENOMEM if not enough memory is available to allocate needed page
+tables.
+* JINUE_EPERM if the process descriptor does not have the permission to map
+memory into the process.
 
 ## Future Direction
 

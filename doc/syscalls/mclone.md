@@ -4,6 +4,9 @@
 
 Clone a contiguous memory mapping from one process to another.
 
+For this operation to succeed, the destination process descriptor must have the
+[JINUE_PERM_MAP](../include/jinue/shared/asm/permissions.h) permission.
+
 ## Arguments
 
 Function number (`arg0`) is 15.
@@ -80,3 +83,5 @@ belongs to the kernel.
 to a process, or is closed.
 * JINUE_EIO if either process no longer exists.
 * JINUE_ENOMEM if not enough memory is available to allocate needed page tables.
+* JINUE_EPERM if the destination process descriptor does not have the
+permission to map memory into the process.

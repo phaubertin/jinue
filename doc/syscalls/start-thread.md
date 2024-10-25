@@ -2,15 +2,17 @@
 
 ## Description
 
-Set the entry point and stack address on a non-running thread and allow it to
-start running.
+Set the entry point and stack address on a non-running thread specified by a
+descriptor number and then start the thread.
+
+For this operation to succeed, the thread descriptor must have the
+[JINUE_PERM_START](../include/jinue/shared/asm/permissions.h) permission.
 
 ## Arguments
 
 Function number (`arg0`) is 20.
 
-The descriptor number for the target thread is set in `arg1`. This descriptor
-must have the necessary permissions (JINUE_PERM_START).
+The descriptor number for the target thread is set in `arg1`.
 
 The address where code execution will start is set in `arg2` and the
 value of the initial stack pointer is set in `arg3`.
@@ -27,7 +29,7 @@ value of the initial stack pointer is set in `arg3`.
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                   code entry point address                     |  arg2
+    |                    code entry point address                    |  arg2
     +----------------------------------------------------------------+
     31                                                               0
 
@@ -46,10 +48,11 @@ returns -1 and an error number is set (in `arg1`).
 
 * JINUE_EINVAL if the code entry point is set to a kernel address.
 * JINUE_EINVAL if the user stack address is set to a kernel address.
-* JINUE_EBADF if the specified descriptor is invalid, or does not refer to a
+* JINUE_EBADF if the thread descriptor is invalid, or does not refer to a
 thread, or is closed.
-* JINUE_EPERM if the target thread descriptor does not have the needed
-permissions.
+* JINUE_EPERM if the thread descriptor does not have the permission to start
+the thread.
+* JINUE_EBUSY if the thread is already running.
 
 ## Future Direction
 

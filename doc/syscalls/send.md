@@ -5,6 +5,9 @@
 Send a message to an IPC endpoint. This call blocks until the message is
 received and replied to.
 
+For this operation to succeed, the IPC endpoint descriptor must have the
+[JINUE_PERM_SEND](../include/jinue/shared/asm/permissions.h) permission.
+
 ## Arguments
 
 The function number, which must be at least 4096, is set in `arg0`. The function
