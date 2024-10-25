@@ -116,11 +116,11 @@ void jinue_yield_thread(void) {
     jinue_syscall(&args);
 }
 
-void jinue_exit_thread(void *value_ptr) {
+void jinue_exit_thread(void) {
     jinue_syscall_args_t args;
 
     args.arg0 = JINUE_SYS_EXIT_THREAD;
-    args.arg1 = (uintptr_t)value_ptr;
+    args.arg1 = 0;
     args.arg2 = 0;
     args.arg3 = 0;
 
@@ -326,7 +326,7 @@ int jinue_start_thread(int fd, void (*entry)(void), void *stack, int *perrno) {
     return call_with_usual_convention(&args, perrno);
 }
 
-int jinue_join_thread(int fd, void **exit_value, int *perrno) {
+int jinue_join_thread(int fd, int *perrno) {
     jinue_syscall_args_t args;
 
     args.arg0 = JINUE_SYS_JOIN_THREAD;
@@ -334,5 +334,5 @@ int jinue_join_thread(int fd, void **exit_value, int *perrno) {
     args.arg2 = 0;
     args.arg3 = 0;
 
-    return call_with_pointer_convention(&args, exit_value, NULL);
+    return call_with_usual_convention(&args, perrno);
 }

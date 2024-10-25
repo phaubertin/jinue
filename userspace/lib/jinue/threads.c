@@ -79,8 +79,7 @@ int jinue_thread_start(jinue_thread_t thread, void *(*start_routine)(void*), voi
 }
 
 int jinue_thread_join(jinue_thread_t thread, void **value_ptr) {
-    void *discarded;
-    int status = jinue_join_thread(thread->fd, &discarded, &errno);
+    int status = jinue_join_thread(thread->fd, &errno);
 
     if(status < 0) {
         return status;

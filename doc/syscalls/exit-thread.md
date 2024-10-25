@@ -1,16 +1,12 @@
-# EXIT_THREAD - Exit the Current Thread
+# EXIT_THREAD - Terminate the Current Thread
 
 ## Description
 
-Terminate the current thread and make available a pointer-sized value to any
-thread that successfully joins the terminating thread by calling
-[JOIN_THREAD](join-thread.md).
+Terminate the current thread.
 
 ## Arguments
 
 Function number (`arg0`) is 12.
-
-The value made available to the joining thread is set in `arg1`.
 
 ```
     +----------------------------------------------------------------+
@@ -19,7 +15,7 @@ The value made available to the joining thread is set in `arg1`.
     31                                                               0
     
     +----------------------------------------------------------------+
-    |                         exit value                             |  arg1
+    |                         reserved (0)                           |  arg1
     +----------------------------------------------------------------+
     31                                                               0
 

@@ -46,13 +46,13 @@ int destroy(int fd);
 
 int dup(int process_fd, int src, int dest);
 
-void exit_thread(void *exit_value);
+void exit_thread(void);
 
 void *get_thread_local(void);
 
 int get_user_memory(const jinue_buffer_t *buffer);
 
-int join_thread(int fd, void **exit_value);
+int join_thread(int fd);
 
 int mclone(int src, int dest, const jinue_mclone_args_t *args);
 

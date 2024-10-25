@@ -18,7 +18,7 @@
 | 9       | [CREATE_ENDPOINT](create-endpoint.md)   | Create IPC Endpoint                  |
 | 10      | [RECEIVE](receive.md)                   | Receive Message                      |
 | 11      | [REPLY](reply.md)                       | Reply to Message                     |
-| 12      | [EXIT_THREAD](exit-thread.md)           | Exit the Current Thread              |
+| 12      | [EXIT_THREAD](exit-thread.md)           | Terminate the Current Thread         |
 | 13      | [MMAP](mmap.md)                         | Map Memory                           |
 | 14      | [CREATE_PROCESS](create-process.md)     | Create Process                       |
 | 15      | [MCLONE](mclone.md)                     | Clone a Memory Mapping               |

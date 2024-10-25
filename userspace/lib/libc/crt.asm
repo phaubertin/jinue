@@ -91,9 +91,6 @@ _start:
     
     ; Exit the thread
 .exit:
-    ; Set main() or _init() exit status as the single argument to
-    ; jinue_exit_thread()
-    push eax
     call jinue_exit_thread
 
 .end:

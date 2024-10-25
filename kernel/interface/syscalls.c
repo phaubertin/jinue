@@ -80,15 +80,6 @@ static void set_return_value_or_error(jinue_syscall_args_t *args, int retval) {
     }
 }
 
-static void set_return_pointer_or_error(jinue_syscall_args_t *args, int retval, void *ptr) {
-    if(retval < 0) {
-        set_error(args, -retval);
-    }
-    else {
-        set_return_pointer(args, ptr);
-    }
-}
-
 static int get_descriptor(uintptr_t value) {
     /* This handles the obvious case where the original value was positive and
      * too large, but also the case where an originally negative value was cast
@@ -141,10 +132,8 @@ static void sys_yield_thread(jinue_syscall_args_t *args) {
 }
 
 static void sys_exit_thread(jinue_syscall_args_t *args) {
-    void *exit_value = (void *)args->arg1;
-
-    exit_thread(exit_value);
-    set_return_value(args, 0);
+    exit_thread();
+    /* No need to set a return value since exit_thread() does not return. */
 }
 
 static void sys_set_thread_local(jinue_syscall_args_t *args) {
@@ -557,9 +546,8 @@ static void sys_join_thread(jinue_syscall_args_t *args) {
         return;
     }
 
-    void *exit_value;
-    int retval = join_thread(fd, &exit_value);
-    set_return_pointer_or_error(args, retval, exit_value);
+    int retval = join_thread(fd);
+    set_return_value_or_error(args, retval);
 }
 
 /**

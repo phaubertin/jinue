@@ -87,9 +87,8 @@ static void free_thread(object_header_t *object) {
 }
 
 void prepare_thread(thread_t *thread, const thread_params_t *params) {
-    thread->sender      = NULL;
-    thread->joined      = NULL;
-    thread->exit_value  = 0;
+    thread->sender = NULL;
+    thread->joined = NULL;
     machine_prepare_thread(thread, params);
 }
 

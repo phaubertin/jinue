@@ -37,7 +37,7 @@
 #include <kernel/domain/entities/thread.h>
 #include <kernel/machine/thread.h>
 
-int join_thread(int fd, void **exit_value) {
+int join_thread(int fd) {
     descriptor_t *desc;
     int status = dereference_object_descriptor(&desc, get_current_process(), fd);
 
@@ -73,8 +73,6 @@ int join_thread(int fd, void **exit_value) {
     if(thread->state != THREAD_STATE_ZOMBIE) {
         block_current_thread();
     }
-
-    *exit_value = thread->exit_value;
 
     sub_ref_to_object(&thread->header);
 

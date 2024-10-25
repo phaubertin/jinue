@@ -224,7 +224,6 @@ jinue_thread_entry:
     push eax
 
     ; Exit the thread.
-    push 0  ; TODO remove this
     call jinue_exit_thread
 
 .end:

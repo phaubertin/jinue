@@ -2,9 +2,10 @@
 
 ## Description
 
-Wait for a thread to terminate, if it hasn't already, and then retrieve the
-pointer-sized value this thread made available when it called
-[EXIT_THREAD](exit-thread.md).
+Wait for a thread to terminate, if it hasn't already. The target thread must
+have been started with [START_THREAD](start-thread.md) and must not be the
+calling thread. Furthermore, this function must be called at most once on a
+given thread since it has been started.
 
 ## Arguments
 
@@ -37,13 +38,8 @@ must have the necessary permissions (JINUE_PERM_JOIN).
 
 ## Return Value
 
-On success, this function sets `arg0` to 0 and set the value the joined thread
-made available when it called [EXIT_THREAD](exit-thread.md) in `arg1`.
-
-On failure, this function sets `arg0` to -1 and an error number in `arg1`.
-
-Note that since this function returns a pointer, it does not follow the usual
-convention where `arg0` is used to return a successful value.
+On success, this function returns 0 (in `arg0`). On failure, this function
+returns -1 and an error number is set (in `arg1`).
 
 ## Errors
 
@@ -51,3 +47,5 @@ convention where `arg0` is used to return a successful value.
 thread, or is closed.
 * JINUE_EPERM if the target thread descriptor does not have the needed
 permissions.
+* JINUE_ESRCH if the thread has not been started or has already beed joined.
+* JINUE_EDEADLK if a thread attempts to join itself.

@@ -35,15 +35,13 @@
 #include <kernel/domain/services/ipc.h>
 #include <kernel/machine/thread.h>
 
-void exit_thread(void *exit_value) {
+void exit_thread(void) {
     thread_t *thread = get_current_thread();
 
     if(thread->sender != NULL) {
         abort_message(thread->sender);
         thread->sender = NULL;
     }
-
-    thread->exit_value = exit_value;
 
     if(thread->joined != NULL) {
         ready_thread(thread->joined);
