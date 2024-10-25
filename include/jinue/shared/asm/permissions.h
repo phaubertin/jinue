@@ -32,18 +32,25 @@
 #ifndef _JINUE_SHARED_ASM_PERMISSIONS_H
 #define _JINUE_SHARED_ASM_PERMISSIONS_H
 
+/** send a message */
 #define JINUE_PERM_SEND             (1<<0)
 
+/** receive a message */
 #define JINUE_PERM_RECEIVE          (1<<1)
 
+/** map memory into a process */
 #define JINUE_PERM_MAP              (1<<2)
 
+/** bind a descriptor into a process */
 #define JINUE_PERM_OPEN             (1<<3)
 
+/** create a thread within a process */
 #define JINUE_PERM_CREATE_THREAD    (1<<4)
 
+/** start a thread */
 #define JINUE_PERM_START            (1<<5)
 
+/** join a thread */
 #define JINUE_PERM_JOIN             (1<<6)
 
 #endif
