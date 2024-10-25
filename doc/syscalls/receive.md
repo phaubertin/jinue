@@ -17,7 +17,7 @@ argument:
   when [REPLY](reply.md)ing to the sender.
 
 For this operation to succeed, the IPC endpoint descriptor must have the
-[JINUE_PERM_RECEIVE](../include/jinue/shared/asm/permissions.h) permission.
+[JINUE_PERM_RECEIVE](../../include/jinue/shared/asm/permissions.h) permission.
 
 ## Arguments
 

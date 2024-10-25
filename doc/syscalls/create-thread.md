@@ -6,8 +6,8 @@ Create a new thread in a target process and bind it to a thread descriptor.
 
 For this operation to succeed, the descriptor for the target process
 must have the
-[JINUE_PERM_CREATE_THREAD](../include/jinue/shared/asm/permissions.h) and
-[JINUE_PERM_OPEN](../include/jinue/shared/asm/permissions.h) permissions.
+[JINUE_PERM_CREATE_THREAD](../../include/jinue/shared/asm/permissions.h) and
+[JINUE_PERM_OPEN](../../include/jinue/shared/asm/permissions.h) permissions.
 
 ## Arguments
 

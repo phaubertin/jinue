@@ -6,7 +6,7 @@ Set the entry point and stack address on a non-running thread specified by a
 descriptor number and then start the thread.
 
 For this operation to succeed, the thread descriptor must have the
-[JINUE_PERM_START](../include/jinue/shared/asm/permissions.h) permission.
+[JINUE_PERM_START](../../include/jinue/shared/asm/permissions.h) permission.
 
 ## Arguments
 

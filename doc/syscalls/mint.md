@@ -14,8 +14,8 @@ customized permissions and cookie.
 
 The permissions that can be set on a descriptor depends on the type of kernel
 object it refers to. See the
-[flag definitions](../include/jinue/shared/asm/permissions.h) for the numerical
-values of the various permission flags.
+[flag definitions](../../include/jinue/shared/asm/permissions.h) for the
+numerical values of the various permission flags.
 
 If the owner descriptor refers to an IPC endpoint, the following permission
 flags can be specified:
@@ -45,7 +45,7 @@ be specified:
 Other permission flags are reserved.
 
 For this operation to succeed, the descriptor for the target process must have
-the [JINUE_PERM_OPEN](../include/jinue/shared/asm/permissions.h) permission.
+the [JINUE_PERM_OPEN](../../include/jinue/shared/asm/permissions.h) permission.
 
 ## Arguments
 
@@ -87,8 +87,8 @@ descriptor.
 descriptor.
 * `perms` the permission flags of the new descriptor, which must describe a
 permissions set appropriate for the type of kernel object the descriptor refers
-to. See the [flag definitions](../include/jinue/shared/asm/permissions.h) for
-the numerical values of the permission flags.
+to. See the [flag definitions](../../include/jinue/shared/asm/permissions.h)
+for the numerical values of the permission flags.
 * `cookie` the cookie of the new descriptor. This parameter is only meaningful
 for references to IPC endpoints and can be set to anything, including zero, for
 other resource types.

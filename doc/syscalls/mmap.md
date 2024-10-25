@@ -5,7 +5,7 @@
 Map a contiguous block of memory into the address space of a process.
 
 For this operation to succeed, the process descriptor must have the
-[JINUE_PERM_MAP](../include/jinue/shared/asm/permissions.h) permission.
+[JINUE_PERM_MAP](../../include/jinue/shared/asm/permissions.h) permission.
 
 ## Arguments
 

@@ -5,7 +5,7 @@
 Create a copy of a descriptor from the current process in a target process.
 
 For this operation to succeed, the descriptor for the target process
-must have the [JINUE_PERM_OPEN](../include/jinue/shared/asm/permissions.h)
+must have the [JINUE_PERM_OPEN](../../include/jinue/shared/asm/permissions.h)
 permission.
 
 A owner descriptor cannot be duplicated with this (or any) function. The owner

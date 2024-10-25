@@ -9,7 +9,7 @@ and must not be the calling thread. Furthermore, this function must be called
 at most once on a given thread since it has been started.
 
 For this operation to succeed, the thread descriptor must have the
-[JINUE_PERM_JOIN](../include/jinue/shared/asm/permissions.h) permission.
+[JINUE_PERM_JOIN](../../include/jinue/shared/asm/permissions.h) permission.
 
 ## Arguments
 

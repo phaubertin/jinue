@@ -5,7 +5,7 @@
 Clone a contiguous memory mapping from one process to another.
 
 For this operation to succeed, the destination process descriptor must have the
-[JINUE_PERM_MAP](../include/jinue/shared/asm/permissions.h) permission.
+[JINUE_PERM_MAP](../../include/jinue/shared/asm/permissions.h) permission.
 
 ## Arguments
 
