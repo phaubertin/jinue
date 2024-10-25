@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without

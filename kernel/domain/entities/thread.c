@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,26 +29,26 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/errno.h>
 #include <kernel/domain/alloc/page_alloc.h>
 #include <kernel/domain/entities/descriptor.h>
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/entities/thread.h>
-#include <kernel/domain/services/ipc.h>
 #include <kernel/domain/services/panic.h>
 #include <kernel/machine/thread.h>
 #include <kernel/utils/list.h>
 
+static void free_thread(object_header_t *object);
+
 /** runtime type definition for a thread */
 static const object_type_t object_type = {
-    .all_permissions    = 0,
+    .all_permissions    = JINUE_PERM_START | JINUE_PERM_JOIN,
     .name               = "thread",
     .size               = sizeof(thread_t),
     .open               = NULL,
     .close              = NULL,
     .destroy            = NULL,
-    .free               = NULL,
+    .free               = free_thread,
     .cache_ctor         = NULL,
     .cache_dtor         = NULL
 };
@@ -57,7 +57,7 @@ const object_type_t *object_type_thread = &object_type;
 
 static jinue_list_t ready_list = JINUE_LIST_STATIC;
 
-thread_t *construct_thread(process_t *process, const thread_params_t *params) {
+thread_t *construct_thread(process_t *process) {
     thread_t *thread = machine_alloc_thread();
 
     if(thread == NULL) {
@@ -68,26 +68,34 @@ thread_t *construct_thread(process_t *process, const thread_params_t *params) {
 
     jinue_node_init(&thread->thread_list);
 
+    thread->state               = THREAD_STATE_ZOMBIE;
     thread->process             = process;
-    thread->sender              = NULL;
+    /* Arbitrary non-NULL value to signify the thread hasn't run yet and
+     * shouldn't be joined. This will fall in the condition in thread_join()
+     * that detects an attempt to join a thread that has already been joined,
+     * so thread_join() will fail with JINUE_ESRCH. */
+    thread->joined              = thread;
     thread->local_storage_addr  = NULL;
     thread->local_storage_size  = 0;
-
-    machine_init_thread(thread, params);
-
-    ready_thread(thread);
-    
+ 
     return thread;
 }
 
-/* This function is called by assembly code. See thread_context_switch_stack(). */
-void free_thread(thread_t *thread) {
+static void free_thread(object_header_t *object) {
+    thread_t *thread = (thread_t *)object;
     machine_free_thread(thread);
 }
 
+void prepare_thread(thread_t *thread, const thread_params_t *params) {
+    thread->sender = NULL;
+    thread->joined = NULL;
+    machine_prepare_thread(thread, params);
+}
+
 void ready_thread(thread_t *thread) {
-    /* add thread to the tail of the ready list to give other threads a chance
-     * to run */
+    thread->state = THREAD_STATE_READY;
+
+    /* add thread to the tail of the ready list to give other threads a chance to run */
     jinue_list_enqueue(&ready_list, &thread->thread_list);
 }
 
@@ -125,13 +133,17 @@ static void switch_thread(thread_t *from, thread_t *to, bool destroy_from) {
         switch_to_process(to->process);
     }
 
+    to->state = THREAD_STATE_RUNNING;
+
     machine_switch_thread(from, to, destroy_from);
 }
 
 void switch_to_thread(thread_t *thread, bool blocked) {
     thread_t *current = get_current_thread();
 
-    if (!blocked) {
+    if (blocked) {
+        current->state = THREAD_STATE_BLOCKED;
+    } else {
         ready_thread(current);
     }
 
@@ -142,10 +154,10 @@ void switch_to_thread(thread_t *thread, bool blocked) {
     );
 }
 
-void start_first_thread(void) {
+void start_first_thread(thread_t *thread) {
     switch_thread(
             NULL,
-            reschedule(false),
+            thread,
             false               /* don't destroy current thread */
     );
 }
@@ -164,15 +176,11 @@ void block_current_thread(void) {
     );
 }
 
-void exit_current_thread(void) {
-    thread_t *current = get_current_thread();
-
-    if(current->sender != NULL) {
-        abort_message(current->sender, JINUE_EIO);
-    }
+void switch_from_exiting_thread(thread_t *thread) {
+    thread->state = THREAD_STATE_ZOMBIE;
 
     switch_thread(
-            current,
+            thread,
             reschedule(false),  /* current thread cannot run */
             true                /* do destroy the thread */
     );

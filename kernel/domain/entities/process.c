@@ -49,8 +49,7 @@ static void free_process(object_header_t *object);
 /** runtime type definition for a process */
 static const object_type_t object_type = {
     .all_permissions    =
-              JINUE_PERM_CLOSE
-            | JINUE_PERM_CREATE_THREAD
+              JINUE_PERM_CREATE_THREAD
             | JINUE_PERM_MAP
             | JINUE_PERM_OPEN,
     .name               = "process",

@@ -36,26 +36,45 @@
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/entities/thread.h>
 
-int create_thread(int  process_fd, const thread_params_t *params) {
+int create_thread(int fd, int process_fd) {
     descriptor_t *desc;
-    int status = dereference_object_descriptor(&desc, get_current_process(), process_fd);
+    int status = dereference_unused_descriptor(&desc, get_current_process(), fd);
+
+    if(status < 0) {
+        return -JINUE_EBADF;
+    }
+
+    descriptor_t *process_desc;
+    status = dereference_object_descriptor(&process_desc, get_current_process(), process_fd);
 
     if(status < 0) {
         return status;
     }
 
-    process_t *process = get_process_from_descriptor(desc);
+    process_t *process = get_process_from_descriptor(process_desc);
 
     if(process == NULL) {
         return -JINUE_EBADF;
     }
 
-    if(!descriptor_has_permissions(desc, JINUE_PERM_CREATE_THREAD)) {
+    if(!descriptor_has_permissions(process_desc, JINUE_PERM_CREATE_THREAD | JINUE_PERM_OPEN)) {
         return -JINUE_EPERM;
     }
 
-    const thread_t *thread = construct_thread(process, params);
+    thread_t *thread = construct_thread(process);
 
-    /** TODO associate new thread to a free descriptor */
-    return (thread == NULL) ? -JINUE_EAGAIN : 0;
+    if(thread == 0) {
+        return -JINUE_ENOMEM;
+    }
+
+    desc->object = &thread->header;
+    desc->flags  =
+          DESCRIPTOR_FLAG_IN_USE
+        | DESCRIPTOR_FLAG_OWNER
+        | object_type_thread->all_permissions;
+    desc->cookie = 0;
+
+    open_object(&thread->header, desc);
+
+    return 0;
 }

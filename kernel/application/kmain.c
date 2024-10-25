@@ -93,18 +93,31 @@ void kmain(const char *cmdline) {
 
     switch_to_process(process);
 
+    /* create user space loader main thread */
+    thread_t *thread = construct_thread(process);
+
+    if(thread == NULL) {
+        panic("Could not create initial thread.");
+    }
+
     /* load user space loader binary */
     exec_file_t loader;
     machine_get_loader(&loader);
 
-    exec(process, &loader, "jinue-userspace-loader", cmdline);
+    exec(
+        process,
+        thread,
+        &loader,
+        "jinue-userspace-loader",
+        cmdline
+    );
 
     /* This should be the last thing the kernel prints before passing control
      * to the user space loader. */
     info("---");
 
-    /* Start first thread */
-    start_first_thread();
+    /* Start first thread. */
+    start_first_thread(thread);
 
     /* should never happen */
     panic("start_first_thread() returned in kmain()");

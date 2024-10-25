@@ -30,6 +30,8 @@
 #include <jinue/shared/asm/i686.h>
 
     bits 32
+
+    extern jinue_exit_thread
     
     section .text
 ; ------------------------------------------------------------------------------
@@ -197,5 +199,31 @@ jinue_syscall_intr:
     pop ebx
 
     ret
+
+.end:
+
+; ------------------------------------------------------------------------------
+; FUNCTION: jinue_thread_entry
+; C PROTOTYPE: void jinue_thread_entry(void);
+; ------------------------------------------------------------------------------
+    global jinue_thread_entry:function (jinue_thread_entry.end - jinue_thread_entry)
+jinue_thread_entry:
+    ; Set up the frame pointer
+    mov ebp, esp
+
+    ; Pop address of the thread function from the stack. Leave the argument on
+    ; the stack since this is where the thread function will expect to find it.
+    pop eax
+
+    ; Call the thread function.
+    call eax
+
+    ; Remove the argument from the stack now that it is no longer needed and
+    ; replace it with the return value of the thread function.
+    pop ebx
+    push eax
+
+    ; Exit the thread.
+    call jinue_exit_thread
 
 .end:

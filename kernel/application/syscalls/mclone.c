@@ -79,7 +79,7 @@ int mclone(int src, int dest, const jinue_mclone_args_t *args) {
         return -JINUE_EBADF;
     }
 
-    if(!descriptor_has_permissions(dest_desc, JINUE_PERM_OPEN)) {
+    if(!descriptor_has_permissions(dest_desc, JINUE_PERM_MAP)) {
         return -JINUE_EPERM;
     }
 

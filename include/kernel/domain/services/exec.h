@@ -36,6 +36,7 @@
 
 void exec(
         process_t           *process,
+        thread_t            *thread,
         const exec_file_t   *exec_file,
         const char          *argv0,
         const char          *cmdline);

@@ -30,7 +30,6 @@
  */
 
 #include <jinue/jinue.h>
-#include "../machine.h"
 #include "stubs.h"
 
 static jinue_syscall_stub_t syscall_stubs[] = {
@@ -53,20 +52,4 @@ int jinue_init(int implementation, int *perrno) {
 
 uintptr_t jinue_syscall(jinue_syscall_args_t *args) {
     return syscall_stubs[syscall_stub_index](args);
-}
-
-static inline void jinue_set_errno(int *perrno, int errval) {
-    if(perrno != NULL) {
-        *perrno = errval;
-    }
-}
-
-intptr_t jinue_syscall_with_usual_convention(jinue_syscall_args_t *args, int *perrno) {
-    const intptr_t retval = (intptr_t)jinue_syscall(args);
-
-    if(retval < 0) {
-        jinue_set_errno(perrno, args->arg1);
-    }
-
-    return retval;
 }

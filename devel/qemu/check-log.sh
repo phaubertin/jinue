@@ -68,6 +68,9 @@ echo "* Check errno was set to JINUE_EPERM"
 RESULT=`grep -F -A 1 "Attempting to call jinue_receive() on the send-only descriptor." $1`
 echo "$RESULT" | grep -F 'operation not permitted' || fail
 
+echo "* Check client thread started and got the right argument"
+grep -F "Client thread is starting with argument: 0xb01dface" $1 || fail
+
 echo "* Check main thread received message from client thread"
 grep -F "Main thread received message" $1 || fail
 
@@ -109,6 +112,9 @@ echo "$RESULT" | grep -F 'I/O error' || fail
 
 echo "* Check client thread exited cleanly"
 grep -F "Client thread is exiting." $1 || fail
+
+echo "* Check main thread joined the client thread and retrieved its exit value"
+grep -F "Client thread exit value is 0xdeadbeef." $1 || fail
 
 echo "* Check the main thread initiated the reboot"
 grep -F "Main thread is running." $1 || fail

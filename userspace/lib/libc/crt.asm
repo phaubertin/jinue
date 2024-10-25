@@ -83,6 +83,7 @@ _start:
     
     call _init
 
+    ; Check _init() exit status, skip main() if non-zero 
     or eax, eax
     jnz .exit
 

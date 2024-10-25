@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Philippe Aubertin.
+ * Copyright (C) 2023-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -43,6 +43,8 @@
 #define MAP_BUFFER_SIZE         16384
 
 #define INIT_PROCESS_DESCRIPTOR (JINUE_DESC_SELF_PROCESS + 1)
+
+#define INIT_THREAD_DESCRIPTOR  (JINUE_DESC_SELF_PROCESS + 2)
 
 static jinue_mem_map_t *get_memory_map(void *buffer, size_t bufsize) {
     int status = jinue_get_user_memory((jinue_mem_map_t *)buffer, bufsize, NULL);
@@ -98,7 +100,7 @@ static int load_init(elf_info_t *elf_info, const jinue_dirent_t *init, int argc,
         INIT_PROCESS_DESCRIPTOR,
         INIT_PROCESS_DESCRIPTOR,
         JINUE_DESC_SELF_PROCESS,
-        JINUE_PERM_CLOSE | JINUE_PERM_CREATE_THREAD | JINUE_PERM_MAP | JINUE_PERM_OPEN,
+        JINUE_PERM_CREATE_THREAD | JINUE_PERM_MAP | JINUE_PERM_OPEN,
         0,
         &errno
     );
@@ -152,15 +154,29 @@ int main(int argc, char *argv[]) {
 
     jinue_info("---");
 
-    status = jinue_create_thread(
-        INIT_PROCESS_DESCRIPTOR,
+    status = jinue_create_thread(INIT_THREAD_DESCRIPTOR, INIT_PROCESS_DESCRIPTOR, &errno);
+
+    if (status != 0) {
+        jinue_error("error: could not create thread: %s", strerror(errno));
+        return EXIT_FAILURE;
+    }
+
+    status = jinue_start_thread(
+        INIT_THREAD_DESCRIPTOR,
         elf_info.entry,
         elf_info.stack_addr,
         &errno
     );
 
     if (status != 0) {
-        jinue_error("error: could not create thread: %s", strerror(errno));
+        jinue_error("error: could not start thread: %s", strerror(errno));
+        return EXIT_FAILURE;
+    }
+
+    status = jinue_close(INIT_THREAD_DESCRIPTOR, &errno);
+
+    if (status != 0) {
+        jinue_error("error: could not close thread descriptor: %s", strerror(errno));
         return EXIT_FAILURE;
     }
 

@@ -4,10 +4,17 @@
 
 Create a copy of a descriptor from the current process in a target process.
 
-A owner descriptor cannot be duplicated with this (or any) function. A owner
-descriptor is the descriptor that was specified in the call to the function
-that created a kernel resource (e.g. [CREATE_ENDPOINT](create-endpoint.md)) and that
-can be used to [mint](mint.md) other descriptors to that resource.
+For this operation to succeed, the descriptor for the target process
+must have the [JINUE_PERM_OPEN](../../include/jinue/shared/asm/permissions.h)
+permission.
+
+A owner descriptor cannot be duplicated with this (or any) function. The owner
+descriptor for a given kernel resource is the original descriptor to which the
+resource was bound when it was created through the relevant system call (e.g.
+[CREATE_ENDPOINT](create-endpoint) for an IPC endpoint). While a owner
+descriptor cannot be duplicated using this function, the [MINT](mint.md)
+function can be used instead to create a new descriptor that refers to the same
+kernel resource and has customized permissions.
 
 ## Arguments
 
@@ -52,3 +59,5 @@ not refer to a process, or is closed.
 * JINUE_EBADF if the specified source descriptor is invalid, or is a owner
 descriptor, or is closed.
 * JINUE_EBADF if the specified destination descriptor is already in use.
+* JINUE_EPERM if the specified process descriptor does not have the permission
+to bind a descriptor into the process.

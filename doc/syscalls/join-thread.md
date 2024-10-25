@@ -1,25 +1,25 @@
-# CREATE_THREAD - Create a Thread
+# JOIN_THREAD - Wait for a Thread to Exit
 
 ## Description
 
-Create a new thread in a target process and bind it to a thread descriptor.
+Wait for a thread to terminate, if it hasn't already.
 
-For this operation to succeed, the descriptor for the target process
-must have the
-[JINUE_PERM_CREATE_THREAD](../../include/jinue/shared/asm/permissions.h) and
-[JINUE_PERM_OPEN](../../include/jinue/shared/asm/permissions.h) permissions.
+The target thread must have been started with [START_THREAD](start-thread.md)
+and must not be the calling thread. Furthermore, this function must be called
+at most once on a given thread since it has been started.
+
+For this operation to succeed, the thread descriptor must have the
+[JINUE_PERM_JOIN](../../include/jinue/shared/asm/permissions.h) permission.
 
 ## Arguments
 
-Function number (`arg0`) is 4.
+Function number (`arg0`) is 21.
 
-The descriptor number to bind to the new thread is set in `arg1`.
-
-The descriptor number for the target process is set in `arg2`.
+The descriptor number for the thread is set in `arg1`.
 
 ```
     +----------------------------------------------------------------+
-    |                         function = 4                           |  arg0
+    |                         function = 21                          |  arg0
     +----------------------------------------------------------------+
     31                                                               0
     
@@ -29,12 +29,12 @@ The descriptor number for the target process is set in `arg2`.
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                    process descriptor number                   |  arg2
+    |                          reserved (0)                          |  arg2
     +----------------------------------------------------------------+
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                         reserved (0)                           |  arg3
+    |                          reserved (0)                          |  arg3
     +----------------------------------------------------------------+
     31                                                               0
 ```
@@ -46,8 +46,9 @@ returns -1 and an error number is set (in `arg1`).
 
 ## Errors
 
-* JINUE_EBADF if the specified descriptor is already in use.
-* JINUE_EBADF if the target process descriptor is invalid, or does not refer to
-a process, or is closed.
-* JINUE_EPERM if the specified process descriptor does not have the permissions
-to create a thread and bind a descriptor into the process.
+* JINUE_EBADF if the thread descriptor is invalid, or does not refer to a
+thread, or is closed.
+* JINUE_ESRCH if the thread has not been started or has already beed joined.
+* JINUE_EDEADLK if a thread attempts to join itself.
+* JINUE_EPERM if the specified thread descriptor does not have the permission
+to join the thread.

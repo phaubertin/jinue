@@ -387,18 +387,18 @@ int reply_to_message(thread_t *replier, const jinue_message_t *message) {
 /**
  * Abort a send or receive operation in progress
  *
- * This function should only be called on a blocked thread that was just
- * dequeued from an IPC endpoint's send or receive queue. The send or receive
- * operation is aborted and the IPC system call returns specified error number.
- *
- * @param thread blocked thread requeued from send or receive queue
- * @param errno error number
+ * The send or receive operation fails with JINUE_EIO.
+ * 
+ * Situations that make calling this function necessary:
+ *  - The thread is queued on an IPC endpoint's send or receive queue and the
+ *    endpoint is being destroyed.
+ *  - The sending thread is blocked being serviced by a receiver thread and the
+ *    receiver thread exits without replying.
+ * 
+ * @param thread thread blocked on an IPC operation
  *
  */
-void abort_message(thread_t *thread, int errno) {
-    thread->message_errno   = errno;
-    /* TODO fix thread servicing message itself sending a message
-     * (i.e. don't clear sender when aborting as send) */
-    thread->sender          = NULL;
+void abort_message(thread_t *thread) {
+    thread->message_errno = JINUE_EIO;
     ready_thread(thread);
 }

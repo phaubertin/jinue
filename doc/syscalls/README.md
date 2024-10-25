@@ -18,7 +18,7 @@
 | 9       | [CREATE_ENDPOINT](create-endpoint.md)   | Create IPC Endpoint                  |
 | 10      | [RECEIVE](receive.md)                   | Receive Message                      |
 | 11      | [REPLY](reply.md)                       | Reply to Message                     |
-| 12      | [EXIT_THREAD](exit-thread.md)           | Exit the Current Thread              |
+| 12      | [EXIT_THREAD](exit-thread.md)           | Terminate the Current Thread         |
 | 13      | [MMAP](mmap.md)                         | Map Memory                           |
 | 14      | [CREATE_PROCESS](create-process.md)     | Create Process                       |
 | 15      | [MCLONE](mclone.md)                     | Clone a Memory Mapping               |
@@ -26,7 +26,9 @@
 | 17      | [CLOSE](close.md)                       | Close a Descriptor                   |
 | 18      | [DESTROY](destroy.md)                   | Destroy a Kernel Object              |
 | 19      | [MINT](mint.md)                         | Mint a Descriptor                    |
-| 20-4095 | -                                       | Reserved                             |
+| 20      | [START_THREAD](start-thread.md)         | Start a Thread                       |
+| 21      | [JOIN_THREAD](join-thread.md)           | Wait for a Thread to Exit            |
+| 22-4095 | -                                       | Reserved                             |
 | 4096+   | [SEND](send.md)                         | Send Message                         |
 
 #### Reserved Function Numbers

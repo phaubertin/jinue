@@ -35,13 +35,13 @@ Function number (`arg0`) is 7.
 
 ## Return Value
 
-This function returns the address of the thread-local storage in `arg0`. If this
-has not been set for the current thread by a previous call to the Set
-Thread-Local Storage system call, then the return value is zero (i.e. the NULL
-pointer in C).
+This function sets `arg0` to 0 and set the address of the thread-local storage
+in `arg1`. If this has not been set for the current thread by a previous call
+to [SET_THREAD_LOCAL] (set-thread-local.md) then the address set in `arg1` is
+zero (i.e. the NULL pointer in C).
 
-Note that, since this function returns a pointer, it does not follow the usual
-convention whereby a negative return value indicates a failure.
+Note that since this function returns a pointer, it does not follow the usual
+convention where `arg0` is used to return a successful value.
 
 ## Errors
 

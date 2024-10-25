@@ -40,7 +40,7 @@ int create_endpoint(int fd);
 
 int create_process(int fd);
 
-int create_thread(int  process_fd, const thread_params_t *params);
+int create_thread(int fd, int process_fd);
 
 int destroy(int fd);
 
@@ -51,6 +51,8 @@ void exit_thread(void);
 void *get_thread_local(void);
 
 int get_user_memory(const jinue_buffer_t *buffer);
+
+int join_thread(int fd);
 
 int mclone(int src, int dest, const jinue_mclone_args_t *args);
 
@@ -69,6 +71,8 @@ int reply(const jinue_message_t *message);
 int send(int fd, int function, const jinue_message_t *message);
 
 void set_thread_local(void *addr, size_t size);
+
+int start_thread(int fd, const thread_params_t *params);
 
 void yield_thread(void);
 

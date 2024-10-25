@@ -146,7 +146,7 @@ static void destroy_endpoint(object_header_t *object) {
             break;
         }
 
-        abort_message(sender, JINUE_EIO);
+        abort_message(sender);
     }
 
     while(true) {
@@ -159,7 +159,7 @@ static void destroy_endpoint(object_header_t *object) {
             break;
         }
 
-        abort_message(receiver, JINUE_EIO);
+        abort_message(receiver);
     }
 }
 

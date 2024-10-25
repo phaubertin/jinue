@@ -16,6 +16,9 @@ argument:
 * `reply_max_size` is set to the maximum size of the reply that can be sent back
   when [REPLY](reply.md)ing to the sender.
 
+For this operation to succeed, the IPC endpoint descriptor must have the
+[JINUE_PERM_RECEIVE](../../include/jinue/shared/asm/permissions.h) permission.
+
 ## Arguments
 
 Function number (`arg0`) is 10.

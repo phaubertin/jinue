@@ -38,13 +38,13 @@ target.utils        = $(notdir $(libjinue_utils))
 targets             = $(target.syscalls) $(target.utils)
 
 objects.syscalls    = i686/stubs.o i686/syscalls.o syscalls.o
-objects.util        = loader.o logging.o
+objects.utils       = loader.o logging.o threads.o
 
 include $(common)
 
 $(target.syscalls): $(objects.syscalls)
 
-$(target.utils): $(objects.util)
+$(target.utils): $(objects.utils)
 
 %.a:
 	ar rcs $@ $^

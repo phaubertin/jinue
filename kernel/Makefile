@@ -69,6 +69,7 @@ sources.kernel.c = \
 	application/syscalls/exit_thread.c \
 	application/syscalls/get_thread_local.c \
 	application/syscalls/get_user_memory.c \
+	application/syscalls/join_thread.c \
 	application/syscalls/mint.c \
 	application/syscalls/mmap.c \
 	application/syscalls/mclone.c \
@@ -78,6 +79,7 @@ sources.kernel.c = \
 	application/syscalls/reply.c \
 	application/syscalls/send.c \
 	application/syscalls/set_thread_local.c \
+	application/syscalls/start_thread.c \
 	application/syscalls/yield_thread.c \
 	application/kmain.c \
 	domain/alloc/page_alloc.c \

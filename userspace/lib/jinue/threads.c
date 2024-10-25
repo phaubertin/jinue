@@ -29,44 +29,68 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/errno.h>
-#include <kernel/application/syscalls.h>
-#include <kernel/domain/entities/descriptor.h>
-#include <kernel/domain/entities/endpoint.h>
-#include <kernel/domain/entities/object.h>
-#include <kernel/domain/entities/process.h>
+#include <jinue/jinue.h>
+#include <jinue/threads.h>
+#include <sys/mman.h>
+#include <errno.h>
 
-/**
- * Create an IPC endpoint owned by the current thread
- *
- * All currently recognized flags will be deprecated.
- *
- * @param flags flags
- * @return IPC endpoint descriptor on success, negated error number on error
- *
- */
-int create_endpoint(int fd) {
-    descriptor_t *desc;
-    int status = dereference_unused_descriptor(&desc, get_current_process(), fd);
+struct jinue_thread {
+    /* The first two members must be in this order and at the start of the
+     * structure, i.e. they must be at the top of the stack when the thread
+     * starts. jinue_thread_entry() relies on this. */
+    void    *(*start_routine)(void*);
+    void    *arg_and_retval;
+    int      fd;
+};
+
+int jinue_thread_init(jinue_thread_t *thread, int fd, size_t stacksize) {
+    int status = jinue_create_thread(fd, JINUE_DESC_SELF_PROCESS, &errno);
 
     if(status < 0) {
         return status;
     }
 
-    ipc_endpoint_t *endpoint = construct_endpoint();
+    char *stack = mmap(
+            NULL,
+            stacksize,
+            JINUE_PROT_READ | JINUE_PROT_WRITE,
+            MAP_SHARED | MAP_ANONYMOUS,
+            -1,
+            0
+    );
 
-    if(endpoint == NULL) {
-        return -JINUE_EAGAIN;
+    if(stack == MAP_FAILED) {
+        jinue_close(fd, NULL);
+        return -1;
     }
 
-    desc->object = &endpoint->header;
-    desc->flags  =
-          DESCRIPTOR_FLAG_IN_USE
-        | DESCRIPTOR_FLAG_OWNER
-        | object_type_ipc_endpoint->all_permissions;
-    desc->cookie = 0;
+    char *stackbase = stack + stacksize;
+    *thread = (struct jinue_thread *)stackbase - 1;
 
-    open_object(&endpoint->header, desc);
+    (*thread)->fd = fd;
 
     return 0;
+}
+
+int jinue_thread_start(jinue_thread_t thread, void *(*start_routine)(void*), void *arg) {
+    thread->start_routine   = start_routine;
+    thread->arg_and_retval  = arg;
+    return jinue_start_thread(thread->fd, jinue_thread_entry, &thread->start_routine, &errno);
+}
+
+int jinue_thread_join(jinue_thread_t thread, void **value_ptr) {
+    int status = jinue_join_thread(thread->fd, &errno);
+
+    if(status < 0) {
+        return status;
+    }
+
+    *value_ptr = thread->arg_and_retval;
+
+    return 0;
+}
+
+int jinue_thread_destroy(jinue_thread_t thread) {
+    /* TODO dealloc/unmap stack */
+    return jinue_close(thread->fd, &errno);
 }

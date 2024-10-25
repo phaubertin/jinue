@@ -86,6 +86,12 @@
 /** create a descriptor with specified cookie and permissions */
 #define JINUE_SYS_MINT                  19
 
+/** start a thread */
+#define JINUE_SYS_START_THREAD          20
+
+/** wait for a thread to exit */
+#define JINUE_SYS_JOIN_THREAD           21
+
 /** start of function numbers for user space messages */
 #define JINUE_SYS_USER_BASE             4096
 
