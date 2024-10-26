@@ -155,6 +155,9 @@ void switch_to_thread(thread_t *thread, bool blocked) {
 }
 
 void start_first_thread(thread_t *thread) {
+    add_ref_to_object(&thread->header);
+    add_ref_to_object(&thread->process->header);
+
     switch_thread(
             NULL,
             thread,

@@ -34,7 +34,6 @@
 #include <kernel/domain/entities/descriptor.h>
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/entities/object.h>
-#include <kernel/domain/services/logging.h>
 #include <kernel/domain/services/panic.h>
 #include <kernel/machine/process.h>
 #include <kernel/machine/thread.h>
@@ -97,15 +96,24 @@ process_t *construct_process(void) {
     return process;
 }
 
+static void close_all_descriptors(process_t *process) {
+    for(int idx = 0; idx < PROCESS_MAX_DESCRIPTORS; ++idx) {
+        descriptor_t *desc = &process->descriptors[idx];
+
+        if(descriptor_is_in_use(desc)) {
+            close_object(desc->object, desc);
+        }
+    }
+}
+
 static void destroy_process(object_header_t *object) {
     process_t *process = (process_t *)object;
     /* TODO destroy remaining threads */
-    /* TODO finalize descriptors */
+    close_all_descriptors(process);
     machine_finalize_process(process);
 }
 
 static void free_process(object_header_t *object) {
-    info("!!! Boom!");
     slab_cache_free(object);
 }
 
