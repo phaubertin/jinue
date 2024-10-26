@@ -29,7 +29,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/errno.h>
 #include <kernel/application/syscalls.h>
 #include <kernel/domain/entities/thread.h>
 #include <kernel/domain/services/ipc.h>
@@ -47,13 +46,6 @@ void exit_thread(void) {
         ready_thread(thread->joined);
     }
 
-    /* When we started the thread in start_thread(), we incremented the
-     * reference count on it to ensure it continues running even if all
-     * descriptors that reference it are closed. This call here will safely
-     * decrement the reference count after it has switched to another thread.
-     * We cannot just decrement the count here because that will possibly free
-     * the current thread, which we don't want to do while it is still running.
-     * 
-     * This call must be the last thing happening in this function. */
-    switch_from_exiting_thread(thread);
+    /* This call must be the last thing happening in this function. */
+    current_thread_is_exiting();
 }

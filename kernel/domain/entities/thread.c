@@ -129,7 +129,7 @@ static void switch_thread(thread_t *from, thread_t *to, bool destroy_from) {
         return;
     }
 
-    if(from == NULL || from->process != to->process) {
+    if(from == NULL || from->process != to->process || destroy_from) {
         switch_to_process(to->process);
     }
 
@@ -155,6 +155,8 @@ void switch_to_thread(thread_t *thread, bool blocked) {
 }
 
 void start_first_thread(thread_t *thread) {
+    thread_is_starting(thread);
+
     switch_thread(
             NULL,
             thread,
@@ -176,13 +178,29 @@ void block_current_thread(void) {
     );
 }
 
-void switch_from_exiting_thread(thread_t *thread) {
+void thread_is_starting(thread_t *thread) {
+    add_running_thread_to_process(thread->process);
+    
+    /* Add a reference on the thread while it is running so it is allowed to
+     * run to completion even if all descriptors that reference it get closed. */
+    add_ref_to_object(&thread->header);
+}
+
+void current_thread_is_exiting(void) {
+    thread_t *thread    = get_current_thread();
+
     thread->state = THREAD_STATE_ZOMBIE;
 
+    remove_running_thread_from_process(thread->process);
+
+    /* switch_thread() takes care of safely decrementing the reference count on
+     * the thread after having switched to another one. We cannot just do it
+     * here because that will possibly free the current thread, which we don't
+     * want to do while it is still running. */
     switch_thread(
             thread,
             reschedule(false),  /* current thread cannot run */
-            true                /* do destroy the thread */
+            true                /* decrement reference count */
     );
 }
 

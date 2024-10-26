@@ -37,6 +37,7 @@
 #include <kernel/domain/services/panic.h>
 #include <kernel/machine/process.h>
 #include <kernel/machine/thread.h>
+#include <kernel/machine/vm.h>
 #include <stddef.h>
 #include <string.h>
 
@@ -96,10 +97,20 @@ process_t *construct_process(void) {
     return process;
 }
 
+static void close_all_descriptors(process_t *process) {
+    for(int idx = 0; idx < PROCESS_MAX_DESCRIPTORS; ++idx) {
+        descriptor_t *desc = &process->descriptors[idx];
+
+        if(descriptor_is_in_use(desc)) {
+            close_object(desc->object, desc);
+        }
+    }
+}
+
 static void destroy_process(object_header_t *object) {
     process_t *process = (process_t *)object;
     /* TODO destroy remaining threads */
-    /* TODO finalize descriptors */
+    close_all_descriptors(process);
     machine_finalize_process(process);
 }
 
@@ -113,4 +124,25 @@ void switch_to_process(process_t *process) {
 
 process_t *get_current_process(void) {
     return get_current_thread()->process;
+}
+
+void add_running_thread_to_process(process_t *process) {
+    ++process->running_threads_count;
+    add_ref_to_object(&process->header);
+}
+
+void remove_running_thread_from_process(process_t *process) {
+    --process->running_threads_count;
+    
+    /* Destroy the process when there are no more running threads. The
+     * reference count alone is not enough because the process might have
+     * descriptors that reference itself. */
+    if(process->running_threads_count < 1) {
+        /* We must switch to a safe address space before destroying the process
+         * so the current thread still has an address space to run into. */
+        machine_switch_to_kernel_addr_space();
+        destroy_object(&process->header);
+    }
+    
+    sub_ref_to_object(&process->header);
 }

@@ -75,7 +75,7 @@ bool vm_create_addr_space(addr_space_t *addr_space);
 
 void vm_destroy_addr_space(addr_space_t *addr_space);
 
-void vm_switch_addr_space(addr_space_t *addr_space, cpu_data_t *cpu_data);
+void vm_switch_addr_space(addr_space_t *addr_space);
 
 void vm_boot_map(void *addr, uint32_t paddr, int num_entries);
 

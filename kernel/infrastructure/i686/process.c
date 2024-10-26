@@ -34,9 +34,7 @@
 #include <kernel/machine/process.h>
 
 void machine_switch_to_process(process_t *process) {
-    vm_switch_addr_space(
-            &process->addr_space,
-            get_cpu_local_data());
+    vm_switch_addr_space(&process->addr_space);
 }
 
 bool machine_init_process(process_t *process) {

@@ -91,6 +91,7 @@ struct descriptor_t {
 typedef struct {
     object_header_t header;
     addr_space_t    addr_space;
+    int             running_threads_count;
     descriptor_t    descriptors[PROCESS_MAX_DESCRIPTORS];
 } process_t;
 

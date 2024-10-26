@@ -145,41 +145,7 @@ static void init_idt(void) {
     }
 }
 
-static void remap_text_video_memory(boot_alloc_t *boot_alloc) {
-    size_t video_buffer_size    = VGA_TEXT_VID_TOP - VGA_TEXT_VID_BASE;
-    size_t num_pages            = video_buffer_size / PAGE_SIZE;
-
-    void *buffer = boot_page_alloc_n(boot_alloc, num_pages);
-    void *mapped = (void *)PHYS_TO_VIRT_AT_16MB(buffer);
-
-    vm_boot_map(mapped, VGA_TEXT_VID_BASE, num_pages);
-
-    info("Remapping text video memory at %#p", mapped);
-
-    /* Note: after this call to vga_set_base_addr() until we switch to the new
-     * new address space, VGA output is not possible. Attempting it will cause
-     * a kernel panic due to a page fault (and the panic handler itself attempts
-     * to log). */
-    vga_set_base_addr(mapped);
-}
-
-static void enable_global_pages(void) {
-    if(cpu_has_feature(CPU_FEATURE_PGE)) {
-        set_cr4(get_cr4() | X86_CR4_PGE);
-    }
-}
-
-static void initialize_page_allocator(boot_alloc_t *boot_alloc) {
-    while(! boot_page_alloc_is_empty(boot_alloc)) {
-        page_free(boot_page_alloc(boot_alloc));
-    }
-
-    info(
-            "%u kilobytes available for allocation by the kernel",
-            get_page_count() * PAGE_SIZE / (1 * KB));
-}
-
-static void init_descriptors(cpu_data_t *cpu_data, boot_alloc_t *boot_alloc) {
+static void load_selectors(cpu_data_t *cpu_data, boot_alloc_t *boot_alloc) {
     /* Pseudo-descriptor allocation is temporary for the duration of this
      * function only. Remember heap pointer on entry so we can free the
      * pseudo-allocator when we are done. */
@@ -216,6 +182,40 @@ static void init_descriptors(cpu_data_t *cpu_data, boot_alloc_t *boot_alloc) {
 
     /* free pseudo-descriptor. */
     boot_heap_pop(boot_alloc);
+}
+
+static void remap_text_video_memory(boot_alloc_t *boot_alloc) {
+    size_t video_buffer_size    = VGA_TEXT_VID_TOP - VGA_TEXT_VID_BASE;
+    size_t num_pages            = video_buffer_size / PAGE_SIZE;
+
+    void *buffer = boot_page_alloc_n(boot_alloc, num_pages);
+    void *mapped = (void *)PHYS_TO_VIRT_AT_16MB(buffer);
+
+    vm_boot_map(mapped, VGA_TEXT_VID_BASE, num_pages);
+
+    info("Remapping text video memory at %#p", mapped);
+
+    /* Note: after this call to vga_set_base_addr() until we switch to the new
+     * new address space, VGA output is not possible. Attempting it will cause
+     * a kernel panic due to a page fault (and the panic handler itself attempts
+     * to log). */
+    vga_set_base_addr(mapped);
+}
+
+static void enable_global_pages(void) {
+    if(cpu_has_feature(CPU_FEATURE_PGE)) {
+        set_cr4(get_cr4() | X86_CR4_PGE);
+    }
+}
+
+static void initialize_page_allocator(boot_alloc_t *boot_alloc) {
+    while(! boot_page_alloc_is_empty(boot_alloc)) {
+        page_free(boot_page_alloc(boot_alloc));
+    }
+
+    info(
+            "%u kilobytes available for allocation by the kernel",
+            get_page_count() * PAGE_SIZE / (1 * KB));
 }
 
 static void select_syscall_implementation(void) {
@@ -351,6 +351,9 @@ void machine_init(const config_t *config) {
      * vm_boot_init() prevent this. */
     init_idt();
 
+    /* load segment selectors */
+    load_selectors(cpu_data, &boot_alloc);
+
     /* Initialize programmable interrupt_controller. */
     pic8259_init();
 
@@ -368,7 +371,7 @@ void machine_init(const config_t *config) {
     remap_text_video_memory(&boot_alloc);
 
     /* switch to new address space */
-    vm_switch_addr_space(addr_space, cpu_data);
+    vm_switch_addr_space(addr_space);
 
     enable_global_pages();
 
@@ -377,9 +380,6 @@ void machine_init(const config_t *config) {
      * the remaining pages to the run-time page allocator. */
     boot_reinit_at_klimit(&boot_alloc);
     initialize_page_allocator(&boot_alloc);
-
-    /* Initialize GDT and TSS */
-    init_descriptors(cpu_data, &boot_alloc);
 
     /* create slab cache to allocate PDPTs
      *

@@ -49,9 +49,9 @@ typedef uint64_t seg_descriptor_t;
 typedef uint32_t seg_selector_t;
 
 typedef struct {
-    uint16_t padding;
-    uint16_t limit;
-    addr_t         addr;
+    uint16_t    padding;
+    uint16_t    limit;
+    addr_t      addr;
 } pseudo_descriptor_t;
 
 typedef struct {

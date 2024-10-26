@@ -32,7 +32,6 @@
 #include <jinue/shared/asm/errno.h>
 #include <kernel/application/syscalls.h>
 #include <kernel/domain/entities/descriptor.h>
-#include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/entities/thread.h>
 
@@ -60,10 +59,7 @@ int start_thread(int fd, const thread_params_t *params) {
 
     prepare_thread(thread, params);
 
-    /* Add a reference on the thread while it is running so it is allowed to
-     * run to completion even if all descriptors that reference it are
-     * closed. */
-    add_ref_to_object(&thread->header);
+    thread_is_starting(thread);
 
     ready_thread(thread);
 

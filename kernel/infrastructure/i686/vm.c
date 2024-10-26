@@ -83,7 +83,9 @@ bool pgtable_format_pae;
 /** First address space created during kernel initialization.
  *
  * This address space is used as a template for kernel page tables/directories
- * when creating new address spaces. */
+ * when creating new address spaces. It can also be used for threads to run
+ * into as long as they only access kernel virtual memory. See
+ * machine_switch_to_kernel_addr_space(). */
 static addr_space_t initial_addr_space;
 
 /**
@@ -542,8 +544,10 @@ void vm_destroy_addr_space(addr_space_t *addr_space) {
     }
 }
 
-void vm_switch_addr_space(addr_space_t *addr_space, cpu_data_t *cpu_data) {
+void vm_switch_addr_space(addr_space_t *addr_space) {
     set_cr3(addr_space->cr3);
+
+    cpu_data_t *cpu_data = get_cpu_local_data();
     cpu_data->current_addr_space = addr_space;
 }
 
@@ -978,4 +982,8 @@ kern_paddr_t machine_lookup_kernel_paddr(void *addr) {
     assert(pte != NULL && pte_is_present(pte));
 
     return (kern_paddr_t)get_pte_paddr(pte);
+}
+
+void machine_switch_to_kernel_addr_space(void) {
+    vm_switch_addr_space(&initial_addr_space);
 }

@@ -31,6 +31,7 @@
 
 #include <kernel/domain/alloc/slab.h>
 #include <kernel/domain/entities/object.h>
+#include <kernel/domain/services/panic.h>
 
 void init_object_cache(slab_cache_t *cache, const object_type_t *type) {
     slab_cache_init(
@@ -78,6 +79,10 @@ void sub_ref_to_object(object_header_t *object) {
 
     if(object->ref_count > 0) {
         return;
+    }
+
+    if(object->ref_count != 0) {
+        panic("Object reference count decremented to negative value");
     }
 
     destroy_object(object);

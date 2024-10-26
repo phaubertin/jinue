@@ -55,5 +55,6 @@ bool machine_clone_userspace_mapping(
 
 kern_paddr_t machine_lookup_kernel_paddr(void *addr);
 
-#endif
+void machine_switch_to_kernel_addr_space(void);
 
+#endif
