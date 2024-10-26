@@ -34,6 +34,7 @@
 #include <kernel/domain/entities/descriptor.h>
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/entities/object.h>
+#include <kernel/domain/services/logging.h>
 #include <kernel/domain/services/panic.h>
 #include <kernel/machine/process.h>
 #include <kernel/machine/thread.h>
@@ -104,6 +105,7 @@ static void destroy_process(object_header_t *object) {
 }
 
 static void free_process(object_header_t *object) {
+    info("!!! Boom!");
     slab_cache_free(object);
 }
 

@@ -985,5 +985,5 @@ kern_paddr_t machine_lookup_kernel_paddr(void *addr) {
 }
 
 void machine_switch_to_kernel_addr_space(void) {
-
+    vm_switch_addr_space(&initial_addr_space);
 }

@@ -129,7 +129,7 @@ static void switch_thread(thread_t *from, thread_t *to, bool destroy_from) {
         return;
     }
 
-    if(from == NULL || from->process != to->process) {
+    if(from == NULL || from->process != to->process || destroy_from) {
         switch_to_process(to->process);
     }
 
