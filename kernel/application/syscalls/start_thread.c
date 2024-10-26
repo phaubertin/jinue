@@ -32,7 +32,6 @@
 #include <jinue/shared/asm/errno.h>
 #include <kernel/application/syscalls.h>
 #include <kernel/domain/entities/descriptor.h>
-#include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/entities/thread.h>
 

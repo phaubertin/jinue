@@ -188,11 +188,10 @@ void thread_is_starting(thread_t *thread) {
 
 void current_thread_is_exiting(void) {
     thread_t *thread    = get_current_thread();
-    process_t *process  = thread->process;
 
     thread->state = THREAD_STATE_ZOMBIE;
 
-    remove_running_thread_from_process(process);
+    remove_running_thread_from_process(thread->process);
 
     /* switch_thread() takes care of safely decrementing the reference count on
      * the thread after having switched to another one. We cannot just do it

@@ -29,13 +29,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/errno.h>
 #include <kernel/application/syscalls.h>
-#include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/thread.h>
 #include <kernel/domain/services/ipc.h>
 #include <kernel/machine/thread.h>
-#include <kernel/machine/vm.h>
 
 void exit_thread(void) {
     thread_t *thread = get_current_thread();
