@@ -60,13 +60,7 @@ int start_thread(int fd, const thread_params_t *params) {
 
     prepare_thread(thread, params);
 
-    /* Add a reference on the thread while it is running so it is allowed to
-     * run to completion even if all descriptors that reference it get closed.
-     *
-     * Similarly, add a reference to the process to which the thread belongs
-     * so it does not get freed while the thread is running. */
-    add_ref_to_object(&thread->header);
-    add_ref_to_object(&thread->process->header);
+    thread_is_starting(thread);
 
     ready_thread(thread);
 

@@ -37,6 +37,7 @@
 #include <kernel/domain/services/panic.h>
 #include <kernel/machine/process.h>
 #include <kernel/machine/thread.h>
+#include <kernel/machine/vm.h>
 #include <stddef.h>
 #include <string.h>
 
@@ -123,4 +124,25 @@ void switch_to_process(process_t *process) {
 
 process_t *get_current_process(void) {
     return get_current_thread()->process;
+}
+
+void add_running_thread_to_process(process_t *process) {
+    ++process->running_threads_count;
+    add_ref_to_object(&process->header);
+}
+
+void remove_running_thread_from_process(process_t *process) {
+    --process->running_threads_count;
+    
+    /* Destroy the process when there are no more running threads. The
+     * reference count alone is not enough because the process might have
+     * descriptors that reference itself. */
+    if(process->running_threads_count < 1) {
+        /* We must switch to a safe address space before destroying the process
+         * so the current thread still has an address space to run into. */
+        machine_switch_to_kernel_addr_space();
+        destroy_object(&process->header);
+    }
+    
+    sub_ref_to_object(&process->header);
 }

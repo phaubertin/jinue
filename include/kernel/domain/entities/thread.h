@@ -50,7 +50,9 @@ void yield_current_thread(void);
 
 void block_current_thread(void);
 
-void switch_from_exiting_thread(thread_t *current);
+void thread_is_starting(thread_t *thread);
+
+void current_thread_is_exiting(void);
 
 void set_thread_local_storage(thread_t *thread, addr_t addr, size_t size);
 

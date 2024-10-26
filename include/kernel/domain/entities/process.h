@@ -44,4 +44,8 @@ void switch_to_process(process_t *process);
 
 process_t *get_current_process(void);
 
+void add_running_thread_to_process(process_t *process);
+
+void remove_running_thread_from_process(process_t *process);
+
 #endif
