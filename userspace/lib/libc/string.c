@@ -99,6 +99,8 @@ char *strcpy(char *restrict dest, const char *restrict src) {
         dest[idx] = src[idx];
     }
 
+    dest[idx] = '\0';
+
     return dest;
 }
 
