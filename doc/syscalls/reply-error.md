@@ -52,5 +52,3 @@ an error number is set (in `arg1`).
     * [RECEIVE](receive.md) was called but did not return successfully; or
     * This function or [REPLY](reply.md) was already called at least once since
       the last call to [RECEIVE](receive.md).
-* JINUE_EINVAL if the error code cannot be represented as a C `int` type or is
-less or equal to zero.
