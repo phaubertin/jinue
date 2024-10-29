@@ -47,9 +47,9 @@ reply.
 On success, this function returns the size of the reply in bytes (in `arg0`).
 On failure, it returns -1 and an error number is set (in `arg1`).
 
-If the function fails with error number
+If this function fails with error number
 [JINUE_EPROTO](../../include/jinue/shared/asm/errno.h), it means the receiving
-thread replied with an error number by calling [REPLY_ERROR](reply-error.md).
+thread replied with an error code by calling [REPLY_ERROR](reply-error.md).
 In that case, the error code specified to [REPLY_ERROR](reply-error.md) is set
 in `arg2`.
     
