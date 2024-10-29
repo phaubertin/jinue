@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,32 +29,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/errno.h>
-#include <jinue/shared/asm/permissions.h>
 #include <kernel/application/syscalls.h>
-#include <kernel/domain/entities/descriptor.h>
 #include <kernel/domain/services/ipc.h>
 #include <kernel/machine/thread.h>
+#include <stdint.h>
 
-int send(uintptr_t *errcode, int fd, int function, const jinue_message_t *message) {
-    thread_t *sender = get_current_thread();
-
-    descriptor_t *desc;
-    int status = dereference_object_descriptor(&desc, sender->process, fd);
-
-    if(status < 0) {
-        return status;
-    }
-
-    ipc_endpoint_t *endpoint = get_endpoint_from_descriptor(desc);
-
-    if(endpoint == NULL) {
-        return -JINUE_EBADF;
-    }
-
-    if(!descriptor_has_permissions(desc, JINUE_PERM_SEND)) {
-        return -JINUE_EPERM;
-    }
-
-    return send_message(errcode, endpoint, sender, function, desc->cookie, message);
+int reply_error(uintptr_t errcode) {
+    thread_t *replier = get_current_thread();
+    return reply_error_to_message(replier, errcode);
 }

@@ -82,7 +82,7 @@ static void ipc_test_run_client(void) {
     message.recv_buffers        = reply_buffers;
     message.recv_buffers_length = 3;
 
-    intptr_t ret = jinue_send(CLIENT_ENDPOINT_DESCRIPTOR, MSG_FUNC_TEST, &message, &errno);
+    intptr_t ret = jinue_send(CLIENT_ENDPOINT_DESCRIPTOR, MSG_FUNC_TEST, &message, &errno, NULL);
 
     if(ret < 0) {
         jinue_error("error: jinue_send() failed: %s.", strerror(errno));
@@ -98,7 +98,7 @@ static void ipc_test_run_client(void) {
     message.recv_buffers        = NULL;
     message.recv_buffers_length = 0;
 
-    ret = jinue_send(CLIENT_ENDPOINT_DESCRIPTOR, MSG_FUNC_TEST, &message, &errno);
+    ret = jinue_send(CLIENT_ENDPOINT_DESCRIPTOR, MSG_FUNC_TEST, &message, &errno, NULL);
 
     if(ret >= 0) {
         jinue_error("error: jinue_send() unexpectedly succeeded");

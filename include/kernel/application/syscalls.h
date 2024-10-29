@@ -68,7 +68,9 @@ int receive(int fd, jinue_message_t *message);
 
 int reply(const jinue_message_t *message);
 
-int send(int fd, int function, const jinue_message_t *message);
+int reply_error(uintptr_t errcode);
+
+int send(uintptr_t *errcode, int fd, int function, const jinue_message_t *message);
 
 void set_thread_local(void *addr, size_t size);
 

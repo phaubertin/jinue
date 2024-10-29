@@ -80,7 +80,8 @@ intptr_t jinue_send(
         int                      fd,
         intptr_t                 function,
         const jinue_message_t   *message,
-        int                     *perrno);
+        int                     *perrno,
+        uintptr_t               *perrcode);
 
 intptr_t jinue_receive(int fd, const jinue_message_t *message, int *perrno);
 
@@ -116,5 +117,7 @@ int jinue_mint(
 int jinue_start_thread(int fd, void (*entry)(void), void *stack, int *perrno);
 
 int jinue_join_thread(int fd, int *perrno);
+
+int jinue_reply_error(uintptr_t errcode, int *perrno);
 
 #endif

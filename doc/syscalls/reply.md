@@ -46,8 +46,8 @@ an error number is set (in `arg1`).
 * JINUE_ENOMSG if there is no current message, which means either:
     * [RECEIVE](receive.md) was not called; or
     * [RECEIVE](receive.md) was called but did not return successfully; or
-    * This function was already called at least once since the last call to
-      [RECEIVE](receive.md).
+    * This function or [REPLY_ERROR](reply-error.md) was already called at
+      least once since the last call to [RECEIVE](receive.md).
 * JINUE_E2BIG if the reply message is too big for the sender's receive buffer
 size.
 * JINUE_EINVAL in any of the following situations:

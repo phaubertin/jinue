@@ -77,6 +77,7 @@ sources.kernel.c = \
 	application/syscalls/reboot.c \
 	application/syscalls/receive.c \
 	application/syscalls/reply.c \
+	application/syscalls/reply_error.c \
 	application/syscalls/send.c \
 	application/syscalls/set_thread_local.c \
 	application/syscalls/start_thread.c \
