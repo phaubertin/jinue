@@ -29,8 +29,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/errno.h>
-#include <jinue/shared/asm/permissions.h>
 #include <kernel/application/syscalls.h>
 #include <kernel/domain/services/ipc.h>
 #include <kernel/machine/thread.h>

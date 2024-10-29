@@ -62,4 +62,6 @@ extern int errno;
 
 #define EDEADLK     JINUE_EDEADLK
 
+#define EPROTO      JINUE_EPROTO
+
 #endif

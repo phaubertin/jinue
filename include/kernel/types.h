@@ -114,6 +114,7 @@ struct thread_t {
     size_t                   local_storage_size;
     size_t                   recv_buffer_size;
     int                      message_errno;
+    uintptr_t                message_reply_errcode;
     uintptr_t                message_function;
     uintptr_t                message_cookie;
     size_t                   message_size;

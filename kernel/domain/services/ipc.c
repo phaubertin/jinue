@@ -38,6 +38,7 @@
 #include <kernel/domain/services/ipc.h>
 #include <kernel/utils/vm.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <string.h>
 
 /**
@@ -207,6 +208,7 @@ static int scatter_message(thread_t *thread, const jinue_message_t *message) {
  *
  */
 int send_message(
+        uintptr_t               *errcode,
         ipc_endpoint_t          *endpoint,
         thread_t                *sender,
         int                      function,
@@ -219,10 +221,11 @@ int send_message(
         return recv_buffer_size;
     }
     
-    sender->recv_buffer_size    = recv_buffer_size;
-    sender->message_errno       = 0;
-    sender->message_function    = function;
-    sender->message_cookie      = cookie;
+    sender->recv_buffer_size        = recv_buffer_size;
+    sender->message_errno           = 0;
+    sender->message_reply_errcode   = 0;
+    sender->message_function        = function;
+    sender->message_cookie          = cookie;
 
     int gather_result = gather_message(sender, message);
 
@@ -248,7 +251,12 @@ int send_message(
         /* switch to receiver thread, which will resume inside syscall_receive() */
         switch_to_thread(receiver, true);
     }
-    
+
+    if(sender->message_errno == JINUE_EPROTO) {
+        *errcode = sender->message_reply_errcode;
+        return -JINUE_EPROTO;
+    }
+
     if(sender->message_errno != 0) {
         return -sender->message_errno;
     }
@@ -375,8 +383,38 @@ int reply_to_message(thread_t *replier, const jinue_message_t *message) {
         return -JINUE_E2BIG;
     }
 
-    sub_ref_to_object(&replyto->header);
     replier->sender = NULL;
+    sub_ref_to_object(&replyto->header);
+    
+    /* switch back to sender thread to return from call immediately */
+    switch_to_thread(replyto, false);
+
+    return 0;
+}
+
+/**
+ * Reply to a message with an error
+ *
+ * This function is called by a receiving thread to end processing of the
+ * current message and send an error code to the sending thread.
+ *
+ * @param replier thread replying to the message
+ * @param errcode error code
+ * @return zero on success, negated error number on error
+ *
+ */
+int reply_error_to_message(thread_t *replier, uintptr_t errcode) {
+    thread_t *replyto = replier->sender;
+
+    if(replyto == NULL) {
+        return -JINUE_ENOMSG;
+    }
+
+
+    replyto->message_errno          = JINUE_EPROTO;
+    replyto->message_reply_errcode  = errcode;
+    replier->sender                 = NULL;
+    sub_ref_to_object(&replyto->header);
     
     /* switch back to sender thread to return from call immediately */
     switch_to_thread(replyto, false);

@@ -35,6 +35,7 @@
 #include <kernel/types.h>
 
 int send_message(
+        uintptr_t               *errcode,
         ipc_endpoint_t          *endpoint,
         thread_t                *sender,
         int                      function,
@@ -44,6 +45,8 @@ int send_message(
 int receive_message(ipc_endpoint_t *endpoint, thread_t *receiver,jinue_message_t *message);
 
 int reply_to_message(thread_t *replier, const jinue_message_t *message);
+
+int reply_error_to_message(thread_t *replier, uintptr_t errcode);
 
 void abort_message(thread_t *thread);
 

@@ -252,7 +252,17 @@ static void sys_send(jinue_syscall_args_t *args) {
         return;
     }
 
-    int retval = send(fd, function, &message);
+    uintptr_t *errcode = &args->arg2;
+    int retval = send(errcode, fd, function, &message);
+
+    if(retval == -JINUE_EPROTO) {
+        args->arg0 = -1;
+        args->arg1 = JINUE_EPROTO;
+        /* The error code has already been set in arg2. */
+        args->arg3 = 0;
+        return;
+    }
+
     set_return_value_or_error(args, retval);
 }
 
@@ -550,6 +560,12 @@ static void sys_join_thread(jinue_syscall_args_t *args) {
     set_return_value_or_error(args, retval);
 }
 
+static void sys_reply_error(jinue_syscall_args_t *args) {
+    uintptr_t errcode   = args->arg1;
+    int retval          = reply_error(errcode);
+    set_return_value_or_error(args, retval);
+}
+
 /**
  * System call dispatching function
  *
@@ -627,6 +643,9 @@ void dispatch_syscall(jinue_syscall_args_t *args) {
             break;
         case JINUE_SYS_JOIN_THREAD:
             sys_join_thread(args);
+            break;
+        case JINUE_SYS_REPLY_ERROR:
+            sys_reply_error(args);
             break;
         default:
             sys_nosys(args);

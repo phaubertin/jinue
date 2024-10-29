@@ -44,9 +44,14 @@ reply.
 
 ## Return Value
 
-On success, the return value set in `arg0` is the size of the reply in bytes. On
-failure, the return value set in `arg0` is -1 and an error number is set in
-`arg1`.
+On success, this function returns the size of the reply in bytes (in `arg0`).
+On failure, it returns -1 and an error number is set (in `arg1`).
+
+If the function fails with error number
+[JINUE_EPROTO](../../include/jinue/shared/asm/errno.h), it means the receiving
+thread replied with an error number by calling [REPLY_ERROR](reply-error.md).
+In that case, the error code specified to [REPLY_ERROR](reply-error.md) is set
+in `arg2`.
     
 ## Errors
 
@@ -62,6 +67,8 @@ too large for its receive buffer(s).
     * If any part of any of the send and/or receive buffers belongs to the kernel.
     * If the send and/or receive buffers array have more than 256 elements.
     * If any of the receive buffers is larger than 64 MB.
+* JINUE_EPROTO the receiving thread failed the exchange by calling
+[REPLY_ERROR](reply-error.md).
 
 ## Future Direction
 

@@ -177,7 +177,8 @@ intptr_t jinue_send(
         int                      fd,
         intptr_t                 function,
         const jinue_message_t   *message,
-        int                     *perrno) {
+        int                     *perrno,
+        uintptr_t               *perrcode) {
 
     jinue_syscall_args_t args;
 
@@ -186,7 +187,19 @@ intptr_t jinue_send(
     args.arg2 = (uintptr_t)message;
     args.arg3 = 0;
 
-    return call_with_usual_convention(&args, perrno);
+    const intptr_t retval = (intptr_t)jinue_syscall(&args);
+
+    if(retval >= 0) {
+        return retval;
+    }
+
+    set_errno(perrno, args.arg1);
+
+    if(args.arg1 == JINUE_EPROTO && perrcode != NULL) {
+        *perrcode = args.arg2;
+    }
+
+    return retval;
 }
 
 intptr_t jinue_receive(int fd, const jinue_message_t *message, int *perrno){
@@ -331,6 +344,17 @@ int jinue_join_thread(int fd, int *perrno) {
 
     args.arg0 = JINUE_SYS_JOIN_THREAD;
     args.arg1 = fd;
+    args.arg2 = 0;
+    args.arg3 = 0;
+
+    return call_with_usual_convention(&args, perrno);
+}
+
+int jinue_reply_error(uintptr_t errcode, int *perrno) {
+    jinue_syscall_args_t args;
+
+    args.arg0 = JINUE_SYS_REPLY_ERROR;
+    args.arg1 = errcode;
     args.arg2 = 0;
     args.arg3 = 0;
 

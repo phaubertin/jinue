@@ -145,6 +145,8 @@ static const char *strerror_const(int errnum) {
         return "no such process";
     case EDEADLK:
         return "resource deadlock would occur";
+    case EPROTO:
+        return "protocol errors";
     default:
         return "unknown error";
     }

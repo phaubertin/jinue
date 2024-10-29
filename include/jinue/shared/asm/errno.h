@@ -71,4 +71,7 @@
 /** resource deadlock would occur */
 #define JINUE_EDEADLK   13
 
+/** protocol error */
+#define JINUE_EPROTO    14
+
 #endif

@@ -92,6 +92,9 @@
 /** wait for a thread to exit */
 #define JINUE_SYS_JOIN_THREAD           21
 
+/** reply to current message with an error code */
+#define JINUE_SYS_REPLY_ERROR           22
+
 /** start of function numbers for user space messages */
 #define JINUE_SYS_USER_BASE             4096
 
