@@ -6,10 +6,10 @@ Reply to the current message with an error code. This function should be
 called after calling the [RECEIVE](receive.md) system call in order to send
 an error reply and complete processing of the message.
 
-When this function is called, the call to [send](send.md) that caused the
+When this function is called, the call to [SEND](send.md) that caused the
 current message to be received fails with error number
 [JINUE_EPROTO](../../include/jinue/shared/asm/errno.h) and the error code
-specified to this function is part of the return value. See [send](send.md)
+specified to this function is part of the return value. See [SEND](send.md)
 for detail.
 
 ## Arguments
