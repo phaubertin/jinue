@@ -39,8 +39,17 @@
 #include "descriptors.h"
 #include "server.h"
 
-void get_meminfo(void) {
-    /* TODO send back struct */
+int get_meminfo(void) {
+    /* TODO implement this */
+
+    int status = jinue_reply_error(JINUE_ENOSYS, &errno);
+
+    if(status < 0) {
+        jinue_error("jinue_reply_error() failed: %s", strerror(errno));
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
 }
 
 int run_server(void) {
@@ -58,7 +67,11 @@ int run_server(void) {
 
         switch(message.recv_function) {
             case JINUE_MSG_GET_MEMINFO:
-                get_meminfo();
+                status = get_meminfo();
+
+                if(status != EXIT_SUCCESS) {
+                    return EXIT_FAILURE;
+                }
                 break;
             case JINUE_MSG_EXIT:
                 /* Exit without sending back a response. This will cause the call to fail with

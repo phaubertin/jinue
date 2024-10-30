@@ -30,22 +30,63 @@
  */
 
 #include <jinue/jinue.h>
+#include <jinue/loader.h>
+#include <errno.h>
 #include <stdlib.h>
 #include "physmem.h"
 
-#define MAX_MAP_ENTRIES 128
+#define MAX_MAP_ENTRIES     128
+
+/* TODO adjust this */
+#define LOADER_BUFFER_SIZE  16384
 
 static uint64_t alloc_addr;
 
 static uint64_t alloc_limit;
 
-int physmem_init(void) {
+static void initialize_range(uint64_t addr, uint64_t size) {
+    alloc_addr  = addr;
+    alloc_limit = addr + size;
+}
+
+static int initialize_range_from_loader_info(void) {
+    char buffer[LOADER_BUFFER_SIZE];
+
+    jinue_buffer_t reply_buffer;
+    reply_buffer.addr = buffer;
+    reply_buffer.size = sizeof(buffer);
+
+    jinue_message_t message;
+    message.send_buffers        = NULL;
+    message.send_buffers_length = 0;
+    message.recv_buffers        = &reply_buffer;
+    message.recv_buffers_length = 1;
+
+    int status = jinue_send(
+        JINUE_DESC_LOADER_ENDPOINT,
+        JINUE_MSG_GET_MEMINFO,
+        &message,
+        &errno,
+        NULL
+    );
+
+    if(status < 0) {
+        /* errno is set by call to jinue_send(). */
+        return status;
+    }
+
+    /* TODO set range */
+
+    return status;
+}
+
+static int initialize_range_from_kernel_info(void) {
     char map_buffer[sizeof(jinue_mem_map_t) + MAX_MAP_ENTRIES * sizeof(jinue_mem_entry_t)];
     jinue_mem_map_t *map = (void *)map_buffer;
 
-    int ret = jinue_get_user_memory(map, sizeof(map_buffer), NULL);
+    int status = jinue_get_user_memory(map, sizeof(map_buffer), NULL);
 
-    if(ret < 0) {
+    if(status < 0) {
         return EXIT_FAILURE;
     }
 
@@ -62,10 +103,27 @@ int physmem_init(void) {
         return EXIT_FAILURE;
     }
 
-    alloc_addr  = entry->addr;
-    alloc_limit = entry->addr + entry->size;
+    initialize_range(entry->addr, entry->size);
 
     return EXIT_SUCCESS;
+}
+
+int physmem_init(void) {
+    int status = initialize_range_from_loader_info();
+
+    if(status >= 0) {
+        return EXIT_SUCCESS;
+    }
+
+    if(errno != JINUE_EBADF && errno != JINUE_EPROTO) {
+        return EXIT_FAILURE;
+    }
+
+    /* We weren't able to get the memory usage information from the loader, most likely because
+     * we *are* the loader. Fall back to the kernel call, which provides information about memory
+     * available to user space, but not about which parts of that user space memory have already
+     * been allocated. */
+    return initialize_range_from_kernel_info();
 }
 
 int64_t physmem_alloc(size_t size) {
