@@ -37,21 +37,19 @@
 #include <string.h>
 #include "binfmt/elf.h"
 #include "debug.h"
+#include "descriptors.h"
 #include "ramdisk.h"
+#include "server.h"
 #include "utils.h"
 
-#define MAP_BUFFER_SIZE         16384
-
-#define INIT_PROCESS_DESCRIPTOR (JINUE_DESC_SELF_PROCESS + 1)
-
-#define INIT_THREAD_DESCRIPTOR  (JINUE_DESC_SELF_PROCESS + 2)
+#define MAP_BUFFER_SIZE 16384
 
 static jinue_mem_map_t *get_memory_map(void *buffer, size_t bufsize) {
-    int status = jinue_get_user_memory((jinue_mem_map_t *)buffer, bufsize, NULL);
+    int status = jinue_get_user_memory((jinue_mem_map_t *)buffer, bufsize, &errno);
 
     if(status != 0) {
         /* TODO use errno to give more information */
-        jinue_error("error: could not get physical memory map from microkernel");
+        jinue_error("error: could not get memory map from kernel: %s", strerror(errno));
         return NULL;
     }
 
@@ -107,6 +105,27 @@ static int load_init(elf_info_t *elf_info, const jinue_dirent_t *init, int argc,
 
     if (status != 0) {
         jinue_error("error: could not create self process descriptor: %s", strerror(errno));
+        return EXIT_FAILURE;
+    }
+
+    status = jinue_create_endpoint(JINUE_DESC_LOADER_ENDPOINT, &errno);
+
+    if (status != 0) {
+        jinue_error("error: could not create endpoint: %s", strerror(errno));
+        return EXIT_FAILURE;
+    }
+
+    status = jinue_mint(
+        JINUE_DESC_LOADER_ENDPOINT,
+        INIT_PROCESS_DESCRIPTOR,
+        JINUE_DESC_LOADER_ENDPOINT,
+        JINUE_PERM_SEND,
+        0,
+        &errno
+    );
+
+    if (status != 0) {
+        jinue_error("error: could not create descriptor for endpoint: %s", strerror(errno));
         return EXIT_FAILURE;
     }
 
@@ -180,5 +199,5 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    return EXIT_SUCCESS;
+    return run_server();
 }

@@ -32,6 +32,7 @@
 #ifndef _JINUE_LOADER_H
 #define _JINUE_LOADER_H
 
+#include <jinue/shared/asm/messages.h>
 #include <stddef.h>
 #include <stdint.h>
 

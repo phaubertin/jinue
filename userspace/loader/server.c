@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,19 +29,48 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_SHARED_ASM_DESCRIPTORS_H
-#define _JINUE_SHARED_ASM_DESCRIPTORS_H
+#include <jinue/jinue.h>
+#include <jinue/loader.h>
+#include <jinue/utils.h>
+#include <errno.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+#include "descriptors.h"
+#include "server.h"
 
-/* On a Unix system, the first three file descriptors typically represent
- * stdout, stdin and stderr. Lets leave them unused to allow this usage. */
+void get_meminfo(void) {
+    /* TODO send back struct */
+}
 
-/** descriptor assigned to refer to own process in loader and initial process */
-#define JINUE_DESC_SELF_PROCESS     3
+int run_server(void) {
+    while(true) {
+        jinue_message_t message;
+        message.recv_buffers        = NULL;
+        message.recv_buffers_length = 0;
 
-/** descriptor for IPC endpoint to loader */
-#define JINUE_DESC_LOADER_ENDPOINT  4
+        int status = jinue_receive(JINUE_DESC_LOADER_ENDPOINT, &message, &errno);
 
-/** last descriptor number reserved for loader protocol */
-#define JINUE_DESC_LAST             4
+        if(status < 0) {
+            jinue_error("jinue_receive() failed: %s", strerror(errno));
+            return EXIT_FAILURE;
+        }
 
-#endif
+        switch(message.recv_function) {
+            case JINUE_MSG_GET_MEMINFO:
+                get_meminfo();
+                break;
+            case JINUE_MSG_EXIT:
+                /* Exit without sending back a response. This will cause the call to fail with
+                 * JINUE_EIO on the sender's side, but only once this process has exited. */
+                return EXIT_SUCCESS;
+            default:
+                status = jinue_reply_error(JINUE_ENOSYS, &errno);
+
+                if(status < 0) {
+                    jinue_error("jinue_reply_error() failed: %s", strerror(errno));
+                    return EXIT_FAILURE;
+                }
+        }
+    }
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,19 +29,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_SHARED_ASM_DESCRIPTORS_H
-#define _JINUE_SHARED_ASM_DESCRIPTORS_H
+#ifndef _JINUE_SHARED_ASM_MESSAGES_H
+#define _JINUE_SHARED_ASM_MESSAGES_H
 
-/* On a Unix system, the first three file descriptors typically represent
- * stdout, stdin and stderr. Lets leave them unused to allow this usage. */
+#include <jinue/shared/asm/syscalls.h>
 
-/** descriptor assigned to refer to own process in loader and initial process */
-#define JINUE_DESC_SELF_PROCESS     3
+/* These message numbers are part of loader interface and only apply when calling the loader IPC
+ * endpoint. They aren't reserved. */
 
-/** descriptor for IPC endpoint to loader */
-#define JINUE_DESC_LOADER_ENDPOINT  4
+/** get information about memory in use on loader exit */
+#define JINUE_MSG_GET_MEMINFO   (JINUE_SYS_USER_BASE + 0)
 
-/** last descriptor number reserved for loader protocol */
-#define JINUE_DESC_LAST             4
+/** exit loader */
+#define JINUE_MSG_EXIT          (JINUE_SYS_USER_BASE + 1)
 
 #endif

@@ -30,19 +30,97 @@
  */
 
 #include <jinue/jinue.h>
+#include <jinue/loader.h>
 #include <jinue/utils.h>
 #include <errno.h>
+#include <inttypes.h>
 #include <stdlib.h>
+#include <string.h>
 #include "tests/ipc.h"
 #include "debug.h"
 #include "utils.h"
 
 #define MAP_BUFFER_SIZE 16384
 
-int main(int argc, char *argv[]) {
+void dump_user_memory(void) {
     char call_buffer[MAP_BUFFER_SIZE];
-    int status;
 
+    /* get free memory blocks from microkernel */
+    int status = jinue_get_user_memory(
+        (jinue_mem_map_t *)&call_buffer,
+        sizeof(call_buffer),
+        &errno
+    );
+
+    if(status != 0) {
+        jinue_error("error: could not get memory map from kernel: %s", strerror(errno));
+        return;
+    }
+
+    dump_phys_memory_map((jinue_mem_map_t *)&call_buffer);
+}
+
+void dump_loader_memory(void) {
+    char buffer[MAP_BUFFER_SIZE];
+
+    jinue_buffer_t reply_buffer;
+    reply_buffer.addr = buffer;
+    reply_buffer.size = sizeof(buffer);
+
+    jinue_message_t message;
+    message.send_buffers        = NULL;
+    message.send_buffers_length = 0;
+    message.recv_buffers        = &reply_buffer;
+    message.recv_buffers_length = 1;
+
+    uintptr_t errcode;
+    int status = jinue_send(JINUE_DESC_LOADER_ENDPOINT, 16777, &message, &errno, &errcode);
+
+    if(status >= 0) {
+        jinue_error("error: jinue_send() unexpectedly succeeded");
+        return;
+    }
+
+    if(errno != JINUE_EPROTO) {
+        jinue_error("error: jinue_send() failed: %s.", strerror(errno));
+        return;
+    }
+
+    jinue_info("expected: jinue_send() set errno to: %s.", strerror(errno));
+
+    if(errcode != JINUE_ENOSYS) {
+        jinue_error("error: loader set error code: %#" PRIxPTR ".", errcode);
+        return;
+    }
+
+    jinue_info("expected: loader set error code to: %s.", strerror(errcode));
+
+    /* TODO get memory information from loader */
+
+    /* TODO dump memory information from loader */
+
+    status = jinue_send(
+        JINUE_DESC_LOADER_ENDPOINT,
+        JINUE_MSG_EXIT,
+        &message,
+        &errno,
+        &errcode
+    );
+
+    if(status >= 0) {
+        jinue_error("error: jinue_send() unexpectedly succeeded");
+        return;
+    }
+
+    if(errno != JINUE_EIO) {
+        jinue_error("error: jinue_send() failed: %s.", strerror(errno));
+        return;
+    }
+
+    jinue_info("expected: jinue_send() set errno to: %s.", strerror(errno));
+}
+
+int main(int argc, char *argv[]) {
     /* Say hello. */
     jinue_info("Jinue test app (%s) started.", argv[0]);
 
@@ -51,16 +129,9 @@ int main(int argc, char *argv[]) {
     dump_auxvec();
     dump_syscall_implementation();
 
-    /* get free memory blocks from microkernel */
-    status = jinue_get_user_memory((jinue_mem_map_t *)&call_buffer, sizeof(call_buffer), &errno);
+    dump_user_memory();
 
-    if(status != 0) {
-        jinue_error("error: could not get physical memory map from microkernel");
-
-        return EXIT_FAILURE;
-    }
-
-    dump_phys_memory_map((jinue_mem_map_t *)&call_buffer);
+    dump_loader_memory();
 
     run_ipc_test();
 
