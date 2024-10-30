@@ -39,20 +39,39 @@
 #include "descriptors.h"
 #include "server.h"
 
-int get_meminfo(void) {
-    /* TODO implement this */
+static int get_meminfo(const jinue_message_t *message, const jinue_loader_meminfo_t *meminfo) {
+    int status;
 
-    int status = jinue_reply_error(JINUE_ENOSYS, &errno);
+    jinue_const_buffer_t reply_buffer;
+    reply_buffer.addr = meminfo;
+    reply_buffer.size = sizeof(jinue_loader_meminfo_t);
+
+    if(message->reply_max_size < reply_buffer.size) {
+        status = jinue_reply_error(JINUE_E2BIG, &errno);
+
+        if(status < 0) {
+            jinue_error("jinue_reply_error() failed: %s", strerror(errno));
+            return EXIT_FAILURE;
+        }
+
+        return EXIT_SUCCESS;
+    }
+
+    jinue_message_t reply;
+    reply.send_buffers        = &reply_buffer;
+    reply.send_buffers_length = 1;
+
+    status = jinue_reply(&reply, &errno);
 
     if(status < 0) {
-        jinue_error("jinue_reply_error() failed: %s", strerror(errno));
+        jinue_error("jinue_reply() failed: %s", strerror(errno));
         return EXIT_FAILURE;
     }
 
     return EXIT_SUCCESS;
 }
 
-int run_server(void) {
+int run_server(const jinue_loader_meminfo_t *meminfo) {
     while(true) {
         jinue_message_t message;
         message.recv_buffers        = NULL;
@@ -67,7 +86,7 @@ int run_server(void) {
 
         switch(message.recv_function) {
             case JINUE_MSG_GET_MEMINFO:
-                status = get_meminfo();
+                status = get_meminfo(&message, meminfo);
 
                 if(status != EXIT_SUCCESS) {
                     return EXIT_FAILURE;

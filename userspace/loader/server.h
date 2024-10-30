@@ -32,6 +32,8 @@
 #ifndef LOADER_SERVER_H_
 #define LOADER_SERVER_H_
 
-int run_server(void);
+#include <jinue/loader.h>
+
+int run_server(const jinue_loader_meminfo_t *meminfo);
 
 #endif

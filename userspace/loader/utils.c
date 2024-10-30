@@ -30,6 +30,7 @@
  */
 
 
+#include <jinue/jinue.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -47,4 +48,14 @@ bool bool_getenv(const char *name) {
             strcmp(value, "true") == 0 ||
             strcmp(value, "yes") == 0 ||
             strcmp(value, "1") == 0;
+}
+
+const jinue_mem_entry_t *get_mem_map_entry_by_type(const jinue_mem_map_t *map, int type) {
+    for(int idx = 0; idx < map->num_entries; ++idx) {
+        if(map->entry[idx].type == type) {
+            return &map->entry[idx];
+        }
+    }
+
+    return NULL;
 }

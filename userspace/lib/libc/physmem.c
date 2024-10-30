@@ -38,26 +38,22 @@
 
 #define MAX_MAP_ENTRIES     128
 
-/* TODO adjust this */
-#define LOADER_BUFFER_SIZE  16384
-
-
 static struct {
     uint64_t addr;
     uint64_t limit;
 } alloc_range;
 
-static void initialize_range(uint64_t addr, uint64_t size) {
+static void initialize_range(uint64_t addr, uint64_t limit) {
     alloc_range.addr    = addr;
-    alloc_range.limit   = addr + size;
+    alloc_range.limit   = limit;
 }
 
 static int initialize_range_from_loader_info(void) {
-    char buffer[LOADER_BUFFER_SIZE];
+    jinue_loader_meminfo_t meminfo;
 
     jinue_buffer_t reply_buffer;
-    reply_buffer.addr = buffer;
-    reply_buffer.size = sizeof(buffer);
+    reply_buffer.addr = &meminfo;
+    reply_buffer.size = sizeof(meminfo);
 
     jinue_message_t message;
     message.send_buffers        = NULL;
@@ -78,7 +74,7 @@ static int initialize_range_from_loader_info(void) {
         return status;
     }
 
-    /* TODO set range */
+    initialize_range(meminfo.hint.physaddr, meminfo.hint.physlimit);
 
     return status;
 }
@@ -106,7 +102,7 @@ static int initialize_range_from_kernel_info(void) {
         return EXIT_FAILURE;
     }
 
-    initialize_range(entry->addr, entry->size);
+    initialize_range(entry->addr, entry->addr + entry->size);
 
     return EXIT_SUCCESS;
 }
@@ -118,7 +114,7 @@ int physmem_init(void) {
         return EXIT_SUCCESS;
     }
 
-    if(errno != JINUE_EBADF && errno != JINUE_EPROTO) {
+    if(errno != JINUE_EBADF) {
         return EXIT_FAILURE;
     }
 
@@ -144,4 +140,8 @@ int64_t physmem_alloc(size_t size) {
 
 uint64_t _libc_get_physmem_alloc_addr(void) {
     return alloc_range.addr;
+}
+
+uint64_t _libc_get_physmem_alloc_limit(void) {
+    return alloc_range.limit;
 }

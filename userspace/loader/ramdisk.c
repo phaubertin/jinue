@@ -33,6 +33,7 @@
 #include <jinue/utils.h>
 #include <sys/mman.h>
 #include <errno.h>
+#include <internals.h>
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -43,6 +44,7 @@
 #include "streams/raw.h"
 #include "streams/stream.h"
 #include "ramdisk.h"
+#include "utils.h"
 
 struct stream_initializer {
     const char *name;
@@ -56,23 +58,6 @@ static struct stream_initializer stream_initializers[] = {
 };
 
 /**
- * Find the kernel memory map entry for the RAM disk image
- *
- * @param map kernel memory map
- * @return map entry, NULL if not found (should not happen)
- *
- * */
-static const jinue_mem_entry_t *get_ramdisk_entry(const jinue_mem_map_t *map) {
-    for(int idx = 0; idx < map->num_entries; ++idx) {
-        if(map->entry[idx].type == JINUE_MEM_TYPE_RAMDISK) {
-            return &map->entry[idx];
-        }
-    }
-
-    return NULL;
-}
-
-/**
  * Map the compressed RAM disk image in this process
  *
  * @param ramdisk structure to initialize with RAM disk image address and size
@@ -81,7 +66,10 @@ static const jinue_mem_entry_t *get_ramdisk_entry(const jinue_mem_map_t *map) {
  *
  * */
 int map_ramdisk(ramdisk_t *ramdisk, const jinue_mem_map_t *map) {
-    const jinue_mem_entry_t *ramdisk_entry = get_ramdisk_entry(map);
+    const jinue_mem_entry_t *ramdisk_entry = get_mem_map_entry_by_type(
+        map,
+        JINUE_MEM_TYPE_RAMDISK
+    );
 
     if(ramdisk_entry == NULL || ramdisk_entry->addr == 0 || ramdisk_entry->size == 0) {
         jinue_error("error: no initial RAM disk found.");
@@ -197,7 +185,7 @@ static enum format detect_format(stream_t *stream) {
  * @return virtual filesystem root, NULL on failure
  *
  * */
-const jinue_dirent_t *extract_ramdisk(const ramdisk_t *ramdisk) {
+const jinue_dirent_t *extract_ramdisk(jinue_loader_meminfo_t *meminfo, const ramdisk_t *ramdisk) {
     stream_t stream;
 
     int status = initialize_stream(&stream, ramdisk);
@@ -205,6 +193,8 @@ const jinue_dirent_t *extract_ramdisk(const ramdisk_t *ramdisk) {
     if(status != STREAM_SUCCESS) {
         return NULL;
     }
+
+    meminfo->ramdisk.addr = _libc_get_physmem_alloc_addr();
 
     const jinue_dirent_t *root;
 
@@ -218,6 +208,8 @@ const jinue_dirent_t *extract_ramdisk(const ramdisk_t *ramdisk) {
         root = NULL;
         break;
     }
+
+    meminfo->ramdisk.size = _libc_get_physmem_alloc_addr() - meminfo->ramdisk.addr;
 
     stream_finalize(&stream);
 

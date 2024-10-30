@@ -41,6 +41,6 @@ typedef struct {
 
 int map_ramdisk(ramdisk_t *ramdisk, const jinue_mem_map_t *map);
 
-const jinue_dirent_t *extract_ramdisk(const ramdisk_t *ramdisk);
+const jinue_dirent_t *extract_ramdisk(jinue_loader_meminfo_t *meminfo, const ramdisk_t *ramdisk);
 
 #endif

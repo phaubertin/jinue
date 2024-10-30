@@ -38,4 +38,6 @@ int _libc_init(void);
 
 uint64_t _libc_get_physmem_alloc_addr(void);
 
+uint64_t _libc_get_physmem_alloc_limit(void);
+
 #endif

@@ -109,4 +109,15 @@ const void *jinue_dirent_file(const jinue_dirent_t *dirent);
 
 const char *jinue_dirent_link(const jinue_dirent_t *dirent);
 
+typedef struct {
+    struct {
+        uint64_t    addr;
+        uint64_t    size;
+    } ramdisk;
+    struct {
+        uint64_t    physaddr;
+        uint64_t    physlimit;
+    } hint;
+} jinue_loader_meminfo_t;
+
 #endif

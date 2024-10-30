@@ -73,6 +73,8 @@ void dump_loader_memory(void) {
     message.recv_buffers        = &reply_buffer;
     message.recv_buffers_length = 1;
 
+    jinue_info("Sending message with unsupported message number.");
+
     uintptr_t errcode;
     int status = jinue_send(JINUE_DESC_LOADER_ENDPOINT, 16777, &message, &errno, &errcode);
 
@@ -95,9 +97,36 @@ void dump_loader_memory(void) {
 
     jinue_info("expected: loader set error code to: %s.", strerror(errcode));
 
-    /* TODO get memory information from loader */
+    jinue_info("Getting memory information from loader.");
 
-    /* TODO dump memory information from loader */
+    status = jinue_send(
+        JINUE_DESC_LOADER_ENDPOINT,
+        JINUE_MSG_GET_MEMINFO,
+        &message,
+        &errno,
+        &errcode
+    );
+
+    if(status < 0) {
+        if(errno == JINUE_EPROTO) {
+            jinue_error("error: loader set error code to: %s.", strerror(errcode));
+        } else {
+            jinue_error("error: jinue_send() failed: %s.", strerror(errno));
+        }
+
+        return;
+    }
+
+    const jinue_loader_meminfo_t *meminfo = (jinue_loader_meminfo_t *)buffer;
+    jinue_info("  Physical memory allocation address:   %#" PRIx64, meminfo->hint.physaddr);
+    jinue_info("  Physical memory allocation limit:     %#" PRIx64, meminfo->hint.physlimit);
+    jinue_info("  Extracted RAM disk address:           %#" PRIx64, meminfo->ramdisk.addr);
+    jinue_info("  Extracted RAM disk size:              %#" PRIx64 " %" PRIu64,
+        meminfo->ramdisk.size,
+        meminfo->ramdisk.size
+    );
+
+    jinue_info("Blocking until loader exits.");
 
     status = jinue_send(
         JINUE_DESC_LOADER_ENDPOINT,
