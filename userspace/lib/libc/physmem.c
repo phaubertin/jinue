@@ -32,6 +32,7 @@
 #include <jinue/jinue.h>
 #include <jinue/loader.h>
 #include <errno.h>
+#include <internals.h>
 #include <stdlib.h>
 #include "physmem.h"
 
@@ -40,13 +41,15 @@
 /* TODO adjust this */
 #define LOADER_BUFFER_SIZE  16384
 
-static uint64_t alloc_addr;
 
-static uint64_t alloc_limit;
+static struct {
+    uint64_t addr;
+    uint64_t limit;
+} alloc_range;
 
 static void initialize_range(uint64_t addr, uint64_t size) {
-    alloc_addr  = addr;
-    alloc_limit = addr + size;
+    alloc_range.addr    = addr;
+    alloc_range.limit   = addr + size;
 }
 
 static int initialize_range_from_loader_info(void) {
@@ -127,14 +130,18 @@ int physmem_init(void) {
 }
 
 int64_t physmem_alloc(size_t size) {
-    uint64_t top = alloc_addr + size;
+    uint64_t top = alloc_range.addr + size;
 
-    if(top > alloc_limit) {
+    if(top > alloc_range.limit) {
         return -1;
     }
 
-    uint64_t retval = alloc_addr;
-    alloc_addr      = top;
+    uint64_t retval     = alloc_range.addr;
+    alloc_range.addr    = top;
 
     return retval;
+}
+
+uint64_t _libc_get_physmem_alloc_addr(void) {
+    return alloc_range.addr;
 }
