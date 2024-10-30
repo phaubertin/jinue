@@ -34,8 +34,8 @@
 
 #include <jinue/shared/asm/syscalls.h>
 
-/* These message numbers are part of loader interface and only apply when calling the loader IPC
- * endpoint. They aren't reserved. */
+/* These message numbers are part of the loader interface and only apply when calling the loader
+ * IPC endpoint. They aren't reserved. */
 
 /** get information about memory in use on loader exit */
 #define JINUE_MSG_GET_MEMINFO   (JINUE_SYS_USER_BASE + 0)
