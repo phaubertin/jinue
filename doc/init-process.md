@@ -19,8 +19,8 @@ initial thread.
 The initial stack is located at the very top of the user space virtual 
 address space ([JINUE_KLIMIT](../include/jinue/shared/asm/i686.h)). 
 Its size is 128KB 
-([JINUE_STACK_SIZE](../include/jinue/shared/asm/i686.h), with 32KB 
-([JINUE_RESERVED_STACK_SIZE](../include/jinue/shared/asm/i686.h)) of 
+([JINUE_STACK_SIZE](../include/jinue/shared/asm/stack.h), with 32KB 
+([JINUE_RESERVED_STACK_SIZE](../include/jinue/shared/asm/stack.h)) of 
 that size reserved for the command line arguments, environment 
 variables and auxiliary vectors.
 

@@ -31,6 +31,7 @@
 
 #include <jinue/shared/asm/descriptors.h>
 #include <jinue/shared/asm/mman.h>
+#include <jinue/shared/asm/stack.h>
 #include <kernel/domain/alloc/page_alloc.h>
 #include <kernel/domain/alloc/vmalloc.h>
 #include <kernel/domain/entities/descriptor.h>
