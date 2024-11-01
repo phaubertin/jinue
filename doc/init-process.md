@@ -22,7 +22,7 @@ initial program thread.
 
 The initial stack is located at the very top of the user address space
 ([JINUE_KLIMIT](../include/jinue/shared/asm/i686.h)) and its size is
-128kB ([JINUE_STACK_SIZE](../include/jinue/shared/asm/stack.h).
+128kB ([JINUE_STACK_SIZE](../include/jinue/shared/asm/stack.h)).
 
 A typical address space for the initial process is illustrated below.
 Only the kernel reserved region and the location of the stack are
@@ -172,7 +172,7 @@ The following table lists the auxiliary vectors:
 The value of the `JINUE_AT_HOWSYSCALL` auxiliary vector identifies the
 system call implementation to use on architecture where there can be
 more than one. Its meaning is implementation dependent. See
-[System Call Implementations](syscalls/implementation.md) for detail.
+[System Call Implementations](syscalls/implementations.md) for detail.
 
 ## Initial Descriptors
 
