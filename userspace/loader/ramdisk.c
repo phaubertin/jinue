@@ -39,6 +39,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "archives/tar.h"
+#include "server/meminfo.h"
+#include "streams/bzip2.h"
 #include "streams/bzip2.h"
 #include "streams/gzip.h"
 #include "streams/raw.h"
@@ -185,7 +187,7 @@ static enum format detect_format(stream_t *stream) {
  * @return virtual filesystem root, NULL on failure
  *
  * */
-const jinue_dirent_t *extract_ramdisk(jinue_loader_meminfo_t *meminfo, const ramdisk_t *ramdisk) {
+const jinue_dirent_t *extract_ramdisk(const ramdisk_t *ramdisk) {
     stream_t stream;
 
     int status = initialize_stream(&stream, ramdisk);
@@ -194,7 +196,7 @@ const jinue_dirent_t *extract_ramdisk(jinue_loader_meminfo_t *meminfo, const ram
         return NULL;
     }
 
-    meminfo->ramdisk.addr = _libc_get_physmem_alloc_addr();
+    const uint64_t ramdisk_start = _libc_get_physmem_alloc_addr(); 
 
     const jinue_dirent_t *root;
 
@@ -209,7 +211,10 @@ const jinue_dirent_t *extract_ramdisk(jinue_loader_meminfo_t *meminfo, const ram
         break;
     }
 
-    meminfo->ramdisk.size = _libc_get_physmem_alloc_addr() - meminfo->ramdisk.addr;
+    if(root != NULL) {
+        const uint64_t ramdisk_end  = _libc_get_physmem_alloc_addr();
+        set_meminfo_ramdisk(ramdisk_start, ramdisk_end - ramdisk_start);
+    }
 
     stream_finalize(&stream);
 

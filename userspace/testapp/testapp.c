@@ -118,12 +118,16 @@ void dump_loader_memory(void) {
     }
 
     const jinue_loader_meminfo_t *meminfo = (jinue_loader_meminfo_t *)buffer;
-    jinue_info("  Physical memory allocation address:   %#" PRIx64, meminfo->hint.physaddr);
-    jinue_info("  Physical memory allocation limit:     %#" PRIx64, meminfo->hint.physlimit);
-    jinue_info("  Extracted RAM disk address:           %#" PRIx64, meminfo->ramdisk.addr);
+    const jinue_loader_segment_t *segments = (const jinue_loader_segment_t *)&meminfo[1];
+
+    jinue_info("  Physical memory allocation address:   %#" PRIx64, meminfo->hints.physaddr);
+    jinue_info("  Physical memory allocation limit:     %#" PRIx64, meminfo->hints.physlimit);
+    jinue_info("  Extracted RAM disk address:           %#" PRIx64,
+        segments[meminfo->ramdisk].addr
+    );
     jinue_info("  Extracted RAM disk size:              %#" PRIx64 " %" PRIu64,
-        meminfo->ramdisk.size,
-        meminfo->ramdisk.size
+        segments[meminfo->ramdisk].size,
+        segments[meminfo->ramdisk].size
     );
 
     jinue_info("Blocking until loader exits.");

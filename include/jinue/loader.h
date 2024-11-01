@@ -110,14 +110,39 @@ const void *jinue_dirent_file(const jinue_dirent_t *dirent);
 const char *jinue_dirent_link(const jinue_dirent_t *dirent);
 
 typedef struct {
+    int n_segments;
+    int n_vmaps;
+    int ramdisk;
     struct {
-        uint64_t    addr;
-        uint64_t    size;
-    } ramdisk;
-    struct {
-        uint64_t    physaddr;
-        uint64_t    physlimit;
-    } hint;
+        void        *mmap_base;
+        uint64_t     physaddr;
+        uint64_t     physlimit;
+    } hints;
 } jinue_loader_meminfo_t;
+
+/** extracted RAM disk */
+#define JINUE_SEG_TYPE_RAMDISK  0
+
+/** file loaded by the loader */
+#define JINUE_SEG_TYPE_FILE     1
+
+/** anonymous memory */
+#define JINUE_SEG_TYPE_ANON     2
+
+/** other memory referenced by a mapping */
+#define JINUE_SEG_TYPE_OTHER    3
+
+typedef struct {
+    uint64_t    addr;
+    uint64_t    size;
+    int         type;
+} jinue_loader_segment_t;
+
+typedef struct {
+    void    *addr;
+    size_t   size;
+    int      perms;
+    int      segment;
+} jinue_loader_vmap_t;
 
 #endif

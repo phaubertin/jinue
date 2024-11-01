@@ -34,6 +34,8 @@ sources.c        = \
 	archives/alloc.c \
 	archives/tar.c \
 	binfmt/elf.c \
+	server/meminfo.c \
+	server/server.c \
 	streams/bzip2.c \
 	streams/gzip.c \
 	streams/raw.c \
@@ -41,7 +43,6 @@ sources.c        = \
 	debug.c \
 	loader.c \
 	ramdisk.c \
-	server.c \
 	utils.c
 loader           = loader
 target           = $(loader)-stripped

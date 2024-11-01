@@ -33,19 +33,17 @@
 #include <jinue/loader.h>
 #include <jinue/utils.h>
 #include <errno.h>
-#include <internals.h>
 #include <stdlib.h>
 #include <string.h>
 #include "binfmt/elf.h"
+#include "server/meminfo.h"
+#include "server/server.h"
 #include "debug.h"
 #include "descriptors.h"
 #include "ramdisk.h"
-#include "server.h"
 #include "utils.h"
 
 #define MAP_BUFFER_SIZE 16384
-
-static jinue_loader_meminfo_t meminfo;
 
 static jinue_mem_map_t *get_memory_map(void *buffer, size_t bufsize) {
     int status = jinue_get_user_memory(buffer, bufsize, &errno);
@@ -137,7 +135,7 @@ static int load_init(elf_info_t *elf_info, const jinue_dirent_t *init, int argc,
 int main(int argc, char *argv[]) {
     jinue_info("Jinue user space loader (%s) started.", argv[0]);
 
-    memset(&meminfo, 0, sizeof(meminfo));
+    initialize_meminfo();
 
     char map_buffer[MAP_BUFFER_SIZE];
     jinue_mem_map_t *map = get_memory_map(map_buffer, sizeof(map_buffer));
@@ -154,7 +152,7 @@ int main(int argc, char *argv[]) {
         return status;
     }
 
-    const jinue_dirent_t *root = extract_ramdisk(&meminfo, &ramdisk);
+    const jinue_dirent_t *root = extract_ramdisk(&ramdisk);
 
     if(root == NULL) {
         return EXIT_FAILURE;
@@ -203,8 +201,5 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    meminfo.hint.physaddr   = _libc_get_physmem_alloc_addr();
-    meminfo.hint.physlimit  = _libc_get_physmem_alloc_limit();
-
-    return run_server(&meminfo);
+    return run_server();
 }

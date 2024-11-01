@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,9 +29,21 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LIBC_MMAP_H
-#define LIBC_MMAP_H
+#ifndef LOADER_MEMINFO_H_
+#define LOADER_MEMINFO_H_
 
-#define MMAP_BASE 0x40000000
+#include <jinue/jinue.h>
+#include <jinue/loader.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
+void initialize_meminfo(void);
+
+int add_meminfo_segment(uint64_t addr, uint64_t size, int type);
+
+void set_meminfo_ramdisk(uint64_t addr, uint64_t size);
+
+int set_meminfo_reply(jinue_message_t *reply, size_t bufsize);
 
 #endif

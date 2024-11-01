@@ -36,17 +36,16 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include "descriptors.h"
+#include "../descriptors.h"
+#include "meminfo.h"
 #include "server.h"
 
-static int get_meminfo(const jinue_message_t *message, const jinue_loader_meminfo_t *meminfo) {
-    int status;
+static int get_meminfo(const jinue_message_t *message) {
+    jinue_message_t reply;
 
-    jinue_const_buffer_t reply_buffer;
-    reply_buffer.addr = meminfo;
-    reply_buffer.size = sizeof(jinue_loader_meminfo_t);
+    int status = set_meminfo_reply(&reply, message->reply_max_size);
 
-    if(message->reply_max_size < reply_buffer.size) {
+    if(status != EXIT_SUCCESS) {
         status = jinue_reply_error(JINUE_E2BIG, &errno);
 
         if(status < 0) {
@@ -56,10 +55,6 @@ static int get_meminfo(const jinue_message_t *message, const jinue_loader_meminf
 
         return EXIT_SUCCESS;
     }
-
-    jinue_message_t reply;
-    reply.send_buffers        = &reply_buffer;
-    reply.send_buffers_length = 1;
 
     status = jinue_reply(&reply, &errno);
 
@@ -71,7 +66,7 @@ static int get_meminfo(const jinue_message_t *message, const jinue_loader_meminf
     return EXIT_SUCCESS;
 }
 
-int run_server(const jinue_loader_meminfo_t *meminfo) {
+int run_server(void) {
     while(true) {
         jinue_message_t message;
         message.recv_buffers        = NULL;
@@ -86,7 +81,7 @@ int run_server(const jinue_loader_meminfo_t *meminfo) {
 
         switch(message.recv_function) {
             case JINUE_MSG_GET_MEMINFO:
-                status = get_meminfo(&message, meminfo);
+                status = get_meminfo(&message);
 
                 if(status != EXIT_SUCCESS) {
                     return EXIT_FAILURE;

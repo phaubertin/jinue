@@ -36,7 +36,7 @@
 #include <stdlib.h>
 #include "physmem.h"
 
-#define MAX_MAP_ENTRIES     128
+#define BUFFER_SIZE 2048
 
 static struct {
     uint64_t addr;
@@ -49,11 +49,11 @@ static void initialize_range(uint64_t addr, uint64_t limit) {
 }
 
 static int initialize_range_from_loader_info(void) {
-    jinue_loader_meminfo_t meminfo;
+    char buffer[BUFFER_SIZE];
 
     jinue_buffer_t reply_buffer;
-    reply_buffer.addr = &meminfo;
-    reply_buffer.size = sizeof(meminfo);
+    reply_buffer.addr = buffer;
+    reply_buffer.size = sizeof(buffer);
 
     jinue_message_t message;
     message.send_buffers        = NULL;
@@ -74,13 +74,15 @@ static int initialize_range_from_loader_info(void) {
         return status;
     }
 
-    initialize_range(meminfo.hint.physaddr, meminfo.hint.physlimit);
+    const jinue_loader_meminfo_t *meminfo = (const jinue_loader_meminfo_t *)buffer;
+
+    initialize_range(meminfo->hints.physaddr, meminfo->hints.physlimit);
 
     return status;
 }
 
 static int initialize_range_from_kernel_info(void) {
-    char map_buffer[sizeof(jinue_mem_map_t) + MAX_MAP_ENTRIES * sizeof(jinue_mem_entry_t)];
+    char map_buffer[BUFFER_SIZE];
     jinue_mem_map_t *map = (void *)map_buffer;
 
     int status = jinue_get_user_memory(map, sizeof(map_buffer), NULL);

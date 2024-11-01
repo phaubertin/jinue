@@ -34,6 +34,6 @@
 
 #include <jinue/loader.h>
 
-int run_server(const jinue_loader_meminfo_t *meminfo);
+int run_server(void);
 
 #endif

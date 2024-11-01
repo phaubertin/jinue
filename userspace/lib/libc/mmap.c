@@ -32,7 +32,7 @@
 #include <jinue/jinue.h>
 #include <sys/mman.h>
 #include <errno.h>
-#include "mmap.h"
+#include <internals.h>
 #include "physmem.h"
 
 static void *alloc_addr = (void *)MMAP_BASE;
