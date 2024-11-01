@@ -152,23 +152,22 @@ filtered out.
 
 ## Auxiliary Vectors
 
-The auxiliary vectors are a table of key-value pairs. Each key is a C
-language `ìnt` value and each value is a 32-bit integer.
+The auxiliary vectors are a table of type-value pairs. Each type is represented
+by a C language `ìnt` value and each value is a 32-bit integer.
 
-The following table provides the names and values of the auxiliary
-vector keys:
+The following table lists the auxiliary vectors:
 
-| Key Value | Key Name              | Value Description                         |
-|-----------|-----------------------|-------------------------------------------|
-| 0         | `JINUE_AT_NULL`       | Indicates the last vector, discard value  |
-| 1         | `JINUE_AT_IGNORE`     | Ignore                                    |
-| 2         | `JINUE_AT_PHDR`       | Address of ELF program headers            |
-| 3         | `JINUE_AT_PHENT`      | Size of a program header entry            |
-| 4         | `JINUE_AT_PHNUM`      | Number of program headers                 |
-| 5         | `JINUE_AT_PAGESZ`     | Page size                                 |
-| 6         | `JINUE_AT_ENTRY`      | Address of program entry point            |
-| 7         | `JINUE_AT_STACKBASE`  | Stack base address                        |
-| 8         | `JINUE_AT_HOWSYSCALL` | System call implementation                |
+| Type Value | Type Name             | Description                               |
+|------------|-----------------------|-------------------------------------------|
+| 0          | `JINUE_AT_NULL`       | Indicates the last vector, discard value  |
+| 1          | `JINUE_AT_IGNORE`     | Ignore                                    |
+| 2          | `JINUE_AT_PHDR`       | Address of ELF program headers            |
+| 3          | `JINUE_AT_PHENT`      | Size of a program header entry            |
+| 4          | `JINUE_AT_PHNUM`      | Number of program headers                 |
+| 5          | `JINUE_AT_PAGESZ`     | Page size                                 |
+| 6          | `JINUE_AT_ENTRY`      | Address of program entry point            |
+| 7          | `JINUE_AT_STACKBASE`  | Stack base address                        |
+| 8          | `JINUE_AT_HOWSYSCALL` | System call implementation                |
 
 The value of the `JINUE_AT_HOWSYSCALL` auxiliary vector identifies the
 system call implementation to use on architecture where there can be
