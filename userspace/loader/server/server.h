@@ -34,6 +34,8 @@
 
 #include <jinue/loader.h>
 
+int reply_error(int error_number);
+
 int run_server(void);
 
 #endif

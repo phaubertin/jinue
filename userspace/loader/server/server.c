@@ -39,6 +39,17 @@
 #include "meminfo.h"
 #include "server.h"
 
+int reply_error(int error_number) {
+    int status = jinue_reply_error(error_number, &errno);
+
+    if(status < 0) {
+        jinue_error("jinue_reply_error() failed: %s", strerror(errno));
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}
+
 int run_server(void) {
     while(true) {
         jinue_message_t message;
@@ -57,7 +68,7 @@ int run_server(void) {
                 status = get_meminfo(&message);
 
                 if(status != EXIT_SUCCESS) {
-                    return EXIT_FAILURE;
+                    return status;
                 }
                 break;
             case JINUE_MSG_EXIT:
@@ -65,11 +76,10 @@ int run_server(void) {
                  * JINUE_EIO on the sender's side, but only once this process has exited. */
                 return EXIT_SUCCESS;
             default:
-                status = jinue_reply_error(JINUE_ENOSYS, &errno);
+                status = reply_error(JINUE_ENOSYS);
 
-                if(status < 0) {
-                    jinue_error("jinue_reply_error() failed: %s", strerror(errno));
-                    return EXIT_FAILURE;
+                if(status != EXIT_SUCCESS) {
+                    return status;
                 }
         }
     }

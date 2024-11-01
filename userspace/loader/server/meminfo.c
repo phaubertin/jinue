@@ -36,6 +36,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "meminfo.h"
+#include "server.h"
 
 #define MAX_SEGMENTS    8
 
@@ -99,17 +100,6 @@ static void update_meminfo(void) {
 static void update_buffers(void) {
     buffers[BUFFER_INDEX_SEGMENTS].size = SEGMENTS_SIZE;
     buffers[BUFFER_INDEX_VMAPS].size    = VMAPS_SIZE;
-}
-
-static int reply_error(int error_number) {
-    int status = jinue_reply_error(error_number, &errno);
-
-    if(status < 0) {
-        jinue_error("jinue_reply_error() failed: %s", strerror(errno));
-        return EXIT_FAILURE;
-    }
-
-    return EXIT_SUCCESS;
 }
 
 int get_meminfo(const jinue_message_t *message) {
