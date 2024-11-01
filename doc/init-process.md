@@ -162,16 +162,13 @@ vector keys:
 |-----------|-----------------------|-------------------------------------------|
 | 0         | `JINUE_AT_NULL`       | Indicates the last vector, discard value  |
 | 1         | `JINUE_AT_IGNORE`     | Ignore                                    |
-| 2         | `JINUE_AT_EXECFD`     | Unused                                    |
-| 3         | `JINUE_AT_PHDR`       | Address of ELF program headers            |
-| 4         | `JINUE_AT_PHENT`      | Size of a program header entry            |
-| 5         | `JINUE_AT_PHNUM`      | Number of program headers                 |
-| 6         | `JINUE_AT_PAGESZ`     | Page size                                 |
-| 7         | `JINUE_AT_BASE`       | Unused                                    |
-| 8         | `JINUE_AT_FLAGS`      | Unused                                    |
-| 9         | `JINUE_AT_ENTRY`      | Address of program entry point            |
-| 10        | `JINUE_AT_STACKBASE`  | Stack base address                        |
-| 11        | `JINUE_AT_HOWSYSCALL` | System call implementation                |
+| 2         | `JINUE_AT_PHDR`       | Address of ELF program headers            |
+| 3         | `JINUE_AT_PHENT`      | Size of a program header entry            |
+| 4         | `JINUE_AT_PHNUM`      | Number of program headers                 |
+| 5         | `JINUE_AT_PAGESZ`     | Page size                                 |
+| 6         | `JINUE_AT_ENTRY`      | Address of program entry point            |
+| 7         | `JINUE_AT_STACKBASE`  | Stack base address                        |
+| 8         | `JINUE_AT_HOWSYSCALL` | System call implementation                |
 
 The value of the `JINUE_AT_HOWSYSCALL` auxiliary vector identifies the
 system call implementation to use on architecture where there can be
