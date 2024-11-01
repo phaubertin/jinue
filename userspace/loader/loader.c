@@ -41,6 +41,7 @@
 #include "debug.h"
 #include "descriptors.h"
 #include "ramdisk.h"
+#include "thread.h"
 #include "utils.h"
 
 #define MAP_BUFFER_SIZE 16384
@@ -78,7 +79,12 @@ static const jinue_dirent_t *get_init(const jinue_dirent_t *root) {
     return dirent;
 }
 
-static int load_init(elf_info_t *elf_info, const jinue_dirent_t *init, int argc, char *argv[]) {
+static int load_init(
+        thread_params_t         *thread_params,
+        const jinue_dirent_t    *init,
+        int                      argc,
+        char                    *argv[]) {
+
     jinue_info("Loading init program %s", jinue_dirent_name(init));
 
     int status = jinue_create_process(INIT_PROCESS_DESCRIPTOR, &errno);
@@ -88,7 +94,7 @@ static int load_init(elf_info_t *elf_info, const jinue_dirent_t *init, int argc,
         return EXIT_FAILURE;
     }
 
-    status = load_elf(elf_info, INIT_PROCESS_DESCRIPTOR, init, argc, argv);
+    status = load_elf(thread_params, INIT_PROCESS_DESCRIPTOR, init, argc, argv);
 
     if(status != EXIT_SUCCESS) {
         return status;
@@ -132,6 +138,36 @@ static int load_init(elf_info_t *elf_info, const jinue_dirent_t *init, int argc,
     return EXIT_SUCCESS;
 }
 
+static int start_initial_thread(thread_params_t *thread_params) {
+    int status = jinue_create_thread(INIT_THREAD_DESCRIPTOR, INIT_PROCESS_DESCRIPTOR, &errno);
+
+    if (status != 0) {
+        jinue_error("error: could not create thread: %s", strerror(errno));
+        return EXIT_FAILURE;
+    }
+
+    status = jinue_start_thread(
+        INIT_THREAD_DESCRIPTOR,
+        thread_params->entry,
+        thread_params->stack_addr,
+        &errno
+    );
+
+    if (status != 0) {
+        jinue_error("error: could not start thread: %s", strerror(errno));
+        return EXIT_FAILURE;
+    }
+
+    status = jinue_close(INIT_THREAD_DESCRIPTOR, &errno);
+
+    if (status != 0) {
+        jinue_error("error: could not close thread descriptor: %s", strerror(errno));
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}
+
 int main(int argc, char *argv[]) {
     jinue_info("Jinue user space loader (%s) started.", argv[0]);
 
@@ -166,8 +202,8 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    elf_info_t elf_info;
-    status = load_init(&elf_info, init, argc, argv);
+    thread_params_t thread_params;
+    status = load_init(&thread_params, init, argc, argv);
 
     if(status != EXIT_SUCCESS) {
         return status;
@@ -175,30 +211,10 @@ int main(int argc, char *argv[]) {
 
     jinue_info("---");
 
-    status = jinue_create_thread(INIT_THREAD_DESCRIPTOR, INIT_PROCESS_DESCRIPTOR, &errno);
+    status = start_initial_thread(&thread_params);
 
-    if (status != 0) {
-        jinue_error("error: could not create thread: %s", strerror(errno));
-        return EXIT_FAILURE;
-    }
-
-    status = jinue_start_thread(
-        INIT_THREAD_DESCRIPTOR,
-        elf_info.entry,
-        elf_info.stack_addr,
-        &errno
-    );
-
-    if (status != 0) {
-        jinue_error("error: could not start thread: %s", strerror(errno));
-        return EXIT_FAILURE;
-    }
-
-    status = jinue_close(INIT_THREAD_DESCRIPTOR, &errno);
-
-    if (status != 0) {
-        jinue_error("error: could not close thread descriptor: %s", strerror(errno));
-        return EXIT_FAILURE;
+    if(status != EXIT_SUCCESS) {
+        return status;
     }
 
     return run_server();

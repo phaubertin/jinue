@@ -41,6 +41,14 @@
 #include "../utils.h"
 #include "elf.h"
 
+typedef struct {
+    void    (*entry)(void);
+    void    *stack_addr;
+    void    *at_phdr;
+    int      at_phent;
+    int      at_phnum;
+} elf_info_t;
+
 /**
  * Validate the ELF header
  *
@@ -216,7 +224,7 @@ static const char *prot_str(int prot) {
  * 
  * src_addr, dest_addr and length must be aligned on a page boundary.
  * 
- * @param fd descriptor of the process in which too load the binary
+ * @param fd descriptor of the process in which to load the binary
  * @param src_addr segment start address in this process
  * @param dest_addr segment start address in the other process
  * @param length length of segment in bytes
@@ -579,13 +587,19 @@ static void initialize_stack(
  * file name from the ELF binary directory entry.
  *
  * @param elf_info ELF information structure (output)
- * @param fd descriptor of the process in which too load the binary
+ * @param fd descriptor of the process in which to load the binary
  * @param dirent directory entry for the ELF binary
  * @param argc number of command line arguments
  * @param argv command line arguments
  *
  * */
-int load_elf(elf_info_t *elf_info, int fd, const jinue_dirent_t *dirent, int argc, char *argv[]) {
+int load_elf(
+    thread_params_t         *thread_params,
+    int                      fd,
+    const jinue_dirent_t    *dirent,
+    int                      argc,
+    char                    *argv[]) {
+
     const Elf32_Ehdr *ehdr = jinue_dirent_file(dirent);
 
     int status = check_elf_header(ehdr, dirent->size);
@@ -594,7 +608,8 @@ int load_elf(elf_info_t *elf_info, int fd, const jinue_dirent_t *dirent, int arg
         return status;
     }
 
-    status = load_segments(elf_info, fd, ehdr);
+    elf_info_t elf_info;
+    status = load_segments(&elf_info, fd, ehdr);
 
     if(status != EXIT_SUCCESS) {
         return status;
@@ -606,7 +621,10 @@ int load_elf(elf_info_t *elf_info, int fd, const jinue_dirent_t *dirent, int arg
         return EXIT_FAILURE;
     }
 
-    initialize_stack(stack, elf_info, dirent, argc, argv);
+    initialize_stack(stack, &elf_info, dirent, argc, argv);
+
+    thread_params->entry        = elf_info.entry;
+    thread_params->stack_addr   = elf_info.stack_addr;
 
     return EXIT_SUCCESS;
 }

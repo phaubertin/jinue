@@ -49,6 +49,15 @@
 #include <assert.h>
 #include <string.h>
 
+typedef struct {
+    void            *entry;
+    void            *stack_addr;
+    addr_t           at_phdr;
+    int              at_phent;
+    int              at_phnum;
+    process_t       *process;
+} elf_info_t;
+
 /**
  * Print validation error message and return false
  *
