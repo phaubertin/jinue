@@ -114,7 +114,6 @@ typedef struct {
     int n_vmaps;
     int ramdisk;
     struct {
-        void        *mmap_base;
         uint64_t     physaddr;
         uint64_t     physlimit;
     } hints;

@@ -93,7 +93,6 @@ int set_meminfo_reply(jinue_message_t *reply, size_t bufsize) {
         return EXIT_FAILURE;
     }
 
-    meminfo.hints.mmap_base             = (void *)MMAP_BASE;
     meminfo.hints.physaddr              = _libc_get_physmem_alloc_addr();
     meminfo.hints.physlimit             = _libc_get_physmem_alloc_limit();
 
