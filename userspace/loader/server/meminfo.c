@@ -29,6 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <jinue/loader.h>
+#include <jinue/utils.h>
+#include <errno.h>
 #include <internals.h>
 #include <stdlib.h>
 #include <string.h>
@@ -88,19 +91,46 @@ void set_meminfo_ramdisk(uint64_t addr, uint64_t size) {
     meminfo.ramdisk = add_meminfo_segment(addr, size, JINUE_SEG_TYPE_RAMDISK);
 }
 
-int set_meminfo_reply(jinue_message_t *reply, size_t bufsize) {
-    if(bufsize < MESSAGE_SIZE) {
+static void update_meminfo(void) {
+    meminfo.hints.physaddr  = _libc_get_physmem_alloc_addr();
+    meminfo.hints.physlimit = _libc_get_physmem_alloc_limit();
+}
+
+static void update_buffers(void) {
+    buffers[BUFFER_INDEX_SEGMENTS].size = SEGMENTS_SIZE;
+    buffers[BUFFER_INDEX_VMAPS].size    = VMAPS_SIZE;
+}
+
+static int reply_error(int error_number) {
+    int status = jinue_reply_error(error_number, &errno);
+
+    if(status < 0) {
+        jinue_error("jinue_reply_error() failed: %s", strerror(errno));
         return EXIT_FAILURE;
     }
 
-    meminfo.hints.physaddr              = _libc_get_physmem_alloc_addr();
-    meminfo.hints.physlimit             = _libc_get_physmem_alloc_limit();
+    return EXIT_SUCCESS;
+}
 
-    buffers[BUFFER_INDEX_SEGMENTS].size = SEGMENTS_SIZE;
-    buffers[BUFFER_INDEX_VMAPS].size    = VMAPS_SIZE;
+int get_meminfo(const jinue_message_t *message) {
+    if(message->reply_max_size < MESSAGE_SIZE) {
+        return reply_error(JINUE_E2BIG);
+    }
 
-    reply->send_buffers                 = buffers;
-    reply->send_buffers_length          = sizeof(buffers)/sizeof(buffers[0]);
+    update_meminfo();
+
+    update_buffers();
+
+    jinue_message_t reply;
+    reply.send_buffers          = buffers;
+    reply.send_buffers_length   = sizeof(buffers)/sizeof(buffers[0]);
+
+    int status = jinue_reply(&reply, &errno);
+
+    if(status < 0) {
+        jinue_error("jinue_reply() failed: %s", strerror(errno));
+        return EXIT_FAILURE;
+    }
 
     return EXIT_SUCCESS;
 }

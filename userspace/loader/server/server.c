@@ -30,7 +30,6 @@
  */
 
 #include <jinue/jinue.h>
-#include <jinue/loader.h>
 #include <jinue/utils.h>
 #include <errno.h>
 #include <stdbool.h>
@@ -39,32 +38,6 @@
 #include "../descriptors.h"
 #include "meminfo.h"
 #include "server.h"
-
-static int get_meminfo(const jinue_message_t *message) {
-    jinue_message_t reply;
-
-    int status = set_meminfo_reply(&reply, message->reply_max_size);
-
-    if(status != EXIT_SUCCESS) {
-        status = jinue_reply_error(JINUE_E2BIG, &errno);
-
-        if(status < 0) {
-            jinue_error("jinue_reply_error() failed: %s", strerror(errno));
-            return EXIT_FAILURE;
-        }
-
-        return EXIT_SUCCESS;
-    }
-
-    status = jinue_reply(&reply, &errno);
-
-    if(status < 0) {
-        jinue_error("jinue_reply() failed: %s", strerror(errno));
-        return EXIT_FAILURE;
-    }
-
-    return EXIT_SUCCESS;
-}
 
 int run_server(void) {
     while(true) {

@@ -33,9 +33,6 @@
 #define LOADER_MEMINFO_H_
 
 #include <jinue/jinue.h>
-#include <jinue/loader.h>
-#include <stdbool.h>
-#include <stddef.h>
 #include <stdint.h>
 
 void initialize_meminfo(void);
@@ -44,6 +41,6 @@ int add_meminfo_segment(uint64_t addr, uint64_t size, int type);
 
 void set_meminfo_ramdisk(uint64_t addr, uint64_t size);
 
-int set_meminfo_reply(jinue_message_t *reply, size_t bufsize);
+int get_meminfo(const jinue_message_t *message);
 
 #endif
