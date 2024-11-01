@@ -50,17 +50,28 @@ int reply_error(int error_number) {
     return EXIT_SUCCESS;
 }
 
+int receive_message(jinue_message_t *message) {
+    message->recv_buffers           = NULL;
+    message->recv_buffers_length    = 0;
+
+    int status = jinue_receive(JINUE_DESC_LOADER_ENDPOINT, message, &errno);
+
+    if(status < 0) {
+        jinue_error("jinue_receive() failed: %s", strerror(errno));
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}
+
 int run_server(void) {
     while(true) {
         jinue_message_t message;
-        message.recv_buffers        = NULL;
-        message.recv_buffers_length = 0;
 
-        int status = jinue_receive(JINUE_DESC_LOADER_ENDPOINT, &message, &errno);
+        int status = receive_message(&message);
 
-        if(status < 0) {
-            jinue_error("jinue_receive() failed: %s", strerror(errno));
-            return EXIT_FAILURE;
+        if(status != EXIT_SUCCESS) {
+            return status;
         }
 
         switch(message.recv_function) {
