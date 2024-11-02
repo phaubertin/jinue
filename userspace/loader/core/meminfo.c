@@ -92,14 +92,6 @@ uint64_t get_meminfo_segment_start(int index) {
     return segments[index].addr;
 }
 
-void set_meminfo_ramdisk(uint64_t addr, uint64_t size) {
-    meminfo.ramdisk = add_meminfo_segment(addr, size, JINUE_SEG_TYPE_RAMDISK);
-}
-
-uint64_t get_meminfo_ramdisk_start(void) {
-    return get_meminfo_segment_start(meminfo.ramdisk);
-}
-
 void add_meminfo_vmap(void *addr, size_t size, int segment_index, size_t offset, int perms) {
     int index = meminfo.n_vmaps++;
 

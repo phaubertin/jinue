@@ -215,8 +215,6 @@ void dump_user_memory(void) {
 
 static const char *segment_type_description(int type) {
     switch(type) {
-        case JINUE_SEG_TYPE_RAMDISK:
-            return "extracted RAM disk";
         case JINUE_SEG_TYPE_FILE:
             return "file";
         case JINUE_SEG_TYPE_ANON:
@@ -300,9 +298,6 @@ static void dump_meminfo(
     }
     
     jinue_info("Memory and mappings information from user space loader:");
-    jinue_info("  Extracted RAM disk:");
-    dump_segment(segments, meminfo->ramdisk);
-
     jinue_info("  Hints:");
     jinue_info("    Physical allocation start: %#" PRIx64, meminfo->hints.physaddr);
     jinue_info("    Physical allocation limit: %#" PRIx64, meminfo->hints.physlimit);

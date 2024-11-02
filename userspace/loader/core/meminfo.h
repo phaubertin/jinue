@@ -42,10 +42,6 @@ int add_meminfo_segment(uint64_t addr, uint64_t size, int type);
 
 uint64_t get_meminfo_segment_start(int index);
 
-void set_meminfo_ramdisk(uint64_t addr, uint64_t size);
-
-uint64_t get_meminfo_ramdisk_start(void);
-
 void add_meminfo_vmap(void *addr, size_t size, int segment_index, size_t offset, int perms);
 
 int get_meminfo(const jinue_message_t *message);

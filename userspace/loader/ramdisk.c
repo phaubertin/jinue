@@ -212,8 +212,6 @@ int extract_ramdisk(extracted_ramdisk_t *extracted, const ramdisk_t *ramdisk) {
     if(status != EXIT_SUCCESS) {
         return status;
     }
-    
-    set_meminfo_ramdisk(extracted->physaddr, extracted->size);
 
     return EXIT_SUCCESS;
 }

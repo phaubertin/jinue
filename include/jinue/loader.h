@@ -112,15 +112,11 @@ const char *jinue_dirent_link(const jinue_dirent_t *dirent);
 typedef struct {
     int n_segments;
     int n_vmaps;
-    int ramdisk;
     struct {
         uint64_t     physaddr;
         uint64_t     physlimit;
     } hints;
 } jinue_loader_meminfo_t;
-
-/** extracted RAM disk */
-#define JINUE_SEG_TYPE_RAMDISK  0
 
 /** file loaded by the loader */
 #define JINUE_SEG_TYPE_FILE     1
