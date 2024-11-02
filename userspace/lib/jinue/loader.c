@@ -49,7 +49,7 @@ const jinue_dirent_t *jinue_dirent_get_next(const jinue_dirent_t *prev) {
     const jinue_dirent_t *current = prev + 1;
 
     if(current->type == JINUE_DIRENT_TYPE_NEXT) {
-        current = current->next;
+        current = (const jinue_dirent_t *)((const char *)current + current->next);
     }
 
     if(current->type == JINUE_DIRENT_TYPE_END) {
