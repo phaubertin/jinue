@@ -49,7 +49,7 @@ const jinue_dirent_t *jinue_dirent_get_next(const jinue_dirent_t *prev) {
     const jinue_dirent_t *current = prev + 1;
 
     if(current->type == JINUE_DIRENT_TYPE_NEXT) {
-        current = (const jinue_dirent_t *)((const char *)current + current->next);
+        current = (const jinue_dirent_t *)((const char *)current + current->rel_value);
     }
 
     if(current->type == JINUE_DIRENT_TYPE_END) {
@@ -73,14 +73,14 @@ const jinue_dirent_t *jinue_dirent_find_by_name(const jinue_dirent_t *root, cons
     return NULL;
 }
 
-const void *jinue_dirent_file(const jinue_dirent_t *dirent) {
-    return (const char *)dirent + dirent->file;
+const char *jinue_dirent_name(const jinue_dirent_t *dirent) {
+    return (const char *)dirent + dirent->rel_name;
 }
 
-const char *jinue_dirent_name(const jinue_dirent_t *dirent) {
-    return (const char *)dirent + dirent->name;
+const void *jinue_dirent_file(const jinue_dirent_t *dirent) {
+    return (const char *)dirent + dirent->rel_value;
 }
 
 const char *jinue_dirent_link(const jinue_dirent_t *dirent) {
-    return (const char *)dirent + dirent->link;
+    return (const char *)dirent + dirent->rel_value;
 }

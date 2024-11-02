@@ -90,10 +90,8 @@ struct jinue_dirent {
     uint32_t    devmajor;
     uint32_t    devminor;
     uint64_t    size;
-    int64_t     file;
-    int64_t     name;
-    int64_t     link;
-    int64_t     next;
+    int64_t     rel_name;
+    int64_t     rel_value;
 };
 
 typedef struct jinue_dirent jinue_dirent_t;
@@ -104,9 +102,9 @@ const jinue_dirent_t *jinue_dirent_get_next(const jinue_dirent_t *prev);
 
 const jinue_dirent_t *jinue_dirent_find_by_name(const jinue_dirent_t *root, const char *name);
 
-const void *jinue_dirent_file(const jinue_dirent_t *dirent);
-
 const char *jinue_dirent_name(const jinue_dirent_t *dirent);
+
+const void *jinue_dirent_file(const jinue_dirent_t *dirent);
 
 const char *jinue_dirent_link(const jinue_dirent_t *dirent);
 

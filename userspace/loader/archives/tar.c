@@ -593,7 +593,7 @@ static int copy_file_data(state_t *state, jinue_dirent_t *dirent) {
         memset((char *)dest + dirent->size, 0, page_aligned_size - dirent->size);
     }
 
-    dirent->file = (char *)dest - (char *)dirent;
+    dirent->rel_value = (char *)dest - (char *)dirent;
 
     return 0;
 }
@@ -729,11 +729,11 @@ const jinue_dirent_t *tar_extract(stream_t *stream) {
             return NULL;
         }
 
-        dirent->name = name - (char *)dirent;
-        dirent->size = DECODE_OCTAL_FIELD(header->size);
-        dirent->uid  = DECODE_OCTAL_FIELD(header->uid);
-        dirent->gid  = DECODE_OCTAL_FIELD(header->gid);
-        dirent->mode = map_mode(DECODE_OCTAL_FIELD(header->mode));
+        dirent->rel_name    = name - (char *)dirent;
+        dirent->size        = DECODE_OCTAL_FIELD(header->size);
+        dirent->uid         = DECODE_OCTAL_FIELD(header->uid);
+        dirent->gid         = DECODE_OCTAL_FIELD(header->gid);
+        dirent->mode        = map_mode(DECODE_OCTAL_FIELD(header->mode));
 
         const char *link;
 
@@ -746,8 +746,8 @@ const jinue_dirent_t *tar_extract(stream_t *stream) {
                 return NULL;
             }
 
-            dirent->size    = 0;
-            dirent->link    = link - (char *)dirent;
+            dirent->size        = 0;
+            dirent->rel_value   = link - (char *)dirent;
             break;
         case JINUE_DIRENT_TYPE_BLKDEV:
         case JINUE_DIRENT_TYPE_CHARDEV:
