@@ -111,7 +111,7 @@ const char *jinue_dirent_link(const jinue_dirent_t *dirent);
 
 typedef struct {
     int n_segments;
-    int n_vmaps;
+    int n_mappings;
     int ramdisk;
     struct {
         uint64_t     physaddr;
@@ -140,6 +140,6 @@ typedef struct {
     int      segment;
     size_t   offset;
     int      perms;
-} jinue_loader_vmap_t;
+} jinue_loader_mapping_t;
 
 #endif

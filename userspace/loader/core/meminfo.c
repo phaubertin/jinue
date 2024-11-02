@@ -46,7 +46,7 @@ static jinue_loader_meminfo_t meminfo;
 
 static jinue_loader_segment_t segments[MAX_SEGMENTS];
 
-static jinue_loader_vmap_t vmaps[MAX_VMAPS];
+static jinue_loader_mapping_t mappings[MAX_VMAPS];
 
 static jinue_const_buffer_t buffers[] = {
 #define BUFFER_INDEX_MEMINFO    0
@@ -61,21 +61,21 @@ static jinue_const_buffer_t buffers[] = {
     },
 #define BUFFER_INDEX_VMAPS      2
     {
-        .addr = vmaps,
+        .addr = mappings,
         .size = 0
     }
 };
 
 #define SEGMENTS_SIZE   (meminfo.n_segments * sizeof(jinue_loader_segment_t))
 
-#define VMAPS_SIZE      (meminfo.n_vmaps * sizeof(jinue_loader_vmap_t))
+#define MAPPINGS_SIZE   (meminfo.n_mappings * sizeof(jinue_loader_mapping_t))
 
-#define MESSAGE_SIZE    (sizeof(meminfo) + SEGMENTS_SIZE + VMAPS_SIZE)
+#define MESSAGE_SIZE    (sizeof(meminfo) + SEGMENTS_SIZE + MAPPINGS_SIZE)
 
 void initialize_meminfo(void) {
     memset(&meminfo, 0, sizeof(meminfo));
     memset(segments, 0, sizeof(segments));
-    memset(vmaps, 0, sizeof(vmaps));
+    memset(mappings, 0, sizeof(mappings));
 }
 
 int add_meminfo_segment(uint64_t addr, uint64_t size, int type) {
@@ -100,14 +100,14 @@ uint64_t get_meminfo_ramdisk_start(void) {
     return get_meminfo_segment_start(meminfo.ramdisk);
 }
 
-void add_meminfo_vmap(void *addr, size_t size, int segment_index, size_t offset, int perms) {
-    int index = meminfo.n_vmaps++;
+void add_meminfo_mapping(void *addr, size_t size, int segment_index, size_t offset, int perms) {
+    int index = meminfo.n_mappings++;
 
-    vmaps[index].addr       = addr;
-    vmaps[index].size       = size;
-    vmaps[index].segment    = segment_index;
-    vmaps[index].offset     = offset;
-    vmaps[index].perms      = perms;
+    mappings[index].addr       = addr;
+    mappings[index].size       = size;
+    mappings[index].segment    = segment_index;
+    mappings[index].offset     = offset;
+    mappings[index].perms      = perms;
 }
 
 static void update_meminfo(void) {
@@ -117,7 +117,7 @@ static void update_meminfo(void) {
 
 static void update_buffers(void) {
     buffers[BUFFER_INDEX_SEGMENTS].size = SEGMENTS_SIZE;
-    buffers[BUFFER_INDEX_VMAPS].size    = VMAPS_SIZE;
+    buffers[BUFFER_INDEX_VMAPS].size    = MAPPINGS_SIZE;
 }
 
 int get_meminfo(const jinue_message_t *message) {

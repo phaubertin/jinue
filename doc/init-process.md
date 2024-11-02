@@ -219,7 +219,7 @@ what memory is available for use.
 The reply contains the following, concatenated, in this order:
 * A memory information structure (`jinue_loader_meminfo_t`).
 * A variable number of segment structures (`jinue_loader_segment_t`).
-* A variable number of mapping structures (`jinue_loader_vmap_t`).
+* A variable number of mapping structures (`jinue_loader_mapping_t`).
 
 The number of segment and mapping structures is indicated in the memory information structure.
 
@@ -227,7 +227,7 @@ The number of segment and mapping structures is indicated in the memory informat
     +===============================+
     | Memory information structure: |
     | * n_segments: N               |
-    | * n_vmaps: M                  |
+    | * n_mappings: M               |
     | * ...                         |
     |                               |
     |                               |

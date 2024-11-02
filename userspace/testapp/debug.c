@@ -247,8 +247,8 @@ static void dump_segment(const jinue_loader_segment_t *segments, int index) {
     jinue_info("          Type:             %s", segment_type_description(segment->type));
 }
 
-static void dump_mapping(const jinue_loader_vmap_t *vmaps, int index) {
-    const jinue_loader_vmap_t *mapping = &vmaps[index];
+static void dump_mapping(const jinue_loader_mapping_t *mappings, int index) {
+    const jinue_loader_mapping_t *mapping = &mappings[index];
 
     jinue_info("    [%3d] Virtual address:  %#p", index, mapping->addr);
     jinue_info("          Size:             %#zx %zu", mapping->size, mapping->size);
@@ -293,7 +293,7 @@ static int get_meminfo(void *buffer, size_t bufsize) {
 static void dump_meminfo(
         const jinue_loader_meminfo_t    *meminfo,
         const jinue_loader_segment_t    *segments,
-        const jinue_loader_vmap_t       *vmaps) {
+        const jinue_loader_mapping_t    *mappings) {
     
     if(! bool_getenv("DEBUG_DUMP_LOADER_MEMORY_INFO")) {
         return;
@@ -315,8 +315,8 @@ static void dump_meminfo(
 
     jinue_info("  Mappings:");
 
-    for(int idx = 0; idx < meminfo->n_vmaps; ++idx) {
-        dump_mapping(vmaps, idx);
+    for(int idx = 0; idx < meminfo->n_mappings; ++idx) {
+        dump_mapping(mappings, idx);
     }
 }
 
@@ -332,7 +332,7 @@ void dump_loader_memory_info(void) {
     const jinue_loader_meminfo_t *meminfo   = (jinue_loader_meminfo_t *)buffer;
     const jinue_loader_segment_t *segments  = (const jinue_loader_segment_t *)&meminfo[1];
 
-    dump_meminfo(meminfo, segments, (const jinue_loader_vmap_t *)&segments[meminfo->n_segments]);
+    dump_meminfo(meminfo, segments, (const jinue_loader_mapping_t *)&segments[meminfo->n_segments]);
 }
 
 static const char *pretty_mode(char *mode, const jinue_dirent_t *dirent) {

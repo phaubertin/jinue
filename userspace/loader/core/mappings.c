@@ -52,7 +52,7 @@ int map_file(void *vaddr, size_t size, int segment_index, size_t offset, int per
         return status;
     }
 
-    add_meminfo_vmap(vaddr, size, segment_index, offset, perms);
+    add_meminfo_mapping(vaddr, size, segment_index, offset, perms);
 
     return 0;
 }
@@ -78,7 +78,7 @@ void *map_anonymous(void *vaddr, size_t size, int perms) {
 
     int index = add_meminfo_segment(paddr, size, JINUE_SEG_TYPE_ANON);
     
-    add_meminfo_vmap(vaddr, size, index, 0, perms);
+    add_meminfo_mapping(vaddr, size, index, 0, perms);
 
     return segment;
 }
