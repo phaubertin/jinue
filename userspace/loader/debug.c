@@ -32,6 +32,7 @@
 #include <jinue/jinue.h>
 #include <jinue/loader.h>
 #include <jinue/utils.h>
+#include <inttypes.h>
 #include "debug.h"
 #include "utils.h"
 
@@ -105,12 +106,12 @@ void dump_ramdisk(const jinue_dirent_t *root) {
 
     while(dirent != NULL) {
         jinue_info(
-                "  %s %6u %6u %12u %s",
+                "  %s %6" PRIu32 " %6" PRIu32 " %12" PRIu64 " %s",
                 pretty_mode(mode_buffer, dirent),
                 dirent->uid,
                 dirent->gid,
                 dirent->size,
-                dirent->name
+                jinue_dirent_name(dirent)
         );
 
         dirent = jinue_dirent_get_next(dirent);

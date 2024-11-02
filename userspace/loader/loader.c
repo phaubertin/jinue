@@ -81,7 +81,7 @@ static const jinue_dirent_t *get_init(const jinue_dirent_t *root) {
 }
 
 static int load_init(elf_info_t *elf_info, const jinue_dirent_t *init, int argc, char *argv[]) {
-    jinue_info("Loading init program %s", init->name);
+    jinue_info("Loading init program %s", jinue_dirent_name(init));
 
     int status = jinue_create_process(INIT_PROCESS_DESCRIPTOR, &errno);
 

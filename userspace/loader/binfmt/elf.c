@@ -421,8 +421,8 @@ size_t count_environ(void) {
  * 
  * */
 char *write_cmdline_arguments(char *dest, const jinue_dirent_t *dirent, int argc, char *argv[]) {
-    strcpy(dest, dirent->name);
-    dest += strlen(dirent->name) + 1;
+    strcpy(dest, jinue_dirent_name(dirent));
+    dest += strlen(jinue_dirent_name(dirent)) + 1;
 
     for(int idx = 1; idx < argc; ++ idx) {
         strcpy(dest, argv[idx]);
@@ -586,7 +586,7 @@ static void initialize_stack(
  *
  * */
 int load_elf(elf_info_t *elf_info, int fd, const jinue_dirent_t *dirent, int argc, char *argv[]) {
-    const Elf32_Ehdr *ehdr = dirent->file;
+    const Elf32_Ehdr *ehdr = jinue_dirent_file(dirent);
 
     int status = check_elf_header(ehdr, dirent->size);
 

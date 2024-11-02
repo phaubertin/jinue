@@ -570,16 +570,16 @@ static char *copy_fixed_string(state_t *state, const char *str, size_t size) {
  *
  * */
 static int copy_file_data(state_t *state, jinue_dirent_t *dirent) {
-    dirent->file = allocate_page_aligned(dirent->size);
+    void *dest = allocate_page_aligned(dirent->size);
 
-    if(dirent->file == NULL) {
+    if(dest == NULL) {
         jinue_error("error: could not allocate memory for file content");
         return -1;
     }
 
     size_t record_aligned_size = (dirent->size + RECORD_SIZE - 1) & ~((size_t)RECORD_SIZE - 1);
 
-    int status = stream_read(state->stream, (void *)dirent->file, record_aligned_size);
+    int status = stream_read(state->stream, dest, record_aligned_size);
 
     if(status != STREAM_SUCCESS) {
         jinue_error("error: read error while reading file content");
@@ -590,8 +590,10 @@ static int copy_file_data(state_t *state, jinue_dirent_t *dirent) {
 
     /* clear padding */
     if(page_aligned_size > dirent->size) {
-        memset((char *)dirent->file + dirent->size, 0, page_aligned_size - dirent->size);
+        memset((char *)dest + dirent->size, 0, page_aligned_size - dirent->size);
     }
+
+    dirent->rel_value = (char *)dest - (char *)dirent;
 
     return 0;
 }
@@ -720,27 +722,32 @@ const jinue_dirent_t *tar_extract(stream_t *stream) {
             return NULL;
         }
 
-        dirent->name = copy_string(&state, filename);
-        dirent->size = DECODE_OCTAL_FIELD(header->size);
-        dirent->uid  = DECODE_OCTAL_FIELD(header->uid);
-        dirent->gid  = DECODE_OCTAL_FIELD(header->gid);
-        dirent->mode = map_mode(DECODE_OCTAL_FIELD(header->mode));
+        const char *name = copy_string(&state, filename);
 
-        if(dirent->name == NULL) {
+        if(name == NULL) {
             jinue_error("error: failed to allocate memory for string (for file name)");
             return NULL;
         }
 
+        dirent->rel_name    = name - (char *)dirent;
+        dirent->size        = DECODE_OCTAL_FIELD(header->size);
+        dirent->uid         = DECODE_OCTAL_FIELD(header->uid);
+        dirent->gid         = DECODE_OCTAL_FIELD(header->gid);
+        dirent->mode        = map_mode(DECODE_OCTAL_FIELD(header->mode));
+
+        const char *link;
+
         switch(type) {
         case JINUE_DIRENT_TYPE_SYMLINK:
-            dirent->size    = 0;
-            dirent->link    = copy_fixed_string(&state, header->linkname, sizeof(header->linkname));
+            link = copy_fixed_string(&state, header->linkname, sizeof(header->linkname));
 
-            if(dirent->link == NULL) {
+            if(link == NULL) {
                 jinue_error("error: failed to allocate memory for string (for symbolic link)");
                 return NULL;
             }
 
+            dirent->size        = 0;
+            dirent->rel_value   = link - (char *)dirent;
             break;
         case JINUE_DIRENT_TYPE_BLKDEV:
         case JINUE_DIRENT_TYPE_CHARDEV:

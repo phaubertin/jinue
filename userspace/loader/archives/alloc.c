@@ -287,8 +287,8 @@ jinue_dirent_t *append_dirent_to_list(alloc_area_t *area, int type) {
         return NULL;
     }
 
-    link->type = JINUE_DIRENT_TYPE_NEXT;
-    link->next = area->addr;
+    link->type      = JINUE_DIRENT_TYPE_NEXT;
+    link->rel_value = (char *)area->addr - (char *)link;
 
     return allocate_dirent(area, type);
 }

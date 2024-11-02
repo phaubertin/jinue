@@ -33,6 +33,7 @@
 #define _JINUE_LOADER_H
 
 #include <stddef.h>
+#include <stdint.h>
 
 /** normal file */
 #define JINUE_DIRENT_TYPE_FILE      1
@@ -82,17 +83,15 @@
 #define JINUE_IXOTH             (1<<0)
 
 struct jinue_dirent {
-    int                  type;
-    int                  mode;
-    int                  uid;
-    int                  gid;
-    int                  devmajor;
-    int                  devminor;
-    size_t               size;
-    const void          *file;
-    const char          *name;
-    const char          *link;
-    struct jinue_dirent *next;
+    uint32_t    type;
+    uint32_t    mode;
+    uint32_t    uid;
+    uint32_t    gid;
+    uint32_t    devmajor;
+    uint32_t    devminor;
+    uint64_t    size;
+    int64_t     rel_name;
+    int64_t     rel_value;
 };
 
 typedef struct jinue_dirent jinue_dirent_t;
@@ -102,5 +101,11 @@ const jinue_dirent_t *jinue_dirent_get_first(const jinue_dirent_t *root);
 const jinue_dirent_t *jinue_dirent_get_next(const jinue_dirent_t *prev);
 
 const jinue_dirent_t *jinue_dirent_find_by_name(const jinue_dirent_t *root, const char *name);
+
+const char *jinue_dirent_name(const jinue_dirent_t *dirent);
+
+const void *jinue_dirent_file(const jinue_dirent_t *dirent);
+
+const char *jinue_dirent_link(const jinue_dirent_t *dirent);
 
 #endif
