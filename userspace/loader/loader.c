@@ -77,10 +77,11 @@ static int get_init(file_t *file, const extracted_ramdisk_t *extracted_ramdisk) 
         return EXIT_FAILURE;
     }
 
-    uint64_t start = extracted_ramdisk->physaddr + ((char *)dirent->file - (char *)root);
+    uint64_t offset = (char *)jinue_dirent_file(dirent) - (char *)root;
+    uint64_t start  = extracted_ramdisk->physaddr + offset;
 
-    file->name          = dirent->name;
-    file->contents      = dirent->file;
+    file->name          = jinue_dirent_name(dirent);
+    file->contents      = jinue_dirent_file(dirent);
     file->size          = dirent->size;
     file->segment_index = add_meminfo_segment(start, dirent->size, JINUE_SEG_TYPE_FILE);
 
@@ -93,7 +94,7 @@ static int load_init(
         int              argc,
         char            *argv[]) {
 
-    jinue_info("Loading init program %s", jinue_dirent_name(init));
+    jinue_info("Loading init program %s", init->name);
 
     int status = jinue_create_process(INIT_PROCESS_DESCRIPTOR, &errno);
 
