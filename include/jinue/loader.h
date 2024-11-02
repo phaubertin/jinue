@@ -137,8 +137,9 @@ typedef struct {
 typedef struct {
     void    *addr;
     size_t   size;
-    int      perms;
     int      segment;
+    size_t   offset;
+    int      perms;
 } jinue_loader_vmap_t;
 
 #endif

@@ -101,7 +101,7 @@ static int load_init(
         return EXIT_FAILURE;
     }
 
-    status = load_elf(thread_params, INIT_PROCESS_DESCRIPTOR, init, argc, argv);
+    status = load_elf(thread_params, init, argc, argv);
 
     if(status != EXIT_SUCCESS) {
         return status;

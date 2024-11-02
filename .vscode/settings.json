@@ -4,7 +4,8 @@
     "makefile.configureOnOpen": false,
     "files.associations": {
         "*.h": "c",
-        "system_error": "c"
+        "system_error": "c",
+        "cstdlib": "c"
     },
     "C_Cpp.default.intelliSenseMode": "linux-gcc-x86"
 }

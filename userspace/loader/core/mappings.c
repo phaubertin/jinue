@@ -29,25 +29,56 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LOADER_MEMINFO_H_
-#define LOADER_MEMINFO_H_
-
 #include <jinue/jinue.h>
+#include <jinue/loader.h>
+#include <jinue/utils.h>
+#include <sys/mman.h>
+#include <errno.h>
+#include <internals.h>
 #include <stdint.h>
-#include <stddef.h>
+#include <string.h>
+#include "../descriptors.h"
+#include "mappings.h"
+#include "meminfo.h"
 
-void initialize_meminfo(void);
+int map_file(void *vaddr, size_t size, int segment_index, size_t offset, int perms) {
+    uint64_t file_start = get_meminfo_segment_start(segment_index);
+    uint64_t paddr      = file_start + offset;
 
-int add_meminfo_segment(uint64_t addr, uint64_t size, int type);
+    int status = jinue_mmap(INIT_PROCESS_DESCRIPTOR, vaddr, size, perms, paddr, &errno);
 
-uint64_t get_meminfo_segment_start(int index);
+    if(status < 0) {
+        jinue_error("error: jinue_mmap() failed: %s", strerror(errno));
+        return status;
+    }
 
-void set_meminfo_ramdisk(uint64_t addr, uint64_t size);
+    add_meminfo_vmap(vaddr, size, segment_index, offset, perms);
 
-uint64_t get_meminfo_ramdisk_start(void);
+    return 0;
+}
 
-void add_meminfo_vmap(void *addr, size_t size, int segment_index, size_t offset, int perms);
+void *map_anonymous(void *vaddr, size_t size, int perms) {
+    uint64_t paddr = _libc_get_physmem_alloc_addr();
 
-int get_meminfo(const jinue_message_t *message);
+    /* Map into this process so we can set the contents. */
+    void *segment = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
 
-#endif
+    if(segment == MAP_FAILED) {
+        jinue_error("error: mmap() failed: %s", strerror(errno));
+        return NULL;
+    }
+
+    /* Map into the target process. */
+    int status = jinue_mmap(INIT_PROCESS_DESCRIPTOR, vaddr, size, perms, paddr, &errno);
+
+    if(status < 0) {
+        jinue_error("error: jinue_mmap() failed: %s", strerror(errno));
+        return NULL;
+    }
+
+    int index = add_meminfo_segment(paddr, size, JINUE_SEG_TYPE_ANON);
+    
+    add_meminfo_vmap(vaddr, size, index, 0, perms);
+
+    return segment;
+}

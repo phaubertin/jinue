@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,16 +29,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LOADER_ELF_ELF_H_
-#define LOADER_ELF_ELF_H_
+#ifndef LOADER_MAPPINGS_H_
+#define LOADER_MAPPINGS_H_
 
 #include <stddef.h>
-#include "../types.h"
 
-int load_elf(
-    thread_params_t *thread_params,
-    const file_t    *exec_file,
-    int              argc,
-    char             *argv[]);
+int map_file(void *vaddr, size_t size, int segment_index, size_t offset, int perms);
+
+void *map_anonymous(void *vaddr, size_t size, int perms);
 
 #endif

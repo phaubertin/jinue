@@ -35,11 +35,13 @@
 #include <sys/elf.h>
 #include <sys/mman.h>
 #include <errno.h>
-#include <internals.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include "../core/mappings.h"
 #include "../core/meminfo.h"
+/* TODO remove this */
+#include "../descriptors.h"
 #include "../utils.h"
 #include "elf.h"
 
@@ -203,75 +205,6 @@ static int map_flags(Elf32_Word p_flags) {
 }
 
 /**
- * String representation of protection flags
- * 
- * @param prot protection flags
- * @return string representation
- *
- * */
-static const char *prot_str(int prot) {
-    static char buffer[4];
-    buffer[0] = (prot & PROT_READ)  ? 'r' : '-';
-    buffer[1] = (prot & PROT_WRITE) ? 'w' : '-';
-    buffer[2] = (prot & PROT_EXEC)  ? 'x' : '-';
-    buffer[3] = '\0';
-    return buffer;
-}
-
-/**
- * Clone a segment mapping from this process to the one where the ELF binary is loaded
- * 
- * This function is a wrapper around jinue_mclone() with debug logging if
- * requested with the DEBUG_LOADER_VERBOSE_MCLONE environment variable.
- * 
- * src_addr, dest_addr and length must be aligned on a page boundary.
- * 
- * @param fd descriptor of the process in which to load the binary
- * @param src_addr segment start address in this process
- * @param dest_addr segment start address in the other process
- * @param length length of segment in bytes
- * @param prot protection flags
- * @return start of stack in loader address space
- *
- * */
-static int clone_mapping(
-        int      fd,
-        void    *src_addr,
-        void    *dest_addr,
-        size_t   length,
-        int      prot) {
-    
-    if(bool_getenv("DEBUG_LOADER_VERBOSE_MCLONE")) {
-        jinue_info(
-            "jinue_mclone(%d, %d, %#p, %#p, %#x, %s, &errno)",
-            JINUE_DESC_SELF_PROCESS,
-            fd,
-            src_addr,
-            dest_addr,
-            length,
-            prot_str(prot)
-        );
-    }
-
-    int status = jinue_mclone(
-        JINUE_DESC_SELF_PROCESS,
-        fd,
-        src_addr,
-        dest_addr,
-        length,
-        prot,
-        &errno
-    );
-
-    if(status != 0) {
-        jinue_error("error: jinue_mclone() failed: %s", strerror(errno));
-        return EXIT_FAILURE;
-    }
-
-    return EXIT_SUCCESS;
-}
-
-/**
  * Load the loadable (PT_LOAD) segments from the ELF binary
  * 
  * @param elf_info ELF information structure (output)
@@ -280,7 +213,7 @@ static int clone_mapping(
  * @return EXIT_SUCCESS on success, EXIT_FAILURE on failure
  *
  * */
-static int load_segments(elf_info_t *elf_info, int fd, const file_t *exec_file) {
+static int load_segments(elf_info_t *elf_info, const file_t *exec_file) {
     const Elf32_Ehdr *ehdr = exec_file->contents;
 
     /* program header table */
@@ -310,39 +243,21 @@ static int load_segments(elf_info_t *elf_info, int fd, const file_t *exec_file) 
         bool needs_padding      = (phdr->p_filesz != phdr->p_memsz);
 
         if(! (is_writable || needs_padding)) {
-            /* Since the segment has to be mapped read only and does not require
-             * padding, we can just map the original pages. */
-            uint64_t file_start = get_meminfo_segment_start(exec_file->segment_index);
-            uint64_t paddr      = file_start + phdr->p_offset - diff;
-
-            int status = jinue_mmap(
-                fd,
+            int status = map_file(
                 (void *)vaddr,
                 memsize,
-                map_flags(phdr->p_flags),
-                paddr,
-                &errno
+                exec_file->segment_index,
+                phdr->p_offset - diff,
+                map_flags(phdr->p_flags)
             );
 
             if(status < 0) {
-                jinue_error("error: jinue_mmap() failed: %s", strerror(errno));
                 return EXIT_FAILURE;
             }
         } else {
-            /* Map into this process. */
-            uint64_t paddr = _libc_get_physmem_alloc_addr();
-            
-            char *segment = mmap(
-                NULL,
-                memsize,
-                PROT_READ | PROT_WRITE,
-                MAP_SHARED | MAP_ANONYMOUS,
-                -1,
-                0
-            );
+            char *segment = map_anonymous((void *)vaddr, memsize, map_flags(phdr->p_flags));
 
-            if(segment == MAP_FAILED) {
-                jinue_error("error: mmap() failed: %s", strerror(errno));
+            if(segment == NULL) {
                 return EXIT_FAILURE;
             }
 
@@ -356,21 +271,6 @@ static int load_segments(elf_info_t *elf_info, int fd, const file_t *exec_file) 
             );
 
             memset(segment + diff + phdr->p_filesz, 0, memsize - phdr->p_filesz - diff);
-
-            /* Map into the target process. */
-            int status = jinue_mmap(
-                fd,
-                (void *)vaddr,
-                memsize,
-                map_flags(phdr->p_flags),
-                paddr,
-                &errno
-            );
-
-            if(status < 0) {
-                jinue_error("error: jinue_mmap() failed: %s", strerror(errno));
-                return EXIT_FAILURE;
-            }
         }
     }
 
@@ -383,35 +283,24 @@ static int load_segments(elf_info_t *elf_info, int fd, const file_t *exec_file) 
  * @return start of stack in loader address space
  *
  * */
-static void *allocate_stack(int fd) {
+static void *allocate_stack(void) {
     /** TODO: check for overlap of stack with loaded segments */
 
-    char *stack = mmap(
-        NULL,
+    char *stack = map_anonymous(
+        (void *)JINUE_STACK_START,
         JINUE_STACK_SIZE,
-        PROT_READ | PROT_WRITE,
-        MAP_SHARED | MAP_ANONYMOUS,
-        -1,
-        0
+        PROT_READ | PROT_WRITE
     );
 
-    if(stack == MAP_FAILED) {
-        return MAP_FAILED;
+    if(stack == NULL) {
+        return NULL;
     }
 
     /* This newly allocated page may have data left from a previous boot
      * which may contain sensitive information. Let's clear it. */
     memset(stack, 0, JINUE_STACK_SIZE);
 
-    int status = clone_mapping(
-        fd,
-        stack,
-        (void *)JINUE_STACK_START,
-        JINUE_STACK_SIZE,
-        PROT_READ | PROT_WRITE
-    );
-
-    return (status == EXIT_SUCCESS) ? stack : MAP_FAILED;
+    return stack;
 }
 
 extern char **environ;
@@ -613,7 +502,6 @@ static void initialize_stack(
  * */
 int load_elf(
         thread_params_t *thread_params,
-        int              fd,
         const file_t    *exec_file,
         int              argc,
         char            *argv[]) {
@@ -627,15 +515,15 @@ int load_elf(
     }
 
     elf_info_t elf_info;
-    status = load_segments(&elf_info, fd, exec_file);
+    status = load_segments(&elf_info, exec_file);
 
     if(status != EXIT_SUCCESS) {
         return status;
     }
 
-    void *stack = allocate_stack(fd);
+    void *stack = allocate_stack();
     
-    if(stack == MAP_FAILED) {
+    if(stack == NULL) {
         return EXIT_FAILURE;
     }
 

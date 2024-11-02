@@ -100,6 +100,16 @@ uint64_t get_meminfo_ramdisk_start(void) {
     return get_meminfo_segment_start(meminfo.ramdisk);
 }
 
+void add_meminfo_vmap(void *addr, size_t size, int segment_index, size_t offset, int perms) {
+    int index = meminfo.n_vmaps++;
+
+    vmaps[index].addr       = addr;
+    vmaps[index].size       = size;
+    vmaps[index].segment    = segment_index;
+    vmaps[index].offset     = offset;
+    vmaps[index].perms      = perms;
+}
+
 static void update_meminfo(void) {
     meminfo.hints.physaddr  = _libc_get_physmem_alloc_addr();
     meminfo.hints.physlimit = _libc_get_physmem_alloc_limit();
