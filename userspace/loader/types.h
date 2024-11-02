@@ -29,12 +29,19 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LOADER_THREAD_H_
-#define LOADER_THREAD_H_
+#ifndef LOADER_TYPES_H_
+#define LOADER_TYPES_H_
 
 typedef struct {
     void (*entry)(void);
     void *stack_addr;
 } thread_params_t;
+
+typedef struct {
+    const char  *name;
+    const void  *contents;
+    size_t       size;
+    int          segment_index;
+} file_t;
 
 #endif

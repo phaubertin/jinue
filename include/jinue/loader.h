@@ -128,9 +128,6 @@ typedef struct {
 /** anonymous memory */
 #define JINUE_SEG_TYPE_ANON     2
 
-/** other memory referenced by a mapping */
-#define JINUE_SEG_TYPE_OTHER    3
-
 typedef struct {
     uint64_t    addr;
     uint64_t    size;

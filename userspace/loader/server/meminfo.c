@@ -88,8 +88,16 @@ int add_meminfo_segment(uint64_t addr, uint64_t size, int type) {
     return index;
 }
 
+uint64_t get_meminfo_segment_start(int index) {
+    return segments[index].addr;
+}
+
 void set_meminfo_ramdisk(uint64_t addr, uint64_t size) {
     meminfo.ramdisk = add_meminfo_segment(addr, size, JINUE_SEG_TYPE_RAMDISK);
+}
+
+uint64_t get_meminfo_ramdisk_start(void) {
+    return get_meminfo_segment_start(meminfo.ramdisk);
 }
 
 static void update_meminfo(void) {

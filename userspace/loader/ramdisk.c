@@ -33,7 +33,6 @@
 #include <jinue/utils.h>
 #include <sys/mman.h>
 #include <errno.h>
-#include <internals.h>
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -196,8 +195,6 @@ const jinue_dirent_t *extract_ramdisk(const ramdisk_t *ramdisk) {
         return NULL;
     }
 
-    const uint64_t ramdisk_start = _libc_get_physmem_alloc_addr(); 
-
     const jinue_dirent_t *root;
 
     switch(detect_format(&stream)) {
@@ -209,11 +206,6 @@ const jinue_dirent_t *extract_ramdisk(const ramdisk_t *ramdisk) {
         jinue_error("error: could not extract RAM disk: unrecognized format");
         root = NULL;
         break;
-    }
-
-    if(root != NULL) {
-        const uint64_t ramdisk_end  = _libc_get_physmem_alloc_addr();
-        set_meminfo_ramdisk(ramdisk_start, ramdisk_end - ramdisk_start);
     }
 
     stream_finalize(&stream);

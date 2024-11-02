@@ -33,12 +33,14 @@
 #include <jinue/loader.h>
 #include <jinue/utils.h>
 #include <sys/mman.h>
+#include <internals.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <tar.h>
+#include "../server/meminfo.h"
 #include "../streams/stream.h"
 #include "alloc.h"
 #include "tar.h"
@@ -211,10 +213,10 @@ const tar_header_t *state_header(const state_t *state) {
  * @param stream stream from which to read archive content
  *
  * */
-void initialize_state(state_t *state, stream_t *stream) {
+static jinue_dirent_t *initialize_state(state_t *state, stream_t *stream) {
     memset(state, 0, sizeof(state_t));
-    initialize_empty_dirent_list(&state->dirent_area);
     state->stream = stream;
+    return initialize_empty_dirent_list(&state->dirent_area);
 }
 
 /**
@@ -641,9 +643,9 @@ const int map_mode(int tar_mode) {
 const jinue_dirent_t *tar_extract(stream_t *stream) {
     state_t state;
 
-    initialize_state(&state, stream);
-
-    jinue_dirent_t *root = initialize_empty_dirent_list(&state.dirent_area);
+    const uint64_t extracted_start = _libc_get_physmem_alloc_addr();
+    
+    jinue_dirent_t *root = initialize_state(&state, stream);
 
     if(root == NULL) {
         return NULL;
@@ -657,7 +659,7 @@ const jinue_dirent_t *tar_extract(stream_t *stream) {
         }
 
         if(state.at_end) {
-            return root;
+            break;
         }
 
         const char *filename = parse_filename(&state, header);
@@ -769,4 +771,9 @@ const jinue_dirent_t *tar_extract(stream_t *stream) {
             }
         }
     }
+
+    const uint64_t extracted_end = _libc_get_physmem_alloc_addr();
+    set_meminfo_ramdisk(extracted_start, extracted_end - extracted_start);
+
+    return root;
 }

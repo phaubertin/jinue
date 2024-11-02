@@ -35,9 +35,11 @@
 #include <sys/elf.h>
 #include <sys/mman.h>
 #include <errno.h>
+#include <internals.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include "../server/meminfo.h"
 #include "../utils.h"
 #include "elf.h"
 
@@ -272,18 +274,15 @@ static int clone_mapping(
 /**
  * Load the loadable (PT_LOAD) segments from the ELF binary
  * 
- * This function is a wrapper around jinue_mclone() with debug logging if
- * requested with the DEBUG_LOADER_VERBOSE_MCLONE environment variable.
- * 
- * src_addr, dest_addr and length must be aligned on a page boundary.
- * 
  * @param elf_info ELF information structure (output)
  * @param fd descriptor of the process in which to load the binary
  * @param ehdr ELF header
  * @return EXIT_SUCCESS on success, EXIT_FAILURE on failure
  *
  * */
-static int load_segments(elf_info_t *elf_info, int fd, const Elf32_Ehdr *ehdr) {
+static int load_segments(elf_info_t *elf_info, int fd, const file_t *exec_file) {
+    const Elf32_Ehdr *ehdr = exec_file->contents;
+
     /* program header table */
     const Elf32_Phdr *phdrs = program_header_table(ehdr);
     elf_info->at_phdr       = get_at_phdr(ehdr);
@@ -310,15 +309,30 @@ static int load_segments(elf_info_t *elf_info, int fd, const Elf32_Ehdr *ehdr) {
         bool is_writable        = !!(phdr->p_flags & PF_W);
         bool needs_padding      = (phdr->p_filesz != phdr->p_memsz);
 
-        char *segment;
-
         if(! (is_writable || needs_padding)) {
             /* Since the segment has to be mapped read only and does not require
              * padding, we can just map the original pages. */
-            segment = (char *)ehdr + phdr->p_offset - diff;
+            uint64_t file_start = get_meminfo_segment_start(exec_file->segment_index);
+            uint64_t paddr      = file_start + phdr->p_offset - diff;
+
+            int status = jinue_mmap(
+                fd,
+                (void *)vaddr,
+                memsize,
+                map_flags(phdr->p_flags),
+                paddr,
+                &errno
+            );
+
+            if(status < 0) {
+                jinue_error("error: jinue_mmap() failed: %s", strerror(errno));
+                return EXIT_FAILURE;
+            }
         } else {
-            /* Copy and pad segment content */
-            segment = mmap(
+            /* Map into this process. */
+            uint64_t paddr = _libc_get_physmem_alloc_addr();
+            
+            char *segment = mmap(
                 NULL,
                 memsize,
                 PROT_READ | PROT_WRITE,
@@ -332,6 +346,7 @@ static int load_segments(elf_info_t *elf_info, int fd, const Elf32_Ehdr *ehdr) {
                 return EXIT_FAILURE;
             }
 
+            /* Copy and pad segment content. */
             memset(segment, 0, diff);
 
             memcpy(
@@ -341,18 +356,21 @@ static int load_segments(elf_info_t *elf_info, int fd, const Elf32_Ehdr *ehdr) {
             );
 
             memset(segment + diff + phdr->p_filesz, 0, memsize - phdr->p_filesz - diff);
-        }
 
-        int status = clone_mapping(
-            fd,
-            segment,
-            (void *)vaddr,
-            memsize,
-            map_flags(phdr->p_flags)
-        );
+            /* Map into the target process. */
+            int status = jinue_mmap(
+                fd,
+                (void *)vaddr,
+                memsize,
+                map_flags(phdr->p_flags),
+                paddr,
+                &errno
+            );
 
-        if(status != EXIT_SUCCESS) {
-            return status;
+            if(status < 0) {
+                jinue_error("error: jinue_mmap() failed: %s", strerror(errno));
+                return EXIT_FAILURE;
+            }
         }
     }
 
@@ -428,9 +446,9 @@ size_t count_environ(void) {
  * @return address of first byte following the last terminator
  * 
  * */
-char *write_cmdline_arguments(char *dest, const jinue_dirent_t *dirent, int argc, char *argv[]) {
-    strcpy(dest, jinue_dirent_name(dirent));
-    dest += strlen(jinue_dirent_name(dirent)) + 1;
+char *write_cmdline_arguments(char *dest, const file_t *exec_file, int argc, char *argv[]) {
+    strcpy(dest, exec_file->name);
+    dest += strlen(exec_file->name) + 1;
 
     for(int idx = 1; idx < argc; ++ idx) {
         strcpy(dest, argv[idx]);
@@ -509,11 +527,11 @@ static void initialize_string_array(
  *
  * */
 static void initialize_stack(
-        void                    *stack,
-        elf_info_t              *elf_info,
-        const jinue_dirent_t    *dirent,
-        int                      argc,
-        char                    *argv[]) {
+        void            *stack,
+        elf_info_t      *elf_info,
+        const file_t    *exec_file,
+        int              argc,
+        char            *argv[]) {
 
     char *local     = (char *)stack + JINUE_STACK_SIZE - JINUE_RESERVED_STACK_SIZE;
     char *remote    = (char *)(JINUE_STACK_BASE - JINUE_RESERVED_STACK_SIZE);
@@ -567,7 +585,7 @@ static void initialize_stack(
 
     char *const args = (char *)&wlocal[index];
 
-    char *const envs = write_cmdline_arguments(args, dirent, argc, argv);
+    char *const envs = write_cmdline_arguments(args, exec_file, argc, argv);
     
     write_environ(envs);
 
@@ -594,22 +612,22 @@ static void initialize_stack(
  *
  * */
 int load_elf(
-    thread_params_t         *thread_params,
-    int                      fd,
-    const jinue_dirent_t    *dirent,
-    int                      argc,
-    char                    *argv[]) {
+        thread_params_t *thread_params,
+        int              fd,
+        const file_t    *exec_file,
+        int              argc,
+        char            *argv[]) {
 
-    const Elf32_Ehdr *ehdr = jinue_dirent_file(dirent);
+    const Elf32_Ehdr *ehdr = exec_file->contents;
 
-    int status = check_elf_header(ehdr, dirent->size);
+    int status = check_elf_header(ehdr, exec_file->size);
 
     if(status != EXIT_SUCCESS) {
         return status;
     }
 
     elf_info_t elf_info;
-    status = load_segments(&elf_info, fd, ehdr);
+    status = load_segments(&elf_info, fd, exec_file);
 
     if(status != EXIT_SUCCESS) {
         return status;
@@ -621,7 +639,7 @@ int load_elf(
         return EXIT_FAILURE;
     }
 
-    initialize_stack(stack, &elf_info, dirent, argc, argv);
+    initialize_stack(stack, &elf_info, exec_file, argc, argv);
 
     thread_params->entry        = elf_info.entry;
     thread_params->stack_addr   = elf_info.stack_addr;

@@ -41,7 +41,7 @@
 #include "debug.h"
 #include "descriptors.h"
 #include "ramdisk.h"
-#include "thread.h"
+#include "types.h"
 #include "utils.h"
 
 #define MAP_BUFFER_SIZE 16384
@@ -57,7 +57,7 @@ static jinue_mem_map_t *get_memory_map(void *buffer, size_t bufsize) {
     return buffer;
 }
 
-static const jinue_dirent_t *get_init(const jinue_dirent_t *root) {
+static int get_init(file_t *file, const jinue_dirent_t *root) {
     const char *init = getenv("init");
 
     if(init == NULL) {
@@ -68,22 +68,29 @@ static const jinue_dirent_t *get_init(const jinue_dirent_t *root) {
 
     if(dirent == NULL) {
         jinue_error("error: init program not found: %s", init);
-        return NULL;
+        return EXIT_FAILURE;
     }
 
     if(dirent->type != JINUE_DIRENT_TYPE_FILE) {
         jinue_error("error: init program is not a regular file: %s", init);
-        return NULL;
+        return EXIT_FAILURE;
     }
 
-    return dirent;
+    uint64_t start = get_meminfo_ramdisk_start() + ((char *)dirent->file - (char *)root);
+
+    file->name          = dirent->name;
+    file->contents      = dirent->file;
+    file->size          = dirent->size;
+    file->segment_index = add_meminfo_segment(start, dirent->size, JINUE_SEG_TYPE_FILE);
+
+    return EXIT_SUCCESS;
 }
 
 static int load_init(
-        thread_params_t         *thread_params,
-        const jinue_dirent_t    *init,
-        int                      argc,
-        char                    *argv[]) {
+        thread_params_t *thread_params,
+        const file_t    *init,
+        int              argc,
+        char            *argv[]) {
 
     jinue_info("Loading init program %s", jinue_dirent_name(init));
 
@@ -196,14 +203,15 @@ int main(int argc, char *argv[]) {
 
     dump_ramdisk(root);
 
-    const jinue_dirent_t *init = get_init(root);
+    file_t init;
+    status = get_init(&init, root);
 
-    if(init == NULL) {
-        return EXIT_FAILURE;
+    if(status != EXIT_SUCCESS) {
+        return status;
     }
 
     thread_params_t thread_params;
-    status = load_init(&thread_params, init, argc, argv);
+    status = load_init(&thread_params, &init, argc, argv);
 
     if(status != EXIT_SUCCESS) {
         return status;

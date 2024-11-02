@@ -297,11 +297,6 @@ static int map_flags(Elf32_Word p_flags) {
 /**
  * Load the loadable (PT_LOAD) segments from the ELF binary
  * 
- * This function is a wrapper around jinue_mclone() with debug logging if
- * requested with the DEBUG_LOADER_VERBOSE_MCLONE environment variable.
- * 
- * src_addr, dest_addr and length must be aligned on a page boundary.
- * 
  * @param elf_info ELF information structure (output)
  * @param ehdr ELF header
  * @param process process in which to load the binary

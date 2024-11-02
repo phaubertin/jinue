@@ -32,15 +32,14 @@
 #ifndef LOADER_ELF_ELF_H_
 #define LOADER_ELF_ELF_H_
 
-#include <jinue/loader.h>
 #include <stddef.h>
-#include "../thread.h"
+#include "../types.h"
 
 int load_elf(
-    thread_params_t         *thread_params,
-    int                      fd,
-    const jinue_dirent_t    *dirent,
-    int                      argc,
-    char                    *argv[]);
+    thread_params_t *thread_params,
+    int              fd,
+    const file_t    *exec_file,
+    int              argc,
+    char             *argv[]);
 
 #endif
