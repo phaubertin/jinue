@@ -207,26 +207,61 @@ In the following description, a "message number" refers to the function
 number above 4096 specified when invoking the [SEND](syscalls/send.md)
 system call and passed along to the receiving thread.
 
-### Get Memory Information
+### Get Memory Information (`JINUE_MSG_GET_MEMINFO`)
 
 Message number 4096 (JINUE_MSG_GET_MEMINFO) allows the initial process
-to request information from the loader regarding memory that has been
-used by the loader to extract the initial RAM disk and for the initial
-process itself. This information should be used alongside the
-information from the [GET_USER_MEMORY](syscalls/get-user-memory.md)
-system call to determine what memory is available for use.
+to request information from the loader regarding memory it has used to
+extract the initial RAM disk and for the initial process itself. This
+information should be used alongside the information from the
+[GET_USER_MEMORY](syscalls/get-user-memory.md) system call to determine
+what memory is available for use.
+
+The reply contains the following, concatenated, in this order:
+* A memory information structure (`jinue_loader_meminfo_t`).
+* A variable number of segment structures (`jinue_loader_segment_t`).
+* A variable number of mapping structures (`jinue_loader_vmap_t`).
+
+The number of segment and mapping structures is indicated in the memory information structure.
+
+```
+    +===============================+
+    | Memory information structure: |
+    | * n_segments: N               |
+    | * n_vmaps: M                  |
+    | * ...                         |
+    |                               |
+    |                               |
+    +===============================+
+    | Segment 0                     |
+    +-------------------------------+
+    | Segment 1                     |
+    +-------------------------------+
+    |  ...                          |
+    +-------------------------------+
+    | Segment N-1                   |
+    +===============================+
+    | Mapping 0                     |
+    +-------------------------------+
+    | Mapping 1                     |
+    +-------------------------------+
+    |  ...                          |
+    +-------------------------------+
+    | Mapping M-1                   |
+    +===============================+
+```
 
 **TODO describe the reply structure**
 
 Note the loader does not report information about memory it itself is
 using. The initial process is expected to get the information it needs
 with this message and then request that the loader exit to reclaim that
-memory. It must do so before starting to allocate memory for its own
-use.
+memory. Before the loader has exited, it is safe to start allocating 
+memory only starting from the physical allocation address hint provided
+in the memory information structure.
 
-### Exit Loader
+### Exit Loader (`JINUE_MSG_EXIT`)
 
-Message number 4097 (JINUE_MSG_EXIT) requests that the loader exits.
+Message number 4097 (JINUE_MSG_EXIT) requests that the loader exit.
 
 Upon receiving this message, the loader exits *without* sending a
 reply, which means the caller should expect the
@@ -238,6 +273,3 @@ where the initial process could start reusing the memory reclaimed from
 the loader after the loader has sent the reply but before it actually
 exited.
 
-## Initialization
-
-**TODO provide and example of the initialization sequence**
