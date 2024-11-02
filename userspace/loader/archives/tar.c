@@ -40,7 +40,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <tar.h>
-#include "../server/meminfo.h"
+#include "../core/meminfo.h"
 #include "../streams/stream.h"
 #include "alloc.h"
 #include "tar.h"

@@ -34,8 +34,8 @@ sources.c        = \
 	archives/alloc.c \
 	archives/tar.c \
 	binfmt/elf.c \
-	server/meminfo.c \
-	server/server.c \
+	core/meminfo.c \
+	core/server.c \
 	streams/bzip2.c \
 	streams/gzip.c \
 	streams/raw.c \

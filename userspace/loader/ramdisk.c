@@ -38,7 +38,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "archives/tar.h"
-#include "server/meminfo.h"
+#include "core/meminfo.h"
 #include "streams/bzip2.h"
 #include "streams/bzip2.h"
 #include "streams/gzip.h"

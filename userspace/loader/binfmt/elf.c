@@ -39,7 +39,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../server/meminfo.h"
+#include "../core/meminfo.h"
 #include "../utils.h"
 #include "elf.h"
 

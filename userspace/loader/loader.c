@@ -36,8 +36,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "binfmt/elf.h"
-#include "server/meminfo.h"
-#include "server/server.h"
+#include "core/meminfo.h"
+#include "core/server.h"
 #include "debug.h"
 #include "descriptors.h"
 #include "ramdisk.h"
