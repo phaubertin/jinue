@@ -81,6 +81,7 @@ int main(int argc, char *argv[]) {
     dump_syscall_implementation();
     dump_user_memory();
     dump_loader_memory_info();
+    dump_loader_ramdisk();
 
     exit_loader();
 

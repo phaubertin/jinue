@@ -44,4 +44,6 @@ void dump_user_memory(void);
 
 void dump_loader_memory_info(void);
 
+void dump_loader_ramdisk(void);
+
 #endif
