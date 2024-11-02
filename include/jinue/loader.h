@@ -103,4 +103,10 @@ const jinue_dirent_t *jinue_dirent_get_next(const jinue_dirent_t *prev);
 
 const jinue_dirent_t *jinue_dirent_find_by_name(const jinue_dirent_t *root, const char *name);
 
+const void *jinue_dirent_file(const jinue_dirent_t *dirent);
+
+const char *jinue_dirent_name(const jinue_dirent_t *dirent);
+
+const char *jinue_dirent_link(const jinue_dirent_t *dirent);
+
 #endif

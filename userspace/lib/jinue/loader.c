@@ -63,7 +63,7 @@ const jinue_dirent_t *jinue_dirent_find_by_name(const jinue_dirent_t *root, cons
     const jinue_dirent_t *dirent = jinue_dirent_get_first(root);
 
     while(dirent != NULL) {
-        if(strcmp(dirent->name, name) == 0) {
+        if(strcmp(jinue_dirent_name(dirent), name) == 0) {
             return dirent;
         }
 
@@ -71,4 +71,16 @@ const jinue_dirent_t *jinue_dirent_find_by_name(const jinue_dirent_t *root, cons
     }
 
     return NULL;
+}
+
+const void *jinue_dirent_file(const jinue_dirent_t *dirent) {
+    return dirent->file;
+}
+
+const char *jinue_dirent_name(const jinue_dirent_t *dirent) {
+    return dirent->name;
+}
+
+const char *jinue_dirent_link(const jinue_dirent_t *dirent) {
+    return dirent->link;
 }

@@ -110,7 +110,7 @@ void dump_ramdisk(const jinue_dirent_t *root) {
                 dirent->uid,
                 dirent->gid,
                 dirent->size,
-                dirent->name
+                jinue_dirent_name(dirent)
         );
 
         dirent = jinue_dirent_get_next(dirent);
