@@ -3,8 +3,7 @@
     "cmake.configureOnOpen": false,
     "makefile.configureOnOpen": false,
     "files.associations": {
-        "*.h": "c",
-        "typeinfo": "c"
+        "*.h": "c"
     },
     "C_Cpp.default.intelliSenseMode": "linux-gcc-x86"
 }
