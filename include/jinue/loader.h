@@ -83,13 +83,13 @@
 #define JINUE_IXOTH             (1<<0)
 
 struct jinue_dirent {
-    int         type;
-    int         mode;
-    int         uid;
-    int         gid;
-    int         devmajor;
-    int         devminor;
-    size_t      size;
+    uint32_t    type;
+    uint32_t    mode;
+    uint32_t    uid;
+    uint32_t    gid;
+    uint32_t    devmajor;
+    uint32_t    devminor;
+    uint64_t    size;
     const void *file;
     const char *name;
     const char *link;
