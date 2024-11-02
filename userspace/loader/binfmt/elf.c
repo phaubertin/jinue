@@ -40,8 +40,6 @@
 #include <string.h>
 #include "../core/mappings.h"
 #include "../core/meminfo.h"
-/* TODO remove this */
-#include "../descriptors.h"
 #include "../utils.h"
 #include "elf.h"
 
@@ -208,8 +206,7 @@ static int map_flags(Elf32_Word p_flags) {
  * Load the loadable (PT_LOAD) segments from the ELF binary
  * 
  * @param elf_info ELF information structure (output)
- * @param fd descriptor of the process in which to load the binary
- * @param ehdr ELF header
+ * @param exec_file file structure for the ELF binary
  * @return EXIT_SUCCESS on success, EXIT_FAILURE on failure
  *
  * */
@@ -410,7 +407,7 @@ static void initialize_string_array(
  *
  * @param stack allocated stack segment
  * @param elf_info ELF information structure (in and out)
- * @param dirent directory entry for the ELF binary
+ * @param exec_file file structure for the ELF binary
  * @param argc number of command line arguments
  * @param argv command line arguments
  *
@@ -494,8 +491,7 @@ static void initialize_stack(
  * file name from the ELF binary directory entry.
  *
  * @param elf_info ELF information structure (output)
- * @param fd descriptor of the process in which to load the binary
- * @param dirent directory entry for the ELF binary
+ * @param exec_file file structure for the ELF binary
  * @param argc number of command line arguments
  * @param argv command line arguments
  *
