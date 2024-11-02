@@ -34,70 +34,21 @@
 #include <jinue/utils.h>
 #include <sys/auxv.h>
 #include <sys/elf.h>
+#include <sys/mman.h>
+#include <errno.h>
 #include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
 #include "debug.h"
 #include "utils.h"
 
+#define MAP_BUFFER_SIZE 16384
+
+#define PRETTY_MODE_SIZE 11
+
 extern char **environ;
 
 extern const Elf32_auxv_t *_jinue_libc_auxv;
-
-static const char *jinue_phys_mem_type_description(uint32_t type) {
-    switch(type) {
-    case JINUE_MEM_TYPE_AVAILABLE:
-        return "Available";
-    case JINUE_MEM_TYPE_BIOS_RESERVED:
-        return "Unavailable/Reserved";
-    case JINUE_MEM_TYPE_ACPI:
-        return "Unavailable/ACPI";
-    case JINUE_MEM_TYPE_RAMDISK:
-        return "Compressed RAM Disk";
-    case JINUE_MEM_TYPE_KERNEL_IMAGE:
-        return "Kernel Image";
-    case JINUE_MEM_TYPE_KERNEL_RESERVED:
-        return "Unavailable/Kernel Data";
-    case JINUE_MEM_TYPE_LOADER_AVAILABLE:
-        return "Available (Loader Hint)";
-    default:
-        return "Unavailable/???";
-    }
-}
-
-void dump_phys_memory_map(const jinue_mem_map_t *map) {
-    const char *name    = "DEBUG_DUMP_MEMORY_MAP";
-    const char *value   = getenv(name);
-
-    if(value == NULL) {
-        return;
-    }
-
-    bool ram_only = true;
-
-    if(strcmp(value, "all") == 0) {
-        ram_only = false;
-    }
-    else if(! bool_getenv(name)) {
-        return;
-    }
-
-    jinue_info("Dump of the BIOS memory map%s:", ram_only?" (showing only available entries)":"");
-
-    for(int idx = 0; idx < map->num_entries; ++idx) {
-        const jinue_mem_entry_t *entry = &map->entry[idx];
-
-        if(entry->type == JINUE_MEM_TYPE_AVAILABLE || !ram_only) {
-            jinue_info(
-                    "  %c [%016" PRIx64 "-%016" PRIx64 "] %s",
-                    (entry->type==JINUE_MEM_TYPE_AVAILABLE)?'*':' ',
-                    entry->addr,
-                    entry->addr + entry->size - 1,
-                    jinue_phys_mem_type_description(entry->type)
-            );
-        }
-    }
-}
 
 void dump_cmdline_arguments(int argc, char *argv[]) {
     if(! bool_getenv("DEBUG_DUMP_CMDLINE_ARGS")) {
@@ -189,4 +140,197 @@ void dump_syscall_implementation(void) {
 
     int howsyscall = getauxval(JINUE_AT_HOWSYSCALL);
     jinue_info("Using system call implementation '%s'.", syscall_implementation_name(howsyscall));
+}
+
+static const char *phys_memory_type_description(uint32_t type) {
+    switch(type) {
+    case JINUE_MEM_TYPE_AVAILABLE:
+        return "Available";
+    case JINUE_MEM_TYPE_BIOS_RESERVED:
+        return "Unavailable/Reserved";
+    case JINUE_MEM_TYPE_ACPI:
+        return "Unavailable/ACPI";
+    case JINUE_MEM_TYPE_RAMDISK:
+        return "Compressed RAM Disk";
+    case JINUE_MEM_TYPE_KERNEL_IMAGE:
+        return "Kernel Image";
+    case JINUE_MEM_TYPE_KERNEL_RESERVED:
+        return "Unavailable/Kernel Data";
+    case JINUE_MEM_TYPE_LOADER_AVAILABLE:
+        return "Available (Loader Hint)";
+    default:
+        return "Unavailable/???";
+    }
+}
+
+static void dump_phys_memory_map(const jinue_mem_map_t *map) {
+    const char *name    = "DEBUG_DUMP_MEMORY_MAP";
+    const char *value   = getenv(name);
+
+    if(value == NULL) {
+        return;
+    }
+
+    bool ram_only = true;
+
+    if(strcmp(value, "all") == 0) {
+        ram_only = false;
+    }
+    else if(! bool_getenv(name)) {
+        return;
+    }
+
+    jinue_info("Dump of the BIOS memory map%s:", ram_only?" (showing only available entries)":"");
+
+    for(int idx = 0; idx < map->num_entries; ++idx) {
+        const jinue_mem_entry_t *entry = &map->entry[idx];
+
+        if(entry->type == JINUE_MEM_TYPE_AVAILABLE || !ram_only) {
+            jinue_info(
+                    "  %c [%016" PRIx64 "-%016" PRIx64 "] %s",
+                    (entry->type==JINUE_MEM_TYPE_AVAILABLE)?'*':' ',
+                    entry->addr,
+                    entry->addr + entry->size - 1,
+                    phys_memory_type_description(entry->type)
+            );
+        }
+    }
+}
+
+void dump_user_memory(void) {
+    char call_buffer[MAP_BUFFER_SIZE];
+
+    jinue_mem_map_t *map = (jinue_mem_map_t *)&call_buffer;
+
+    /* get free memory blocks from microkernel */
+    int status = jinue_get_user_memory(map, sizeof(call_buffer), &errno);
+
+    if(status != 0) {
+        jinue_error("error: could not get memory map from kernel: %s", strerror(errno));
+        return;
+    }
+
+    dump_phys_memory_map(map);
+}
+
+static const char *segment_type_description(int type) {
+    switch(type) {
+        case JINUE_SEG_TYPE_RAMDISK:
+            return "extracted RAM disk";
+        case JINUE_SEG_TYPE_FILE:
+            return "file";
+        case JINUE_SEG_TYPE_ANON:
+            return "anonymous";
+        default:
+            return "???";
+    }
+}
+
+static const char *pretty_permissions(int prot) {
+    const int mask = PROT_READ | PROT_WRITE | PROT_EXEC;
+
+    static char buffer[5];
+    buffer[0] = (prot & PROT_READ)  ? 'r' : '-';
+    buffer[1] = (prot & PROT_WRITE) ? 'w' : '-';
+    buffer[2] = (prot & PROT_EXEC)  ? 'x' : '-';
+    buffer[3] = ((prot & ~mask) != 0) ? '?' : '\0';
+    buffer[4] = '\0';
+
+    return buffer;
+}
+
+static void dump_segment(const jinue_loader_segment_t *segments, int index) {
+    const jinue_loader_segment_t *segment = &segments[index];
+
+    jinue_info("    [%3d] Physical address: %#" PRIx64, index, segment->addr);
+    jinue_info("          Size:             %#" PRIx64 " %" PRIu64, segment->size, segment->size);
+    jinue_info("          Type:             %s", segment_type_description(segment->type));
+}
+
+static void dump_mapping(const jinue_loader_vmap_t *vmaps, int index) {
+    const jinue_loader_vmap_t *mapping = &vmaps[index];
+
+    jinue_info("    [%3d] Virtual address:  %#p", index, mapping->addr);
+    jinue_info("          Size:             %#zx %zu", mapping->size, mapping->size);
+    jinue_info("          Segment index:    %d", mapping->segment);
+    jinue_info("          Offset:           %#zx %zu", mapping->offset, mapping->offset);
+    jinue_info("          Permissions:      %s", pretty_permissions(mapping->perms));
+
+}
+
+static int get_meminfo(void *buffer, size_t bufsize) {
+    jinue_buffer_t reply_buffer;
+    reply_buffer.addr = buffer;
+    reply_buffer.size = bufsize;
+
+    jinue_message_t message;
+    message.send_buffers        = NULL;
+    message.send_buffers_length = 0;
+    message.recv_buffers        = &reply_buffer;
+    message.recv_buffers_length = 1;
+
+    uintptr_t errcode;
+
+    int status = jinue_send(
+        JINUE_DESC_LOADER_ENDPOINT,
+        JINUE_MSG_GET_MEMINFO,
+        &message,
+        &errno,
+        &errcode
+    );
+
+    if(status < 0) {
+        if(errno == JINUE_EPROTO) {
+            jinue_error("error: loader set error code to: %s.", strerror(errcode));
+        } else {
+            jinue_error("error: jinue_send() failed: %s.", strerror(errno));
+        }
+    }
+
+    return status;
+}
+
+static void dump_meminfo(
+        const jinue_loader_meminfo_t    *meminfo,
+        const jinue_loader_segment_t    *segments,
+        const jinue_loader_vmap_t       *vmaps) {
+    
+    if(! bool_getenv("DEBUG_DUMP_LOADER_MEMORY_INFO")) {
+        return;
+    }
+    
+    jinue_info("Memory and mappings information from user space loader:");
+    jinue_info("  Extracted RAM disk:");
+    dump_segment(segments, meminfo->ramdisk);
+
+    jinue_info("  Hints:");
+    jinue_info("    Physical allocation start: %#" PRIx64, meminfo->hints.physaddr);
+    jinue_info("    Physical allocation limit: %#" PRIx64, meminfo->hints.physlimit);
+
+    jinue_info("  Segments:");
+
+    for(int idx = 0; idx < meminfo->n_segments; ++idx) {
+        dump_segment(segments, idx);
+    }
+
+    jinue_info("  Mappings:");
+
+    for(int idx = 0; idx < meminfo->n_vmaps; ++idx) {
+        dump_mapping(vmaps, idx);
+    }
+}
+
+void dump_loader_memory_info(void) {
+    char buffer[MAP_BUFFER_SIZE];
+
+    int status = get_meminfo(buffer, sizeof(buffer));
+
+    if(status < 0) {
+        return;
+    }
+
+    const jinue_loader_meminfo_t *meminfo   = (jinue_loader_meminfo_t *)buffer;
+    const jinue_loader_segment_t *segments  = (const jinue_loader_segment_t *)&meminfo[1];
+
+    dump_meminfo(meminfo, segments, (const jinue_loader_vmap_t *)&segments[meminfo->n_segments]);
 }

@@ -34,12 +34,14 @@
 
 void dump_cmdline_arguments(int argc, char *argv[]);
 
-void dump_phys_memory_map(const jinue_mem_map_t *map);
-
 void dump_environ(void);
 
 void dump_auxvec(void);
 
 void dump_syscall_implementation(void);
+
+void dump_user_memory(void);
+
+void dump_loader_memory_info(void);
 
 #endif

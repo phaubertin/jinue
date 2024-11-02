@@ -34,105 +34,25 @@
 #include <jinue/utils.h>
 #include <errno.h>
 #include <inttypes.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include "tests/ipc.h"
 #include "debug.h"
 #include "utils.h"
 
-#define MAP_BUFFER_SIZE 16384
+void exit_loader(void) {
+    uintptr_t errcode;
 
-void dump_user_memory(void) {
-    char call_buffer[MAP_BUFFER_SIZE];
-
-    /* get free memory blocks from microkernel */
-    int status = jinue_get_user_memory(
-        (jinue_mem_map_t *)&call_buffer,
-        sizeof(call_buffer),
-        &errno
-    );
-
-    if(status != 0) {
-        jinue_error("error: could not get memory map from kernel: %s", strerror(errno));
-        return;
-    }
-
-    dump_phys_memory_map((jinue_mem_map_t *)&call_buffer);
-}
-
-void dump_loader_memory(void) {
-    char buffer[MAP_BUFFER_SIZE];
-
-    jinue_buffer_t reply_buffer;
-    reply_buffer.addr = buffer;
-    reply_buffer.size = sizeof(buffer);
+    jinue_info("Blocking until loader exits.");
 
     jinue_message_t message;
     message.send_buffers        = NULL;
     message.send_buffers_length = 0;
-    message.recv_buffers        = &reply_buffer;
-    message.recv_buffers_length = 1;
+    message.recv_buffers        = NULL;
+    message.recv_buffers_length = 0;
 
-    jinue_info("Sending message with unsupported message number.");
-
-    uintptr_t errcode;
-    int status = jinue_send(JINUE_DESC_LOADER_ENDPOINT, 16777, &message, &errno, &errcode);
-
-    if(status >= 0) {
-        jinue_error("error: jinue_send() unexpectedly succeeded");
-        return;
-    }
-
-    if(errno != JINUE_EPROTO) {
-        jinue_error("error: jinue_send() failed: %s.", strerror(errno));
-        return;
-    }
-
-    jinue_info("expected: jinue_send() set errno to: %s.", strerror(errno));
-
-    if(errcode != JINUE_ENOSYS) {
-        jinue_error("error: loader set error code: %#" PRIxPTR ".", errcode);
-        return;
-    }
-
-    jinue_info("expected: loader set error code to: %s.", strerror(errcode));
-
-    jinue_info("Getting memory information from loader.");
-
-    status = jinue_send(
-        JINUE_DESC_LOADER_ENDPOINT,
-        JINUE_MSG_GET_MEMINFO,
-        &message,
-        &errno,
-        &errcode
-    );
-
-    if(status < 0) {
-        if(errno == JINUE_EPROTO) {
-            jinue_error("error: loader set error code to: %s.", strerror(errcode));
-        } else {
-            jinue_error("error: jinue_send() failed: %s.", strerror(errno));
-        }
-
-        return;
-    }
-
-    const jinue_loader_meminfo_t *meminfo = (jinue_loader_meminfo_t *)buffer;
-    const jinue_loader_segment_t *segments = (const jinue_loader_segment_t *)&meminfo[1];
-
-    jinue_info("  Physical memory allocation address:   %#" PRIx64, meminfo->hints.physaddr);
-    jinue_info("  Physical memory allocation limit:     %#" PRIx64, meminfo->hints.physlimit);
-    jinue_info("  Extracted RAM disk address:           %#" PRIx64,
-        segments[meminfo->ramdisk].addr
-    );
-    jinue_info("  Extracted RAM disk size:              %#" PRIx64 " %" PRIu64,
-        segments[meminfo->ramdisk].size,
-        segments[meminfo->ramdisk].size
-    );
-
-    jinue_info("Blocking until loader exits.");
-
-    status = jinue_send(
+    int status = jinue_send(
         JINUE_DESC_LOADER_ENDPOINT,
         JINUE_MSG_EXIT,
         &message,
@@ -141,7 +61,7 @@ void dump_loader_memory(void) {
     );
 
     if(status >= 0) {
-        jinue_error("error: jinue_send() unexpectedly succeeded");
+        jinue_error("error: jinue_send() unexpectedly succeeded for JINUE_MSG_EXIT");
         return;
     }
 
@@ -149,8 +69,6 @@ void dump_loader_memory(void) {
         jinue_error("error: jinue_send() failed: %s.", strerror(errno));
         return;
     }
-
-    jinue_info("expected: jinue_send() set errno to: %s.", strerror(errno));
 }
 
 int main(int argc, char *argv[]) {
@@ -161,10 +79,10 @@ int main(int argc, char *argv[]) {
     dump_environ();
     dump_auxvec();
     dump_syscall_implementation();
-
     dump_user_memory();
+    dump_loader_memory_info();
 
-    dump_loader_memory();
+    exit_loader();
 
     run_ipc_test();
 
