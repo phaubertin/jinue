@@ -74,13 +74,13 @@ const jinue_dirent_t *jinue_dirent_find_by_name(const jinue_dirent_t *root, cons
 }
 
 const void *jinue_dirent_file(const jinue_dirent_t *dirent) {
-    return dirent->file;
+    return (const char *)dirent + dirent->file;
 }
 
 const char *jinue_dirent_name(const jinue_dirent_t *dirent) {
-    return dirent->name;
+    return (const char *)dirent + dirent->name;
 }
 
 const char *jinue_dirent_link(const jinue_dirent_t *dirent) {
-    return dirent->link;
+    return (const char *)dirent + dirent->link;
 }

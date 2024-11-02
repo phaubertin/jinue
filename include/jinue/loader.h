@@ -90,9 +90,9 @@ struct jinue_dirent {
     uint32_t    devmajor;
     uint32_t    devminor;
     uint64_t    size;
-    const void *file;
-    const char *name;
-    const char *link;
+    int64_t     file;
+    int64_t     name;
+    int64_t     link;
     int64_t     next;
 };
 
