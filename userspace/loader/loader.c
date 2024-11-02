@@ -57,14 +57,15 @@ static jinue_mem_map_t *get_memory_map(void *buffer, size_t bufsize) {
     return buffer;
 }
 
-static int get_init(file_t *file, const jinue_dirent_t *root) {
+static int get_init(file_t *file, const extracted_ramdisk_t *extracted_ramdisk) {
     const char *init = getenv("init");
 
     if(init == NULL) {
         init = "/sbin/init";
     }
 
-    const jinue_dirent_t *dirent = jinue_dirent_find_by_name(root, init);
+    const jinue_dirent_t *root      = extracted_ramdisk->root;
+    const jinue_dirent_t *dirent    = jinue_dirent_find_by_name(root, init);
 
     if(dirent == NULL) {
         jinue_error("error: init program not found: %s", init);
@@ -76,7 +77,7 @@ static int get_init(file_t *file, const jinue_dirent_t *root) {
         return EXIT_FAILURE;
     }
 
-    uint64_t start = get_meminfo_ramdisk_start() + ((char *)dirent->file - (char *)root);
+    uint64_t start = extracted_ramdisk->physaddr + ((char *)dirent->file - (char *)root);
 
     file->name          = dirent->name;
     file->contents      = dirent->file;
@@ -195,16 +196,18 @@ int main(int argc, char *argv[]) {
         return status;
     }
 
-    const jinue_dirent_t *root = extract_ramdisk(&ramdisk);
+    extracted_ramdisk_t extracted_ramdisk;
+    
+    status = extract_ramdisk(&extracted_ramdisk, &ramdisk);
 
-    if(root == NULL) {
-        return EXIT_FAILURE;
+    if(status != EXIT_SUCCESS) {
+        return status;
     }
 
-    dump_ramdisk(root);
+    dump_ramdisk(extracted_ramdisk.root);
 
     file_t init;
-    status = get_init(&init, root);
+    status = get_init(&init, &extracted_ramdisk);
 
     if(status != EXIT_SUCCESS) {
         return status;

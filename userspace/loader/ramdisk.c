@@ -182,33 +182,38 @@ static enum format detect_format(stream_t *stream) {
  * - no compression (.tar)
  * - gzip compression (.tar.gz)
  *
- * @param ramdisk structure that contains the RAM disk image address and size
- * @return virtual filesystem root, NULL on failure
+ * @param extracted extracted RAM disk address and size (out)
+ * @param ramdisk RAM disk image address and size
+ * @return EXIT_SUCCESS on success, EXIT_FAILURE on failure
  *
  * */
-const jinue_dirent_t *extract_ramdisk(const ramdisk_t *ramdisk) {
+int extract_ramdisk(extracted_ramdisk_t *extracted, const ramdisk_t *ramdisk) {
     stream_t stream;
 
     int status = initialize_stream(&stream, ramdisk);
 
     if(status != STREAM_SUCCESS) {
-        return NULL;
+        return EXIT_FAILURE;
     }
-
-    const jinue_dirent_t *root;
 
     switch(detect_format(&stream)) {
     case FORMAT_TAR:
         jinue_info("RAM disk is a tar archive.");
-        root = tar_extract(&stream);
+        status = tar_extract(extracted, &stream);
         break;
     default:
         jinue_error("error: could not extract RAM disk: unrecognized format");
-        root = NULL;
+        status = EXIT_FAILURE;
         break;
     }
 
     stream_finalize(&stream);
 
-    return root;
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
+    
+    set_meminfo_ramdisk(extracted->physaddr, extracted->size);
+
+    return EXIT_SUCCESS;
 }

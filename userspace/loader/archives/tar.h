@@ -35,6 +35,7 @@
 #include <jinue/loader.h>
 #include <stdbool.h>
 #include "../streams/stream.h"
+#include "../ramdisk.h"
 
 typedef struct {
     char name[100];
@@ -57,6 +58,6 @@ typedef struct {
 
 bool is_tar(stream_t *stream);
 
-const jinue_dirent_t *tar_extract(stream_t *stream);
+int tar_extract(extracted_ramdisk_t *extracted, stream_t *stream);
 
 #endif

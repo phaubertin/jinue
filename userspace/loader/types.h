@@ -32,6 +32,8 @@
 #ifndef LOADER_TYPES_H_
 #define LOADER_TYPES_H_
 
+#include <stddef.h>
+
 typedef struct {
     void (*entry)(void);
     void *stack_addr;
