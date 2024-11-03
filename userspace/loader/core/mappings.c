@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,33 +29,56 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
 #include <jinue/jinue.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdlib.h>
+#include <jinue/loader.h>
+#include <jinue/utils.h>
+#include <sys/mman.h>
+#include <errno.h>
+#include <internals.h>
+#include <stdint.h>
 #include <string.h>
-#include "utils.h"
+#include "../descriptors.h"
+#include "mappings.h"
+#include "meminfo.h"
 
-bool bool_getenv(const char *name) {
-    const char *value = getenv(name);
+int map_file(void *vaddr, size_t size, int segment_index, size_t offset, int perms) {
+    uint64_t file_start = get_meminfo_segment_start(segment_index);
+    uint64_t paddr      = file_start + offset;
 
-    if(value == NULL) {
-        return false;
+    int status = jinue_mmap(INIT_PROCESS_DESCRIPTOR, vaddr, size, perms, paddr, &errno);
+
+    if(status < 0) {
+        jinue_error("error: jinue_mmap() failed: %s", strerror(errno));
+        return status;
     }
 
-    return  strcmp(value, "enable") == 0 ||
-            strcmp(value, "true") == 0 ||
-            strcmp(value, "yes") == 0 ||
-            strcmp(value, "1") == 0;
+    add_meminfo_mapping(vaddr, size, segment_index, offset, perms);
+
+    return 0;
 }
 
-const jinue_mem_entry_t *get_mem_map_entry_by_type(const jinue_mem_map_t *map, int type) {
-    for(int idx = 0; idx < map->num_entries; ++idx) {
-        if(map->entry[idx].type == type) {
-            return &map->entry[idx];
-        }
+void *map_anonymous(void *vaddr, size_t size, int perms) {
+    uint64_t paddr = _libc_get_physmem_alloc_addr();
+
+    /* Map into this process so we can set the contents. */
+    void *segment = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+
+    if(segment == MAP_FAILED) {
+        jinue_error("error: mmap() failed: %s", strerror(errno));
+        return NULL;
     }
 
-    return NULL;
+    /* Map into the target process. */
+    int status = jinue_mmap(INIT_PROCESS_DESCRIPTOR, vaddr, size, perms, paddr, &errno);
+
+    if(status < 0) {
+        jinue_error("error: jinue_mmap() failed: %s", strerror(errno));
+        return NULL;
+    }
+
+    int index = add_meminfo_segment(paddr, size, JINUE_SEG_TYPE_ANON);
+    
+    add_meminfo_mapping(vaddr, size, index, 0, perms);
+
+    return segment;
 }

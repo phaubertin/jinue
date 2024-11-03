@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Philippe Aubertin.
+ * Copyright (C) 2023-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,35 +29,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LOADER_ARCHIVES_TAR_H_
-#define LOADER_ARCHIVES_TAR_H_
+#ifndef LOADER_DESCRIPTORS_H_
+#define LOADER_DESCRIPTORS_H_
 
-#include <jinue/loader.h>
-#include <stdbool.h>
-#include "../streams/stream.h"
-#include "../ramdisk.h"
+#include <jinue/shared/asm/descriptors.h>
 
-typedef struct {
-    char name[100];
-    char mode[8];
-    char uid[8];
-    char gid[8];
-    char size[12];
-    char mtime[12];
-    char chksum[8];
-    char typeflag;
-    char linkname[100];
-    char magic[6];
-    char version[2];
-    char uname[32];
-    char gname[32];
-    char devmajor[8];
-    char devminor[8];
-    char prefix[155];
-} tar_header_t;
+#define INIT_PROCESS_DESCRIPTOR (JINUE_DESC_LAST + 1)
 
-bool is_tar(stream_t *stream);
-
-int tar_extract(extracted_ramdisk_t *extracted, stream_t *stream);
+#define INIT_THREAD_DESCRIPTOR  (JINUE_DESC_LAST + 2)
 
 #endif

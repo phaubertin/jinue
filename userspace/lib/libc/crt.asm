@@ -32,7 +32,7 @@
     bits 32
     
     extern environ
-    extern _init
+    extern _libc_init
     extern main
     extern jinue_exit_thread
     extern _jinue_libc_auxv
@@ -81,9 +81,9 @@ _start:
     ; Set address of auxiliary vectors
     mov dword [_jinue_libc_auxv], edi
     
-    call _init
+    call _libc_init
 
-    ; Check _init() exit status, skip main() if non-zero 
+    ; Check _libc_init() exit status, skip main() if non-zero 
     or eax, eax
     jnz .exit
 

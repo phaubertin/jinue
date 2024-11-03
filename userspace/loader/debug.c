@@ -36,7 +36,6 @@
 #include "debug.h"
 #include "utils.h"
 
-
 #define PRETTY_MODE_SIZE 11
 
 static const char *pretty_mode(char *mode, const jinue_dirent_t *dirent) {

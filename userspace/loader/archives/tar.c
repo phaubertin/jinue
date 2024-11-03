@@ -33,6 +33,7 @@
 #include <jinue/loader.h>
 #include <jinue/utils.h>
 #include <sys/mman.h>
+#include <internals.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -211,10 +212,10 @@ const tar_header_t *state_header(const state_t *state) {
  * @param stream stream from which to read archive content
  *
  * */
-void initialize_state(state_t *state, stream_t *stream) {
+static jinue_dirent_t *initialize_state(state_t *state, stream_t *stream) {
     memset(state, 0, sizeof(state_t));
-    initialize_empty_dirent_list(&state->dirent_area);
     state->stream = stream;
+    return initialize_empty_dirent_list(&state->dirent_area);
 }
 
 /**
@@ -634,36 +635,37 @@ const int map_mode(int tar_mode) {
 /**
  * Extract tar archive into a virtual filesystem
  *
+ * @param extracted extracted RAM disk address and size (out)
  * @param stream stream from which to read the archive data
- * @return virtual filesystem root, NULL on failure
+ * @return EXIT_SUCCESS on success, EXIT_FAILURE on failure
  *
  * */
-const jinue_dirent_t *tar_extract(stream_t *stream) {
+int tar_extract(extracted_ramdisk_t *extracted, stream_t *stream) {
     state_t state;
 
-    initialize_state(&state, stream);
-
-    jinue_dirent_t *root = initialize_empty_dirent_list(&state.dirent_area);
+    const uint64_t extracted_start = _libc_get_physmem_alloc_addr();
+    
+    jinue_dirent_t *root = initialize_state(&state, stream);
 
     if(root == NULL) {
-        return NULL;
+        return EXIT_FAILURE;
     }
 
     while(true) {
         const tar_header_t *header = extract_header(&state);
 
         if(header == NULL) {
-            return NULL;
+            return EXIT_FAILURE;
         }
 
         if(state.at_end) {
-            return root;
+            break;
         }
 
         const char *filename = parse_filename(&state, header);
 
         if(filename == NULL) {
-            return NULL;
+            return EXIT_FAILURE;
         }
 
         int type;
@@ -704,11 +706,11 @@ const jinue_dirent_t *tar_extract(stream_t *stream) {
         case FILETYPE_PAX:
         case FILETYPE_PAX_GLOBAL:
             jinue_error("error: PAX archive not supported");
-            return NULL;
+            return EXIT_FAILURE;
         case FILETYPE_GNU_LONGNAME:
         case FILETYPE_GNU_LONGLINK:
             jinue_error("error: tar archive with GNU long names extensions not supported");
-            return NULL;
+            return EXIT_FAILURE;
         default:
             jinue_warning("warning: file with unrecognized type treated as a regular file: %s", filename);
             type = JINUE_DIRENT_TYPE_FILE;
@@ -719,14 +721,14 @@ const jinue_dirent_t *tar_extract(stream_t *stream) {
 
         if(dirent == NULL) {
             jinue_error("error: directory entry allocation failed");
-            return NULL;
+            return EXIT_FAILURE;
         }
 
         const char *name = copy_string(&state, filename);
 
         if(name == NULL) {
             jinue_error("error: failed to allocate memory for string (for file name)");
-            return NULL;
+            return EXIT_FAILURE;
         }
 
         dirent->rel_name    = name - (char *)dirent;
@@ -743,7 +745,7 @@ const jinue_dirent_t *tar_extract(stream_t *stream) {
 
             if(link == NULL) {
                 jinue_error("error: failed to allocate memory for string (for symbolic link)");
-                return NULL;
+                return EXIT_FAILURE;
             }
 
             dirent->size        = 0;
@@ -765,8 +767,16 @@ const jinue_dirent_t *tar_extract(stream_t *stream) {
             int status = copy_file_data(&state, dirent);
 
             if(status < 0) {
-                return NULL;
+                return EXIT_FAILURE;
             }
         }
     }
+
+    const uint64_t extracted_end = _libc_get_physmem_alloc_addr();
+
+    extracted->physaddr = extracted_start;
+    extracted->size     = extracted_end - extracted_start;
+    extracted->root     = root;
+
+    return EXIT_SUCCESS;
 }

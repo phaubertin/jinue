@@ -36,6 +36,12 @@
  * stdout, stdin and stderr. Lets leave them unused to allow this usage. */
 
 /** descriptor assigned to refer to own process in loader and initial process */
-#define JINUE_DESC_SELF_PROCESS 3
+#define JINUE_DESC_SELF_PROCESS     3
+
+/** descriptor for IPC endpoint to loader */
+#define JINUE_DESC_LOADER_ENDPOINT  4
+
+/** last descriptor number reserved for loader protocol */
+#define JINUE_DESC_LAST             4
 
 #endif

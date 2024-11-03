@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,35 +29,25 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LOADER_ARCHIVES_TAR_H_
-#define LOADER_ARCHIVES_TAR_H_
+#ifndef LOADER_MEMINFO_H_
+#define LOADER_MEMINFO_H_
 
-#include <jinue/loader.h>
-#include <stdbool.h>
-#include "../streams/stream.h"
-#include "../ramdisk.h"
+#include <jinue/jinue.h>
+#include <stdint.h>
+#include <stddef.h>
 
-typedef struct {
-    char name[100];
-    char mode[8];
-    char uid[8];
-    char gid[8];
-    char size[12];
-    char mtime[12];
-    char chksum[8];
-    char typeflag;
-    char linkname[100];
-    char magic[6];
-    char version[2];
-    char uname[32];
-    char gname[32];
-    char devmajor[8];
-    char devminor[8];
-    char prefix[155];
-} tar_header_t;
+void initialize_meminfo(void);
 
-bool is_tar(stream_t *stream);
+int add_meminfo_segment(uint64_t addr, uint64_t size, int type);
 
-int tar_extract(extracted_ramdisk_t *extracted, stream_t *stream);
+uint64_t get_meminfo_segment_start(int index);
+
+void set_meminfo_ramdisk(uint64_t addr, uint64_t size);
+
+uint64_t get_meminfo_ramdisk_start(void);
+
+void add_meminfo_mapping(void *addr, size_t size, int segment_index, size_t offset, int perms);
+
+int get_meminfo(const jinue_message_t *message);
 
 #endif

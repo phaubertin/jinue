@@ -36,52 +36,65 @@
 #include <stdlib.h>
 #include <string.h>
 #include "binfmt/elf.h"
+#include "core/meminfo.h"
+#include "core/server.h"
 #include "debug.h"
+#include "descriptors.h"
 #include "ramdisk.h"
+#include "types.h"
 #include "utils.h"
 
-#define MAP_BUFFER_SIZE         16384
-
-#define INIT_PROCESS_DESCRIPTOR (JINUE_DESC_SELF_PROCESS + 1)
-
-#define INIT_THREAD_DESCRIPTOR  (JINUE_DESC_SELF_PROCESS + 2)
+#define MAP_BUFFER_SIZE 16384
 
 static jinue_mem_map_t *get_memory_map(void *buffer, size_t bufsize) {
-    int status = jinue_get_user_memory((jinue_mem_map_t *)buffer, bufsize, NULL);
+    int status = jinue_get_user_memory(buffer, bufsize, &errno);
 
     if(status != 0) {
-        /* TODO use errno to give more information */
-        jinue_error("error: could not get physical memory map from microkernel");
+        jinue_error("error: could not get memory map from kernel: %s", strerror(errno));
         return NULL;
     }
 
     return buffer;
 }
 
-static const jinue_dirent_t *get_init(const jinue_dirent_t *root) {
+static int get_init(file_t *file, const extracted_ramdisk_t *extracted_ramdisk) {
     const char *init = getenv("init");
 
     if(init == NULL) {
         init = "/sbin/init";
     }
 
-    const jinue_dirent_t *dirent = jinue_dirent_find_by_name(root, init);
+    const jinue_dirent_t *root      = extracted_ramdisk->root;
+    const jinue_dirent_t *dirent    = jinue_dirent_find_by_name(root, init);
 
     if(dirent == NULL) {
         jinue_error("error: init program not found: %s", init);
-        return NULL;
+        return EXIT_FAILURE;
     }
 
     if(dirent->type != JINUE_DIRENT_TYPE_FILE) {
         jinue_error("error: init program is not a regular file: %s", init);
-        return NULL;
+        return EXIT_FAILURE;
     }
 
-    return dirent;
+    uint64_t offset = (char *)jinue_dirent_file(dirent) - (char *)root;
+    uint64_t start  = extracted_ramdisk->physaddr + offset;
+
+    file->name          = jinue_dirent_name(dirent);
+    file->contents      = jinue_dirent_file(dirent);
+    file->size          = dirent->size;
+    file->segment_index = add_meminfo_segment(start, dirent->size, JINUE_SEG_TYPE_FILE);
+
+    return EXIT_SUCCESS;
 }
 
-static int load_init(elf_info_t *elf_info, const jinue_dirent_t *init, int argc, char *argv[]) {
-    jinue_info("Loading init program %s", jinue_dirent_name(init));
+static int load_init(
+        thread_params_t *thread_params,
+        const file_t    *init,
+        int              argc,
+        char            *argv[]) {
+
+    jinue_info("Loading init program %s", init->name);
 
     int status = jinue_create_process(INIT_PROCESS_DESCRIPTOR, &errno);
 
@@ -90,7 +103,7 @@ static int load_init(elf_info_t *elf_info, const jinue_dirent_t *init, int argc,
         return EXIT_FAILURE;
     }
 
-    status = load_elf(elf_info, INIT_PROCESS_DESCRIPTOR, init, argc, argv);
+    status = load_elf(thread_params, init, argc, argv);
 
     if(status != EXIT_SUCCESS) {
         return status;
@@ -110,51 +123,32 @@ static int load_init(elf_info_t *elf_info, const jinue_dirent_t *init, int argc,
         return EXIT_FAILURE;
     }
 
+    status = jinue_create_endpoint(JINUE_DESC_LOADER_ENDPOINT, &errno);
+
+    if (status != 0) {
+        jinue_error("error: could not create endpoint: %s", strerror(errno));
+        return EXIT_FAILURE;
+    }
+
+    status = jinue_mint(
+        JINUE_DESC_LOADER_ENDPOINT,
+        INIT_PROCESS_DESCRIPTOR,
+        JINUE_DESC_LOADER_ENDPOINT,
+        JINUE_PERM_SEND,
+        0,
+        &errno
+    );
+
+    if (status != 0) {
+        jinue_error("error: could not create descriptor for endpoint: %s", strerror(errno));
+        return EXIT_FAILURE;
+    }
+
     return EXIT_SUCCESS;
 }
 
-int main(int argc, char *argv[]) {
-    jinue_info("Jinue user space loader (%s) started.", argv[0]);
-
-    char map_buffer[MAP_BUFFER_SIZE];
-    jinue_mem_map_t *map = get_memory_map(map_buffer, sizeof(map_buffer));
-
-    if(map == NULL) {
-        return EXIT_FAILURE;
-    }
-
-    ramdisk_t ramdisk;
-
-    int status = map_ramdisk(&ramdisk, map);
-
-    if(status != EXIT_SUCCESS) {
-        return status;
-    }
-
-    const jinue_dirent_t *root = extract_ramdisk(&ramdisk);
-
-    if(root == NULL) {
-        return EXIT_FAILURE;
-    }
-
-    dump_ramdisk(root);
-
-    const jinue_dirent_t *init = get_init(root);
-
-    if(init == NULL) {
-        return EXIT_FAILURE;
-    }
-
-    elf_info_t elf_info;
-    status = load_init(&elf_info, init, argc, argv);
-
-    if(status != EXIT_SUCCESS) {
-        return status;
-    }
-
-    jinue_info("---");
-
-    status = jinue_create_thread(INIT_THREAD_DESCRIPTOR, INIT_PROCESS_DESCRIPTOR, &errno);
+static int start_initial_thread(thread_params_t *thread_params) {
+    int status = jinue_create_thread(INIT_THREAD_DESCRIPTOR, INIT_PROCESS_DESCRIPTOR, &errno);
 
     if (status != 0) {
         jinue_error("error: could not create thread: %s", strerror(errno));
@@ -163,8 +157,8 @@ int main(int argc, char *argv[]) {
 
     status = jinue_start_thread(
         INIT_THREAD_DESCRIPTOR,
-        elf_info.entry,
-        elf_info.stack_addr,
+        thread_params->entry,
+        thread_params->stack_addr,
         &errno
     );
 
@@ -181,4 +175,59 @@ int main(int argc, char *argv[]) {
     }
 
     return EXIT_SUCCESS;
+}
+
+int main(int argc, char *argv[]) {
+    jinue_info("Jinue user space loader (%s) started.", argv[0]);
+
+    initialize_meminfo();
+
+    char map_buffer[MAP_BUFFER_SIZE];
+    jinue_mem_map_t *map = get_memory_map(map_buffer, sizeof(map_buffer));
+
+    if(map == NULL) {
+        return EXIT_FAILURE;
+    }
+
+    ramdisk_t ramdisk;
+
+    int status = map_ramdisk(&ramdisk, map);
+
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
+
+    extracted_ramdisk_t extracted_ramdisk;
+    
+    status = extract_ramdisk(&extracted_ramdisk, &ramdisk);
+
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
+
+    dump_ramdisk(extracted_ramdisk.root);
+
+    file_t init;
+    status = get_init(&init, &extracted_ramdisk);
+
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
+
+    thread_params_t thread_params;
+    status = load_init(&thread_params, &init, argc, argv);
+
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
+
+    jinue_info("---");
+
+    status = start_initial_thread(&thread_params);
+
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
+
+    return run_server();
 }

@@ -33,9 +33,9 @@
 #include <sys/auxv.h>
 #include <sys/elf.h>
 #include <errno.h>
+#include <internals.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "mmap.h"
 #include "physmem.h"
 
 /* Original value of the program break, i.e. just after the data segment. We

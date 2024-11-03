@@ -30,19 +30,18 @@
  */
 
 #include <jinue/jinue.h>
+#include <jinue/loader.h>
 #include <jinue/utils.h>
 #include <errno.h>
+#include <inttypes.h>
+#include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include "tests/ipc.h"
 #include "debug.h"
 #include "utils.h"
 
-#define MAP_BUFFER_SIZE 16384
-
 int main(int argc, char *argv[]) {
-    char call_buffer[MAP_BUFFER_SIZE];
-    int status;
-
     /* Say hello. */
     jinue_info("Jinue test app (%s) started.", argv[0]);
 
@@ -50,17 +49,17 @@ int main(int argc, char *argv[]) {
     dump_environ();
     dump_auxvec();
     dump_syscall_implementation();
+    dump_user_memory();
+    dump_loader_memory_info();
+    dump_loader_ramdisk();
 
-    /* get free memory blocks from microkernel */
-    status = jinue_get_user_memory((jinue_mem_map_t *)&call_buffer, sizeof(call_buffer), &errno);
+    jinue_info("Blocking until loader exits.");
 
-    if(status != 0) {
-        jinue_error("error: could not get physical memory map from microkernel");
+    int status = jinue_exit_loader();
 
+    if(status < 0) {
         return EXIT_FAILURE;
     }
-
-    dump_phys_memory_map((jinue_mem_map_t *)&call_buffer);
 
     run_ipc_test();
 

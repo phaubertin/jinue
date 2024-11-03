@@ -39,6 +39,7 @@
 #include <jinue/shared/asm/mman.h>
 #include <jinue/shared/asm/memory.h>
 #include <jinue/shared/asm/permissions.h>
+#include <jinue/shared/asm/stack.h>
 #include <jinue/shared/asm/syscalls.h>
 #include <jinue/shared/types.h>
 #include <stddef.h>

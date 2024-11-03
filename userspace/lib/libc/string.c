@@ -146,7 +146,7 @@ static const char *strerror_const(int errnum) {
     case EDEADLK:
         return "resource deadlock would occur";
     case EPROTO:
-        return "protocol errors";
+        return "protocol error";
     default:
         return "unknown error";
     }

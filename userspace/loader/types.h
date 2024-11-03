@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,9 +29,21 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LIBC_MMAP_H
-#define LIBC_MMAP_H
+#ifndef LOADER_TYPES_H_
+#define LOADER_TYPES_H_
 
-#define MMAP_BASE 0x40000000
+#include <stddef.h>
+
+typedef struct {
+    void (*entry)(void);
+    void *stack_addr;
+} thread_params_t;
+
+typedef struct {
+    const char  *name;
+    const void  *contents;
+    size_t       size;
+    int          segment_index;
+} file_t;
 
 #endif

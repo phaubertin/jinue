@@ -35,15 +35,6 @@
 #include <kernel/types.h>
 #include <sys/elf.h>
 
-typedef struct {
-    void            *entry;
-    void            *stack_addr;
-    addr_t           at_phdr;
-    int              at_phent;
-    int              at_phnum;
-    process_t       *process;
-} elf_info_t;
-
 bool elf_check(Elf32_Ehdr *elf);
 
 const Elf32_Phdr *elf_executable_program_header(const Elf32_Ehdr *ehdr);

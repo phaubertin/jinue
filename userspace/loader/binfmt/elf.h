@@ -32,17 +32,13 @@
 #ifndef LOADER_ELF_ELF_H_
 #define LOADER_ELF_ELF_H_
 
-#include <jinue/loader.h>
 #include <stddef.h>
+#include "../types.h"
 
-typedef struct {
-    void    (*entry)(void);
-    void    *stack_addr;
-    void    *at_phdr;
-    int      at_phent;
-    int      at_phnum;
-} elf_info_t;
-
-int load_elf(elf_info_t *elf_info, int fd, const jinue_dirent_t *dirent, int argc, char *argv[]);
+int load_elf(
+    thread_params_t *thread_params,
+    const file_t    *exec_file,
+    int              argc,
+    char             *argv[]);
 
 #endif

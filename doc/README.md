@@ -6,6 +6,7 @@ This directory contains documentation.
 
 * [Kernel Command Line](cmdline.md)
 * [System Call Interface](syscalls/README.md)
+* [Initial Process Execution Environment](init-process.md)
 
 ## Design/Developer Documents
 

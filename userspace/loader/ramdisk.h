@@ -32,15 +32,23 @@
 #ifndef LOADER_RAMDISK_H_
 #define LOADER_RAMDISK_H_
 
+#include <jinue/jinue.h>
 #include <jinue/loader.h>
+#include <stdint.h>
 
 typedef struct {
     const void  *addr;
     size_t       size;
 } ramdisk_t;
 
+typedef struct {
+    uint64_t         physaddr;
+    size_t           size;
+    jinue_dirent_t  *root;
+} extracted_ramdisk_t;
+
 int map_ramdisk(ramdisk_t *ramdisk, const jinue_mem_map_t *map);
 
-const jinue_dirent_t *extract_ramdisk(const ramdisk_t *ramdisk);
+int extract_ramdisk(extracted_ramdisk_t *extracted, const ramdisk_t *ramdisk);
 
 #endif

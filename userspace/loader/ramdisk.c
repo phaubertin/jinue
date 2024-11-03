@@ -38,11 +38,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include "archives/tar.h"
+#include "core/meminfo.h"
+#include "streams/bzip2.h"
 #include "streams/bzip2.h"
 #include "streams/gzip.h"
 #include "streams/raw.h"
 #include "streams/stream.h"
 #include "ramdisk.h"
+#include "utils.h"
 
 struct stream_initializer {
     const char *name;
@@ -56,23 +59,6 @@ static struct stream_initializer stream_initializers[] = {
 };
 
 /**
- * Find the kernel memory map entry for the RAM disk image
- *
- * @param map kernel memory map
- * @return map entry, NULL if not found (should not happen)
- *
- * */
-static const jinue_mem_entry_t *get_ramdisk_entry(const jinue_mem_map_t *map) {
-    for(int idx = 0; idx < map->num_entries; ++idx) {
-        if(map->entry[idx].type == JINUE_MEM_TYPE_RAMDISK) {
-            return &map->entry[idx];
-        }
-    }
-
-    return NULL;
-}
-
-/**
  * Map the compressed RAM disk image in this process
  *
  * @param ramdisk structure to initialize with RAM disk image address and size
@@ -81,7 +67,10 @@ static const jinue_mem_entry_t *get_ramdisk_entry(const jinue_mem_map_t *map) {
  *
  * */
 int map_ramdisk(ramdisk_t *ramdisk, const jinue_mem_map_t *map) {
-    const jinue_mem_entry_t *ramdisk_entry = get_ramdisk_entry(map);
+    const jinue_mem_entry_t *ramdisk_entry = get_mem_map_entry_by_type(
+        map,
+        JINUE_MEM_TYPE_RAMDISK
+    );
 
     if(ramdisk_entry == NULL || ramdisk_entry->addr == 0 || ramdisk_entry->size == 0) {
         jinue_error("error: no initial RAM disk found.");
@@ -193,33 +182,38 @@ static enum format detect_format(stream_t *stream) {
  * - no compression (.tar)
  * - gzip compression (.tar.gz)
  *
- * @param ramdisk structure that contains the RAM disk image address and size
- * @return virtual filesystem root, NULL on failure
+ * @param extracted extracted RAM disk address and size (out)
+ * @param ramdisk RAM disk image address and size
+ * @return EXIT_SUCCESS on success, EXIT_FAILURE on failure
  *
  * */
-const jinue_dirent_t *extract_ramdisk(const ramdisk_t *ramdisk) {
+int extract_ramdisk(extracted_ramdisk_t *extracted, const ramdisk_t *ramdisk) {
     stream_t stream;
 
     int status = initialize_stream(&stream, ramdisk);
 
     if(status != STREAM_SUCCESS) {
-        return NULL;
+        return EXIT_FAILURE;
     }
-
-    const jinue_dirent_t *root;
 
     switch(detect_format(&stream)) {
     case FORMAT_TAR:
         jinue_info("RAM disk is a tar archive.");
-        root = tar_extract(&stream);
+        status = tar_extract(extracted, &stream);
         break;
     default:
         jinue_error("error: could not extract RAM disk: unrecognized format");
-        root = NULL;
+        status = EXIT_FAILURE;
         break;
     }
 
     stream_finalize(&stream);
 
-    return root;
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
+    
+    set_meminfo_ramdisk(extracted->physaddr, extracted->size);
+
+    return EXIT_SUCCESS;
 }

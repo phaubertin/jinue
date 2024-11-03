@@ -32,6 +32,7 @@
 #ifndef _JINUE_LOADER_H
 #define _JINUE_LOADER_H
 
+#include <jinue/shared/asm/messages.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -107,5 +108,48 @@ const char *jinue_dirent_name(const jinue_dirent_t *dirent);
 const void *jinue_dirent_file(const jinue_dirent_t *dirent);
 
 const char *jinue_dirent_link(const jinue_dirent_t *dirent);
+
+typedef struct {
+    int n_segments;
+    int n_mappings;
+    int ramdisk;
+    struct {
+        uint64_t     physaddr;
+        uint64_t     physlimit;
+    } hints;
+} jinue_meminfo_t;
+
+/** extracted RAM disk */
+#define JINUE_SEG_TYPE_RAMDISK  0
+
+/** file loaded by the loader */
+#define JINUE_SEG_TYPE_FILE     1
+
+/** anonymous memory */
+#define JINUE_SEG_TYPE_ANON     2
+
+typedef struct {
+    uint64_t    addr;
+    uint64_t    size;
+    int         type;
+} jinue_segment_t;
+
+typedef struct {
+    void    *addr;
+    size_t   size;
+    int      segment;
+    size_t   offset;
+    int      perms;
+} jinue_mapping_t;
+
+const jinue_meminfo_t *jinue_get_meminfo(void *buffer, size_t bufsize);
+
+const jinue_segment_t *jinue_get_segment(const jinue_meminfo_t *meminfo, unsigned int index);
+
+const jinue_segment_t *jinue_get_ramdisk(const jinue_meminfo_t *meminfo);
+
+const jinue_mapping_t *jinue_get_mapping(const jinue_meminfo_t *meminfo, unsigned int index);
+
+int jinue_exit_loader(void);
 
 #endif

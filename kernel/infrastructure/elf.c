@@ -31,6 +31,7 @@
 
 #include <jinue/shared/asm/descriptors.h>
 #include <jinue/shared/asm/mman.h>
+#include <jinue/shared/asm/stack.h>
 #include <kernel/domain/alloc/page_alloc.h>
 #include <kernel/domain/alloc/vmalloc.h>
 #include <kernel/domain/entities/descriptor.h>
@@ -47,6 +48,15 @@
 #include <kernel/utils/vm.h>
 #include <assert.h>
 #include <string.h>
+
+typedef struct {
+    void            *entry;
+    void            *stack_addr;
+    addr_t           at_phdr;
+    int              at_phent;
+    int              at_phnum;
+    process_t       *process;
+} elf_info_t;
 
 /**
  * Print validation error message and return false
@@ -286,11 +296,6 @@ static int map_flags(Elf32_Word p_flags) {
 
 /**
  * Load the loadable (PT_LOAD) segments from the ELF binary
- * 
- * This function is a wrapper around jinue_mclone() with debug logging if
- * requested with the DEBUG_LOADER_VERBOSE_MCLONE environment variable.
- * 
- * src_addr, dest_addr and length must be aligned on a page boundary.
  * 
  * @param elf_info ELF information structure (output)
  * @param ehdr ELF header

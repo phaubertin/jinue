@@ -38,34 +38,25 @@
 /** Ignore entry */
 #define JINUE_AT_IGNORE         1
 
-/** Program file descriptor */
-#define JINUE_AT_EXECFD         2
-
 /** Program headers address */
-#define JINUE_AT_PHDR           3
+#define JINUE_AT_PHDR           2
 
 /** Size of program header entry */
-#define JINUE_AT_PHENT          4
+#define JINUE_AT_PHENT          3
 
 /** Number of program header entries */
-#define JINUE_AT_PHNUM          5
+#define JINUE_AT_PHNUM          4
 
 /** Page size */
-#define JINUE_AT_PAGESZ         6
-
-/** Base address */
-#define JINUE_AT_BASE           7
-
-/** Flags */
-#define JINUE_AT_FLAGS          8
+#define JINUE_AT_PAGESZ         5
 
 /** Program entry point */
-#define JINUE_AT_ENTRY          9
+#define JINUE_AT_ENTRY          6
 
 /** Stack base address for main thread */
-#define JINUE_AT_STACKBASE      10
+#define JINUE_AT_STACKBASE      7
 
 /** System call implementation */
-#define JINUE_AT_HOWSYSCALL     11
+#define JINUE_AT_HOWSYSCALL     8
 
 #endif
