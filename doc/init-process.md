@@ -29,8 +29,9 @@ Only the kernel reserved region and the location of the stack are
 imposed by the kernel and the user space loader, respectively. The
 location of the program segments are determined entirely by the program
 binary. The initial process is free to place its heap and mmap() area
-wherever it wants, but if the initial process makes use of the Jinue
-libc, they will be located as shown below.
+wherever it wants, but if the initial process makes use of the
+[Jinue libc](../userspace/lib/libc), they will be located as shown
+below.
 
 ```
     +===========================================+
@@ -79,24 +80,26 @@ libc, they will be located as shown below.
 
 The higher 32kB
 ([JINUE_RESERVED_STACK_SIZE](../include/jinue/shared/asm/stack.h)) of
-the stack is reserved by the user space loader for the command line
-arguments, the environment variables and auxiliary vectors. On program
-entry, the stack pointer is set to the limit of this reserved region.
+the stack is reserved and used by the user space loader for the command
+line arguments, the environment variables and auxiliary vectors. On
+program entry, the stack pointer is set to the limit of this reserved
+region.
 
 More specifically, the initial stack layout and contents is illustrated
 below. Starting from the top of the stack on program entry (so from the
 lowest address), the stack contents is, in this order:
 
 * A C language `int` value that indicates the number of command line
-  arguments (argc), including the program name (`argv[0]]`).
+  arguments (`argc`), including the program name (`argv[0]]`).
 * A string pointers table with `argc + 1` elements that points to the
-  command line arguments. The last element of this table contains the
-  value 0 (i.e. the C language `NULL` pointer value).
+  command line arguments (`argv`). The last element of this table
+  contains the value 0 (i.e. the C language `NULL` pointer value).
 * A C language `int` value that indicates the number of environment
   variables.
 * A string pointers table that points to the environment variables. Just
-  like the command line arguments table, there is one element than the
-  number of environment variables, with the last element set to zero.
+  like the command line arguments table, there is one more element than
+  the number of environment variables, with the last element set to
+  zero.
 * The auxiliary vectors (described below).
 * The command line argument strings, indexed by the command line
   argument strings table described above.
@@ -170,8 +173,8 @@ The following table lists the auxiliary vectors:
 | 8          | `JINUE_AT_HOWSYSCALL` | System call implementation                |
 
 The value of the `JINUE_AT_HOWSYSCALL` auxiliary vector identifies the
-system call implementation to use on architecture where there can be
-more than one. Its meaning is implementation dependent. See
+system call implementation to use on architectures where there can be
+more than one. Its meaning is architecture dependent. See
 [System Call Implementations](syscalls/implementations.md) for detail.
 
 ## Initial Descriptors
@@ -227,7 +230,8 @@ using. The initial process is expected to get the information it needs
 with this message and then request that the loader exit to reclaim that
 memory. Before the loader has exited, it is safe to start allocating
 memory only starting from the physical allocation address hint provided
-in the memory information structure.
+in the memory information structure. Otherwise, the initial process
+risks overwriting memory the loader is still actively using.
 
 The reply to this message contains the following, concatenated, in this
 order:
@@ -275,25 +279,29 @@ The memory information structure contains the following members:
 * `n_mappings` number of mapping structures.
 * `ramdisk`index of the segment structure that represent the extracted
   RAM disk.
-* `hints` contains advice the application is free to use or disregard:
+* `hints` contains advice the initial process is free to use or
+  disregard:
   * `physaddr` physical address from which to start allocating memory
     sequentially.
-  * `physlimit`physical address beyond which the application should not
-    allocate memory sequentially starting from `physaddr`.
-  
-The application is free to allocate memory anywhere that is described a 
-user memory by the kernel memory map (see the 
-[GET_USER_MEMORY](syscalls/get-user-memory.md) system call) and that is 
-not identified as in use by one of the segment structures, as long as 
-the loader has exited. It is also free to either map the extracted RAM 
-disk for its own use or instead reclaim that memory. However, early in 
-its startup process, the application might need to allocate memory 
+  * `physlimit`physical address beyond which the initial process should
+    not allocate memory sequentially starting from `physaddr`.
+
+As long as the loader has exited, the initial process is free to 
+allocate memory anywhere that is described as user memory by the kernel 
+memory map (see the [GET_USER_MEMORY](syscalls/get-user-memory.md) 
+system call) and that is not identified as in use by one of the segment 
+structures. It is also free to either map the extracted RAM disk for 
+its own use or instead reclaim that memory. However, early in its 
+startup process, the initial process might need to allocate memory 
 before it has processed all this information and while the loader is 
 still resident. It is in this situation that the `physaddr` and 
 `physlimit` hints are most useful.
 
 #### The Segment Structure
-The segment structure contains the following members:
+
+Each segment structure describes a range of memory that is used either
+by the initial process or by the extracted RAM disk. Its members are as
+follow:
 
 * `addr` physical address of the start of the segment
 * `size` size of the segment in bytes
@@ -301,28 +309,32 @@ The segment structure contains the following members:
 
 Segment types:
 
-| Number | Name                     | Description        |
-|--------|--------------------------|--------------------|
-| 0      | `JINUE_SEG_TYPE_RAMDISK` | Extracted RAM disk |
-| 1      | `JINUE_SEG_TYPE_FILE`    | A file             |
-| 2      | `JINUE_SEG_TYPE_ANON`    | Anonymous memory   |
-
+| Number | Name                     | Description            |
+|--------|--------------------------|------------------------|
+| 0      | `JINUE_SEG_TYPE_RAMDISK` | The extracted RAM disk |
+| 1      | `JINUE_SEG_TYPE_FILE`    | A file                 |
+| 2      | `JINUE_SEG_TYPE_ANON`    | Anonymous memory       |
 
 Segments may overlap in the following ways:
 
 * File segments may overlap the extracted RAM disk segment (if they are
   files in the extracted RAM disk).
-* Future direction: the extracted RAM disk might be identical to the RAM
-  disk image as described by the [GET_USER_MEMORY](syscalls/get-user-memory.md) system call.
+* Future direction: if the RAM disk image has the right format and is
+  uncompressed, the memory range of the extracted RAM disk might be
+  identical to the RAM disk image as described by the
+  [GET_USER_MEMORY](syscalls/get-user-memory.md) system call, i.e. the
+  loader might be using the RAM disk image in place.
 
 #### The Mapping Structure
 
-The mapping structure contains the following members:
+Each mapping structure describes a mapping in the initial process'
+address space. Its members are as follow:
 
 * `addr` virtual address of the mapping
 * `size` size of the mapping in bytes
 * `segment` index of the segment this mapping references
-* `offset` offset of the mapping within the referenced segment
+* `offset` offset of the mapping from the start of the referenced
+  segment
 * `perms` permissions of the mapping: logical OR of `JINUE_PROT_READ`,
   `JINUE_PROT_WRITE` and/or `JINUE_PROT_EXEC`
 
@@ -336,7 +348,7 @@ reply, which means the caller should expect the
 [SEND](syscalls/send.md) system call to fail with error number
 `JINUE_EIO`. This is done on purpose to ensure the calling thread
 remains blocked until the loader has actually exited. If the loader
-were to send a reply and then exit, there would exist a race condition
+were to send a reply and then exit, there would be a race condition
 where the initial process could start reusing the memory reclaimed from
 the loader after the loader has sent the reply but before it actually
 exited.
@@ -345,10 +357,10 @@ exited.
 
 Messages will be added to this endpoint that will allow file and
 anonymous mappings to be added through the loader. This will be done to
-provide support for a dynamic loader so the application can get a full
-accounting of what has been mapped into its address space, including by
-the dynamic loader, through the `JINUE_MSG_GET_MEMINFO` message. This
-would also allow an application or a dynamic loader to take advantage
-of the abilities of a chain loader that follows this protocol, for
-example a chain loader's abilities to read files from a disk or a
-network.
+provide support for a dynamic loader so the initial process can get a
+full accounting of what has been mapped into its address space,
+including by the dynamic loader, through the `JINUE_MSG_GET_MEMINFO`
+message. This would also allow an application or a dynamic loader to
+take advantage of the abilities of a chain loader that follows this
+protocol, for example a chain loader's abilities to read files from a
+disk or a network.

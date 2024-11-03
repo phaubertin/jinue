@@ -3,7 +3,7 @@
 The microkernel supports the following implementations to invoke system calls.
 Not all implementations are available on all CPUs. On initialization, before
 invoking any system call, an application should look at the value of auxiliary
-vector number 11 (called JINUE_AT_HOWSYSCALL) to determine the best supported
+vector number 8 (called `JINUE_AT_HOWSYSCALL`) to determine the best supported
 system call implementation:
 
 * 0 for the interrupt-based implementation
