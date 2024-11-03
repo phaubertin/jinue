@@ -117,7 +117,7 @@ typedef struct {
         uint64_t     physaddr;
         uint64_t     physlimit;
     } hints;
-} jinue_loader_meminfo_t;
+} jinue_meminfo_t;
 
 /** extracted RAM disk */
 #define JINUE_SEG_TYPE_RAMDISK  0
@@ -132,7 +132,7 @@ typedef struct {
     uint64_t    addr;
     uint64_t    size;
     int         type;
-} jinue_loader_segment_t;
+} jinue_segment_t;
 
 typedef struct {
     void    *addr;
@@ -140,6 +140,16 @@ typedef struct {
     int      segment;
     size_t   offset;
     int      perms;
-} jinue_loader_mapping_t;
+} jinue_mapping_t;
+
+const jinue_meminfo_t *jinue_get_meminfo(void *buffer, size_t bufsize);
+
+const jinue_segment_t *jinue_get_segment(const jinue_meminfo_t *meminfo, unsigned int index);
+
+const jinue_segment_t *jinue_get_ramdisk(const jinue_meminfo_t *meminfo);
+
+const jinue_mapping_t *jinue_get_mapping(const jinue_meminfo_t *meminfo, unsigned int index);
+
+int jinue_exit_loader(void);
 
 #endif

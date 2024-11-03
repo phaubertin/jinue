@@ -239,16 +239,16 @@ static const char *pretty_permissions(int prot) {
     return buffer;
 }
 
-static void dump_segment(const jinue_loader_segment_t *segments, int index) {
-    const jinue_loader_segment_t *segment = &segments[index];
+static void dump_segment(const jinue_meminfo_t *meminfo, unsigned int index) {
+    const jinue_segment_t *segment = jinue_get_segment(meminfo, index);
 
     jinue_info("    [%3d] Physical address: %#" PRIx64, index, segment->addr);
     jinue_info("          Size:             %#" PRIx64 " %" PRIu64, segment->size, segment->size);
     jinue_info("          Type:             %s", segment_type_description(segment->type));
 }
 
-static void dump_mapping(const jinue_loader_mapping_t *mappings, int index) {
-    const jinue_loader_mapping_t *mapping = &mappings[index];
+static void dump_mapping(const jinue_meminfo_t *meminfo, unsigned int index) {
+    const jinue_mapping_t *mapping = jinue_get_mapping(meminfo, index);
 
     jinue_info("    [%3d] Virtual address:  %#p", index, mapping->addr);
     jinue_info("          Size:             %#zx %zu", mapping->size, mapping->size);
@@ -258,42 +258,7 @@ static void dump_mapping(const jinue_loader_mapping_t *mappings, int index) {
 
 }
 
-static int get_meminfo(void *buffer, size_t bufsize) {
-    jinue_buffer_t reply_buffer;
-    reply_buffer.addr = buffer;
-    reply_buffer.size = bufsize;
-
-    jinue_message_t message;
-    message.send_buffers        = NULL;
-    message.send_buffers_length = 0;
-    message.recv_buffers        = &reply_buffer;
-    message.recv_buffers_length = 1;
-
-    uintptr_t errcode;
-
-    int status = jinue_send(
-        JINUE_DESC_LOADER_ENDPOINT,
-        JINUE_MSG_GET_MEMINFO,
-        &message,
-        &errno,
-        &errcode
-    );
-
-    if(status < 0) {
-        if(errno == JINUE_EPROTO) {
-            jinue_error("error: loader set error code to: %s.", strerror(errcode));
-        } else {
-            jinue_error("error: jinue_send() failed: %s.", strerror(errno));
-        }
-    }
-
-    return status;
-}
-
-static void dump_meminfo(
-        const jinue_loader_meminfo_t    *meminfo,
-        const jinue_loader_segment_t    *segments,
-        const jinue_loader_mapping_t    *mappings) {
+static void dump_meminfo(const jinue_meminfo_t *meminfo) {
     
     if(! bool_getenv("DEBUG_DUMP_LOADER_MEMORY_INFO")) {
         return;
@@ -301,7 +266,7 @@ static void dump_meminfo(
     
     jinue_info("Memory and mappings information from user space loader:");
     jinue_info("  Extracted RAM disk:");
-    dump_segment(segments, meminfo->ramdisk);
+    dump_segment(meminfo, meminfo->ramdisk);
 
     jinue_info("  Hints:");
     jinue_info("    Physical allocation start: %#" PRIx64, meminfo->hints.physaddr);
@@ -309,30 +274,27 @@ static void dump_meminfo(
 
     jinue_info("  Segments:");
 
-    for(int idx = 0; idx < meminfo->n_segments; ++idx) {
-        dump_segment(segments, idx);
+    for(unsigned int idx = 0; idx < meminfo->n_segments; ++idx) {
+        dump_segment(meminfo, idx);
     }
 
     jinue_info("  Mappings:");
 
-    for(int idx = 0; idx < meminfo->n_mappings; ++idx) {
-        dump_mapping(mappings, idx);
+    for(unsigned int idx = 0; idx < meminfo->n_mappings; ++idx) {
+        dump_mapping(meminfo, idx);
     }
 }
 
 void dump_loader_memory_info(void) {
     char buffer[MAP_BUFFER_SIZE];
 
-    int status = get_meminfo(buffer, sizeof(buffer));
+    const jinue_meminfo_t *meminfo = jinue_get_meminfo(buffer, sizeof(buffer));
 
-    if(status < 0) {
+    if(meminfo == NULL) {
         return;
     }
 
-    const jinue_loader_meminfo_t *meminfo   = (jinue_loader_meminfo_t *)buffer;
-    const jinue_loader_segment_t *segments  = (const jinue_loader_segment_t *)&meminfo[1];
-
-    dump_meminfo(meminfo, segments, (const jinue_loader_mapping_t *)&segments[meminfo->n_segments]);
+    dump_meminfo(meminfo);
 }
 
 static const char *pretty_mode(char *mode, const jinue_dirent_t *dirent) {
@@ -420,15 +382,13 @@ void dump_loader_ramdisk(void) {
     if(root == MAP_FAILED) {
         char buffer[MAP_BUFFER_SIZE];
 
-        int status = get_meminfo(buffer, sizeof(buffer));
+        const jinue_meminfo_t *meminfo = jinue_get_meminfo(buffer, sizeof(buffer));
 
-        if(status < 0) {
+        if(meminfo == NULL) {
             return;
         }
 
-        const jinue_loader_meminfo_t *meminfo   = (jinue_loader_meminfo_t *)buffer;
-        const jinue_loader_segment_t *segments  = (const jinue_loader_segment_t *)&meminfo[1];
-        const jinue_loader_segment_t *ramdisk   = &segments[meminfo->ramdisk];
+        const jinue_segment_t *ramdisk = jinue_get_ramdisk(meminfo);
 
         root = mmap(NULL, ramdisk->size, PROT_READ, MAP_SHARED, -1, ramdisk->addr);
     }

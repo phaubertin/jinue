@@ -74,7 +74,7 @@ static int initialize_range_from_loader_info(void) {
         return status;
     }
 
-    const jinue_loader_meminfo_t *meminfo = (const jinue_loader_meminfo_t *)buffer;
+    const jinue_meminfo_t *meminfo = (const jinue_meminfo_t *)buffer;
 
     initialize_range(meminfo->hints.physaddr, meminfo->hints.physlimit);
 

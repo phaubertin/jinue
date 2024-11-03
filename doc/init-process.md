@@ -236,9 +236,9 @@ risks overwriting memory the loader is still actively using.
 The reply to this message contains the following, concatenated, in this
 order:
 
-* A memory information structure (`jinue_loader_meminfo_t`).
-* A variable number of segment structures (`jinue_loader_segment_t`).
-* A variable number of mapping structures (`jinue_loader_mapping_t`).
+* A memory information structure (`jinue_meminfo_t`).
+* A variable number of segment structures (`jinue_segment_t`).
+* A variable number of mapping structures (`jinue_mapping_t`).
 
 The number of segment and mapping structures is indicated in the memory
 information structure. For the definitions of all these structures, see

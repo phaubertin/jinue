@@ -41,36 +41,6 @@
 #include "debug.h"
 #include "utils.h"
 
-void exit_loader(void) {
-    uintptr_t errcode;
-
-    jinue_info("Blocking until loader exits.");
-
-    jinue_message_t message;
-    message.send_buffers        = NULL;
-    message.send_buffers_length = 0;
-    message.recv_buffers        = NULL;
-    message.recv_buffers_length = 0;
-
-    int status = jinue_send(
-        JINUE_DESC_LOADER_ENDPOINT,
-        JINUE_MSG_EXIT,
-        &message,
-        &errno,
-        &errcode
-    );
-
-    if(status >= 0) {
-        jinue_error("error: jinue_send() unexpectedly succeeded for JINUE_MSG_EXIT");
-        return;
-    }
-
-    if(errno != JINUE_EIO) {
-        jinue_error("error: jinue_send() failed: %s.", strerror(errno));
-        return;
-    }
-}
-
 int main(int argc, char *argv[]) {
     /* Say hello. */
     jinue_info("Jinue test app (%s) started.", argv[0]);
@@ -83,7 +53,13 @@ int main(int argc, char *argv[]) {
     dump_loader_memory_info();
     dump_loader_ramdisk();
 
-    exit_loader();
+    jinue_info("Blocking until loader exits.");
+
+    int status = jinue_exit_loader();
+
+    if(status < 0) {
+        return EXIT_FAILURE;
+    }
 
     run_ipc_test();
 

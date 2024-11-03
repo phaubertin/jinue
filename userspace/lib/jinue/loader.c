@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Philippe Aubertin.
+ * Copyright (C) 2023-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,7 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <jinue/jinue.h>
 #include <jinue/loader.h>
+#include <jinue/utils.h>
 #include <stddef.h>
 #include <string.h>
 
@@ -83,4 +85,108 @@ const void *jinue_dirent_file(const jinue_dirent_t *dirent) {
 
 const char *jinue_dirent_link(const jinue_dirent_t *dirent) {
     return (const char *)dirent + dirent->rel_value;
+}
+
+const jinue_meminfo_t *jinue_get_meminfo(void *buffer, size_t bufsize) {
+    jinue_buffer_t reply_buffer;
+    reply_buffer.addr = buffer;
+    reply_buffer.size = bufsize;
+
+    jinue_message_t message;
+    message.send_buffers        = NULL;
+    message.send_buffers_length = 0;
+    message.recv_buffers        = &reply_buffer;
+    message.recv_buffers_length = 1;
+
+    int errnum;
+    uintptr_t errcode;
+
+    int status = jinue_send(
+        JINUE_DESC_LOADER_ENDPOINT,
+        JINUE_MSG_GET_MEMINFO,
+        &message,
+        &errnum,
+        &errcode
+    );
+
+    if(status < 0) {
+        if(errnum == JINUE_EPROTO) {
+            jinue_error("error: loader set error code to: %s.", strerror(errcode));
+        } else {
+            jinue_error("error: jinue_send() failed: %s.", strerror(errnum));
+        }
+
+        return NULL;
+    }
+
+    return buffer;
+}
+
+const jinue_segment_t *jinue_get_segment(const jinue_meminfo_t *meminfo, unsigned int index) {
+    if(meminfo == NULL) {
+        return NULL;
+    }
+
+    if(index >= meminfo->n_segments) {
+        return NULL;
+    }
+
+    return &((const jinue_segment_t *)&meminfo[1])[index];
+}
+
+const jinue_segment_t *jinue_get_ramdisk(const jinue_meminfo_t *meminfo) {
+    if(meminfo == NULL) {
+        return NULL;
+    }
+
+    return jinue_get_segment(meminfo, meminfo->ramdisk);
+}
+
+const jinue_mapping_t *jinue_get_mapping(const jinue_meminfo_t *meminfo, unsigned int index) {
+    if(meminfo == NULL) {
+        return NULL;
+    }
+
+    if(index >= meminfo->n_mappings) {
+        return NULL;
+    }
+
+    const jinue_segment_t *segments = (const jinue_segment_t *)&meminfo[1];
+    return &((jinue_mapping_t *)&segments[meminfo->n_segments])[index];
+}
+
+int jinue_exit_loader(void) {
+    jinue_message_t message;
+    message.send_buffers        = NULL;
+    message.send_buffers_length = 0;
+    message.recv_buffers        = NULL;
+    message.recv_buffers_length = 0;
+
+    int errnum;
+    uintptr_t errcode;
+
+    int status = jinue_send(
+        JINUE_DESC_LOADER_ENDPOINT,
+        JINUE_MSG_EXIT,
+        &message,
+        &errnum,
+        &errcode
+    );
+
+    if(status >= 0) {
+        jinue_error("error: jinue_send() unexpectedly succeeded for JINUE_MSG_EXIT");
+        return -1;
+    }
+
+    if(errnum == JINUE_EIO) {
+        return 0;
+    }
+
+    if(errnum == JINUE_EPROTO) {
+        jinue_error("error: loader set error code to: %s.", strerror(errcode));
+    } else {
+        jinue_error("error: jinue_send() failed: %s.", strerror(errnum));
+    }
+
+    return status;
 }

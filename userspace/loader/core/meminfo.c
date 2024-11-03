@@ -40,13 +40,13 @@
 
 #define MAX_SEGMENTS    8
 
-#define MAX_VMAPS       8
+#define MAX_MAPPINGS    8
 
-static jinue_loader_meminfo_t meminfo;
+static jinue_meminfo_t meminfo;
 
-static jinue_loader_segment_t segments[MAX_SEGMENTS];
+static jinue_segment_t segments[MAX_SEGMENTS];
 
-static jinue_loader_mapping_t mappings[MAX_VMAPS];
+static jinue_mapping_t mappings[MAX_MAPPINGS];
 
 static jinue_const_buffer_t buffers[] = {
 #define BUFFER_INDEX_MEMINFO    0
@@ -66,9 +66,9 @@ static jinue_const_buffer_t buffers[] = {
     }
 };
 
-#define SEGMENTS_SIZE   (meminfo.n_segments * sizeof(jinue_loader_segment_t))
+#define SEGMENTS_SIZE   (meminfo.n_segments * sizeof(jinue_segment_t))
 
-#define MAPPINGS_SIZE   (meminfo.n_mappings * sizeof(jinue_loader_mapping_t))
+#define MAPPINGS_SIZE   (meminfo.n_mappings * sizeof(jinue_mapping_t))
 
 #define MESSAGE_SIZE    (sizeof(meminfo) + SEGMENTS_SIZE + MAPPINGS_SIZE)
 
