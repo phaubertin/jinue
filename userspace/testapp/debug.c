@@ -415,26 +415,23 @@ static void dump_ramdisk(const jinue_dirent_t *root) {
 }
 
 void dump_loader_ramdisk(void) {
-    char buffer[MAP_BUFFER_SIZE];
+    static const jinue_dirent_t *root = MAP_FAILED;
 
-    int status = get_meminfo(buffer, sizeof(buffer));
+    if(root == MAP_FAILED) {
+        char buffer[MAP_BUFFER_SIZE];
 
-    if(status < 0) {
-        return;
+        int status = get_meminfo(buffer, sizeof(buffer));
+
+        if(status < 0) {
+            return;
+        }
+
+        const jinue_loader_meminfo_t *meminfo   = (jinue_loader_meminfo_t *)buffer;
+        const jinue_loader_segment_t *segments  = (const jinue_loader_segment_t *)&meminfo[1];
+        const jinue_loader_segment_t *ramdisk   = &segments[meminfo->ramdisk];
+
+        root = mmap(NULL, ramdisk->size, PROT_READ, MAP_SHARED, -1, ramdisk->addr);
     }
-
-    const jinue_loader_meminfo_t *meminfo   = (jinue_loader_meminfo_t *)buffer;
-    const jinue_loader_segment_t *segments  = (const jinue_loader_segment_t *)&meminfo[1];
-    const jinue_loader_segment_t *ramdisk   = &segments[meminfo->ramdisk];
-
-    const jinue_dirent_t *root = mmap(
-        NULL,
-        ramdisk->size,
-        PROT_READ,
-        MAP_SHARED,
-        -1,
-        ramdisk->addr
-    );
 
     if(root == MAP_FAILED) {
         jinue_error("error: mmap() failed: %s.", strerror(errno));
