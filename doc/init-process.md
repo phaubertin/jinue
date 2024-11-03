@@ -83,8 +83,8 @@ the stack is reserved by the user space loader for the command line
 arguments, the environment variables and auxiliary vectors. On program
 entry, the stack pointer is set to the limit of this reserved region.
 
-More specifically, the initial stack layout and contents is illustrated 
-below. Starting from the top of the stack on program entry (so from the 
+More specifically, the initial stack layout and contents is illustrated
+below. Starting from the top of the stack on program entry (so from the
 lowest address), the stack contents is, in this order:
 
 * A C language `int` value that indicates the number of command line
@@ -207,21 +207,38 @@ In the following description, a "message number" refers to the function
 number above 4096 specified when invoking the [SEND](syscalls/send.md)
 system call and passed along to the receiving thread.
 
+### Overview
+
+The initial process should request information about memory usage
+using the `JINUE_MSG_GET_MEMINFO` message. It should then ask the loader
+to exit using the `JINUE_MSG_EXIT` message.
+
 ### Get Memory Information (`JINUE_MSG_GET_MEMINFO`)
 
-Message number 4096 (JINUE_MSG_GET_MEMINFO) allows the initial process
-to request information from the loader regarding memory it has used to
-extract the initial RAM disk and for the initial process itself. This
-information should be used alongside the information from the
-[GET_USER_MEMORY](syscalls/get-user-memory.md) system call to determine
-what memory is available for use.
+An empty message with message number 4096 (JINUE_MSG_GET_MEMINFO)
+allows the initial process to request information from the loader
+regarding memory it has used to extract the initial RAM disk and for
+the initial process itself. This information should be used alongside
+the information from the [GET_USER_MEMORY](syscalls/get-user-memory.md)
+system call to determine what memory is available for use.
 
-The reply contains the following, concatenated, in this order:
+Note the loader does not report information about memory it itself is
+using. The initial process is expected to get the information it needs
+with this message and then request that the loader exit to reclaim that
+memory. Before the loader has exited, it is safe to start allocating
+memory only starting from the physical allocation address hint provided
+in the memory information structure.
+
+The reply to this message contains the following, concatenated, in this
+order:
+
 * A memory information structure (`jinue_loader_meminfo_t`).
 * A variable number of segment structures (`jinue_loader_segment_t`).
 * A variable number of mapping structures (`jinue_loader_mapping_t`).
 
-The number of segment and mapping structures is indicated in the memory information structure.
+The number of segment and mapping structures is indicated in the memory
+information structure. For the definitions of all these structures, see
+[<jinue/loader.h>](../include/jinue/loader.h).
 
 ```
     +===============================+
@@ -250,18 +267,69 @@ The number of segment and mapping structures is indicated in the memory informat
     +===============================+
 ```
 
-**TODO describe the reply structure**
+#### The Memory Information Structure
 
-Note the loader does not report information about memory it itself is
-using. The initial process is expected to get the information it needs
-with this message and then request that the loader exit to reclaim that
-memory. Before the loader has exited, it is safe to start allocating 
-memory only starting from the physical allocation address hint provided
-in the memory information structure.
+The memory information structure contains the following members:
+
+* `n_segments` number of segment structures.
+* `n_mappings` number of mapping structures.
+* `ramdisk`index of the segment structure that represent the extracted
+  RAM disk.
+* `hints` contains advice the application is free to use or disregard:
+  * `physaddr` physical address from which to start allocating memory
+    sequentially.
+  * `physlimit`physical address beyond which the application should not
+    allocate memory sequentially starting from `physaddr`.
+  
+The application is free to allocate memory anywhere that is described a 
+user memory by the kernel memory map (see the 
+[GET_USER_MEMORY](syscalls/get-user-memory.md) system call) and that is 
+not identified as in use by one of the segment structures, as long as 
+the loader has exited. It is also free to either map the extracted RAM 
+disk for its own use or instead reclaim that memory. However, early in 
+its startup process, the application might need to allocate memory 
+before it has processed all this information and while the loader is 
+still resident. It is in this situation that the `physaddr` and 
+`physlimit` hints are most useful.
+
+#### The Segment Structure
+The segment structure contains the following members:
+
+* `addr` physical address of the start of the segment
+* `size` size of the segment in bytes
+* `type`type of the segment
+
+Segment types:
+
+| Number | Name                     | Description        |
+|--------|--------------------------|--------------------|
+| 0      | `JINUE_SEG_TYPE_RAMDISK` | Extracted RAM disk |
+| 1      | `JINUE_SEG_TYPE_FILE`    | A file             |
+| 2      | `JINUE_SEG_TYPE_ANON`    | Anonymous memory   |
+
+
+Segments may overlap in the following ways:
+
+* File segments may overlap the extracted RAM disk segment (if they are
+  files in the extracted RAM disk).
+* Future direction: the extracted RAM disk might be identical to the RAM
+  disk image as described by the [GET_USER_MEMORY](syscalls/get-user-memory.md) system call.
+
+#### The Mapping Structure
+
+The mapping structure contains the following members:
+
+* `addr` virtual address of the mapping
+* `size` size of the mapping in bytes
+* `segment` index of the segment this mapping references
+* `offset` offset of the mapping within the referenced segment
+* `perms` permissions of the mapping: logical OR of `JINUE_PROT_READ`,
+  `JINUE_PROT_WRITE` and/or `JINUE_PROT_EXEC`
 
 ### Exit Loader (`JINUE_MSG_EXIT`)
 
-Message number 4097 (JINUE_MSG_EXIT) requests that the loader exit.
+An empty message with message number 4097 (JINUE_MSG_EXIT) requests that
+the loader exit.
 
 Upon receiving this message, the loader exits *without* sending a
 reply, which means the caller should expect the
@@ -273,3 +341,14 @@ where the initial process could start reusing the memory reclaimed from
 the loader after the loader has sent the reply but before it actually
 exited.
 
+### Future Direction
+
+Messages will be added to this endpoint that will allow file and
+anonymous mappings to be added through the loader. This will be done to
+provide support for a dynamic loader so the application can get a full
+accounting of what has been mapped into its address space, including by
+the dynamic loader, through the `JINUE_MSG_GET_MEMINFO` message. This
+would also allow an application or a dynamic loader to take advantage
+of the abilities of a chain loader that follows this protocol, for
+example a chain loader's abilities to read files from a disk or a
+network.
