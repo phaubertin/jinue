@@ -1,4 +1,4 @@
-# Copyright (C) 2019 Philippe Aubertin.
+# Copyright (C) 2019-2024 Philippe Aubertin.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -122,7 +122,7 @@ CFLAGS               = $(CFLAGS.arch) $(CFLAGS.optimization) $(CFLAGS.debug) $(C
 
 # Linker flags
 LDFLAGS.arch         = -Wl,-m,elf_i386
-LDFLAGS.others       = -static -nostdlib
+LDFLAGS.others       = -static -nostdlib -Wl,-z,noexecstack
 LDFLAGS              = $(LDFLAGS.arch) $(LDFLAGS.others) $(LDFLAGS.extra)
 
 # NASM assembler flags
