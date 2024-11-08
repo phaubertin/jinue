@@ -30,7 +30,7 @@
 jinue_root = ../../..
 include $(jinue_root)/header.mk
 
-sources.c           = i686/syscalls.c loader.c logging.c syscalls.c
+sources.c           = i686/syscalls.c loader.c logging.c syscalls.c threads.c
 sources.nasm        = i686/stubs.asm
 
 target.syscalls     = $(notdir $(libjinue_syscalls))
