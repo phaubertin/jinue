@@ -33,6 +33,7 @@
 #define JINUE_KERNEL_TYPES_H
 
 #include <jinue/shared/asm/ipc.h>
+#include <jinue/shared/asm/descriptors.h>
 #include <jinue/shared/types.h>
 #include <kernel/machine/types.h>
 #include <kernel/utils/list.h>
@@ -86,13 +87,11 @@ struct descriptor_t {
     uintptr_t        cookie;
 };
 
-#define PROCESS_MAX_DESCRIPTORS     12
-
 typedef struct {
     object_header_t header;
     addr_space_t    addr_space;
     int             running_threads_count;
-    descriptor_t    descriptors[PROCESS_MAX_DESCRIPTORS];
+    descriptor_t    descriptors[JINUE_DESC_NUM];
 } process_t;
 
 typedef enum {

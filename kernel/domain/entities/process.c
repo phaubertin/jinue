@@ -98,7 +98,7 @@ process_t *construct_process(void) {
 }
 
 static void close_all_descriptors(process_t *process) {
-    for(int idx = 0; idx < PROCESS_MAX_DESCRIPTORS; ++idx) {
+    for(int idx = 0; idx < JINUE_DESC_NUM; ++idx) {
         descriptor_t *desc = &process->descriptors[idx];
 
         if(descriptor_is_in_use(desc)) {
