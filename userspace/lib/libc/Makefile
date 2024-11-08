@@ -44,7 +44,7 @@ sources.c        = \
 	snprintf.c \
 	string.c \
 	vsnprintf.c
-sources.nasm     = crt.asm
+sources.nasm     = i686/crt.asm
 
 target.user      = libc.a
 target.kernel    = libc-kernel.a
@@ -52,7 +52,7 @@ targets          = $(target.user) $(target.kernel)
 
 objects.generic  = string.o snprintf.o vsnprintf.o
 objects.user     = \
-	crt.o \
+	i686/crt.o \
 	brk.o \
 	descriptors.o \
 	errno.o \
