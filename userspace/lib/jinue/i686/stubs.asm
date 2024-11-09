@@ -202,6 +202,7 @@ jinue_syscall_intr:
 
 .end:
 
+; TODO remove this
 ; ------------------------------------------------------------------------------
 ; FUNCTION: jinue_thread_entry
 ; C PROTOTYPE: void jinue_thread_entry(void);

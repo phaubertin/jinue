@@ -29,42 +29,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/descriptors.h>
-#include <kernel/domain/entities/descriptor.h>
-#include <kernel/domain/entities/object.h>
-#include <kernel/domain/entities/process.h>
-#include <kernel/domain/entities/thread.h>
-#include <kernel/domain/services/exec.h>
-#include <kernel/domain/services/panic.h>
-#include <kernel/machine/exec.h>
+#ifndef LIBC_PTHREAD_MACHINE_H
+#define LIBC_PTHREAD_MACHINE_H
 
-static void set_descriptor(process_t *process, int fd, object_header_t *object) {
-    descriptor_t *desc;
-    (void)dereference_unused_descriptor(&desc, process, fd);
+#include <pthread.h>
 
-    desc->object = object;
-    desc->flags  = DESCRIPTOR_FLAG_IN_USE | object->type->all_permissions;
-    desc->cookie = 0;
+void __pthread_entry(void);
 
-    open_object(object, desc);
-}
+void *__pthread_initialize_stack(pthread_t thread, void *(*start_routine)(void*), void *arg);
 
-static void initialize_descriptors(process_t *process, thread_t *thread) {
-    set_descriptor(process, JINUE_DESC_SELF_PROCESS, &process->header);
-    set_descriptor(process, JINUE_DESC_MAIN_THREAD, &thread->header);
-}
-
-void exec(
-        process_t           *process,
-        thread_t            *thread,
-        const exec_file_t   *exec_file,
-        const char          *argv0,
-        const char          *cmdline) {
-    
-    thread_params_t thread_params;
-    machine_load_exec(&thread_params, process, exec_file, argv0, cmdline);
-
-    prepare_thread(thread, &thread_params);
-
-    initialize_descriptors(process, thread);
-}
+#endif

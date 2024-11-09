@@ -31,8 +31,8 @@
 
 #include <jinue/jinue.h>
 #include <errno.h>
+#include <internals.h>
 #include <stdlib.h>
-#include "descriptors.h"
 
 struct fdlink {
     struct fdlink   *next;
@@ -85,7 +85,7 @@ static int allocate_new_descriptor(void) {
     return (alloc_state.next)++;
 }
 
-int allocate_descriptor(void) {
+int __allocate_descriptor(void) {
     /* Fast allocation path: reuse a descriptor number previously freed by free_descriptor(). */
 
     struct fdlink *link = get(&alloc_state.freelist);
@@ -100,7 +100,7 @@ int allocate_descriptor(void) {
     return allocate_new_descriptor();
 }
 
-void free_descriptor(int fd) {
+void __free_descriptor(int fd) {
     struct fdlink *link = get(&alloc_state.freelinks);
     link->fd = fd;
     append(&alloc_state.freelist, link);

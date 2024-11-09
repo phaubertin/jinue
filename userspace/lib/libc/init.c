@@ -32,6 +32,7 @@
 #include <jinue/jinue.h>
 #include <sys/auxv.h>
 #include <stdlib.h>
+#include "pthread/libc.h"
 #include "brk.h"
 #include "physmem.h"
 
@@ -41,6 +42,8 @@ int _libc_init(void) {
     if(ret < 0) {
         return EXIT_FAILURE;
     }
+
+    __pthread_set_current(__pthread_main_thread);
 
     ret = physmem_init();
 

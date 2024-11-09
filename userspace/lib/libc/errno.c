@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Philippe Aubertin.
+ * Copyright (C) 2023-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -30,5 +30,9 @@
  */
 
 #include <errno.h>
+#include <pthread.h>
+#include "pthread/thread.h"
 
-int errno;
+int *__get_errno(void) {
+    return &pthread_self()->local_errno;
+}

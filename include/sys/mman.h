@@ -53,6 +53,8 @@
 
 #define MAP_ANONYMOUS   (1<<3)
 
+#define MAP_ANON        MAP_ANONYMOUS
+
 #define MAP_FAILED      ((void *)-1)
 
 

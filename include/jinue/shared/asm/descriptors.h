@@ -32,17 +32,17 @@
 #ifndef _JINUE_SHARED_ASM_DESCRIPTORS_H
 #define _JINUE_SHARED_ASM_DESCRIPTORS_H
 
-/* On a Unix system, the first three file descriptors typically represent
- * stdout, stdin and stderr. Lets leave them unused to allow this usage. */
-
 /** descriptor assigned to refer to own process in loader and initial process */
-#define JINUE_DESC_SELF_PROCESS     3
+#define JINUE_DESC_SELF_PROCESS     0
+
+/** descriptor for initial thread */
+#define JINUE_DESC_MAIN_THREAD      1
 
 /** descriptor for IPC endpoint to loader */
-#define JINUE_DESC_LOADER_ENDPOINT  4
+#define JINUE_DESC_LOADER_ENDPOINT  2
 
 /** last descriptor number reserved for loader protocol */
-#define JINUE_DESC_LAST             4
+#define JINUE_DESC_LAST             2
 
 /** number of descriptors in a process */
 #define JINUE_DESC_NUM              12

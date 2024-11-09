@@ -183,8 +183,9 @@ The user space loader sets up the following initial descriptors.
 
 | Descriptor<br>Number | Name                         | Description         |
 |----------------------|------------------------------|---------------------|
-| 3                    | `JINUE_DESC_SELF_PROCESS`    | Self process        |
-| 4                    | `JINUE_DESC_LOADER_ENDPOINT` | Loader IPC endpoint |
+| 0                    | `JINUE_DESC_SELF_PROCESS`    | Self process        |
+| 1                    | `JINUE_DESC_MAIN_THREAD`     | Main thread         |
+| 2                    | `JINUE_DESC_LOADER_ENDPOINT` | Loader IPC endpoint |
 
 ### Self Process Descriptor
 
@@ -192,6 +193,12 @@ The self process descriptor is a descriptor that references the initial
 process' own process. It can be used, among other things, to [map
 memory](syscalls/mmap.md) into the process' address space and to
 [create new threads](syscalls/create-thread.md).
+
+### Main Thread Descriptor
+
+The main thread descriptor is a descriptor that references the initial
+thread in the process. It can be used, among other things, to
+[join](syscalls/join-thread.md) the initial thread from another thread.
 
 ### Loader IPC Endpoint Descriptor
 

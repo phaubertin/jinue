@@ -42,4 +42,8 @@ uint64_t _libc_get_physmem_alloc_addr(void);
 
 uint64_t _libc_get_physmem_alloc_limit(void);
 
+int __allocate_descriptor(void);
+
+void __free_descriptor(int fd);
+
 #endif

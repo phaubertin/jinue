@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Philippe Aubertin.
+ * Copyright (C) 2023-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -34,7 +34,9 @@
 
 #include <jinue/shared/asm/errno.h>
 
-extern int errno;
+int *__get_errno(void);
+
+#define errno (*__get_errno())
 
 #define ENOMEM      JINUE_ENOMEM
 

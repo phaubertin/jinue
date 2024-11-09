@@ -55,7 +55,7 @@ void jinue_reboot(void);
 
 void jinue_set_thread_local(void *addr, size_t size);
 
-int jinue_get_thread_local(void **thread_local);
+void *jinue_get_thread_local(void);
 
 int jinue_create_thread(int fd, int process, int *perrno);
 

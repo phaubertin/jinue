@@ -29,42 +29,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/descriptors.h>
-#include <kernel/domain/entities/descriptor.h>
-#include <kernel/domain/entities/object.h>
-#include <kernel/domain/entities/process.h>
-#include <kernel/domain/entities/thread.h>
-#include <kernel/domain/services/exec.h>
-#include <kernel/domain/services/panic.h>
-#include <kernel/machine/exec.h>
+#include <stdint.h>
+#include "../pthread/machine.h"
+#include "../pthread/thread.h"
 
-static void set_descriptor(process_t *process, int fd, object_header_t *object) {
-    descriptor_t *desc;
-    (void)dereference_unused_descriptor(&desc, process, fd);
-
-    desc->object = object;
-    desc->flags  = DESCRIPTOR_FLAG_IN_USE | object->type->all_permissions;
-    desc->cookie = 0;
-
-    open_object(object, desc);
-}
-
-static void initialize_descriptors(process_t *process, thread_t *thread) {
-    set_descriptor(process, JINUE_DESC_SELF_PROCESS, &process->header);
-    set_descriptor(process, JINUE_DESC_MAIN_THREAD, &thread->header);
-}
-
-void exec(
-        process_t           *process,
-        thread_t            *thread,
-        const exec_file_t   *exec_file,
-        const char          *argv0,
-        const char          *cmdline) {
+void *__pthread_initialize_stack(pthread_t thread, void *(*start_routine)(void*), void *arg) {
+    uintptr_t *stackbase = (uintptr_t *)((char *)thread->alloc_stackaddr + thread->stacksize);
     
-    thread_params_t thread_params;
-    machine_load_exec(&thread_params, process, exec_file, argv0, cmdline);
+    stackbase[-1] = (uintptr_t)arg;
+    stackbase[-2] = (uintptr_t)start_routine;
+    stackbase[-3] = (uintptr_t)thread;
 
-    prepare_thread(thread, &thread_params);
-
-    initialize_descriptors(process, thread);
+    return &stackbase[-3];
 }

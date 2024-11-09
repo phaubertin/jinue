@@ -144,18 +144,32 @@ static int load_init(
         return EXIT_FAILURE;
     }
 
-    return EXIT_SUCCESS;
-}
-
-static int start_initial_thread(thread_params_t *thread_params) {
-    int status = jinue_create_thread(INIT_THREAD_DESCRIPTOR, INIT_PROCESS_DESCRIPTOR, &errno);
+    status = jinue_create_thread(INIT_THREAD_DESCRIPTOR, INIT_PROCESS_DESCRIPTOR, &errno);
 
     if (status != 0) {
         jinue_error("error: could not create thread: %s", strerror(errno));
         return EXIT_FAILURE;
     }
 
-    status = jinue_start_thread(
+    status = jinue_mint(
+        INIT_THREAD_DESCRIPTOR,
+        INIT_PROCESS_DESCRIPTOR,
+        JINUE_DESC_MAIN_THREAD,
+        JINUE_PERM_START | JINUE_PERM_JOIN,
+        0,
+        &errno
+    );
+
+    if (status != 0) {
+        jinue_error("error: could not create descriptor for initial thread: %s", strerror(errno));
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}
+
+static int start_initial_thread(thread_params_t *thread_params) {
+    int status = jinue_start_thread(
         INIT_THREAD_DESCRIPTOR,
         thread_params->entry,
         thread_params->stack_addr,

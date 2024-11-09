@@ -29,11 +29,27 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LIBC_DESCRIPTORS_H
-#define LIBC_DESCRIPTORS_H
+#ifndef LIBC_PTHREAD_THREAD_H
+#define LIBC_PTHREAD_THREAD_H
 
-int allocate_descriptor(void);
+#include <pthread.h>
+#include <stddef.h>
 
-void free_descriptor(int fd);
+#define THREAD_FLAG_RUNNING     (1<<0)
+
+#define THREAD_FLAG_DETACHED    (1<<1)
+
+struct __pthread {
+    struct __pthread    *self;
+    struct __pthread    *next;
+    int                  fd;
+    int                  flags;
+    int                  local_errno;
+    void                *stackaddr;
+    size_t               stacksize;
+    void                *alloc_stackaddr;
+    size_t               alloc_stacksize;
+    void                *exit_status;
+};
 
 #endif
