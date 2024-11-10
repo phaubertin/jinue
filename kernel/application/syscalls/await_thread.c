@@ -61,6 +61,7 @@ int await_thread(int fd) {
         return -JINUE_EDEADLK;
     }
 
+    /* TODO this check and the following assignment should be atomic */
     if(thread->awaiter != NULL) {
         return -JINUE_ESRCH;
     }
