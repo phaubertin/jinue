@@ -117,7 +117,7 @@ void *__mmap_perrno(
     int64_t paddr;
 
     if(flags & MAP_ANONYMOUS) {
-        paddr = physmem_alloc(aligned_length);
+        paddr = __physmem_alloc(aligned_length);
 
         if(paddr < 0) {
             *perrno = ENOMEM;

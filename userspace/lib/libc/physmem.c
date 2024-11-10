@@ -109,7 +109,7 @@ static int initialize_range_from_kernel_info(void) {
     return EXIT_SUCCESS;
 }
 
-int physmem_init(void) {
+int __physmem_init(void) {
     int status = initialize_range_from_loader_info();
 
     if(status >= 0) {
@@ -127,7 +127,7 @@ int physmem_init(void) {
     return initialize_range_from_kernel_info();
 }
 
-int64_t physmem_alloc(size_t size) {
+int64_t __physmem_alloc(size_t size) {
     uint64_t top = alloc_range.addr + size;
 
     if(top > alloc_range.limit) {
