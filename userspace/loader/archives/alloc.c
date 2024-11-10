@@ -31,6 +31,7 @@
 
 #include <jinue/jinue.h>
 #include <sys/mman.h>
+#include <internals.h>
 #include <string.h>
 #include "alloc.h"
 
@@ -52,13 +53,8 @@
  *
  * */
 void *allocate_page_aligned(size_t bytes) {
-    void *addr = mmap(NULL, bytes, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-
-    if(addr == MAP_FAILED) {
-        return NULL;
-    }
-
-    return addr;
+    void *addr = mmap_anonymous(NULL, bytes);
+    return (addr == MAP_FAILED) ? NULL : addr;
 }
 
 /**

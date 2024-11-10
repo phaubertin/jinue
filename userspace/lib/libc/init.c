@@ -36,7 +36,8 @@
 #include "brk.h"
 #include "physmem.h"
 
-int _libc_init(void) {
+/* This function is called by assembly language code. */
+int __libc_init(void) {
     int ret = jinue_init(getauxval(JINUE_AT_HOWSYSCALL), NULL);
 
     if(ret < 0) {
@@ -45,7 +46,7 @@ int _libc_init(void) {
 
     __pthread_set_current(__pthread_main_thread);
 
-    ret = physmem_init();
+    ret = __physmem_init();
 
     if(ret != EXIT_SUCCESS) {
         return EXIT_FAILURE;

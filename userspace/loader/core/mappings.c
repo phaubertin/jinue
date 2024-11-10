@@ -58,10 +58,10 @@ int map_file(void *vaddr, size_t size, int segment_index, size_t offset, int per
 }
 
 void *map_anonymous(void *vaddr, size_t size, int perms) {
-    uint64_t paddr = _libc_get_physmem_alloc_addr();
+    uint64_t paddr = libc_get_physmem_alloc_addr();
 
     /* Map into this process so we can set the contents. */
-    void *segment = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    void *segment = mmap_anonymous(NULL, size);
 
     if(segment == MAP_FAILED) {
         jinue_error("error: mmap() failed: %s", strerror(errno));

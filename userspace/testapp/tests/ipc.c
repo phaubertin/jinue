@@ -129,10 +129,10 @@ void run_ipc_test(void) {
 
     jinue_info("Running threading and IPC test...");
 
-    int endpoint = __allocate_descriptor();
+    int endpoint = libc_allocate_descriptor();
 
     if(endpoint < 0) {
-        jinue_error("error: __allocate_descriptor() failed: %s", strerror(errno));
+        jinue_error("error: libc_allocate_descriptor() failed: %s", strerror(errno));
         return;
     }
 
@@ -143,10 +143,10 @@ void run_ipc_test(void) {
         return;
     }
 
-    client_endpoint = __allocate_descriptor();
+    client_endpoint = libc_allocate_descriptor();
 
     if(client_endpoint < 0) {
-        jinue_error("error: __allocate_descriptor() failed: %s", strerror(errno));
+        jinue_error("error: libc_allocate_descriptor() failed: %s", strerror(errno));
         return;
     }
 

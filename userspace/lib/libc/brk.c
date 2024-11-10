@@ -113,7 +113,7 @@ int __brk_perrno(void *addr, int *perrno) {
     if((uintptr_t)addr > (uintptr_t)allocated_break) {
         uintptr_t new_allocated = ((uintptr_t)addr + JINUE_PAGE_SIZE - 1) & ~(JINUE_PAGE_SIZE - 1);
         size_t size             = new_allocated - (uintptr_t)allocated_break;
-        intptr_t physaddr       = physmem_alloc(size);
+        intptr_t physaddr       = __physmem_alloc(size);
 
         if(physaddr < 0) {
             *perrno = ENOMEM;

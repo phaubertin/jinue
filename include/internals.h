@@ -36,14 +36,29 @@
 
 #define MMAP_BASE 0x40000000
 
-int _libc_init(void); 
+int __libc_init(void); 
 
-uint64_t _libc_get_physmem_alloc_addr(void);
+uint64_t __get_physmem_alloc_addr(void);
 
-uint64_t _libc_get_physmem_alloc_limit(void);
+uint64_t __get_physmem_alloc_limit(void);
 
 int __allocate_descriptor(void);
 
 void __free_descriptor(int fd);
+
+void *__mmap_anonymous(void *addr, size_t len);
+
+
+#define libc_init __libc_init
+
+#define libc_get_physmem_alloc_addr __get_physmem_alloc_addr
+
+#define libc_get_physmem_alloc_limit __get_physmem_alloc_limit
+
+#define libc_allocate_descriptor __allocate_descriptor
+
+#define libc_free_descriptor __free_descriptor
+
+#define mmap_anonymous __mmap_anonymous
 
 #endif

@@ -643,7 +643,7 @@ const int map_mode(int tar_mode) {
 int tar_extract(extracted_ramdisk_t *extracted, stream_t *stream) {
     state_t state;
 
-    const uint64_t extracted_start = _libc_get_physmem_alloc_addr();
+    const uint64_t extracted_start = libc_get_physmem_alloc_addr();
     
     jinue_dirent_t *root = initialize_state(&state, stream);
 
@@ -772,7 +772,7 @@ int tar_extract(extracted_ramdisk_t *extracted, stream_t *stream) {
         }
     }
 
-    const uint64_t extracted_end = _libc_get_physmem_alloc_addr();
+    const uint64_t extracted_end = libc_get_physmem_alloc_addr();
 
     extracted->physaddr = extracted_start;
     extracted->size     = extracted_end - extracted_start;
