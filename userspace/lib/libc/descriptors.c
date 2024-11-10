@@ -71,7 +71,7 @@ static struct fdlink *get(struct fdlink **root) {
 
 static int allocate_new_descriptor(int *perrno) {
     if(alloc_state.next >= JINUE_DESC_NUM) {
-        errno = EAGAIN;
+        *perrno = EAGAIN;
         return -1;
     }
 
