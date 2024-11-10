@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Philippe Aubertin.
+ * Copyright (C) 2023-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,10 +29,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <errno.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include "brk.h"
+#include "malloc.h"
 
 /* minimum allocation size, in bytes */
 #define MIN_SBRK_SIZE   (16 * 1024)
@@ -68,6 +71,10 @@ struct header {
 static struct header *heap_head = NULL;
 
 static struct header *heap_tail = NULL;
+
+void *malloc(size_t size) {
+    return __malloc_perrno(size, &errno);
+}
 
 static bool is_terminator(const struct header *header) {
     return !!(header->prev_and_flags & FLAG_TERMINATOR);
@@ -121,13 +128,16 @@ static void *allocate_from_buffer(struct header *buffer, size_t size) {
     return buffer + 1;
 }
 
-#define FAILED_SBRK ((void *)-1)
+static void *sbrk_else_null(intptr_t incr, int *perrno) {
+    void *old_break = __sbrk_perrno(incr, perrno);
+    return (old_break == (void *)-1) ? NULL : old_break;
+}
 
-static void *align_break(void) {
-    void *current_break = sbrk(0);
+static void *align_break(int *perrno) {
+    void *current_break = sbrk_else_null(0, perrno);
 
-    if(current_break == FAILED_SBRK) {
-        return FAILED_SBRK;
+    if(current_break == NULL) {
+        return NULL;
     }
 
     uintptr_t alignment = (uintptr_t)current_break & (sizeof(struct header) - 1);
@@ -136,17 +146,21 @@ static void *align_break(void) {
         return current_break;
     }
 
-    void *ret = sbrk(sizeof(struct header) - alignment);
+    void *ret = sbrk_else_null(sizeof(struct header) - alignment, perrno);
 
-    if(ret == FAILED_SBRK) {
-        return FAILED_SBRK;
+    if(ret == NULL) {
+        return NULL;
     }
 
-    return sbrk(0);
+    return sbrk_else_null(0, perrno);
 }
 
-static void *allocate_with_sbrk(size_t size) {
-    void *current_break = align_break();
+static void *allocate_with_sbrk(size_t size, int *perrno) {
+    void *current_break = align_break(perrno);
+
+    if(current_break == NULL) {
+        return NULL;
+    }
 
     size_t alloc_size;
 
@@ -165,9 +179,9 @@ static void *allocate_with_sbrk(size_t size) {
          *
          * Three headers: the one for the new buffer and two terminators for the
          * new frame */
-        void *ret = sbrk(alloc_size + 3 * sizeof(struct header));
+        void *ret = sbrk_else_null(alloc_size + 3 * sizeof(struct header), perrno);
 
-        if(ret == FAILED_SBRK) {
+        if(ret == NULL) {
             return NULL;
         }
 
@@ -196,9 +210,9 @@ static void *allocate_with_sbrk(size_t size) {
             buffer = tail_prev;
 
             /* only one header size for the new end terminator */
-            void *ret = sbrk(alloc_size - bufsize(buffer));
+            void *ret = sbrk_else_null(alloc_size - bufsize(buffer), perrno);
 
-            if(ret == FAILED_SBRK) {
+            if(ret == NULL) {
                 return NULL;
             }
 
@@ -209,9 +223,9 @@ static void *allocate_with_sbrk(size_t size) {
              * put it there. */
             buffer = heap_tail;
 
-            void *ret = sbrk(alloc_size + sizeof(struct header));
+            void *ret = sbrk_else_null(alloc_size + sizeof(struct header), perrno);
 
-            if(ret == FAILED_SBRK) {
+            if(ret == NULL) {
                 return NULL;
             }
 
@@ -229,7 +243,7 @@ static void *allocate_with_sbrk(size_t size) {
     return allocate_from_buffer(buffer, size);
 }
 
-void *malloc(size_t size) {
+void *__malloc_perrno(size_t size, int *perrno) {
     if(size == 0) {
         return NULL;
     }
@@ -246,7 +260,7 @@ void *malloc(size_t size) {
     }
 
     /* Could not find a free buffer to satisfy allocation, let's call sbrk(). */
-    return allocate_with_sbrk(size);
+    return allocate_with_sbrk(size, perrno);
 }
 
 void free(void *ptr) {

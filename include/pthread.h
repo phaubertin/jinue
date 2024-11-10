@@ -29,42 +29,59 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/descriptors.h>
-#include <kernel/domain/entities/descriptor.h>
-#include <kernel/domain/entities/object.h>
-#include <kernel/domain/entities/process.h>
-#include <kernel/domain/entities/thread.h>
-#include <kernel/domain/services/exec.h>
-#include <kernel/domain/services/panic.h>
-#include <kernel/machine/exec.h>
+#ifndef _JINUE_LIBC_PTHREAD_H
+#define _JINUE_LIBC_PTHREAD_H
 
-static void set_descriptor(process_t *process, int fd, object_header_t *object) {
-    descriptor_t *desc;
-    (void)dereference_unused_descriptor(&desc, process, fd);
+#include <stddef.h>
 
-    desc->object = object;
-    desc->flags  = DESCRIPTOR_FLAG_IN_USE | object->type->all_permissions;
-    desc->cookie = 0;
+#define PTHREAD_STACK_MIN 16384
 
-    open_object(object, desc);
-}
+typedef struct __pthread *pthread_t;
 
-static void initialize_descriptors(process_t *process, thread_t *thread) {
-    set_descriptor(process, JINUE_DESC_SELF_PROCESS, &process->header);
-    set_descriptor(process, JINUE_DESC_MAIN_THREAD, &thread->header);
-}
+typedef struct {
+    int      flags;
+    int      detachstate;
+    size_t   stacksize;
+    void    *stackaddr;
+} pthread_attr_t;
 
-void exec(
-        process_t           *process,
-        thread_t            *thread,
-        const exec_file_t   *exec_file,
-        const char          *argv0,
-        const char          *cmdline) {
-    
-    thread_params_t thread_params;
-    machine_load_exec(&thread_params, process, exec_file, argv0, cmdline);
+/* threads */
 
-    prepare_thread(thread, &thread_params);
+pthread_t pthread_self(void);
 
-    initialize_descriptors(process, thread);
-}
+int pthread_create(
+        pthread_t               *restrict thread,
+        const pthread_attr_t    *restrict attr,
+        void                    *(*start_routine)(void*),
+        void                    *restrict arg);
+
+int pthread_join(pthread_t thread, void **exit_status);
+
+void pthread_exit(void *exit_status);
+
+/* thread attributes */
+
+int pthread_attr_destroy(pthread_attr_t *attr);
+
+int pthread_attr_init(pthread_attr_t *attr);
+
+#define PTHREAD_CREATE_JOINABLE 0
+
+#define PTHREAD_CREATE_DETACHED 1
+
+int pthread_attr_getdetachstate(const pthread_attr_t *attr, int *detachstate);
+
+int pthread_attr_setdetachstate(pthread_attr_t *attr, int detachstate);
+
+int pthread_attr_getstacksize(const pthread_attr_t *restrict attr, size_t *restrict stacksize);
+
+int pthread_attr_setstacksize(pthread_attr_t *attr, size_t stacksize);
+
+int pthread_attr_getstack(
+        const pthread_attr_t     *restrict attr,
+        void                    **restrict stackaddr,
+        size_t                   *restrict stacksize);
+
+int pthread_attr_setstack(pthread_attr_t *attr, void *stackaddr, size_t stacksize);
+
+#endif

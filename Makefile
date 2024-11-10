@@ -121,6 +121,11 @@ kernel:
 libjinue:
 	$(MAKE) -C $(libjinue)
 
+# build the standard C library
+.PHONY: libc
+libc:
+	$(MAKE) -C $(libc)
+
 # build the user space loader
 .PHONY: loader
 loader:

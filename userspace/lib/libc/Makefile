@@ -31,8 +31,13 @@ jinue_root = ../../..
 include $(jinue_root)/header.mk
 
 sources.c        = \
+	i686/stack.c \
+	pthread/attr.c \
+	pthread/libc.c \
+	pthread/thread.c \
 	assert-kernel.c \
 	brk.c \
+	descriptors.c \
 	errno.c \
 	getauxval.c \
 	getenv.c \
@@ -43,19 +48,37 @@ sources.c        = \
 	snprintf.c \
 	string.c \
 	vsnprintf.c
-sources.nasm     = crt.asm
+sources.nasm     = i686/crt.asm i686/pthread.asm
 
 target.user      = libc.a
+target.pthread	 = libpthread.a
 target.kernel    = libc-kernel.a
-targets          = $(target.user) $(target.kernel)
+targets          = $(target.user) $(target.pthread) $(target.kernel)
 
 objects.generic  = string.o snprintf.o vsnprintf.o
-objects.user     = crt.o brk.o errno.o getauxval.o getenv.o init.o malloc.o mmap.o physmem.o
+objects.user     = \
+	i686/crt.o \
+	pthread/libc.o \
+	brk.o \
+	descriptors.o \
+	errno.o \
+	getauxval.o \
+	getenv.o init.o \
+	malloc.o \
+	mmap.o \
+	physmem.o
+objects.pthread  = \
+	i686/pthread.o \
+	i686/stack.o \
+	pthread/attr.o \
+	pthread/thread.o
 objects.kernel   = assert-kernel.o
 
 include $(common)
 
 $(target.user): $(objects.generic) $(objects.user)
+
+$(target.pthread): $(objects.pthread)
 
 $(target.kernel): $(objects.generic) $(objects.kernel)
 

@@ -55,10 +55,10 @@ include $(common)
 $(libjinue_syscalls) $(libjinue_utils): FORCE
 	$(MAKE) -C $(libjinue)
 	
-$(libc)/libc.a: FORCE
+$(libc)/libc.a $(libc)/libpthread.a: FORCE
 	$(MAKE) -C $(libc)
 
-$(testapp): $(objects) $(libjinue_utils) $(libc)/libc.a $(libjinue_syscalls)
+$(testapp): $(objects) $(libjinue_utils) $(libc)/libpthread.a $(libc)/libc.a $(libjinue_syscalls)
 
 $(stripped): $(testapp)
 

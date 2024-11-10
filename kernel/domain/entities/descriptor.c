@@ -45,7 +45,7 @@
  *
  */
 static descriptor_t *dereference_descriptor(process_t *process, int fd) {
-    if(fd < 0 || fd > PROCESS_MAX_DESCRIPTORS) {
+    if(fd < 0 || fd > JINUE_DESC_NUM) {
         return NULL;
     }
 

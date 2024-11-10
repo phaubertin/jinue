@@ -33,44 +33,57 @@
 #include <sys/mman.h>
 #include <errno.h>
 #include <internals.h>
+#include "mmap.h"
 #include "physmem.h"
 
 static void *alloc_addr = (void *)MMAP_BASE;
 
 void *mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off) {
+    return __mmap_perrno(addr, len, prot, flags, fildes, off, &errno);
+}
+
+void *__mmap_perrno(
+        void    *addr,
+        size_t   len,
+        int      prot,
+        int      flags,
+        int      fildes,
+        off_t    off,
+        int     *perrno) {
+
     if((flags & (MAP_SHARED | MAP_PRIVATE)) == 0) {
-        errno = EINVAL;
+        *perrno = EINVAL;
         return MAP_FAILED;
     }
 
     if(flags & MAP_PRIVATE) {
-        errno = ENOTSUP;
+        *perrno = ENOTSUP;
         return MAP_FAILED;
     }
 
     const int flags_mask = MAP_FIXED | MAP_SHARED | MAP_ANONYMOUS;
 
     if((flags & ~flags_mask) != 0) {
-        errno = EINVAL;
+        *perrno = EINVAL;
         return MAP_FAILED;
     }
 
     const int prot_mask = PROT_READ | PROT_WRITE | PROT_EXEC;
 
     if((prot & ~prot_mask) != 0) {
-        errno = EINVAL;
+        *perrno = EINVAL;
         return MAP_FAILED;
     }
 
     const int write_exec = PROT_WRITE | PROT_EXEC;
 
     if((prot & write_exec) == write_exec) {
-        errno = ENOTSUP;
+        *perrno = ENOTSUP;
         return MAP_FAILED;
     }
 
     if(len == 0) {
-        errno = EINVAL;
+        *perrno = EINVAL;
         return MAP_FAILED;
     }
 
@@ -78,7 +91,7 @@ void *mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off) {
 
     if(flags & MAP_FIXED) {
         if(addr == NULL || ((uintptr_t)addr & (JINUE_PAGE_SIZE - 1)) != 0) {
-            errno = EINVAL;
+            *perrno = EINVAL;
             return MAP_FAILED;
         }
     }
@@ -88,16 +101,16 @@ void *mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off) {
 
     if((uintptr_t)addr >= JINUE_KLIMIT || JINUE_KLIMIT - (uintptr_t)addr < aligned_length) {
         if(flags & MAP_FIXED) {
-            errno = EINVAL;
+            *perrno = EINVAL;
         }
         else {
-            errno = ENOMEM;
+            *perrno = ENOMEM;
         }
         return MAP_FAILED;
     }
 
     if(off < 0 || (off & (JINUE_PAGE_SIZE - 1)) != 0) {
-        errno = EINVAL;
+        *perrno = EINVAL;
         return MAP_FAILED;
     }
 
@@ -107,7 +120,7 @@ void *mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off) {
         paddr = physmem_alloc(aligned_length);
 
         if(paddr < 0) {
-            errno = ENOMEM;
+            *perrno = ENOMEM;
             return MAP_FAILED;
         }
     }
@@ -115,17 +128,9 @@ void *mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off) {
         paddr = off;
     }
 
-    int kernel_errno;
-    int ret = jinue_mmap(
-            JINUE_DESC_SELF_PROCESS,
-            addr,
-            aligned_length,
-            prot,
-            paddr,
-            &kernel_errno);
+    int ret = jinue_mmap(JINUE_DESC_SELF_PROCESS, addr, aligned_length, prot, paddr, perrno);
 
     if(ret < 0) {
-        errno = kernel_errno;
         return MAP_FAILED;
     }
 

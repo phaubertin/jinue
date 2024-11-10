@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Philippe Aubertin.
+ * Copyright (C) 2023-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -32,6 +32,12 @@
 #ifndef LIBC_BRK_H
 #define LIBC_BRK_H
 
-int brk_init(void);
+#include <stdint.h>
+
+int __brk_init(void);
+
+int __brk_perrno(void *addr, int *perrno);
+
+void *__sbrk_perrno(intptr_t incr, int *perrno);
 
 #endif

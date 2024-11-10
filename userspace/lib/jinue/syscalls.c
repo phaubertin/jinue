@@ -83,7 +83,7 @@ void jinue_set_thread_local(void *addr, size_t size) {
     jinue_syscall(&args);
 }
 
-int jinue_get_thread_local(void **thread_local) {
+void *jinue_get_thread_local(void) {
     jinue_syscall_args_t args;
 
     args.arg0 = JINUE_SYS_GET_THREAD_LOCAL;
@@ -91,7 +91,10 @@ int jinue_get_thread_local(void **thread_local) {
     args.arg2 = 0;
     args.arg3 = 0;
 
-    return call_with_pointer_convention(&args, thread_local, NULL);
+    void *tls = NULL;
+    (void)call_with_pointer_convention(&args, &tls, NULL);
+
+    return tls;
 }
 
 int jinue_create_thread(int fd, int process, int *perrno) {

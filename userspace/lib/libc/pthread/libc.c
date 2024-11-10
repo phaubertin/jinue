@@ -29,42 +29,34 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/descriptors.h>
-#include <kernel/domain/entities/descriptor.h>
-#include <kernel/domain/entities/object.h>
-#include <kernel/domain/entities/process.h>
-#include <kernel/domain/entities/thread.h>
-#include <kernel/domain/services/exec.h>
-#include <kernel/domain/services/panic.h>
-#include <kernel/machine/exec.h>
+#include <jinue/jinue.h>
+#include <pthread.h>
+#include <stdlib.h>
+#include "libc.h"
+#include "thread.h"
 
-static void set_descriptor(process_t *process, int fd, object_header_t *object) {
-    descriptor_t *desc;
-    (void)dereference_unused_descriptor(&desc, process, fd);
+/* This file contains the subset of the POSIX threads implementation that is in
+ * libc instead of libpthread because of dependencies in the libc initilization
+ * code.*/
 
-    desc->object = object;
-    desc->flags  = DESCRIPTOR_FLAG_IN_USE | object->type->all_permissions;
-    desc->cookie = 0;
+static struct __pthread main_thread = {
+    .self               = &main_thread,
+    .next               = NULL,
+    .fd                 = JINUE_DESC_MAIN_THREAD,
+    .flags              = THREAD_FLAG_RUNNING,
+    .stackaddr          = (void *)JINUE_STACK_START,
+    .stacksize          = JINUE_STACK_SIZE,
+    .alloc_stackaddr    = (void *)JINUE_STACK_START,
+    .alloc_stacksize    = JINUE_STACK_SIZE,
+    .exit_status        = NULL
+};
 
-    open_object(object, desc);
+pthread_t __pthread_main_thread = &main_thread;
+
+void __pthread_set_current(pthread_t thread) {
+    jinue_set_thread_local(thread, sizeof(struct __pthread));
 }
 
-static void initialize_descriptors(process_t *process, thread_t *thread) {
-    set_descriptor(process, JINUE_DESC_SELF_PROCESS, &process->header);
-    set_descriptor(process, JINUE_DESC_MAIN_THREAD, &thread->header);
-}
-
-void exec(
-        process_t           *process,
-        thread_t            *thread,
-        const exec_file_t   *exec_file,
-        const char          *argv0,
-        const char          *cmdline) {
-    
-    thread_params_t thread_params;
-    machine_load_exec(&thread_params, process, exec_file, argv0, cmdline);
-
-    prepare_thread(thread, &thread_params);
-
-    initialize_descriptors(process, thread);
+pthread_t pthread_self(void) {
+    return jinue_get_thread_local();
 }

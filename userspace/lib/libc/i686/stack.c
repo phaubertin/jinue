@@ -5,18 +5,18 @@
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,19 +29,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_THREADS_H
-#define _JINUE_THREADS_H
+#include <stdint.h>
+#include "../pthread/machine.h"
+#include "../pthread/thread.h"
 
-#include <stddef.h>
+void *__pthread_initialize_stack(pthread_t thread, void *(*start_routine)(void*), void *arg) {
+    uintptr_t *stackbase = (uintptr_t *)((char *)thread->stackaddr + thread->stacksize);
+    
+    stackbase[-1] = (uintptr_t)arg;
+    stackbase[-2] = (uintptr_t)start_routine;
+    stackbase[-3] = (uintptr_t)thread;
 
-typedef struct jinue_thread *jinue_thread_t;
-
-int jinue_thread_init(jinue_thread_t *thread, int fd, size_t stacksize);
-
-int jinue_thread_start(jinue_thread_t thread, void *(*start_routine)(void*), void *arg);
-
-int jinue_thread_join(jinue_thread_t thread, void **value_ptr);
-
-int jinue_thread_destroy(jinue_thread_t thread);
-
-#endif
+    return &stackbase[-3];
+}

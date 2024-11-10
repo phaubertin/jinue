@@ -29,13 +29,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/descriptors.h>
 #include <jinue/shared/asm/mman.h>
 #include <jinue/shared/asm/stack.h>
 #include <kernel/domain/alloc/page_alloc.h>
 #include <kernel/domain/alloc/vmalloc.h>
-#include <kernel/domain/entities/descriptor.h>
-#include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/services/cmdline.h>
 #include <kernel/domain/services/logging.h>
@@ -502,26 +499,6 @@ static void initialize_stack(
 }
 
 /**
- * Initialize descriptors for user space loader
- *
- * This function initializes a single descriptor which references the process
- * itself (JINUE_DESC_SELF_PROCESS).
- * 
- * @param process process in which the ELF binary is loaded
- *
- * */
-static void initialize_descriptors(process_t *process) {
-    descriptor_t *desc;
-    (void)dereference_unused_descriptor(&desc, process, JINUE_DESC_SELF_PROCESS);
-
-    desc->object = &process->header;
-    desc->flags  = DESCRIPTOR_FLAG_IN_USE | object_type_process->all_permissions;
-    desc->cookie = 0;
-
-    open_object(&process->header, desc);
-}
-
-/**
  * Load ELF binary
  *
  * This function is intended to be used to load the user space loader binary,
@@ -555,8 +532,6 @@ void machine_load_exec(
     allocate_stack(&elf_info);
 
     initialize_stack(&elf_info, cmdline, argv0);
-    
-    initialize_descriptors(process);
 
     info("ELF binary loaded.");
 

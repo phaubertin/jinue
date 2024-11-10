@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Philippe Aubertin.
+ * Copyright (C) 2023-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -36,6 +36,7 @@
 #include <internals.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include "brk.h"
 #include "physmem.h"
 
 /* Original value of the program break, i.e. just after the data segment. We
@@ -50,7 +51,15 @@ static void *reported_break;
  * boundary. */
 static void *allocated_break;
 
-int brk_init(void) {
+int brk(void *addr) {
+    return __brk_perrno(addr, &errno);
+}
+
+void *sbrk(intptr_t incr) {
+    return __sbrk_perrno(incr, &errno);
+}
+
+int __brk_init(void) {
     Elf32_Phdr *phdr = (Elf32_Phdr *)getauxval(JINUE_AT_PHDR);
 
     if(phdr == NULL) {
@@ -90,14 +99,14 @@ int brk_init(void) {
     return EXIT_SUCCESS;
 }
 
-int brk(void *addr) {
+int __brk_perrno(void *addr, int *perrno) {
     if((uintptr_t)addr < (uintptr_t)bottom_break) {
-        errno = EINVAL;
+        *perrno = EINVAL;
         return -1;
     }
 
     if((uintptr_t)addr > MMAP_BASE) {
-        errno = ENOMEM;
+        *perrno = ENOMEM;
         return -1;
     }
 
@@ -107,21 +116,19 @@ int brk(void *addr) {
         intptr_t physaddr       = physmem_alloc(size);
 
         if(physaddr < 0) {
-            errno = ENOMEM;
+            *perrno = ENOMEM;
             return -1;
         }
 
-        int kernel_errno;
         int ret = jinue_mmap(
                 JINUE_DESC_SELF_PROCESS,
                 allocated_break,
                 size,
                 JINUE_PROT_READ | JINUE_PROT_WRITE,
                 physaddr,
-                &kernel_errno);
+                perrno);
 
         if(ret < 0) {
-            errno = kernel_errno;
             return -1;
         }
 
@@ -133,10 +140,10 @@ int brk(void *addr) {
     return 0;
 }
 
-void *sbrk(intptr_t incr) {
+void *__sbrk_perrno(intptr_t incr, int *perrno) {
     void *previous_break = reported_break;
 
-    int ret = brk((char *)reported_break + incr);
+    int ret = __brk_perrno((char *)reported_break + incr, perrno);
 
     if(ret != 0) {
         return (void *)-1;

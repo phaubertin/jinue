@@ -52,7 +52,7 @@
  *
  * */
 void *allocate_page_aligned(size_t bytes) {
-    void *addr = mmap(NULL, bytes, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, 0, 0);
+    void *addr = mmap(NULL, bytes, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
 
     if(addr == MAP_FAILED) {
         return NULL;
