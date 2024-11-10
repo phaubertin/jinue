@@ -49,8 +49,6 @@ int jinue_init(int implementation, int *perrno);
 
 uintptr_t jinue_syscall(jinue_syscall_args_t *args);
 
-void jinue_thread_entry(void);
-
 void jinue_reboot(void);
 
 void jinue_set_thread_local(void *addr, size_t size);
@@ -117,7 +115,7 @@ int jinue_mint(
 
 int jinue_start_thread(int fd, void (*entry)(void), void *stack, int *perrno);
 
-int jinue_join_thread(int fd, int *perrno);
+int jinue_await_thread(int fd, int *perrno);
 
 int jinue_reply_error(uintptr_t errcode, int *perrno);
 

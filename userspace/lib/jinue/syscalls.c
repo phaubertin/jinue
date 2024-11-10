@@ -342,10 +342,10 @@ int jinue_start_thread(int fd, void (*entry)(void), void *stack, int *perrno) {
     return call_with_usual_convention(&args, perrno);
 }
 
-int jinue_join_thread(int fd, int *perrno) {
+int jinue_await_thread(int fd, int *perrno) {
     jinue_syscall_args_t args;
 
-    args.arg0 = JINUE_SYS_JOIN_THREAD;
+    args.arg0 = JINUE_SYS_AWAIT_THREAD;
     args.arg1 = fd;
     args.arg2 = 0;
     args.arg3 = 0;

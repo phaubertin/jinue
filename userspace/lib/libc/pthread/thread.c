@@ -175,7 +175,7 @@ int pthread_create(
 
 int pthread_join(pthread_t thread, void **exit_status) {
     int errno_retval;
-    int status = jinue_join_thread(thread->fd, &errno_retval);
+    int status = jinue_await_thread(thread->fd, &errno_retval);
 
     if(status < 0) {
         return errno_retval;

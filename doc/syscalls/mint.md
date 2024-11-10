@@ -40,7 +40,7 @@ be specified:
 | Name              | Description                       |
 |-------------------|-----------------------------------|
 | JINUE_PERM_START  | Start the thread                  |
-| JINUE_PERM_JOIN   | Wait for the thread to terminate  |
+| JINUE_PERM_AWAIT   | Wait for the thread to terminate  |
 
 Other permission flags are reserved.
 

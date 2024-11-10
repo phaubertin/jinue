@@ -42,8 +42,8 @@ void exit_thread(void) {
         thread->sender = NULL;
     }
 
-    if(thread->joined != NULL) {
-        ready_thread(thread->joined);
+    if(thread->awaiter != NULL) {
+        ready_thread(thread->awaiter);
     }
 
     /* This call must be the last thing happening in this function. */

@@ -90,7 +90,7 @@
 #define JINUE_SYS_START_THREAD          20
 
 /** wait for a thread to exit */
-#define JINUE_SYS_JOIN_THREAD           21
+#define JINUE_SYS_AWAIT_THREAD          21
 
 /** reply to current message with an error code */
 #define JINUE_SYS_REPLY_ERROR           22

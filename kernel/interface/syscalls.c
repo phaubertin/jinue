@@ -548,7 +548,7 @@ static void sys_start_thread(jinue_syscall_args_t *args) {
     set_return_value_or_error(args, retval);
 }
 
-static void sys_join_thread(jinue_syscall_args_t *args) {
+static void sys_await_thread(jinue_syscall_args_t *args) {
     int fd                      = get_descriptor(args->arg1);
 
     if(fd < 0) {
@@ -556,7 +556,7 @@ static void sys_join_thread(jinue_syscall_args_t *args) {
         return;
     }
 
-    int retval = join_thread(fd);
+    int retval = await_thread(fd);
     set_return_value_or_error(args, retval);
 }
 
@@ -641,8 +641,8 @@ void dispatch_syscall(jinue_syscall_args_t *args) {
         case JINUE_SYS_START_THREAD:
             sys_start_thread(args);
             break;
-        case JINUE_SYS_JOIN_THREAD:
-            sys_join_thread(args);
+        case JINUE_SYS_AWAIT_THREAD:
+            sys_await_thread(args);
             break;
         case JINUE_SYS_REPLY_ERROR:
             sys_reply_error(args);
