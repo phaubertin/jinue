@@ -50,18 +50,19 @@ __pthread_entry:
     ; the stack on entry.
     call __pthread_set_current
 
-    ; Pop and discard the argument to __pthread_set_current that we no longer
-    ; need, then pop the address of the thread function from the stack. Leave
-    ; the argument on the stack since this is where the thread function will
-    ; expect to find it.
-    pop eax
-    pop eax
+    ; Pop and discard the argument to __pthread_set_current() now that we no
+    ; longer need it, then pop the address of the thread function. Leave the
+    ; argument to the thread function on the stack since this is where the it
+    ; will expect it.
+    pop eax     ; discard __pthread_set_current() argument
+    pop eax     ; thread function address
 
     ; Call the thread function.
     call eax
 
-    ; Remove the argument from the stack now that it is no longer needed and
-    ; replace it with the return value of the thread function.
+    ; Remove the thread function argument from the stack now that it is no
+    ; longer needed and replace it with the return value of the thread
+    ; function, which will serve as the argument to pthread_exit().
     pop ebx
     push eax
 
