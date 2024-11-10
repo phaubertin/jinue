@@ -46,4 +46,8 @@ int __allocate_descriptor(void);
 
 void __free_descriptor(int fd);
 
+void *__mmap_anonymous(void *addr, size_t len);
+
+#define mmap_anonymous __mmap_anonymous
+
 #endif

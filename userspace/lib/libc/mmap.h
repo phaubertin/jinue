@@ -44,4 +44,6 @@ void *__mmap_perrno(
     off_t    off,
     int     *perrno);
 
+void *__mmap_anonymous_perrno(void *addr, size_t len, int *perrno);
+
 #endif

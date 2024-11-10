@@ -140,3 +140,19 @@ void *__mmap_perrno(
 
     return addr;
 }
+
+void *__mmap_anonymous(void *addr, size_t len) {
+    return __mmap_anonymous_perrno(addr, len, &errno);
+}
+
+void *__mmap_anonymous_perrno(void *addr, size_t len, int *perrno) {
+    return __mmap_perrno(
+        addr,
+        len,
+        PROT_READ | PROT_WRITE,
+        MAP_SHARED | MAP_ANONYMOUS,
+        -1,
+        0,
+        perrno
+    );
+}

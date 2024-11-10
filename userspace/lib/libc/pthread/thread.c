@@ -92,16 +92,7 @@ static pthread_t allocate_thread(int *perrno) {
 }
 
 static void *allocate_stack(size_t stacksize, int *perrno) {
-    void *stack = __mmap_perrno(
-        NULL,
-        stacksize,
-        PROT_READ | PROT_WRITE,
-        MAP_SHARED | MAP_ANONYMOUS,
-        -1,
-        0,
-        perrno
-    );
-
+    void *stack = __mmap_anonymous_perrno(NULL, stacksize, perrno);
     return (stack == MAP_FAILED) ? NULL : stack;
 }
 
