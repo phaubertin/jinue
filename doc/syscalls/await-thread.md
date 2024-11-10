@@ -1,4 +1,4 @@
-# JOIN_THREAD - Wait for a Thread to Exit
+# AWAIT_THREAD - Wait for a Thread to Exit
 
 ## Description
 
@@ -9,7 +9,7 @@ and must not be the calling thread. Furthermore, this function must be called
 at most once on a given thread since it has been started.
 
 For this operation to succeed, the thread descriptor must have the
-[JINUE_PERM_JOIN](../../include/jinue/shared/asm/permissions.h) permission.
+[JINUE_PERM_AWAIT](../../include/jinue/shared/asm/permissions.h) permission.
 
 ## Arguments
 
@@ -48,7 +48,7 @@ returns -1 and an error number is set (in `arg1`).
 
 * JINUE_EBADF if the thread descriptor is invalid, or does not refer to a
 thread, or is closed.
-* JINUE_ESRCH if the thread has not been started or has already beed joined.
-* JINUE_EDEADLK if a thread attempts to join itself.
+* JINUE_ESRCH if the thread has not been started or has already beed awaited.
+* JINUE_EDEADLK if a thread attempts to await itself.
 * JINUE_EPERM if the specified thread descriptor does not have the permission
-to join the thread.
+to await the thread.

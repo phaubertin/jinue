@@ -50,7 +50,7 @@
 /** start a thread */
 #define JINUE_PERM_START            (1<<5)
 
-/** join a thread */
-#define JINUE_PERM_JOIN             (1<<6)
+/** await a thread */
+#define JINUE_PERM_AWAIT            (1<<6)
 
 #endif

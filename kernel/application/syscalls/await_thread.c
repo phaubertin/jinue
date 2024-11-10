@@ -37,7 +37,7 @@
 #include <kernel/domain/entities/thread.h>
 #include <kernel/machine/thread.h>
 
-int join_thread(int fd) {
+int await_thread(int fd) {
     descriptor_t *desc;
     int status = dereference_object_descriptor(&desc, get_current_process(), fd);
 
@@ -51,7 +51,7 @@ int join_thread(int fd) {
         return -JINUE_EBADF;
     }
 
-    if(!descriptor_has_permissions(desc, JINUE_PERM_JOIN)) {
+    if(!descriptor_has_permissions(desc, JINUE_PERM_AWAIT)) {
         return -JINUE_EPERM;
     }
 
@@ -61,11 +61,11 @@ int join_thread(int fd) {
         return -JINUE_EDEADLK;
     }
 
-    if(thread->joined != NULL) {
+    if(thread->awaiter != NULL) {
         return -JINUE_ESRCH;
     }
 
-    thread->joined = current;
+    thread->awaiter = current;
 
     /* Keep the thread around until we actually read the exit value. */
     add_ref_to_object(&thread->header);

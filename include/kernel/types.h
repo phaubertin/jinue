@@ -108,7 +108,7 @@ struct thread_t {
     thread_state_t           state;
     process_t               *process;
     struct thread_t         *sender;
-    struct thread_t         *joined;
+    struct thread_t         *awaiter;
     addr_t                   local_storage_addr;
     size_t                   local_storage_size;
     size_t                   recv_buffer_size;

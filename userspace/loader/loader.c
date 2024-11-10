@@ -155,7 +155,7 @@ static int load_init(
         INIT_THREAD_DESCRIPTOR,
         INIT_PROCESS_DESCRIPTOR,
         JINUE_DESC_MAIN_THREAD,
-        JINUE_PERM_START | JINUE_PERM_JOIN,
+        JINUE_PERM_START | JINUE_PERM_AWAIT,
         0,
         &errno
     );

@@ -198,7 +198,7 @@ memory](syscalls/mmap.md) into the process' address space and to
 
 The main thread descriptor is a descriptor that references the initial
 thread in the process. It can be used, among other things, to
-[join](syscalls/join-thread.md) the initial thread from another thread.
+[await](syscalls/await-thread.md) the initial thread from another thread.
 
 ### Loader IPC Endpoint Descriptor
 

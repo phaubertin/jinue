@@ -42,7 +42,7 @@ static void free_thread(object_header_t *object);
 
 /** runtime type definition for a thread */
 static const object_type_t object_type = {
-    .all_permissions    = JINUE_PERM_START | JINUE_PERM_JOIN,
+    .all_permissions    = JINUE_PERM_START | JINUE_PERM_AWAIT,
     .name               = "thread",
     .size               = sizeof(thread_t),
     .open               = NULL,
@@ -71,10 +71,10 @@ thread_t *construct_thread(process_t *process) {
     thread->state               = THREAD_STATE_ZOMBIE;
     thread->process             = process;
     /* Arbitrary non-NULL value to signify the thread hasn't run yet and
-     * shouldn't be joined. This will fall in the condition in thread_join()
-     * that detects an attempt to join a thread that has already been joined,
-     * so thread_join() will fail with JINUE_ESRCH. */
-    thread->joined              = thread;
+     * shouldn't be awaited. This will fall in the condition in await_thread()
+     * that detects an attempt to await a thread that has already been awaited,
+     * so await_thread() will fail with JINUE_ESRCH. */
+    thread->awaiter             = thread;
     thread->local_storage_addr  = NULL;
     thread->local_storage_size  = 0;
  
@@ -87,8 +87,8 @@ static void free_thread(object_header_t *object) {
 }
 
 void prepare_thread(thread_t *thread, const thread_params_t *params) {
-    thread->sender = NULL;
-    thread->joined = NULL;
+    thread->sender  = NULL;
+    thread->awaiter = NULL;
     machine_prepare_thread(thread, params);
 }
 

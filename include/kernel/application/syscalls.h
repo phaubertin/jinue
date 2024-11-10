@@ -34,6 +34,8 @@
 
 #include <kernel/types.h>
 
+int await_thread(int fd);
+
 int close(int fd);
 
 int create_endpoint(int fd);
@@ -51,8 +53,6 @@ void exit_thread(void);
 void *get_thread_local(void);
 
 int get_user_memory(const jinue_buffer_t *buffer);
-
-int join_thread(int fd);
 
 int mclone(int src, int dest, const jinue_mclone_args_t *args);
 
