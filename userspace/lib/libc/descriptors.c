@@ -32,7 +32,8 @@
 #include <jinue/jinue.h>
 #include <errno.h>
 #include <internals.h>
-#include <stdlib.h>
+#include "descriptors.h"
+#include "malloc.h"
 
 struct fdlink {
     struct fdlink   *next;
@@ -49,6 +50,10 @@ static struct {
     .freelinks  = NULL
 };
 
+int __allocate_descriptor(void) {
+    return __allocate_descriptor_perrno(&errno);
+}
+
 static void append(struct fdlink **root, struct fdlink *link) {
     link->next  = *root;
     *root       = link;
@@ -64,7 +69,7 @@ static struct fdlink *get(struct fdlink **root) {
     return link;
 }
 
-static int allocate_new_descriptor(void) {
+static int allocate_new_descriptor(int *perrno) {
     if(alloc_state.next >= JINUE_DESC_NUM) {
         errno = EAGAIN;
         return -1;
@@ -73,10 +78,9 @@ static int allocate_new_descriptor(void) {
     /* We don't need the link now, only when the descriptor is freed. Let's allocate it now
      * anyway because we want this function to fail if we can't allocate, we don't want the
      * failure to happen when we free the descriptor. */
-    struct fdlink *link = malloc(sizeof(struct fdlink));
+    struct fdlink *link = __malloc_perrno(sizeof(struct fdlink), perrno);
 
     if(link == NULL) {
-        /* errno is set by malloc() in this case */
         return -1;
     }
 
@@ -85,7 +89,7 @@ static int allocate_new_descriptor(void) {
     return (alloc_state.next)++;
 }
 
-int __allocate_descriptor(void) {
+int __allocate_descriptor_perrno(int *perrno) {
     /* Fast allocation path: reuse a descriptor number previously freed by free_descriptor(). */
 
     struct fdlink *link = get(&alloc_state.freelist);
@@ -97,7 +101,7 @@ int __allocate_descriptor(void) {
 
     /* Slow allocation path: allocate a new, never used descriptor. */
     
-    return allocate_new_descriptor();
+    return allocate_new_descriptor(perrno);
 }
 
 void __free_descriptor(int fd) {

@@ -31,10 +31,12 @@
 
 #include <jinue/jinue.h>
 #include <sys/mman.h>
-#include <errno.h>
 #include <internals.h>
-#include <stdlib.h>
 #include <pthread.h>
+#include <stdlib.h>
+#include "../descriptors.h"
+#include "../malloc.h"
+#include "../mmap.h"
 #include "attr.h"
 #include "machine.h"
 #include "thread.h"
@@ -56,27 +58,27 @@ static void free_thread_to_pool(pthread_t thread) {
     pool            = thread;
 }
 
-static pthread_t allocate_thread(void) {
+static pthread_t allocate_thread(int *perrno) {
     pthread_t thread = get_thread_from_pool();
 
     if(thread != NULL) {
         return thread;
     }
 
-    thread = malloc(sizeof(struct __pthread));
+    thread = __malloc_perrno(sizeof(struct __pthread), perrno);
 
     if(thread == NULL) {
         return NULL;
     }
 
-    int fd = __allocate_descriptor();
+    int fd = __allocate_descriptor_perrno(perrno);
 
     if(fd < 0) {
         free(thread);
         return NULL;
     }
 
-    int status = jinue_create_thread(fd, JINUE_DESC_SELF_PROCESS, &errno);
+    int status = jinue_create_thread(fd, JINUE_DESC_SELF_PROCESS, perrno);
 
     if(status < 0) {
         __free_descriptor(fd);
@@ -89,12 +91,21 @@ static pthread_t allocate_thread(void) {
     return thread;
 }
 
-static void *allocate_stack(size_t stacksize) {
-    void *stack = mmap(NULL, stacksize, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+static void *allocate_stack(size_t stacksize, int *perrno) {
+    void *stack = __mmap_perrno(
+        NULL,
+        stacksize,
+        PROT_READ | PROT_WRITE,
+        MAP_SHARED | MAP_ANONYMOUS,
+        -1,
+        0,
+        perrno
+    );
+
     return (stack == MAP_FAILED) ? NULL : stack;
 }
 
-static int setup_stack(pthread_t thread, const pthread_attr_t *attr) {
+static int setup_stack(pthread_t thread, const pthread_attr_t *attr, int *perrno) {
     if(__pthread_attr_has_stackaddr(attr)) {
         thread->stackaddr   = attr->stackaddr;
         thread->stacksize   = attr->stacksize;
@@ -108,7 +119,7 @@ static int setup_stack(pthread_t thread, const pthread_attr_t *attr) {
     }
 
     size_t stacksize    = (attr->stacksize + JINUE_PAGE_SIZE - 1) & ~JINUE_PAGE_MASK;
-    void *stackaddr     = allocate_stack(stacksize);
+    void *stackaddr     = allocate_stack(stacksize, perrno);
 
     if(stackaddr == NULL) {
         return -1;
@@ -119,7 +130,7 @@ static int setup_stack(pthread_t thread, const pthread_attr_t *attr) {
     thread->alloc_stacksize = stacksize;
     thread->stacksize       = stacksize;
 
-    /* TODO unmap existing allocated stack (if not NULL, once system call exists) */
+    /* TODO unmap existing allocated stack (if not NULL, once munmap() exists) */
     
     return 0;
 }
@@ -134,17 +145,18 @@ int pthread_create(
         attr = __pthread_attr_get_defaults();
     }
 
-    pthread_t candidate = allocate_thread();
+    int errno_retval;
+    pthread_t candidate = allocate_thread(&errno_retval);
 
     if(candidate == NULL) {
-        return errno;
+        return errno_retval;
     }
 
-    int status = setup_stack(candidate, attr);
+    int status = setup_stack(candidate, attr, &errno_retval);
 
     if(status < 0) {
         free_thread_to_pool(candidate);
-        return errno;
+        return errno_retval;
     }
 
     candidate->flags        = THREAD_FLAG_RUNNING;
@@ -158,12 +170,12 @@ int pthread_create(
         candidate->fd,
         __pthread_entry,
         __pthread_initialize_stack(candidate, start_routine, arg),
-        &errno
+        &errno_retval
     );
 
     if(status < 0) {
         free_thread_to_pool(candidate);
-        return errno;
+        return errno_retval;
     }
 
     *thread = candidate;
@@ -171,10 +183,11 @@ int pthread_create(
 }
 
 int pthread_join(pthread_t thread, void **exit_status) {
-    int status = jinue_join_thread(thread->fd, &errno);
+    int errno_retval;
+    int status = jinue_join_thread(thread->fd, &errno_retval);
 
     if(status < 0) {
-        return errno;
+        return errno_retval;
     }
 
     *exit_status = thread->exit_status;
