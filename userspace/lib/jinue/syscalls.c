@@ -48,19 +48,6 @@ static intptr_t call_with_usual_convention(jinue_syscall_args_t *args, int *perr
     return retval;
 }
 
-static intptr_t call_with_pointer_convention(jinue_syscall_args_t *args, void **ptr, int *perrno) {
-
-    const intptr_t retval = (intptr_t)jinue_syscall(args);
-
-    if(retval < 0) {
-        set_errno(perrno, args->arg1);
-    } else {
-        *ptr = (void *)args->arg1;
-    }
-
-    return retval;
-}
-
 void jinue_reboot(void) {
     jinue_syscall_args_t args;
 
@@ -81,20 +68,6 @@ void jinue_set_thread_local(void *addr, size_t size) {
     args.arg3 = 0;
 
     jinue_syscall(&args);
-}
-
-void *jinue_get_thread_local(void) {
-    jinue_syscall_args_t args;
-
-    args.arg0 = JINUE_SYS_GET_THREAD_LOCAL;
-    args.arg1 = 0;
-    args.arg2 = 0;
-    args.arg3 = 0;
-
-    void *tls = NULL;
-    (void)call_with_pointer_convention(&args, &tls, NULL);
-
-    return tls;
 }
 
 int jinue_create_thread(int fd, int process, int *perrno) {

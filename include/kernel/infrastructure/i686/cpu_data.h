@@ -42,7 +42,6 @@
 static inline cpu_data_t *get_cpu_local_data(void) {
     /* CPU data structure is at address zero within the per-cpu data segment */
     cpu_data_t *const zero = (cpu_data_t *)0;
-
     return (cpu_data_t *)get_gs_ptr( (uint32_t *)&zero->self );
 }
 

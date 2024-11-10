@@ -4,9 +4,6 @@
 
 Set the address and size of the thread-local storage for the current thread.
 
-A thread can then retrieve the address of the thead-local storage by calling the
-[GET_THREAD_LOCAL](get-thread-local.md) system call.
-
 ## Arguments
 
 Function number (`arg0`) is 6.
@@ -46,14 +43,3 @@ an error number is set (in `arg1`).
 
 * JINUE_EINVAL if any part of the region set with this function belongs to the
 kernel.
-
-## Future Direction
-
-The current system call can only set the thread-local storage for the current
-thread. This may be changed to allow setting the thread-local storage for
-another thread, which would be specified using a descriptor.
-
-Support will also be implemented in the kernel for an architecture-dependent
-mechanism to access thread-local storage that is faster than calling the
-[GET_THREAD_LOCAL](get-thread-local.md) system call. On x86, this will likely
-mean dedicating an entry to thread-local storage in the GDT.

@@ -13,7 +13,7 @@
 | 4       | [CREATE_THREAD](create-thread.md)       | Create a thread                      |
 | 5       | [YIELD_THREAD](yield-thread.md)         | Yield the Current Thread             |
 | 6       | [SET_THREAD_LOCAL](set-thread-local.md) | Set Thread-Local Storage             |
-| 7       | [GET_THREAD_LOCAL](get-thread-local.md) | Get Thread-Local Storage Address     |
+| 7       | -                                       | Reserved                             |
 | 8       | [GET_USER_MEMORY](get-user-memory.md)   | Get User Memory Map                  |
 | 9       | [CREATE_ENDPOINT](create-endpoint.md)   | Create IPC Endpoint                  |
 | 10      | [RECEIVE](receive.md)                   | Receive Message                      |

@@ -47,9 +47,6 @@
 /** set address and size of thread local storage for current thread */
 #define JINUE_SYS_SET_THREAD_LOCAL      6
 
-/** get address of thread local storage for current thread */
-#define JINUE_SYS_GET_THREAD_LOCAL      7
-
 /** get free memory block list for management by user space */
 #define JINUE_SYS_GET_USER_MEMORY       8
 

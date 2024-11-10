@@ -208,7 +208,3 @@ void set_thread_local_storage(thread_t *thread, addr_t addr, size_t size) {
     thread->local_storage_addr = addr;
     thread->local_storage_size = size;
 }
-
-addr_t get_thread_local_storage(const thread_t *thread) {
-    return thread->local_storage_addr;
-}

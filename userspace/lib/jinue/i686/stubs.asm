@@ -90,7 +90,6 @@ jinue_syscall_fast_intel:
     pop ebx
 
     ret
-
 .end:
 
 ; ------------------------------------------------------------------------------
@@ -148,7 +147,6 @@ jinue_syscall_fast_amd:
     pop ebx
 
     ret
-
 .end:
 
 ; ------------------------------------------------------------------------------
@@ -199,5 +197,17 @@ jinue_syscall_intr:
     pop ebx
 
     ret
+.end:
 
+; ------------------------------------------------------------------------------
+; FUNCTION: jinue_get_thread_local
+; C PROTOTYPE: void *jinue_get_thread_local(void);
+; ------------------------------------------------------------------------------
+    global jinue_get_thread_local:function (jinue_get_thread_local.end - jinue_get_thread_local)
+jinue_get_thread_local:
+    ; We assume that, whethever the structure of the TLS data looks like, it
+    ; starts with a pointer to itself, which we return here.
+    mov eax, dword [gs:0]
+
+    ret
 .end:

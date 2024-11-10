@@ -57,13 +57,6 @@ static void set_return_value(jinue_syscall_args_t *args, int retval) {
 	args->arg3	= 0;
 }
 
-static void set_return_pointer(jinue_syscall_args_t *args, void *ptr) {
-    args->arg0	= 0;
-	args->arg1	= (uintptr_t)ptr;
-	args->arg2	= 0;
-	args->arg3	= 0;
-}
-
 static void set_error(jinue_syscall_args_t *args, int error) {
 	args->arg0	= (uintptr_t)-1;
 	args->arg1	= (uintptr_t)error;
@@ -147,11 +140,6 @@ static void sys_set_thread_local(jinue_syscall_args_t *args) {
 
     set_thread_local(addr, size);
     set_return_value(args, 0);
-}
-
-static void sys_get_thread_local(jinue_syscall_args_t *args) {
-    void *tls = get_thread_local();
-    set_return_pointer(args, tls);
 }
 
 static void sys_get_user_memory(jinue_syscall_args_t *args) {
@@ -598,9 +586,6 @@ void dispatch_syscall(jinue_syscall_args_t *args) {
             break;
         case JINUE_SYS_SET_THREAD_LOCAL:
             sys_set_thread_local(args);
-            break;
-        case JINUE_SYS_GET_THREAD_LOCAL:
-            sys_get_thread_local(args);
             break;
         case JINUE_SYS_GET_USER_MEMORY:
             sys_get_user_memory(args);
