@@ -31,8 +31,13 @@
 
 #include <kernel/application/syscalls.h>
 #include <kernel/domain/entities/thread.h>
+#include <kernel/machine/cpu.h>
 #include <kernel/machine/thread.h>
 
 void set_thread_local(void *addr, size_t size) {
-    set_thread_local_storage(get_current_thread(), addr, size);
+    thread_t *thread = get_current_thread();
+
+    set_thread_local_storage(thread, addr, size);
+    
+    machine_set_tls(thread);
 }

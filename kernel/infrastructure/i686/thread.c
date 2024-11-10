@@ -37,6 +37,7 @@
 #include <kernel/infrastructure/i686/types.h>
 #include <kernel/interface/i686/trap.h>
 #include <kernel/interface/i686/types.h>
+#include <kernel/machine/cpu.h>
 #include <kernel/machine/thread.h>
 #include <assert.h>
 #include <stddef.h>
@@ -107,7 +108,7 @@ void machine_prepare_thread(thread_t *thread, const thread_params_t *params) {
     trapframe->ds       = SEG_SELECTOR(GDT_USER_DATA, RPL_USER);
     trapframe->es       = SEG_SELECTOR(GDT_USER_DATA, RPL_USER);
     trapframe->fs       = SEG_SELECTOR(GDT_USER_DATA, RPL_USER);
-    trapframe->gs       = SEG_SELECTOR(GDT_USER_DATA, RPL_USER);
+    trapframe->gs       = SEG_SELECTOR(GDT_USER_TLS_DATA, RPL_USER);
 
     kernel_context_t *kernel_context = (kernel_context_t *)trapframe - 1;
 
@@ -145,6 +146,8 @@ void machine_switch_thread(thread_t *from, thread_t *to, bool destroy_from) {
     tss->esp0 = kernel_stack_base;
     tss->esp1 = kernel_stack_base;
     tss->esp2 = kernel_stack_base;
+
+    machine_set_tls(to);
 
     /* update kernel stack address for SYSENTER instruction */
     if(cpu_has_feature(CPU_FEATURE_SYSENTER)) {

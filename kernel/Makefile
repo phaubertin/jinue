@@ -67,7 +67,6 @@ sources.kernel.c = \
 	application/syscalls/destroy.c \
 	application/syscalls/dup.c \
 	application/syscalls/exit_thread.c \
-	application/syscalls/get_thread_local.c \
 	application/syscalls/get_user_memory.c \
 	application/syscalls/await_thread.c \
 	application/syscalls/mint.c \

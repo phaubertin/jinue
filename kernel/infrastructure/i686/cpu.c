@@ -30,6 +30,7 @@
  */
 
 #include <kernel/infrastructure/i686/cpu.h>
+#include <kernel/infrastructure/i686/cpu_data.h>
 #include <kernel/infrastructure/i686/descriptors.h>
 #include <kernel/infrastructure/i686/x86.h>
 #include <kernel/machine/cpu.h>
@@ -37,6 +38,19 @@
 #include <string.h>
 
 cpu_info_t cpu_info;
+
+static void set_tls_segment(cpu_data_t *data, void *addr, size_t size) {
+    data->gdt[GDT_USER_TLS_DATA] = SEG_DESCRIPTOR(
+        addr,
+        size - 1,
+        SEG_TYPE_DATA | SEG_FLAG_USER | SEG_FLAG_NORMAL
+    );
+}
+
+void machine_set_tls(const thread_t *thread) {
+    cpu_data_t *data = get_cpu_local_data();
+    set_tls_segment(data, thread->local_storage_addr, thread->local_storage_size);
+}
 
 void cpu_init_data(cpu_data_t *data) {
     tss_t *tss;
@@ -70,7 +84,7 @@ void cpu_init_data(cpu_data_t *data) {
     data->gdt[GDT_PER_CPU_DATA] =
         SEG_DESCRIPTOR( data,   sizeof(cpu_data_t)-1,   SEG_TYPE_DATA  | SEG_FLAG_KERNEL | SEG_FLAG_32BIT | SEG_FLAG_IN_BYTES | SEG_FLAG_NOSYSTEM | SEG_FLAG_PRESENT);
     
-    data->gdt[GDT_USER_TLS_DATA] = SEG_DESCRIPTOR(0, 0, 0);
+    set_tls_segment(data, NULL, 0);
     
     /* setup kernel stack in TSS */
     tss->ss0  = SEG_SELECTOR(GDT_KERNEL_DATA, RPL_KERNEL);

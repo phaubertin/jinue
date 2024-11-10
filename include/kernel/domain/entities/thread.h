@@ -56,6 +56,4 @@ void current_thread_is_exiting(void);
 
 void set_thread_local_storage(thread_t *thread, addr_t addr, size_t size);
 
-addr_t get_thread_local_storage(const thread_t *thread);
-
 #endif

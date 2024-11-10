@@ -32,7 +32,10 @@
 #ifndef JINUE_KERNEL_MACHINE_CPU_H
 #define JINUE_KERNEL_MACHINE_CPU_H
 
+#include <kernel/types.h>
+
 unsigned int machine_get_cpu_dcache_alignment(void);
 
-#endif
+void machine_set_tls(const thread_t *thread);
 
+#endif
