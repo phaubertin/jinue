@@ -34,7 +34,7 @@
 #include "../pthread/thread.h"
 
 void *__pthread_initialize_stack(pthread_t thread, void *(*start_routine)(void*), void *arg) {
-    uintptr_t *stackbase = (uintptr_t *)((char *)thread->alloc_stackaddr + thread->stacksize);
+    uintptr_t *stackbase = (uintptr_t *)((char *)thread->stackaddr + thread->stacksize);
     
     stackbase[-1] = (uintptr_t)arg;
     stackbase[-2] = (uintptr_t)start_routine;
