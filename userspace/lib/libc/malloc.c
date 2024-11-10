@@ -128,8 +128,6 @@ static void *allocate_from_buffer(struct header *buffer, size_t size) {
     return buffer + 1;
 }
 
-#define FAILED_SBRK ((void *)-1)
-
 static void *sbrk_else_null(intptr_t incr, int *perrno) {
     void *old_break = __sbrk_perrno(incr, perrno);
     return (old_break == (void *)-1) ? NULL : old_break;
