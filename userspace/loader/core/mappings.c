@@ -58,7 +58,7 @@ int map_file(void *vaddr, size_t size, int segment_index, size_t offset, int per
 }
 
 void *map_anonymous(void *vaddr, size_t size, int perms) {
-    uint64_t paddr = _libc_get_physmem_alloc_addr();
+    uint64_t paddr = libc_get_physmem_alloc_addr();
 
     /* Map into this process so we can set the contents. */
     void *segment = mmap_anonymous(NULL, size);

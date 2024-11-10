@@ -140,10 +140,10 @@ int64_t physmem_alloc(size_t size) {
     return retval;
 }
 
-uint64_t _libc_get_physmem_alloc_addr(void) {
+uint64_t __get_physmem_alloc_addr(void) {
     return alloc_range.addr;
 }
 
-uint64_t _libc_get_physmem_alloc_limit(void) {
+uint64_t __get_physmem_alloc_limit(void) {
     return alloc_range.limit;
 }

@@ -111,8 +111,8 @@ void add_meminfo_mapping(void *addr, size_t size, int segment_index, size_t offs
 }
 
 static void update_meminfo(void) {
-    meminfo.hints.physaddr  = _libc_get_physmem_alloc_addr();
-    meminfo.hints.physlimit = _libc_get_physmem_alloc_limit();
+    meminfo.hints.physaddr  = libc_get_physmem_alloc_addr();
+    meminfo.hints.physlimit = libc_get_physmem_alloc_limit();
 }
 
 static void update_buffers(void) {
