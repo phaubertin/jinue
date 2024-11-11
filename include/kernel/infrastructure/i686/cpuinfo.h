@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,28 +29,29 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_CPU_DATA_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_CPU_DATA_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_CPUINFO_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_CPUINFO_H
 
-#include <kernel/infrastructure/i686/types.h>
-#include <kernel/infrastructure/i686/x86.h>
+#include <kernel/infrastructure/i686/asm/cpuinfo.h>
+#include <stdbool.h>
+#include <stdint.h>
 
+typedef struct {
+    unsigned int     maxphyaddr;
+    unsigned int     dcache_alignment;
+    uint32_t         features;
+    int              vendor;
+    int              family;
+    int              model;
+    int              stepping;
+} cpuinfo_t;
 
-#define CPU_DATA_ALIGNMENT      256
+extern cpuinfo_t cpuinfo;
 
+void detect_cpu_features(void);
 
-static inline cpu_data_t *get_cpu_local_data(void) {
-    /* CPU data structure is at address zero within the per-cpu data segment */
-    cpu_data_t *const zero = (cpu_data_t *)0;
-    return (cpu_data_t *)get_gs_ptr( (uint32_t *)&zero->self );
-}
-
-static inline tss_t *get_tss(void) {
-    return &get_cpu_local_data()->tss;
-}
-
-static inline addr_space_t *get_current_addr_space(void) {
-    return get_cpu_local_data()->current_addr_space;
+static inline bool cpu_has_feature(uint32_t mask) {
+    return (cpuinfo.features & mask) == mask;
 }
 
 #endif

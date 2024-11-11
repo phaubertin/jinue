@@ -30,7 +30,7 @@
  */
 
 #include <kernel/infrastructure/i686/pmap/pmap.h>
-#include <kernel/infrastructure/i686/cpu_data.h>
+#include <kernel/infrastructure/i686/percpu.h>
 #include <kernel/machine/process.h>
 
 void machine_switch_to_process(process_t *process) {

@@ -30,14 +30,15 @@
  */
 
 #include <kernel/domain/alloc/page_alloc.h>
+#include <kernel/infrastructure/i686/asm/msr.h>
 #include <kernel/infrastructure/i686/asm/thread.h>
-#include <kernel/infrastructure/i686/cpu.h>
-#include <kernel/infrastructure/i686/cpu_data.h>
+#include <kernel/infrastructure/i686/cpuinfo.h>
 #include <kernel/infrastructure/i686/descriptors.h>
+#include <kernel/infrastructure/i686/percpu.h>
 #include <kernel/infrastructure/i686/types.h>
 #include <kernel/interface/i686/trap.h>
 #include <kernel/interface/i686/types.h>
-#include <kernel/machine/cpu.h>
+#include <kernel/machine/tls.h>
 #include <kernel/machine/thread.h>
 #include <assert.h>
 #include <stddef.h>
@@ -150,7 +151,7 @@ void machine_switch_thread(thread_t *from, thread_t *to, bool destroy_from) {
     machine_set_tls(to);
 
     /* update kernel stack address for SYSENTER instruction */
-    if(cpu_has_feature(CPU_FEATURE_SYSENTER)) {
+    if(cpu_has_feature(CPUINFO_FEATURE_SYSENTER)) {
         wrmsr(MSR_IA32_SYSENTER_ESP, (uint64_t)(uintptr_t)kernel_stack_base);
     }
 

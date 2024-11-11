@@ -33,10 +33,11 @@
 #include <kernel/domain/alloc/slab.h>
 #include <kernel/domain/alloc/vmalloc.h>
 #include <kernel/domain/services/panic.h>
+#include <kernel/infrastructure/i686/asm/msr.h>
 #include <kernel/infrastructure/i686/pmap/init.h>
 #include <kernel/infrastructure/i686/pmap/private.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
-#include <kernel/infrastructure/i686/cpu.h>
+#include <kernel/infrastructure/i686/cpuinfo.h>
 #include <kernel/infrastructure/i686/memory.h>
 #include <kernel/infrastructure/i686/x86.h>
 #include <kernel/interface/i686/boot.h>
@@ -320,7 +321,7 @@ static pdpt_t *initialize_boot_page_tables(
 void pae_enable(boot_alloc_t *boot_alloc, const bootinfo_t *bootinfo) {
     pgtable_format_pae      = true;
     entries_per_page_table  = PAE_PAGE_TABLE_PTES;
-    page_frame_number_mask  = ((UINT64_C(1) << cpu_info.maxphyaddr) - 1) & (~PAGE_MASK);
+    page_frame_number_mask  = ((UINT64_C(1) << cpuinfo.maxphyaddr) - 1) & (~PAGE_MASK);
 
     pdpt_t *pdpt = initialize_boot_page_tables(boot_alloc, bootinfo);
 

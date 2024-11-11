@@ -29,13 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_MACHINE_CPU_H
-#define JINUE_KERNEL_MACHINE_CPU_H
-
-#include <kernel/types.h>
+#ifndef JINUE_KERNEL_MACHINE_CPUINFO_H
+#define JINUE_KERNEL_MACHINE_CPUINFO_H
 
 unsigned int machine_get_cpu_dcache_alignment(void);
-
-void machine_set_tls(const thread_t *thread);
 
 #endif

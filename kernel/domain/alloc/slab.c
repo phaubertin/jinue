@@ -32,7 +32,7 @@
 #include <kernel/domain/alloc/page_alloc.h>
 #include <kernel/domain/alloc/slab.h>
 #include <kernel/domain/services/logging.h>
-#include <kernel/machine/cpu.h>
+#include <kernel/machine/cpuinfo.h>
 #include <kernel/utils/utils.h>
 #include <kernel/types.h>
 #include <assert.h>

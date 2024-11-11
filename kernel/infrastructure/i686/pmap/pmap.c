@@ -40,8 +40,8 @@
 #include <kernel/infrastructure/i686/pmap/pmap.h>
 #include <kernel/infrastructure/i686/pmap/private.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
-#include <kernel/infrastructure/i686/cpu_data.h>
 #include <kernel/infrastructure/i686/memory.h>
+#include <kernel/infrastructure/i686/percpu.h>
 #include <kernel/infrastructure/i686/x86.h>
 #include <kernel/infrastructure/elf.h>
 #include <kernel/interface/i686/boot.h>
@@ -546,7 +546,7 @@ void pmap_destroy_addr_space(addr_space_t *addr_space) {
 void pmap_switch_addr_space(addr_space_t *addr_space) {
     set_cr3(addr_space->cr3);
 
-    cpu_data_t *cpu_data = get_cpu_local_data();
+    percpu_t *cpu_data = get_percpu_data();
     cpu_data->current_addr_space = addr_space;
 }
 

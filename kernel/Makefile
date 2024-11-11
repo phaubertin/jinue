@@ -106,11 +106,12 @@ sources.kernel.c = \
 	infrastructure/i686/boot_alloc.c \
 	infrastructure/i686/cmdline.c \
 	infrastructure/i686/config.c \
-	infrastructure/i686/cpu.c \
+	infrastructure/i686/cpuinfo.c \
 	infrastructure/i686/debug.c \
 	infrastructure/i686/halt.c \
 	infrastructure/i686/init.c \
 	infrastructure/i686/memory.c \
+	infrastructure/i686/percpu.c \
 	infrastructure/i686/process.c \
 	infrastructure/i686/thread.c \
 	infrastructure/elf.c \
