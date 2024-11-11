@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <kernel/infrastructure/i686/drivers/pic8259.h>
 #include <kernel/infrastructure/i686/io.h>
-#include <kernel/infrastructure/i686/pic8259.h>
 #include <kernel/interface/i686/asm/irq.h>
 #include <stdbool.h>
 

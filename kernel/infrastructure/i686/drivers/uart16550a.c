@@ -30,9 +30,9 @@
  */
 
 #include <kernel/domain/services/logging.h>
-#include <kernel/infrastructure/i686/asm/uart16550a.h>
+#include <kernel/infrastructure/i686/drivers/asm/uart16550a.h>
+#include <kernel/infrastructure/i686/drivers/uart16550a.h>
 #include <kernel/infrastructure/i686/io.h>
-#include <kernel/infrastructure/i686/uart16550a.h>
 
 static void printn(int loglevel, const char *message, size_t n);
 

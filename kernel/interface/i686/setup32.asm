@@ -164,8 +164,8 @@
 ;  ===  +=======================================+ 0
 
 #include <kernel/domain/services/asm/cmdline.h>
+#include <kernel/infrastructure/i686/pmap/asm/vm.h>
 #include <kernel/infrastructure/i686/asm/memory.h>
-#include <kernel/infrastructure/i686/asm/vm.h>
 #include <kernel/infrastructure/i686/asm/x86.h>
 #include <kernel/interface/i686/asm/boot.h>
 #include <kernel/interface/i686/asm/bootinfo.h>

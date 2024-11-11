@@ -30,8 +30,8 @@
  */
 
 #include <kernel/domain/alloc/vmalloc.h>
+#include <kernel/infrastructure/i686/pmap/vm_private.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
-#include <kernel/infrastructure/i686/vm_private.h>
 #include <assert.h>
 
 /* This file contains non-Physical Address Extension (PAE) memory management

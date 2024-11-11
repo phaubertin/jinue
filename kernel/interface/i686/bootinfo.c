@@ -30,7 +30,7 @@
  */
 
 #include <kernel/domain/services/panic.h>
-#include <kernel/infrastructure/i686/vm.h>
+#include <kernel/infrastructure/i686/pmap/vm.h>
 #include <kernel/interface/i686/boot.h>
 #include <stddef.h>
 

@@ -37,12 +37,11 @@
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/services/panic.h>
+#include <kernel/infrastructure/i686/pmap/vm.h>
+#include <kernel/infrastructure/i686/pmap/vm_private.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
 #include <kernel/infrastructure/i686/cpu_data.h>
 #include <kernel/infrastructure/i686/memory.h>
-#include <kernel/infrastructure/i686/vga.h>
-#include <kernel/infrastructure/i686/vm.h>
-#include <kernel/infrastructure/i686/vm_private.h>
 #include <kernel/infrastructure/i686/x86.h>
 #include <kernel/infrastructure/elf.h>
 #include <kernel/interface/i686/boot.h>

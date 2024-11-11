@@ -32,8 +32,8 @@
 #include <kernel/domain/alloc/page_alloc.h>
 #include <kernel/domain/alloc/vmalloc.h>
 #include <kernel/domain/services/panic.h>
+#include <kernel/infrastructure/i686/pmap/vm.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
-#include <kernel/infrastructure/i686/vm.h>
 #include <kernel/utils/utils.h>
 #include <stdbool.h>
 #include <string.h>

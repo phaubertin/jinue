@@ -29,14 +29,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_VM_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_VM_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_PMAP_VM_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_PMAP_VM_H
 
 /** This header file contains the interface exposed to the rest of the kernel's
  * i686-specific code of the low-level page table management functions defined
  * in vm.c and vm_pae.c located in kernel/infrastructure/i686/. */
 
-#include <kernel/infrastructure/i686/asm/vm.h>
+#include <kernel/infrastructure/i686/pmap/asm/vm.h>
 #include <kernel/infrastructure/i686/types.h>
 #include <kernel/interface/i686/asm/boot.h>
 #include <kernel/interface/i686/types.h>

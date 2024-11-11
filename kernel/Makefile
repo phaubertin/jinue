@@ -96,6 +96,12 @@ sources.kernel.c = \
 	domain/services/logging.c \
 	domain/services/panic.c \
 	domain/config.c \
+	infrastructure/i686/drivers/vga.c \
+	infrastructure/i686/drivers/pic8259.c \
+	infrastructure/i686/drivers/uart16550a.c \
+	infrastructure/i686/pmap/vm.c \
+	infrastructure/i686/pmap/vm_pae.c \
+	infrastructure/i686/pmap/vm_x86.c \
 	infrastructure/i686/auxv.c \
 	infrastructure/i686/boot_alloc.c \
 	infrastructure/i686/cmdline.c \
@@ -105,14 +111,8 @@ sources.kernel.c = \
 	infrastructure/i686/halt.c \
 	infrastructure/i686/init.c \
 	infrastructure/i686/memory.c \
-	infrastructure/i686/pic8259.c \
 	infrastructure/i686/process.c \
 	infrastructure/i686/thread.c \
-	infrastructure/i686/uart16550a.c \
-	infrastructure/i686/vga.c \
-	infrastructure/i686/vm.c \
-	infrastructure/i686/vm_pae.c \
-	infrastructure/i686/vm_x86.c \
 	infrastructure/elf.c \
 	interface/i686/bootinfo.c \
 	interface/i686/interrupt.c \

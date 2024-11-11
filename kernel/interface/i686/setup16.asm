@@ -28,8 +28,8 @@
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <kernel/domain/services/asm/cmdline.h>
+#include <kernel/infrastructure/i686/drivers/asm/pic8259.h>
 #include <kernel/infrastructure/i686/asm/descriptors.h>
-#include <kernel/infrastructure/i686/asm/pic8259.h>
 #include <kernel/interface/i686/asm/boot.h>
 #include <kernel/interface/i686/asm/e820.h>
 

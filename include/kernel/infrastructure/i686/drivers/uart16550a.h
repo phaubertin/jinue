@@ -29,17 +29,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_PIC8259_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_PIC8259_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_DRIVERS_UART16550A_H_
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_DRIVERS_UART16550A_H_
 
-#include <kernel/infrastructure/i686/asm/pic8259.h>
+#include <kernel/types.h>
 
-void pic8259_init();
-
-void pic8259_mask(int irq);
-
-void pic8259_unmask(int irq);
-
-void pic8259_ack(int irq);
+void init_uart16550a(const config_t *config);
 
 #endif

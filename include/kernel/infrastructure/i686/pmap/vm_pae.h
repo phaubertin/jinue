@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_VM_PAE_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_VM_PAE_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_PMAP_VM_PAE_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_PMAP_VM_PAE_H
 
 /** This header file contains declarations for the PAE functions defined in
  * kernel/infrastructure/i686/vm_pae.c. It is intended to be included by vm.c

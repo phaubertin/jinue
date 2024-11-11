@@ -5,18 +5,18 @@
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,14 +29,37 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_VGA_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_VGA_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_PMAP_VM_X86_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_PMAP_VM_X86_H
 
-#include <kernel/infrastructure/i686/asm/vga.h>
-#include <kernel/types.h>
+/** This header file contains declarations for the non-PAE functions defined in
+ * kernel/infrastructure/i686/vm_x86.c. It is intended to be included by vm.c
+ * and vm_x86.c. There should be no reason to include it anywhere else. */
 
-void vga_init(const config_t *config);
+#include <kernel/infrastructure/i686/types.h>
 
-void vga_set_base_addr(void *base_addr);
+void vm_x86_create_initial_addr_space(addr_space_t *addr_space, pte_t *page_directory);
+
+void vm_x86_create_addr_space(addr_space_t *addr_space, pte_t *page_directory);
+
+void vm_x86_destroy_addr_space(addr_space_t *addr_space);
+
+unsigned int vm_x86_page_table_offset_of(void *addr);
+
+unsigned int vm_x86_page_directory_offset_of(void *addr);
+
+pte_t *vm_x86_lookup_page_directory(addr_space_t *addr_space);
+
+pte_t *vm_x86_get_pte_with_offset(pte_t *pte, unsigned int offset);
+
+void vm_x86_set_pte(pte_t *pte, uint32_t paddr, uint64_t flags);
+
+void vm_x86_set_pte_flags(pte_t *pte, uint64_t flags);
+
+uint32_t vm_x86_get_pte_paddr(const pte_t *pte);
+
+void vm_x86_clear_pte(pte_t *pte);
+
+void vm_x86_copy_pte(pte_t *dest, const pte_t *src);
 
 #endif

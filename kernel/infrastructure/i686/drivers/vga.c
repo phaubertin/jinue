@@ -31,9 +31,9 @@
 
 #include <jinue/shared/asm/logging.h>
 #include <kernel/domain/services/logging.h>
+#include <kernel/infrastructure/i686/drivers/vga.h>
+#include <kernel/infrastructure/i686/pmap/vm.h>
 #include <kernel/infrastructure/i686/io.h>
-#include <kernel/infrastructure/i686/vga.h>
-#include <kernel/infrastructure/i686/vm.h>
 #include <kernel/utils/asm/ascii.h>
 #include <kernel/utils/vm.h>
 

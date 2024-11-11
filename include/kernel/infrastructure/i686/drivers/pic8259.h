@@ -29,37 +29,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_VM_X86_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_VM_X86_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_DRIVERS_PIC8259_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_DRIVERS_PIC8259_H
 
-/** This header file contains declarations for the non-PAE functions defined in
- * kernel/infrastructure/i686/vm_x86.c. It is intended to be included by vm.c
- * and vm_x86.c. There should be no reason to include it anywhere else. */
+#include <kernel/infrastructure/i686/drivers/asm/pic8259.h>
 
-#include <kernel/infrastructure/i686/types.h>
+void pic8259_init();
 
-void vm_x86_create_initial_addr_space(addr_space_t *addr_space, pte_t *page_directory);
+void pic8259_mask(int irq);
 
-void vm_x86_create_addr_space(addr_space_t *addr_space, pte_t *page_directory);
+void pic8259_unmask(int irq);
 
-void vm_x86_destroy_addr_space(addr_space_t *addr_space);
-
-unsigned int vm_x86_page_table_offset_of(void *addr);
-
-unsigned int vm_x86_page_directory_offset_of(void *addr);
-
-pte_t *vm_x86_lookup_page_directory(addr_space_t *addr_space);
-
-pte_t *vm_x86_get_pte_with_offset(pte_t *pte, unsigned int offset);
-
-void vm_x86_set_pte(pte_t *pte, uint32_t paddr, uint64_t flags);
-
-void vm_x86_set_pte_flags(pte_t *pte, uint64_t flags);
-
-uint32_t vm_x86_get_pte_paddr(const pte_t *pte);
-
-void vm_x86_clear_pte(pte_t *pte);
-
-void vm_x86_copy_pte(pte_t *dest, const pte_t *src);
+void pic8259_ack(int irq);
 
 #endif
