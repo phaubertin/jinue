@@ -32,8 +32,8 @@
 #ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_PMAP_INIT_H
 #define JINUE_KERNEL_INFRASTRUCTURE_I686_PMAP_INIT_H
 
-/** This header file contains private definitions shared by vm.c, vm_pae.c
- * and vm_x86.c in kernel/infrastructure/i686/pmap/. There should be no reason
+/** This header file contains private definitions shared by pmap.c, pae.c
+ * and nopae.c in kernel/infrastructure/i686/pmap/. There should be no reason
  * to include it anywhere else. */
 
 #include <kernel/infrastructure/i686/types.h>

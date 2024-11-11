@@ -32,7 +32,7 @@
 #include <jinue/shared/asm/errno.h>
 #include <kernel/domain/services/logging.h>
 #include <kernel/domain/services/panic.h>
-#include <kernel/infrastructure/i686/pmap/vm.h>
+#include <kernel/infrastructure/i686/pmap/pmap.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
 #include <kernel/infrastructure/i686/memory.h>
 #include <kernel/interface/i686/asm/e820.h>

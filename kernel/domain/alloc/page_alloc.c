@@ -33,7 +33,7 @@
 #include <kernel/domain/alloc/page_alloc.h>
 #include <kernel/domain/alloc/vmalloc.h>
 #include <kernel/machine/asm/machine.h>
-#include <kernel/machine/vm.h>
+#include <kernel/machine/pmap.h>
 #include <string.h>
 
 

@@ -40,9 +40,9 @@
 #include <kernel/infrastructure/elf.h>
 #include <kernel/machine/asm/machine.h>
 #include <kernel/machine/auxv.h>
-#include <kernel/machine/vm.h>
+#include <kernel/machine/pmap.h>
 #include <kernel/utils/utils.h>
-#include <kernel/utils/vm.h>
+#include <kernel/utils/pmap.h>
 #include <assert.h>
 #include <string.h>
 

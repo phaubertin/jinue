@@ -29,24 +29,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_IO_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_IO_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_ISA_ABI_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_ISA_ABI_H
 
-#include <stdint.h>
+#include <kernel/infrastructure/i686/types.h>
 
-uint8_t  inb(uint16_t port);
+addr_t get_fpointer(void);
 
-uint16_t inw(uint16_t port);
+addr_t get_caller_fpointer(addr_t fptr);
 
-uint32_t inl(uint16_t port);
+addr_t get_ret_addr(addr_t fptr);
 
-void outb(uint16_t port, uint8_t  value);
-
-void outw(uint16_t port, uint16_t value);
-
-void outl(uint16_t port, uint32_t value);
-
-void iodelay(void);
+addr_t get_program_counter(void);
 
 #endif
-

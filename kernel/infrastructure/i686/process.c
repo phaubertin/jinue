@@ -29,18 +29,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/infrastructure/i686/pmap/vm.h>
+#include <kernel/infrastructure/i686/pmap/pmap.h>
 #include <kernel/infrastructure/i686/cpu_data.h>
 #include <kernel/machine/process.h>
 
 void machine_switch_to_process(process_t *process) {
-    vm_switch_addr_space(&process->addr_space);
+    pmap_switch_addr_space(&process->addr_space);
 }
 
 bool machine_init_process(process_t *process) {
-    return vm_create_addr_space(&process->addr_space);
+    return pmap_create_addr_space(&process->addr_space);
 }
 
 void machine_finalize_process(process_t *process) {
-    vm_destroy_addr_space(&process->addr_space);
+    pmap_destroy_addr_space(&process->addr_space);
 }

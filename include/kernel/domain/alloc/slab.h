@@ -33,7 +33,7 @@
 #define JINUE_KERNEL_DOMAIN_SLAB_H
 
 #include <kernel/machine/asm/machine.h>
-#include <kernel/utils/vm.h>
+#include <kernel/utils/pmap.h>
 #include <kernel/types.h>
 
 #define SLAB_SIZE                   PAGE_SIZE

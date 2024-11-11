@@ -34,7 +34,7 @@
 #include <kernel/domain/alloc/vmalloc.h>
 #include <kernel/domain/services/panic.h>
 #include <kernel/infrastructure/i686/pmap/init.h>
-#include <kernel/infrastructure/i686/pmap/vm_private.h>
+#include <kernel/infrastructure/i686/pmap/private.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
 #include <kernel/infrastructure/i686/cpu.h>
 #include <kernel/infrastructure/i686/memory.h>
@@ -45,8 +45,8 @@
 #include <string.h>
 
 /* This file contains Physical Address Extension (PAE) memory management code.
- * Non-PAE code is located in vm_x86.c. Virtual memory management code
- * independent of PAE is located in vm.c. */
+ * Non-PAE code is located in nopae.c. Virtual memory management code
+ * independent of PAE is located in pmap.c. */
 
 /** number of address bits that encode the PDPT offset */
 #define PDPT_BITS               2
@@ -55,7 +55,7 @@
 #define PDPT_ENTRIES            (1 << PDPT_BITS)
 
 /** number of entries in a page directory or page table */
-#define PAGE_TABLE_ENTRIES      VM_PAE_PAGE_TABLE_PTES
+#define PAGE_TABLE_ENTRIES      PAE_PAGE_TABLE_PTES
 
 
 struct pte_t {
@@ -82,7 +82,7 @@ static inline unsigned int pdpt_offset_of(void *addr) {
 
 static void clear_pdpt(pdpt_t *pdpt) {
     for(int idx = 0; idx < PDPT_ENTRIES; ++idx) {
-        vm_pae_clear_pte(&pdpt->pd[idx]);
+        pae_clear_pte(&pdpt->pd[idx]);
     }
 }
 
@@ -93,7 +93,7 @@ static void clear_pdpt(pdpt_t *pdpt) {
  *
  * */
 static void initialize_boot_mapping_at_1mb(pte_t *page_table_1mb) {
-    vm_initialize_page_table_linear(
+    initialize_page_table_linear(
             page_table_1mb,
             0,
             X86_PTE_READ_WRITE,
@@ -114,14 +114,14 @@ static void initialize_boot_mapping_at_16mb(
     size_t image_pages = image_size / PAGE_SIZE;
 
     /* map kernel image read only */
-    pte_t *next_pte = vm_initialize_page_table_linear(
+    pte_t *next_pte = initialize_page_table_linear(
             page_table_16mb,
             MEMORY_ADDR_16MB,
             0,
             image_pages);
 
     /* map remaining of region read/write */
-    vm_initialize_page_table_linear(
+    initialize_page_table_linear(
             next_pte,
             MEMORY_ADDR_16MB + image_size,
             X86_PTE_READ_WRITE,
@@ -145,7 +145,7 @@ static void initialize_boot_mapping_at_klimit(
     size_t image_pages = image_size / PAGE_SIZE;
 
     /* map kernel image read only */
-    pte_t *next_pte_after_image = vm_initialize_page_table_linear(
+    pte_t *next_pte_after_image = initialize_page_table_linear(
             page_table_klimit,
             MEMORY_ADDR_16MB,
             0,
@@ -154,14 +154,14 @@ static void initialize_boot_mapping_at_klimit(
     /* map kernel data segment */
     size_t offset = ((uintptr_t)bootinfo->data_start - KLIMIT) / PAGE_SIZE;
 
-    vm_initialize_page_table_linear(
-            vm_pae_get_pte_with_offset(page_table_klimit, offset),
+    initialize_page_table_linear(
+            pae_get_pte_with_offset(page_table_klimit, offset),
             bootinfo->data_physaddr + MEMORY_ADDR_16MB - MEMORY_ADDR_1MB,
             X86_PTE_READ_WRITE,
             bootinfo->data_size / PAGE_SIZE);
 
     /* map rest of region read/write */
-    vm_initialize_page_table_linear(
+    initialize_page_table_linear(
             next_pte_after_image,
             MEMORY_ADDR_16MB + image_size,
             X86_PTE_READ_WRITE,
@@ -181,15 +181,15 @@ static void initialize_boot_low_page_directory(
         const pte_t     *page_table_1mb,
         const pte_t     *page_table_16mb) {
 
-    vm_pae_set_pte(
+    pae_set_pte(
             low_page_directory,
             (uintptr_t)page_table_1mb,
             X86_PTE_READ_WRITE | X86_PTE_PRESENT);
 
-    vm_initialize_page_table_linear(
-            vm_pae_get_pte_with_offset(
+    initialize_page_table_linear(
+            pae_get_pte_with_offset(
                     low_page_directory,
-                    vm_pae_page_directory_offset_of((addr_t)MEMORY_ADDR_16MB)),
+                    pae_page_directory_offset_of((addr_t)MEMORY_ADDR_16MB)),
             (uintptr_t)page_table_16mb,
             X86_PTE_READ_WRITE,
             BOOT_PTES_AT_16MB / PAGE_TABLE_ENTRIES);
@@ -206,10 +206,10 @@ static void initialize_boot_page_directory_klimit(
         pte_t           *page_directory_klimit,
         const pte_t     *page_table_klimit) {
 
-    vm_pae_set_pte(
-            vm_pae_get_pte_with_offset(
+    pae_set_pte(
+            pae_get_pte_with_offset(
                     page_directory_klimit,
-                    vm_pae_page_directory_offset_of((addr_t)KLIMIT)),
+                    pae_page_directory_offset_of((addr_t)KLIMIT)),
             (uintptr_t)page_table_klimit,
             X86_PTE_READ_WRITE | X86_PTE_PRESENT);
 }
@@ -227,12 +227,12 @@ static void initialize_boot_pdpt(
         const pte_t     *low_page_directory,
         const pte_t     *page_directory_klimit) {
 
-    vm_pae_set_pte(
+    pae_set_pte(
             &pdpt->pd[0],
             (uintptr_t)low_page_directory,
             X86_PTE_PRESENT);
 
-    vm_pae_set_pte(
+    pae_set_pte(
             &pdpt->pd[pdpt_offset_of((addr_t)KLIMIT)],
             (uintptr_t)page_directory_klimit,
             X86_PTE_PRESENT);
@@ -317,9 +317,9 @@ static pdpt_t *initialize_boot_page_tables(
  * @param bootinfo boot information structure
  *
  * */
-void vm_pae_enable(boot_alloc_t *boot_alloc, const bootinfo_t *bootinfo) {
+void pae_enable(boot_alloc_t *boot_alloc, const bootinfo_t *bootinfo) {
     pgtable_format_pae      = true;
-    entries_per_page_table  = VM_PAE_PAGE_TABLE_PTES;
+    entries_per_page_table  = PAE_PAGE_TABLE_PTES;
     page_frame_number_mask  = ((UINT64_C(1) << cpu_info.maxphyaddr) - 1) & (~PAGE_MASK);
 
     pdpt_t *pdpt = initialize_boot_page_tables(boot_alloc, bootinfo);
@@ -332,7 +332,7 @@ void vm_pae_enable(boot_alloc_t *boot_alloc, const bootinfo_t *bootinfo) {
     wrmsr(MSR_EFER, msrval);
 }
 
-void vm_pae_create_initial_addr_space(
+void pae_create_initial_addr_space(
         addr_space_t    *address_space,
         pte_t           *page_directories,
         boot_alloc_t    *boot_alloc) {
@@ -341,7 +341,7 @@ void vm_pae_create_initial_addr_space(
     initial_pdpt = boot_heap_alloc(boot_alloc, pdpt_t, 32);
 
     int offset = pdpt_offset_of((void *)KLIMIT);
-    vm_initialize_page_table_linear(
+    initialize_page_table_linear(
             &initial_pdpt->pd[offset],
             (uintptr_t)page_directories,
             X86_PTE_PRESENT,
@@ -351,7 +351,7 @@ void vm_pae_create_initial_addr_space(
     address_space->cr3              = VIRT_TO_PHYS_AT_16MB(initial_pdpt);
 }
 
-bool vm_pae_create_addr_space(addr_space_t *addr_space, pte_t *first_page_directory) {
+bool pae_create_addr_space(addr_space_t *addr_space, pte_t *first_page_directory) {
     /* Create a PDPT for the new address space */
     pdpt_t *pdpt = slab_cache_alloc(&pdpt_cache);
 
@@ -363,13 +363,13 @@ bool vm_pae_create_addr_space(addr_space_t *addr_space, pte_t *first_page_direct
 
     unsigned int klimit_offset = pdpt_offset_of((void *)KLIMIT);
 
-    vm_pae_set_pte(
+    pae_set_pte(
             &pdpt->pd[klimit_offset],
             machine_lookup_kernel_paddr(first_page_directory),
             X86_PTE_PRESENT);
 
     for(int idx = klimit_offset + 1; idx < PDPT_ENTRIES; ++idx) {
-        vm_pae_copy_pte(&pdpt->pd[idx], &initial_pdpt->pd[idx]);
+        pae_copy_pte(&pdpt->pd[idx], &initial_pdpt->pd[idx]);
     }
 
     /* Lookup the physical address of the page where the PDPT resides. */
@@ -384,15 +384,15 @@ bool vm_pae_create_addr_space(addr_space_t *addr_space, pte_t *first_page_direct
     return true;
 }
 
-void vm_pae_destroy_addr_space(addr_space_t *addr_space) {
+void pae_destroy_addr_space(addr_space_t *addr_space) {
     pdpt_t *pdpt = addr_space->top_level.pdpt;
 
     for(unsigned int idx = 0; idx < pdpt_offset_of((void *)KLIMIT); ++idx) {
         pte_t *pdpte = &pdpt->pd[idx];
 
         if(pte_is_present(pdpte)) {
-            vm_destroy_page_directory(
-                    memory_lookup_page(vm_pae_get_pte_paddr(pdpte)),
+            destroy_page_directory(
+                    memory_lookup_page(pae_get_pte_paddr(pdpte)),
                     entries_per_page_table);
         }
     }
@@ -412,15 +412,15 @@ void vm_pae_destroy_addr_space(addr_space_t *addr_space) {
      *    entry for address KLIMIT is at some non-zero offset within this page
      *    directory. In this case, we must free the userspace page tables, but
      *    not the kernel page tables, and then free the page directory. */
-    unsigned int klimit_offset = vm_pae_page_directory_offset_of((void *)KLIMIT);
+    unsigned int klimit_offset = pae_page_directory_offset_of((void *)KLIMIT);
 
     if(klimit_offset > 0) {
         pte_t *pdpte = &pdpt->pd[pdpt_offset_of((void *)KLIMIT)];
 
         assert(pte_is_present(pdpte));
 
-        vm_destroy_page_directory(
-                memory_lookup_page(vm_pae_get_pte_paddr(pdpte)),
+        destroy_page_directory(
+                memory_lookup_page(pae_get_pte_paddr(pdpte)),
                 klimit_offset);
     }
 
@@ -434,7 +434,7 @@ void vm_pae_destroy_addr_space(addr_space_t *addr_space) {
  * @param addr address to look up
  * @param create_as_need Whether a page table is allocated if it does not exist
  */
-pte_t *vm_pae_lookup_page_directory(
+pte_t *pae_lookup_page_directory(
         addr_space_t    *addr_space,
         void            *addr,
         bool             create_as_needed,
@@ -450,7 +450,7 @@ pte_t *vm_pae_lookup_page_directory(
     pte_t  *pdpte   = &pdpt->pd[pdpt_offset_of(addr)];
     
     if(pte_is_present(pdpte)) {
-        return memory_lookup_page(vm_pae_get_pte_paddr(pdpte));
+        return memory_lookup_page(pae_get_pte_paddr(pdpte));
     }
 
     if(!create_as_needed) {
@@ -462,7 +462,7 @@ pte_t *vm_pae_lookup_page_directory(
     if(page_directory != NULL) {
         clear_page(page_directory);
 
-        vm_pae_set_pte(
+        pae_set_pte(
                 pdpte,
                 machine_lookup_kernel_paddr(page_directory),
                 X86_PTE_PRESENT);
@@ -483,7 +483,7 @@ pte_t *vm_pae_lookup_page_directory(
  * @return entry offset of address within page table
  *
  */
-unsigned int vm_pae_page_table_offset_of(void *addr) {
+unsigned int pae_page_table_offset_of(void *addr) {
     return PAGE_TABLE_OFFSET_OF(addr);
 }
 
@@ -494,7 +494,7 @@ unsigned int vm_pae_page_table_offset_of(void *addr) {
  * @return entry offset of address within page directory
  *
  */
-unsigned int vm_pae_page_directory_offset_of(void *addr) {
+unsigned int pae_page_directory_offset_of(void *addr) {
     return PAGE_DIRECTORY_OFFSET_OF(addr);
 }
 
@@ -506,7 +506,7 @@ unsigned int vm_pae_page_directory_offset_of(void *addr) {
  * @return PTE at specified offset
  *
  */
-pte_t *vm_pae_get_pte_with_offset(pte_t *pte, unsigned int offset) {
+pte_t *pae_get_pte_with_offset(pte_t *pte, unsigned int offset) {
     return &pte[offset];
 }
 
@@ -522,7 +522,7 @@ pte_t *vm_pae_get_pte_with_offset(pte_t *pte, unsigned int offset) {
  * @param flags flags
  *
  */
-void vm_pae_set_pte(pte_t *pte, uint64_t paddr, uint64_t flags) {
+void pae_set_pte(pte_t *pte, uint64_t paddr, uint64_t flags) {
     assert((paddr & ~page_frame_number_mask) == 0);
     pte->entry = paddr | flags;
 }
@@ -538,7 +538,7 @@ void vm_pae_set_pte(pte_t *pte, uint64_t paddr, uint64_t flags) {
  * @param pte flags flags
  *
  */
-void vm_pae_set_pte_flags(pte_t *pte, uint64_t flags) {
+void pae_set_pte_flags(pte_t *pte, uint64_t flags) {
     pte->entry = (pte->entry & page_frame_number_mask) | flags;
 }
 
@@ -549,7 +549,7 @@ void vm_pae_set_pte_flags(pte_t *pte, uint64_t flags) {
  * @return physical address
  *
  */
-uint64_t vm_pae_get_pte_paddr(const pte_t *pte) {
+uint64_t pae_get_pte_paddr(const pte_t *pte) {
     return (pte->entry & page_frame_number_mask);
 }
 
@@ -562,7 +562,7 @@ uint64_t vm_pae_get_pte_paddr(const pte_t *pte) {
  * @param pte page table or page directory entry
  *
  */
-void vm_pae_clear_pte(pte_t *pte) {
+void pae_clear_pte(pte_t *pte) {
     pte->entry = 0;
 }
 
@@ -573,11 +573,11 @@ void vm_pae_clear_pte(pte_t *pte) {
  * @param src source page table/directory entry
  *
  */
-void vm_pae_copy_pte(pte_t *dest, const pte_t *src) {
+void pae_copy_pte(pte_t *dest, const pte_t *src) {
     dest->entry = src->entry;
 }
 
-void vm_pae_create_pdpt_cache(void) {
+void pae_create_pdpt_cache(void) {
     slab_cache_init(
             &pdpt_cache,
             "pae_pdpt",

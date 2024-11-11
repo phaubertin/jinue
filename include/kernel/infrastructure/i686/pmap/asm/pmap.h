@@ -29,16 +29,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_PMAP_ASM_VM_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_PMAP_ASM_VM_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_PMAP_ASM_PMAP_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_PMAP_ASM_PMAP_H
 
 #include <kernel/infrastructure/i686/asm/x86.h>
 #include <kernel/machine/asm/machine.h>
 
 /** Number of entries per page table/directory, PAE disabled */
-#define VM_X86_PAGE_TABLE_PTES  1024
+#define NOPAE_PAGE_TABLE_PTES   1024
 
 /** Number of entries per page table/directory, PAE enabled */
-#define VM_PAE_PAGE_TABLE_PTES  512
+#define PAE_PAGE_TABLE_PTES     512
 
 #endif

@@ -36,7 +36,7 @@
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/thread.h>
 #include <kernel/domain/services/ipc.h>
-#include <kernel/utils/vm.h>
+#include <kernel/utils/pmap.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>

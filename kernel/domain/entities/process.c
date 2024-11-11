@@ -35,9 +35,9 @@
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/services/panic.h>
+#include <kernel/machine/pmap.h>
 #include <kernel/machine/process.h>
 #include <kernel/machine/thread.h>
-#include <kernel/machine/vm.h>
 #include <stddef.h>
 #include <string.h>
 

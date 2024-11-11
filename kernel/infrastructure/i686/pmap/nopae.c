@@ -30,37 +30,37 @@
  */
 
 #include <kernel/domain/alloc/vmalloc.h>
-#include <kernel/infrastructure/i686/pmap/vm_private.h>
+#include <kernel/infrastructure/i686/pmap/private.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
 #include <assert.h>
 
 /* This file contains non-Physical Address Extension (PAE) memory management
- * code. PAE code is located in vm_pae.c. Virtual memory management code
- * independent of PAE is located in vm.c. */
+ * code. PAE code is located in pae.c. Virtual memory management code
+ * independent of PAE is located in pmap.c. */
 
 /** number of entries in a page directory or page table */
-#define PAGE_TABLE_ENTRIES      VM_X86_PAGE_TABLE_PTES
+#define PAGE_TABLE_ENTRIES      NOPAE_PAGE_TABLE_PTES
 
 struct pte_t {
     uint32_t entry;
 };
 
-void vm_x86_create_initial_addr_space(addr_space_t *addr_space, pte_t *page_directory) {
+void nopae_create_initial_addr_space(addr_space_t *addr_space, pte_t *page_directory) {
     addr_space->top_level.pd = (pte_t *)PHYS_TO_VIRT_AT_16MB(page_directory);
     addr_space->cr3          = (uintptr_t)page_directory;
 }
 
-void vm_x86_create_addr_space(addr_space_t *addr_space, pte_t *page_directory) {
+void nopae_create_addr_space(addr_space_t *addr_space, pte_t *page_directory) {
     addr_space->top_level.pd = page_directory;
     addr_space->cr3          = machine_lookup_kernel_paddr(page_directory);
 }
 
-void vm_x86_destroy_addr_space(addr_space_t *addr_space) {
-    vm_destroy_page_directory(
+void nopae_destroy_addr_space(addr_space_t *addr_space) {
+    destroy_page_directory(
             addr_space->top_level.pd,
             /* Free page tables for addresses 0..KLIMIT, be careful not to free
              * the kernel page tables starting at KLIMIT. */
-            vm_x86_page_directory_offset_of((addr_t)KLIMIT));
+            nopae_page_directory_offset_of((addr_t)KLIMIT));
 }
 
 /**
@@ -70,7 +70,7 @@ void vm_x86_destroy_addr_space(addr_space_t *addr_space) {
  * @return entry offset of address within page table
  *
  */
-unsigned int vm_x86_page_table_offset_of(void *addr) {
+unsigned int nopae_page_table_offset_of(void *addr) {
     return PAGE_TABLE_OFFSET_OF(addr);
 }
 
@@ -81,7 +81,7 @@ unsigned int vm_x86_page_table_offset_of(void *addr) {
  * @return entry offset of address within page directory
  *
  */
-unsigned int vm_x86_page_directory_offset_of(void *addr) {
+unsigned int nopae_page_directory_offset_of(void *addr) {
     return PAGE_DIRECTORY_OFFSET_OF(addr);
 }
 
@@ -94,7 +94,7 @@ unsigned int vm_x86_page_directory_offset_of(void *addr) {
  *
  * @param addr_space address space in which the address is looked up.
  */
-pte_t *vm_x86_lookup_page_directory(addr_space_t *addr_space) {
+pte_t *nopae_lookup_page_directory(addr_space_t *addr_space) {
     return addr_space->top_level.pd;
 }
 
@@ -106,7 +106,7 @@ pte_t *vm_x86_lookup_page_directory(addr_space_t *addr_space) {
  * @return PTE at specified offset
  *
  */
-pte_t *vm_x86_get_pte_with_offset(pte_t *pte, unsigned int offset) {
+pte_t *nopae_get_pte_with_offset(pte_t *pte, unsigned int offset) {
     return &pte[offset];
 }
 
@@ -143,7 +143,7 @@ static uint32_t filter_pte_flags(uint64_t flags) {
  * @param flags flags
  *
  */
-void vm_x86_set_pte(pte_t *pte, uint32_t paddr, uint64_t flags) {
+void nopae_set_pte(pte_t *pte, uint32_t paddr, uint64_t flags) {
     assert((paddr & PAGE_MASK) == 0);
     pte->entry = paddr | filter_pte_flags(flags);
 }
@@ -159,7 +159,7 @@ void vm_x86_set_pte(pte_t *pte, uint32_t paddr, uint64_t flags) {
  * @param pte flags flags
  *
  */
-void vm_x86_set_pte_flags(pte_t *pte, uint64_t flags) {
+void nopae_set_pte_flags(pte_t *pte, uint64_t flags) {
     pte->entry = (pte->entry & ~PAGE_MASK) | filter_pte_flags(flags);
 }
 
@@ -170,7 +170,7 @@ void vm_x86_set_pte_flags(pte_t *pte, uint64_t flags) {
  * @return physical address
  *
  */
-uint32_t vm_x86_get_pte_paddr(const pte_t *pte) {
+uint32_t nopae_get_pte_paddr(const pte_t *pte) {
     return pte->entry & ~PAGE_MASK;
 }
 
@@ -183,7 +183,7 @@ uint32_t vm_x86_get_pte_paddr(const pte_t *pte) {
  * @param pte page table or page directory entry
  *
  */
-void vm_x86_clear_pte(pte_t *pte) {
+void nopae_clear_pte(pte_t *pte) {
     pte->entry = 0;
 }
 
@@ -194,6 +194,6 @@ void vm_x86_clear_pte(pte_t *pte) {
  * @param src source page table/directory entry
  *
  */
-void vm_x86_copy_pte(pte_t *dest, const pte_t *src) {
+void nopae_copy_pte(pte_t *dest, const pte_t *src) {
     dest->entry = src->entry;
 }

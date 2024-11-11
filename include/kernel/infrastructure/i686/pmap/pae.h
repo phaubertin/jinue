@@ -29,50 +29,50 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_PMAP_VM_PAE_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_PMAP_VM_PAE_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_PMAP_PAE_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_PMAP_PAE_H
 
 /** This header file contains declarations for the PAE functions defined in
- * kernel/infrastructure/i686/vm_pae.c. It is intended to be included by vm.c
- * and vm_pae.c. There should be no reason to include it anywhere else. */
+ * kernel/infrastructure/i686/pmap/pae.c. It is intended to be included by
+ * pmap.c and pae.c. There should be no reason to include it anywhere else. */
 
 #include <kernel/infrastructure/i686/types.h>
 #include <kernel/interface/i686/types.h>
 
-void vm_pae_enable(boot_alloc_t *boot_alloc, const bootinfo_t *bootinfo);
+void pae_enable(boot_alloc_t *boot_alloc, const bootinfo_t *bootinfo);
 
-void vm_pae_create_initial_addr_space(
+void pae_create_initial_addr_space(
         addr_space_t    *address_space,
         pte_t           *page_directories,
         boot_alloc_t    *boot_alloc);
 
-bool vm_pae_create_addr_space(addr_space_t *addr_space, pte_t *first_page_directory);
+bool pae_create_addr_space(addr_space_t *addr_space, pte_t *first_page_directory);
 
-void vm_pae_destroy_addr_space(addr_space_t *addr_space);
+void pae_destroy_addr_space(addr_space_t *addr_space);
 
-pte_t *vm_pae_lookup_page_directory(
+pte_t *pae_lookup_page_directory(
         addr_space_t    *addr_space,
         void            *addr,
         bool             create_as_needed,
         bool            *reload_cr3);
 
-unsigned int vm_pae_page_table_offset_of(void *addr);
+unsigned int pae_page_table_offset_of(void *addr);
 
-unsigned int vm_pae_page_directory_offset_of(void *addr);
+unsigned int pae_page_directory_offset_of(void *addr);
 
-pte_t *vm_pae_get_pte_with_offset(pte_t *pte, unsigned int offset);
+pte_t *pae_get_pte_with_offset(pte_t *pte, unsigned int offset);
 
-void vm_pae_set_pte(pte_t *pte, uint64_t paddr, uint64_t flags);
+void pae_set_pte(pte_t *pte, uint64_t paddr, uint64_t flags);
 
-void vm_pae_set_pte_flags(pte_t *pte, uint64_t flags);
+void pae_set_pte_flags(pte_t *pte, uint64_t flags);
 
-uint64_t vm_pae_get_pte_paddr(const pte_t *pte);
+uint64_t pae_get_pte_paddr(const pte_t *pte);
 
-void vm_pae_clear_pte(pte_t *pte);
+void pae_clear_pte(pte_t *pte);
 
-void vm_pae_copy_pte(pte_t *dest, const pte_t *src);
+void pae_copy_pte(pte_t *dest, const pte_t *src);
 
-void vm_pae_create_pdpt_cache(void);
+void pae_create_pdpt_cache(void);
 
 #endif
 

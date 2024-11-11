@@ -38,8 +38,8 @@
 #include <kernel/infrastructure/i686/drivers/uart16550a.h>
 #include <kernel/infrastructure/i686/drivers/vga.h>
 #include <kernel/infrastructure/i686/pmap/init.h>
-#include <kernel/infrastructure/i686/pmap/vm.h>
-#include <kernel/infrastructure/i686/pmap/vm_pae.h>
+#include <kernel/infrastructure/i686/pmap/pae.h>
+#include <kernel/infrastructure/i686/pmap/pmap.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
 #include <kernel/infrastructure/i686/cpu.h>
 #include <kernel/infrastructure/i686/cpu_data.h>
@@ -87,7 +87,7 @@ static void move_kernel_at_16mb(const bootinfo_t *bootinfo) {
             (addr_t)bootinfo->page_table_klimit,
             (uint32_t)bootinfo->page_directory);
 
-    vm_write_protect_kernel_image(bootinfo);
+    pmap_write_protect_kernel_image(bootinfo);
 }
 
 static bool maybe_enable_pae(
@@ -110,11 +110,11 @@ static bool maybe_enable_pae(
 
     if(! use_pae) {
         warning("Warning: Physical Address Extension (PAE) not enabled. NX protection disabled.");
-        vm_set_no_pae();
+        pmap_set_no_pae();
     }
     else {
         info("Enabling Physical Address Extension (PAE).");
-        vm_pae_enable(boot_alloc, bootinfo);
+        pae_enable(boot_alloc, bootinfo);
     }
 
     return use_pae;
@@ -191,7 +191,7 @@ static void remap_text_video_memory(boot_alloc_t *boot_alloc) {
     void *buffer = boot_page_alloc_n(boot_alloc, num_pages);
     void *mapped = (void *)PHYS_TO_VIRT_AT_16MB(buffer);
 
-    vm_boot_map(mapped, VGA_TEXT_VID_BASE, num_pages);
+    pmap_boot_map(mapped, VGA_TEXT_VID_BASE, num_pages);
 
     info("Remapping text video memory at %#p", mapped);
 
@@ -344,11 +344,7 @@ void machine_init(const config_t *config) {
     /* initialize per-CPU data */
     cpu_init_data(cpu_data);
     
-    /* Initialize interrupt descriptor table (IDT)
-     *
-     * This function modifies the IDT in-place (see trap.asm). This must be
-     * done before vm_boot_init() because the page protection bits set up by
-     * vm_boot_init() prevent this. */
+    /* Initialize interrupt descriptor table (IDT) */
     init_idt();
 
     /* load segment selectors */
@@ -360,18 +356,18 @@ void machine_init(const config_t *config) {
     exec_file_t kernel;
     get_kernel_exec_file(&kernel, bootinfo);
 
-    addr_space_t *addr_space = vm_create_initial_addr_space(&kernel, &boot_alloc, bootinfo);
+    addr_space_t *addr_space = pmap_create_initial_addr_space(&kernel, &boot_alloc, bootinfo);
 
     memory_initialize_array(&boot_alloc, bootinfo);
 
     /* After this, VGA output is not possible until we switch to the
-     * new address space (see the call to vm_switch_addr_space() below).
+     * new address space (see the call to pmap_switch_addr_space() below).
      * Attempting it will cause a kernel panic due to a page fault (and the
      * panic handler itself attempts to log). */
     remap_text_video_memory(&boot_alloc);
 
     /* switch to new address space */
-    vm_switch_addr_space(addr_space);
+    pmap_switch_addr_space(addr_space);
 
     enable_global_pages();
 
@@ -387,9 +383,9 @@ void machine_init(const config_t *config) {
      * because the slab allocator needs to allocate a slab to allocate the new
      * slab cache on the slab cache cache.
      *
-     * This must be done before the first time vm_create_addr_space() is called. */
+     * This must be done before the first time pmap_create_addr_space() is called. */
     if(pae_enabled) {
-        vm_pae_create_pdpt_cache();
+        pae_create_pdpt_cache();
     }
 
     /* choose a system call implementation */

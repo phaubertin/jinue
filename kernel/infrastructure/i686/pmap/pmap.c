@@ -37,15 +37,15 @@
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/services/panic.h>
-#include <kernel/infrastructure/i686/pmap/vm.h>
-#include <kernel/infrastructure/i686/pmap/vm_private.h>
+#include <kernel/infrastructure/i686/pmap/pmap.h>
+#include <kernel/infrastructure/i686/pmap/private.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
 #include <kernel/infrastructure/i686/cpu_data.h>
 #include <kernel/infrastructure/i686/memory.h>
 #include <kernel/infrastructure/i686/x86.h>
 #include <kernel/infrastructure/elf.h>
 #include <kernel/interface/i686/boot.h>
-#include <kernel/machine/vm.h>
+#include <kernel/machine/pmap.h>
 #include <kernel/utils/utils.h>
 #include <sys/elf.h>
 #include <assert.h>
@@ -54,8 +54,8 @@
 #include <string.h>
 
 /* This file contains memory management code that is independent of whether
- * Physical Address Extension (PAE) is enabled or not. The PAE code is in the
- * vm_pae.c file. Non-PAE code is in the vm_x86.c file.
+ * Physical Address Extension (PAE) is enabled or not. The PAE code is in
+ * pae.c. Non-PAE code is in nopae.c.
  *
  * Type "pte_t *" is a pointer on a page table or page directory entry. Such
  * pointers might point to a 32-bit (non-PAE) entry or a 64-bit (PAE) entry and,
@@ -97,10 +97,10 @@ static addr_space_t initial_addr_space;
  */
 static pte_t *get_pte_with_offset(pte_t *pte, unsigned int offset) {
     if(pgtable_format_pae) {
-        return vm_pae_get_pte_with_offset(pte, offset);
+        return pae_get_pte_with_offset(pte, offset);
     }
     else {
-        return vm_x86_get_pte_with_offset(pte, offset);
+        return nopae_get_pte_with_offset(pte, offset);
     }
 }
 
@@ -131,10 +131,10 @@ static inline const pte_t *get_pte_with_offset_const(
  */
 static unsigned int page_table_offset_of(void *addr) {
     if(pgtable_format_pae) {
-        return vm_pae_page_table_offset_of(addr);
+        return pae_page_table_offset_of(addr);
     }
     else {
-        return vm_x86_page_table_offset_of(addr);
+        return nopae_page_table_offset_of(addr);
     }
 }
 
@@ -147,10 +147,10 @@ static unsigned int page_table_offset_of(void *addr) {
  */
 static unsigned int page_directory_offset_of(void *addr) {
     if(pgtable_format_pae) {
-        return vm_pae_page_directory_offset_of(addr);
+        return pae_page_directory_offset_of(addr);
     }
     else {
-        return vm_x86_page_directory_offset_of(addr);
+        return nopae_page_directory_offset_of(addr);
     }
 }
 
@@ -167,10 +167,10 @@ static unsigned int page_directory_offset_of(void *addr) {
  */
 static void set_pte_flags(pte_t *pte, uint64_t flags) {
     if(pgtable_format_pae) {
-        vm_pae_set_pte_flags(pte, flags);
+        pae_set_pte_flags(pte, flags);
     }
     else {
-        vm_x86_set_pte_flags(pte, flags);
+        nopae_set_pte_flags(pte, flags);
     }
 }
 
@@ -183,10 +183,10 @@ static void set_pte_flags(pte_t *pte, uint64_t flags) {
  */
 static void copy_pte(pte_t *dest, const pte_t *src) {
     if(pgtable_format_pae) {
-        vm_pae_copy_pte(dest, src);
+        pae_copy_pte(dest, src);
     }
     else {
-        vm_x86_copy_pte(dest, src);
+        nopae_copy_pte(dest, src);
     }
 }
 
@@ -220,10 +220,10 @@ void copy_ptes(pte_t *dest, const pte_t *src, int n) {
  */
 static void set_pte(pte_t *pte, user_paddr_t paddr, uint64_t flags) {
     if(pgtable_format_pae) {
-        vm_pae_set_pte(pte, paddr, flags);
+        pae_set_pte(pte, paddr, flags);
     }
     else {
-        vm_x86_set_pte(pte, (uint32_t)paddr, flags);
+        nopae_set_pte(pte, (uint32_t)paddr, flags);
     }
 }
 
@@ -238,10 +238,10 @@ static void set_pte(pte_t *pte, user_paddr_t paddr, uint64_t flags) {
  */
 static void clear_pte(pte_t *pte) {
     if(pgtable_format_pae) {
-        vm_pae_clear_pte(pte);
+        pae_clear_pte(pte);
     }
     else {
-        vm_x86_clear_pte(pte);
+        nopae_clear_pte(pte);
     }
 }
 
@@ -270,10 +270,10 @@ void clear_ptes(pte_t *pte, int n) {
  */
 static user_paddr_t get_pte_paddr(const pte_t *pte) {
     if(pgtable_format_pae) {
-        return vm_pae_get_pte_paddr(pte);
+        return pae_get_pte_paddr(pte);
     }
     else {
-        return vm_x86_get_pte_paddr(pte);
+        return nopae_get_pte_paddr(pte);
     }
 }
 
@@ -281,12 +281,12 @@ static user_paddr_t get_pte_paddr(const pte_t *pte) {
  * Initialize virtual memory management to not use PAE
  *
  * During initialization, the kernel either calls this function or calls
- * vm_pae_enable() to enable PAE.
+ * pae_enable() to enable PAE.
  *
  */
-void vm_set_no_pae(void) {
+void pmap_set_no_pae(void) {
     pgtable_format_pae      = false;
-    entries_per_page_table  = VM_X86_PAGE_TABLE_PTES;
+    entries_per_page_table  = NOPAE_PAGE_TABLE_PTES;
 }
 
 /**
@@ -299,7 +299,7 @@ void vm_set_no_pae(void) {
  * @return first page table entry after affected ones
  *
  */
-pte_t *vm_initialize_page_table_linear(
+pte_t *initialize_page_table_linear(
         pte_t       *page_table,
         uint64_t     start_paddr,
         uint64_t     flags,
@@ -329,7 +329,7 @@ pte_t *vm_initialize_page_table_linear(
  * @param bootinfo boot information structure
  *
  */
-void vm_write_protect_kernel_image(const bootinfo_t *bootinfo) {
+void pmap_write_protect_kernel_image(const bootinfo_t *bootinfo) {
     size_t image_size = (char *)bootinfo->image_top - (char *)bootinfo->image_start;
     size_t image_pages = image_size / PAGE_SIZE;
 
@@ -351,14 +351,14 @@ static void initialize_initial_page_tables(
     size_t image_pages = image_size / PAGE_SIZE;
 
     /* map kernel image read only, not executable */
-    pte_t *next_pte_after_image = vm_initialize_page_table_linear(
+    pte_t *next_pte_after_image = initialize_page_table_linear(
             page_tables,
             MEMORY_ADDR_16MB,
             X86_PTE_GLOBAL | X86_PTE_NX,
             image_pages);
 
     /* map rest of region read/write */
-    vm_initialize_page_table_linear(
+    initialize_page_table_linear(
             next_pte_after_image,
             MEMORY_ADDR_16MB + image_size,
             X86_PTE_GLOBAL | X86_PTE_READ_WRITE | X86_PTE_NX,
@@ -375,7 +375,7 @@ static void initialize_initial_page_tables(
     size_t code_size        = phdr->p_memsz + OFFSET_OF_PTR(phdr->p_vaddr, PAGE_SIZE);
     size_t code_offset      = (code_vaddr - KLIMIT) / PAGE_SIZE;
 
-    vm_initialize_page_table_linear(
+    initialize_page_table_linear(
             get_pte_with_offset(page_tables, code_offset),
             code_vaddr + MEMORY_ADDR_16MB - KLIMIT,
             X86_PTE_GLOBAL,
@@ -384,7 +384,7 @@ static void initialize_initial_page_tables(
     /* map kernel data segment */
     size_t data_offset = ((uintptr_t)bootinfo->data_start - KLIMIT) / PAGE_SIZE;
 
-    vm_initialize_page_table_linear(
+    initialize_page_table_linear(
             get_pte_with_offset(page_tables, data_offset),
             bootinfo->data_physaddr + MEMORY_ADDR_16MB - MEMORY_ADDR_1MB,
             X86_PTE_GLOBAL | X86_PTE_READ_WRITE | X86_PTE_NX,
@@ -398,14 +398,14 @@ static void initialize_initial_page_directories(
 
     int offset = page_directory_offset_of((void *)KLIMIT);
 
-    vm_initialize_page_table_linear(
+    initialize_page_table_linear(
             get_pte_with_offset(page_directories, offset),
             (uintptr_t)page_tables,
             X86_PTE_READ_WRITE,
             num_page_tables);
 }
 
-addr_space_t *vm_create_initial_addr_space(
+addr_space_t *pmap_create_initial_addr_space(
         const exec_file_t   *kernel,
         boot_alloc_t        *boot_alloc,
         const bootinfo_t    *bootinfo) {
@@ -430,13 +430,13 @@ addr_space_t *vm_create_initial_addr_space(
     kernel_page_tables      = (pte_t *)PHYS_TO_VIRT_AT_16MB(page_tables);
 
     if(pgtable_format_pae) {
-        vm_pae_create_initial_addr_space(
+        pae_create_initial_addr_space(
                 &initial_addr_space,
                 page_directories,
                 boot_alloc);
     }
     else {
-        vm_x86_create_initial_addr_space(&initial_addr_space, page_directories);
+        nopae_create_initial_addr_space(&initial_addr_space, page_directories);
     }
 
     return &initial_addr_space;
@@ -446,14 +446,14 @@ static pte_t *clone_first_kernel_page_directory(void) {
     pte_t *pd_template;
 
     if(pgtable_format_pae) {
-        pd_template = vm_pae_lookup_page_directory(
+        pd_template = pae_lookup_page_directory(
                 &initial_addr_space,
                 (void *)KLIMIT,
                 false,
                 NULL);
     }
     else {
-        pd_template = vm_x86_lookup_page_directory(&initial_addr_space);
+        pd_template = nopae_lookup_page_directory(&initial_addr_space);
     }
 
     assert(pd_template != NULL);
@@ -490,7 +490,7 @@ static void free_first_kernel_page_directory(pte_t *page_directory) {
     }
 }
 
-bool vm_create_addr_space(addr_space_t *addr_space) {
+bool pmap_create_addr_space(addr_space_t *addr_space) {
     pte_t *page_directory = clone_first_kernel_page_directory();
 
     if(page_directory == NULL) {
@@ -498,11 +498,11 @@ bool vm_create_addr_space(addr_space_t *addr_space) {
     }
 
     if(!pgtable_format_pae) {
-        vm_x86_create_addr_space(addr_space, page_directory);
+        nopae_create_addr_space(addr_space, page_directory);
         return true;
     }
 
-    bool retval = vm_pae_create_addr_space(addr_space, page_directory);
+    bool retval = pae_create_addr_space(addr_space, page_directory);
 
     if(!retval) {
         free_first_kernel_page_directory(page_directory);
@@ -511,7 +511,7 @@ bool vm_create_addr_space(addr_space_t *addr_space) {
     return retval;
 }
 
-void vm_destroy_page_directory(void *page_directory, unsigned int last_index) {
+void destroy_page_directory(void *page_directory, unsigned int last_index) {
     for(unsigned int idx = 0; idx < last_index; ++idx) {
         pte_t *pte = get_pte_with_offset(page_directory, idx);
 
@@ -525,7 +525,7 @@ void vm_destroy_page_directory(void *page_directory, unsigned int last_index) {
     page_free(page_directory);
 }
 
-void vm_destroy_addr_space(addr_space_t *addr_space) {
+void pmap_destroy_addr_space(addr_space_t *addr_space) {
     /** ASSERTION: address space must not be NULL */
     assert(addr_space != NULL);
 
@@ -536,24 +536,24 @@ void vm_destroy_addr_space(addr_space_t *addr_space) {
     assert( addr_space != get_current_addr_space() );
 
     if(pgtable_format_pae) {
-        vm_pae_destroy_addr_space(addr_space);
+        pae_destroy_addr_space(addr_space);
     }
     else {
-        vm_x86_destroy_addr_space(addr_space);
+        nopae_destroy_addr_space(addr_space);
     }
 }
 
-void vm_switch_addr_space(addr_space_t *addr_space) {
+void pmap_switch_addr_space(addr_space_t *addr_space) {
     set_cr3(addr_space->cr3);
 
     cpu_data_t *cpu_data = get_cpu_local_data();
     cpu_data->current_addr_space = addr_space;
 }
 
-void vm_boot_map(void *addr, uint32_t paddr, int num_entries) {
+void pmap_boot_map(void *addr, uint32_t paddr, int num_entries) {
     int offset = (uintptr_t)((char *)addr - KLIMIT) / PAGE_SIZE;
 
-    vm_initialize_page_table_linear(
+    initialize_page_table_linear(
             get_pte_with_offset(
                     (pte_t *)PTR_TO_PHYS_ADDR_AT_16MB(kernel_page_tables),
                     offset),
@@ -562,7 +562,7 @@ void vm_boot_map(void *addr, uint32_t paddr, int num_entries) {
             num_entries);
 }
 
-static pte_t *vm_lookup_page_table(
+static pte_t *pmap_lookup_page_table(
         addr_space_t    *addr_space,
         void            *addr,
         bool             create_as_needed,
@@ -574,14 +574,14 @@ static pte_t *vm_lookup_page_table(
     assert(addr_space != NULL);
 
     if(pgtable_format_pae) {
-        page_directory = vm_pae_lookup_page_directory(
+        page_directory = pae_lookup_page_directory(
                 addr_space,
                 addr,
                 create_as_needed,
                 reload_cr3);
     }
     else {
-        page_directory = vm_x86_lookup_page_directory(addr_space);
+        page_directory = nopae_lookup_page_directory(addr_space);
     }
     
     if(page_directory == NULL) {
@@ -642,7 +642,7 @@ static pte_t *vm_lookup_page_table(
  * @return pointer to page table entry on success, NULL otherwise
  *
  * */
-static pte_t *vm_lookup_page_table_entry(
+static pte_t *lookup_page_table_entry(
         addr_space_t    *addr_space,
         void            *addr,
         bool             create_as_needed,
@@ -665,7 +665,7 @@ static pte_t *vm_lookup_page_table_entry(
                 page_number_of((uintptr_t)addr - KLIMIT));
     }
 
-    pte_t *page_table = vm_lookup_page_table(
+    pte_t *page_table = pmap_lookup_page_table(
             addr_space,
             addr,
             create_as_needed,
@@ -753,9 +753,9 @@ static uint64_t map_page_access_flags(int prot) {
 /**
  * Map a page frame (physical page) to a virtual memory page.
  *
- * This function is intended to be called by vm_map_userspace_page()) and
- * vm_map_kernel_page(). Either of these functions should be called elsewhere
- * instead of calling this function directly.
+ * This function is intended to be called by map_userspace_page()) and
+ * machine_map_kernel_page(). Either of these functions should be called
+ * elsewhere instead of calling this function directly.
  *
  * There is no need to specify an address space for kernel mappings since
  * kernel mappings are global.
@@ -766,11 +766,11 @@ static uint64_t map_page_access_flags(int prot) {
  * @param addr_space address space in which to map, NULL for kernel mappings
  * @param vaddr virtual address of mapping
  * @param paddr address of page frame
- * @param flags flags used for mapping (see VM_FLAG_x constants in vm.h)
+ * @param flags flags used for mapping (see X86_PTE_... constants)
  * @return true on success, false on page table allocation error
  *
  */
-static bool vm_map_page(
+static bool map_page(
         addr_space_t    *addr_space,
         void            *vaddr,
         user_paddr_t     paddr,
@@ -780,7 +780,7 @@ static bool vm_map_page(
     assert( page_offset_of(vaddr) == 0 );
     
     bool reload_cr3 = false;
-    pte_t *pte = vm_lookup_page_table_entry(addr_space, vaddr, true, &reload_cr3);
+    pte_t *pte = lookup_page_table_entry(addr_space, vaddr, true, &reload_cr3);
     
     /* kernel page tables are pre-allocated so this should always succeed for
      * kernel mappings. */
@@ -811,7 +811,7 @@ static bool vm_map_page(
  */
 void machine_map_kernel_page(void *vaddr, kern_paddr_t paddr, int prot) {
     assert(is_kernel_pointer(vaddr));
-    vm_map_page(NULL, vaddr, paddr, map_page_access_flags(prot) | X86_PTE_GLOBAL);
+    map_page(NULL, vaddr, paddr, map_page_access_flags(prot) | X86_PTE_GLOBAL);
 }
 
 /**
@@ -823,18 +823,18 @@ void machine_map_kernel_page(void *vaddr, kern_paddr_t paddr, int prot) {
  * @param addr_space address space in which to map
  * @param vaddr virtual address of mapping
  * @param paddr address of page frame
- * @param flags flags used for the mapping (see VM_FLAG_x constants in vm.h)
+ * @param prot protections flags
  * @return true on success, false on page table allocation error
  *
  */
-static bool vm_map_userspace_page(
+static bool map_userspace_page(
         addr_space_t    *addr_space,
         void            *vaddr,
         user_paddr_t     paddr,
         int              prot) {
 
     assert(is_userspace_pointer(vaddr));
-    return vm_map_page(addr_space, vaddr, paddr, map_page_access_flags(prot) | X86_PTE_USER);
+    return map_page(addr_space, vaddr, paddr, map_page_access_flags(prot) | X86_PTE_USER);
 }
 
 /**
@@ -864,7 +864,7 @@ bool machine_map_userspace(
     for(size_t idx = 0; idx < length / PAGE_SIZE; ++idx) {
         /* TODO We should be able to optimize by not looking up the page table
          * for each entry. */
-        if(!vm_map_userspace_page(addr_space, addr, paddr, prot)) {
+        if(!map_userspace_page(addr_space, addr, paddr, prot)) {
             return false;
         }
 
@@ -887,11 +887,11 @@ bool machine_map_userspace(
  * @param addr address of page to unmap
  *
  */
-static void vm_unmap_page(addr_space_t *addr_space, void *addr) {
+static void unmap_page(addr_space_t *addr_space, void *addr) {
     /** ASSERTION: addr is aligned on a page boundary */
     assert( page_offset_of(addr) == 0 );
     
-    pte_t *pte = vm_lookup_page_table_entry(addr_space, addr, false, NULL);
+    pte_t *pte = lookup_page_table_entry(addr_space, addr, false, NULL);
     
     if(pte != NULL) {
         clear_pte(pte);
@@ -912,7 +912,7 @@ static void vm_unmap_page(addr_space_t *addr_space, void *addr) {
  */
 void machine_unmap_kernel_page(void *addr) {
     assert(is_kernel_pointer(addr));
-    vm_unmap_page(NULL, addr);
+    unmap_page(NULL, addr);
 }
 
 /**
@@ -946,15 +946,15 @@ bool machine_clone_userspace_mapping(
     for(size_t idx = 0; idx < length / PAGE_SIZE; ++idx) {
         /* TODO We should be able to optimize by not looking up the page table
          * for each entry, both for source and destination. */
-        pte_t *src_pte = vm_lookup_page_table_entry(src_addr_space, src_addr, false, NULL);
+        pte_t *src_pte = lookup_page_table_entry(src_addr_space, src_addr, false, NULL);
 
         if(src_pte == NULL || !pte_is_present(src_pte)) {
-            vm_unmap_page(dest_addr_space, dest_addr);
+            unmap_page(dest_addr_space, dest_addr);
         }
         else {
             user_paddr_t paddr = get_pte_paddr(src_pte);
 
-            if(!vm_map_userspace_page(dest_addr_space, dest_addr, paddr, prot)) {
+            if(!map_userspace_page(dest_addr_space, dest_addr, paddr, prot)) {
                 return false;
             }
         }
@@ -976,7 +976,7 @@ bool machine_clone_userspace_mapping(
 kern_paddr_t machine_lookup_kernel_paddr(void *addr) {
     assert( is_kernel_pointer(addr) );
 
-    pte_t *pte = vm_lookup_page_table_entry(NULL, addr, false, NULL);
+    pte_t *pte = lookup_page_table_entry(NULL, addr, false, NULL);
 
     assert(pte != NULL && pte_is_present(pte));
 
@@ -984,5 +984,5 @@ kern_paddr_t machine_lookup_kernel_paddr(void *addr) {
 }
 
 void machine_switch_to_kernel_addr_space(void) {
-    vm_switch_addr_space(&initial_addr_space);
+    pmap_switch_addr_space(&initial_addr_space);
 }

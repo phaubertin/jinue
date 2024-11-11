@@ -29,21 +29,21 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_PMAP_VM_PRIVATE_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_PMAP_VM_PRIVATE_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_PMAP_PRIVATE_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_PMAP_PRIVATE_H
 
-#include <kernel/infrastructure/i686/pmap/vm.h>
-#include <kernel/infrastructure/i686/pmap/vm_pae.h>
-#include <kernel/infrastructure/i686/pmap/vm_x86.h>
+#include <kernel/infrastructure/i686/pmap/nopae.h>
+#include <kernel/infrastructure/i686/pmap/pae.h>
+#include <kernel/infrastructure/i686/pmap/pmap.h>
 #include <kernel/infrastructure/i686/types.h>
 #include <kernel/machine/asm/machine.h>
-#include <kernel/machine/vm.h>
-#include <kernel/utils/vm.h>
+#include <kernel/machine/pmap.h>
+#include <kernel/utils/pmap.h>
 #include <stdbool.h>
 #include <stdint.h>
 
-/** This header file contains private definitions shared by vm.c, vm_pae.c
- * and vm_x86.c in kernel/infrastructure/i686/pmap/. There should be no reason
+/** This header file contains private definitions shared by pmap.c, pae.c
+ * and nopae.c in kernel/infrastructure/i686/pmap/. There should be no reason
  * to include it anywhere else. */
 
 /** bit mask for page table or page directory offset */
@@ -61,17 +61,13 @@ extern size_t entries_per_page_table;
 
 extern bool pgtable_format_pae;
 
-pte_t *vm_initialize_page_table_linear(
+pte_t *initialize_page_table_linear(
         pte_t       *page_table,
         uint64_t     start_paddr,
         uint64_t     flags,
         int          num_entries);
 
-kern_paddr_t vm_clone_page_directory(
-        kern_paddr_t         template_paddr,
-        unsigned int         start_index);
-
-void vm_destroy_page_directory(void *page_directory, unsigned int last_index);
+void destroy_page_directory(void *page_directory, unsigned int last_index);
 
 /**
  * Whether the specified page table/directory entry maps a page present in memory

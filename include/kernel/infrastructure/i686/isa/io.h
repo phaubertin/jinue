@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2019 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,42 +29,24 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_UTILS_VM_H
-#define JINUE_KERNEL_UTILS_VM_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_ISA_IO_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_ISA_IO_H
 
-#include <kernel/machine/asm/machine.h>
-
-#include <stdbool.h>
 #include <stdint.h>
 
+uint8_t  inb(uint16_t port);
 
-/** byte offset in page of virtual (linear) address */
-#define page_offset_of(x)   ((uintptr_t)(x) & PAGE_MASK)
+uint16_t inw(uint16_t port);
 
-/** address of the page that contains a virtual (linear) address */
-#define page_address_of(x)  ((uintptr_t)(x) & ~PAGE_MASK)
+uint32_t inl(uint16_t port);
 
-/** sequential page number of virtual (linear) address */
-#define page_number_of(x)   ((uintptr_t)(x) >> PAGE_BITS)
+void outb(uint16_t port, uint8_t  value);
 
-/** Check whether a pointer points to kernel space */
-static inline bool is_kernel_pointer(const void *addr) {
-    return (uintptr_t)addr >= KLIMIT;
-}
+void outw(uint16_t port, uint16_t value);
 
-/** Check whether a pointer points to user space */
-static inline bool is_userspace_pointer(const void *addr) {
-    return (uintptr_t)addr < KLIMIT;
-}
+void outl(uint16_t port, uint32_t value);
 
-/** Maximum size of user buffer starting at specified address */
-static inline uintptr_t user_pointer_max_size(const void *addr) {
-    return (uintptr_t)KLIMIT - (uintptr_t)addr;
-}
-
-/** Check that a buffer is completely in user space */
-static inline bool check_userspace_buffer(const void *addr, uintptr_t size) {
-    return is_userspace_pointer(addr) && size <= user_pointer_max_size(addr);
-}
+void iodelay(void);
 
 #endif
+

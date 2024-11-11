@@ -99,9 +99,9 @@ sources.kernel.c = \
 	infrastructure/i686/drivers/vga.c \
 	infrastructure/i686/drivers/pic8259.c \
 	infrastructure/i686/drivers/uart16550a.c \
-	infrastructure/i686/pmap/vm.c \
-	infrastructure/i686/pmap/vm_pae.c \
-	infrastructure/i686/pmap/vm_x86.c \
+	infrastructure/i686/pmap/nopae.c \
+	infrastructure/i686/pmap/pmap.c \
+	infrastructure/i686/pmap/pae.c \
 	infrastructure/i686/auxv.c \
 	infrastructure/i686/boot_alloc.c \
 	infrastructure/i686/cmdline.c \
@@ -119,9 +119,9 @@ sources.kernel.c = \
 	interface/syscalls.c
 
 sources.kernel.nasm = \
+	infrastructure/i686/isa/abi.asm \
+	infrastructure/i686/isa/io.asm \
 	infrastructure/i686/pmap/init.asm \
-	infrastructure/i686/abi.asm \
-	infrastructure/i686/io.asm \
 	infrastructure/i686/thread_switch.asm \
 	infrastructure/i686/x86.asm \
 	interface/i686/crt.asm \

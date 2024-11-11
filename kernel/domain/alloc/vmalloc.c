@@ -31,7 +31,7 @@
 
 #include <kernel/domain/alloc/vmalloc.h>
 #include <kernel/domain/services/panic.h>
-#include <kernel/utils/vm.h>
+#include <kernel/utils/pmap.h>
 
 
 /**

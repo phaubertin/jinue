@@ -34,7 +34,7 @@
 #include <kernel/domain/entities/descriptor.h>
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/services/logging.h>
-#include <kernel/machine/vm.h>
+#include <kernel/machine/pmap.h>
 
 /**
  * Implementation for the MCLONE system call

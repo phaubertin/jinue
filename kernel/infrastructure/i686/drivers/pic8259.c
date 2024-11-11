@@ -30,7 +30,7 @@
  */
 
 #include <kernel/infrastructure/i686/drivers/pic8259.h>
-#include <kernel/infrastructure/i686/io.h>
+#include <kernel/infrastructure/i686/isa/io.h>
 #include <kernel/interface/i686/asm/irq.h>
 #include <stdbool.h>
 

@@ -32,10 +32,10 @@
 #include <jinue/shared/asm/logging.h>
 #include <kernel/domain/services/logging.h>
 #include <kernel/infrastructure/i686/drivers/vga.h>
-#include <kernel/infrastructure/i686/pmap/vm.h>
-#include <kernel/infrastructure/i686/io.h>
+#include <kernel/infrastructure/i686/isa/io.h>
+#include <kernel/infrastructure/i686/pmap/pmap.h>
 #include <kernel/utils/asm/ascii.h>
-#include <kernel/utils/vm.h>
+#include <kernel/utils/pmap.h>
 
 typedef unsigned int vga_pos_t;
 

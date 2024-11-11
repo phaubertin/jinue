@@ -29,18 +29,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_PMAP_VM_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_PMAP_VM_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_PMAP_PMAP_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_PMAP_PMAP_H
 
 /** This header file contains the interface exposed to the rest of the kernel's
  * i686-specific code of the low-level page table management functions defined
- * in vm.c and vm_pae.c located in kernel/infrastructure/i686/. */
+ * in pmap.c located in kernel/infrastructure/i686/pmap/. */
 
-#include <kernel/infrastructure/i686/pmap/asm/vm.h>
+#include <kernel/infrastructure/i686/pmap/asm/pmap.h>
 #include <kernel/infrastructure/i686/types.h>
 #include <kernel/interface/i686/asm/boot.h>
 #include <kernel/interface/i686/types.h>
-#include <kernel/utils/vm.h>
+#include <kernel/utils/pmap.h>
 
 /** convert physical to virtual address for kernel loaded at 0x100000 (1MB) */
 #define PHYS_TO_VIRT_AT_1MB(x)      (((uintptr_t)(x)) + BOOT_OFFSET_FROM_1MB)
@@ -62,30 +62,30 @@
 
 #define ADDR_4GB    UINT64_C(0x100000000)
 
-void vm_set_no_pae(void);
+void pmap_set_no_pae(void);
 
-void vm_write_protect_kernel_image(const bootinfo_t *bootinfo);
+void pmap_write_protect_kernel_image(const bootinfo_t *bootinfo);
 
-addr_space_t *vm_create_initial_addr_space(
+addr_space_t *pmap_create_initial_addr_space(
         const exec_file_t   *kernel,
         boot_alloc_t        *boot_alloc,
         const bootinfo_t    *bootinfo) ;
 
-bool vm_create_addr_space(addr_space_t *addr_space);
+bool pmap_create_addr_space(addr_space_t *addr_space);
 
-void vm_destroy_addr_space(addr_space_t *addr_space);
+void pmap_destroy_addr_space(addr_space_t *addr_space);
 
-void vm_switch_addr_space(addr_space_t *addr_space);
+void pmap_switch_addr_space(addr_space_t *addr_space);
 
-void vm_boot_map(void *addr, uint32_t paddr, int num_entries);
+void pmap_boot_map(void *addr, uint32_t paddr, int num_entries);
 
-void vm_map_kernel_page(void *vaddr, kern_paddr_t paddr, int flags);
+void pmap_map_kernel_page(void *vaddr, kern_paddr_t paddr, int flags);
 
-void vm_unmap_kernel_page(void *addr);
+void pmap_unmap_kernel_page(void *addr);
 
-void vm_unmap_userspace(addr_space_t *addr_space, void *addr);
+void pmap_unmap_userspace(addr_space_t *addr_space, void *addr);
 
-bool vm_clone_range(
+bool pmap_clone_range(
         addr_space_t    *dest_addr_space,
         addr_space_t    *src_addr_space,
         addr_t           dest_addr,
