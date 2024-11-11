@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Philippe Aubertin.
+ * Copyright (C) 2019 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,11 +29,19 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_REMAP_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_REMAP_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_PMAP_INIT_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_PMAP_INIT_H
+
+/** This header file contains private definitions shared by vm.c, vm_pae.c
+ * and vm_x86.c in kernel/infrastructure/i686/pmap/. There should be no reason
+ * to include it anywhere else. */
 
 #include <kernel/infrastructure/i686/types.h>
+#include <stdint.h>
 
 void move_and_remap_kernel(addr_t end_addr, addr_t pte, uint32_t cr3_value);
 
+void enable_pae(uint32_t cr3_value);
+
 #endif
+

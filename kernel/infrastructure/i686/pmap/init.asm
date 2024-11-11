@@ -1,4 +1,4 @@
-; Copyright (C) 2021 Philippe Aubertin.
+; Copyright (C) 2019-2024 Philippe Aubertin.
 ; All rights reserved.
 ;
 ; Redistribution and use in source and binary forms, with or without
@@ -29,6 +29,7 @@
 
 #include <kernel/infrastructure/i686/pmap/asm/vm.h>
 #include <kernel/infrastructure/i686/asm/memory.h>
+#include <kernel/interface/i686/asm/boot.h>
 
     bits 32
 
@@ -142,5 +143,39 @@ move_and_remap_kernel:
 
     pop edi
     pop esi
+    ret
+.end:
+
+; ------------------------------------------------------------------------------
+; FUNCTION: enable_pae
+; C PROTOTYPE: void enable_pae(uint32_t cr3_value)
+; ------------------------------------------------------------------------------
+    global enable_pae:function (enable_pae.end - enable_pae)
+enable_pae:
+    mov eax, [esp+ 4]   ; First argument: pdpt
+
+    ; Jump to low-address alias
+    jmp .just_here - BOOT_OFFSET_FROM_16MB
+.just_here:
+
+    ; Disable paging.
+    mov ecx, cr0
+    and ecx, ~X86_CR0_PG
+    mov cr0, ecx
+
+    ; Load CR3 with address of PDPT.
+    mov cr3, eax
+
+    ; Enable PAE.
+    mov eax, cr4
+    or eax, X86_CR4_PAE
+    mov cr4, eax
+
+    ; Re-enable paging (PG), prevent kernel from writing to read-only pages (WP).
+    or ecx, X86_CR0_PG | X86_CR0_WP
+    mov cr0, ecx
+
+    ; No need to jump back to high alias. The ret instruction will take care
+    ; of it because this is where the return address is.
     ret
 .end:

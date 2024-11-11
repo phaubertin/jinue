@@ -41,7 +41,7 @@ void check_memory(const bootinfo_t *bootinfo);
 
 void memory_initialize_array(
         boot_alloc_t        *boot_alloc,
-        const bootinfo_t   *bootinfo);
+        const bootinfo_t    *bootinfo);
 
 void *memory_lookup_page(uint64_t paddr);
 

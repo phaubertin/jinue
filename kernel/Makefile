@@ -119,9 +119,9 @@ sources.kernel.c = \
 	interface/syscalls.c
 
 sources.kernel.nasm = \
+	infrastructure/i686/pmap/init.asm \
 	infrastructure/i686/abi.asm \
 	infrastructure/i686/io.asm \
-	infrastructure/i686/remap.asm \
 	infrastructure/i686/thread_switch.asm \
 	infrastructure/i686/x86.asm \
 	interface/i686/crt.asm \

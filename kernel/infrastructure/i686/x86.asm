@@ -28,7 +28,6 @@
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <kernel/infrastructure/i686/asm/x86.h>
-#include <kernel/interface/i686/asm/boot.h>
 
     bits 32
 
@@ -40,7 +39,6 @@
 cli:
     cli
     ret
-
 .end:
 
 ; ------------------------------------------------------------------------------
@@ -51,7 +49,6 @@ cli:
 sti:
     sti
     ret
-
 .end:
 
 ; ------------------------------------------------------------------------------
@@ -62,7 +59,6 @@ sti:
 hlt:
     hlt
     ret
-
 .end:
 
 ; ------------------------------------------------------------------------------
@@ -74,7 +70,6 @@ invalidate_tlb:
     mov eax, [esp+4]    ; First param: vaddr
     invlpg [eax]
     ret
-
 .end:
 
 ; ------------------------------------------------------------------------------
@@ -88,7 +83,6 @@ lgdt:
                         ; padding for alignment
     lgdt [eax]
     ret
-
 .end:
 
 ; ------------------------------------------------------------------------------
@@ -102,7 +96,6 @@ lidt:
                         ; padding for alignment
     lidt [eax]
     ret
-
 .end:
 
 ; ------------------------------------------------------------------------------
@@ -114,7 +107,6 @@ ltr:
     mov eax, [esp+4]    ; First param: sel
     ltr ax
     ret
-
 .end:
 
 ; ------------------------------------------------------------------------------
@@ -148,7 +140,6 @@ cpuid:
     pop ebx
         
     ret
-
 .end:
 
 ; ------------------------------------------------------------------------------
@@ -159,7 +150,6 @@ cpuid:
 get_esp:
     mov eax, esp
     ret
-
 .end:
 
 ; ------------------------------------------------------------------------------
@@ -170,7 +160,6 @@ get_esp:
 get_cr0:
     mov eax, cr0
     ret
-
 .end:
 
 ; ------------------------------------------------------------------------------
@@ -181,7 +170,6 @@ get_cr0:
 get_cr2:
     mov eax, cr2
     ret
-
 .end:
 
 ; ------------------------------------------------------------------------------
@@ -192,7 +180,6 @@ get_cr2:
 get_cr3:
     mov eax, cr3
     ret
-
 .end:
 
 ; ------------------------------------------------------------------------------
@@ -203,7 +190,6 @@ get_cr3:
 get_cr4:
     mov eax, cr4
     ret
-
 .end:
 
 ; ------------------------------------------------------------------------------
@@ -218,7 +204,6 @@ set_cr0:
     jmp .do_ret         ; jump to flush the instruction queue
 .do_ret:
     ret
-
 .end:
 
 ; ------------------------------------------------------------------------------
@@ -230,7 +215,6 @@ set_cr3:
     mov eax, [esp+4]    ; First param: val
     mov cr3, eax
     ret
-
 .end:
 
 ; ------------------------------------------------------------------------------
@@ -242,7 +226,6 @@ set_cr4:
     mov eax, [esp+4]    ; First param: val
     mov cr4, eax
     ret
-
 .end:
 
 ; ------------------------------------------------------------------------------
@@ -254,7 +237,6 @@ get_eflags:
     pushfd
     pop eax
     ret
-
 .end:
 
 ; ------------------------------------------------------------------------------
@@ -267,7 +249,6 @@ set_eflags:
     push eax
     popfd
     ret
-
 .end:
 
 ; ------------------------------------------------------------------------------
@@ -293,7 +274,6 @@ set_ds:
     mov eax, [esp+4]    ; First param: val
     mov ds, eax
     ret
-
 .end:
 
 ; ------------------------------------------------------------------------------
@@ -305,7 +285,6 @@ set_es:
     mov eax, [esp+4]    ; First param: val
     mov es, eax
     ret
-
 .end:
 
 ; ------------------------------------------------------------------------------
@@ -317,7 +296,6 @@ set_fs:
     mov eax, [esp+4]    ; First param: val
     mov fs, eax
     ret
-
 .end:
 
 ; ------------------------------------------------------------------------------
@@ -329,7 +307,6 @@ set_gs:
     mov eax, [esp+4]    ; First param: val
     mov gs, eax
     ret
-
 .end:
 
 ; ------------------------------------------------------------------------------
@@ -341,7 +318,6 @@ set_ss:
     mov eax, [esp+4]    ; First param: val
     mov ss, eax
     ret
-
 .end:
 
 ; ------------------------------------------------------------------------------
@@ -354,7 +330,6 @@ rdmsr:
     
     rdmsr
     ret
-
 .end:
 
 ; ------------------------------------------------------------------------------
@@ -369,7 +344,6 @@ wrmsr:
     
     wrmsr
     ret
-
 .end:
 
 ; ------------------------------------------------------------------------------
@@ -381,7 +355,6 @@ get_gs_ptr:
     mov ecx, [esp+ 4]   ; First param:  ptr
     mov eax, [gs:ecx]
     ret
-
 .end:
 
 ; ------------------------------------------------------------------------------
@@ -392,40 +365,4 @@ get_gs_ptr:
 rdtsc:
     rdtsc
     ret
-
-.end:
-
-; ------------------------------------------------------------------------------
-; FUNCTION: x86_enable_pae
-; C PROTOTYPE: void x86_enable_pae(uint32_t cr3_value)
-; ------------------------------------------------------------------------------
-    global x86_enable_pae:function (x86_enable_pae.end - x86_enable_pae)
-x86_enable_pae:
-    mov eax, [esp+ 4]   ; First argument: pdpt
-
-    ; Jump to low-address alias
-    jmp .just_here - BOOT_OFFSET_FROM_16MB
-.just_here:
-
-    ; Disable paging.
-    mov ecx, cr0
-    and ecx, ~X86_CR0_PG
-    mov cr0, ecx
-
-    ; Load CR3 with address of PDPT.
-    mov cr3, eax
-
-    ; Enable PAE.
-    mov eax, cr4
-    or eax, X86_CR4_PAE
-    mov cr4, eax
-
-    ; Re-enable paging (PG), prevent kernel from writing to read-only pages (WP).
-    or ecx, X86_CR0_PG | X86_CR0_WP
-    mov cr0, ecx
-
-    ; No need to jump back to high alias. The ret instruction will take care
-    ; of it because this is where the return address is.
-    ret
-
 .end:

@@ -113,5 +113,4 @@ thread_context_switch_stack:
 
 .skip_destroy:
     ret
-
 .end:

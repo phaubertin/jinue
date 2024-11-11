@@ -34,7 +34,6 @@
 
 #include <kernel/infrastructure/i686/types.h>
 
-
 addr_t get_fpointer(void);
 
 addr_t get_caller_fpointer(addr_t fptr);

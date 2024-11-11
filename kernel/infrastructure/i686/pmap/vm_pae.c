@@ -33,6 +33,7 @@
 #include <kernel/domain/alloc/slab.h>
 #include <kernel/domain/alloc/vmalloc.h>
 #include <kernel/domain/services/panic.h>
+#include <kernel/infrastructure/i686/pmap/init.h>
 #include <kernel/infrastructure/i686/pmap/vm_private.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
 #include <kernel/infrastructure/i686/cpu.h>
@@ -323,7 +324,7 @@ void vm_pae_enable(boot_alloc_t *boot_alloc, const bootinfo_t *bootinfo) {
 
     pdpt_t *pdpt = initialize_boot_page_tables(boot_alloc, bootinfo);
 
-    x86_enable_pae(PTR_TO_PHYS_ADDR_AT_16MB(pdpt));
+    enable_pae(PTR_TO_PHYS_ADDR_AT_16MB(pdpt));
 
     /* Enable support for NX/XD bit */
     uint64_t msrval  = rdmsr(MSR_EFER);

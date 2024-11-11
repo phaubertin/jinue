@@ -70,7 +70,7 @@ static bool memory_ranges_overlap(
 
 static bool range_is_in_available_memory(
         const memory_range_t    *range,
-        const bootinfo_t       *bootinfo) {
+        const bootinfo_t        *bootinfo) {
 
     bool retval = false;
 
@@ -211,7 +211,7 @@ static uint64_t memory_find_top(const bootinfo_t *bootinfo) {
  * */
 void memory_initialize_array(
         boot_alloc_t        *boot_alloc,
-        const bootinfo_t   *bootinfo) {
+        const bootinfo_t    *bootinfo) {
 
     const size_t entries_per_page = PAGE_SIZE / sizeof(uintptr_t);
 
