@@ -94,4 +94,6 @@ typedef struct {
     bool                 vga_enable;
 } machine_config_t;
 
+typedef struct { uint32_t lock; } spinlock_t;
+
 #endif
