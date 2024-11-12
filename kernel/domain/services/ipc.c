@@ -245,7 +245,6 @@ int send_message(
         block_current_thread();
     }
     else {
-        add_ref_to_object(&sender->header);
         receiver->sender = sender;
 
         /* switch to receiver thread, which will resume inside syscall_receive() */
@@ -315,7 +314,6 @@ int receive_message(ipc_endpoint_t *endpoint, thread_t *receiver, jinue_message_
         sender = receiver->sender;
     }
     else {
-        add_ref_to_object(&sender->header);
         receiver->sender = sender;
     }
 
@@ -327,7 +325,6 @@ int receive_message(ipc_endpoint_t *endpoint, thread_t *receiver, jinue_message_
     if(sender->message_size > recv_buffer_size) {
         /* message is too big for the receive buffer */
         sender->message_errno = JINUE_E2BIG;
-        sub_ref_to_object(&sender->header);
         receiver->sender = NULL;
         
         /* switch back to sender thread to return from call immediately */
@@ -384,7 +381,6 @@ int reply_to_message(thread_t *replier, const jinue_message_t *message) {
     }
 
     replier->sender = NULL;
-    sub_ref_to_object(&replyto->header);
     
     /* switch back to sender thread to return from call immediately */
     switch_to_thread(replyto, false);
@@ -410,11 +406,9 @@ int reply_error_to_message(thread_t *replier, uintptr_t errcode) {
         return -JINUE_ENOMSG;
     }
 
-
     replyto->message_errno          = JINUE_EPROTO;
     replyto->message_reply_errcode  = errcode;
     replier->sender                 = NULL;
-    sub_ref_to_object(&replyto->header);
     
     /* switch back to sender thread to return from call immediately */
     switch_to_thread(replyto, false);
