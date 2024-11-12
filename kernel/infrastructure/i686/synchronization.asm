@@ -29,10 +29,10 @@
 
     bits 32
 
-; ------------------------------------------------------------------------------
+; -----------------------------------------------------------------------------
 ; FUNCTION: init_spinlock
 ; C PROTOTYPE: void init_spinlock(spinlock_t *lock);
-; ------------------------------------------------------------------------------
+; -----------------------------------------------------------------------------
     global init_spinlock:function (init_spinlock.end - init_spinlock)
 init_spinlock:
     mov eax, [esp+4]    ; first argument: lock
@@ -41,10 +41,17 @@ init_spinlock:
     ret
 .end:
 
-; ------------------------------------------------------------------------------
+; -----------------------------------------------------------------------------
 ; FUNCTION: spin_lock
 ; C PROTOTYPE: void spin_lock(spinlock_t *lock);
-; ------------------------------------------------------------------------------
+; DESCRIPTION:
+;   Simple ticket lock implementation. The whole lock is a double word (32
+;   bits) with the low word (16 bits) being the "now serving" number and the
+;   high word being the ticket number.
+;   
+;   For now, the assumption is that interrupts are disabled whenever we are in
+;   the kernel, so there is no need to disable interrupts here.
+; -----------------------------------------------------------------------------
     global spin_lock:function (spin_lock.end - spin_lock)
 spin_lock:
     mov eax, [esp+4]            ; first argument: lock
@@ -66,10 +73,10 @@ spin_lock:
     ret
 .end:
 
-; ------------------------------------------------------------------------------
+; -----------------------------------------------------------------------------
 ; FUNCTION: spin_unlock
 ; C PROTOTYPE: void spin_unlock(spinlock_t *lock);
-; ------------------------------------------------------------------------------
+; -----------------------------------------------------------------------------
     global spin_unlock:function (spin_unlock.end - spin_unlock)
 spin_unlock:
     mov eax, [esp+4]    ; first argument: lock
