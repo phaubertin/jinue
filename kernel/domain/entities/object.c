@@ -32,6 +32,7 @@
 #include <kernel/domain/alloc/slab.h>
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/services/panic.h>
+#include <kernel/machine/atomic.h>
 
 void init_object_cache(slab_cache_t *cache, const object_type_t *type) {
     slab_cache_init(
@@ -73,15 +74,19 @@ void destroy_object(object_header_t *object) {
     }
 }
 
+void add_ref_to_object(object_header_t *object) {
+    (void)add_atomic(&object->ref_count, 1);
+}
+
 /* This function is called by assembly code. See switch_thread_stack(). */
 void sub_ref_to_object(object_header_t *object) {
-    --object->ref_count;
+    int ref_count = add_atomic(&object->ref_count, -1);
 
-    if(object->ref_count > 0) {
+    if(ref_count > 0) {
         return;
     }
 
-    if(object->ref_count != 0) {
+    if(ref_count != 0) {
         panic("Object reference count decremented to negative value");
     }
 
