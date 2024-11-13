@@ -126,7 +126,7 @@ sources.kernel.nasm = \
 	infrastructure/i686/isa/regs.asm \
 	infrastructure/i686/pmap/init.asm \
 	infrastructure/i686/iodelay.asm \
-	infrastructure/i686/synchronization.asm \
+	infrastructure/i686/spinlock.asm \
 	infrastructure/i686/thread.asm \
 	interface/i686/crt.asm \
 	interface/i686/trap.asm
