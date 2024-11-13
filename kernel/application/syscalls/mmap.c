@@ -33,7 +33,7 @@
 #include <kernel/application/syscalls.h>
 #include <kernel/domain/entities/descriptor.h>
 #include <kernel/domain/entities/process.h>
-#include <kernel/machine/vm.h>
+#include <kernel/machine/pmap.h>
 
 /**
  * Implementation for the MMAP system call

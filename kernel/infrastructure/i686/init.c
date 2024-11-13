@@ -34,18 +34,20 @@
 #include <kernel/domain/services/cmdline.h>
 #include <kernel/domain/services/logging.h>
 #include <kernel/domain/services/panic.h>
+#include <kernel/infrastructure/i686/asm/msr.h>
+#include <kernel/infrastructure/i686/drivers/pic8259.h>
+#include <kernel/infrastructure/i686/drivers/uart16550a.h>
+#include <kernel/infrastructure/i686/drivers/vga.h>
+#include <kernel/infrastructure/i686/isa/instrs.h>
+#include <kernel/infrastructure/i686/isa/regs.h>
+#include <kernel/infrastructure/i686/pmap/init.h>
+#include <kernel/infrastructure/i686/pmap/pae.h>
+#include <kernel/infrastructure/i686/pmap/pmap.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
-#include <kernel/infrastructure/i686/cpu.h>
-#include <kernel/infrastructure/i686/cpu_data.h>
+#include <kernel/infrastructure/i686/cpuinfo.h>
 #include <kernel/infrastructure/i686/descriptors.h>
 #include <kernel/infrastructure/i686/memory.h>
-#include <kernel/infrastructure/i686/pic8259.h>
-#include <kernel/infrastructure/i686/remap.h>
-#include <kernel/infrastructure/i686/uart16550a.h>
-#include <kernel/infrastructure/i686/vga.h>
-#include <kernel/infrastructure/i686/vm.h>
-#include <kernel/infrastructure/i686/vm_pae.h>
-#include <kernel/infrastructure/i686/x86.h>
+#include <kernel/infrastructure/i686/percpu.h>
 #include <kernel/infrastructure/elf.h>
 #include <kernel/interface/i686/boot.h>
 #include <kernel/interface/i686/interrupt.h>
@@ -87,7 +89,7 @@ static void move_kernel_at_16mb(const bootinfo_t *bootinfo) {
             (addr_t)bootinfo->page_table_klimit,
             (uint32_t)bootinfo->page_directory);
 
-    vm_write_protect_kernel_image(bootinfo);
+    pmap_write_protect_kernel_image(bootinfo);
 }
 
 static bool maybe_enable_pae(
@@ -97,7 +99,7 @@ static bool maybe_enable_pae(
 
     bool use_pae;
 
-    if(cpu_has_feature(CPU_FEATURE_PAE)) {
+    if(cpu_has_feature(CPUINFO_FEATURE_PAE)) {
         use_pae = (config->machine.pae != CONFIG_PAE_DISABLE);
     }
     else {
@@ -110,11 +112,11 @@ static bool maybe_enable_pae(
 
     if(! use_pae) {
         warning("Warning: Physical Address Extension (PAE) not enabled. NX protection disabled.");
-        vm_set_no_pae();
+        pmap_set_no_pae();
     }
     else {
         info("Enabling Physical Address Extension (PAE).");
-        vm_pae_enable(boot_alloc, bootinfo);
+        pae_enable(boot_alloc, bootinfo);
     }
 
     return use_pae;
@@ -145,7 +147,7 @@ static void init_idt(void) {
     }
 }
 
-static void load_selectors(cpu_data_t *cpu_data, boot_alloc_t *boot_alloc) {
+static void load_selectors(percpu_t *cpu_data, boot_alloc_t *boot_alloc) {
     /* Pseudo-descriptor allocation is temporary for the duration of this
      * function only. Remember heap pointer on entry so we can free the
      * pseudo-allocator when we are done. */
@@ -191,7 +193,7 @@ static void remap_text_video_memory(boot_alloc_t *boot_alloc) {
     void *buffer = boot_page_alloc_n(boot_alloc, num_pages);
     void *mapped = (void *)PHYS_TO_VIRT_AT_16MB(buffer);
 
-    vm_boot_map(mapped, VGA_TEXT_VID_BASE, num_pages);
+    pmap_boot_map(mapped, VGA_TEXT_VID_BASE, num_pages);
 
     info("Remapping text video memory at %#p", mapped);
 
@@ -203,7 +205,7 @@ static void remap_text_video_memory(boot_alloc_t *boot_alloc) {
 }
 
 static void enable_global_pages(void) {
-    if(cpu_has_feature(CPU_FEATURE_PGE)) {
+    if(cpu_has_feature(CPUINFO_FEATURE_PGE)) {
         set_cr4(get_cr4() | X86_CR4_PGE);
     }
 }
@@ -219,7 +221,7 @@ static void initialize_page_allocator(boot_alloc_t *boot_alloc) {
 }
 
 static void select_syscall_implementation(void) {
-    if(cpu_has_feature(CPU_FEATURE_SYSCALL)) {
+    if(cpu_has_feature(CPUINFO_FEATURE_SYSCALL)) {
         uint64_t msrval;
 
         syscall_implementation = JINUE_I686_HOWSYSCALL_FAST_AMD;
@@ -234,7 +236,7 @@ static void select_syscall_implementation(void) {
 
         wrmsr(MSR_STAR, msrval);
     }
-    else if(cpu_has_feature(CPU_FEATURE_SYSENTER)) {
+    else if(cpu_has_feature(CPUINFO_FEATURE_SYSENTER)) {
         syscall_implementation = JINUE_I686_HOWSYSCALL_FAST_INTEL;
 
         wrmsr(MSR_IA32_SYSENTER_CS,  SEG_SELECTOR(GDT_KERNEL_CODE, RPL_KERNEL));
@@ -310,7 +312,7 @@ void machine_init(const config_t *config) {
 
     const bootinfo_t *bootinfo = get_bootinfo();
 
-    cpu_detect_features();
+    detect_cpu_features();
 
     check_data_segment(bootinfo);
 
@@ -338,17 +340,13 @@ void machine_init(const config_t *config) {
      * 
      * We need to ensure that the Task State Segment (TSS) contained in this
      * memory block does not cross a page boundary. */
-    assert(sizeof(cpu_data_t) < CPU_DATA_ALIGNMENT);
-    cpu_data_t *cpu_data = boot_heap_alloc(&boot_alloc, cpu_data_t, CPU_DATA_ALIGNMENT);
+    assert(sizeof(percpu_t) < PERCPU_DATA_ALIGNMENT);
+    percpu_t *cpu_data = boot_heap_alloc(&boot_alloc, percpu_t, PERCPU_DATA_ALIGNMENT);
     
     /* initialize per-CPU data */
-    cpu_init_data(cpu_data);
+    init_percpu_data(cpu_data);
     
-    /* Initialize interrupt descriptor table (IDT)
-     *
-     * This function modifies the IDT in-place (see trap.asm). This must be
-     * done before vm_boot_init() because the page protection bits set up by
-     * vm_boot_init() prevent this. */
+    /* Initialize interrupt descriptor table (IDT) */
     init_idt();
 
     /* load segment selectors */
@@ -360,18 +358,18 @@ void machine_init(const config_t *config) {
     exec_file_t kernel;
     get_kernel_exec_file(&kernel, bootinfo);
 
-    addr_space_t *addr_space = vm_create_initial_addr_space(&kernel, &boot_alloc, bootinfo);
+    addr_space_t *addr_space = pmap_create_initial_addr_space(&kernel, &boot_alloc, bootinfo);
 
     memory_initialize_array(&boot_alloc, bootinfo);
 
     /* After this, VGA output is not possible until we switch to the
-     * new address space (see the call to vm_switch_addr_space() below).
+     * new address space (see the call to pmap_switch_addr_space() below).
      * Attempting it will cause a kernel panic due to a page fault (and the
      * panic handler itself attempts to log). */
     remap_text_video_memory(&boot_alloc);
 
     /* switch to new address space */
-    vm_switch_addr_space(addr_space);
+    pmap_switch_addr_space(addr_space);
 
     enable_global_pages();
 
@@ -387,9 +385,9 @@ void machine_init(const config_t *config) {
      * because the slab allocator needs to allocate a slab to allocate the new
      * slab cache on the slab cache cache.
      *
-     * This must be done before the first time vm_create_addr_space() is called. */
+     * This must be done before the first time pmap_create_addr_space() is called. */
     if(pae_enabled) {
-        vm_pae_create_pdpt_cache();
+        pae_create_pdpt_cache();
     }
 
     /* choose a system call implementation */

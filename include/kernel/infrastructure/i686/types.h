@@ -110,17 +110,17 @@ typedef struct {
     uint16_t    iomap;
 } tss_t;
 
-struct cpu_data_t {
+struct percpu_t {
+    struct percpu_t     *self;
+    addr_space_t        *current_addr_space;
     seg_descriptor_t     gdt[GDT_LENGTH];
     /* The assembly-language system call entry point for the SYSCALL instruction
      * (fast_amd_entry in trap.asm) makes assumptions regarding the location of
      * the TSS within this structure. */
     tss_t                tss;
-    struct cpu_data_t   *self;
-    addr_space_t        *current_addr_space;
 };
 
-typedef struct cpu_data_t cpu_data_t;
+typedef struct percpu_t percpu_t;
 
 typedef struct {
     uint32_t    edi;

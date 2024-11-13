@@ -32,9 +32,9 @@
 #include <jinue/shared/asm/errno.h>
 #include <kernel/domain/services/logging.h>
 #include <kernel/domain/services/panic.h>
+#include <kernel/infrastructure/i686/pmap/pmap.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
 #include <kernel/infrastructure/i686/memory.h>
-#include <kernel/infrastructure/i686/vm.h>
 #include <kernel/interface/i686/asm/e820.h>
 #include <kernel/interface/i686/boot.h>
 #include <kernel/machine/memory.h>
@@ -70,7 +70,7 @@ static bool memory_ranges_overlap(
 
 static bool range_is_in_available_memory(
         const memory_range_t    *range,
-        const bootinfo_t       *bootinfo) {
+        const bootinfo_t        *bootinfo) {
 
     bool retval = false;
 
@@ -211,7 +211,7 @@ static uint64_t memory_find_top(const bootinfo_t *bootinfo) {
  * */
 void memory_initialize_array(
         boot_alloc_t        *boot_alloc,
-        const bootinfo_t   *bootinfo) {
+        const bootinfo_t    *bootinfo) {
 
     const size_t entries_per_page = PAGE_SIZE / sizeof(uintptr_t);
 

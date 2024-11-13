@@ -57,7 +57,7 @@ targets          = $(target.user) $(target.pthread) $(target.kernel)
 
 objects.generic  = string.o snprintf.o vsnprintf.o
 objects.user     = \
-	i686/crt.o \
+	i686/crt-nasm.o \
 	pthread/libc.o \
 	brk.o \
 	descriptors.o \
@@ -68,7 +68,7 @@ objects.user     = \
 	mmap.o \
 	physmem.o
 objects.pthread  = \
-	i686/pthread.o \
+	i686/pthread-nasm.o \
 	i686/stack.o \
 	pthread/attr.o \
 	pthread/thread.o

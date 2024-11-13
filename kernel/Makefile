@@ -46,8 +46,8 @@ kernel_elf       = interface/i686/kernel
 stripped         = $(kernel_elf)-stripped
 image            = interface/i686/$(notdir $(kernel_img))
 kmain			 = application/kmain.o
-setup16          = interface/i686/setup16.o
-setup32          = interface/i686/setup32.o
+setup16          = interface/i686/setup16-nasm.o
+setup32          = interface/i686/setup32-nasm.o
 target           = $(image)
 
 unclean.extra    = \
@@ -96,34 +96,37 @@ sources.kernel.c = \
 	domain/services/logging.c \
 	domain/services/panic.c \
 	domain/config.c \
-	infrastructure/i686/auxv.c \
+	infrastructure/i686/drivers/vga.c \
+	infrastructure/i686/drivers/pic8259.c \
+	infrastructure/i686/drivers/uart16550a.c \
+	infrastructure/i686/pmap/nopae.c \
+	infrastructure/i686/pmap/pmap.c \
+	infrastructure/i686/pmap/pae.c \
 	infrastructure/i686/boot_alloc.c \
 	infrastructure/i686/cmdline.c \
 	infrastructure/i686/config.c \
-	infrastructure/i686/cpu.c \
+	infrastructure/i686/cpuinfo.c \
 	infrastructure/i686/debug.c \
 	infrastructure/i686/halt.c \
 	infrastructure/i686/init.c \
 	infrastructure/i686/memory.c \
-	infrastructure/i686/pic8259.c \
+	infrastructure/i686/percpu.c \
 	infrastructure/i686/process.c \
 	infrastructure/i686/thread.c \
-	infrastructure/i686/uart16550a.c \
-	infrastructure/i686/vga.c \
-	infrastructure/i686/vm.c \
-	infrastructure/i686/vm_pae.c \
-	infrastructure/i686/vm_x86.c \
 	infrastructure/elf.c \
+	interface/i686/auxv.c \
 	interface/i686/bootinfo.c \
 	interface/i686/interrupt.c \
 	interface/syscalls.c
 
 sources.kernel.nasm = \
-	infrastructure/i686/abi.asm \
-	infrastructure/i686/io.asm \
-	infrastructure/i686/remap.asm \
-	infrastructure/i686/thread_switch.asm \
-	infrastructure/i686/x86.asm \
+	infrastructure/i686/isa/abi.asm \
+	infrastructure/i686/isa/instrs.asm \
+	infrastructure/i686/isa/io.asm \
+	infrastructure/i686/isa/regs.asm \
+	infrastructure/i686/pmap/init.asm \
+	infrastructure/i686/iodelay.asm \
+	infrastructure/i686/thread.asm \
 	interface/i686/crt.asm \
 	interface/i686/trap.asm
 
@@ -134,7 +137,7 @@ sources.setup.nasm = \
 sources.c = $(sources.kernel.c)
 sources.nasm = $(sources.kernel.nasm) $(sources.setup.nasm)
 
-objects.kernel = $(sources.kernel.nasm:%.asm=%.o) $(sources.kernel.c:%.c=%.o)
+objects.kernel = $(sources.kernel.nasm:%.asm=%-nasm.o) $(sources.kernel.c:%.c=%.o)
 
 include $(common)
 
@@ -152,9 +155,9 @@ $(build_info_h): FORCE
 	
 $(kmain): $(kmain:%.o=%.c) $(build_info_h)
 
-$(setup16): $(setup16:%.o=%.asm)
+$(setup16): $(setup16:%-nasm.o=%.asm)
 
-$(setup32): $(setup32:%.o=%.asm)
+$(setup32): $(setup32:%-nasm.o=%.asm)
 
 $(kernel_elf): $(objects.kernel) $(kernel_ldscript) libc
 	$(LINK.o) $(KERNEL_LDFLAGS) $(objects.kernel) $(c.lib) $(KERNEL_LDLIBS) -o $@

@@ -37,7 +37,7 @@ target.syscalls     = $(notdir $(libjinue_syscalls))
 target.utils        = $(notdir $(libjinue_utils))
 targets             = $(target.syscalls) $(target.utils)
 
-objects.syscalls    = i686/stubs.o i686/syscalls.o syscalls.o
+objects.syscalls    = i686/stubs-nasm.o i686/syscalls.o syscalls.o
 objects.utils       = loader.o logging.o
 
 include $(common)

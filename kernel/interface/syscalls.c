@@ -40,7 +40,7 @@
 #include <kernel/interface/syscalls.h>
 #include <kernel/machine/asm/machine.h>
 #include <kernel/utils/utils.h>
-#include <kernel/utils/vm.h>
+#include <kernel/utils/pmap.h>
 #include <limits.h>
 #include <stddef.h>
 #include <stdint.h>

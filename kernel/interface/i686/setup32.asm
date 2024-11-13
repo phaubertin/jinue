@@ -164,8 +164,8 @@
 ;  ===  +=======================================+ 0
 
 #include <kernel/domain/services/asm/cmdline.h>
+#include <kernel/infrastructure/i686/pmap/asm/pmap.h>
 #include <kernel/infrastructure/i686/asm/memory.h>
-#include <kernel/infrastructure/i686/asm/vm.h>
 #include <kernel/infrastructure/i686/asm/x86.h>
 #include <kernel/interface/i686/asm/boot.h>
 #include <kernel/interface/i686/asm/bootinfo.h>
@@ -567,7 +567,7 @@ prepare_data_segment:
     ; Page tables that need to be allocated:
     ;   - One for the first 2MB of memory, which is where the kernel image is
     ;     located, as well as VGA text video memory.
-    ;   - BOOT_PTES_AT_16MB / VM_X86_PAGE_TABLE_PTES for mapping at 0x1000000
+    ;   - BOOT_PTES_AT_16MB / NOPAE_PAGE_TABLE_PTES for mapping at 0x1000000
     ;     (i.e. at 16MB) where the kernel image will be moved by the kernel.
     ;   - One for kernel image mapping at KLIMIT
     ;
@@ -588,7 +588,7 @@ allocate_page_tables:
 
     ; Page tables for mapping at 0x1000000 (i.e. at 16MB)
     mov dword [ebp + BOOTINFO_PAGE_TABLE_16MB], edi
-    add edi, PAGE_SIZE * BOOT_PTES_AT_16MB / VM_X86_PAGE_TABLE_PTES
+    add edi, PAGE_SIZE * BOOT_PTES_AT_16MB / NOPAE_PAGE_TABLE_PTES
 
     ; One page table for mapping at KLIMIT
     mov dword [ebp + BOOTINFO_PAGE_TABLE_KLIMIT], edi
@@ -828,7 +828,7 @@ initialize_page_directory:
     mov eax, dword [ebp + BOOTINFO_PAGE_TABLE_16MB]
     or eax, X86_PTE_READ_WRITE
     lea edi, [edi + 4 * (MEMORY_ADDR_16MB >> 22)]
-    mov ecx, BOOT_PTES_AT_16MB / VM_X86_PAGE_TABLE_PTES
+    mov ecx, BOOT_PTES_AT_16MB / NOPAE_PAGE_TABLE_PTES
     call map_linear
 
     ; add entry for the last page table

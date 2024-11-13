@@ -75,9 +75,15 @@ libjinue_utils       = $(libjinue)/libjinue-utils.a
 
 # object files
 objects.c            = $(sources.c:%.c=%.o)
-objects.nasm         = $(sources.nasm:%.asm=%.o)
+objects.nasm         = $(sources.nasm:%.asm=%-nasm.o)
 objects.extra        =
 objects              = $(objects.c) $(objects.nasm) $(objects.extra)
+
+# Dependency files
+depfiles.c           = $(sources.c:%.c=%.d)
+depfiles.nasm        = $(sources.nasm:%.asm=%-nasm.d)
+depfiles.extra       =
+depfiles             = $(depfiles.c) $(depfiles.nasm) $(depfiles.extra)
 
 # built targets
 targets.phony       ?=
@@ -85,7 +91,7 @@ targets             ?= $(target)
 targets.all          = $(targets) $(targets.phony)
 
 # files to clean up
-unclean.build        = $(objects) $(targets) $(objects:%.o=%.d) $(sources.nasm:%.asm=%.nasm)
+unclean.build        = $(objects) $(targets) $(depfiles) $(sources.nasm:%.asm=%.nasm)
 unclean.extra        =
 unclean              = $(unclean.build) $(unclean.extra)
 unclean_recursive   ?=
@@ -134,10 +140,10 @@ NASMFLAGS            = $(NASMFLAGS.arch) $(NASMFLAGS.debug) $(NASMFLAGS.others) 
 STRIPFLAGS           = --strip-debug
 
 # Automatic dependencies generation flags
-DEPFLAGS             = -MT $@ -MD -MP -MF $*.d
+DEPFLAGS             = -MT $@ -MD -MP -MF
 
 # Add dependencies generation flags when compiling object files from C source code
-COMPILE.c = $(CC) $(DEPFLAGS) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+COMPILE.c = $(CC) $(DEPFLAGS) $(basename $@).d $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
 
 # macro to include common target definitions (all, clean, implicit rules)
 common               = $(jinue_root)/common.mk

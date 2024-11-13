@@ -263,7 +263,7 @@ fast_amd_entry:
     mov gs, dx                          ; load gs with per-cpu data segment selector
     mov esp, [gs:GDT_LENGTH * 8 + 4]    ; load kernel stack pointer from TSS
                                         ; Stack pointer is at offset 4 in the TSS, and
-                                        ; the TSS follows the GDT (see cpu_data_t).
+                                        ; the TSS follows the GDT (see percpu_t).
     
     ; For details on the stack layout, see comments in interrupt_entry above and
     ; the definition of the trapframe_t type.
