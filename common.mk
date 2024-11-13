@@ -57,7 +57,7 @@ FORCE:
 	@echo "; * The file you want to edit instead is $<."								>> $@
 	@echo "; * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"	>> $@
 	@echo ""																			>> $@
-	$(CPP) $(DEPFLAGS) $(CPPFLAGS) -x assembler-with-cpp $< >> $@
+	$(CPP) $(DEPFLAGS)$(basename $@)-nasm.d $(CPPFLAGS) -x assembler-with-cpp $< >> $@
 
 %.ld: %.lds
 	@echo "/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"	 > $@
@@ -70,7 +70,7 @@ FORCE:
 	@echo ""																			>> $@
 	$(CPP) $(CPPFLAGS) -x c -P $< >> $@
 
-%.o: %.nasm
+%-nasm.o: %.nasm
 	nasm -f elf $(NASMFLAGS) -o $@ $<
 
 %.bin: %.nasm
@@ -81,4 +81,4 @@ FORCE:
 
 .PRECIOUS: %.nasm
 
-include $(wildcard $(patsubst %,%.d,$(basename $(objects))))
+include $(wildcard $(depfiles))

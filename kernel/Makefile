@@ -46,8 +46,8 @@ kernel_elf       = interface/i686/kernel
 stripped         = $(kernel_elf)-stripped
 image            = interface/i686/$(notdir $(kernel_img))
 kmain			 = application/kmain.o
-setup16          = interface/i686/setup16.o
-setup32          = interface/i686/setup32.o
+setup16          = interface/i686/setup16-nasm.o
+setup32          = interface/i686/setup32-nasm.o
 target           = $(image)
 
 unclean.extra    = \
@@ -135,7 +135,7 @@ sources.setup.nasm = \
 sources.c = $(sources.kernel.c)
 sources.nasm = $(sources.kernel.nasm) $(sources.setup.nasm)
 
-objects.kernel = $(sources.kernel.nasm:%.asm=%.o) $(sources.kernel.c:%.c=%.o)
+objects.kernel = $(sources.kernel.nasm:%.asm=%-nasm.o) $(sources.kernel.c:%.c=%.o)
 
 include $(common)
 
@@ -153,9 +153,9 @@ $(build_info_h): FORCE
 	
 $(kmain): $(kmain:%.o=%.c) $(build_info_h)
 
-$(setup16): $(setup16:%.o=%.asm)
+$(setup16): $(setup16:%-nasm.o=%.asm)
 
-$(setup32): $(setup32:%.o=%.asm)
+$(setup32): $(setup32:%-nasm.o=%.asm)
 
 $(kernel_elf): $(objects.kernel) $(kernel_ldscript) libc
 	$(LINK.o) $(KERNEL_LDFLAGS) $(objects.kernel) $(c.lib) $(KERNEL_LDLIBS) -o $@
