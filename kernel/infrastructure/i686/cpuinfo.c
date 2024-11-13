@@ -31,8 +31,9 @@
 
 #include <kernel/infrastructure/i686/asm/cpuid.h>
 #include <kernel/infrastructure/i686/asm/eflags.h>
+#include <kernel/infrastructure/i686/isa/instrs.h>
+#include <kernel/infrastructure/i686/isa/regs.h>
 #include <kernel/infrastructure/i686/cpuinfo.h>
-#include <kernel/infrastructure/i686/x86.h>
 #include <kernel/machine/cpuinfo.h>
 
 cpuinfo_t cpuinfo;

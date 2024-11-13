@@ -34,12 +34,13 @@
 #include <kernel/domain/alloc/vmalloc.h>
 #include <kernel/domain/services/panic.h>
 #include <kernel/infrastructure/i686/asm/msr.h>
+#include <kernel/infrastructure/i686/asm/x86.h>
+#include <kernel/infrastructure/i686/isa/instrs.h>
 #include <kernel/infrastructure/i686/pmap/init.h>
 #include <kernel/infrastructure/i686/pmap/private.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
 #include <kernel/infrastructure/i686/cpuinfo.h>
 #include <kernel/infrastructure/i686/memory.h>
-#include <kernel/infrastructure/i686/x86.h>
 #include <kernel/interface/i686/boot.h>
 #include <kernel/utils/utils.h>
 #include <assert.h>

@@ -38,6 +38,8 @@
 #include <kernel/infrastructure/i686/drivers/pic8259.h>
 #include <kernel/infrastructure/i686/drivers/uart16550a.h>
 #include <kernel/infrastructure/i686/drivers/vga.h>
+#include <kernel/infrastructure/i686/isa/instrs.h>
+#include <kernel/infrastructure/i686/isa/regs.h>
 #include <kernel/infrastructure/i686/pmap/init.h>
 #include <kernel/infrastructure/i686/pmap/pae.h>
 #include <kernel/infrastructure/i686/pmap/pmap.h>
@@ -46,7 +48,6 @@
 #include <kernel/infrastructure/i686/descriptors.h>
 #include <kernel/infrastructure/i686/memory.h>
 #include <kernel/infrastructure/i686/percpu.h>
-#include <kernel/infrastructure/i686/x86.h>
 #include <kernel/infrastructure/elf.h>
 #include <kernel/interface/i686/boot.h>
 #include <kernel/interface/i686/interrupt.h>

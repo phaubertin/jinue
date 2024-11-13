@@ -32,6 +32,8 @@
 #include <kernel/domain/alloc/page_alloc.h>
 #include <kernel/infrastructure/i686/asm/msr.h>
 #include <kernel/infrastructure/i686/asm/thread.h>
+#include <kernel/infrastructure/i686/isa/instrs.h>
+#include <kernel/infrastructure/i686/isa/regs.h>
 #include <kernel/infrastructure/i686/cpuinfo.h>
 #include <kernel/infrastructure/i686/descriptors.h>
 #include <kernel/infrastructure/i686/percpu.h>

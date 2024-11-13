@@ -32,8 +32,8 @@
 #ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_PERCPU_H
 #define JINUE_KERNEL_INFRASTRUCTURE_I686_PERCPU_H
 
+#include <kernel/infrastructure/i686/isa/regs.h>
 #include <kernel/infrastructure/i686/types.h>
-#include <kernel/infrastructure/i686/x86.h>
 
 #define PERCPU_DATA_ALIGNMENT 256
 

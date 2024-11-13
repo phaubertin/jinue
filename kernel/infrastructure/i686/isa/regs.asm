@@ -1,4 +1,4 @@
-; Copyright (C) 2019 Philippe Aubertin.
+; Copyright (C) 2019-2024 Philippe Aubertin.
 ; All rights reserved.
 ;
 ; Redistribution and use in source and binary forms, with or without
@@ -27,120 +27,7 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include <kernel/infrastructure/i686/asm/x86.h>
-
     bits 32
-
-; ------------------------------------------------------------------------------
-; FUNCTION: cli
-; C PROTOTYPE: void cli(void);
-; ------------------------------------------------------------------------------
-    global cli:function (cli.end - cli)
-cli:
-    cli
-    ret
-.end:
-
-; ------------------------------------------------------------------------------
-; FUNCTION: sti
-; C PROTOTYPE: void sti(void);
-; ------------------------------------------------------------------------------
-    global sti:function (sti.end - sti)
-sti:
-    sti
-    ret
-.end:
-
-; ------------------------------------------------------------------------------
-; FUNCTION: hlt
-; C PROTOTYPE: void hlt(void);
-; ------------------------------------------------------------------------------
-    global hlt:function (hlt.end - hlt)
-hlt:
-    hlt
-    ret
-.end:
-
-; ------------------------------------------------------------------------------
-; FUNCTION: invalidate_tlb
-; C PROTOTYPE: void invalidate_tlb(void *vaddr)
-; ------------------------------------------------------------------------------
-    global invalidate_tlb:function (invalidate_tlb.end - invalidate_tlb)
-invalidate_tlb:
-    mov eax, [esp+4]    ; First param: vaddr
-    invlpg [eax]
-    ret
-.end:
-
-; ------------------------------------------------------------------------------
-; FUNCTION: lgdt
-; C PROTOTYPE: void lgdt(x86_pseudo_descriptor_t *gdt_desc)
-; ------------------------------------------------------------------------------
-    global lgdt:function (lgdt.end - lgdt)
-lgdt:
-    mov eax, [esp+4]    ; First param: gdt_info
-    add eax, 2          ; gdt_info_t structure contains two bytes of
-                        ; padding for alignment
-    lgdt [eax]
-    ret
-.end:
-
-; ------------------------------------------------------------------------------
-; FUNCTION: lidt
-; C PROTOTYPE: void lidt(x86_pseudo_descriptor_t *idt_desc)
-; ------------------------------------------------------------------------------
-    global lidt:function (lidt.end - lidt)
-lidt:
-    mov eax, [esp+4]    ; First param: idt_info
-    add eax, 2          ; idt_info_t structure contains two bytes of
-                        ; padding for alignment
-    lidt [eax]
-    ret
-.end:
-
-; ------------------------------------------------------------------------------
-; FUNCTION: ltr
-; C PROTOTYPE: void ltr(seg_selector_t sel)
-; ------------------------------------------------------------------------------
-    global ltr:function (ltr.end - ltr)
-ltr:
-    mov eax, [esp+4]    ; First param: sel
-    ltr ax
-    ret
-.end:
-
-; ------------------------------------------------------------------------------
-; FUNCTION: cpuid
-; C PROTOTYPE: uint32_t cpuid(x86_regs_t *regs)
-; ------------------------------------------------------------------------------
-    global cpuid:function (cpuid.end - cpuid)
-cpuid:
-    ; save registers
-    push ebx
-    push edi
-    
-    mov edi, [esp+12]   ; First param: regs
-    
-    mov eax, [edi+ 0]   ; regs->eax
-    mov ebx, [edi+ 4]   ; regs->ebx
-    mov ecx, [edi+ 8]   ; regs->ecx
-    mov edx, [edi+12]   ; regs->edx
-    
-    cpuid
-    
-    mov edi, [esp+12]   ; First param: regs
-    
-    mov [edi+ 0], eax
-    mov [edi+ 4], ebx
-    mov [edi+ 8], ecx
-    mov [edi+12], edx
-    
-    ; restore registers
-    pop edi
-    pop ebx
-        
-    ret
-.end:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: get_esp
@@ -321,32 +208,6 @@ set_ss:
 .end:
 
 ; ------------------------------------------------------------------------------
-; FUNCTION: rdmsr
-; C PROTOTYPE: uint64_t rdmsr(msr_addr_t addr)
-; ------------------------------------------------------------------------------
-    global rdmsr:function (rdmsr.end - rdmsr)
-rdmsr:
-    mov ecx, [esp+ 4]    ; First param:  addr
-    
-    rdmsr
-    ret
-.end:
-
-; ------------------------------------------------------------------------------
-; FUNCTION: wrmsr
-; C PROTOTYPE: void wrmsr(msr_addr_t addr, uint64_t val)
-; ------------------------------------------------------------------------------
-    global wrmsr:function (wrmsr.end - wrmsr)
-wrmsr:
-    mov ecx, [esp+ 4]   ; First param:  addr
-    mov eax, [esp+ 8]   ; Second param: val (low dword)
-    mov edx, [esp+12]   ; Second param: val (high dword)
-    
-    wrmsr
-    ret
-.end:
-
-; ------------------------------------------------------------------------------
 ; FUNCTION: get_gs_ptr
 ; C PROTOTYPE: uint32_t get_gs_ptr(uint32_t *ptr)
 ; ------------------------------------------------------------------------------
@@ -354,15 +215,5 @@ wrmsr:
 get_gs_ptr:
     mov ecx, [esp+ 4]   ; First param:  ptr
     mov eax, [gs:ecx]
-    ret
-.end:
-
-; ------------------------------------------------------------------------------
-; FUNCTION: rdtsc
-; C PROTOTYPE: uint64_t rdtsc(void)
-; ------------------------------------------------------------------------------
-    global rdtsc:function (rdtsc.end - rdtsc)
-rdtsc:
-    rdtsc
     ret
 .end:

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,45 +29,36 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/domain/services/logging.h>
-#include <kernel/domain/services/panic.h>
-#include <kernel/infrastructure/i686/drivers/pic8259.h>
-#include <kernel/infrastructure/i686/isa/io.h>
-#include <kernel/infrastructure/i686/isa/regs.h>
-#include <kernel/interface/i686/interrupt.h>
-#include <kernel/interface/syscalls.h>
-#include <kernel/machine/asm/machine.h>
-#include <inttypes.h>
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_INSTRS_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_INSTRS_H
 
+#include <kernel/infrastructure/i686/types.h>
 
-void dispatch_interrupt(trapframe_t *trapframe) {
-    unsigned int    ivt         = trapframe->ivt;
-    uintptr_t       eip         = trapframe->eip;
-    uint32_t        errcode     = trapframe->errcode;
-    
-    /* exceptions */
-    if(ivt <= IDT_LAST_EXCEPTION) {
-        info(
-                "EXCEPT: %u cr2=%#" PRIx32 " errcode=%#" PRIx32 " eip=%#" PRIxPTR,
-                ivt,
-                get_cr2(),
-                errcode,
-                eip);
-        
-        /* never returns */
-        panic("caught exception");
-    }
-    
-    if(ivt == JINUE_I686_SYSCALL_IRQ) {
-    	/* interrupt-based system call implementation */
-        dispatch_syscall((jinue_syscall_args_t *)&trapframe->msg_arg0);
-    }
-    else if(ivt >= IDT_PIC8259_BASE && ivt < IDT_PIC8259_BASE + PIC8259_IRQ_COUNT) {
-    	int irq = ivt - IDT_PIC8259_BASE;
-        info("IRQ: %i (vector %u)", irq, ivt);
-        pic8259_ack(irq);
-    }
-    else {
-    	info("INTR: vector %u", ivt);
-    }
-}
+typedef struct {
+    uint32_t eax;
+    uint32_t ebx;
+    uint32_t ecx;
+    uint32_t edx;
+} x86_cpuid_regs_t;
+
+void cli(void);
+
+void sti(void);
+
+void hlt(void);
+
+void invlpg(void *vaddr);
+
+void lgdt(pseudo_descriptor_t *gdt_info);
+
+void lidt(pseudo_descriptor_t *idt_info);
+
+void ltr(seg_selector_t sel);
+
+uint32_t cpuid(x86_cpuid_regs_t *regs);
+
+uint64_t rdmsr(uint32_t addr);
+
+void wrmsr(uint32_t addr, uint64_t val);
+
+#endif
