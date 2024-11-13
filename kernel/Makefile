@@ -102,7 +102,6 @@ sources.kernel.c = \
 	infrastructure/i686/pmap/nopae.c \
 	infrastructure/i686/pmap/pmap.c \
 	infrastructure/i686/pmap/pae.c \
-	infrastructure/i686/auxv.c \
 	infrastructure/i686/boot_alloc.c \
 	infrastructure/i686/cmdline.c \
 	infrastructure/i686/config.c \
@@ -115,6 +114,7 @@ sources.kernel.c = \
 	infrastructure/i686/process.c \
 	infrastructure/i686/thread.c \
 	infrastructure/elf.c \
+	interface/i686/auxv.c \
 	interface/i686/bootinfo.c \
 	interface/i686/interrupt.c \
 	interface/syscalls.c
