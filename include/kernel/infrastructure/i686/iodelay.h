@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,22 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_ISA_IO_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_ISA_IO_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_IODELAY_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_IODELAY_H
 
-#include <stdint.h>
-
-uint8_t  inb(uint16_t port);
-
-uint16_t inw(uint16_t port);
-
-uint32_t inl(uint16_t port);
-
-void outb(uint16_t port, uint8_t  value);
-
-void outw(uint16_t port, uint16_t value);
-
-void outl(uint16_t port, uint32_t value);
+void iodelay(void);
 
 #endif
-

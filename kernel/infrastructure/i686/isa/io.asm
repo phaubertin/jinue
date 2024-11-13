@@ -1,4 +1,4 @@
-; Copyright (C) 2019 Philippe Aubertin.
+; Copyright (C) 2019-2024 Philippe Aubertin.
 ; All rights reserved.
 ;
 ; Redistribution and use in source and binary forms, with or without
@@ -97,15 +97,5 @@ outl:
     mov eax, [esp+8]    ; second argument: value
     mov edx, [esp+4]    ; first argument:  port
     out dx, eax
-    ret
-.end:
-
-;------------------------------------------------------------------------
-; FUNCTION:    iodelay
-; C PROTOTYPE: void iodelay(void)
-;------------------------------------------------------------------------
-    global iodelay:function (iodelay.end - iodelay)
-iodelay:
-    out 0x80, al
     ret
 .end:
