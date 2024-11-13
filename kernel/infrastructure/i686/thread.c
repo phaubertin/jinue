@@ -37,6 +37,7 @@
 #include <kernel/infrastructure/i686/cpuinfo.h>
 #include <kernel/infrastructure/i686/descriptors.h>
 #include <kernel/infrastructure/i686/percpu.h>
+#include <kernel/infrastructure/i686/thread.h>
 #include <kernel/infrastructure/i686/types.h>
 #include <kernel/interface/i686/trap.h>
 #include <kernel/interface/i686/types.h>
@@ -45,13 +46,6 @@
 #include <assert.h>
 #include <stddef.h>
 #include <string.h>
-
-
-/* defined in thread_switch.asm */
-void thread_context_switch_stack(
-        machine_thread_t *from_ctx,
-        machine_thread_t *to_ctx,
-        bool destroy_from);
 
 /* For each thread, a page is allocated which contains:
  *  - The thread structure (thread_t), which includes the thread's message
@@ -117,7 +111,7 @@ void machine_prepare_thread(thread_t *thread, const thread_params_t *params) {
 
     memset(kernel_context, 0, sizeof(kernel_context_t));
 
-    /* This is the address to which thread_context_switch_stack() will return. */
+    /* This is the address to which switch_thread_stack() will return. */
     kernel_context->eip = (uint32_t)return_from_interrupt;
 
     /* set thread stack pointer */
@@ -157,8 +151,8 @@ void machine_switch_thread(thread_t *from, thread_t *to, bool destroy_from) {
         wrmsr(MSR_IA32_SYSENTER_ESP, (uint64_t)(uintptr_t)kernel_stack_base);
     }
 
-    /* switch thread context stack */
-    thread_context_switch_stack(from_ctx, to_ctx, destroy_from);
+    /* switch thread stack */
+    switch_thread_stack(from_ctx, to_ctx, destroy_from);
 }
 
 thread_t *get_current_thread(void) {

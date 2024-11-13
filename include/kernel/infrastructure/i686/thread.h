@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,65 +29,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/domain/alloc/slab.h>
-#include <kernel/domain/entities/object.h>
-#include <kernel/domain/services/panic.h>
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_THREAD_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_THREAD_H
 
-void init_object_cache(slab_cache_t *cache, const object_type_t *type) {
-    slab_cache_init(
-        cache,
-        type->name,
-        type->size,
-        0,
-        type->cache_ctor,
-        type->cache_dtor,
-        SLAB_DEFAULTS
-    );
-}
+#include <kernel/machine/types.h>
+#include <stdbool.h>
 
-void open_object(object_header_t *object, const descriptor_t *desc) {
-    add_ref_to_object(object);
+void switch_thread_stack(
+        machine_thread_t    *from_ctx,
+        machine_thread_t    *to_ctx,
+        bool                 destroy_from);
 
-    if(object->type->open != NULL) {
-        object->type->open(object, desc);
-    }
-}
-
-void close_object(object_header_t *object, const descriptor_t *desc) {
-    if(object->type->close != NULL) {
-        object->type->close(object, desc);
-    }
-
-    sub_ref_to_object(object);
-}
-
-void destroy_object(object_header_t *object) {
-    if(object_is_destroyed(object)) {
-        return;
-    }
-
-    mark_object_destroyed(object);
-
-    if(object->type->destroy != NULL) {
-        object->type->destroy(object);
-    }
-}
-
-/* This function is called by assembly code. See switch_thread_stack(). */
-void sub_ref_to_object(object_header_t *object) {
-    --object->ref_count;
-
-    if(object->ref_count > 0) {
-        return;
-    }
-
-    if(object->ref_count != 0) {
-        panic("Object reference count decremented to negative value");
-    }
-
-    destroy_object(object);
-
-    if(object->type->free != NULL) {
-        object->type->free(object);
-    }
-}
+#endif

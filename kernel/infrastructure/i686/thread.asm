@@ -35,14 +35,14 @@
     extern sub_ref_to_object
 
 ; ------------------------------------------------------------------------------
-; FUNCTION: thread_context_switch_stack
-; C PROTOTYPE: void thread_context_switch_stack(
+; FUNCTION: switch_thread_stack
+; C PROTOTYPE: void switch_thread_stack(
 ;               machine_thread_t    *from_ctx,
 ;               machine_thread_t    *to_ctx,
 ;               bool                 destroy_from);
 ; ------------------------------------------------------------------------------
-    global thread_context_switch_stack:function (thread_context_switch_stack.end - thread_context_switch_stack)
-thread_context_switch_stack:
+    global switch_thread_stack:function (switch_thread_stack.end - switch_thread_stack)
+switch_thread_stack:
     ; System V ABI calling convention: these four registers must be preserved
     ;
     ; We must store these registers whether we are actually using them here or
