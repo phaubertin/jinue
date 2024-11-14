@@ -103,7 +103,7 @@ typedef enum {
 
 struct thread_t {
     object_header_t          header;
-    machine_thread_t         thread_ctx;
+    machine_thread_t         machine_thread;
     jinue_node_t             thread_list;
     thread_state_t           state;
     process_t               *process;

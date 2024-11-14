@@ -43,7 +43,7 @@ static inline percpu_t *get_percpu_data(void) {
     return (percpu_t *)get_gs_ptr( (uint32_t *)&zero->self );
 }
 
-static inline tss_t *get_tss(void) {
+static inline tss_t *get_percpu_tss(void) {
     return &get_percpu_data()->tss;
 }
 

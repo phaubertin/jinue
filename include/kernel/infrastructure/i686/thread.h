@@ -35,9 +35,6 @@
 #include <kernel/machine/types.h>
 #include <stdbool.h>
 
-void switch_thread_stack(
-        machine_thread_t    *from_ctx,
-        machine_thread_t    *to_ctx,
-        bool                 destroy_from);
+void switch_thread_stack(machine_thread_t *from, machine_thread_t *to);
 
 #endif

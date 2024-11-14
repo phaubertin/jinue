@@ -135,7 +135,11 @@ static void switch_thread(thread_t *from, thread_t *to, bool destroy_from) {
 
     to->state = THREAD_STATE_RUNNING;
 
-    machine_switch_thread(from, to, destroy_from);
+    if(destroy_from) {
+        machine_switch_and_unref_thread(from, to);
+    } else {
+        machine_switch_thread(from, to);
+    }
 }
 
 void switch_to_thread(thread_t *thread, bool blocked) {
