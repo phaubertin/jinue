@@ -34,6 +34,8 @@
 
 #include <kernel/machine/types.h>
 
+#define SPINLOCK_STATIC { .lock = 0 }
+
 void init_spinlock(spinlock_t *lock);
 
 void spin_lock(spinlock_t *lock);

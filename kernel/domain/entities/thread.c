@@ -35,6 +35,7 @@
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/entities/thread.h>
 #include <kernel/domain/services/panic.h>
+#include <kernel/machine/spinlock.h>
 #include <kernel/machine/thread.h>
 #include <kernel/utils/list.h>
 
@@ -55,7 +56,13 @@ static const object_type_t object_type = {
 
 const object_type_t *object_type_thread = &object_type;
 
-static jinue_list_t ready_list = JINUE_LIST_STATIC;
+static struct {
+    jinue_list_t    queue;
+    spinlock_t      lock;
+} ready_queue = {
+    .queue  = JINUE_LIST_STATIC,
+    .lock   = SPINLOCK_STATIC
+};
 
 thread_t *construct_thread(process_t *process) {
     thread_t *thread = machine_alloc_thread();
@@ -95,16 +102,24 @@ void prepare_thread(thread_t *thread, const thread_params_t *params) {
 void ready_thread(thread_t *thread) {
     thread->state = THREAD_STATE_READY;
 
+    spin_lock(&ready_queue.lock);
+
     /* add thread to the tail of the ready list to give other threads a chance to run */
-    jinue_list_enqueue(&ready_list, &thread->thread_list);
+    jinue_list_enqueue(&ready_queue.queue, &thread->thread_list);
+
+    spin_unlock(&ready_queue.lock);
 }
 
 static thread_t *reschedule(bool current_can_run) {
+    spin_lock(&ready_queue.lock);
+
     thread_t *to_thread = jinue_node_entry(
-            jinue_list_dequeue(&ready_list),
+            jinue_list_dequeue(&ready_queue.queue),
             thread_t,
             thread_list
     );
+
+    spin_unlock(&ready_queue.lock);
     
     if(to_thread == NULL) {
         /* Special case to take into account: when scheduling the first thread,
@@ -191,7 +206,7 @@ void thread_is_starting(thread_t *thread) {
 }
 
 void current_thread_is_exiting(void) {
-    thread_t *thread    = get_current_thread();
+    thread_t *thread = get_current_thread();
 
     thread->state = THREAD_STATE_ZOMBIE;
 
