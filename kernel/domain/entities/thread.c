@@ -110,16 +110,22 @@ void ready_thread(thread_t *thread) {
     spin_unlock(&ready_queue.lock);
 }
 
-static thread_t *reschedule(bool current_can_run) {
+thread_t *dequeue_ready_thread(void) {
     spin_lock(&ready_queue.lock);
 
-    thread_t *to_thread = jinue_node_entry(
+    thread_t *thread = jinue_node_entry(
             jinue_list_dequeue(&ready_queue.queue),
             thread_t,
             thread_list
     );
 
     spin_unlock(&ready_queue.lock);
+
+    return thread;
+}
+
+static thread_t *reschedule(bool current_can_run) {
+    thread_t *to_thread = dequeue_ready_thread();
     
     if(to_thread == NULL) {
         /* Special case to take into account: when scheduling the first thread,
