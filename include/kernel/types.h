@@ -109,6 +109,7 @@ struct thread_t {
     process_t               *process;
     struct thread_t         *sender;
     struct thread_t         *awaiter;
+    spinlock_t               await_lock;
     addr_t                   local_storage_addr;
     size_t                   local_storage_size;
     size_t                   recv_buffer_size;
@@ -129,6 +130,7 @@ typedef struct {
 
 typedef struct {
     object_header_t header;
+    spinlock_t      lock;
     jinue_list_t    send_list;
     jinue_list_t    recv_list;
     int             receivers_count;

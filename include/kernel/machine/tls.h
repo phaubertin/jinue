@@ -34,6 +34,6 @@
 
 #include <kernel/types.h>
 
-void machine_set_tls(const thread_t *thread);
+void machine_set_thread_local_storage(const thread_t *thread);
 
 #endif

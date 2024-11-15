@@ -35,6 +35,7 @@
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/entities/thread.h>
+#include <kernel/machine/spinlock.h>
 #include <kernel/machine/thread.h>
 
 int await_thread(int fd) {
@@ -61,21 +62,20 @@ int await_thread(int fd) {
         return -JINUE_EDEADLK;
     }
 
-    /* TODO this check and the following assignment should be atomic */
+    spin_lock(&thread->await_lock);
+
     if(thread->awaiter != NULL) {
+        spin_unlock(&thread->await_lock);
         return -JINUE_ESRCH;
     }
 
     thread->awaiter = current;
 
-    /* Keep the thread around until we actually read the exit value. */
-    add_ref_to_object(&thread->header);
-
-    if(thread->state != THREAD_STATE_ZOMBIE) {
-        block_current_thread();
+    if(thread->state == THREAD_STATE_ZOMBIE) {
+        spin_unlock(&thread->await_lock);
+    } else {
+        block_and_unlock(&thread->await_lock);
     }
-
-    sub_ref_to_object(&thread->header);
 
     return 0;
 }

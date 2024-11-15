@@ -156,7 +156,7 @@ void machine_switch_thread(thread_t *from, thread_t *to) {
 
     set_kernel_stack(to);
 
-    machine_set_tls(to);
+    machine_set_thread_local_storage(to);
 
     machine_thread_t *machine_from  = (from == NULL) ? NULL : &from->machine_thread;
     machine_thread_t *machine_to    = &to->machine_thread;

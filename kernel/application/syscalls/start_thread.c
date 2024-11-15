@@ -59,9 +59,7 @@ int start_thread(int fd, const thread_params_t *params) {
 
     prepare_thread(thread, params);
 
-    thread_is_starting(thread);
-
-    ready_thread(thread);
+    run_thread(thread);
 
     return 0;
 }

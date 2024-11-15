@@ -36,6 +36,7 @@
 #include <kernel/domain/entities/endpoint.h>
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/services/ipc.h>
+#include <kernel/machine/spinlock.h>
 #include <kernel/utils/list.h>
 #include <stddef.h>
 
@@ -82,6 +83,7 @@ static void cache_endpoint_ctor(void *buffer, size_t size) {
     init_object_header(&endpoint->header, object_type_ipc_endpoint);
     jinue_list_init(&endpoint->send_list);
     jinue_list_init(&endpoint->recv_list);
+    init_spinlock(&endpoint->lock);
     endpoint->receivers_count = 0;
 }
 

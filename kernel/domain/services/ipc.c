@@ -36,6 +36,7 @@
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/thread.h>
 #include <kernel/domain/services/ipc.h>
+#include <kernel/machine/spinlock.h>
 #include <kernel/utils/pmap.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -233,22 +234,24 @@ int send_message(
         return gather_result;
     }
 
+    spin_lock(&endpoint->lock);
+
     thread_t *receiver = jinue_node_entry(
             jinue_list_dequeue(&endpoint->recv_list),
             thread_t,
             thread_list);
 
     if(receiver == NULL) {
-        /* No thread is waiting to receive this message, so we must wait on the
-         * sender list. */
+        /* No thread is waiting to receive this message, so we must wait on the sender list. */
         jinue_list_enqueue(&endpoint->send_list, &sender->thread_list);
-        block_current_thread();
+        block_and_unlock(&endpoint->lock);
     }
     else {
+        spin_unlock(&endpoint->lock);
         receiver->sender = sender;
 
         /* switch to receiver thread, which will resume inside syscall_receive() */
-        switch_to_thread(receiver, true);
+        switch_to_and_block(receiver);
     }
 
     if(sender->message_errno == JINUE_EPROTO) {
@@ -299,53 +302,55 @@ int receive_message(ipc_endpoint_t *endpoint, thread_t *receiver, jinue_message_
 
     receiver->message_errno = 0;
 
-    thread_t *sender = jinue_node_entry(
-        jinue_list_dequeue(&endpoint->send_list),
-        thread_t,
-        thread_list);
-    
-    if(sender == NULL) {
-        /* No thread is waiting to send a message, so we must wait on the receive
-         * list. */
-        jinue_list_enqueue(&endpoint->recv_list, &receiver->thread_list);
-        block_current_thread();
+    while(true) {
+        spin_lock(&endpoint->lock);
+
+        thread_t *sender = jinue_node_entry(
+            jinue_list_dequeue(&endpoint->send_list),
+            thread_t,
+            thread_list);
         
-        /* set by sending thread */
-        sender = receiver->sender;
-    }
-    else {
-        receiver->sender = sender;
-    }
+        if(sender == NULL) {
+            /* No thread is waiting to send a message, so we must wait on the receive list. */
+            jinue_list_enqueue(&endpoint->recv_list, &receiver->thread_list);
+            block_and_unlock(&endpoint->lock);
+            
+            /* set by sending thread */
+            sender = receiver->sender;
+        }
+        else {
+            spin_unlock(&endpoint->lock);
+            receiver->sender = sender;
+        }
 
-    if(receiver->message_errno != 0) {
-        receiver->sender = NULL;
-        return -receiver->message_errno;
-    }
+        if(receiver->message_errno != 0) {
+            receiver->sender = NULL;
+            return -receiver->message_errno;
+        }
 
-    if(sender->message_size > recv_buffer_size) {
-        /* message is too big for the receive buffer */
-        sender->message_errno = JINUE_E2BIG;
-        receiver->sender = NULL;
+        if(sender->message_size > recv_buffer_size) {
+            /* message is too big for the receive buffer */
+            sender->message_errno   = JINUE_E2BIG;
+            receiver->sender        = NULL;
+            
+            ready_thread(sender);
+            continue;
+        }
+
+        /* copy reply to user space buffer */
+        int scatter_result = scatter_message(sender, message);
+
+        if(scatter_result < 0) {
+            receiver->sender = NULL;
+            return scatter_result;
+        }
         
-        /* switch back to sender thread to return from call immediately */
-        switch_to_thread(sender, false);
-                
-        return -JINUE_E2BIG;
-    }
-    
-    /* copy reply to user space buffer */
-    int scatter_result = scatter_message(sender, message);
+        message->recv_function  = sender->message_function;
+        message->recv_cookie    = sender->message_cookie;
+        message->reply_max_size = sender->recv_buffer_size;
 
-    if(scatter_result < 0) {
-        receiver->sender = NULL;
-        return scatter_result;
+        return sender->message_size;
     }
-    
-    message->recv_function  = sender->message_function;
-    message->recv_cookie    = sender->message_cookie;
-    message->reply_max_size = sender->recv_buffer_size;
-
-    return sender->message_size;
 }
 
 /**
@@ -383,7 +388,7 @@ int reply_to_message(thread_t *replier, const jinue_message_t *message) {
     replier->sender = NULL;
     
     /* switch back to sender thread to return from call immediately */
-    switch_to_thread(replyto, false);
+    switch_to(replyto);
 
     return 0;
 }
@@ -411,7 +416,7 @@ int reply_error_to_message(thread_t *replier, uintptr_t errcode) {
     replier->sender                 = NULL;
     
     /* switch back to sender thread to return from call immediately */
-    switch_to_thread(replyto, false);
+    switch_to(replyto);
 
     return 0;
 }

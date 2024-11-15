@@ -39,20 +39,22 @@ extern const object_type_t *object_type_thread;
 thread_t *construct_thread(process_t *process);
 
 void prepare_thread(thread_t *thread, const thread_params_t *params);
-       
+
 void ready_thread(thread_t *thread);
 
-void switch_to_thread(thread_t *thread, bool blocked);
+void run_first_thread(thread_t *thread);
 
-void start_first_thread(thread_t *thread);
+void run_thread(thread_t *thread);
+
+void terminate_current_thread(void);
+
+void switch_to(thread_t *to);
+
+void switch_to_and_block(thread_t *to);
+
+void block_and_unlock(spinlock_t *lock);
 
 void yield_current_thread(void);
-
-void block_current_thread(void);
-
-void thread_is_starting(thread_t *thread);
-
-void current_thread_is_exiting(void);
 
 void set_thread_local_storage(thread_t *thread, addr_t addr, size_t size);
 

@@ -138,9 +138,6 @@ void remove_running_thread_from_process(process_t *process) {
      * reference count alone is not enough because the process might have
      * descriptors that reference itself. */
     if(process->running_threads_count < 1) {
-        /* We must switch to a safe address space before destroying the process
-         * so the current thread still has an address space to run into. */
-        machine_switch_to_kernel_addr_space();
         destroy_object(&process->header);
     }
     
