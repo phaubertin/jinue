@@ -38,38 +38,27 @@
 #include <kernel/machine/spinlock.h>
 #include <kernel/machine/thread.h>
 
-int await_thread(int fd) {
-    descriptor_t desc;
-    int status = dereference_object_descriptor(&desc, get_current_process(), fd);
-
-    if(status < 0) {
-        return -JINUE_EBADF;
-    }
-
-    thread_t *thread = get_thread_from_descriptor(&desc);
+static int with_thread_referenced(descriptor_t *thread_desc) {
+    thread_t *thread = get_thread_from_descriptor(thread_desc);
 
     if(thread == NULL) {
-        unreference_descriptor_object(&desc);
         return -JINUE_EBADF;
     }
 
-    if(!descriptor_has_permissions(&desc, JINUE_PERM_AWAIT)) {
-        unreference_descriptor_object(&desc);
+    if(!descriptor_has_permissions(thread_desc, JINUE_PERM_AWAIT)) {
         return -JINUE_EPERM;
     }
 
     thread_t *current = get_current_thread();
 
     if(thread == current) {
-        unreference_descriptor_object(&desc);
         return -JINUE_EDEADLK;
     }
 
     spin_lock(&thread->await_lock);
 
-    if(thread->awaiter != NULL) {
+    if(thread->state == THREAD_STATE_CREATED || thread->awaiter != NULL) {
         spin_unlock(&thread->await_lock);
-        unreference_descriptor_object(&desc);
         return -JINUE_ESRCH;
     }
 
@@ -81,7 +70,20 @@ int await_thread(int fd) {
         block_and_unlock(&thread->await_lock);
     }
 
-    unreference_descriptor_object(&desc);
-
     return 0;
+}
+
+int await_thread(int fd) {
+    descriptor_t thread_desc;
+    int status = dereference_object_descriptor(&thread_desc, get_current_process(), fd);
+
+    if(status < 0) {
+        return -JINUE_EBADF;
+    }
+
+    status = with_thread_referenced(&thread_desc);
+
+    unreference_descriptor_object(&thread_desc);
+
+    return status;
 }

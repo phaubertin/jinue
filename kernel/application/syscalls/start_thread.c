@@ -55,7 +55,7 @@ int start_thread(int fd, const thread_params_t *params) {
         return -JINUE_EPERM;
     }
 
-    if(thread->state != THREAD_STATE_ZOMBIE) {
+    if(thread->state != THREAD_STATE_CREATED && thread->state != THREAD_STATE_ZOMBIE) {
         unreference_descriptor_object(&desc);
         return -JINUE_EBUSY;
     }

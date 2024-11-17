@@ -96,10 +96,12 @@ typedef struct {
 } process_t;
 
 typedef enum {
-    THREAD_STATE_ZOMBIE,
+    THREAD_STATE_CREATED,
+    THREAD_STATE_STARTING,
     THREAD_STATE_READY,
     THREAD_STATE_RUNNING,
-    THREAD_STATE_BLOCKED
+    THREAD_STATE_BLOCKED,
+    THREAD_STATE_ZOMBIE
 } thread_state_t;
 
 struct thread_t {

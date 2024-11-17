@@ -85,13 +85,9 @@ thread_t *construct_thread(process_t *process) {
     init_spinlock(&thread->await_lock);
     jinue_node_init(&thread->thread_list);
 
-    thread->state               = THREAD_STATE_ZOMBIE;
+    thread->state               = THREAD_STATE_CREATED;
     thread->process             = process;
-    /* Arbitrary non-NULL value to signify the thread hasn't run yet and
-     * shouldn't be awaited. This will fall in the condition in await_thread()
-     * that detects an attempt to await a thread that has already been awaited,
-     * so await_thread() will fail with JINUE_ESRCH. */
-    thread->awaiter             = thread;
+    thread->awaiter             = NULL;
     thread->local_storage_addr  = NULL;
     thread->local_storage_size  = 0;
  
@@ -128,7 +124,14 @@ static void free_thread(object_header_t *object) {
  */
 void prepare_thread(thread_t *thread, const thread_params_t *params) {
     thread->sender  = NULL;
+    
+    spin_lock(&thread->await_lock);
+    
     thread->awaiter = NULL;
+    thread->state   = THREAD_STATE_STARTING;
+
+    spin_unlock(&thread->await_lock);    
+    
     machine_prepare_thread(thread, params);
 }
 
