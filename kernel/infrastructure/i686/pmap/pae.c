@@ -483,7 +483,6 @@ pte_t *pae_lookup_page_directory(
  *
  * @param addr virtual address
  * @return entry offset of address within page table
- *
  */
 unsigned int pae_page_table_offset_of(void *addr) {
     return PAGE_TABLE_OFFSET_OF(addr);
@@ -494,7 +493,6 @@ unsigned int pae_page_table_offset_of(void *addr) {
  *
  * @param addr virtual address
  * @return entry offset of address within page directory
- *
  */
 unsigned int pae_page_directory_offset_of(void *addr) {
     return PAGE_DIRECTORY_OFFSET_OF(addr);
@@ -506,7 +504,6 @@ unsigned int pae_page_directory_offset_of(void *addr) {
  * @param pte base page table entry (e.g. the beginning of a page table)
  * @param offset entry offset
  * @return PTE at specified offset
- *
  */
 pte_t *pae_get_pte_with_offset(pte_t *pte, unsigned int offset) {
     return &pte[offset];
@@ -522,7 +519,6 @@ pte_t *pae_get_pte_with_offset(pte_t *pte, unsigned int offset) {
  * @param pte page table or page directory entry
  * @param paddr physical address of page frame
  * @param flags flags
- *
  */
 void pae_set_pte(pte_t *pte, uint64_t paddr, uint64_t flags) {
     assert((paddr & ~page_frame_number_mask) == 0);
@@ -538,7 +534,6 @@ void pae_set_pte(pte_t *pte, uint64_t paddr, uint64_t flags) {
  *
  * @param pte page table entry
  * @param pte flags flags
- *
  */
 void pae_set_pte_flags(pte_t *pte, uint64_t flags) {
     pte->entry = (pte->entry & page_frame_number_mask) | flags;
@@ -549,7 +544,6 @@ void pae_set_pte_flags(pte_t *pte, uint64_t flags) {
  *
  * @param pte page table or page directory entry array
  * @return physical address
- *
  */
 uint64_t pae_get_pte_paddr(const pte_t *pte) {
     return (pte->entry & page_frame_number_mask);
@@ -562,7 +556,6 @@ uint64_t pae_get_pte_paddr(const pte_t *pte) {
  * present in memory.
  *
  * @param pte page table or page directory entry
- *
  */
 void pae_clear_pte(pte_t *pte) {
     pte->entry = 0;
@@ -573,7 +566,6 @@ void pae_clear_pte(pte_t *pte) {
  *
  * @param dest destination page table/directory entry
  * @param src source page table/directory entry
- *
  */
 void pae_copy_pte(pte_t *dest, const pte_t *src) {
     dest->entry = src->entry;

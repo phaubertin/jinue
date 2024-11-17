@@ -47,7 +47,7 @@
  */
 int create_endpoint(int fd) {
     process_t *process  = get_current_process();
-    int status          = reserve_unused_descriptor(process, fd);
+    int status          = reserve_free_descriptor(process, fd);
 
     if(status < 0) {
         return status;
@@ -56,13 +56,13 @@ int create_endpoint(int fd) {
     ipc_endpoint_t *endpoint = construct_endpoint();
 
     if(endpoint == NULL) {
-        free_descriptor(process, fd);
+        free_reserved_descriptor(process, fd);
         return -JINUE_EAGAIN;
     }
 
     descriptor_t desc;
     desc.object = endpoint_object(endpoint);
-    desc.flags  = DESCRIPTOR_FLAG_OWNER | object_type_ipc_endpoint->all_permissions;
+    desc.flags  = DESC_FLAG_OWNER | object_type_ipc_endpoint->all_permissions;
     desc.cookie = 0;
 
     open_descriptor(process, fd, &desc);

@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_ENTITIES_DESCRIPTOR_H
-#define JINUE_KERNEL_ENTITIES_DESCRIPTOR_H
+#ifndef JINUE_KERNEL_ENTITIES_DESC_H
+#define JINUE_KERNEL_ENTITIES_DESC_H
 
 #include <jinue/shared/asm/permissions.h>
 #include <kernel/types.h>
@@ -38,39 +38,39 @@
 /* These flags are numbered downward starting at 31 to not conflict with PERM_... flags
  * which share the same flags field. */
 
-#define DESCRIPTOR_FLAG_NONE        0
+#define DESC_FLAG_NONE          0
 
-#define DESCRIPTOR_FLAG_STATE1      (1<<31)
+#define DESC_FLAG_STATE1        (1<<31)
 
-#define DESCRIPTOR_FLAG_STATE0      (1<<30)
+#define DESC_FLAG_STATE0        (1<<30)
 
-#define DESCRIPTOR_FLAG_OWNER       (1<<29)
+#define DESC_FLAG_OWNER         (1<<29)
 
-#define DESCRIPTOR_FLAG_STATE       (DESCRIPTOR_FLAG_STATE1 | DESCRIPTOR_FLAG_STATE0)
+#define DESC_FLAG_STATE         (DESC_FLAG_STATE1 | DESC_FLAG_STATE0)
 
-#define DESCRIPTOR_STATE_FREE       0
+#define DESC_STATE_FREE         0
 
-#define DESCRIPTOR_STATE_RESERVED   DESCRIPTOR_FLAG_STATE0
+#define DESC_STATE_RESERVED     DESC_FLAG_STATE0
 
-#define DESCRIPTOR_STATE_OPEN       DESCRIPTOR_FLAG_STATE1
+#define DESC_STATE_OPEN         DESC_FLAG_STATE1
 
-#define DESCRIPTOR_STATE_DESTROYED  (DESCRIPTOR_FLAG_STATE1 | DESCRIPTOR_FLAG_STATE0)
+#define DESC_STATE_DESTROYED    (DESC_FLAG_STATE1 | DESC_FLAG_STATE0)
 
 
 static inline bool descriptor_is_free(const descriptor_t *desc) {
-    return (desc->flags & DESCRIPTOR_FLAG_STATE) == DESCRIPTOR_STATE_FREE;
+    return (desc->flags & DESC_FLAG_STATE) == DESC_STATE_FREE;
 }
 
 static inline bool descriptor_is_reserved(const descriptor_t *desc) {
-    return (desc->flags & DESCRIPTOR_FLAG_STATE) == DESCRIPTOR_STATE_RESERVED;
+    return (desc->flags & DESC_FLAG_STATE) == DESC_STATE_RESERVED;
 }
 
 static inline bool descriptor_is_open(const descriptor_t *desc) {
-    return (desc->flags & DESCRIPTOR_FLAG_STATE) == DESCRIPTOR_STATE_OPEN;
+    return (desc->flags & DESC_FLAG_STATE) == DESC_STATE_OPEN;
 }
 
 static inline bool descriptor_is_destroyed(const descriptor_t *desc) {
-    return (desc->flags & DESCRIPTOR_FLAG_STATE) == DESCRIPTOR_STATE_DESTROYED;
+    return (desc->flags & DESC_FLAG_STATE) == DESC_STATE_DESTROYED;
 }
 
 static inline bool descriptor_is_closeable(const descriptor_t *desc) {
@@ -78,7 +78,7 @@ static inline bool descriptor_is_closeable(const descriptor_t *desc) {
 }
 
 static inline bool descriptor_is_owner(const descriptor_t *desc) {
-    return !!(desc->flags & DESCRIPTOR_FLAG_OWNER);
+    return !!(desc->flags & DESC_FLAG_OWNER);
 }
 
 static inline bool descriptor_has_permissions(const descriptor_t *desc, int perms) {
@@ -94,9 +94,9 @@ int dereference_object_descriptor(
 
 void unreference_descriptor_object(descriptor_t *desc);
 
-int reserve_unused_descriptor(process_t *process, int fd);
+int reserve_free_descriptor(process_t *process, int fd);
 
-void free_descriptor(process_t *process, int fd);
+void free_reserved_descriptor(process_t *process, int fd);
 
 void open_descriptor(process_t *process, int fd, const descriptor_t *in);
 

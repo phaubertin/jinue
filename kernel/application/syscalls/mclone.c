@@ -106,7 +106,6 @@ static int with_source_referenced(
  * @param dest destination process descriptor number
  * @param args MCLONE system call arguments structure
  * @return zero on success, negated error code on failure
- *
  */
 int mclone(int src, int dest, const jinue_mclone_args_t *args) {
     process_t *current = get_current_process();

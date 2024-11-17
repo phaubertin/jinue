@@ -43,7 +43,6 @@
 
 static void free_thread(object_header_t *object);
 
-/** runtime type definition for a thread */
 static const object_type_t object_type = {
     .all_permissions    = JINUE_PERM_START | JINUE_PERM_AWAIT,
     .name               = "thread",
@@ -56,8 +55,10 @@ static const object_type_t object_type = {
     .cache_dtor         = NULL
 };
 
+/** runtime type definition for a thread */
 const object_type_t *object_type_thread = &object_type;
 
+/** ready threads queue with lock */
 static struct {
     jinue_list_t    queue;
     spinlock_t      lock;
@@ -68,6 +69,13 @@ static struct {
 
 /**
  * Thread constructor
+ * 
+ * The in-kernel thread implementation separates thread creation and thread
+ * startup, which allows an application to keep kernel thread objects around in
+ * a thread pool and reuse them as application threads exit and new ones start.
+ * This function constructs a thread but does not start it. run_thread() (or
+ * run_first_thread()) does that on an already constructed thread that has
+ * been prepared for a first or new run with prepare_thread().
  * 
  * @param process process in which to create the new thread
  * @return thread on success, NULL on memory allocation error
@@ -116,7 +124,10 @@ static void free_thread(object_header_t *object) {
  * point.
  * 
  * This function is separate from the thread constructor to allow a thread
- * to be reused by the application.
+ * to be reused by the application. (See construct_thread())
+ * 
+ * Once a thread has been prepared by calling this function, it can be run
+ * by calling run_thread() (or run_first_thread()).
  * 
  * @param thread the thread
  * @param params initialization parameters
@@ -204,6 +215,9 @@ void run_first_thread(thread_t *thread) {
 /**
  * Run a thread
  * 
+ * Before this function is called, the thread must have been prepared with
+ * prepare_thread().
+ * 
  * @param thread the thread to run
  *
  */
@@ -267,7 +281,6 @@ static thread_t *reschedule(bool current_can_run) {
  * The thread is destroyed and freed only if there are no more references to it
  * (i.e. no descriptors referencing it). Otherwise, it remains available to be
  * reused by calling prepare_thread() and then run_thread() again.
- *
  */
 void terminate_current_thread(void) {
     thread_t *current = get_current_thread();
@@ -384,7 +397,6 @@ void block_and_unlock(spinlock_t *lock) {
  * 
  * The current thread is added at the tail of the ready queue. It continues
  * running if no other thread is ready to run.
- *
  */
 void yield_current_thread(void) {
     thread_t *current   = get_current_thread();

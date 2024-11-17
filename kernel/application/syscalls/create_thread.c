@@ -56,7 +56,7 @@ static int with_target_process_referenced(process_t *current, int fd, descriptor
 
     descriptor_t desc;
     desc.object = thread_object(thread);
-    desc.flags  = DESCRIPTOR_FLAG_OWNER | object_type_thread->all_permissions;
+    desc.flags  = DESC_FLAG_OWNER | object_type_thread->all_permissions;
     desc.cookie = 0;
 
     open_descriptor(current, fd, &desc);
@@ -81,7 +81,7 @@ static int with_descriptor_reserved(process_t *current, int fd, int process_fd) 
 
 int create_thread(int fd, int process_fd) {
     process_t *current  = get_current_process();
-    int status          = reserve_unused_descriptor(current, fd);
+    int status          = reserve_free_descriptor(current, fd);
 
     if(status < 0) {
         return -JINUE_EBADF;
@@ -90,7 +90,7 @@ int create_thread(int fd, int process_fd) {
     status = with_descriptor_reserved(current, fd, process_fd);
 
     if(status < 0) {
-        free_descriptor(current, fd);
+        free_reserved_descriptor(current, fd);
     }
 
     return status;

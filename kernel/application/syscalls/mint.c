@@ -51,7 +51,7 @@ static int with_target_process_referenced(
         return -JINUE_EPERM;
     }
 
-    int status = reserve_unused_descriptor(target, args->fd);
+    int status = reserve_free_descriptor(target, args->fd);
 
     if(status < 0) {
         return status;

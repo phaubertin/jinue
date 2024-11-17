@@ -43,7 +43,6 @@
  * @param process_fd process descriptor number
  * @param args MMAP system call arguments structure
  * @return zero on success, negated error code on failure
- *
  */
 int mmap(int process_fd, const jinue_mmap_args_t *args) {
     descriptor_t desc;

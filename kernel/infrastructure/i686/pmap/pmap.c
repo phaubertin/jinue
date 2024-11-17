@@ -92,7 +92,6 @@ static addr_space_t initial_addr_space;
  * @param pte base page table entry (e.g. the beginning of a page table)
  * @param offset entry offset
  * @return PTE at specified offset
- *
  */
 static pte_t *get_pte_with_offset(pte_t *pte, unsigned int offset) {
     if(pgtable_format_pae) {
@@ -112,7 +111,6 @@ static pte_t *get_pte_with_offset(pte_t *pte, unsigned int offset) {
  * @param pte base page table entry (e.g. the beginning of a page table)
  * @param offset entry offset
  * @return PTE at specified offset
- *
  */
 static inline const pte_t *get_pte_with_offset_const(
         const pte_t     *pte,
@@ -126,7 +124,6 @@ static inline const pte_t *get_pte_with_offset_const(
  *
  * @param addr virtual address
  * @return entry offset of address within page table
- *
  */
 static unsigned int page_table_offset_of(void *addr) {
     if(pgtable_format_pae) {
@@ -142,7 +139,6 @@ static unsigned int page_table_offset_of(void *addr) {
  *
  * @param addr virtual address
  * @return entry offset of address within page directory
- *
  */
 static unsigned int page_directory_offset_of(void *addr) {
     if(pgtable_format_pae) {
@@ -162,7 +158,6 @@ static unsigned int page_directory_offset_of(void *addr) {
  *
  * @param pte page table entry
  * @param pte flags flags
- *
  */
 static void set_pte_flags(pte_t *pte, uint64_t flags) {
     if(pgtable_format_pae) {
@@ -178,7 +173,6 @@ static void set_pte_flags(pte_t *pte, uint64_t flags) {
  *
  * @param dest destination page table/directory entry
  * @param src source page table/directory entry
- *
  */
 static void copy_pte(pte_t *dest, const pte_t *src) {
     if(pgtable_format_pae) {
@@ -195,7 +189,6 @@ static void copy_pte(pte_t *dest, const pte_t *src) {
  * @param dest destination array
  * @param src source array
  * @param n number of entries to copy
- *
  */
 void copy_ptes(pte_t *dest, const pte_t *src, int n) {
     for(int idx = 0; idx < n; ++idx) {
@@ -215,7 +208,6 @@ void copy_ptes(pte_t *dest, const pte_t *src, int n) {
  * @param pte page table or page directory entry
  * @param paddr physical address of page frame
  * @param flags flags
- *
  */
 static void set_pte(pte_t *pte, user_paddr_t paddr, uint64_t flags) {
     if(pgtable_format_pae) {
@@ -233,7 +225,6 @@ static void set_pte(pte_t *pte, user_paddr_t paddr, uint64_t flags) {
  * present in memory.
  *
  * @param pte page table or page directory entry
- *
  */
 static void clear_pte(pte_t *pte) {
     if(pgtable_format_pae) {
@@ -252,7 +243,6 @@ static void clear_pte(pte_t *pte) {
  *
  * @param pte page table or page directory entry array
  * @param n number of entries to clear
- *
  */
 void clear_ptes(pte_t *pte, int n) {
     for(int idx = 0; idx < n; ++idx) {
@@ -265,7 +255,6 @@ void clear_ptes(pte_t *pte, int n) {
  *
  * @param pte page table or page directory entry array
  * @return physical address
- *
  */
 static user_paddr_t get_pte_paddr(const pte_t *pte) {
     if(pgtable_format_pae) {
@@ -281,7 +270,6 @@ static user_paddr_t get_pte_paddr(const pte_t *pte) {
  *
  * During initialization, the kernel either calls this function or calls
  * pae_enable() to enable PAE.
- *
  */
 void pmap_set_no_pae(void) {
     pgtable_format_pae      = false;
@@ -296,7 +284,6 @@ void pmap_set_no_pae(void) {
  * @param flags page table entry flags
  * @param num_entries number of entries to initialize
  * @return first page table entry after affected ones
- *
  */
 pte_t *initialize_page_table_linear(
         pte_t       *page_table,
@@ -326,7 +313,6 @@ pte_t *initialize_page_table_linear(
  * new copy is read only.
  *
  * @param bootinfo boot information structure
- *
  */
 void pmap_write_protect_kernel_image(const bootinfo_t *bootinfo) {
     size_t image_size = (char *)bootinfo->image_top - (char *)bootinfo->image_start;
@@ -692,7 +678,6 @@ static pte_t *lookup_page_table_entry(
  * @param addr_space address space in which a mapping change was performed
  * @param addr virtual address of mapping change
  * @param reload_cr3 true if CR3 register must be reloaded
- *
  */
 static void invalidate_mapping(
         addr_space_t    *addr_space,
@@ -727,7 +712,6 @@ static void invalidate_mapping(
  *
  * @param prot architecture-independent protection flags
  * @return architecture-dependent flags
- *
  */
 static uint64_t map_page_access_flags(int prot) {
     const int rwe_mask = JINUE_PROT_READ | JINUE_PROT_WRITE | JINUE_PROT_EXEC;
@@ -767,7 +751,6 @@ static uint64_t map_page_access_flags(int prot) {
  * @param paddr address of page frame
  * @param flags flags used for mapping (see X86_PTE_... constants)
  * @return true on success, false on page table allocation error
- *
  */
 static bool map_page(
         addr_space_t    *addr_space,
@@ -806,7 +789,6 @@ static bool map_page(
  * @param vaddr virtual address of mapping
  * @param paddr address of page frame
  * @param prot protections flags
- *
  */
 void machine_map_kernel_page(void *vaddr, kern_paddr_t paddr, int prot) {
     assert(is_kernel_pointer(vaddr));
@@ -824,7 +806,6 @@ void machine_map_kernel_page(void *vaddr, kern_paddr_t paddr, int prot) {
  * @param paddr address of page frame
  * @param prot protections flags
  * @return true on success, false on page table allocation error
- *
  */
 static bool map_userspace_page(
         addr_space_t    *addr_space,
@@ -848,7 +829,6 @@ static bool map_userspace_page(
  * @param length length of mapping
  * @param prot protection flags
  * @return true on success, false on page table allocation error
- *
  */
 bool machine_map_userspace(
         process_t       *process,
@@ -884,7 +864,6 @@ bool machine_map_userspace(
  *
  * @param addr_space address space from which to unmap, NULL for kernel mappings
  * @param addr address of page to unmap
- *
  */
 static void unmap_page(addr_space_t *addr_space, void *addr) {
     /** ASSERTION: addr is aligned on a page boundary */
@@ -907,7 +886,6 @@ static void unmap_page(addr_space_t *addr_space, void *addr) {
  * This function does not perform any page table deallocation.
  *
  * @param addr address of page to unmap
- *
  */
 void machine_unmap_kernel_page(void *addr) {
     assert(is_kernel_pointer(addr));
@@ -929,7 +907,6 @@ void machine_unmap_kernel_page(void *addr) {
  * @param src_addr start of range in source address space
  * @param length length of mapping range
  * @param prot protections flags
- *
  */
 bool machine_clone_userspace_mapping(
         process_t   *dest_process,
@@ -970,7 +947,6 @@ bool machine_clone_userspace_mapping(
  *
  * @param addr virtual address of kernel page
  * @return physical address of page frame
- *
  */
 kern_paddr_t machine_lookup_kernel_paddr(void *addr) {
     assert( is_kernel_pointer(addr) );

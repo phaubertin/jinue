@@ -47,7 +47,6 @@ static void destroy_process(object_header_t *object);
 
 static void free_process(object_header_t *object);
 
-/** runtime type definition for a process */
 static const object_type_t object_type = {
     .all_permissions    =
               JINUE_PERM_CREATE_THREAD
@@ -63,27 +62,52 @@ static const object_type_t object_type = {
     .cache_dtor         = NULL
 };
 
+/** runtime type definition for a process */
 const object_type_t *object_type_process = &object_type;
 
 /** slab cache used for allocating process objects */
 static slab_cache_t process_cache;
 
+/**
+ * Constructor for process object in slab cache
+ * 
+ * This constructor is called when the slab cache is grown. It should only
+ * initialize state that persists when the object is freed and then reused,
+ * such as the object type.
+ * 
+ * See construct_process() for the run time constructor.
+ * 
+ * @param buffer the process to construct
+ * @param ignore size of object - ignored
+ */
 static void cache_process_ctor(void *buffer, size_t ignore) {
     process_t *process = buffer;
-
     init_object_header(&process->header, object_type_process);
 }
 
+/**
+ * Process slab cache initialization
+ */
 void initialize_process_cache(void) {
     init_object_cache(&process_cache, object_type_process);
 }
 
+/**
+ * Initialize the descriptors of a process being constructed
+ * 
+ * @param process the process being constructed
+ */
 static void initialize_descriptors(process_t *process) {
     for(int idx = 0; idx < JINUE_DESC_NUM; ++idx) {
         clear_descriptor(&process->descriptors[idx]);
     }
 }
 
+/**
+ * Process constructor
+ * 
+ * @return process if successful, NULL if out of memory
+ */
 process_t *construct_process(void) {
     process_t *process = slab_cache_alloc(&process_cache);
 
@@ -99,6 +123,11 @@ process_t *construct_process(void) {
     return process;
 }
 
+/**
+ * Close all descriptors of a process being destroyed
+ * 
+ * @param process the process being destroyed
+ */
 static void close_descriptors(process_t *process) {
     for(int idx = 0; idx < JINUE_DESC_NUM; ++idx) {
         descriptor_t *desc = &process->descriptors[idx];
@@ -109,6 +138,14 @@ static void close_descriptors(process_t *process) {
     }
 }
 
+/**
+ * Destroy a process
+ * 
+ * This is the "destroy" op of the object type, hence why the type of the
+ * argument.
+ * 
+ * @param object process object
+ */
 static void destroy_process(object_header_t *object) {
     process_t *process = (process_t *)object;
     /* TODO destroy remaining threads */
@@ -116,23 +153,60 @@ static void destroy_process(object_header_t *object) {
     machine_finalize_process(process);
 }
 
+/**
+ * Free a process
+ * 
+ * This is the "free" op of the object type, hence why the type of the
+ * argument. This function is called automatically once the process no
+ * longer has any references.
+ * 
+ * @param object process object
+ */
 static void free_process(object_header_t *object) {
     slab_cache_free(object);
 }
 
+/**
+ * Switch to specified process address space
+ * 
+ * @param process the process
+ */
 void switch_to_process(process_t *process) {
     machine_switch_to_process(process);
 }
 
+/**
+ * Get process running on current CPU
+ * 
+ * @return running process
+ */
 process_t *get_current_process(void) {
     return get_current_thread()->process;
 }
 
+/**
+ * Update process state to account for a new running thread
+ * 
+ * This function is called not when a new thread is created but when it
+ * actually starts running.
+ * 
+ * @param process the process that gained a running thread
+ */
 void add_running_thread_to_process(process_t *process) {
     ++process->running_threads_count;
     add_ref_to_object(&process->header);
 }
 
+/**
+ * Update process state to account for a running thread exiting
+ * 
+ * This function is called not when a thread is destroyed but when it exits.
+ * When a thread has exited, the kernel thread object can be reused for
+ * another application thread. However, when *all* of a process' threads have
+ * exited, the process is destroyed, which this funtion takes care of.
+ * 
+ * @param process the process that lost a running thread
+ */
 void remove_running_thread_from_process(process_t *process) {
     --process->running_threads_count;
     

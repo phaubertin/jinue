@@ -50,7 +50,6 @@ static void destroy_endpoint(object_header_t *object);
 
 static void free_endpoint(object_header_t *object);
 
-/** runtime type definition for an IPC endpoint */
 static const object_type_t object_type = {
     .all_permissions    = JINUE_PERM_SEND | JINUE_PERM_RECEIVE,
     .name               = "ipc_endpoint",
@@ -63,6 +62,7 @@ static const object_type_t object_type = {
     .cache_dtor         = NULL
 };
 
+/** runtime type definition for an IPC endpoint */
 const object_type_t *object_type_ipc_endpoint = &object_type;
 
 /** slab cache used for allocating IPC endpoint objects */
@@ -75,7 +75,6 @@ static slab_cache_t ipc_endpoint_cache;
  *
  * @param buffer IPC endpoint object being constructed
  * @param size size in bytes of the IPC endpoint object (ignored)
- *
  */
 static void cache_endpoint_ctor(void *buffer, size_t size) {
     ipc_endpoint_t *endpoint = buffer;
@@ -119,7 +118,6 @@ static void close_endpoint(object_header_t *object, const descriptor_t *desc) {
 
 /**
  * Perform boot-time initialization for IPC
- *
  */
 void initialize_endpoint_cache(void) {
     init_object_cache(&ipc_endpoint_cache, object_type_ipc_endpoint);
@@ -129,7 +127,6 @@ void initialize_endpoint_cache(void) {
  * Constructor for IPC endpoint object
  *
  * @return pointer to endpoint on success, NULL on allocation failure
- *
  */
 ipc_endpoint_t *construct_endpoint(void) {
     return slab_cache_alloc(&ipc_endpoint_cache);

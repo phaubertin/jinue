@@ -46,7 +46,7 @@ static int with_source_referenced(
         return -JINUE_EBADF;
     }
 
-    int status = reserve_unused_descriptor(target, dest);
+    int status = reserve_free_descriptor(target, dest);
 
     if(status < 0) {
         return status;
