@@ -2,7 +2,7 @@
 
 ## Description
 
-Close a descriptor and destroy the kernel object to which it refers.
+Destroy the kernel object to which a descriptor refers.
 
 In order to use this function, the owner descriptor for the resource must be
 specified. The owner descriptor is the descriptor that was specified in the

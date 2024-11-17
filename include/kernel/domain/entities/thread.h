@@ -36,6 +36,10 @@
 
 extern const object_type_t *object_type_thread;
 
+static inline object_header_t *thread_object(thread_t *thread) {
+    return &thread->header;
+}
+
 thread_t *construct_thread(process_t *process);
 
 void prepare_thread(thread_t *thread, const thread_params_t *params);

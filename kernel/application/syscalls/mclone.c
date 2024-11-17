@@ -36,43 +36,12 @@
 #include <kernel/domain/services/logging.h>
 #include <kernel/machine/pmap.h>
 
-/**
- * Implementation for the MCLONE system call
- *
- * Clone memory mappings from one process to another.
- *
- * @param src source process descriptor number
- * @param dest destination process descriptor number
- * @param args MCLONE system call arguments structure
- * @return zero on success, negated error code on failure
- *
- */
-int mclone(int src, int dest, const jinue_mclone_args_t *args) {
-    process_t *current_process = get_current_process();
+static int with_destination_referenced(
+        process_t                   *current,
+        process_t                   *src_process,
+        descriptor_t                *dest_desc,
+        const jinue_mclone_args_t   *args) {
 
-    descriptor_t *src_desc;
-    int status = dereference_object_descriptor(&src_desc, current_process, src);
-    
-    if(status < 0) {
-        return status;
-    }
-    
-    process_t *src_process = get_process_from_descriptor(src_desc);
-
-    if(src_process == NULL) {
-        return -JINUE_EBADF;
-    }
-
-    /* TODO what permissions do we need on the source for this? Should the
-     * source just implicitly be the current process? */
-    
-    descriptor_t *dest_desc;
-    status = dereference_object_descriptor(&dest_desc, current_process, dest);
-    
-    if(status < 0) {
-        return status;
-    }
-    
     process_t *dest_process = get_process_from_descriptor(dest_desc);
 
     if(dest_process == NULL) {
@@ -97,4 +66,61 @@ int mclone(int src, int dest, const jinue_mclone_args_t *args) {
     }
 
     return 0;
+}
+
+static int with_source_referenced(
+        process_t                   *current,
+        descriptor_t                *src_desc,
+        int                          dest,
+        const jinue_mclone_args_t   *args) {
+    
+    process_t *src_process = get_process_from_descriptor(src_desc);
+
+    if(src_process == NULL) {
+        return -JINUE_EBADF;
+    }
+
+    /* TODO what permissions do we need on the source for this? Should the
+     * source just implicitly be the current process? */
+
+    descriptor_t dest_desc;
+    int status = dereference_object_descriptor(&dest_desc, current, dest);
+    
+    if(status < 0) {
+        return status;
+    }
+
+    status = with_destination_referenced(current, src_process, &dest_desc, args);
+
+    unreference_descriptor_object(&dest_desc);
+
+    return status;
+}
+
+/**
+ * Implementation for the MCLONE system call
+ *
+ * Clone memory mappings from one process to another.
+ *
+ * @param src source process descriptor number
+ * @param dest destination process descriptor number
+ * @param args MCLONE system call arguments structure
+ * @return zero on success, negated error code on failure
+ *
+ */
+int mclone(int src, int dest, const jinue_mclone_args_t *args) {
+    process_t *current = get_current_process();
+
+    descriptor_t src_desc;
+    int status = dereference_object_descriptor(&src_desc, current, src);
+    
+    if(status < 0) {
+        return status;
+    }
+    
+    status = with_source_referenced(current, &src_desc, dest, args);
+
+    unreference_descriptor_object(&src_desc);
+
+    return status;
 }

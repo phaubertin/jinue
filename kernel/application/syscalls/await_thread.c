@@ -39,26 +39,29 @@
 #include <kernel/machine/thread.h>
 
 int await_thread(int fd) {
-    descriptor_t *desc;
+    descriptor_t desc;
     int status = dereference_object_descriptor(&desc, get_current_process(), fd);
 
     if(status < 0) {
         return -JINUE_EBADF;
     }
 
-    thread_t *thread = get_thread_from_descriptor(desc);
+    thread_t *thread = get_thread_from_descriptor(&desc);
 
     if(thread == NULL) {
+        unreference_descriptor_object(&desc);
         return -JINUE_EBADF;
     }
 
-    if(!descriptor_has_permissions(desc, JINUE_PERM_AWAIT)) {
+    if(!descriptor_has_permissions(&desc, JINUE_PERM_AWAIT)) {
+        unreference_descriptor_object(&desc);
         return -JINUE_EPERM;
     }
 
     thread_t *current = get_current_thread();
 
     if(thread == current) {
+        unreference_descriptor_object(&desc);
         return -JINUE_EDEADLK;
     }
 
@@ -66,6 +69,7 @@ int await_thread(int fd) {
 
     if(thread->awaiter != NULL) {
         spin_unlock(&thread->await_lock);
+        unreference_descriptor_object(&desc);
         return -JINUE_ESRCH;
     }
 
@@ -76,6 +80,8 @@ int await_thread(int fd) {
     } else {
         block_and_unlock(&thread->await_lock);
     }
+
+    unreference_descriptor_object(&desc);
 
     return 0;
 }

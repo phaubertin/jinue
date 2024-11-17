@@ -46,26 +46,31 @@
  *
  */
 int mmap(int process_fd, const jinue_mmap_args_t *args) {
-    descriptor_t *desc;
+    descriptor_t desc;
     int status = dereference_object_descriptor(&desc, get_current_process(), process_fd);
 
     if(status < 0) {
         return status;
     }
 
-    process_t *process = get_process_from_descriptor(desc);
+    process_t *process = get_process_from_descriptor(&desc);
 
     if(process == NULL) {
+        unreference_descriptor_object(&desc);
         return -JINUE_EBADF;
     }
 
-    if(!descriptor_has_permissions(desc, JINUE_PERM_MAP)) {
+    if(!descriptor_has_permissions(&desc, JINUE_PERM_MAP)) {
+        unreference_descriptor_object(&desc);
         return -JINUE_EPERM;
     }
 
     if(! machine_map_userspace(process, args->addr, args->length, args->paddr, args->prot)) {
+        unreference_descriptor_object(&desc);
         return -JINUE_ENOMEM;
     }
+
+    unreference_descriptor_object(&desc);
 
     return 0;
 }

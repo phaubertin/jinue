@@ -91,6 +91,7 @@ typedef struct {
     object_header_t header;
     addr_space_t    addr_space;
     int             running_threads_count;
+    spinlock_t      descriptors_lock;
     descriptor_t    descriptors[JINUE_DESC_NUM];
 } process_t;
 

@@ -39,19 +39,19 @@
 #include <kernel/machine/exec.h>
 
 static void set_descriptor(process_t *process, int fd, object_header_t *object) {
-    descriptor_t *desc;
-    (void)dereference_unused_descriptor(&desc, process, fd);
+    (void)reserve_unused_descriptor(process, fd);
 
-    desc->object = object;
-    desc->flags  = DESCRIPTOR_FLAG_IN_USE | object->type->all_permissions;
-    desc->cookie = 0;
+    descriptor_t desc;
+    desc.object = object;
+    desc.flags  = object->type->all_permissions;
+    desc.cookie = 0;
 
-    open_object(object, desc);
+    open_descriptor(process, fd, &desc);
 }
 
 static void initialize_descriptors(process_t *process, thread_t *thread) {
-    set_descriptor(process, JINUE_DESC_SELF_PROCESS, &process->header);
-    set_descriptor(process, JINUE_DESC_MAIN_THREAD, &thread->header);
+    set_descriptor(process, JINUE_DESC_SELF_PROCESS, process_object(process));
+    set_descriptor(process, JINUE_DESC_MAIN_THREAD, thread_object(thread));
 }
 
 void exec(

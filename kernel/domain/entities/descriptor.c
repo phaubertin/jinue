@@ -35,12 +35,29 @@
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/entities/thread.h>
+#include <kernel/machine/spinlock.h>
+#include <assert.h>
+
+
+/**
+ * Clear a descriptor
+ * 
+ * A cleared descriptor is unused and is not referring to any object.
+ * 
+ * @param desc descriptor
+ *
+ */
+void clear_descriptor(descriptor_t *desc) {
+    desc->flags     = DESCRIPTOR_STATE_FREE;
+    desc->object    = NULL;
+    desc->cookie    = 0;
+}
 
 /**
  * Get an object reference by descriptor in a specified process
  * 
  * @param process process for which the descriptor is looked up
- * @param fd descriptor
+ * @param fd descriptor number
  * @return object reference on success, NULL if out of bound
  *
  */
@@ -52,60 +69,63 @@ static descriptor_t *dereference_descriptor(process_t *process, int fd) {
     return &process->descriptors[fd];
 }
 
+static void set_state(descriptor_t *desc, int state)  {
+    desc->flags &= ~DESCRIPTOR_FLAG_STATE;
+    desc->flags |= state;
+}
+
 /**
- * Get the object referenced by a descriptor
+ * Portion of dereference_object_descriptor() performed under locked
  * 
- * @param pdesc pointer to where to store the pointer to the object reference (out)
+ * @param pout pointer to where to copy the descriptor (out)
  * @param process process for which the descriptor is looked up
- * @param fd descriptor
+ * @param desc referenced descriptor
  * @return zero on success, negated error number on error
  *
  */
-int dereference_object_descriptor(
-        descriptor_t    **pdesc,
-        process_t        *process,
-        int               fd) {
-
-    descriptor_t *desc = dereference_descriptor(process, fd);
-
-    if(desc == NULL) {
-        return -JINUE_EBADF;
-    }
-
-    if(! descriptor_is_in_use(desc)) {
-        return -JINUE_EBADF;
-    }
-
+static int dereference_object_descriptor_locked(
+        descriptor_t    *pout,
+        process_t       *process,
+        descriptor_t    *desc) {
+    
     if(descriptor_is_destroyed(desc)) {
         return -JINUE_EIO;
+    }
+    
+    if(! descriptor_is_open(desc)) {
+        return -JINUE_EBADF;
     }
 
     object_header_t *object = desc->object;
 
     if(object_is_destroyed(object)) {
-        desc->flags |= DESCRIPTOR_FLAG_DESTROYED;
+        set_state(desc, DESCRIPTOR_STATE_DESTROYED);
         close_object(object, desc);
         return -JINUE_EIO;
     }
 
-    *pdesc = desc;
+    add_ref_to_object(desc->object);
+    *pout = *desc;
 
     return 0;
 }
 
 /**
- * Get an unused object reference by descriptor
+ * Dereference an object descriptor
  * 
- * @param pdesc pointer to where to store the pointer to the object reference (out)
+ * Checked that the descriptor actually references an object and that it hasn't
+ * been destroyed. Adds a reference to the object on success.
+ * 
+ * @param pout pointer to where to copy the descriptor (out)
  * @param process process for which the descriptor is looked up
- * @param fd descriptor
+ * @param fd descriptor number
  * @return zero on success, negated error number on error
  *
  */
-int dereference_unused_descriptor(
-        descriptor_t    **pdesc,
-        process_t        *process,
-        int               fd) {
+int dereference_object_descriptor(
+        descriptor_t    *pout,
+        process_t       *process,
+        int              fd) {
 
     descriptor_t *desc = dereference_descriptor(process, fd);
 
@@ -113,11 +133,109 @@ int dereference_unused_descriptor(
         return -JINUE_EBADF;
     }
 
-    if(descriptor_is_in_use(desc)) {
+    spin_lock(&process->descriptors_lock);
+
+    int status = dereference_object_descriptor_locked(pout, process, desc);
+    
+    spin_unlock(&process->descriptors_lock);
+
+    return status;
+}
+
+/**
+ * Unreference the object referenced by a descriptor
+ * 
+ * Should be called after dereference_object_descriptor() when you are done
+ * accessing the object
+ * 
+ * @param desc descriptor
+ *
+ */
+void unreference_descriptor_object(descriptor_t *desc) {
+    sub_ref_to_object(desc->object);
+}
+
+/**
+ * Reserve an unused descriptor by descriptor number
+ * 
+ * @param pdesc pointer to where to store the pointer to the object reference (out)
+ * @param process process for which the descriptor is looked up
+ * @param fd descriptor number
+ * @return zero on success, negated error number on error
+ *
+ */
+int reserve_unused_descriptor(process_t *process, int fd) {
+    descriptor_t *desc = dereference_descriptor(process, fd);
+
+    if(desc == NULL) {
         return -JINUE_EBADF;
     }
 
-    *pdesc = desc;
+    spin_lock(&process->descriptors_lock);
+
+    if(!descriptor_is_free(desc)) {
+        spin_unlock(&process->descriptors_lock);
+        return -JINUE_EBADF;
+    }
+
+    set_state(desc, DESCRIPTOR_STATE_RESERVED);
+
+    spin_unlock(&process->descriptors_lock);
+
+    return 0;
+}
+
+void free_descriptor(process_t *process, int fd) {
+    descriptor_t *desc = dereference_descriptor(process, fd);
+
+    spin_lock(&process->descriptors_lock);
+
+    assert(descriptor_is_reserved(desc));
+
+    clear_descriptor(desc);
+
+    spin_unlock(&process->descriptors_lock);
+}
+
+void open_descriptor(process_t *process, int fd, const descriptor_t *in) {
+    descriptor_t *desc = dereference_descriptor(process, fd);
+
+    spin_lock(&process->descriptors_lock);
+
+    assert(descriptor_is_reserved(desc));
+
+    *desc = *in;
+    
+    set_state(desc, DESCRIPTOR_STATE_OPEN);
+
+    spin_unlock(&process->descriptors_lock);
+
+    open_object(in->object, in);
+}
+
+int close_descriptor(process_t *process, int fd) {
+    descriptor_t *desc = dereference_descriptor(process, fd);
+
+    if(desc == NULL) {
+        return -JINUE_EBADF;
+    }
+
+    spin_lock(&process->descriptors_lock);
+
+    if(! descriptor_is_closeable(desc)) {
+        spin_unlock(&process->descriptors_lock);
+        return -JINUE_EBADF;
+    }
+
+    const descriptor_t copy = *desc;
+
+    clear_descriptor(desc);
+    
+    spin_unlock(&process->descriptors_lock);
+
+    if(descriptor_is_open(&copy)) {
+        close_object(copy.object, &copy);
+    }
 
     return 0;
 }

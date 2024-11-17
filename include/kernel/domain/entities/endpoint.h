@@ -36,6 +36,10 @@
 
 extern const object_type_t *object_type_ipc_endpoint;
 
+static inline object_header_t *endpoint_object(ipc_endpoint_t *endpoint) {
+    return &endpoint->header;
+}
+
 void initialize_endpoint_cache(void);
 
 ipc_endpoint_t *construct_endpoint(void);

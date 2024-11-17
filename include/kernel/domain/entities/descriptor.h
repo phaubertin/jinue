@@ -40,21 +40,44 @@
 
 #define DESCRIPTOR_FLAG_NONE        0
 
-#define DESCRIPTOR_FLAG_IN_USE      (1<<31)
+#define DESCRIPTOR_FLAG_STATE1      (1<<31)
 
-#define DESCRIPTOR_FLAG_DESTROYED   (1<<30)
+#define DESCRIPTOR_FLAG_STATE0      (1<<30)
 
 #define DESCRIPTOR_FLAG_OWNER       (1<<29)
 
-static inline bool descriptor_is_in_use(descriptor_t *desc) {
-    return desc != NULL && (desc->flags & DESCRIPTOR_FLAG_IN_USE);
+#define DESCRIPTOR_FLAG_STATE       (DESCRIPTOR_FLAG_STATE1 | DESCRIPTOR_FLAG_STATE0)
+
+#define DESCRIPTOR_STATE_FREE       0
+
+#define DESCRIPTOR_STATE_RESERVED   DESCRIPTOR_FLAG_STATE0
+
+#define DESCRIPTOR_STATE_OPEN       DESCRIPTOR_FLAG_STATE1
+
+#define DESCRIPTOR_STATE_DESTROYED  (DESCRIPTOR_FLAG_STATE1 | DESCRIPTOR_FLAG_STATE0)
+
+
+static inline bool descriptor_is_free(const descriptor_t *desc) {
+    return (desc->flags & DESCRIPTOR_FLAG_STATE) == DESCRIPTOR_STATE_FREE;
 }
 
-static inline bool descriptor_is_destroyed(descriptor_t *desc) {
-    return !!(desc->flags & DESCRIPTOR_FLAG_DESTROYED);
+static inline bool descriptor_is_reserved(const descriptor_t *desc) {
+    return (desc->flags & DESCRIPTOR_FLAG_STATE) == DESCRIPTOR_STATE_RESERVED;
 }
 
-static inline bool descriptor_is_owner(descriptor_t *desc) {
+static inline bool descriptor_is_open(const descriptor_t *desc) {
+    return (desc->flags & DESCRIPTOR_FLAG_STATE) == DESCRIPTOR_STATE_OPEN;
+}
+
+static inline bool descriptor_is_destroyed(const descriptor_t *desc) {
+    return (desc->flags & DESCRIPTOR_FLAG_STATE) == DESCRIPTOR_STATE_DESTROYED;
+}
+
+static inline bool descriptor_is_closeable(const descriptor_t *desc) {
+    return descriptor_is_open(desc) || descriptor_is_destroyed(desc);
+}
+
+static inline bool descriptor_is_owner(const descriptor_t *desc) {
     return !!(desc->flags & DESCRIPTOR_FLAG_OWNER);
 }
 
@@ -62,15 +85,22 @@ static inline bool descriptor_has_permissions(const descriptor_t *desc, int perm
     return (desc->flags & perms) == perms;
 }
 
-int dereference_object_descriptor(
-        descriptor_t    **pdesc,
-        process_t        *process,
-        int               fd);
+void clear_descriptor(descriptor_t *desc);
 
-int dereference_unused_descriptor(
-        descriptor_t    **pdesc,
-        process_t        *process,
-        int               fd);
+int dereference_object_descriptor(
+        descriptor_t    *pout,
+        process_t       *process,
+        int              fd);
+
+void unreference_descriptor_object(descriptor_t *desc);
+
+int reserve_unused_descriptor(process_t *process, int fd);
+
+void free_descriptor(process_t *process, int fd);
+
+void open_descriptor(process_t *process, int fd, const descriptor_t *in);
+
+int close_descriptor(process_t *process, int fd);
 
 ipc_endpoint_t *get_endpoint_from_descriptor(descriptor_t *desc);
 

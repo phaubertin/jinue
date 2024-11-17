@@ -78,15 +78,17 @@ void initialize_process_cache(void) {
     init_object_cache(&process_cache, object_type_process);
 }
 
-static void init_process(process_t *process) {
-    memset(&process->descriptors, 0, sizeof(process->descriptors));
+static void initialize_descriptors(process_t *process) {
+    for(int idx = 0; idx < JINUE_DESC_NUM; ++idx) {
+        clear_descriptor(&process->descriptors[idx]);
+    }
 }
 
 process_t *construct_process(void) {
     process_t *process = slab_cache_alloc(&process_cache);
 
     if(process != NULL) {
-        init_process(process);
+        initialize_descriptors(process);
 
         if(!machine_init_process(process)) {
             slab_cache_free(process);
@@ -97,11 +99,11 @@ process_t *construct_process(void) {
     return process;
 }
 
-static void close_all_descriptors(process_t *process) {
+static void close_descriptors(process_t *process) {
     for(int idx = 0; idx < JINUE_DESC_NUM; ++idx) {
         descriptor_t *desc = &process->descriptors[idx];
 
-        if(descriptor_is_in_use(desc)) {
+        if(descriptor_is_open(desc)) {
             close_object(desc->object, desc);
         }
     }
@@ -110,7 +112,7 @@ static void close_all_descriptors(process_t *process) {
 static void destroy_process(object_header_t *object) {
     process_t *process = (process_t *)object;
     /* TODO destroy remaining threads */
-    close_all_descriptors(process);
+    close_descriptors(process);
     machine_finalize_process(process);
 }
 
