@@ -38,7 +38,7 @@
 #include <kernel/machine/spinlock.h>
 #include <kernel/machine/thread.h>
 
-static int with_thread_referenced(descriptor_t *thread_desc) {
+static int with_thread(descriptor_t *thread_desc) {
     thread_t *thread = get_thread_from_descriptor(thread_desc);
 
     if(thread == NULL) {
@@ -81,7 +81,7 @@ int await_thread(int fd) {
         return -JINUE_EBADF;
     }
 
-    status = with_thread_referenced(&thread_desc);
+    status = with_thread(&thread_desc);
 
     unreference_descriptor_object(&thread_desc);
 

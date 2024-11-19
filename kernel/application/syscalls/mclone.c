@@ -36,7 +36,7 @@
 #include <kernel/domain/services/logging.h>
 #include <kernel/machine/pmap.h>
 
-static int with_destination_referenced(
+static int with_destination(
         process_t                   *current,
         process_t                   *src_process,
         descriptor_t                *dest_desc,
@@ -68,7 +68,7 @@ static int with_destination_referenced(
     return 0;
 }
 
-static int with_source_referenced(
+static int with_source(
         process_t                   *current,
         descriptor_t                *src_desc,
         int                          dest,
@@ -90,7 +90,7 @@ static int with_source_referenced(
         return status;
     }
 
-    status = with_destination_referenced(current, src_process, &dest_desc, args);
+    status = with_destination(current, src_process, &dest_desc, args);
 
     unreference_descriptor_object(&dest_desc);
 
@@ -117,7 +117,7 @@ int mclone(int src, int dest, const jinue_mclone_args_t *args) {
         return status;
     }
     
-    status = with_source_referenced(current, &src_desc, dest, args);
+    status = with_source(current, &src_desc, dest, args);
 
     unreference_descriptor_object(&src_desc);
 

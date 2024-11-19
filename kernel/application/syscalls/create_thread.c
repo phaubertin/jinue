@@ -37,7 +37,7 @@
 #include <kernel/domain/entities/thread.h>
 
 
-static int with_target_process_referenced(process_t *current, int fd, descriptor_t *target_desc) {
+static int with_target_process(process_t *current, int fd, descriptor_t *target_desc) {
     process_t *target = get_process_from_descriptor(target_desc);
 
     if(target == NULL) {
@@ -72,7 +72,7 @@ static int with_descriptor_reserved(process_t *current, int fd, int process_fd) 
         return status;
     }
 
-    status = with_target_process_referenced(current, fd, &target_desc);
+    status = with_target_process(current, fd, &target_desc);
 
     unreference_descriptor_object(&target_desc);
 

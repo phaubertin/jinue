@@ -36,7 +36,7 @@
 #include <kernel/domain/entities/process.h>
 
 
-static int with_source_referenced(
+static int with_source(
         process_t       *current,
         process_t       *target,
         descriptor_t    *src_desc,
@@ -57,7 +57,7 @@ static int with_source_referenced(
     return 0;
 }
 
-static int with_target_process_referenced(
+static int with_target_process(
         process_t       *current,
         descriptor_t    *target_desc,
         int              src,
@@ -80,7 +80,7 @@ static int with_target_process_referenced(
         return status;
     }
 
-    status = with_source_referenced(current, target, &src_desc, dest);
+    status = with_source(current, target, &src_desc, dest);
 
     unreference_descriptor_object(&src_desc);
 
@@ -97,7 +97,7 @@ int dup(int process_fd, int src, int dest) {
         return status;
     }
 
-    status = with_target_process_referenced(current, &target_desc, src, dest);
+    status = with_target_process(current, &target_desc, src, dest);
 
     unreference_descriptor_object(&target_desc);
 

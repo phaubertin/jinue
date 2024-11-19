@@ -35,7 +35,7 @@
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
 
-static int with_target_process_referenced(
+static int with_target_process(
         process_t               *current,
         descriptor_t            *owner_desc,
         descriptor_t            *target_desc,
@@ -67,7 +67,7 @@ static int with_target_process_referenced(
     return 0;
 }
 
-static int with_owner_referenced(
+static int with_owner(
         process_t               *current,
         descriptor_t            *owner_desc,
         const jinue_mint_args_t *args) {
@@ -94,7 +94,7 @@ static int with_owner_referenced(
         return status;
     }
 
-    status = with_target_process_referenced(current, owner_desc, &target_desc, args);
+    status = with_target_process(current, owner_desc, &target_desc, args);
 
     unreference_descriptor_object(&target_desc);
 
@@ -111,7 +111,7 @@ int mint(int owner, const jinue_mint_args_t *args) {
         return status;
     }
 
-    status = with_owner_referenced(current, &owner_desc, args);
+    status = with_owner(current, &owner_desc, args);
 
     unreference_descriptor_object(&owner_desc);
 
