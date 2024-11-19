@@ -82,7 +82,7 @@ static slab_cache_t process_cache;
  */
 static void cache_process_ctor(void *buffer, size_t ignore) {
     process_t *process = buffer;
-    init_object_header(&process->header, object_type_process);
+    object_init_header(&process->header, object_type_process);
 }
 
 /**
@@ -133,7 +133,7 @@ static void close_descriptors(process_t *process) {
         descriptor_t *desc = &process->descriptors[idx];
 
         if(descriptor_is_open(desc)) {
-            close_object(desc->object, desc);
+            object_close(desc->object, desc);
         }
     }
 }
@@ -194,7 +194,7 @@ process_t *get_current_process(void) {
  */
 void add_running_thread_to_process(process_t *process) {
     add_atomic(&process->running_threads_count, 1);
-    add_ref_to_object(&process->header);
+    object_add_ref(&process->header);
 }
 
 /**
@@ -214,8 +214,8 @@ void remove_running_thread_from_process(process_t *process) {
      * reference count alone is not enough because the process might have
      * descriptors that reference itself. */
     if(running_count < 1) {
-        destroy_object(&process->header);
+        object_destroy(&process->header);
     }
     
-    sub_ref_to_object(&process->header);
+    object_sub_ref(&process->header);
 }

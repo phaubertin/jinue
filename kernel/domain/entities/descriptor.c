@@ -111,11 +111,11 @@ static int descriptor_access_object_locked(
 
     if(object_is_destroyed(object)) {
         set_state(desc, DESC_STATE_DESTROYED);
-        close_object(object, desc);
+        object_close(object, desc);
         return -JINUE_EIO;
     }
 
-    add_ref_to_object(desc->object);
+    object_add_ref(desc->object);
     *pout = *desc;
 
     return 0;
@@ -179,7 +179,7 @@ int descriptor_access_object(
  * @param desc descriptor
  */
 void descriptor_unreference_object(descriptor_t *desc) {
-    sub_ref_to_object(desc->object);
+    object_sub_ref(desc->object);
 }
 
 /**
@@ -273,7 +273,7 @@ void descriptor_open(process_t *process, int fd, const descriptor_t *in) {
 
     spin_unlock(&process->descriptors_lock);
 
-    open_object(in->object, in);
+    object_open(in->object, in);
 }
 
 /**
@@ -308,7 +308,7 @@ int descriptor_close(process_t *process, int fd) {
     spin_unlock(&process->descriptors_lock);
 
     if(descriptor_is_open(&copy)) {
-        close_object(copy.object, &copy);
+        object_close(copy.object, &copy);
     }
 
     return 0;

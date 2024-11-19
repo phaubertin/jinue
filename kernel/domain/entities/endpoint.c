@@ -80,7 +80,7 @@ static slab_cache_t ipc_endpoint_cache;
 static void cache_ctor_op(void *buffer, size_t size) {
     ipc_endpoint_t *endpoint = buffer;
     
-    init_object_header(&endpoint->header, object_type_ipc_endpoint);
+    object_init_header(&endpoint->header, object_type_ipc_endpoint);
     init_list(&endpoint->send_list);
     init_list(&endpoint->recv_list);
     init_spinlock(&endpoint->lock);
@@ -138,7 +138,7 @@ static void close_op(object_header_t *object, const descriptor_t *desc) {
         int receivers = sub_receiver(endpoint);
 
         if(receivers < 1) {
-            destroy_object(object);
+            object_destroy(object);
         }
     }
 }

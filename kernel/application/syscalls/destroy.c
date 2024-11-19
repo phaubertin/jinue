@@ -59,7 +59,7 @@ int destroy(int fd) {
         return -JINUE_EPERM;
     }
 
-    destroy_object(object);
+    object_destroy(object);
 
     descriptor_unreference_object(&desc);
 

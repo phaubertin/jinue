@@ -88,7 +88,7 @@ thread_t *construct_thread(process_t *process) {
         return NULL;
     }
 
-    init_object_header(&thread->header, object_type_thread);
+    object_init_header(&thread->header, object_type_thread);
 
     init_spinlock(&thread->await_lock);
 
@@ -187,7 +187,7 @@ static void thread_is_starting(thread_t *thread) {
     
     /* Add a reference on the thread while it is running so it is allowed to
      * run to completion even if all descriptors that reference it get closed. */
-    add_ref_to_object(&thread->header);
+    object_add_ref(&thread->header);
 
     thread->state = THREAD_STATE_RUNNING;
 }

@@ -166,7 +166,7 @@ void machine_switch_thread(thread_t *from, thread_t *to) {
 
 static void unref_cleanup_handler(void *arg) {
     thread_t *thread = arg;
-    sub_ref_to_object(&thread->header);
+    object_sub_ref(&thread->header);
 }
 
 void machine_switch_and_unref_thread(thread_t *from, thread_t *to) {
