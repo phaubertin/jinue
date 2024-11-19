@@ -46,7 +46,7 @@
  * @param object object the descriptor will reference
  */
 static void set_descriptor(process_t *process, int fd, object_header_t *object) {
-    int status = reserve_free_descriptor(process, fd);
+    int status = descriptor_reserve_unused(process, fd);
 
     if(status < 0) {
         panic("Could not set up predefined descriptor for user space loader");
@@ -57,7 +57,7 @@ static void set_descriptor(process_t *process, int fd, object_header_t *object) 
     desc.flags  = object->type->all_permissions;
     desc.cookie = 0;
 
-    open_descriptor(process, fd, &desc);
+    descriptor_open(process, fd, &desc);
 }
 
 /**

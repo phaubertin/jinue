@@ -40,7 +40,7 @@ int destroy(int fd) {
     process_t *process = get_current_process();
 
     descriptor_t desc;
-    int status = dereference_object_descriptor(&desc, process, fd);
+    int status = descriptor_access_object(&desc, process, fd);
 
     if(status < 0) {
         return status;
@@ -50,18 +50,18 @@ int destroy(int fd) {
 
     /* TODO support other object types */
     if(object->type != object_type_ipc_endpoint) {
-        unreference_descriptor_object(&desc);
+        descriptor_unreference_object(&desc);
         return -JINUE_EBADF;
     }
 
     if(!descriptor_is_owner(&desc)) {
-        unreference_descriptor_object(&desc);
+        descriptor_unreference_object(&desc);
         return -JINUE_EPERM;
     }
 
     destroy_object(object);
 
-    unreference_descriptor_object(&desc);
+    descriptor_unreference_object(&desc);
 
     return 0;
 }

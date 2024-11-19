@@ -38,7 +38,7 @@
 
 
 static int with_target_process(process_t *current, int fd, descriptor_t *target_desc) {
-    process_t *target = get_process_from_descriptor(target_desc);
+    process_t *target = descriptor_get_process(target_desc);
 
     if(target == NULL) {
         return -JINUE_EBADF;
@@ -59,14 +59,14 @@ static int with_target_process(process_t *current, int fd, descriptor_t *target_
     desc.flags  = DESC_FLAG_OWNER | object_type_thread->all_permissions;
     desc.cookie = 0;
 
-    open_descriptor(current, fd, &desc);
+    descriptor_open(current, fd, &desc);
 
     return 0;
 }
 
 static int with_descriptor_reserved(process_t *current, int fd, int process_fd) {
     descriptor_t target_desc;
-    int status = dereference_object_descriptor(&target_desc, current, process_fd);
+    int status = descriptor_access_object(&target_desc, current, process_fd);
 
     if(status < 0) {
         return status;
@@ -74,14 +74,14 @@ static int with_descriptor_reserved(process_t *current, int fd, int process_fd) 
 
     status = with_target_process(current, fd, &target_desc);
 
-    unreference_descriptor_object(&target_desc);
+    descriptor_unreference_object(&target_desc);
 
     return status;
 }
 
 int create_thread(int fd, int process_fd) {
     process_t *current  = get_current_process();
-    int status          = reserve_free_descriptor(current, fd);
+    int status          = descriptor_reserve_unused(current, fd);
 
     if(status < 0) {
         return -JINUE_EBADF;
@@ -90,7 +90,7 @@ int create_thread(int fd, int process_fd) {
     status = with_descriptor_reserved(current, fd, process_fd);
 
     if(status < 0) {
-        free_reserved_descriptor(current, fd);
+        descriptor_free_reservation(current, fd);
     }
 
     return status;

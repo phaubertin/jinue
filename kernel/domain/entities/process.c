@@ -99,7 +99,7 @@ void initialize_process_cache(void) {
  */
 static void initialize_descriptors(process_t *process) {
     for(int idx = 0; idx < JINUE_DESC_NUM; ++idx) {
-        clear_descriptor(&process->descriptors[idx]);
+        descriptor_clear(&process->descriptors[idx]);
     }
 }
 
