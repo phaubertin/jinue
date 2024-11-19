@@ -30,6 +30,8 @@
  */
 
 #include <kernel/domain/alloc/page_alloc.h>
+#include <kernel/domain/entities/object.h>
+#include <kernel/infrastructure/i686/asm/eflags.h>
 #include <kernel/infrastructure/i686/asm/msr.h>
 #include <kernel/infrastructure/i686/asm/thread.h>
 #include <kernel/infrastructure/i686/isa/instrs.h>
@@ -43,6 +45,7 @@
 #include <kernel/interface/i686/types.h>
 #include <kernel/machine/tls.h>
 #include <kernel/machine/thread.h>
+#include <kernel/machine/spinlock.h>
 #include <assert.h>
 #include <stddef.h>
 #include <string.h>
@@ -81,25 +84,32 @@
  * 
  */
 
-static addr_t get_kernel_stack_base(machine_thread_t *thread_ctx) {
-    thread_t *thread = (thread_t *)( (uintptr_t)thread_ctx & THREAD_CONTEXT_MASK );
+/* Stack frame for switch_thread_stack(). */
+typedef struct {
+    void        (*cleanup_handler)(void *);
+    void        *cleanup_arg;
+    uint32_t     edi;
+    uint32_t     esi;
+    uint32_t     ebx;
+    uint32_t     ebp;
+    uint32_t     eip;
+} kernel_context_t;
+
+static addr_t get_kernel_stack_base(thread_t *thread) {
     return (addr_t)thread + THREAD_CONTEXT_SIZE;
 }
 
 void machine_prepare_thread(thread_t *thread, const thread_params_t *params) {
-    /* initialize fields */
-    machine_thread_t *thread_ctx = &thread->thread_ctx;
-
     /* setup stack for initial return to user space */
-    void *kernel_stack_base = get_kernel_stack_base(thread_ctx);
+    void *kernel_stack_base = get_kernel_stack_base(thread);
 
-    trapframe_t *trapframe = (trapframe_t *)kernel_stack_base - 1;
+    trapframe_t *trapframe  = (trapframe_t *)kernel_stack_base - 1;
 
     memset(trapframe, 0, sizeof(trapframe_t));
 
     trapframe->eip      = (uint32_t)params->entry;
     trapframe->esp      = (uint32_t)params->stack_addr;
-    trapframe->eflags   = 2;
+    trapframe->eflags   = EFLAGS_ALWAYS_1;
     trapframe->cs       = SEG_SELECTOR(GDT_USER_CODE, RPL_USER);
     trapframe->ss       = SEG_SELECTOR(GDT_USER_DATA, RPL_USER);
     trapframe->ds       = SEG_SELECTOR(GDT_USER_DATA, RPL_USER);
@@ -115,7 +125,7 @@ void machine_prepare_thread(thread_t *thread, const thread_params_t *params) {
     kernel_context->eip = (uint32_t)return_from_interrupt;
 
     /* set thread stack pointer */
-    thread_ctx->saved_stack_pointer = (addr_t)kernel_context;
+    thread->machine_thread.saved_stack_pointer = (addr_t)kernel_context;
 }
 
 thread_t *machine_alloc_thread(void) {
@@ -126,33 +136,60 @@ void machine_free_thread(thread_t *thread) {
     page_free(thread);
 }
 
-void machine_switch_thread(thread_t *from, thread_t *to, bool destroy_from) {
-    /** ASSERTION: to argument must not be NULL */
-    assert(to != NULL);
-    
-    /** ASSERTION: from argument must not be NULL if destroy_from is true */
-    assert(from != NULL || !destroy_from);
-
-    machine_thread_t *from_ctx  = (from == NULL) ? NULL : &from->thread_ctx;
-    machine_thread_t *to_ctx    = &to->thread_ctx;
-
+static void set_kernel_stack(thread_t *thread) {
     /* setup TSS with kernel stack base for this thread context */
-    addr_t kernel_stack_base = get_kernel_stack_base(to_ctx);
-    tss_t *tss = get_tss();
+    tss_t *tss                  = get_percpu_tss();
+    addr_t kernel_stack_base    = get_kernel_stack_base(thread);
 
     tss->esp0 = kernel_stack_base;
     tss->esp1 = kernel_stack_base;
     tss->esp2 = kernel_stack_base;
 
-    machine_set_tls(to);
-
     /* update kernel stack address for SYSENTER instruction */
     if(cpu_has_feature(CPUINFO_FEATURE_SYSENTER)) {
         wrmsr(MSR_IA32_SYSENTER_ESP, (uint64_t)(uintptr_t)kernel_stack_base);
     }
+}
 
-    /* switch thread stack */
-    switch_thread_stack(from_ctx, to_ctx, destroy_from);
+void machine_switch_thread(thread_t *from, thread_t *to) {
+    assert(to != NULL);
+
+    set_kernel_stack(to);
+
+    machine_set_thread_local_storage(to);
+
+    machine_thread_t *machine_from  = (from == NULL) ? NULL : &from->machine_thread;
+    machine_thread_t *machine_to    = &to->machine_thread;
+    
+    switch_thread_stack(machine_from, machine_to);
+}
+
+static void unref_cleanup_handler(void *arg) {
+    thread_t *thread = arg;
+    sub_ref_to_object(&thread->header);
+}
+
+void machine_switch_and_unref_thread(thread_t *from, thread_t *to) {
+    assert(from != NULL);
+
+    kernel_context_t *context   = (kernel_context_t *)to->machine_thread.saved_stack_pointer;
+    context->cleanup_handler    = unref_cleanup_handler;
+    context->cleanup_arg        = from;
+    
+    machine_switch_thread(from, to);
+}
+
+static void unlock_cleanup_handler(void *arg) {
+    spinlock_t *lock = arg;
+    spin_unlock(lock);
+}
+
+void machine_switch_thread_and_unlock(thread_t *from, thread_t *to, spinlock_t *lock) {
+    kernel_context_t *context   = (kernel_context_t *)to->machine_thread.saved_stack_pointer;
+    context->cleanup_handler    = unlock_cleanup_handler;
+    context->cleanup_arg        = lock;
+    
+    machine_switch_thread(from, to);
 }
 
 thread_t *get_current_thread(void) {

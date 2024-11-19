@@ -34,13 +34,15 @@
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/entities/thread.h>
+#include <kernel/domain/services/ipc.h>
 #include <kernel/domain/services/panic.h>
+#include <kernel/machine/spinlock.h>
 #include <kernel/machine/thread.h>
+#include <kernel/machine/tls.h>
 #include <kernel/utils/list.h>
 
 static void free_thread(object_header_t *object);
 
-/** runtime type definition for a thread */
 static const object_type_t object_type = {
     .all_permissions    = JINUE_PERM_START | JINUE_PERM_AWAIT,
     .name               = "thread",
@@ -53,10 +55,32 @@ static const object_type_t object_type = {
     .cache_dtor         = NULL
 };
 
+/** runtime type definition for a thread */
 const object_type_t *object_type_thread = &object_type;
 
-static jinue_list_t ready_list = JINUE_LIST_STATIC;
+/** ready threads queue with lock */
+static struct {
+    jinue_list_t    queue;
+    spinlock_t      lock;
+} ready_queue = {
+    .queue  = JINUE_LIST_STATIC,
+    .lock   = SPINLOCK_STATIC
+};
 
+/**
+ * Thread constructor
+ * 
+ * The in-kernel thread implementation separates thread creation and thread
+ * startup, which allows an application to keep kernel thread objects around in
+ * a thread pool and reuse them as application threads exit and new ones start.
+ * This function constructs a thread but does not start it. run_thread() (or
+ * run_first_thread()) does that on an already constructed thread that has
+ * been prepared for a first or new run with prepare_thread().
+ * 
+ * @param process process in which to create the new thread
+ * @return thread on success, NULL on memory allocation error
+ *
+ */
 thread_t *construct_thread(process_t *process) {
     thread_t *thread = machine_alloc_thread();
 
@@ -66,47 +90,174 @@ thread_t *construct_thread(process_t *process) {
 
     init_object_header(&thread->header, object_type_thread);
 
+    init_spinlock(&thread->await_lock);
     jinue_node_init(&thread->thread_list);
 
-    thread->state               = THREAD_STATE_ZOMBIE;
+    thread->state               = THREAD_STATE_CREATED;
     thread->process             = process;
-    /* Arbitrary non-NULL value to signify the thread hasn't run yet and
-     * shouldn't be awaited. This will fall in the condition in await_thread()
-     * that detects an attempt to await a thread that has already been awaited,
-     * so await_thread() will fail with JINUE_ESRCH. */
-    thread->awaiter             = thread;
+    thread->awaiter             = NULL;
     thread->local_storage_addr  = NULL;
     thread->local_storage_size  = 0;
  
     return thread;
 }
 
+/**
+ * Free a thread
+ * 
+ * This function implements the "free" operation of the runtime type
+ * definition.
+ * 
+ * @param object object header of thread object
+ *
+ */
 static void free_thread(object_header_t *object) {
     thread_t *thread = (thread_t *)object;
     machine_free_thread(thread);
 }
 
+/**
+ * Prepare a thread to be run
+ * 
+ * Initializes the thread state. This initialization includes preparing the
+ * context on the stack with the specified initial stack pointer and entry
+ * point.
+ * 
+ * This function is separate from the thread constructor to allow a thread
+ * to be reused by the application. (See construct_thread())
+ * 
+ * Once a thread has been prepared by calling this function, it can be run
+ * by calling run_thread() (or run_first_thread()).
+ * 
+ * @param thread the thread
+ * @param params initialization parameters
+ *
+ */
 void prepare_thread(thread_t *thread, const thread_params_t *params) {
     thread->sender  = NULL;
+    
+    spin_lock(&thread->await_lock);
+    
     thread->awaiter = NULL;
+    thread->state   = THREAD_STATE_STARTING;
+
+    spin_unlock(&thread->await_lock);    
+    
     machine_prepare_thread(thread, params);
 }
 
-void ready_thread(thread_t *thread) {
+/**
+ * Add a thread to the ready queue (without locking)
+ * 
+ * This funtion contains the business logic for ready_thread() without the
+ * locking. Some functions beside ready_thread() that need to block and then
+ * unlock call it, hence why it is a separate function.
+ * 
+ * @param thread the thread
+ *
+ */
+static void ready_thread_locked(thread_t *thread) {
     thread->state = THREAD_STATE_READY;
 
     /* add thread to the tail of the ready list to give other threads a chance to run */
-    jinue_list_enqueue(&ready_list, &thread->thread_list);
+    jinue_list_enqueue(&ready_queue.queue, &thread->thread_list);
 }
 
-static thread_t *reschedule(bool current_can_run) {
-    thread_t *to_thread = jinue_node_entry(
-            jinue_list_dequeue(&ready_list),
+/**
+ * Add a thread to the ready queue
+ * 
+ * @param thread the thread
+ *
+ */
+void ready_thread(thread_t *thread) {
+    spin_lock(&ready_queue.lock);
+
+    ready_thread_locked(thread);
+
+    spin_unlock(&ready_queue.lock);
+}
+
+/**
+ * Common logic for a starting thread
+ * 
+ * @param thread the thread that is starting
+ *
+ */
+static void thread_is_starting(thread_t *thread) {
+    add_running_thread_to_process(thread->process);
+    
+    /* Add a reference on the thread while it is running so it is allowed to
+     * run to completion even if all descriptors that reference it get closed. */
+    add_ref_to_object(&thread->header);
+
+    thread->state = THREAD_STATE_RUNNING;
+}
+
+/**
+ * Run the first thread
+ * 
+ * This function must not call get_current_thread() because that function will
+ * not find a thread_t structure where it expects to find it relative to the
+ * stack pointer. It must also actually switch to the thread instead of just
+ * adding it to the ready queue for the thread to actually run.
+ * 
+ * @param thread the thread to run
+ *
+ */
+void run_first_thread(thread_t *thread) {
+    switch_to_process(thread->process);
+
+    thread_is_starting(thread);
+
+    machine_switch_thread(NULL, thread);
+}
+
+/**
+ * Run a thread
+ * 
+ * Before this function is called, the thread must have been prepared with
+ * prepare_thread().
+ * 
+ * @param thread the thread to run
+ *
+ */
+void run_thread(thread_t *thread) {
+    thread_is_starting(thread);
+
+    ready_thread(thread);
+}
+
+/**
+ * Get the thread at the head of the ready queue
+ * 
+ * @return thread ready to run, NULL if there are none
+ *
+ */
+static thread_t *dequeue_ready_thread(void) {
+    spin_lock(&ready_queue.lock);
+
+    thread_t *thread = jinue_node_entry(
+            jinue_list_dequeue(&ready_queue.queue),
             thread_t,
             thread_list
     );
+
+    spin_unlock(&ready_queue.lock);
+
+    return thread;
+}
+
+/**
+ * Get the next thread to run
+ * 
+ * @param current_can_run whether the current thread can continue running
+ * @return thread ready to run
+ *
+ */
+static thread_t *reschedule(bool current_can_run) {
+    thread_t *to = dequeue_ready_thread();
     
-    if(to_thread == NULL) {
+    if(to == NULL) {
         /* Special case to take into account: when scheduling the first thread,
          * there is no current thread. We should not call get_current_thread()
          * in that case. */
@@ -121,90 +272,166 @@ static thread_t *reschedule(bool current_can_run) {
         panic("No thread to schedule");
     }
 
-    return to_thread;
+    return to;
 }
 
-static void switch_thread(thread_t *from, thread_t *to, bool destroy_from) {
-    if(to == from) {
-        return;
+/**
+ * Terminate the current thread
+ * 
+ * The thread is destroyed and freed only if there are no more references to it
+ * (i.e. no descriptors referencing it). Otherwise, it remains available to be
+ * reused by calling prepare_thread() and then run_thread() again.
+ */
+void terminate_current_thread(void) {
+    thread_t *current = get_current_thread();
+
+    spin_lock(&current->await_lock);
+
+    /* This state transition must be done under lock to avoid a race condition
+     * with await_thread(). */
+    current->state = THREAD_STATE_ZOMBIE;
+
+    if(current->awaiter != NULL) {
+        ready_thread(current->awaiter);
     }
 
-    if(from == NULL || from->process != to->process || destroy_from) {
+    spin_unlock(&current->await_lock);
+
+    if(current->sender != NULL) {
+        abort_message(current->sender);
+        current->sender = NULL;
+    }
+
+    thread_t *to    = reschedule(false);
+    to->state       = THREAD_STATE_RUNNING;
+    
+    if(current->process != to->process) {
         switch_to_process(to->process);
+    }
+
+    /* This must be done after switching process since it will destroy the process
+     * if the current thread is the last one. We don't want to destroy the address
+     * space we are still running in... */
+    remove_running_thread_from_process(current->process);
+
+    /* This function takes care of safely decrementing the reference count on
+     * the thread after having switched to the other one. We cannot just do it
+     * here because that will possibly free the current thread, which we don't
+     * want to do while it is still running. */
+    machine_switch_and_unref_thread(current, to);
+}
+
+/**
+ * Switch to another thread
+ * 
+ * The current thread remains ready to run and is added to the ready queue.
+ * 
+ * @param to thread to switch to
+ *
+ */
+void switch_to(thread_t *to) {
+    thread_t *current   = get_current_thread();
+
+    to->state           = THREAD_STATE_RUNNING;
+
+    if(current->process != to->process) {
+        switch_to_process(to->process);
+    }
+
+    spin_lock(&ready_queue.lock);
+
+    ready_thread_locked(current);
+
+    machine_switch_thread_and_unlock(current, to, &ready_queue.lock);
+}
+
+/**
+ * Switch to another thread and block the current thread
+ * 
+ * @param to thread to switch to
+ *
+ */
+void switch_to_and_block(thread_t *to) {
+    thread_t *current   = get_current_thread();
+    current->state      = THREAD_STATE_BLOCKED;
+    to->state           = THREAD_STATE_RUNNING;
+
+    if(current->process != to->process) {
+        switch_to_process(to->process);
+    }
+
+    machine_switch_thread(current, to);
+}
+
+/**
+ * Block the current thread and then unlock a lock
+ * 
+ * The lock is unlocked *after* the switch to another thread. This function
+ * eliminates race conditions when enqueuing the current thread to a queue,
+ * setting it as the awaiter of another thread, etc. and then blocking, if
+ * the following sequence is followed:
+ * 
+ *  1. Take the lock (e.g. the lock protecting a queue).
+ *  2. Add the thread (e.g. to the queue).
+ *  3. Call this function to block the thread and release the lock atomically.
+ * 
+ * @param lock the lock to unlock after switching thread
+ *
+ */
+void block_and_unlock(spinlock_t *lock) {
+    thread_t *current   = get_current_thread();
+    current->state      = THREAD_STATE_BLOCKED;
+
+    thread_t *to        = reschedule(false);
+    to->state           = THREAD_STATE_RUNNING;
+
+    if(current->process != to->process) {
+        switch_to_process(to->process);
+    }
+
+    machine_switch_thread_and_unlock(current, to, lock);
+}
+
+/**
+ * Yield the current thread
+ * 
+ * The current thread is added at the tail of the ready queue. It continues
+ * running if no other thread is ready to run.
+ */
+void yield_current_thread(void) {
+    thread_t *current   = get_current_thread();
+    thread_t *to        = reschedule(true);
+
+    if(to == current) {
+        return;
     }
 
     to->state = THREAD_STATE_RUNNING;
 
-    machine_switch_thread(from, to, destroy_from);
-}
-
-void switch_to_thread(thread_t *thread, bool blocked) {
-    thread_t *current = get_current_thread();
-
-    if (blocked) {
-        current->state = THREAD_STATE_BLOCKED;
-    } else {
-        ready_thread(current);
+    if(current->process != to->process) {
+        switch_to_process(to->process);
     }
 
-    switch_thread(
-            current,
-            thread,
-            false               /* don't destroy current thread */
-    );
+    spin_lock(&ready_queue.lock);
+
+    ready_thread_locked(current);
+
+    machine_switch_thread_and_unlock(current, to, &ready_queue.lock);
 }
 
-void start_first_thread(thread_t *thread) {
-    thread_is_starting(thread);
-
-    switch_thread(
-            NULL,
-            thread,
-            false               /* don't destroy current thread */
-    );
-}
-
-void yield_current_thread(void) {
-    switch_to_thread(
-            reschedule(true),   /* current thread can run */
-            false               /* don't block current thread */
-    );
-}
-
-void block_current_thread(void) {
-    switch_to_thread(
-            reschedule(false),  /* current thread cannot run */
-            true                /* do block current thread */
-    );
-}
-
-void thread_is_starting(thread_t *thread) {
-    add_running_thread_to_process(thread->process);
-    
-    /* Add a reference on the thread while it is running so it is allowed to
-     * run to completion even if all descriptors that reference it get closed. */
-    add_ref_to_object(&thread->header);
-}
-
-void current_thread_is_exiting(void) {
-    thread_t *thread    = get_current_thread();
-
-    thread->state = THREAD_STATE_ZOMBIE;
-
-    remove_running_thread_from_process(thread->process);
-
-    /* switch_thread() takes care of safely decrementing the reference count on
-     * the thread after having switched to another one. We cannot just do it
-     * here because that will possibly free the current thread, which we don't
-     * want to do while it is still running. */
-    switch_thread(
-            thread,
-            reschedule(false),  /* current thread cannot run */
-            true                /* decrement reference count */
-    );
-}
-
+/**
+ * Set the address and size of the Thread-Local Storage (TLS)
+ * 
+ * @param thread the thread
+ * @param addr address of thread-local storage
+ * @param size size of thread-local storage
+ *
+ */
 void set_thread_local_storage(thread_t *thread, addr_t addr, size_t size) {
     thread->local_storage_addr = addr;
     thread->local_storage_size = size;
+
+    if(thread == get_current_thread()) {
+        machine_set_thread_local_storage(thread);
+    }
 }

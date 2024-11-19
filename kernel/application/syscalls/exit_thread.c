@@ -31,21 +31,7 @@
 
 #include <kernel/application/syscalls.h>
 #include <kernel/domain/entities/thread.h>
-#include <kernel/domain/services/ipc.h>
-#include <kernel/machine/thread.h>
 
 void exit_thread(void) {
-    thread_t *thread = get_current_thread();
-
-    if(thread->sender != NULL) {
-        abort_message(thread->sender);
-        thread->sender = NULL;
-    }
-
-    if(thread->awaiter != NULL) {
-        ready_thread(thread->awaiter);
-    }
-
-    /* This call must be the last thing happening in this function. */
-    current_thread_is_exiting();
+    terminate_current_thread();
 }

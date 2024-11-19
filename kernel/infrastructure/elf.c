@@ -509,8 +509,8 @@ static void initialize_stack(
  * @param thread_params initial thread parameters (output)
  * @param process process in which to load the ELF binary
  * @param exec_file executable ELF file
- * @param argv0 name of binary
- * @param cmdline full kernel command line
+ * @param argv0 program name (argv[0])
+ * @param cmdline full kernel command line, used for arguments and environment
  *
  * */
 void machine_load_exec(

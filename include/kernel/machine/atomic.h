@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,12 +29,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_THREAD_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_THREAD_H
+#ifndef JINUE_KERNEL_MACHINE_ATOMIC_H
+#define JINUE_KERNEL_MACHINE_ATOMIC_H
 
-#include <kernel/machine/types.h>
-#include <stdbool.h>
+int add_atomic(int *value, int increment);
 
-void switch_thread_stack(machine_thread_t *from, machine_thread_t *to);
+int or_atomic(int *value, int mask);
 
 #endif

@@ -74,7 +74,6 @@ void destroy_page_directory(void *page_directory, unsigned int last_index);
  *
  * @param pte page table or page directory entry
  * @return true if page is present in memory, false otherwise
- *
  */
 static inline bool pte_is_present(const pte_t *pte) {
     /* Micro-optimization: both flags we are interested in are in the lower four

@@ -107,10 +107,10 @@ typedef struct {
 } jinue_mclone_args_t;
 
 typedef struct {
-    int process;
-    int fd;
-    int perms;
-    uintptr_t cookie;
+    int         process;
+    int         fd;
+    int         perms;
+    uintptr_t   cookie;
 } jinue_mint_args_t;
 
 #endif

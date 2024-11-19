@@ -42,6 +42,10 @@ thread_t *machine_alloc_thread(void);
 
 void machine_free_thread(thread_t *thread);
 
-void machine_switch_thread(thread_t *from, thread_t *to, bool destroy_from);
+void machine_switch_thread(thread_t *from, thread_t *to);
+
+void machine_switch_and_unref_thread(thread_t *from, thread_t *to);
+
+void machine_switch_thread_and_unlock(thread_t *from, thread_t *to, spinlock_t *lock);
 
 #endif

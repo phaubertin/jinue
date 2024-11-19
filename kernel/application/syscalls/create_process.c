@@ -36,27 +36,26 @@
 #include <kernel/domain/entities/process.h>
 
 int create_process(int fd) {
-    descriptor_t *desc;
-    int status = dereference_unused_descriptor(&desc, get_current_process(), fd);
+    process_t *current  = get_current_process();
+    int status          = reserve_free_descriptor(current, fd);
 
     if(status < 0) {
         return status;
     }
 
-    process_t *process = construct_process();
+    process_t *new_process = construct_process();
 
-    if(process == NULL) {
+    if(new_process == NULL) {
+        free_reserved_descriptor(current, fd);
         return -JINUE_EAGAIN;
     }
 
-    desc->object = &process->header;
-    desc->flags  =
-          DESCRIPTOR_FLAG_IN_USE
-        | DESCRIPTOR_FLAG_OWNER
-        | object_type_process->all_permissions;
-    desc->cookie = 0;
+    descriptor_t desc;
+    desc.object = process_object(new_process);
+    desc.flags  = DESC_FLAG_OWNER | object_type_process->all_permissions;
+    desc.cookie = 0;
 
-    open_object(&process->header, desc);
+    open_descriptor(current, fd, &desc);
 
     return 0;
 }

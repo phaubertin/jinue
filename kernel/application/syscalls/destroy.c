@@ -37,29 +37,31 @@
 #include <kernel/domain/entities/process.h>
 
 int destroy(int fd) {
-    descriptor_t *desc;
-    int status = dereference_object_descriptor(&desc, get_current_process(), fd);
+    process_t *process = get_current_process();
+
+    descriptor_t desc;
+    int status = dereference_object_descriptor(&desc, process, fd);
 
     if(status < 0) {
         return status;
     }
 
-    object_header_t *object = desc->object;
+    object_header_t *object = desc.object;
 
     /* TODO support other object types */
     if(object->type != object_type_ipc_endpoint) {
+        unreference_descriptor_object(&desc);
         return -JINUE_EBADF;
     }
 
-    if(!descriptor_is_owner(desc)) {
+    if(!descriptor_is_owner(&desc)) {
+        unreference_descriptor_object(&desc);
         return -JINUE_EPERM;
     }
 
     destroy_object(object);
 
-    close_object(object, desc);
-
-    desc->flags = DESCRIPTOR_FLAG_NONE;
+    unreference_descriptor_object(&desc);
 
     return 0;
 }

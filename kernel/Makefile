@@ -120,6 +120,8 @@ sources.kernel.c = \
 	interface/syscalls.c
 
 sources.kernel.nasm = \
+	infrastructure/i686/atomic/atomic.asm \
+	infrastructure/i686/atomic/spinlock.asm \
 	infrastructure/i686/isa/abi.asm \
 	infrastructure/i686/isa/instrs.asm \
 	infrastructure/i686/isa/io.asm \

@@ -37,9 +37,8 @@
 ; ------------------------------------------------------------------------------
 ; FUNCTION: switch_thread_stack
 ; C PROTOTYPE: void switch_thread_stack(
-;               machine_thread_t    *from_ctx,
-;               machine_thread_t    *to_ctx,
-;               bool                 destroy_from);
+;               machine_thread_t    *from,
+;               machine_thread_t    *to);
 ; ------------------------------------------------------------------------------
     global switch_thread_stack:function (switch_thread_stack.end - switch_thread_stack)
 switch_thread_stack:
@@ -52,20 +51,23 @@ switch_thread_stack:
     push ebx
     push esi
     push edi
+    push dword 0
+    push dword 0
     
     ; At this point, the stack looks like this:
     ;
-    ; esp+28  destroy_from boolean (third function argument)
-    ; esp+24  to thread context pointer (second function argument)
-    ; esp+20  from thread context pointer (first function argument)
-    ; esp+16  return address
-    ; esp+12  ebp
-    ; esp+ 8  ebx
-    ; esp+ 4  esi
-    ; esp+ 0  edi
+    ; esp+32  to thread context pointer (second function argument)
+    ; esp+28  from thread context pointer (first function argument)
+    ; esp+24  return address
+    ; esp+20  ebp
+    ; esp+16  ebx
+    ; esp+12  esi
+    ; esp+ 8  edi
+    ; esp+ 4  space reserved for cleanup handler argument
+    ; esp+ 0  space reserved for cleanup handler
     
     ; retrieve the from thread context argument
-    mov ecx, [esp+20]   ; from thread context (first function argument)
+    mov ecx, [esp+28]   ; from thread context (first function argument)
 
     ; On the first thread context switch after boot, the kernel is using a
     ; temporary stack and the from/current thread context is NULL. Skip saving
@@ -78,39 +80,29 @@ switch_thread_stack:
     mov [ecx], esp
 
 .do_switch:
-    ; read remaining arguments from stack before switching
-    mov esi, [esp+24]   ; to thread context (second function argument)
-    mov eax, [esp+28]   ; destroy_from boolean (third function argument)
+    ; read remaining argument from stack before switching
+    mov esi, [esp+32]   ; to thread context (second function argument)
     
     ; Load the saved stack pointer from the thread context to which we are
     ; switching (to thread). This is where we actually switch thread.
     mov esp, [esi]      ; saved stack pointer is the first member
+
+    ; Call the cleanup handler, if any
+    pop eax
+    or eax, eax
+    jz .no_handler
+
+    call eax
+
+.no_handler:
+    ; Remove the cleanup handler argument from the stack
+    pop edi
     
     ; Restore the saved registers.
-    ;
-    ; We do this before calling sub_ref_to_object(). Otherwise, the frame
-    ; pointer still refers to the thread stack for the previous thread, i.e.
-    ; the one we are potentially about to destroy when sub_ref_to_object() is
-    ; called. This is a problem if e.g. we try to dump the call stack from
-    ; sub_ref_to_object() or one of its callees.
     pop edi
     pop esi
     pop ebx
     pop ebp
 
-    ; Now that we switched stack, see if the caller requested the from thread
-    ; context be destroyed.
-    or eax, eax
-    jz .skip_destroy
-    
-    ; destroy from thread context
-    and ecx, THREAD_CONTEXT_MASK
-    push ecx
-    call sub_ref_to_object
-    
-    ; cleanup sub_ref_to_object() arguments from stack
-    add esp, 4
-
-.skip_destroy:
     ret
 .end:

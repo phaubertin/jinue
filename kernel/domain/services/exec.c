@@ -38,22 +38,59 @@
 #include <kernel/domain/services/panic.h>
 #include <kernel/machine/exec.h>
 
+/**
+ * Set up a predefined descriptor for the user space loader
+ * 
+ * @param process user space loader process
+ * @param fd descriptor number
+ * @param object object the descriptor will reference
+ */
 static void set_descriptor(process_t *process, int fd, object_header_t *object) {
-    descriptor_t *desc;
-    (void)dereference_unused_descriptor(&desc, process, fd);
+    int status = reserve_free_descriptor(process, fd);
 
-    desc->object = object;
-    desc->flags  = DESCRIPTOR_FLAG_IN_USE | object->type->all_permissions;
-    desc->cookie = 0;
+    if(status < 0) {
+        panic("Could not set up predefined descriptor for user space loader");
+    }
 
-    open_object(object, desc);
+    descriptor_t desc;
+    desc.object = object;
+    desc.flags  = object->type->all_permissions;
+    desc.cookie = 0;
+
+    open_descriptor(process, fd, &desc);
 }
 
+/**
+ * Initialize the predefined descriptors for the user space loader
+ * 
+ * @param process user space loader process
+ * @param thread initial thread
+ */
 static void initialize_descriptors(process_t *process, thread_t *thread) {
-    set_descriptor(process, JINUE_DESC_SELF_PROCESS, &process->header);
-    set_descriptor(process, JINUE_DESC_MAIN_THREAD, &thread->header);
+    set_descriptor(process, JINUE_DESC_SELF_PROCESS, process_object(process));
+    set_descriptor(process, JINUE_DESC_MAIN_THREAD, thread_object(thread));
 }
 
+/**
+ * Load an executable file into a new process and prepare the initial thread
+ * 
+ * This function is intended to load the user space loader binary, and any
+ * other program will be loaded from user space. The executable file must be
+ * a static binary.
+ * 
+ * This function sets up the loadable segments into the process address space
+ * and prepares the initial thread with the proper entry point and stack
+ * address. In addition, it also sets up two predefined descriptors: one that
+ * refers to the process and another one to the thread. These descriptors have
+ * the same purpose and descriptor numbers as two of the descriptors set up for
+ * the initial process by the user space loader (see doc/init-process.md).
+ * 
+ * @param process user space loader process in which to load the executable
+ * @param thread initial thread
+ * @param exec_file executable binary file
+ * @param argv0 program name (argv[0])
+ * @param cmdline full kernel command line, used for arguments and environment
+ */
 void exec(
         process_t           *process,
         thread_t            *thread,

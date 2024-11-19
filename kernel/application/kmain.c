@@ -117,8 +117,8 @@ void kmain(const char *cmdline) {
     info("---");
 
     /* Start first thread. */
-    start_first_thread(thread);
+    run_first_thread(thread);
 
     /* should never happen */
-    panic("start_first_thread() returned in kmain()");
+    panic("run_first_thread() returned in kmain()");
 }

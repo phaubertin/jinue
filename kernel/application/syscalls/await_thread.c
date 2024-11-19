@@ -35,23 +35,17 @@
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/entities/thread.h>
+#include <kernel/machine/spinlock.h>
 #include <kernel/machine/thread.h>
 
-int await_thread(int fd) {
-    descriptor_t *desc;
-    int status = dereference_object_descriptor(&desc, get_current_process(), fd);
-
-    if(status < 0) {
-        return -JINUE_EBADF;
-    }
-
-    thread_t *thread = get_thread_from_descriptor(desc);
+static int with_thread(descriptor_t *thread_desc) {
+    thread_t *thread = get_thread_from_descriptor(thread_desc);
 
     if(thread == NULL) {
         return -JINUE_EBADF;
     }
 
-    if(!descriptor_has_permissions(desc, JINUE_PERM_AWAIT)) {
+    if(!descriptor_has_permissions(thread_desc, JINUE_PERM_AWAIT)) {
         return -JINUE_EPERM;
     }
 
@@ -61,21 +55,35 @@ int await_thread(int fd) {
         return -JINUE_EDEADLK;
     }
 
-    /* TODO this check and the following assignment should be atomic */
-    if(thread->awaiter != NULL) {
+    spin_lock(&thread->await_lock);
+
+    if(thread->state == THREAD_STATE_CREATED || thread->awaiter != NULL) {
+        spin_unlock(&thread->await_lock);
         return -JINUE_ESRCH;
     }
 
     thread->awaiter = current;
 
-    /* Keep the thread around until we actually read the exit value. */
-    add_ref_to_object(&thread->header);
-
-    if(thread->state != THREAD_STATE_ZOMBIE) {
-        block_current_thread();
+    if(thread->state == THREAD_STATE_ZOMBIE) {
+        spin_unlock(&thread->await_lock);
+    } else {
+        block_and_unlock(&thread->await_lock);
     }
 
-    sub_ref_to_object(&thread->header);
-
     return 0;
+}
+
+int await_thread(int fd) {
+    descriptor_t thread_desc;
+    int status = dereference_object_descriptor(&thread_desc, get_current_process(), fd);
+
+    if(status < 0) {
+        return -JINUE_EBADF;
+    }
+
+    status = with_thread(&thread_desc);
+
+    unreference_descriptor_object(&thread_desc);
+
+    return status;
 }

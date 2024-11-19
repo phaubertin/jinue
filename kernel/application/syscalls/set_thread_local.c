@@ -32,12 +32,7 @@
 #include <kernel/application/syscalls.h>
 #include <kernel/domain/entities/thread.h>
 #include <kernel/machine/thread.h>
-#include <kernel/machine/tls.h>
 
 void set_thread_local(void *addr, size_t size) {
-    thread_t *thread = get_current_thread();
-
-    set_thread_local_storage(thread, addr, size);
-    
-    machine_set_tls(thread);
+    set_thread_local_storage(get_current_thread(), addr, size);
 }

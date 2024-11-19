@@ -42,7 +42,7 @@ static void set_tls_segment(percpu_t *data, void *addr, size_t size) {
     );
 }
 
-void machine_set_tls(const thread_t *thread) {
+void machine_set_thread_local_storage(const thread_t *thread) {
     percpu_t *data = get_percpu_data();
     set_tls_segment(data, thread->local_storage_addr, thread->local_storage_size);
 }

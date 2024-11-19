@@ -35,8 +35,47 @@
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
 
-static int check_mint_permissions(const object_header_t *object, int perms) {
-    if((perms & ~object->type->all_permissions) != 0) {
+static int with_target_process(
+        process_t               *current,
+        descriptor_t            *owner_desc,
+        descriptor_t            *target_desc,
+        const jinue_mint_args_t *args) {
+    
+    process_t *target = get_process_from_descriptor(target_desc);
+
+    if(target == NULL) {
+        return -JINUE_EBADF;
+    }
+
+    if(!descriptor_has_permissions(target_desc, JINUE_PERM_OPEN)) {
+        return -JINUE_EPERM;
+    }
+
+    int status = reserve_free_descriptor(target, args->fd);
+
+    if(status < 0) {
+        return status;
+    }
+
+    descriptor_t dest_desc;
+    dest_desc.object = owner_desc->object;
+    dest_desc.flags  = args->perms;
+    dest_desc.cookie = args->cookie;
+
+    open_descriptor(target, args->fd, &dest_desc);
+
+    return 0;
+}
+
+static int with_owner(
+        process_t               *current,
+        descriptor_t            *owner_desc,
+        const jinue_mint_args_t *args) {
+    
+    int perms       = args->perms;
+    int all_perms   = owner_desc->object->type->all_permissions;
+    
+    if((perms & ~all_perms) != 0) {
         return -JINUE_EINVAL;
     }
 
@@ -44,59 +83,37 @@ static int check_mint_permissions(const object_header_t *object, int perms) {
         return -JINUE_EINVAL;
     }
 
-    return 0;
+    if(! descriptor_is_owner(owner_desc)) {
+        return -JINUE_EPERM;
+    }
+
+    descriptor_t target_desc;
+    int status = dereference_object_descriptor(&target_desc, current, args->process);
+
+    if(status < 0) {
+        return status;
+    }
+
+    status = with_target_process(current, owner_desc, &target_desc, args);
+
+    unreference_descriptor_object(&target_desc);
+
+    return status;
 }
 
-int mint(int owner, const jinue_mint_args_t *mint_args) {
-    process_t *current_process = get_current_process();
+int mint(int owner, const jinue_mint_args_t *args) {
+    process_t *current = get_current_process();
 
-    descriptor_t *src_desc;
-    int status = dereference_object_descriptor(&src_desc, current_process, owner);
-
-    if(status < 0) {
-        return status;
-    }
-
-    object_header_t *object = src_desc->object;
-
-    status = check_mint_permissions(object, mint_args->perms);
+    descriptor_t owner_desc;
+    int status = dereference_object_descriptor(&owner_desc, current, owner);
 
     if(status < 0) {
         return status;
     }
 
-    if(!descriptor_is_owner(src_desc)) {
-        return -JINUE_EPERM;
-    }
+    status = with_owner(current, &owner_desc, args);
 
-    descriptor_t *process_desc;
-    status = dereference_object_descriptor(&process_desc, current_process, mint_args->process);
+    unreference_descriptor_object(&owner_desc);
 
-    process_t *process = get_process_from_descriptor(process_desc);
-
-    if(process == NULL) {
-        return -JINUE_EBADF;
-    }
-
-    if(!descriptor_has_permissions(process_desc, JINUE_PERM_OPEN)) {
-        return -JINUE_EPERM;
-    }
-
-    descriptor_t *dest_desc;
-    status = dereference_unused_descriptor(&dest_desc, process, mint_args->fd);
-
-    if(status < 0) {
-        return status;
-    }
-
-    dest_desc->object = src_desc->object;
-    dest_desc->flags  =
-          mint_args->perms
-        | (src_desc->flags & OBJECT_FLAG_DESTROYED)
-        | DESCRIPTOR_FLAG_IN_USE;
-    dest_desc->cookie = mint_args->cookie;
-
-    open_object(object, dest_desc);
-
-    return 0;
+    return status;
 }

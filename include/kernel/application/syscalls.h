@@ -56,7 +56,7 @@ int get_user_memory(const jinue_buffer_t *buffer);
 
 int mclone(int src, int dest, const jinue_mclone_args_t *args);
 
-int mint(int owner, const jinue_mint_args_t *mint_args);
+int mint(int owner, const jinue_mint_args_t *args);
 
 int mmap(int process_fd, const jinue_mmap_args_t *args);
 

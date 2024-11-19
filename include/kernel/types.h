@@ -91,24 +91,28 @@ typedef struct {
     object_header_t header;
     addr_space_t    addr_space;
     int             running_threads_count;
+    spinlock_t      descriptors_lock;
     descriptor_t    descriptors[JINUE_DESC_NUM];
 } process_t;
 
 typedef enum {
-    THREAD_STATE_ZOMBIE,
+    THREAD_STATE_CREATED,
+    THREAD_STATE_STARTING,
     THREAD_STATE_READY,
     THREAD_STATE_RUNNING,
-    THREAD_STATE_BLOCKED
+    THREAD_STATE_BLOCKED,
+    THREAD_STATE_ZOMBIE
 } thread_state_t;
 
 struct thread_t {
     object_header_t          header;
-    machine_thread_t         thread_ctx;
+    machine_thread_t         machine_thread;
     jinue_node_t             thread_list;
     thread_state_t           state;
     process_t               *process;
     struct thread_t         *sender;
     struct thread_t         *awaiter;
+    spinlock_t               await_lock;
     addr_t                   local_storage_addr;
     size_t                   local_storage_size;
     size_t                   recv_buffer_size;
@@ -129,6 +133,7 @@ typedef struct {
 
 typedef struct {
     object_header_t header;
+    spinlock_t      lock;
     jinue_list_t    send_list;
     jinue_list_t    recv_list;
     int             receivers_count;

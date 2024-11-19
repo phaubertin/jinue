@@ -36,6 +36,8 @@
 #include <kernel/domain/entities/endpoint.h>
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/services/ipc.h>
+#include <kernel/machine/atomic.h>
+#include <kernel/machine/spinlock.h>
 #include <kernel/utils/list.h>
 #include <stddef.h>
 
@@ -49,7 +51,6 @@ static void destroy_endpoint(object_header_t *object);
 
 static void free_endpoint(object_header_t *object);
 
-/** runtime type definition for an IPC endpoint */
 static const object_type_t object_type = {
     .all_permissions    = JINUE_PERM_SEND | JINUE_PERM_RECEIVE,
     .name               = "ipc_endpoint",
@@ -62,6 +63,7 @@ static const object_type_t object_type = {
     .cache_dtor         = NULL
 };
 
+/** runtime type definition for an IPC endpoint */
 const object_type_t *object_type_ipc_endpoint = &object_type;
 
 /** slab cache used for allocating IPC endpoint objects */
@@ -74,7 +76,6 @@ static slab_cache_t ipc_endpoint_cache;
  *
  * @param buffer IPC endpoint object being constructed
  * @param size size in bytes of the IPC endpoint object (ignored)
- *
  */
 static void cache_endpoint_ctor(void *buffer, size_t size) {
     ipc_endpoint_t *endpoint = buffer;
@@ -82,21 +83,38 @@ static void cache_endpoint_ctor(void *buffer, size_t size) {
     init_object_header(&endpoint->header, object_type_ipc_endpoint);
     jinue_list_init(&endpoint->send_list);
     jinue_list_init(&endpoint->recv_list);
+    init_spinlock(&endpoint->lock);
     endpoint->receivers_count = 0;
 }
 
+/**
+ * Add a reference that can be used to receive on the endpoint
+ *
+ * @param endpoint the endpoint
+ */
 static void add_receiver(ipc_endpoint_t *endpoint) {
-    ++endpoint->receivers_count;
+    add_atomic(&endpoint->receivers_count, 1);
 }
 
-static void sub_receiver(ipc_endpoint_t *endpoint) {
-    --endpoint->receivers_count;
+/**
+ * Remove a reference that can be used to receive on the endpoint
+ *
+ * @param endpoint the endpoint
+ * @return updated number of references allowed to receive
+ */
+static int sub_receiver(ipc_endpoint_t *endpoint) {
+    return add_atomic(&endpoint->receivers_count, -1);
 }
 
-static bool has_receivers(const ipc_endpoint_t *endpoint) {
-    return endpoint->receivers_count > 0;
-}
-
+/**
+ * Open an IPC endpoint
+ * 
+ * This function is defined as the "open" op in the runtime type definition,
+ * called when a new descriptor references the endpoint.
+ *
+ * @param object the endpoint object
+ * @param desc the new descriptor
+ */
 static void open_endpoint(object_header_t *object, const descriptor_t *desc) {
     if(descriptor_has_permissions(desc, JINUE_PERM_RECEIVE)) {
         ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
@@ -104,20 +122,29 @@ static void open_endpoint(object_header_t *object, const descriptor_t *desc) {
     }
 }
 
+/**
+ * Close an IPC endpoint
+ * 
+ * This function is defined as the "close" op in the runtime type definition,
+ * called when a a descriptor that references the endpoint is closed and stops
+ * referencing it.
+ *
+ * @param object the endpoint object
+ * @param desc the descriptor being closed
+ */
 static void close_endpoint(object_header_t *object, const descriptor_t *desc) {
     if(descriptor_has_permissions(desc, JINUE_PERM_RECEIVE)) {
         ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
-        sub_receiver(endpoint);
+        int receivers = sub_receiver(endpoint);
 
-        if(!has_receivers(endpoint)) {
+        if(receivers < 1) {
             destroy_object(object);
         }
     }
 }
 
 /**
- * Perform boot-time initialization for IPC
- *
+ * Initialize the IPC endpoint slab cache
  */
 void initialize_endpoint_cache(void) {
     init_object_cache(&ipc_endpoint_cache, object_type_ipc_endpoint);
@@ -126,13 +153,19 @@ void initialize_endpoint_cache(void) {
 /**
  * Constructor for IPC endpoint object
  *
- * @return pointer to endpoint on success, NULL on allocation failure
- *
+ * @return endpoint on success, NULL on allocation failure
  */
 ipc_endpoint_t *construct_endpoint(void) {
     return slab_cache_alloc(&ipc_endpoint_cache);
 }
 
+/**
+ * Destroy an IPC endpoint
+ * 
+ * This function is defined as the "destroy" op in the runtime type definition.
+ *
+ * @param object the endpoint object
+ */
 static void destroy_endpoint(object_header_t *object) {
     ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
 
@@ -163,6 +196,14 @@ static void destroy_endpoint(object_header_t *object) {
     }
 }
 
+/**
+ * Free an IPC endpoint
+ * 
+ * This function is defined as the "free" op in the runtime type definition,
+ * called automatically when the endpoint's reference count falls to zero.
+ *
+ * @param object the endpoint object
+ */
 static void free_endpoint(object_header_t *object) {
     slab_cache_free(object);
 }

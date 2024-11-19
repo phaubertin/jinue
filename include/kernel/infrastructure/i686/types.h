@@ -122,12 +122,4 @@ struct percpu_t {
 
 typedef struct percpu_t percpu_t;
 
-typedef struct {
-    uint32_t    edi;
-    uint32_t    esi;
-    uint32_t    ebx;
-    uint32_t    ebp;
-    uint32_t    eip;
-} kernel_context_t;
-
 #endif

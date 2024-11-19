@@ -36,6 +36,10 @@
 
 extern const object_type_t *object_type_process;
 
+static inline object_header_t *process_object(process_t *process) {
+    return &process->header;
+}
+
 void initialize_process_cache(void);
 
 process_t *construct_process(void);

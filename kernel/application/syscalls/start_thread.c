@@ -36,32 +36,35 @@
 #include <kernel/domain/entities/thread.h>
 
 int start_thread(int fd, const thread_params_t *params) {
-    descriptor_t *desc;
+    descriptor_t desc;
     int status = dereference_object_descriptor(&desc, get_current_process(), fd);
 
     if(status < 0) {
         return -JINUE_EBADF;
     }
 
-    thread_t *thread = get_thread_from_descriptor(desc);
+    thread_t *thread = get_thread_from_descriptor(&desc);
 
     if(thread == NULL) {
+        unreference_descriptor_object(&desc);
         return -JINUE_EBADF;
     }
 
-    if(!descriptor_has_permissions(desc, JINUE_PERM_START)) {
+    if(!descriptor_has_permissions(&desc, JINUE_PERM_START)) {
+        unreference_descriptor_object(&desc);
         return -JINUE_EPERM;
     }
 
-    if(thread->state != THREAD_STATE_ZOMBIE) {
+    if(thread->state != THREAD_STATE_CREATED && thread->state != THREAD_STATE_ZOMBIE) {
+        unreference_descriptor_object(&desc);
         return -JINUE_EBUSY;
     }
 
     prepare_thread(thread, params);
 
-    thread_is_starting(thread);
+    run_thread(thread);
 
-    ready_thread(thread);
+    unreference_descriptor_object(&desc);
 
     return 0;
 }

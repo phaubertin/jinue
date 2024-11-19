@@ -36,45 +36,62 @@
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/entities/thread.h>
 
-int create_thread(int fd, int process_fd) {
-    descriptor_t *desc;
-    int status = dereference_unused_descriptor(&desc, get_current_process(), fd);
 
-    if(status < 0) {
+static int with_target_process(process_t *current, int fd, descriptor_t *target_desc) {
+    process_t *target = get_process_from_descriptor(target_desc);
+
+    if(target == NULL) {
         return -JINUE_EBADF;
     }
 
-    descriptor_t *process_desc;
-    status = dereference_object_descriptor(&process_desc, get_current_process(), process_fd);
+    if(!descriptor_has_permissions(target_desc, JINUE_PERM_CREATE_THREAD | JINUE_PERM_OPEN)) {
+        return -JINUE_EPERM;
+    }
+
+    thread_t *thread = construct_thread(target);
+
+    if(thread == NULL) {
+        return -JINUE_ENOMEM;
+    }
+
+    descriptor_t desc;
+    desc.object = thread_object(thread);
+    desc.flags  = DESC_FLAG_OWNER | object_type_thread->all_permissions;
+    desc.cookie = 0;
+
+    open_descriptor(current, fd, &desc);
+
+    return 0;
+}
+
+static int with_descriptor_reserved(process_t *current, int fd, int process_fd) {
+    descriptor_t target_desc;
+    int status = dereference_object_descriptor(&target_desc, current, process_fd);
 
     if(status < 0) {
         return status;
     }
 
-    process_t *process = get_process_from_descriptor(process_desc);
+    status = with_target_process(current, fd, &target_desc);
 
-    if(process == NULL) {
+    unreference_descriptor_object(&target_desc);
+
+    return status;
+}
+
+int create_thread(int fd, int process_fd) {
+    process_t *current  = get_current_process();
+    int status          = reserve_free_descriptor(current, fd);
+
+    if(status < 0) {
         return -JINUE_EBADF;
     }
 
-    if(!descriptor_has_permissions(process_desc, JINUE_PERM_CREATE_THREAD | JINUE_PERM_OPEN)) {
-        return -JINUE_EPERM;
+    status = with_descriptor_reserved(current, fd, process_fd);
+
+    if(status < 0) {
+        free_reserved_descriptor(current, fd);
     }
 
-    thread_t *thread = construct_thread(process);
-
-    if(thread == 0) {
-        return -JINUE_ENOMEM;
-    }
-
-    desc->object = &thread->header;
-    desc->flags  =
-          DESCRIPTOR_FLAG_IN_USE
-        | DESCRIPTOR_FLAG_OWNER
-        | object_type_thread->all_permissions;
-    desc->cookie = 0;
-
-    open_object(&thread->header, desc);
-
-    return 0;
+    return status;
 }

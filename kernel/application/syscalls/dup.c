@@ -35,51 +35,71 @@
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
 
-int dup(int process_fd, int src, int dest) {
-    process_t *current_process = get_current_process();
 
-    descriptor_t *process_desc;
-    int status = dereference_object_descriptor(&process_desc, current_process, process_fd);
-    
-    if(status < 0) {
-        return status;
-    }
-    
-    process_t *process = get_process_from_descriptor(process_desc);
-
-    if(process == NULL) {
-        return -JINUE_EBADF;
-    }
-
-    if(!descriptor_has_permissions(process_desc, JINUE_PERM_OPEN)) {
-        return -JINUE_EPERM;
-    }
-
-    descriptor_t *src_desc;
-    status = dereference_object_descriptor(&src_desc, current_process, src);
-
-    if(status < 0) {
-        return status;
-    }
-
-    object_header_t *object = src_desc->object;
+static int with_source(
+        process_t       *current,
+        process_t       *target,
+        descriptor_t    *src_desc,
+        int              dest) {
 
     if(descriptor_is_owner(src_desc)) {
         return -JINUE_EBADF;
     }
 
-    descriptor_t *dest_desc;
-    status = dereference_unused_descriptor(&dest_desc, process, dest);
+    int status = reserve_free_descriptor(target, dest);
 
     if(status < 0) {
         return status;
     }
 
-    dest_desc->object = src_desc->object;
-    dest_desc->flags  = src_desc->flags;
-    dest_desc->cookie = src_desc->cookie;
-
-    open_object(object, dest_desc);
+    open_descriptor(target, dest, src_desc);
 
     return 0;
+}
+
+static int with_target_process(
+        process_t       *current,
+        descriptor_t    *target_desc,
+        int              src,
+        int              dest) {
+    
+    process_t *target = get_process_from_descriptor(target_desc);
+
+    if(target == NULL) {
+        return -JINUE_EBADF;
+    }
+
+    if(!descriptor_has_permissions(target_desc, JINUE_PERM_OPEN)) {
+        return -JINUE_EPERM;
+    }
+
+    descriptor_t src_desc;
+    int status = dereference_object_descriptor(&src_desc, current, src);
+
+    if(status < 0) {
+        return status;
+    }
+
+    status = with_source(current, target, &src_desc, dest);
+
+    unreference_descriptor_object(&src_desc);
+
+    return status;
+}
+
+int dup(int process_fd, int src, int dest) {
+    process_t *current = get_current_process();
+
+    descriptor_t target_desc;
+    int status = dereference_object_descriptor(&target_desc, current, process_fd);
+    
+    if(status < 0) {
+        return status;
+    }
+
+    status = with_target_process(current, &target_desc, src, dest);
+
+    unreference_descriptor_object(&target_desc);
+
+    return status;
 }

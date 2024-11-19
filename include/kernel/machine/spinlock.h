@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,12 +29,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_THREAD_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_THREAD_H
+#ifndef JINUE_KERNEL_MACHINE_SPINLOCK_H
+#define JINUE_KERNEL_MACHINE_SPINLOCK_H
 
 #include <kernel/machine/types.h>
-#include <stdbool.h>
 
-void switch_thread_stack(machine_thread_t *from, machine_thread_t *to);
+#define SPINLOCK_STATIC { .lock = 0 }
+
+void init_spinlock(spinlock_t *lock);
+
+void spin_lock(spinlock_t *lock);
+
+void spin_unlock(spinlock_t *lock);
 
 #endif
+

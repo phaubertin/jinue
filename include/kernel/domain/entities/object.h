@@ -40,11 +40,6 @@
 
 #define OBJECT_FLAG_DESTROYED       (1<<0)
 
-
-static inline void mark_object_destroyed(object_header_t *object) {
-    object->flags |= OBJECT_FLAG_DESTROYED;
-}
-
 static inline bool object_is_destroyed(object_header_t *object) {
     return !!(object->flags & OBJECT_FLAG_DESTROYED);
 }
@@ -55,10 +50,6 @@ static inline void init_object_header(object_header_t *object, const object_type
     object->flags       = OBJECT_FLAG_NONE;
 }
 
-static inline void add_ref_to_object(object_header_t *object) {
-    ++object->ref_count;
-}
-
 void init_object_cache(slab_cache_t *cache, const object_type_t *type);
 
 void open_object(object_header_t *object, const descriptor_t *desc);
@@ -66,6 +57,8 @@ void open_object(object_header_t *object, const descriptor_t *desc);
 void close_object(object_header_t *object, const descriptor_t *desc);
 
 void destroy_object(object_header_t *object);
+
+void add_ref_to_object(object_header_t *object);
 
 void sub_ref_to_object(object_header_t *object);
 

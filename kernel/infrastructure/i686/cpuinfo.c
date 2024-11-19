@@ -53,7 +53,7 @@ void detect_cpu_features(void) {
     /* The CPUID instruction is available if we can change the value of eflags
      * bit 21 (ID) */
     temp_eflags  = get_eflags();
-    temp_eflags ^= CPU_EFLAGS_ID;
+    temp_eflags ^= EFLAGS_ID;
     set_eflags(temp_eflags);
     
     if(temp_eflags == get_eflags()) {

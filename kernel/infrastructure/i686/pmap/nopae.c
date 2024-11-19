@@ -68,7 +68,6 @@ void nopae_destroy_addr_space(addr_space_t *addr_space) {
  *
  * @param addr virtual address
  * @return entry offset of address within page table
- *
  */
 unsigned int nopae_page_table_offset_of(void *addr) {
     return PAGE_TABLE_OFFSET_OF(addr);
@@ -79,7 +78,6 @@ unsigned int nopae_page_table_offset_of(void *addr) {
  *
  * @param addr virtual address
  * @return entry offset of address within page directory
- *
  */
 unsigned int nopae_page_directory_offset_of(void *addr) {
     return PAGE_DIRECTORY_OFFSET_OF(addr);
@@ -104,7 +102,6 @@ pte_t *nopae_lookup_page_directory(addr_space_t *addr_space) {
  * @param pte base page table entry (e.g. the beginning of a page table)
  * @param offset entry offset
  * @return PTE at specified offset
- *
  */
 pte_t *nopae_get_pte_with_offset(pte_t *pte, unsigned int offset) {
     return &pte[offset];
@@ -124,7 +121,6 @@ pte_t *nopae_get_pte_with_offset(pte_t *pte, unsigned int offset) {
  * @param paddr physical address of page frame
  * @param flags flags
  * @return flags
- *
  */
 static uint32_t filter_pte_flags(uint64_t flags) {
     uint32_t mask = PAGE_MASK;
@@ -141,7 +137,6 @@ static uint32_t filter_pte_flags(uint64_t flags) {
  * @param pte page table or page directory entry
  * @param paddr physical address of page frame
  * @param flags flags
- *
  */
 void nopae_set_pte(pte_t *pte, uint32_t paddr, uint64_t flags) {
     assert((paddr & PAGE_MASK) == 0);
@@ -157,7 +152,6 @@ void nopae_set_pte(pte_t *pte, uint32_t paddr, uint64_t flags) {
  *
  * @param pte page table entry
  * @param pte flags flags
- *
  */
 void nopae_set_pte_flags(pte_t *pte, uint64_t flags) {
     pte->entry = (pte->entry & ~PAGE_MASK) | filter_pte_flags(flags);
@@ -168,7 +162,6 @@ void nopae_set_pte_flags(pte_t *pte, uint64_t flags) {
  *
  * @param pte page table or page directory entry array
  * @return physical address
- *
  */
 uint32_t nopae_get_pte_paddr(const pte_t *pte) {
     return pte->entry & ~PAGE_MASK;
@@ -181,7 +174,6 @@ uint32_t nopae_get_pte_paddr(const pte_t *pte) {
  * present in memory.
  *
  * @param pte page table or page directory entry
- *
  */
 void nopae_clear_pte(pte_t *pte) {
     pte->entry = 0;
@@ -192,7 +184,6 @@ void nopae_clear_pte(pte_t *pte) {
  *
  * @param dest destination page table/directory entry
  * @param src source page table/directory entry
- *
  */
 void nopae_copy_pte(pte_t *dest, const pte_t *src) {
     dest->entry = src->entry;

@@ -35,14 +35,33 @@
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/entities/thread.h>
+#include <kernel/machine/spinlock.h>
+#include <assert.h>
+
 
 /**
- * Get an object reference by descriptor in a specified process
+ * Clear a descriptor
+ * 
+ * A cleared descriptor is in the free state (i.e. is unused) and is not
+ * referring to any object.
+ * 
+ * @param desc descriptor
+ */
+void clear_descriptor(descriptor_t *desc) {
+    desc->flags     = DESC_STATE_FREE;
+    desc->object    = NULL;
+    desc->cookie    = 0;
+}
+
+/**
+ * Get an object reference by descriptor number in a specified process
+ * 
+ * This function does not do any kind of locking or reference count update, so
+ * it should only be called in this file by functions that do these things.
  * 
  * @param process process for which the descriptor is looked up
- * @param fd descriptor
+ * @param fd descriptor number (DESC_STATE_... constant)
  * @return object reference on success, NULL if out of bound
- *
  */
 static descriptor_t *dereference_descriptor(process_t *process, int fd) {
     if(fd < 0 || fd > JINUE_DESC_NUM) {
@@ -53,59 +72,87 @@ static descriptor_t *dereference_descriptor(process_t *process, int fd) {
 }
 
 /**
- * Get the object referenced by a descriptor
+ * Set the state of a descriptor.
  * 
- * @param pdesc pointer to where to store the pointer to the object reference (out)
- * @param process process for which the descriptor is looked up
- * @param fd descriptor
- * @return zero on success, negated error number on error
- *
+ * This function does not do any kind of locking, so it should only be called
+ * in this file by functions that it when needed.
+ * 
+ * @param desc descriptor in a process' descriptor array
+ * @param state state to set (DESC_STATE_... constant)
+ * @return object reference on success, NULL if out of bound
  */
-int dereference_object_descriptor(
-        descriptor_t    **pdesc,
-        process_t        *process,
-        int               fd) {
+static void set_state(descriptor_t *desc, int state)  {
+    desc->flags &= ~DESC_FLAG_STATE;
+    desc->flags |= state;
+}
 
-    descriptor_t *desc = dereference_descriptor(process, fd);
-
-    if(desc == NULL) {
-        return -JINUE_EBADF;
-    }
-
-    if(! descriptor_is_in_use(desc)) {
-        return -JINUE_EBADF;
-    }
-
+/**
+ * Portion of dereference_object_descriptor() performed under lock
+ * 
+ * @param pout pointer to where to copy the descriptor (out)
+ * @param process process for which the descriptor is looked up
+ * @param desc referenced descriptor
+ * @return zero on success, negated error number on error
+ */
+static int dereference_object_descriptor_locked(
+        descriptor_t    *pout,
+        process_t       *process,
+        descriptor_t    *desc) {
+    
     if(descriptor_is_destroyed(desc)) {
         return -JINUE_EIO;
+    }
+    
+    if(! descriptor_is_open(desc)) {
+        return -JINUE_EBADF;
     }
 
     object_header_t *object = desc->object;
 
     if(object_is_destroyed(object)) {
-        desc->flags |= DESCRIPTOR_FLAG_DESTROYED;
+        set_state(desc, DESC_STATE_DESTROYED);
         close_object(object, desc);
         return -JINUE_EIO;
     }
 
-    *pdesc = desc;
+    add_ref_to_object(desc->object);
+    *pout = *desc;
 
     return 0;
 }
 
 /**
- * Get an unused object reference by descriptor
- * 
- * @param pdesc pointer to where to store the pointer to the object reference (out)
- * @param process process for which the descriptor is looked up
- * @param fd descriptor
- * @return zero on success, negated error number on error
+ * Dereference an object descriptor
  *
+ * This function finds a descriptor by descriptor number is a specified
+ * process. It expects the descriptor to reference an object (i.e. be in the
+ * open state) and fails with JINUE_EBADF if it doesn't, unless the descriptor
+ * is in the destroyed state, in which case it fails with JINUE_EIO.
+ * 
+ * It also checks that the object referenced hasn't been destroyed. If it has,
+ * it changes the descriptor's state to destroyed, decrement the referenced
+ * object's reference count (because the descriptor no longer references it)
+ * and fails with JINUE_EIO.
+ * 
+ * If the call succeeds, it copies the descriptor to the storage pointed to by
+ * the pout argument and increments the reference count of the referenced
+ * object. These two things ensure the caller can continue to access the
+ * descriptor data and referenced object even while not under the process'
+ * descriptor lock and even if the descriptor is concurrently modified.
+ * 
+ * The caller *must* decrement the referenced object reference call when it is
+ * done with it to free the reference added by this call. This can be done by
+ * calling unreference_descriptor_object() on the descriptor copy.
+ * 
+ * @param pout pointer to where to copy the descriptor (out)
+ * @param process process in which the descriptor is looked up
+ * @param fd descriptor number
+ * @return zero on success, negated error number on error
  */
-int dereference_unused_descriptor(
-        descriptor_t    **pdesc,
-        process_t        *process,
-        int               fd) {
+int dereference_object_descriptor(
+        descriptor_t    *pout,
+        process_t       *process,
+        int              fd) {
 
     descriptor_t *desc = dereference_descriptor(process, fd);
 
@@ -113,15 +160,172 @@ int dereference_unused_descriptor(
         return -JINUE_EBADF;
     }
 
-    if(descriptor_is_in_use(desc)) {
+    spin_lock(&process->descriptors_lock);
+
+    int status = dereference_object_descriptor_locked(pout, process, desc);
+    
+    spin_unlock(&process->descriptors_lock);
+
+    return status;
+}
+
+/**
+ * Unreference the object referenced by a descriptor
+ * 
+ * Must be called on the copy of the descriptor obtained by calling
+ * dereference_object_descriptor() when the caller is done accessing the
+ * object.
+ * 
+ * @param desc descriptor
+ */
+void unreference_descriptor_object(descriptor_t *desc) {
+    sub_ref_to_object(desc->object);
+}
+
+/**
+ * Reserve an unused descriptor by descriptor number
+ * 
+ * This function ensures the descriptor is free. If it is, it sets it state to
+ * reserve (DESC_STATE_RESERVED) to prevent concurrent attempts to assign it.
+ * 
+ * Once a descriptor is reserved, it must be set with open_descriptor(), or the
+ * reservation must be released with free_reserved_descriptor() if rolling back
+ * becomes necessary.
+ * 
+ * This two step process allows the caller to confirm the availability of the
+ * descriptor before it starts allocating resources or performing some
+ * similarly expensive operation, and it ensures this operation does not need
+ * to be done while holding the process' descriptor lock.
+ * 
+ * @param pdesc pointer to where to store the pointer to the object reference (out)
+ * @param process process for which the descriptor is looked up
+ * @param fd descriptor number
+ * @return zero on success, negated error number on error
+ */
+int reserve_free_descriptor(process_t *process, int fd) {
+    descriptor_t *desc = dereference_descriptor(process, fd);
+
+    if(desc == NULL) {
         return -JINUE_EBADF;
     }
 
-    *pdesc = desc;
+    spin_lock(&process->descriptors_lock);
+
+    if(!descriptor_is_free(desc)) {
+        spin_unlock(&process->descriptors_lock);
+        return -JINUE_EBADF;
+    }
+
+    set_state(desc, DESC_STATE_RESERVED);
+
+    spin_unlock(&process->descriptors_lock);
 
     return 0;
 }
 
+/**
+ * Free a reserved descriptor
+ * 
+ * This function must be called for a descriptor reserved with
+ * reserve_free_descriptor() if the descriptor will not be set with
+ * open_descriptor().
+ * 
+ * @param process process for which the descriptor is looked up
+ * @param fd descriptor number
+ */
+void free_reserved_descriptor(process_t *process, int fd) {
+    descriptor_t *desc = dereference_descriptor(process, fd);
+
+    spin_lock(&process->descriptors_lock);
+
+    assert(descriptor_is_reserved(desc));
+
+    clear_descriptor(desc);
+
+    spin_unlock(&process->descriptors_lock);
+}
+
+/**
+ * Open a descriptor
+ * 
+ * This function assigns an object to a descriptor and sets its flags and
+ * cookie. The object's reference count is incremented to reflect the new
+ * reference by the descriptor. The object's open op is also called.
+ * 
+ * The descriptor must have been reserved with reserve_free_descriptor() before
+ * calling this function. This function does not do error checking because this
+ * will have been done by reserve_free_descriptor().
+ * 
+ * @param process process in which the descriptor is opened
+ * @param fd descriptor number
+ * @param in data to set on the descriptor
+ */
+void open_descriptor(process_t *process, int fd, const descriptor_t *in) {
+    descriptor_t *desc = dereference_descriptor(process, fd);
+
+    spin_lock(&process->descriptors_lock);
+
+    assert(descriptor_is_reserved(desc));
+
+    *desc = *in;
+    
+    set_state(desc, DESC_STATE_OPEN);
+
+    spin_unlock(&process->descriptors_lock);
+
+    open_object(in->object, in);
+}
+
+/**
+ * Close a descriptor
+ * 
+ * This function closes a descriptor so it becomes available for reuse. In
+ * addition to clearing the descriptor state, it also calls the referenced
+ * object's close op if the descriptor is initially in the open state.
+ * 
+ * @param process process in which the descriptor is closed
+ * @param fd descriptor number
+ * @return zero on success, negated error number on error
+ */
+int close_descriptor(process_t *process, int fd) {
+    descriptor_t *desc = dereference_descriptor(process, fd);
+
+    if(desc == NULL) {
+        return -JINUE_EBADF;
+    }
+
+    spin_lock(&process->descriptors_lock);
+
+    if(! descriptor_is_closeable(desc)) {
+        spin_unlock(&process->descriptors_lock);
+        return -JINUE_EBADF;
+    }
+
+    const descriptor_t copy = *desc;
+
+    clear_descriptor(desc);
+    
+    spin_unlock(&process->descriptors_lock);
+
+    if(descriptor_is_open(&copy)) {
+        close_object(copy.object, &copy);
+    }
+
+    return 0;
+}
+
+/**
+ * Get IPC endpoint referenced by descriptor
+ * 
+ * If the specified descriptor refers to an IPC endpoint, a pointer to that
+ * endpoint is returned. Otherwise, the function fails by returning NULL.
+ * 
+ * This function is typically called on a descriptor copy obtain by calling
+ * dereference_object_descriptor().
+ * 
+ * @param desc descriptor
+ * @return IPC endpoint on success, NULL on failure
+ */
 ipc_endpoint_t *get_endpoint_from_descriptor(descriptor_t *desc) {
     object_header_t *object = desc->object;
 
@@ -132,6 +336,18 @@ ipc_endpoint_t *get_endpoint_from_descriptor(descriptor_t *desc) {
     return (ipc_endpoint_t *)object;
 }
 
+/**
+ * Get process referenced by descriptor
+ * 
+ * If the specified descriptor refers to a process, a pointer to that process
+ * is returned. Otherwise, the function fails by returning NULL.
+ * 
+ * This function is typically called on a descriptor copy obtain by calling
+ * dereference_object_descriptor().
+ * 
+ * @param desc descriptor
+ * @return process on success, NULL on failure
+ */
 process_t *get_process_from_descriptor(descriptor_t *desc) {
     object_header_t *object = desc->object;
 
@@ -142,6 +358,18 @@ process_t *get_process_from_descriptor(descriptor_t *desc) {
     return (process_t *)object;
 }
 
+/**
+ * Get thread referenced by descriptor
+ * 
+ * If the specified descriptor refers to a thread, a pointer to that thread
+ * is returned. Otherwise, the function fails by returning NULL.
+ * 
+ * This function is typically called on a descriptor copy obtain by calling
+ * dereference_object_descriptor().
+ * 
+ * @param desc descriptor
+ * @return thread on success, NULL on failure
+ */
 thread_t *get_thread_from_descriptor(descriptor_t *desc) {
     object_header_t *object = desc->object;
 

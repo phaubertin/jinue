@@ -561,7 +561,6 @@ static void sys_reply_error(jinue_syscall_args_t *args) {
  * arguments.
  *
  * @param trapframe trap frame for current system call
- *
  */
 void dispatch_syscall(jinue_syscall_args_t *args) {
     intptr_t function = args->arg0;
