@@ -85,27 +85,27 @@ static inline bool descriptor_has_permissions(const descriptor_t *desc, int perm
     return (desc->flags & perms) == perms;
 }
 
-void clear_descriptor(descriptor_t *desc);
+void descriptor_clear(descriptor_t *desc);
 
-int dereference_object_descriptor(
+int descriptor_access_object(
         descriptor_t    *pout,
         process_t       *process,
         int              fd);
 
-void unreference_descriptor_object(descriptor_t *desc);
+void descriptor_unreference_object(descriptor_t *desc);
 
-int reserve_free_descriptor(process_t *process, int fd);
+int descriptor_reserve_unused(process_t *process, int fd);
 
-void free_reserved_descriptor(process_t *process, int fd);
+void descriptor_free_reservation(process_t *process, int fd);
 
-void open_descriptor(process_t *process, int fd, const descriptor_t *in);
+void descriptor_open(process_t *process, int fd, const descriptor_t *in);
 
-int close_descriptor(process_t *process, int fd);
+int descriptor_close(process_t *process, int fd);
 
-ipc_endpoint_t *get_endpoint_from_descriptor(descriptor_t *desc);
+ipc_endpoint_t *descriptor_get_endpoint(descriptor_t *desc);
 
-process_t *get_process_from_descriptor(descriptor_t *desc);
+process_t *descriptor_get_process(descriptor_t *desc);
 
-thread_t *get_thread_from_descriptor(descriptor_t *desc);
+thread_t *descriptor_get_thread(descriptor_t *desc);
 
 #endif

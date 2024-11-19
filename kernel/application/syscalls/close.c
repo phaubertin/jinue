@@ -37,5 +37,5 @@
 
 
 int close(int fd) {
-    return close_descriptor(get_current_process(), fd);
+    return descriptor_close(get_current_process(), fd);
 }

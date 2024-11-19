@@ -36,7 +36,7 @@
 #include <kernel/machine/pmap.h>
 
 int with_process(descriptor_t *process_desc, const jinue_mmap_args_t *args) {
-    process_t *process = get_process_from_descriptor(process_desc);
+    process_t *process = descriptor_get_process(process_desc);
 
     if(process == NULL) {
         return -JINUE_EBADF;
@@ -56,7 +56,7 @@ int with_process(descriptor_t *process_desc, const jinue_mmap_args_t *args) {
 
 int mmap(int process_fd, const jinue_mmap_args_t *args) {
     descriptor_t process_desc;
-    int status = dereference_object_descriptor(&process_desc, get_current_process(), process_fd);
+    int status = descriptor_access_object(&process_desc, get_current_process(), process_fd);
 
     if(status < 0) {
         return status;
@@ -64,7 +64,7 @@ int mmap(int process_fd, const jinue_mmap_args_t *args) {
 
     status = with_process(&process_desc, args);
 
-    unreference_descriptor_object(&process_desc);
+    descriptor_unreference_object(&process_desc);
 
     return status;
 }

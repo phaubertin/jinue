@@ -42,7 +42,7 @@ static int with_destination(
         descriptor_t                *dest_desc,
         const jinue_mclone_args_t   *args) {
 
-    process_t *dest_process = get_process_from_descriptor(dest_desc);
+    process_t *dest_process = descriptor_get_process(dest_desc);
 
     if(dest_process == NULL) {
         return -JINUE_EBADF;
@@ -74,7 +74,7 @@ static int with_source(
         int                          dest,
         const jinue_mclone_args_t   *args) {
     
-    process_t *src_process = get_process_from_descriptor(src_desc);
+    process_t *src_process = descriptor_get_process(src_desc);
 
     if(src_process == NULL) {
         return -JINUE_EBADF;
@@ -84,7 +84,7 @@ static int with_source(
      * source just implicitly be the current process? */
 
     descriptor_t dest_desc;
-    int status = dereference_object_descriptor(&dest_desc, current, dest);
+    int status = descriptor_access_object(&dest_desc, current, dest);
     
     if(status < 0) {
         return status;
@@ -92,7 +92,7 @@ static int with_source(
 
     status = with_destination(current, src_process, &dest_desc, args);
 
-    unreference_descriptor_object(&dest_desc);
+    descriptor_unreference_object(&dest_desc);
 
     return status;
 }
@@ -111,7 +111,7 @@ int mclone(int src, int dest, const jinue_mclone_args_t *args) {
     process_t *current = get_current_process();
 
     descriptor_t src_desc;
-    int status = dereference_object_descriptor(&src_desc, current, src);
+    int status = descriptor_access_object(&src_desc, current, src);
     
     if(status < 0) {
         return status;
@@ -119,7 +119,7 @@ int mclone(int src, int dest, const jinue_mclone_args_t *args) {
     
     status = with_source(current, &src_desc, dest, args);
 
-    unreference_descriptor_object(&src_desc);
+    descriptor_unreference_object(&src_desc);
 
     return status;
 }

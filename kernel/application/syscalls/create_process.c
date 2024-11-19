@@ -37,16 +37,16 @@
 
 int create_process(int fd) {
     process_t *current  = get_current_process();
-    int status          = reserve_free_descriptor(current, fd);
+    int status          = descriptor_reserve_unused(current, fd);
 
     if(status < 0) {
         return status;
     }
 
-    process_t *new_process = construct_process();
+    process_t *new_process = process_new();
 
     if(new_process == NULL) {
-        free_reserved_descriptor(current, fd);
+        descriptor_free_reservation(current, fd);
         return -JINUE_EAGAIN;
     }
 
@@ -55,7 +55,7 @@ int create_process(int fd) {
     desc.flags  = DESC_FLAG_OWNER | object_type_process->all_permissions;
     desc.cookie = 0;
 
-    open_descriptor(current, fd, &desc);
+    descriptor_open(current, fd, &desc);
 
     return 0;
 }

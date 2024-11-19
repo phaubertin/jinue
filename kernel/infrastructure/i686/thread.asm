@@ -32,7 +32,7 @@
 
     bits 32
     
-    extern sub_ref_to_object
+    extern object_sub_ref
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: switch_thread_stack

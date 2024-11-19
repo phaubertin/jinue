@@ -41,7 +41,7 @@ static int with_target_process(
         descriptor_t            *target_desc,
         const jinue_mint_args_t *args) {
     
-    process_t *target = get_process_from_descriptor(target_desc);
+    process_t *target = descriptor_get_process(target_desc);
 
     if(target == NULL) {
         return -JINUE_EBADF;
@@ -51,7 +51,7 @@ static int with_target_process(
         return -JINUE_EPERM;
     }
 
-    int status = reserve_free_descriptor(target, args->fd);
+    int status = descriptor_reserve_unused(target, args->fd);
 
     if(status < 0) {
         return status;
@@ -62,7 +62,7 @@ static int with_target_process(
     dest_desc.flags  = args->perms;
     dest_desc.cookie = args->cookie;
 
-    open_descriptor(target, args->fd, &dest_desc);
+    descriptor_open(target, args->fd, &dest_desc);
 
     return 0;
 }
@@ -88,7 +88,7 @@ static int with_owner(
     }
 
     descriptor_t target_desc;
-    int status = dereference_object_descriptor(&target_desc, current, args->process);
+    int status = descriptor_access_object(&target_desc, current, args->process);
 
     if(status < 0) {
         return status;
@@ -96,7 +96,7 @@ static int with_owner(
 
     status = with_target_process(current, owner_desc, &target_desc, args);
 
-    unreference_descriptor_object(&target_desc);
+    descriptor_unreference_object(&target_desc);
 
     return status;
 }
@@ -105,7 +105,7 @@ int mint(int owner, const jinue_mint_args_t *args) {
     process_t *current = get_current_process();
 
     descriptor_t owner_desc;
-    int status = dereference_object_descriptor(&owner_desc, current, owner);
+    int status = descriptor_access_object(&owner_desc, current, owner);
 
     if(status < 0) {
         return status;
@@ -113,7 +113,7 @@ int mint(int owner, const jinue_mint_args_t *args) {
 
     status = with_owner(current, &owner_desc, args);
 
-    unreference_descriptor_object(&owner_desc);
+    descriptor_unreference_object(&owner_desc);
 
     return status;
 }

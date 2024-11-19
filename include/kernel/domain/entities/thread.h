@@ -40,26 +40,26 @@ static inline object_header_t *thread_object(thread_t *thread) {
     return &thread->header;
 }
 
-thread_t *construct_thread(process_t *process);
+thread_t *thread_new(process_t *process);
 
-void prepare_thread(thread_t *thread, const thread_params_t *params);
+void thread_prepare(thread_t *thread, const thread_params_t *params);
 
-void ready_thread(thread_t *thread);
+void thread_ready(thread_t *thread);
 
-void run_first_thread(thread_t *thread);
+void thread_run_first(thread_t *thread);
 
-void run_thread(thread_t *thread);
+void thread_run(thread_t *thread);
 
-void terminate_current_thread(void);
+void thread_terminate_current(void);
 
-void switch_to(thread_t *to);
+void thread_switch_to(thread_t *to);
 
-void switch_to_and_block(thread_t *to);
+void thread_switch_to_and_block(thread_t *to);
 
-void block_and_unlock(spinlock_t *lock);
+void thread_block_current_and_unlock(spinlock_t *lock);
 
-void yield_current_thread(void);
+void thread_yield_current(void);
 
-void set_thread_local_storage(thread_t *thread, addr_t addr, size_t size);
+void thread_set_local_storage(thread_t *thread, addr_t addr, size_t size);
 
 #endif

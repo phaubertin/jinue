@@ -34,5 +34,5 @@
 #include <kernel/machine/thread.h>
 
 void set_thread_local(void *addr, size_t size) {
-    set_thread_local_storage(get_current_thread(), addr, size);
+    thread_set_local_storage(get_current_thread(), addr, size);
 }

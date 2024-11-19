@@ -85,16 +85,16 @@ void kmain(const char *cmdline) {
     initialize_process_cache();
 
     /* create process for user space loader */
-    process_t *process = construct_process();
+    process_t *process = process_new();
 
     if(process == NULL) {
         panic("Could not create initial process.");
     }
 
-    switch_to_process(process);
+    process_switch_to(process);
 
     /* create user space loader main thread */
-    thread_t *thread = construct_thread(process);
+    thread_t *thread = thread_new(process);
 
     if(thread == NULL) {
         panic("Could not create initial thread.");
@@ -117,8 +117,8 @@ void kmain(const char *cmdline) {
     info("---");
 
     /* Start first thread. */
-    run_first_thread(thread);
+    thread_run_first(thread);
 
     /* should never happen */
-    panic("run_first_thread() returned in kmain()");
+    panic("thread_run_first() returned in kmain()");
 }

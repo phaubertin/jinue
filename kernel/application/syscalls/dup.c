@@ -46,13 +46,13 @@ static int with_source(
         return -JINUE_EBADF;
     }
 
-    int status = reserve_free_descriptor(target, dest);
+    int status = descriptor_reserve_unused(target, dest);
 
     if(status < 0) {
         return status;
     }
 
-    open_descriptor(target, dest, src_desc);
+    descriptor_open(target, dest, src_desc);
 
     return 0;
 }
@@ -63,7 +63,7 @@ static int with_target_process(
         int              src,
         int              dest) {
     
-    process_t *target = get_process_from_descriptor(target_desc);
+    process_t *target = descriptor_get_process(target_desc);
 
     if(target == NULL) {
         return -JINUE_EBADF;
@@ -74,7 +74,7 @@ static int with_target_process(
     }
 
     descriptor_t src_desc;
-    int status = dereference_object_descriptor(&src_desc, current, src);
+    int status = descriptor_access_object(&src_desc, current, src);
 
     if(status < 0) {
         return status;
@@ -82,7 +82,7 @@ static int with_target_process(
 
     status = with_source(current, target, &src_desc, dest);
 
-    unreference_descriptor_object(&src_desc);
+    descriptor_unreference_object(&src_desc);
 
     return status;
 }
@@ -91,7 +91,7 @@ int dup(int process_fd, int src, int dest) {
     process_t *current = get_current_process();
 
     descriptor_t target_desc;
-    int status = dereference_object_descriptor(&target_desc, current, process_fd);
+    int status = descriptor_access_object(&target_desc, current, process_fd);
     
     if(status < 0) {
         return status;
@@ -99,7 +99,7 @@ int dup(int process_fd, int src, int dest) {
 
     status = with_target_process(current, &target_desc, src, dest);
 
-    unreference_descriptor_object(&target_desc);
+    descriptor_unreference_object(&target_desc);
 
     return status;
 }

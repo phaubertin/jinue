@@ -40,27 +40,27 @@ int send(uintptr_t *errcode, int fd, int function, const jinue_message_t *messag
     thread_t *sender = get_current_thread();
 
     descriptor_t desc;
-    int status = dereference_object_descriptor(&desc, sender->process, fd);
+    int status = descriptor_access_object(&desc, sender->process, fd);
 
     if(status < 0) {
         return status;
     }
 
-    ipc_endpoint_t *endpoint = get_endpoint_from_descriptor(&desc);
+    ipc_endpoint_t *endpoint = descriptor_get_endpoint(&desc);
 
     if(endpoint == NULL) {
-        unreference_descriptor_object(&desc);
+        descriptor_unreference_object(&desc);
         return -JINUE_EBADF;
     }
 
     if(!descriptor_has_permissions(&desc, JINUE_PERM_SEND)) {
-        unreference_descriptor_object(&desc);
+        descriptor_unreference_object(&desc);
         return -JINUE_EPERM;
     }
 
     status = send_message(errcode, endpoint, sender, function, desc.cookie, message);
 
-    unreference_descriptor_object(&desc);
+    descriptor_unreference_object(&desc);
 
     return status;
 }

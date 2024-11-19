@@ -58,8 +58,8 @@ void init_object_cache(slab_cache_t *cache, const object_type_t *type) {
  * @param object the object
  * @param desc new descriptor
  */
-void open_object(object_header_t *object, const descriptor_t *desc) {
-    add_ref_to_object(object);
+void object_open(object_header_t *object, const descriptor_t *desc) {
+    object_add_ref(object);
 
     if(object->type->open != NULL) {
         object->type->open(object, desc);
@@ -72,12 +72,12 @@ void open_object(object_header_t *object, const descriptor_t *desc) {
  * @param object the object
  * @param desc descriptor being closed
  */
-void close_object(object_header_t *object, const descriptor_t *desc) {
+void object_close(object_header_t *object, const descriptor_t *desc) {
     if(object->type->close != NULL) {
         object->type->close(object, desc);
     }
 
-    sub_ref_to_object(object);
+    object_sub_ref(object);
 }
 
 /**
@@ -89,7 +89,7 @@ void close_object(object_header_t *object, const descriptor_t *desc) {
  * @param object the object
  * @param desc descriptor being closed
  */
-void destroy_object(object_header_t *object) {
+void object_destroy(object_header_t *object) {
     int original_flags = or_atomic(&object->flags, OBJECT_FLAG_DESTROYED);
 
     if(original_flags & OBJECT_FLAG_DESTROYED) {
@@ -107,7 +107,7 @@ void destroy_object(object_header_t *object) {
  *
  * @param object the object
  */
-void add_ref_to_object(object_header_t *object) {
+void object_add_ref(object_header_t *object) {
     (void)add_atomic(&object->ref_count, 1);
 }
 
@@ -122,7 +122,7 @@ void add_ref_to_object(object_header_t *object) {
  *
  * @param object the object
  */
-void sub_ref_to_object(object_header_t *object) {
+void object_sub_ref(object_header_t *object) {
     int ref_count = add_atomic(&object->ref_count, -1);
 
     if(ref_count > 0) {
@@ -133,7 +133,7 @@ void sub_ref_to_object(object_header_t *object) {
         panic("Object reference count decremented to negative value");
     }
 
-    destroy_object(object);
+    object_destroy(object);
 
     if(object->type->free != NULL) {
         object->type->free(object);

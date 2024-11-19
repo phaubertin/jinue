@@ -39,7 +39,7 @@
 #include <kernel/machine/thread.h>
 
 static int with_thread(descriptor_t *thread_desc) {
-    thread_t *thread = get_thread_from_descriptor(thread_desc);
+    thread_t *thread = descriptor_get_thread(thread_desc);
 
     if(thread == NULL) {
         return -JINUE_EBADF;
@@ -67,7 +67,7 @@ static int with_thread(descriptor_t *thread_desc) {
     if(thread->state == THREAD_STATE_ZOMBIE) {
         spin_unlock(&thread->await_lock);
     } else {
-        block_and_unlock(&thread->await_lock);
+        thread_block_current_and_unlock(&thread->await_lock);
     }
 
     return 0;
@@ -75,7 +75,7 @@ static int with_thread(descriptor_t *thread_desc) {
 
 int await_thread(int fd) {
     descriptor_t thread_desc;
-    int status = dereference_object_descriptor(&thread_desc, get_current_process(), fd);
+    int status = descriptor_access_object(&thread_desc, get_current_process(), fd);
 
     if(status < 0) {
         return -JINUE_EBADF;
@@ -83,7 +83,7 @@ int await_thread(int fd) {
 
     status = with_thread(&thread_desc);
 
-    unreference_descriptor_object(&thread_desc);
+    descriptor_unreference_object(&thread_desc);
 
     return status;
 }
