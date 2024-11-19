@@ -42,14 +42,14 @@ static inline object_header_t *process_object(process_t *process) {
 
 void initialize_process_cache(void);
 
-process_t *construct_process(void);
-
-void switch_to_process(process_t *process);
-
 process_t *get_current_process(void);
 
-void add_running_thread_to_process(process_t *process);
+process_t *process_new(void);
 
-void remove_running_thread_from_process(process_t *process);
+void process_switch_to(process_t *process);
+
+void process_add_running_thread(process_t *process);
+
+void process_remove_running_thread(process_t *process);
 
 #endif

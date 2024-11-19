@@ -41,11 +41,11 @@
 #include <stddef.h>
 #include <string.h>
 
-static void cache_process_ctor(void *buffer, size_t ignore);
+static void cache_ctor_op(void *buffer, size_t ignore);
 
-static void destroy_process(object_header_t *object);
+static void destroy_op(object_header_t *object);
 
-static void free_process(object_header_t *object);
+static void free_op(object_header_t *object);
 
 static const object_type_t object_type = {
     .all_permissions    =
@@ -56,9 +56,9 @@ static const object_type_t object_type = {
     .size               = sizeof(process_t),
     .open               = NULL,
     .close              = NULL,
-    .destroy            = destroy_process,
-    .free               = free_process,
-    .cache_ctor         = cache_process_ctor,
+    .destroy            = destroy_op,
+    .free               = free_op,
+    .cache_ctor         = cache_ctor_op,
     .cache_dtor         = NULL
 };
 
@@ -75,12 +75,12 @@ static slab_cache_t process_cache;
  * initialize state that persists when the object is freed and then reused,
  * such as the object type.
  * 
- * See construct_process() for the run time constructor.
+ * See process_new() for the run time constructor.
  * 
  * @param buffer the process to construct
  * @param ignore size of object - ignored
  */
-static void cache_process_ctor(void *buffer, size_t ignore) {
+static void cache_ctor_op(void *buffer, size_t ignore) {
     process_t *process = buffer;
     object_init_header(&process->header, object_type_process);
 }
@@ -90,6 +90,15 @@ static void cache_process_ctor(void *buffer, size_t ignore) {
  */
 void initialize_process_cache(void) {
     init_object_cache(&process_cache, object_type_process);
+}
+
+/**
+ * Get process running on current CPU
+ * 
+ * @return running process
+ */
+process_t *get_current_process(void) {
+    return get_current_thread()->process;
 }
 
 /**
@@ -108,7 +117,7 @@ static void initialize_descriptors(process_t *process) {
  * 
  * @return process if successful, NULL if out of memory
  */
-process_t *construct_process(void) {
+process_t *process_new(void) {
     process_t *process = slab_cache_alloc(&process_cache);
 
     if(process != NULL) {
@@ -146,7 +155,7 @@ static void close_descriptors(process_t *process) {
  * 
  * @param object process object
  */
-static void destroy_process(object_header_t *object) {
+static void destroy_op(object_header_t *object) {
     process_t *process = (process_t *)object;
     /* TODO destroy remaining threads */
     close_descriptors(process);
@@ -162,7 +171,7 @@ static void destroy_process(object_header_t *object) {
  * 
  * @param object process object
  */
-static void free_process(object_header_t *object) {
+static void free_op(object_header_t *object) {
     slab_cache_free(object);
 }
 
@@ -171,17 +180,8 @@ static void free_process(object_header_t *object) {
  * 
  * @param process the process
  */
-void switch_to_process(process_t *process) {
+void process_switch_to(process_t *process) {
     machine_switch_to_process(process);
-}
-
-/**
- * Get process running on current CPU
- * 
- * @return running process
- */
-process_t *get_current_process(void) {
-    return get_current_thread()->process;
 }
 
 /**
@@ -192,7 +192,7 @@ process_t *get_current_process(void) {
  * 
  * @param process the process that gained a running thread
  */
-void add_running_thread_to_process(process_t *process) {
+void process_add_running_thread(process_t *process) {
     add_atomic(&process->running_threads_count, 1);
     object_add_ref(&process->header);
 }
@@ -207,7 +207,7 @@ void add_running_thread_to_process(process_t *process) {
  * 
  * @param process the process that lost a running thread
  */
-void remove_running_thread_from_process(process_t *process) {
+void process_remove_running_thread(process_t *process) {
     int running_count = add_atomic(&process->running_threads_count, -1);
     
     /* Destroy the process when there are no more running threads. The

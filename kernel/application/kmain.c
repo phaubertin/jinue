@@ -85,13 +85,13 @@ void kmain(const char *cmdline) {
     initialize_process_cache();
 
     /* create process for user space loader */
-    process_t *process = construct_process();
+    process_t *process = process_new();
 
     if(process == NULL) {
         panic("Could not create initial process.");
     }
 
-    switch_to_process(process);
+    process_switch_to(process);
 
     /* create user space loader main thread */
     thread_t *thread = construct_thread(process);

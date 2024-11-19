@@ -183,7 +183,7 @@ void ready_thread(thread_t *thread) {
  *
  */
 static void thread_is_starting(thread_t *thread) {
-    add_running_thread_to_process(thread->process);
+    process_add_running_thread(thread->process);
     
     /* Add a reference on the thread while it is running so it is allowed to
      * run to completion even if all descriptors that reference it get closed. */
@@ -204,7 +204,7 @@ static void thread_is_starting(thread_t *thread) {
  *
  */
 void run_first_thread(thread_t *thread) {
-    switch_to_process(thread->process);
+    process_switch_to(thread->process);
 
     thread_is_starting(thread);
 
@@ -301,13 +301,13 @@ void terminate_current_thread(void) {
     to->state       = THREAD_STATE_RUNNING;
     
     if(current->process != to->process) {
-        switch_to_process(to->process);
+        process_switch_to(to->process);
     }
 
     /* This must be done after switching process since it will destroy the process
      * if the current thread is the last one. We don't want to destroy the address
      * space we are still running in... */
-    remove_running_thread_from_process(current->process);
+    process_remove_running_thread(current->process);
 
     /* This function takes care of safely decrementing the reference count on
      * the thread after having switched to the other one. We cannot just do it
@@ -330,7 +330,7 @@ void switch_to(thread_t *to) {
     to->state           = THREAD_STATE_RUNNING;
 
     if(current->process != to->process) {
-        switch_to_process(to->process);
+        process_switch_to(to->process);
     }
 
     spin_lock(&ready_queue.lock);
@@ -352,7 +352,7 @@ void switch_to_and_block(thread_t *to) {
     to->state           = THREAD_STATE_RUNNING;
 
     if(current->process != to->process) {
-        switch_to_process(to->process);
+        process_switch_to(to->process);
     }
 
     machine_switch_thread(current, to);
@@ -381,7 +381,7 @@ void block_and_unlock(spinlock_t *lock) {
     to->state           = THREAD_STATE_RUNNING;
 
     if(current->process != to->process) {
-        switch_to_process(to->process);
+        process_switch_to(to->process);
     }
 
     machine_switch_thread_and_unlock(current, to, lock);
@@ -404,7 +404,7 @@ void yield_current_thread(void) {
     to->state = THREAD_STATE_RUNNING;
 
     if(current->process != to->process) {
-        switch_to_process(to->process);
+        process_switch_to(to->process);
     }
 
     spin_lock(&ready_queue.lock);

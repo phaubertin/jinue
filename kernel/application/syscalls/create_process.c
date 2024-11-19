@@ -43,7 +43,7 @@ int create_process(int fd) {
         return status;
     }
 
-    process_t *new_process = construct_process();
+    process_t *new_process = process_new();
 
     if(new_process == NULL) {
         descriptor_free_reservation(current, fd);
