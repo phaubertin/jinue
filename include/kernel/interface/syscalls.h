@@ -34,6 +34,6 @@
 
 #include <jinue/shared/types.h>
 
-void dispatch_syscall(jinue_syscall_args_t *args);
+void handle_syscall(jinue_syscall_args_t *args);
 
 #endif

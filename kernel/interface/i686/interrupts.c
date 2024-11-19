@@ -34,13 +34,14 @@
 #include <kernel/infrastructure/i686/drivers/pic8259.h>
 #include <kernel/infrastructure/i686/isa/io.h>
 #include <kernel/infrastructure/i686/isa/regs.h>
-#include <kernel/interface/i686/interrupt.h>
+#include <kernel/interface/i686/asm/irq.h>
+#include <kernel/interface/i686/interrupts.h>
 #include <kernel/interface/syscalls.h>
 #include <kernel/machine/asm/machine.h>
 #include <inttypes.h>
 
 
-void dispatch_interrupt(trapframe_t *trapframe) {
+void handle_interrupt(trapframe_t *trapframe) {
     unsigned int    ivt         = trapframe->ivt;
     uintptr_t       eip         = trapframe->eip;
     uint32_t        errcode     = trapframe->errcode;
@@ -60,7 +61,7 @@ void dispatch_interrupt(trapframe_t *trapframe) {
     
     if(ivt == JINUE_I686_SYSCALL_IRQ) {
     	/* interrupt-based system call implementation */
-        dispatch_syscall((jinue_syscall_args_t *)&trapframe->msg_arg0);
+        handle_syscall((jinue_syscall_args_t *)&trapframe->msg_arg0);
     }
     else if(ivt >= IDT_PIC8259_BASE && ivt < IDT_PIC8259_BASE + PIC8259_IRQ_COUNT) {
     	int irq = ivt - IDT_PIC8259_BASE;

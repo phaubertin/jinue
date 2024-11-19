@@ -33,8 +33,8 @@
 
     bits 32
 
-    extern dispatch_interrupt
-    extern dispatch_syscall
+    extern handle_interrupt
+    extern handle_syscall
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: interrupt_entry
@@ -128,11 +128,11 @@ interrupt_entry:
     mov eax, SEG_SELECTOR(GDT_PER_CPU_DATA, RPL_KERNEL)
     mov gs, ax
     
-    ; set dispatch_interrupt() function argument
+    ; set handle_interrupt() function argument
     push esp            ; First argument:  trapframe
     
     ; call interrupt dispatching function
-    call dispatch_interrupt
+    call handle_interrupt
     
     ; remove argument(s) from stack
     add esp, 4
@@ -208,16 +208,16 @@ fast_intel_entry:
     mov eax, SEG_SELECTOR(GDT_PER_CPU_DATA, RPL_KERNEL)
     mov gs, ax
     
-    ; set dispatch_syscall() function argument
+    ; set handle_syscall() function argument
     ;
-    ; The message arguments, a ponter to which dispatch_syscall() takes
+    ; The message arguments, a ponter to which handle_syscall() takes
     ; as argument are at the beginning of the trap frame, so we can just
     ; pass the address of the trap frame.
     push esp                ; First argument: message arguments
     
-    call dispatch_syscall
+    call handle_syscall
     
-    ; cleanup dispatch_syscall() argument
+    ; cleanup handle_syscall() argument
     add esp, 4
     
     pop eax                 ; 0
@@ -299,16 +299,16 @@ fast_amd_entry:
     mov ds, cx
     mov es, cx
     
-    ; set dispatch_syscall() function argument
+    ; set handle_syscall() function argument
     ;
-    ; The message arguments, a ponter to which dispatch_syscall() takes
+    ; The message arguments, a ponter to which handle_syscall() takes
     ; as argument are at the beginning of the trap frame, so we can just
     ; pass the address of the trap frame.
     push esp                ; First argument: message arguments
     
-    call dispatch_syscall
+    call handle_syscall
     
-    ; cleanup dispatch_syscall() argument
+    ; cleanup handle_syscall() argument
     add esp, 4
     
     pop eax                 ; 0
