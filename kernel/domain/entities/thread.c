@@ -29,6 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <jinue/shared/asm/errno.h>
 #include <kernel/domain/alloc/page_alloc.h>
 #include <kernel/domain/entities/descriptor.h>
 #include <kernel/domain/entities/object.h>
@@ -271,6 +272,33 @@ static thread_t *reschedule(bool current_can_run) {
 }
 
 /**
+ * Yield the current thread
+ * 
+ * The current thread is added at the tail of the ready queue. It continues
+ * running if no other thread is ready to run.
+ */
+void thread_yield_current(void) {
+    thread_t *current   = get_current_thread();
+    thread_t *to        = reschedule(true);
+
+    if(to == current) {
+        return;
+    }
+
+    to->state = THREAD_STATE_RUNNING;
+
+    if(current->process != to->process) {
+        process_switch_to(to->process);
+    }
+
+    spin_lock(&ready_queue.lock);
+
+    thread_ready_locked(current);
+
+    machine_switch_thread_and_unlock(current, to, &ready_queue.lock);
+}
+
+/**
  * Terminate the current thread
  * 
  * The thread is destroyed and freed only if there are no more references to it
@@ -387,31 +415,29 @@ void thread_block_current_and_unlock(spinlock_t *lock) {
     machine_switch_thread_and_unlock(current, to, lock);
 }
 
-/**
- * Yield the current thread
- * 
- * The current thread is added at the tail of the ready queue. It continues
- * running if no other thread is ready to run.
- */
-void thread_yield_current(void) {
-    thread_t *current   = get_current_thread();
-    thread_t *to        = reschedule(true);
+int thread_await(thread_t *thread) {
+    thread_t *current = get_current_thread();
 
-    if(to == current) {
-        return;
+    if(thread == current) {
+        return -JINUE_EDEADLK;
     }
 
-    to->state = THREAD_STATE_RUNNING;
+    spin_lock(&thread->await_lock);
 
-    if(current->process != to->process) {
-        process_switch_to(to->process);
+    if(thread->state == THREAD_STATE_CREATED || thread->awaiter != NULL) {
+        spin_unlock(&thread->await_lock);
+        return -JINUE_ESRCH;
     }
 
-    spin_lock(&ready_queue.lock);
+    thread->awaiter = current;
 
-    thread_ready_locked(current);
+    if(thread->state == THREAD_STATE_ZOMBIE) {
+        spin_unlock(&thread->await_lock);
+    } else {
+        thread_block_current_and_unlock(&thread->await_lock);
+    }
 
-    machine_switch_thread_and_unlock(current, to, &ready_queue.lock);
+    return 0;
 }
 
 /**

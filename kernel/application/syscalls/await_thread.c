@@ -49,28 +49,7 @@ static int with_thread(descriptor_t *thread_desc) {
         return -JINUE_EPERM;
     }
 
-    thread_t *current = get_current_thread();
-
-    if(thread == current) {
-        return -JINUE_EDEADLK;
-    }
-
-    spin_lock(&thread->await_lock);
-
-    if(thread->state == THREAD_STATE_CREATED || thread->awaiter != NULL) {
-        spin_unlock(&thread->await_lock);
-        return -JINUE_ESRCH;
-    }
-
-    thread->awaiter = current;
-
-    if(thread->state == THREAD_STATE_ZOMBIE) {
-        spin_unlock(&thread->await_lock);
-    } else {
-        thread_block_current_and_unlock(&thread->await_lock);
-    }
-
-    return 0;
+    return thread_await(thread);
 }
 
 int await_thread(int fd) {
