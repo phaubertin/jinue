@@ -81,8 +81,8 @@ static void cache_endpoint_ctor(void *buffer, size_t size) {
     ipc_endpoint_t *endpoint = buffer;
     
     init_object_header(&endpoint->header, object_type_ipc_endpoint);
-    jinue_list_init(&endpoint->send_list);
-    jinue_list_init(&endpoint->recv_list);
+    init_list(&endpoint->send_list);
+    init_list(&endpoint->recv_list);
     init_spinlock(&endpoint->lock);
     endpoint->receivers_count = 0;
 }
@@ -170,10 +170,7 @@ static void destroy_endpoint(object_header_t *object) {
     ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
 
     while(true) {
-        thread_t *sender = jinue_node_entry(
-            jinue_list_dequeue(&endpoint->send_list),
-            thread_t,
-            thread_list);
+        thread_t *sender = list_dequeue(&endpoint->send_list, thread_t, thread_list);
         
         if(sender == NULL) {
             break;
@@ -183,10 +180,7 @@ static void destroy_endpoint(object_header_t *object) {
     }
 
     while(true) {
-        thread_t *receiver = jinue_node_entry(
-            jinue_list_dequeue(&endpoint->recv_list),
-            thread_t,
-            thread_list);
+        thread_t *receiver = list_dequeue(&endpoint->recv_list, thread_t, thread_list);
         
         if(receiver == NULL) {
             break;

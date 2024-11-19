@@ -107,7 +107,7 @@ typedef enum {
 struct thread_t {
     object_header_t          header;
     machine_thread_t         machine_thread;
-    jinue_node_t             thread_list;
+    list_node_t              thread_list;
     thread_state_t           state;
     process_t               *process;
     struct thread_t         *sender;
@@ -134,8 +134,8 @@ typedef struct {
 typedef struct {
     object_header_t header;
     spinlock_t      lock;
-    jinue_list_t    send_list;
-    jinue_list_t    recv_list;
+    list_t          send_list;
+    list_t          recv_list;
     int             receivers_count;
 } ipc_endpoint_t;
 
@@ -150,7 +150,7 @@ typedef struct {
 } kern_mem_block_t;
 
 typedef struct {
-    jinue_node_t loggers;
+    list_node_t loggers;
     void (*log)(int loglevel, const char *message, size_t n);
 } logger_t;
 
