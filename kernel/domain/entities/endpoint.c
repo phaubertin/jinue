@@ -86,18 +86,44 @@ static void cache_endpoint_ctor(void *buffer, size_t size) {
     endpoint->receivers_count = 0;
 }
 
+/**
+ * Add a reference that can be used to receive on the endpoint
+ *
+ * @param endpoint the endpoint
+ */
 static void add_receiver(ipc_endpoint_t *endpoint) {
+    /* TODO this should be synchronized somehow (atomic increment?) */
     ++endpoint->receivers_count;
 }
 
+/**
+ * remove a reference that can be used to receive on the endpoint
+ *
+ * @param endpoint the endpoint
+ */
 static void sub_receiver(ipc_endpoint_t *endpoint) {
     --endpoint->receivers_count;
 }
 
+/**
+ * Indicate whether an endpoint has references that can be used to receive
+ *
+ * @param endpoint the endpoint
+ * @return true if such references exist, false otherwise
+ */
 static bool has_receivers(const ipc_endpoint_t *endpoint) {
     return endpoint->receivers_count > 0;
 }
 
+/**
+ * Open an IPC endpoint
+ * 
+ * This function is defined as the "open" op in the runtime type definition,
+ * called when a new descriptor references the endpoint.
+ *
+ * @param object the endpoint object
+ * @param desc the new descriptor
+ */
 static void open_endpoint(object_header_t *object, const descriptor_t *desc) {
     if(descriptor_has_permissions(desc, JINUE_PERM_RECEIVE)) {
         ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
@@ -105,6 +131,16 @@ static void open_endpoint(object_header_t *object, const descriptor_t *desc) {
     }
 }
 
+/**
+ * Close an IPC endpoint
+ * 
+ * This function is defined as the "close" op in the runtime type definition,
+ * called when a a descriptor that references the endpoint is closed and stops
+ * referencing it.
+ *
+ * @param object the endpoint object
+ * @param desc the descriptor being closed
+ */
 static void close_endpoint(object_header_t *object, const descriptor_t *desc) {
     if(descriptor_has_permissions(desc, JINUE_PERM_RECEIVE)) {
         ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
@@ -117,7 +153,7 @@ static void close_endpoint(object_header_t *object, const descriptor_t *desc) {
 }
 
 /**
- * Perform boot-time initialization for IPC
+ * Initialize the IPC endpoint slab cache
  */
 void initialize_endpoint_cache(void) {
     init_object_cache(&ipc_endpoint_cache, object_type_ipc_endpoint);
@@ -126,12 +162,19 @@ void initialize_endpoint_cache(void) {
 /**
  * Constructor for IPC endpoint object
  *
- * @return pointer to endpoint on success, NULL on allocation failure
+ * @return endpoint on success, NULL on allocation failure
  */
 ipc_endpoint_t *construct_endpoint(void) {
     return slab_cache_alloc(&ipc_endpoint_cache);
 }
 
+/**
+ * Destroy an IPC endpoint
+ * 
+ * This function is defined as the "destroy" op in the runtime type definition.
+ *
+ * @param object the endpoint object
+ */
 static void destroy_endpoint(object_header_t *object) {
     ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
 
@@ -162,6 +205,14 @@ static void destroy_endpoint(object_header_t *object) {
     }
 }
 
+/**
+ * Free an IPC endpoint
+ * 
+ * This function is defined as the "free" op in the runtime type definition,
+ * called automatically when the endpoint's reference count falls to zero.
+ *
+ * @param object the endpoint object
+ */
 static void free_endpoint(object_header_t *object) {
     slab_cache_free(object);
 }

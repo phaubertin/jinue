@@ -34,6 +34,12 @@
 #include <kernel/domain/services/panic.h>
 #include <kernel/machine/atomic.h>
 
+/**
+ * Initialize a slab cache using parameters from a runtime object type
+ *
+ * @param cache the cache to initialize
+ * @param type the runtime object type definition
+ */
 void init_object_cache(slab_cache_t *cache, const object_type_t *type) {
     slab_cache_init(
         cache,
@@ -46,6 +52,12 @@ void init_object_cache(slab_cache_t *cache, const object_type_t *type) {
     );
 }
 
+/**
+ * Update object state to reflect an additional descriptor referencing it
+ *
+ * @param object the object
+ * @param desc new descriptor
+ */
 void open_object(object_header_t *object, const descriptor_t *desc) {
     add_ref_to_object(object);
 
@@ -54,6 +66,12 @@ void open_object(object_header_t *object, const descriptor_t *desc) {
     }
 }
 
+/**
+ * Update object state to reflect a descriptor no longer referencing it
+ *
+ * @param object the object
+ * @param desc descriptor being closed
+ */
 void close_object(object_header_t *object, const descriptor_t *desc) {
     if(object->type->close != NULL) {
         object->type->close(object, desc);
@@ -62,6 +80,15 @@ void close_object(object_header_t *object, const descriptor_t *desc) {
     sub_ref_to_object(object);
 }
 
+/**
+ * Mark object as destroyed
+ * 
+ * The state of the object is destoyed after this function is called but the
+ * object is not freed because it might still be referenced.
+ *
+ * @param object the object
+ * @param desc descriptor being closed
+ */
 void destroy_object(object_header_t *object) {
     if(object_is_destroyed(object)) {
         return;
@@ -74,11 +101,26 @@ void destroy_object(object_header_t *object) {
     }
 }
 
+/**
+ * Increment the reference count of an object
+ *
+ * @param object the object
+ */
 void add_ref_to_object(object_header_t *object) {
     (void)add_atomic(&object->ref_count, 1);
 }
 
-/* This function is called by assembly code. See switch_thread_stack(). */
+/**
+ * Decrement the reference count of an object
+ * 
+ * If the reference count falls to zero, the object is destroyed and the "free"
+ * op from the runtime type definition is called, freeing the object.
+ * 
+ * This function is called by assembly code. See machine_switch_thread() and
+ * machine_switch_and_unref_thread().
+ *
+ * @param object the object
+ */
 void sub_ref_to_object(object_header_t *object) {
     int ref_count = add_atomic(&object->ref_count, -1);
 
