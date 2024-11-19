@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_ENTITIES_DESC_H
-#define JINUE_KERNEL_ENTITIES_DESC_H
+#ifndef JINUE_KERNEL_ENTITIES_DESCRIPTOR_H
+#define JINUE_KERNEL_ENTITIES_DESCRIPTOR_H
 
 #include <jinue/shared/asm/permissions.h>
 #include <kernel/types.h>
