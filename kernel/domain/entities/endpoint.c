@@ -36,6 +36,7 @@
 #include <kernel/domain/entities/endpoint.h>
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/services/ipc.h>
+#include <kernel/machine/atomic.h>
 #include <kernel/machine/spinlock.h>
 #include <kernel/utils/list.h>
 #include <stddef.h>
@@ -92,27 +93,17 @@ static void cache_endpoint_ctor(void *buffer, size_t size) {
  * @param endpoint the endpoint
  */
 static void add_receiver(ipc_endpoint_t *endpoint) {
-    /* TODO this should be synchronized somehow (atomic increment?) */
-    ++endpoint->receivers_count;
+    add_atomic(&endpoint->receivers_count, 1);
 }
 
 /**
- * remove a reference that can be used to receive on the endpoint
+ * Remove a reference that can be used to receive on the endpoint
  *
  * @param endpoint the endpoint
+ * @return updated number of references allowed to receive
  */
-static void sub_receiver(ipc_endpoint_t *endpoint) {
-    --endpoint->receivers_count;
-}
-
-/**
- * Indicate whether an endpoint has references that can be used to receive
- *
- * @param endpoint the endpoint
- * @return true if such references exist, false otherwise
- */
-static bool has_receivers(const ipc_endpoint_t *endpoint) {
-    return endpoint->receivers_count > 0;
+static int sub_receiver(ipc_endpoint_t *endpoint) {
+    return add_atomic(&endpoint->receivers_count, -1);
 }
 
 /**
@@ -144,9 +135,9 @@ static void open_endpoint(object_header_t *object, const descriptor_t *desc) {
 static void close_endpoint(object_header_t *object, const descriptor_t *desc) {
     if(descriptor_has_permissions(desc, JINUE_PERM_RECEIVE)) {
         ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
-        sub_receiver(endpoint);
+        int receivers = sub_receiver(endpoint);
 
-        if(!has_receivers(endpoint)) {
+        if(receivers < 1) {
             destroy_object(object);
         }
     }

@@ -35,6 +35,7 @@
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/services/panic.h>
+#include <kernel/machine/atomic.h>
 #include <kernel/machine/pmap.h>
 #include <kernel/machine/process.h>
 #include <kernel/machine/thread.h>
@@ -193,7 +194,7 @@ process_t *get_current_process(void) {
  * @param process the process that gained a running thread
  */
 void add_running_thread_to_process(process_t *process) {
-    ++process->running_threads_count;
+    add_atomic(&process->running_threads_count, 1);
     add_ref_to_object(&process->header);
 }
 
@@ -208,12 +209,12 @@ void add_running_thread_to_process(process_t *process) {
  * @param process the process that lost a running thread
  */
 void remove_running_thread_from_process(process_t *process) {
-    --process->running_threads_count;
+    int running_count = add_atomic(&process->running_threads_count, -1);
     
     /* Destroy the process when there are no more running threads. The
      * reference count alone is not enough because the process might have
      * descriptors that reference itself. */
-    if(process->running_threads_count < 1) {
+    if(running_count < 1) {
         destroy_object(&process->header);
     }
     
