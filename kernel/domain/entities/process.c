@@ -34,7 +34,6 @@
 #include <kernel/domain/entities/descriptor.h>
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/entities/object.h>
-#include <kernel/domain/services/panic.h>
 #include <kernel/machine/atomic.h>
 #include <kernel/machine/pmap.h>
 #include <kernel/machine/process.h>
