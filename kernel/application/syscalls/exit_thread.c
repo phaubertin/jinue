@@ -33,5 +33,5 @@
 #include <kernel/domain/entities/thread.h>
 
 void exit_thread(void) {
-    terminate_current_thread();
+    thread_terminate_current();
 }

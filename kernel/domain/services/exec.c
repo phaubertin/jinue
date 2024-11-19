@@ -101,7 +101,7 @@ void exec(
     thread_params_t thread_params;
     machine_load_exec(&thread_params, process, exec_file, argv0, cmdline);
 
-    prepare_thread(thread, &thread_params);
+    thread_prepare(thread, &thread_params);
 
     initialize_descriptors(process, thread);
 }

@@ -67,7 +67,7 @@ static int with_thread(descriptor_t *thread_desc) {
     if(thread->state == THREAD_STATE_ZOMBIE) {
         spin_unlock(&thread->await_lock);
     } else {
-        block_and_unlock(&thread->await_lock);
+        thread_block_current_and_unlock(&thread->await_lock);
     }
 
     return 0;

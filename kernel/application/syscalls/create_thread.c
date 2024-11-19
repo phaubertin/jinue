@@ -48,7 +48,7 @@ static int with_target_process(process_t *current, int fd, descriptor_t *target_
         return -JINUE_EPERM;
     }
 
-    thread_t *thread = construct_thread(target);
+    thread_t *thread = thread_new(target);
 
     if(thread == NULL) {
         return -JINUE_ENOMEM;

@@ -60,9 +60,9 @@ int start_thread(int fd, const thread_params_t *params) {
         return -JINUE_EBUSY;
     }
 
-    prepare_thread(thread, params);
+    thread_prepare(thread, params);
 
-    run_thread(thread);
+    thread_run(thread);
 
     descriptor_unreference_object(&desc);
 
