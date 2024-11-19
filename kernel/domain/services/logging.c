@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Philippe Aubertin.
+ * Copyright (C) 2022-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -35,10 +35,10 @@
 #include <kernel/types.h>
 #include <stdio.h>
 
-jinue_list_t loggers = JINUE_LIST_STATIC;
+list_t loggers = STATIC_LIST;
 
 void register_logger(logger_t *logger) {
-    jinue_list_enqueue(&loggers, &logger->loggers);
+    list_enqueue(&loggers, &logger->loggers);
 }
 
 static void log_message(int loglevel, const char *restrict format, va_list args) {
@@ -53,10 +53,10 @@ static void log_message(int loglevel, const char *restrict format, va_list args)
 }
 
 void logging_add_message(int loglevel, const char *message, size_t n) {
-    jinue_cursor_t cur = jinue_list_head_cursor(&loggers);
+    list_cursor_t cur = list_head(&loggers);
 
     while(true) {
-        logger_t *logger = jinue_cursor_entry(cur, logger_t, loggers);
+        logger_t *logger = list_cursor_entry(cur, logger_t, loggers);
 
         if(logger == NULL) {
             break;
@@ -64,7 +64,7 @@ void logging_add_message(int loglevel, const char *message, size_t n) {
 
         logger->log(loglevel, message, n);
 
-        cur = jinue_cursor_next(cur);
+        cur = list_cursor_next(cur);
     }
 }
 

@@ -236,14 +236,11 @@ int send_message(
 
     spin_lock(&endpoint->lock);
 
-    thread_t *receiver = jinue_node_entry(
-            jinue_list_dequeue(&endpoint->recv_list),
-            thread_t,
-            thread_list);
+    thread_t *receiver = list_dequeue(&endpoint->recv_list, thread_t, thread_list);
 
     if(receiver == NULL) {
         /* No thread is waiting to receive this message, so we must wait on the sender list. */
-        jinue_list_enqueue(&endpoint->send_list, &sender->thread_list);
+        list_enqueue(&endpoint->send_list, &sender->thread_list);
         block_and_unlock(&endpoint->lock);
     }
     else {
@@ -305,14 +302,11 @@ int receive_message(ipc_endpoint_t *endpoint, thread_t *receiver, jinue_message_
     while(true) {
         spin_lock(&endpoint->lock);
 
-        thread_t *sender = jinue_node_entry(
-            jinue_list_dequeue(&endpoint->send_list),
-            thread_t,
-            thread_list);
+        thread_t *sender = list_dequeue(&endpoint->send_list, thread_t, thread_list);
         
         if(sender == NULL) {
             /* No thread is waiting to send a message, so we must wait on the receive list. */
-            jinue_list_enqueue(&endpoint->recv_list, &receiver->thread_list);
+            list_enqueue(&endpoint->recv_list, &receiver->thread_list);
             block_and_unlock(&endpoint->lock);
             
             /* set by sending thread */

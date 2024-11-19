@@ -60,10 +60,10 @@ const object_type_t *object_type_thread = &object_type;
 
 /** ready threads queue with lock */
 static struct {
-    jinue_list_t    queue;
+    list_t          queue;
     spinlock_t      lock;
 } ready_queue = {
-    .queue  = JINUE_LIST_STATIC,
+    .queue  = STATIC_LIST,
     .lock   = SPINLOCK_STATIC
 };
 
@@ -91,7 +91,6 @@ thread_t *construct_thread(process_t *process) {
     init_object_header(&thread->header, object_type_thread);
 
     init_spinlock(&thread->await_lock);
-    jinue_node_init(&thread->thread_list);
 
     thread->state               = THREAD_STATE_CREATED;
     thread->process             = process;
@@ -160,7 +159,7 @@ static void ready_thread_locked(thread_t *thread) {
     thread->state = THREAD_STATE_READY;
 
     /* add thread to the tail of the ready list to give other threads a chance to run */
-    jinue_list_enqueue(&ready_queue.queue, &thread->thread_list);
+    list_enqueue(&ready_queue.queue, &thread->thread_list);
 }
 
 /**
@@ -236,11 +235,7 @@ void run_thread(thread_t *thread) {
 static thread_t *dequeue_ready_thread(void) {
     spin_lock(&ready_queue.lock);
 
-    thread_t *thread = jinue_node_entry(
-            jinue_list_dequeue(&ready_queue.queue),
-            thread_t,
-            thread_list
-    );
+    thread_t *thread = list_dequeue(&ready_queue.queue, thread_t, thread_list);
 
     spin_unlock(&ready_queue.lock);
 

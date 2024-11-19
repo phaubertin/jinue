@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -33,6 +33,8 @@
 #define JINUE_KERNEL_UTILS_UTILS_H
 
 #include <stdint.h>
+
+#define OFFSET_OF(type, member) ((uintptr_t)(&((type *)0)->member))
 
 #define ALIGN_START(x, s)       ( (x) & ~((s)-1) )
 
