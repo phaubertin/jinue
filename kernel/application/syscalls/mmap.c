@@ -36,13 +36,13 @@
 #include <kernel/machine/pmap.h>
 
 int with_process(descriptor_t *process_desc, const jinue_mmap_args_t *args) {
-    process_t *process = get_process_from_descriptor(&process_desc);
+    process_t *process = get_process_from_descriptor(process_desc);
 
     if(process == NULL) {
         return -JINUE_EBADF;
     }
 
-    if(!descriptor_has_permissions(&process_desc, JINUE_PERM_MAP)) {
+    if(!descriptor_has_permissions(process_desc, JINUE_PERM_MAP)) {
         return -JINUE_EPERM;
     }
 
