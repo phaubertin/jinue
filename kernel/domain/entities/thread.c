@@ -415,6 +415,13 @@ void thread_block_current_and_unlock(spinlock_t *lock) {
     machine_switch_thread_and_unlock(current, to, lock);
 }
 
+/**
+ * Block until thread terminates
+ * 
+ * @param thread awaited thread
+ * @return zero on success, negated error code on failure
+ *
+ */
 int thread_await(thread_t *thread) {
     thread_t *current = get_current_thread();
 
