@@ -44,3 +44,26 @@ add_atomic:
 
     ret
 .end:
+
+; -----------------------------------------------------------------------------
+; FUNCTION: or_atomic
+; C PROTOTYPE: int or_atomic(int *value, int mask);
+; -----------------------------------------------------------------------------
+    global or_atomic:function (or_atomic.end - or_atomic)
+or_atomic:
+    mov edx, [esp+4]                ; first argument: pointer to value
+    mov eax, dword [edx]            ; initial value in eax
+
+.again:
+    mov ecx, eax                    ; copy value
+    or ecx, dword [esp+8]           ; second argument: mask
+
+    ; Copy or result (ecx) into value ([edx]), but only if current value is the
+    ; one we are expecting (eax). Otherwise, the curent value ([edx]) is copied
+    ; into eax so we can try again.
+    lock cmpxchg dword [edx], ecx
+
+    jnz .again                      ; value changed, retry
+
+    ret
+.end:

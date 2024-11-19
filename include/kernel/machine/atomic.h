@@ -34,4 +34,6 @@
 
 int add_atomic(int *value, int increment);
 
+int or_atomic(int *value, int mask);
+
 #endif

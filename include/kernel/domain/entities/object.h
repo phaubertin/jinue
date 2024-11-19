@@ -40,11 +40,6 @@
 
 #define OBJECT_FLAG_DESTROYED       (1<<0)
 
-
-static inline void mark_object_destroyed(object_header_t *object) {
-    object->flags |= OBJECT_FLAG_DESTROYED;
-}
-
 static inline bool object_is_destroyed(object_header_t *object) {
     return !!(object->flags & OBJECT_FLAG_DESTROYED);
 }

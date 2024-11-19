@@ -90,11 +90,12 @@ void close_object(object_header_t *object, const descriptor_t *desc) {
  * @param desc descriptor being closed
  */
 void destroy_object(object_header_t *object) {
-    if(object_is_destroyed(object)) {
+    int original_flags = or_atomic(&object->flags, OBJECT_FLAG_DESTROYED);
+
+    if(original_flags & OBJECT_FLAG_DESTROYED) {
+        /* Object was already marked destroyed, do nothing. */
         return;
     }
-
-    mark_object_destroyed(object);
 
     if(object->type->destroy != NULL) {
         object->type->destroy(object);
