@@ -42,6 +42,6 @@ static inline object_header_t *endpoint_object(ipc_endpoint_t *endpoint) {
 
 void initialize_endpoint_cache(void);
 
-ipc_endpoint_t *construct_endpoint(void);
+ipc_endpoint_t *endpoint_new(void);
 
 #endif

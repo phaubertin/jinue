@@ -41,25 +41,25 @@
 #include <kernel/utils/list.h>
 #include <stddef.h>
 
-static void cache_endpoint_ctor(void *buffer, size_t size);
+static void cache_ctor_op(void *buffer, size_t size);
 
-static void open_endpoint(object_header_t *object, const descriptor_t *desc);
+static void open_op(object_header_t *object, const descriptor_t *desc);
 
-static void close_endpoint(object_header_t *object, const descriptor_t *desc);
+static void close_op(object_header_t *object, const descriptor_t *desc);
 
-static void destroy_endpoint(object_header_t *object);
+static void destroy_op(object_header_t *object);
 
-static void free_endpoint(object_header_t *object);
+static void free_op(object_header_t *object);
 
 static const object_type_t object_type = {
     .all_permissions    = JINUE_PERM_SEND | JINUE_PERM_RECEIVE,
     .name               = "ipc_endpoint",
     .size               = sizeof(ipc_endpoint_t),
-    .open               = open_endpoint,
-    .close              = close_endpoint,
-    .destroy            = destroy_endpoint,
-    .free               = free_endpoint,
-    .cache_ctor         = cache_endpoint_ctor,
+    .open               = open_op,
+    .close              = close_op,
+    .destroy            = destroy_op,
+    .free               = free_op,
+    .cache_ctor         = cache_ctor_op,
     .cache_dtor         = NULL
 };
 
@@ -77,7 +77,7 @@ static slab_cache_t ipc_endpoint_cache;
  * @param buffer IPC endpoint object being constructed
  * @param size size in bytes of the IPC endpoint object (ignored)
  */
-static void cache_endpoint_ctor(void *buffer, size_t size) {
+static void cache_ctor_op(void *buffer, size_t size) {
     ipc_endpoint_t *endpoint = buffer;
     
     init_object_header(&endpoint->header, object_type_ipc_endpoint);
@@ -115,7 +115,7 @@ static int sub_receiver(ipc_endpoint_t *endpoint) {
  * @param object the endpoint object
  * @param desc the new descriptor
  */
-static void open_endpoint(object_header_t *object, const descriptor_t *desc) {
+static void open_op(object_header_t *object, const descriptor_t *desc) {
     if(descriptor_has_permissions(desc, JINUE_PERM_RECEIVE)) {
         ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
         add_receiver(endpoint);
@@ -132,7 +132,7 @@ static void open_endpoint(object_header_t *object, const descriptor_t *desc) {
  * @param object the endpoint object
  * @param desc the descriptor being closed
  */
-static void close_endpoint(object_header_t *object, const descriptor_t *desc) {
+static void close_op(object_header_t *object, const descriptor_t *desc) {
     if(descriptor_has_permissions(desc, JINUE_PERM_RECEIVE)) {
         ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
         int receivers = sub_receiver(endpoint);
@@ -155,7 +155,7 @@ void initialize_endpoint_cache(void) {
  *
  * @return endpoint on success, NULL on allocation failure
  */
-ipc_endpoint_t *construct_endpoint(void) {
+ipc_endpoint_t *endpoint_new(void) {
     return slab_cache_alloc(&ipc_endpoint_cache);
 }
 
@@ -166,7 +166,7 @@ ipc_endpoint_t *construct_endpoint(void) {
  *
  * @param object the endpoint object
  */
-static void destroy_endpoint(object_header_t *object) {
+static void destroy_op(object_header_t *object) {
     ipc_endpoint_t *endpoint = (ipc_endpoint_t *)object;
 
     while(true) {
@@ -198,6 +198,6 @@ static void destroy_endpoint(object_header_t *object) {
  *
  * @param object the endpoint object
  */
-static void free_endpoint(object_header_t *object) {
+static void free_op(object_header_t *object) {
     slab_cache_free(object);
 }

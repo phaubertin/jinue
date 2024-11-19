@@ -53,7 +53,7 @@ int create_endpoint(int fd) {
         return status;
     }
 
-    ipc_endpoint_t *endpoint = construct_endpoint();
+    ipc_endpoint_t *endpoint = endpoint_new();
 
     if(endpoint == NULL) {
         descriptor_free_reservation(process, fd);
