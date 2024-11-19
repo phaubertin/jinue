@@ -33,15 +33,12 @@
 #define JINUE_KERNEL_INTERFACE_I686_INTERRUPT_H
 
 #include <kernel/infrastructure/i686/types.h>
-#include <kernel/interface/i686/asm/irq.h>
 #include <kernel/interface/i686/types.h>
-#include <stdint.h>
 
 
 /* defined in trap.asm */
 extern seg_descriptor_t idt[];
 
-void dispatch_interrupt(trapframe_t *trapframe);
+void handle_interrupt(trapframe_t *trapframe);
 
 #endif
-

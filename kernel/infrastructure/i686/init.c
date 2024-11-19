@@ -49,8 +49,9 @@
 #include <kernel/infrastructure/i686/memory.h>
 #include <kernel/infrastructure/i686/percpu.h>
 #include <kernel/infrastructure/elf.h>
+#include <kernel/interface/i686/asm/irq.h>
 #include <kernel/interface/i686/boot.h>
-#include <kernel/interface/i686/interrupt.h>
+#include <kernel/interface/i686/interrupts.h>
 #include <kernel/interface/i686/trap.h>
 #include <kernel/interface/syscalls.h>
 #include <kernel/machine/asm/machine.h>
