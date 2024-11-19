@@ -34,7 +34,6 @@
 
 #include <stdint.h>
 
-/** TODO move this to a more general-purpose header file */
 #define OFFSET_OF(type, member) ((uintptr_t)(&((type *)0)->member))
 
 #define ALIGN_START(x, s)       ( (x) & ~((s)-1) )
