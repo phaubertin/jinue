@@ -40,6 +40,6 @@ void pic8259_mask(int irq);
 
 void pic8259_unmask(int irq);
 
-void pic8259_ack(int irq);
+void pic8259_eoi(int irq);
 
 #endif

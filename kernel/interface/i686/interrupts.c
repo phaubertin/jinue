@@ -55,7 +55,7 @@ static void handle_exception(unsigned int ivt, uintptr_t eip, uint32_t errcode) 
 static void handle_hardware_interrupt(unsigned int ivt) {
     int irq = ivt - IDT_PIC8259_BASE;
     info("IRQ: %i (vector %u)", irq, ivt);
-    pic8259_ack(irq);
+    pic8259_eoi(irq);
 }
 
 static void handle_unexpected_interrupt(unsigned int ivt) {

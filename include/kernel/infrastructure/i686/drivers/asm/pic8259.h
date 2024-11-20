@@ -59,10 +59,25 @@
 /** ICW4 bit 0: 8086/8088 mode (1) or MCS-80/85 mode (0) */
 #define PIC8259_ICW4_UPM        (1<<0)
 
-/** ICW4 bit 1: Auto EOI*/
+/** ICW4 bit 1: Auto EOI */
 #define PIC8259_ICW4_AEOI       (1<<1)
 
+/** ICW4 bit 4: special (1) or "regular" (0) fully nested mode */
+#define PIC8259_ICW4_SFNM       (1<<4)
+
 /** OCW2: non-specific EOI command */
-#define PIC8259_EOI             0x20
+#define PIC8259_OCW2_EOI        0x20
+
+/** OCW3: read ISR (1) or IRR (0) when RR is also set */
+#define PIC8259_OCW3_RIS        (1<<0)
+
+/** OCW3: read register command when set */
+#define PIC8259_OCW3_RR         (1<<1)
+
+/** OCW3: always 1 to select OCW3, otherwise it's OCW2 */
+#define PIC8259_OCW3_1          (1<<3)
+
+/** OCW3: read Interrupt Service Register (ISR) */
+#define PIC8259_OCW3_READ_ISR   (PIC8259_OCW3_1 | PIC8259_OCW3_RR | PIC8259_OCW3_RIS)
 
 #endif

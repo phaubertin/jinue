@@ -80,17 +80,33 @@ static void initialize(const pic8259_t *pic8259) {
     iodelay();
 
     /* ICW4: Use 8088/8086 mode */
-    outb(pic8259->io_base + 1, PIC8259_ICW4_UPM);
+    value = PIC8259_ICW4_UPM;
+
+    if(!pic8259->is_proxied) {
+        /* special fully nested mode for main */
+        value |= PIC8259_ICW4_SFNM;
+    }
+
+    outb(pic8259->io_base + 1, value);
     iodelay();
 
     /* Set interrupt mask */
     outb(pic8259->io_base + 1, pic8259->mask);
     iodelay();
+
+    /* We are only ever going to read the ISR, never the IRR, so let's
+     * enable this once here and not have to do it for each read. */
+    outb(pic8259->io_base + 0, PIC8259_OCW3_READ_ISR);
+    iodelay();
 }
 
-static void ack_eoi(pic8259_t *pic8259) {
-    outb(pic8259->io_base + 0, PIC8259_EOI);
+static void eoi(pic8259_t *pic8259) {
+    outb(pic8259->io_base + 0, PIC8259_OCW2_EOI);
     iodelay();
+}
+
+static uint8_t read_isr(pic8259_t *pic8259) {
+    return inb(pic8259->io_base + 0);
 }
 
 void pic8259_init() {
@@ -130,11 +146,19 @@ void pic8259_unmask(int irq) {
     }
 }
 
-void pic8259_ack(int irq) {
+void pic8259_eoi(int irq) {
     if(irq >= 8) {
-        ack_eoi(&proxied_pic8259);
+        eoi(&proxied_pic8259);
+        iodelay();
+
+        /* Special fully nested mode: do not send EIO to main controller if
+         * interrupts are still being service on the proxied one. */
+        uint8_t isr = read_isr(&proxied_pic8259);
+
+        if(isr != 0) {
+            return;
+        }
     }
 
-    ack_eoi(&main_pic8259);
-    pic8259_unmask(irq);
+    eoi(&main_pic8259);
 }
