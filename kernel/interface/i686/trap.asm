@@ -28,7 +28,8 @@
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <kernel/infrastructure/i686/asm/descriptors.h>
-#include <kernel/interface/i686/asm/irq.h>
+#include <kernel/interface/i686/asm/exceptions.h>
+#include <kernel/interface/i686/asm/idt.h>
 #include <kernel/machine/asm/machine.h>
 
     bits 32
@@ -374,7 +375,7 @@ trampoline:
                 ; Push a null DWORD in lieu of the error code for interrupts
                 ; that do not have one (only some CPU exceptions have an error
                 ; code). We do this to maintain a consistent stack frame layout.
-                %if ! HAS_ERRCODE(ivt)
+                %if ! EXCEPTION_HAS_ERRCODE(ivt)
                     push byte NULL_ERRCODE 
                 %endif
                 

@@ -49,7 +49,7 @@
 #include <kernel/infrastructure/i686/memory.h>
 #include <kernel/infrastructure/i686/percpu.h>
 #include <kernel/infrastructure/elf.h>
-#include <kernel/interface/i686/asm/irq.h>
+#include <kernel/interface/i686/asm/idt.h>
 #include <kernel/interface/i686/boot.h>
 #include <kernel/interface/i686/interrupts.h>
 #include <kernel/interface/i686/trap.h>

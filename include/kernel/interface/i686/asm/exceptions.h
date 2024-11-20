@@ -29,50 +29,65 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/i686.h>
-#include <kernel/domain/services/logging.h>
-#include <kernel/domain/services/panic.h>
-#include <kernel/infrastructure/i686/drivers/pic8259.h>
-#include <kernel/infrastructure/i686/isa/regs.h>
-#include <kernel/interface/i686/asm/exceptions.h>
-#include <kernel/interface/i686/asm/idt.h>
-#include <kernel/interface/i686/interrupts.h>
-#include <kernel/interface/syscalls.h>
-#include <inttypes.h>
+#ifndef JINUE_KERNEL_INTERFACE_I686_ASM_EXCEPTIONS_H
+#define JINUE_KERNEL_INTERFACE_I686_ASM_EXCEPTIONS_H
 
+/** Divide Error */
+#define EXCEPTION_DIV_ZERO               0
 
-static void handle_exception(unsigned int ivt, uintptr_t eip, uint32_t errcode) {
-    info(   "EXCEPT: %u cr2=%#" PRIx32 " errcode=%#" PRIx32 " eip=%#" PRIxPTR,
-            ivt,
-            get_cr2(),
-            errcode,
-            eip);
-    
-    /* never returns */
-    panic("caught exception");
-}
+/** NMI Interrupt */
+#define EXCEPTION_NMI                    2
 
-static void handle_hardware_interrupt(unsigned int ivt) {
-    int irq = ivt - IDT_PIC8259_BASE;
-    info("IRQ: %i (vector %u)", irq, ivt);
-    pic8259_eoi(irq);
-}
+/** Breakpoint */
+#define EXCEPTION_BREAK                  3
 
-static void handle_unexpected_interrupt(unsigned int ivt) {
-    info("INTR: vector %u", ivt);
-}
+/** Overflow */
+#define EXCEPTION_OVERFLOW               4
 
-void handle_interrupt(trapframe_t *trapframe) {
-    unsigned int ivt = trapframe->ivt;
+/** BOUND Range Exceeded */
+#define EXCEPTION_BOUND                  5
 
-    if(ivt == JINUE_I686_SYSCALL_INTERRUPT) {
-    	jinue_syscall_args_t *args = (jinue_syscall_args_t *)&trapframe->msg_arg0;
-        handle_syscall(args);
-    } else if(ivt <= IDT_LAST_EXCEPTION) {
-        handle_exception(ivt, trapframe->eip, trapframe->errcode);
-    } else if(ivt >= IDT_PIC8259_BASE && ivt < IDT_PIC8259_BASE + PIC8259_IRQ_COUNT) {
-        handle_hardware_interrupt(ivt);
-    } else {
-        handle_unexpected_interrupt(ivt);
-    }
-}
+/** Invalid Opcode (Undefined Opcode) */
+#define EXCEPTION_INVALID_OP             6
+
+/** Device Not Available (No Math Coprocessor) */
+#define EXCEPTION_NO_COPROC              7
+
+/** Double Fault */
+#define EXCEPTION_DOUBLE_FAULT           8
+
+/** Invalid TSS */
+#define EXCEPTION_INVALID_TSS           10
+
+/** Segment Not Present */
+#define EXCEPTION_SEGMENT_NOT_PRESENT   11
+
+/** Stack-Segment Fault */
+#define EXCEPTION_STACK_SEGMENT         12
+
+/** General Protection */
+#define EXCEPTION_GENERAL_PROTECTION    13
+
+/** Page Fault */
+#define EXCEPTION_PAGE_FAULT            14
+
+/** x87 FPU Floating-Point Error (Math Fault) */
+#define EXCEPTION_MATH                  16
+
+/** Alignment Check */
+#define EXCEPTION_ALIGNMENT             17
+
+/** Machine Check */
+#define EXCEPTION_MACHINE_CHECK         18
+
+/** SIMD Floating-Point Exception */
+#define EXCEPTION_SIMD                  19
+
+#define EXCEPTION_HAS_ERRCODE(x) \
+    (\
+           (x) == EXCEPTION_DOUBLE_FAULT \
+        || (x) == EXCEPTION_ALIGNMENT \
+        || (x) >= EXCEPTION_INVALID_TSS && (x) <= EXCEPTION_PAGE_FAULT \
+    )
+
+#endif

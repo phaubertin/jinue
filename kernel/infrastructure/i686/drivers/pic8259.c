@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -32,7 +32,7 @@
 #include <kernel/infrastructure/i686/drivers/pic8259.h>
 #include <kernel/infrastructure/i686/isa/io.h>
 #include <kernel/infrastructure/i686/iodelay.h>
-#include <kernel/interface/i686/asm/irq.h>
+#include <kernel/interface/i686/asm/idt.h>
 #include <stdbool.h>
 
 typedef struct {
