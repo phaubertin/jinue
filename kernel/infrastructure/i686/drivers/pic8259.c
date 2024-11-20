@@ -30,8 +30,8 @@
  */
 
 #include <kernel/infrastructure/i686/drivers/pic8259.h>
+#include <kernel/infrastructure/i686/drivers/iodelay.h>
 #include <kernel/infrastructure/i686/isa/io.h>
-#include <kernel/infrastructure/i686/iodelay.h>
 #include <kernel/interface/i686/asm/idt.h>
 #include <stdbool.h>
 
