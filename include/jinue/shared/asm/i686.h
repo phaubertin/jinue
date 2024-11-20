@@ -57,7 +57,7 @@
 #define JINUE_KLIMIT                        0xc0000000
 
 /** interrupt vector for system call software interrupt */
-#define JINUE_I686_SYSCALL_IRQ              0x80
+#define JINUE_I686_SYSCALL_INTERRUPT        0x80
 
 /** slow/safe interrupt-based system call implementation */
 #define JINUE_I686_HOWSYSCALL_INTERRUPT     0

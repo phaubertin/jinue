@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -41,34 +41,38 @@
 #include <inttypes.h>
 
 
+static void handle_exception(unsigned int ivt, uintptr_t eip, uint32_t errcode) {
+    info(   "EXCEPT: %u cr2=%#" PRIx32 " errcode=%#" PRIx32 " eip=%#" PRIxPTR,
+            ivt,
+            get_cr2(),
+            errcode,
+            eip);
+    
+    /* never returns */
+    panic("caught exception");
+}
+
+static void handle_hardware_interrupt(unsigned int ivt) {
+    int irq = ivt - IDT_PIC8259_BASE;
+    info("IRQ: %i (vector %u)", irq, ivt);
+    pic8259_ack(irq);
+}
+
+static void handle_unexpected_interrupt(unsigned int ivt) {
+    info("INTR: vector %u", ivt);
+}
+
 void handle_interrupt(trapframe_t *trapframe) {
-    unsigned int    ivt         = trapframe->ivt;
-    uintptr_t       eip         = trapframe->eip;
-    uint32_t        errcode     = trapframe->errcode;
-    
-    /* exceptions */
-    if(ivt <= IDT_LAST_EXCEPTION) {
-        info(
-                "EXCEPT: %u cr2=%#" PRIx32 " errcode=%#" PRIx32 " eip=%#" PRIxPTR,
-                ivt,
-                get_cr2(),
-                errcode,
-                eip);
-        
-        /* never returns */
-        panic("caught exception");
-    }
-    
-    if(ivt == JINUE_I686_SYSCALL_IRQ) {
-    	/* interrupt-based system call implementation */
-        handle_syscall((jinue_syscall_args_t *)&trapframe->msg_arg0);
-    }
-    else if(ivt >= IDT_PIC8259_BASE && ivt < IDT_PIC8259_BASE + PIC8259_IRQ_COUNT) {
-    	int irq = ivt - IDT_PIC8259_BASE;
-        info("IRQ: %i (vector %u)", irq, ivt);
-        pic8259_ack(irq);
-    }
-    else {
-    	info("INTR: vector %u", ivt);
+    unsigned int ivt = trapframe->ivt;
+
+    if(ivt == JINUE_I686_SYSCALL_INTERRUPT) {
+    	jinue_syscall_args_t *args = (jinue_syscall_args_t *)&trapframe->msg_arg0;
+        handle_syscall(args);
+    } else if(ivt <= IDT_LAST_EXCEPTION) {
+        handle_exception(ivt, trapframe->eip, trapframe->errcode);
+    } else if(ivt >= IDT_PIC8259_BASE && ivt < IDT_PIC8259_BASE + PIC8259_IRQ_COUNT) {
+        handle_hardware_interrupt(ivt);
+    } else {
+        handle_unexpected_interrupt(ivt);
     }
 }

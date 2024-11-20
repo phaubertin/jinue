@@ -132,7 +132,7 @@ static void init_idt(void) {
         /* set interrupt gate flags */
         unsigned int flags = SEG_TYPE_INTERRUPT_GATE | SEG_FLAG_NORMAL_GATE;
 
-        if(idx == JINUE_I686_SYSCALL_IRQ) {
+        if(idx == JINUE_I686_SYSCALL_INTERRUPT) {
             flags |= SEG_FLAG_USER;
         }
         else {
