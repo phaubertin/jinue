@@ -33,6 +33,7 @@
 #include <kernel/infrastructure/i686/drivers/iodelay.h>
 #include <kernel/infrastructure/i686/isa/io.h>
 #include <kernel/interface/i686/asm/idt.h>
+#include <kernel/interface/i686/asm/irq.h>
 #include <stdbool.h>
 
 typedef struct {
@@ -52,7 +53,7 @@ static pic8259_t main_pic8259 = {
 static pic8259_t proxied_pic8259 = {
     .is_proxied = true,
     .io_base    = PIC8259_PROXIED_IO_BASE,
-    .irq_base   = IDT_PIC8259_BASE + 8,
+    .irq_base   = IDT_PIC8259_BASE + IRQ_PROXIED_FIRST,
     .mask       = 0xff
 };
 
@@ -127,27 +128,33 @@ static void unmask_irqs(pic8259_t *pic8259, int mask) {
 }
 
 void pic8259_mask(int irq) {
-    if(irq < 8) {
-        if(irq != PIC8259_CASCADE_INPUT) {
-            mask_irqs(&main_pic8259, 1 << irq);
-        }
+    if(irq == PIC8259_CASCADE_INPUT) {
+        return;
     }
-    else {
-        mask_irqs(&proxied_pic8259, 1 << (irq - 8));
+
+    pic8259_t *pic = &main_pic8259;
+
+    if(irq >= IRQ_PROXIED_FIRST) {
+        irq -= IRQ_PROXIED_FIRST;
+        pic = &proxied_pic8259;
     }
+
+    mask_irqs(pic, 1 << irq);
 }
 
 void pic8259_unmask(int irq) {
-    if(irq < 8) {
-        unmask_irqs(&main_pic8259, 1 << irq);
+    pic8259_t *pic = &main_pic8259;
+
+    if(irq >= IRQ_PROXIED_FIRST) {
+        irq -= IRQ_PROXIED_FIRST;
+        pic = &proxied_pic8259;
     }
-    else {
-        unmask_irqs(&proxied_pic8259, 1 << (irq - 8));
-    }
+
+    unmask_irqs(pic, 1 << irq);
 }
 
 void pic8259_eoi(int irq) {
-    if(irq >= 8) {
+    if(irq >= IRQ_PROXIED_FIRST) {
         eoi(&proxied_pic8259);
         iodelay();
 
@@ -164,13 +171,13 @@ void pic8259_eoi(int irq) {
 }
 
 bool pic8259_is_spurious(int irq) {
-    if(irq != 7 && irq != 15) {
+    if(irq != IRQ_SPURIOUS && irq != IRQ_PROXIED_SPURIOUS) {
         return false;
     }
 
-    const uint8_t mask = (1 << 7);
+    const uint8_t mask = (1 << IRQ_SPURIOUS);
 
-    if(irq == 7) {
+    if(irq == IRQ_SPURIOUS) {
         /* If we got interrupted for IRQ 7 but IRQ 7 isn't actually being
          * serviced by the main PIC, then this is a spurious interrupt.
          *

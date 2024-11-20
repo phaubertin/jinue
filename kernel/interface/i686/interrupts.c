@@ -37,6 +37,7 @@
 #include <kernel/infrastructure/i686/isa/regs.h>
 #include <kernel/interface/i686/asm/exceptions.h>
 #include <kernel/interface/i686/asm/idt.h>
+#include <kernel/interface/i686/asm/irq.h>
 #include <kernel/interface/i686/interrupts.h>
 #include <kernel/interface/syscalls.h>
 #include <inttypes.h>
@@ -60,8 +61,11 @@ static void handle_hardware_interrupt(unsigned int ivt) {
         return;
     }
 
-    /* TODO set a constant for this IRQ */
-    if(irq == 0) {
+    /* For all hardware interrupts except the timer, we mask the interrupt and
+     * let the driver handling it unmask it when it's done. This prevents us
+     * from being repeatedly interrupted by level-triggered interrupts in the
+     * meantime. We never mask the timer interrupt. */
+    if(irq == IRQ_TIMER) {
         tick_interrupt();
     } else {
         pic8259_mask(irq);
