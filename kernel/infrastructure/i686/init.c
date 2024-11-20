@@ -129,7 +129,16 @@ static void init_idt(void) {
         /* get address, which is already stored in the IDT entry */
         addr_t addr = (addr_t)(uintptr_t)idt[idx];
 
-        /* set interrupt gate flags */
+        /* Set interrupt gate flags.
+         * 
+         * Because we are using an interrupt gate, the IF flag is cleared when
+         * the interrupt routine is entered, which means interrupts are
+         * disabled.
+         * 
+         * See Intel 64 and IA-32 Architectures Software Developer’s Manual
+         * Volume 3 section 7.12.1.3 "Flag Usage By Exception- or Interrupt-
+         * Handler Procedure".
+         */
         unsigned int flags = SEG_TYPE_INTERRUPT_GATE | SEG_FLAG_NORMAL_GATE;
 
         if(idx == JINUE_I686_SYSCALL_INTERRUPT) {
