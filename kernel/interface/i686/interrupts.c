@@ -30,6 +30,7 @@
  */
 
 #include <jinue/shared/asm/i686.h>
+#include <kernel/application/interrupts.h>
 #include <kernel/domain/services/logging.h>
 #include <kernel/domain/services/panic.h>
 #include <kernel/infrastructure/i686/drivers/pic8259.h>
@@ -48,13 +49,25 @@ static void handle_exception(unsigned int ivt, uintptr_t eip, uint32_t errcode) 
             errcode,
             eip);
     
-    /* never returns */
     panic("caught exception");
 }
 
 static void handle_hardware_interrupt(unsigned int ivt) {
     int irq = ivt - IDT_PIC8259_BASE;
-    info("IRQ: %i (vector %u)", irq, ivt);
+
+    if(pic8259_is_spurious(irq)) {
+        spurious_interrupt();
+        return;
+    }
+
+    /* TODO set a constant for this IRQ */
+    if(irq == 0) {
+        tick_interrupt();
+    } else {
+        pic8259_mask(irq);
+    }
+
+    hardware_interrupt(irq);
     pic8259_eoi(irq);
 }
 

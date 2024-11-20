@@ -162,3 +162,42 @@ void pic8259_eoi(int irq) {
 
     eoi(&main_pic8259);
 }
+
+bool pic8259_is_spurious(int irq) {
+    if(irq != 7 && irq != 15) {
+        return false;
+    }
+
+    const uint8_t mask = (1 << 7);
+
+    if(irq == 7) {
+        /* If we got interrupted for IRQ 7 but IRQ 7 isn't actually being
+         * serviced by the main PIC, then this is a spurious interrupt.
+         *
+         * Don't send a EOI either way:
+         * - In the case of a spurious interrupt, no IRQ 7 is in service, so no
+         *   EOI should be sent.
+         * - In the case of an actual interrupt, the handler will handle it as
+         *   any other hardware interrupt and will call pic8259_eoi() later. */
+        uint8_t isr = read_isr(&main_pic8259);
+        return (isr & mask) == 0;
+    }
+
+    uint8_t isr = read_isr(&proxied_pic8259);
+
+    if((isr & mask) != 0) {
+        return false;
+    }
+
+    /* Spurious interrupt on the proxied PIC: we must not send a EOI to the
+     * proxied PIC, but we must send it to the main PIC that got interrupted
+     * by the proxied PIC.
+     * 
+     * This is true unless another interrupt is in service on the proxied PIC
+     * (special fully nested mode). */
+    if(isr == 0) {
+        eoi(&main_pic8259);
+    }
+
+    return true;
+}
