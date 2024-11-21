@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,28 +29,20 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INTERFACE_I686_TRAP_H
-#define JINUE_KERNEL_INTERFACE_I686_TRAP_H
+#include <jinue/shared/asm/i686.h>
+#include <kernel/domain/services/scheduler.h>
+#include <kernel/interface/i686/interrupts.h>
+#include <kernel/interface/i686/trap.h>
+#include <kernel/interface/syscalls.h>
 
-#include <jinue/shared/types.h>
-#include <kernel/interface/i686/types.h>
+void handle_trap(trapframe_t *trapframe) {
+    unsigned int ivt = trapframe->ivt;
 
-extern int syscall_implementation;
+    if(ivt == JINUE_I686_SYSCALL_INTERRUPT) {
+        handle_syscall(trapframe_syscall_args(trapframe));
+    } else {
+        handle_interrupt(trapframe);
+    }
 
-void handle_trap(trapframe_t *trapframe);
-
-/** entry point for Intel fast system call implementation (SYSENTER/SYSEXIT) */
-void fast_intel_entry(void);
-
-/** entry point for AMD fast system call implementation (SYSCALL/SYSRET) */
-void fast_amd_entry(void);
-
-/* do not call - used by new user threads to "return" to user space for the
- * first time. See thread_page_create(). */
-void return_from_interrupt(void);
-
-static inline jinue_syscall_args_t *trapframe_syscall_args(trapframe_t *trapframe) {
-    return (jinue_syscall_args_t *)&trapframe->msg_arg0;
+    reschedule();
 }
-
-#endif
