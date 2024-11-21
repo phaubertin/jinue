@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,9 +29,27 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/application/interrupts.h>
-#include <kernel/domain/services/scheduler.h>
+#ifndef JINUE_KERNEL_SERVICES_SCHEDULER_H
+#define JINUE_KERNEL_SERVICES_SCHEDULER_H
 
-void tick_interrupt(void) {
-   scheduler_tick();
-}
+#include <kernel/domain/services/asm/scheduler.h>
+#include <kernel/types.h>
+#include <stdbool.h>
+
+void reschedule(void);
+
+void scheduler_tick(void);
+
+void ready_thread(thread_t *thread);
+
+void yield_current_thread(void);
+
+void switch_to_thread(thread_t *to);
+
+void switch_to_thread_and_block(thread_t *to);
+
+void block_current_thread_and_unlock(spinlock_t *lock);
+
+void switch_from_exiting_thread(void);
+
+#endif

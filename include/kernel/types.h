@@ -109,6 +109,7 @@ struct thread_t {
     machine_thread_t         machine_thread;
     list_node_t              thread_list;
     thread_state_t           state;
+    int                      cpu_credits;
     process_t               *process;
     struct thread_t         *sender;
     struct thread_t         *awaiter;

@@ -29,9 +29,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/application/interrupts.h>
+#include <jinue/shared/asm/i686.h>
 #include <kernel/domain/services/scheduler.h>
+#include <kernel/interface/i686/interrupts.h>
+#include <kernel/interface/i686/trap.h>
+#include <kernel/interface/syscalls.h>
 
-void tick_interrupt(void) {
-   scheduler_tick();
+void handle_trap(trapframe_t *trapframe) {
+    if(trapframe->ivt == JINUE_I686_SYSCALL_INTERRUPT) {
+        handle_syscall(trapframe_syscall_args(trapframe));
+    } else {
+        handle_interrupt(trapframe);
+    }
+
+    reschedule();
 }

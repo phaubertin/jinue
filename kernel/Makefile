@@ -98,6 +98,7 @@ sources.kernel.c = \
 	domain/services/ipc.c \
 	domain/services/logging.c \
 	domain/services/panic.c \
+	domain/services/scheduler.c \
 	domain/config.c \
 	infrastructure/i686/drivers/vga.c \
 	infrastructure/i686/drivers/pic8259.c \
@@ -121,6 +122,7 @@ sources.kernel.c = \
 	interface/i686/auxv.c \
 	interface/i686/bootinfo.c \
 	interface/i686/interrupts.c \
+	interface/i686/trap.c \
 	interface/syscalls.c
 
 sources.kernel.nasm = \

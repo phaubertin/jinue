@@ -29,7 +29,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/i686.h>
 #include <kernel/application/interrupts.h>
 #include <kernel/domain/services/logging.h>
 #include <kernel/domain/services/panic.h>
@@ -39,7 +38,6 @@
 #include <kernel/interface/i686/asm/idt.h>
 #include <kernel/interface/i686/asm/irq.h>
 #include <kernel/interface/i686/interrupts.h>
-#include <kernel/interface/syscalls.h>
 #include <inttypes.h>
 
 
@@ -82,10 +80,7 @@ static void handle_unexpected_interrupt(unsigned int ivt) {
 void handle_interrupt(trapframe_t *trapframe) {
     unsigned int ivt = trapframe->ivt;
 
-    if(ivt == JINUE_I686_SYSCALL_INTERRUPT) {
-    	jinue_syscall_args_t *args = (jinue_syscall_args_t *)&trapframe->msg_arg0;
-        handle_syscall(args);
-    } else if(ivt <= IDT_LAST_EXCEPTION) {
+    if(ivt <= IDT_LAST_EXCEPTION) {
         handle_exception(ivt, trapframe->eip, trapframe->errcode);
     } else if(ivt >= IDT_PIC8259_BASE && ivt < IDT_PIC8259_BASE + PIC8259_IRQ_COUNT) {
         handle_hardware_interrupt(ivt);

@@ -27,6 +27,7 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#include <jinue/shared/asm/i686.h>
 #include <kernel/infrastructure/i686/asm/descriptors.h>
 #include <kernel/infrastructure/i686/asm/percpu.h>
 #include <kernel/infrastructure/i686/asm/tss.h>
@@ -36,8 +37,7 @@
 
     bits 32
 
-    extern handle_interrupt
-    extern handle_syscall
+    extern handle_trap
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: interrupt_entry
@@ -131,11 +131,11 @@ interrupt_entry:
     mov eax, SEG_SELECTOR(GDT_PER_CPU_DATA, RPL_KERNEL)
     mov gs, ax
     
-    ; set handle_interrupt() function argument
+    ; set handle_trap() function argument
     push esp            ; First argument:  trapframe
     
     ; call interrupt dispatching function
-    call handle_interrupt
+    call handle_trap
     
     ; remove argument(s) from stack
     add esp, 4
@@ -185,7 +185,11 @@ fast_intel_entry:
     mov ebp, 0              ; setup dummy frame pointer
     
     push byte 0             ; 48 ebp (caller-saved by kernel calling convention)
-    push byte 0             ; 44 interrupt vector (unused)
+    
+    ; 44 interrupt vector
+    ; 
+    ; This interrupt vector value tells handle_trap() this is a system call.
+    push dword JINUE_I686_SYSCALL_INTERRUPT  
     push byte 0             ; 40 error code (unused)
     push gs                 ; 36
     push fs                 ; 32
@@ -211,16 +215,12 @@ fast_intel_entry:
     mov eax, SEG_SELECTOR(GDT_PER_CPU_DATA, RPL_KERNEL)
     mov gs, ax
     
-    ; set handle_syscall() function argument
-    ;
-    ; The message arguments, a ponter to which handle_syscall() takes
-    ; as argument are at the beginning of the trap frame, so we can just
-    ; pass the address of the trap frame.
-    push esp                ; First argument: message arguments
+    ; set handle_trap() function argument
+    push esp                ; First argument: trapframe
     
-    call handle_syscall
+    call handle_trap
     
-    ; cleanup handle_syscall() argument
+    ; cleanup handle_trap() argument
     add esp, 4
     
     pop eax                 ; 0
@@ -287,7 +287,11 @@ fast_amd_entry:
     mov ebp, 0              ; setup dummy frame pointer
     
     push byte 0             ; 48 ebp (caller-saved by kernel calling convention)
-    push byte 0             ; 44 interrupt vector (unused)
+    
+    ; 44 interrupt vector
+    ; 
+    ; This interrupt vector value tells handle_trap() this is a system call.
+    push dword JINUE_I686_SYSCALL_INTERRUPT  
     push byte 0             ; 40 error code (unused)
     push byte 0             ; 36 gs (caller-saved by kernel calling convention)
     push fs                 ; 32
@@ -309,16 +313,12 @@ fast_amd_entry:
     mov ds, cx
     mov es, cx
     
-    ; set handle_syscall() function argument
-    ;
-    ; The message arguments, a ponter to which handle_syscall() takes
-    ; as argument are at the beginning of the trap frame, so we can just
-    ; pass the address of the trap frame.
-    push esp                ; First argument: message arguments
+    ; set handle_trap() function argument
+    push esp                ; First argument: trapframe
     
-    call handle_syscall
+    call handle_trap
     
-    ; cleanup handle_syscall() argument
+    ; cleanup handle_trap() argument
     add esp, 4
     
     pop eax                 ; 0

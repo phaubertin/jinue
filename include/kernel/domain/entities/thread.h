@@ -44,21 +44,11 @@ thread_t *thread_new(process_t *process);
 
 void thread_prepare(thread_t *thread, const thread_params_t *params);
 
-void thread_ready(thread_t *thread);
-
 void thread_run_first(thread_t *thread);
 
 void thread_run(thread_t *thread);
 
-void thread_yield_current(void);
-
 void thread_terminate_current(void);
-
-void thread_switch_to(thread_t *to);
-
-void thread_switch_to_and_block(thread_t *to);
-
-void thread_block_current_and_unlock(spinlock_t *lock);
 
 int thread_await(thread_t *thread);
 

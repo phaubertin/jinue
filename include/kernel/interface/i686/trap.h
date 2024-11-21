@@ -32,7 +32,12 @@
 #ifndef JINUE_KERNEL_INTERFACE_I686_TRAP_H
 #define JINUE_KERNEL_INTERFACE_I686_TRAP_H
 
+#include <jinue/shared/types.h>
+#include <kernel/interface/i686/types.h>
+
 extern int syscall_implementation;
+
+void handle_trap(trapframe_t *trapframe);
 
 /** entry point for Intel fast system call implementation (SYSENTER/SYSEXIT) */
 void fast_intel_entry(void);
@@ -43,5 +48,9 @@ void fast_amd_entry(void);
 /* do not call - used by new user threads to "return" to user space for the
  * first time. See thread_page_create(). */
 void return_from_interrupt(void);
+
+static inline jinue_syscall_args_t *trapframe_syscall_args(trapframe_t *trapframe) {
+    return (jinue_syscall_args_t *)&trapframe->msg_arg0;
+}
 
 #endif

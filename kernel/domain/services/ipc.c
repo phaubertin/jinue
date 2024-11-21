@@ -34,8 +34,8 @@
 #include <jinue/shared/types.h>
 #include <kernel/domain/entities/endpoint.h>
 #include <kernel/domain/entities/object.h>
-#include <kernel/domain/entities/thread.h>
 #include <kernel/domain/services/ipc.h>
+#include <kernel/domain/services/scheduler.h>
 #include <kernel/machine/spinlock.h>
 #include <kernel/utils/pmap.h>
 #include <stddef.h>
@@ -241,14 +241,14 @@ int send_message(
     if(receiver == NULL) {
         /* No thread is waiting to receive this message, so we must wait on the sender list. */
         list_enqueue(&endpoint->send_list, &sender->thread_list);
-        thread_block_current_and_unlock(&endpoint->lock);
+        block_current_thread_and_unlock(&endpoint->lock);
     }
     else {
         spin_unlock(&endpoint->lock);
         receiver->sender = sender;
 
         /* switch to receiver thread, which will resume inside syscall_receive() */
-        thread_switch_to_and_block(receiver);
+        switch_to_thread_and_block(receiver);
     }
 
     if(sender->message_errno == JINUE_EPROTO) {
@@ -307,7 +307,7 @@ int receive_message(ipc_endpoint_t *endpoint, thread_t *receiver, jinue_message_
         if(sender == NULL) {
             /* No thread is waiting to send a message, so we must wait on the receive list. */
             list_enqueue(&endpoint->recv_list, &receiver->thread_list);
-            thread_block_current_and_unlock(&endpoint->lock);
+            block_current_thread_and_unlock(&endpoint->lock);
             
             /* set by sending thread */
             sender = receiver->sender;
@@ -327,7 +327,7 @@ int receive_message(ipc_endpoint_t *endpoint, thread_t *receiver, jinue_message_
             sender->message_errno   = JINUE_E2BIG;
             receiver->sender        = NULL;
             
-            thread_ready(sender);
+            ready_thread(sender);
             continue;
         }
 
@@ -382,7 +382,7 @@ int reply_to_message(thread_t *replier, const jinue_message_t *message) {
     replier->sender = NULL;
     
     /* switch back to sender thread to return from call immediately */
-    thread_switch_to(replyto);
+    switch_to_thread(replyto);
 
     return 0;
 }
@@ -410,7 +410,7 @@ int reply_error_to_message(thread_t *replier, uintptr_t errcode) {
     replier->sender                 = NULL;
     
     /* switch back to sender thread to return from call immediately */
-    thread_switch_to(replyto);
+    switch_to_thread(replyto);
 
     return 0;
 }
@@ -431,5 +431,5 @@ int reply_error_to_message(thread_t *replier, uintptr_t errcode) {
  */
 void abort_message(thread_t *thread) {
     thread->message_errno = JINUE_EIO;
-    thread_ready(thread);
+    ready_thread(thread);
 }
