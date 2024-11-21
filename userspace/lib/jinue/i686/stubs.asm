@@ -180,7 +180,7 @@ jinue_syscall_intr:
     mov esi, [edi+ 8]   ; arg2 (message pointer)
     mov edi, [edi+12]   ; arg3 (message size)
 
-    int JINUE_I686_SYSCALL_IRQ
+    int JINUE_I686_SYSCALL_INTERRUPT
     
     ; restore arguments structure pointer
     mov ebp, [esp+20]

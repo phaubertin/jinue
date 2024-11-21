@@ -30,7 +30,8 @@
 #include <kernel/infrastructure/i686/asm/descriptors.h>
 #include <kernel/infrastructure/i686/asm/percpu.h>
 #include <kernel/infrastructure/i686/asm/tss.h>
-#include <kernel/interface/i686/asm/irq.h>
+#include <kernel/interface/i686/asm/exceptions.h>
+#include <kernel/interface/i686/asm/idt.h>
 #include <kernel/machine/asm/machine.h>
 
     bits 32
@@ -241,6 +242,13 @@ fast_intel_entry:
     pop ecx                 ; 64 user stack pointer
     ; no action needed      ; 68 skip user stack segment
     
+    ; When we saved EFLAGS, IF was already cleared, so we need to explicitly
+    ; re-enable interrupts.
+    ; 
+    ; The sti instruction takes effect after the *next* instruction, so after
+    ; sysexit here, which is what we want. For this reason, it must be the last
+    ; instruction before sysexit.
+    sti
     sysexit
 
 .end:
@@ -332,6 +340,13 @@ fast_amd_entry:
     pop esp                 ; 64 user stack pointer
     ; no action needed      ; 68 skip user stack segment
     
+    ; When we saved EFLAGS, IF was already cleared, so we need to explicitly
+    ; re-enable interrupts.
+    ; 
+    ; The sti instruction takes effect after the *next* instruction, so after
+    ; sysret here, which is what we want. For this reason, it must be the last
+    ; instruction before sysret.
+    sti
     sysret
 
 .end:
@@ -376,7 +391,7 @@ trampoline:
                 ; Push a null DWORD in lieu of the error code for interrupts
                 ; that do not have one (only some CPU exceptions have an error
                 ; code). We do this to maintain a consistent stack frame layout.
-                %if ! HAS_ERRCODE(ivt)
+                %if ! EXCEPTION_HAS_ERRCODE(ivt)
                     push byte NULL_ERRCODE 
                 %endif
                 

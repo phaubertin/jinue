@@ -109,7 +109,7 @@ void machine_prepare_thread(thread_t *thread, const thread_params_t *params) {
 
     trapframe->eip      = (uint32_t)params->entry;
     trapframe->esp      = (uint32_t)params->stack_addr;
-    trapframe->eflags   = EFLAGS_ALWAYS_1;
+    trapframe->eflags   = EFLAGS_ALWAYS_1 | EFLAGS_IF;
     trapframe->cs       = SEG_SELECTOR(GDT_USER_CODE, RPL_USER);
     trapframe->ss       = SEG_SELECTOR(GDT_USER_DATA, RPL_USER);
     trapframe->ds       = SEG_SELECTOR(GDT_USER_DATA, RPL_USER);

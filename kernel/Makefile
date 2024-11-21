@@ -60,6 +60,9 @@ unclean.extra    = \
 	$(stripped)
 
 sources.kernel.c = \
+	application/interrupts/hardware.c \
+	application/interrupts/spurious.c \
+	application/interrupts/tick.c \
 	application/syscalls/close.c \
 	application/syscalls/create_endpoint.c \
 	application/syscalls/create_process.c \
@@ -98,6 +101,7 @@ sources.kernel.c = \
 	domain/config.c \
 	infrastructure/i686/drivers/vga.c \
 	infrastructure/i686/drivers/pic8259.c \
+	infrastructure/i686/drivers/pit8253.c \
 	infrastructure/i686/drivers/uart16550a.c \
 	infrastructure/i686/pmap/nopae.c \
 	infrastructure/i686/pmap/pmap.c \
@@ -122,12 +126,12 @@ sources.kernel.c = \
 sources.kernel.nasm = \
 	infrastructure/i686/atomic/atomic.asm \
 	infrastructure/i686/atomic/spinlock.asm \
+	infrastructure/i686/drivers/iodelay.asm \
 	infrastructure/i686/isa/abi.asm \
 	infrastructure/i686/isa/instrs.asm \
 	infrastructure/i686/isa/io.asm \
 	infrastructure/i686/isa/regs.asm \
 	infrastructure/i686/pmap/init.asm \
-	infrastructure/i686/iodelay.asm \
 	infrastructure/i686/thread.asm \
 	interface/i686/crt.asm \
 	interface/i686/trap.asm

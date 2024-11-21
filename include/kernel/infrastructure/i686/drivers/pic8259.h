@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -33,6 +33,7 @@
 #define JINUE_KERNEL_INFRASTRUCTURE_I686_DRIVERS_PIC8259_H
 
 #include <kernel/infrastructure/i686/drivers/asm/pic8259.h>
+#include <stdbool.h>
 
 void pic8259_init();
 
@@ -40,6 +41,8 @@ void pic8259_mask(int irq);
 
 void pic8259_unmask(int irq);
 
-void pic8259_ack(int irq);
+void pic8259_eoi(int irq);
+
+bool pic8259_is_spurious(int irq);
 
 #endif

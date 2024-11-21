@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -36,6 +36,7 @@
 #include <kernel/domain/services/panic.h>
 #include <kernel/infrastructure/i686/asm/msr.h>
 #include <kernel/infrastructure/i686/drivers/pic8259.h>
+#include <kernel/infrastructure/i686/drivers/pit8253.h>
 #include <kernel/infrastructure/i686/drivers/uart16550a.h>
 #include <kernel/infrastructure/i686/drivers/vga.h>
 #include <kernel/infrastructure/i686/isa/instrs.h>
@@ -49,6 +50,7 @@
 #include <kernel/infrastructure/i686/memory.h>
 #include <kernel/infrastructure/i686/percpu.h>
 #include <kernel/infrastructure/elf.h>
+#include <kernel/interface/i686/asm/idt.h>
 #include <kernel/interface/i686/asm/irq.h>
 #include <kernel/interface/i686/boot.h>
 #include <kernel/interface/i686/interrupts.h>
@@ -129,10 +131,19 @@ static void init_idt(void) {
         /* get address, which is already stored in the IDT entry */
         addr_t addr = (addr_t)(uintptr_t)idt[idx];
 
-        /* set interrupt gate flags */
+        /* Set interrupt gate flags.
+         * 
+         * Because we are using an interrupt gate, the IF flag is cleared when
+         * the interrupt routine is entered, which means interrupts are
+         * disabled.
+         * 
+         * See Intel 64 and IA-32 Architectures Software Developer’s Manual
+         * Volume 3 section 7.12.1.3 "Flag Usage By Exception- or Interrupt-
+         * Handler Procedure".
+         */
         unsigned int flags = SEG_TYPE_INTERRUPT_GATE | SEG_FLAG_NORMAL_GATE;
 
-        if(idx == JINUE_I686_SYSCALL_IRQ) {
+        if(idx == JINUE_I686_SYSCALL_INTERRUPT) {
             flags |= SEG_FLAG_USER;
         }
         else {
@@ -216,8 +227,7 @@ static void initialize_page_allocator(boot_alloc_t *boot_alloc) {
         page_free(boot_page_alloc(boot_alloc));
     }
 
-    info(
-            "%u kilobytes available for allocation by the kernel",
+    info(   "%u kilobytes available for allocation by the kernel",
             get_page_count() * PAGE_SIZE / (1 * KB));
 }
 
@@ -355,6 +365,13 @@ void machine_init(const config_t *config) {
 
     /* Initialize programmable interrupt_controller. */
     pic8259_init();
+
+    /* Initialize programmable interval timer and enable timer interrupt.
+     *
+     * Interrupts are disabled during initialization so the CPU won't actually
+     * be interrupted until the first user space thread starts. */
+    pit8253_init();
+    pic8259_unmask(IRQ_TIMER);
 
     exec_file_t kernel;
     get_kernel_exec_file(&kernel, bootinfo);

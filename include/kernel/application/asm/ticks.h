@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,9 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_IODELAY_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_IODELAY_H
+#ifndef JINUE_KERNEL_APPLICATION_ASM_TICKS_H
+#define JINUE_KERNEL_APPLICATION_ASM_TICKS_H
 
-void iodelay(void);
+#define TICKS_PER_SECOND 100
 
 #endif

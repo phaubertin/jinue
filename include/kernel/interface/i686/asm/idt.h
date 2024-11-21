@@ -29,19 +29,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_UTILS_ASM_UTILS_H
-#define JINUE_KERNEL_UTILS_ASM_UTILS_H
+#ifndef JINUE_KERNEL_INTERFACE_I686_ASM_IDT_H
+#define JINUE_KERNEL_INTERFACE_I686_ASM_IDT_H
 
-#define KB                  (1024)
+#define IDT_VECTOR_COUNT        256
 
-#define MB                  (1024 * KB)
+#define IDT_LAST_EXCEPTION      31
 
-#define GB                  (1024 * MB)
-
-#define ROUND_DIVIDE(n, d)  (((n) + (d)/2) / (d))
-
-#define ALIGN_START(x, s)   ( (x) & ~((s)-1) )
-
-#define ALIGN_END(x, s)     ( ALIGN_START((x) + s - 1, (s)) )
+#define IDT_PIC8259_BASE     	(IDT_LAST_EXCEPTION + 1)
 
 #endif
