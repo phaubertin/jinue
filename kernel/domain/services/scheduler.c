@@ -83,7 +83,7 @@ static thread_t *select_next_ready_thread(bool current_can_run) {
         panic("No thread to schedule");
     }
 
-    to->credits += SCHEDULER_BASE_CREDITS;
+    to->cpu_credits += SCHEDULER_BASE_CREDITS;
 
     return to;
 }
@@ -108,7 +108,7 @@ static void thread_ready_locked(thread_t *thread) {
 void reschedule(void) {
     thread_t *current = get_current_thread();
 
-    if(current->credits > 0) {
+    if(current->cpu_credits > 0) {
         return;
     }
 
@@ -134,8 +134,8 @@ void reschedule(void) {
 void scheduler_tick(void) {
     thread_t *current = get_current_thread();
 
-    if(current->credits > 0) {
-        --current->credits;
+    if(current->cpu_credits > 0) {
+        --current->cpu_credits;
     }
 }
 
@@ -163,7 +163,7 @@ void yield_current_thread(void) {
     /* This defers the thread switch to the next time reschedule() is called,
      * which will happen at the end of the system call. */
     thread_t *current   = get_current_thread();
-    current->credits    = 0;
+    current->cpu_credits    = 0;
 }
 
 /**
