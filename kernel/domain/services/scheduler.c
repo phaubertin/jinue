@@ -105,6 +105,10 @@ static void thread_ready_locked(thread_t *thread) {
     list_enqueue(&ready_queue.queue, &thread->thread_list);
 }
 
+
+/**
+ * Preempt the current thread if it's time
+ */
 void reschedule(void) {
     thread_t *current = get_current_thread();
 
@@ -131,6 +135,9 @@ void reschedule(void) {
     machine_switch_thread_and_unlock(current, to, &ready_queue.lock);
 }
 
+/**
+ * Decrement current thread CPU credits due to timer tick
+ */
 void scheduler_tick(void) {
     thread_t *current = get_current_thread();
 
