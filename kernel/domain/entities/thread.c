@@ -31,16 +31,14 @@
 
 #include <jinue/shared/asm/errno.h>
 #include <kernel/domain/alloc/page_alloc.h>
-#include <kernel/domain/entities/descriptor.h>
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/entities/thread.h>
 #include <kernel/domain/services/ipc.h>
-#include <kernel/domain/services/panic.h>
+#include <kernel/domain/services/scheduler.h>
 #include <kernel/machine/spinlock.h>
 #include <kernel/machine/thread.h>
 #include <kernel/machine/tls.h>
-#include <kernel/utils/list.h>
 
 static void free_op(object_header_t *object);
 
@@ -58,15 +56,6 @@ static const object_type_t object_type = {
 
 /** runtime type definition for a thread */
 const object_type_t *object_type_thread = &object_type;
-
-/** ready threads queue with lock */
-static struct {
-    list_t          queue;
-    spinlock_t      lock;
-} ready_queue = {
-    .queue  = STATIC_LIST,
-    .lock   = SPINLOCK_STATIC
-};
 
 /**
  * Thread constructor
@@ -147,37 +136,6 @@ void thread_prepare(thread_t *thread, const thread_params_t *params) {
 }
 
 /**
- * Add a thread to the ready queue (without locking)
- * 
- * This funtion contains the business logic for thread_ready() without the
- * locking. Some functions beside thread_ready() that need to block and then
- * unlock call it, hence why it is a separate function.
- * 
- * @param thread the thread
- *
- */
-static void thread_ready_locked(thread_t *thread) {
-    thread->state = THREAD_STATE_READY;
-
-    /* add thread to the tail of the ready list to give other threads a chance to run */
-    list_enqueue(&ready_queue.queue, &thread->thread_list);
-}
-
-/**
- * Add a thread to the ready queue
- * 
- * @param thread the thread
- *
- */
-void thread_ready(thread_t *thread) {
-    spin_lock(&ready_queue.lock);
-
-    thread_ready_locked(thread);
-
-    spin_unlock(&ready_queue.lock);
-}
-
-/**
  * Common logic for a starting thread
  * 
  * @param thread the thread that is starting
@@ -228,77 +186,6 @@ void thread_run(thread_t *thread) {
 }
 
 /**
- * Get the thread at the head of the ready queue
- * 
- * @return thread ready to run, NULL if there are none
- *
- */
-static thread_t *dequeue_ready_thread(void) {
-    spin_lock(&ready_queue.lock);
-
-    thread_t *thread = list_dequeue(&ready_queue.queue, thread_t, thread_list);
-
-    spin_unlock(&ready_queue.lock);
-
-    return thread;
-}
-
-/**
- * Get the next thread to run
- * 
- * @param current_can_run whether the current thread can continue running
- * @return thread ready to run
- *
- */
-static thread_t *reschedule(bool current_can_run) {
-    thread_t *to = dequeue_ready_thread();
-    
-    if(to == NULL) {
-        /* Special case to take into account: when scheduling the first thread,
-         * there is no current thread. We should not call get_current_thread()
-         * in that case. */
-        if(current_can_run) {
-            return get_current_thread();
-        }
-
-        /* Currently, scheduling is purely cooperative and only one CPU is
-         * supported (so, there are no threads currently running on other
-         * CPUs). What this means is that, once there are no more threads
-         * running or ready to run, this situation will never change. */
-        panic("No thread to schedule");
-    }
-
-    return to;
-}
-
-/**
- * Yield the current thread
- * 
- * The current thread is added at the tail of the ready queue. It continues
- * running if no other thread is ready to run.
- */
-void thread_yield_current(void) {
-    thread_t *current   = get_current_thread();
-    thread_t *to        = reschedule(true);
-
-    if(to == current) {
-        return;
-    }
-
-    to->state = THREAD_STATE_RUNNING;
-
-    if(current->process != to->process) {
-        process_switch_to(to->process);
-    }
-
-    spin_lock(&ready_queue.lock);
-
-    thread_ready_locked(current);
-
-    machine_switch_thread_and_unlock(current, to, &ready_queue.lock);
-}
-
-/**
  * Terminate the current thread
  * 
  * The thread is destroyed and freed only if there are no more references to it
@@ -342,77 +229,6 @@ void thread_terminate_current(void) {
      * here because that will possibly free the current thread, which we don't
      * want to do while it is still running. */
     machine_switch_and_unref_thread(current, to);
-}
-
-/**
- * Switch to another thread
- * 
- * The current thread remains ready to run and is added to the ready queue.
- * 
- * @param to thread to switch to
- *
- */
-void thread_switch_to(thread_t *to) {
-    thread_t *current   = get_current_thread();
-
-    to->state           = THREAD_STATE_RUNNING;
-
-    if(current->process != to->process) {
-        process_switch_to(to->process);
-    }
-
-    spin_lock(&ready_queue.lock);
-
-    thread_ready_locked(current);
-
-    machine_switch_thread_and_unlock(current, to, &ready_queue.lock);
-}
-
-/**
- * Switch to another thread and block the current thread
- * 
- * @param to thread to switch to
- *
- */
-void thread_switch_to_and_block(thread_t *to) {
-    thread_t *current   = get_current_thread();
-    current->state      = THREAD_STATE_BLOCKED;
-    to->state           = THREAD_STATE_RUNNING;
-
-    if(current->process != to->process) {
-        process_switch_to(to->process);
-    }
-
-    machine_switch_thread(current, to);
-}
-
-/**
- * Block the current thread and then unlock a lock
- * 
- * The lock is unlocked *after* the switch to another thread. This function
- * eliminates race conditions when enqueuing the current thread to a queue,
- * setting it as the awaiter of another thread, etc. and then blocking, if
- * the following sequence is followed:
- * 
- *  1. Take the lock (e.g. the lock protecting a queue).
- *  2. Add the thread (e.g. to the queue).
- *  3. Call this function to block the thread and release the lock atomically.
- * 
- * @param lock the lock to unlock after switching thread
- *
- */
-void thread_block_current_and_unlock(spinlock_t *lock) {
-    thread_t *current   = get_current_thread();
-    current->state      = THREAD_STATE_BLOCKED;
-
-    thread_t *to        = reschedule(false);
-    to->state           = THREAD_STATE_RUNNING;
-
-    if(current->process != to->process) {
-        process_switch_to(to->process);
-    }
-
-    machine_switch_thread_and_unlock(current, to, lock);
 }
 
 /**

@@ -29,9 +29,22 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/application/syscalls.h>
-#include <kernel/domain/services/scheduler.h>
+#ifndef JINUE_KERNEL_SERVICES_SCHEDULER_H
+#define JINUE_KERNEL_SERVICES_SCHEDULER_H
 
-void yield_thread(void) {
-    thread_yield_current();
-}
+#include <kernel/types.h>
+#include <stdbool.h>
+
+thread_t *reschedule(bool current_can_run);
+
+void thread_ready(thread_t *thread);
+
+void thread_yield_current(void);
+
+void thread_switch_to(thread_t *to);
+
+void thread_switch_to_and_block(thread_t *to);
+
+void thread_block_current_and_unlock(spinlock_t *lock);
+
+#endif

@@ -34,8 +34,8 @@
 #include <jinue/shared/types.h>
 #include <kernel/domain/entities/endpoint.h>
 #include <kernel/domain/entities/object.h>
-#include <kernel/domain/entities/thread.h>
 #include <kernel/domain/services/ipc.h>
+#include <kernel/domain/services/scheduler.h>
 #include <kernel/machine/spinlock.h>
 #include <kernel/utils/pmap.h>
 #include <stddef.h>

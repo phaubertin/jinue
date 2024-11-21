@@ -98,6 +98,7 @@ sources.kernel.c = \
 	domain/services/ipc.c \
 	domain/services/logging.c \
 	domain/services/panic.c \
+	domain/services/scheduler.c \
 	domain/config.c \
 	infrastructure/i686/drivers/vga.c \
 	infrastructure/i686/drivers/pic8259.c \
