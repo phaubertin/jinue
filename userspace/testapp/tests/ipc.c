@@ -204,13 +204,8 @@ void run_ipc_test(void) {
         return;
     }
 
-    if(status != 0) {
-        jinue_error("error: pthread_attr_init() failed: %s", strerror(status));
-        return;
-    }
-
     pthread_t client_thread; 
-    status = pthread_create(&client_thread, NULL, ipc_test_client_thread, (void *)(uintptr_t) 0xb01dface);
+    status = pthread_create(&client_thread, &attr, ipc_test_client_thread, (void *)(uintptr_t) 0xb01dface);
 
     if(status != 0) {
         jinue_error("error: could not create thread: %s", strerror(status));
