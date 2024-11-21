@@ -32,8 +32,13 @@
 #ifndef JINUE_KERNEL_SERVICES_SCHEDULER_H
 #define JINUE_KERNEL_SERVICES_SCHEDULER_H
 
+#include <kernel/domain/services/asm/scheduler.h>
 #include <kernel/types.h>
 #include <stdbool.h>
+
+void reschedule(void);
+
+void scheduler_tick(void);
 
 void ready_thread(thread_t *thread);
 

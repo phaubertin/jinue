@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,9 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/application/interrupts.h>
-#include <kernel/domain/services/scheduler.h>
+#ifndef JINUE_KERNEL_SERVICES_ASM_SCHEDULER_H
+#define JINUE_KERNEL_SERVICES_ASM_SCHEDULER_H
 
-void tick_interrupt(void) {
-   scheduler_tick();
-}
+#define SCHEDULER_BASE_CREDITS 3
+
+#endif

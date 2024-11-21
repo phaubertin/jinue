@@ -71,20 +71,19 @@ static thread_t *dequeue_ready_thread(void) {
 static thread_t *select_next_ready_thread(bool current_can_run) {
     thread_t *to = dequeue_ready_thread();
     
-    if(to == NULL) {
-        /* Special case to take into account: when scheduling the first thread,
-         * there is no current thread. We should not call get_current_thread()
-         * in that case. */
-        if(current_can_run) {
-            return get_current_thread();
-        }
+    if(to == NULL && current_can_run) {
+        to = get_current_thread();
+    }
 
+    if(to == NULL) {
         /* Currently, scheduling is purely cooperative and only one CPU is
          * supported (so, there are no threads currently running on other
          * CPUs). What this means is that, once there are no more threads
          * running or ready to run, this situation will never change. */
         panic("No thread to schedule");
     }
+
+    to->credits = SCHEDULER_BASE_CREDITS;
 
     return to;
 }
@@ -104,6 +103,40 @@ static void thread_ready_locked(thread_t *thread) {
 
     /* add thread to the tail of the ready list to give other threads a chance to run */
     list_enqueue(&ready_queue.queue, &thread->thread_list);
+}
+
+void reschedule(void) {
+    thread_t *current = get_current_thread();
+
+    if(current->credits > 0) {
+        return;
+    }
+
+    thread_t *to = select_next_ready_thread(true);
+
+    if(to == current) {
+        return;
+    }
+
+    to->state = THREAD_STATE_RUNNING;
+
+    if(current->process != to->process) {
+        process_switch_to(to->process);
+    }
+
+    spin_lock(&ready_queue.lock);
+
+    thread_ready_locked(current);
+
+    machine_switch_thread_and_unlock(current, to, &ready_queue.lock);
+}
+
+void scheduler_tick(void) {
+    thread_t *current = get_current_thread();
+
+    if(current->credits > 0) {
+        --current->credits;
+    }
 }
 
 /**
@@ -127,24 +160,10 @@ void ready_thread(thread_t *thread) {
  * running if no other thread is ready to run.
  */
 void yield_current_thread(void) {
+    /* This defers the thread switch to the next time reschedule() is called,
+     * which will happen at the end of the system call. */
     thread_t *current   = get_current_thread();
-    thread_t *to        = select_next_ready_thread(true);
-
-    if(to == current) {
-        return;
-    }
-
-    to->state = THREAD_STATE_RUNNING;
-
-    if(current->process != to->process) {
-        process_switch_to(to->process);
-    }
-
-    spin_lock(&ready_queue.lock);
-
-    thread_ready_locked(current);
-
-    machine_switch_thread_and_unlock(current, to, &ready_queue.lock);
+    current->credits    = 0;
 }
 
 /**

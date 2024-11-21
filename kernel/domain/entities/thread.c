@@ -129,6 +129,7 @@ void thread_prepare(thread_t *thread, const thread_params_t *params) {
     
     thread->awaiter = NULL;
     thread->state   = THREAD_STATE_STARTING;
+    thread->credits = 0;
 
     spin_unlock(&thread->await_lock);    
     
