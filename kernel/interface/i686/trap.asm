@@ -240,6 +240,13 @@ fast_intel_entry:
     pop ecx                 ; 64 user stack pointer
     ; no action needed      ; 68 skip user stack segment
     
+    ; When we saved EFLAGS, IF was already cleared, so we need to explicitly
+    ; re-enable interrupts.
+    ; 
+    ; The sti instruction takes effect after the *next* instruction, so after
+    ; sysexit here, which is what we want. For this reason, it must be the last
+    ; instruction before sysexit.
+    sti
     sysexit
 
 .end:
@@ -331,6 +338,13 @@ fast_amd_entry:
     pop esp                 ; 64 user stack pointer
     ; no action needed      ; 68 skip user stack segment
     
+    ; When we saved EFLAGS, IF was already cleared, so we need to explicitly
+    ; re-enable interrupts.
+    ; 
+    ; The sti instruction takes effect after the *next* instruction, so after
+    ; sysret here, which is what we want. For this reason, it must be the last
+    ; instruction before sysret.
+    sti
     sysret
 
 .end:

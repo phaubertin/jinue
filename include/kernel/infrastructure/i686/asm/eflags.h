@@ -34,6 +34,8 @@
 
 #define EFLAGS_ALWAYS_1 (1<<1)
 
+#define EFLAGS_IF       (1<<9)
+
 #define EFLAGS_ID       (1<<21)
 
 #endif
