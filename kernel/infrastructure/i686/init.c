@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -36,6 +36,7 @@
 #include <kernel/domain/services/panic.h>
 #include <kernel/infrastructure/i686/asm/msr.h>
 #include <kernel/infrastructure/i686/drivers/pic8259.h>
+#include <kernel/infrastructure/i686/drivers/pit8253.h>
 #include <kernel/infrastructure/i686/drivers/uart16550a.h>
 #include <kernel/infrastructure/i686/drivers/vga.h>
 #include <kernel/infrastructure/i686/isa/instrs.h>
@@ -50,6 +51,7 @@
 #include <kernel/infrastructure/i686/percpu.h>
 #include <kernel/infrastructure/elf.h>
 #include <kernel/interface/i686/asm/idt.h>
+#include <kernel/interface/i686/asm/irq.h>
 #include <kernel/interface/i686/boot.h>
 #include <kernel/interface/i686/interrupts.h>
 #include <kernel/interface/i686/trap.h>
@@ -364,6 +366,13 @@ void machine_init(const config_t *config) {
 
     /* Initialize programmable interrupt_controller. */
     pic8259_init();
+
+    /* Initialize programmable interval timer and enable timer interrupt.
+     *
+     * Interrupts are disabled during initialization so the CPU won't actually
+     * be interrupted until the first user space thread starts. */
+    pit8253_init();
+    pic8259_unmask(IRQ_TIMER);
 
     exec_file_t kernel;
     get_kernel_exec_file(&kernel, bootinfo);
