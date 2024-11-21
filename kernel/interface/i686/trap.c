@@ -36,9 +36,7 @@
 #include <kernel/interface/syscalls.h>
 
 void handle_trap(trapframe_t *trapframe) {
-    unsigned int ivt = trapframe->ivt;
-
-    if(ivt == JINUE_I686_SYSCALL_INTERRUPT) {
+    if(trapframe->ivt == JINUE_I686_SYSCALL_INTERRUPT) {
         handle_syscall(trapframe_syscall_args(trapframe));
     } else {
         handle_interrupt(trapframe);
