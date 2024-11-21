@@ -29,17 +29,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <kernel/application/asm/ticks.h>
 #include <kernel/infrastructure/i686/drivers/iodelay.h>
 #include <kernel/infrastructure/i686/drivers/pit8253.h>
 #include <kernel/infrastructure/i686/isa/io.h>
+#include <kernel/infrastructure/i686/isa/io.h>
+#include <kernel/utils/utils.h>
 
 void pit8253_init(void) {
     outb(PIT8253_IO_CW_REG, PIT8253_CW_COUNTER0 | PIT8253_CW_MODE2 | PIT8253_CW_LOAD_LSB_MSB);
     iodelay();
 
-    /* TODO use constants */
-    int divider = 11932;
-
+    int divider = ROUND_DIVIDE(PIT8253_FREQ_N * 1000000, PIT8253_FREQ_D * TICKS_PER_SECOND);
     outb(PIT8253_IO_COUNTER0, divider & 0xff);
     iodelay();
 

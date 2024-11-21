@@ -95,4 +95,12 @@
 /** Mode 5: hardware-triggered strobe */
 #define PIT8253_CW_MODE5        (PIT8253_CW_M2 | PIT8253_CW_M0)
 
+/* Frequency parameters */
+
+/** Numerator of input frequency in MHz */
+#define PIT8253_FREQ_N          105
+
+/** Denominator of input frequency in MHz */
+#define PIT8253_FREQ_D          88
+
 #endif

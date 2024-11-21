@@ -32,13 +32,10 @@
 #ifndef JINUE_KERNEL_UTILS_UTILS_H
 #define JINUE_KERNEL_UTILS_UTILS_H
 
+#include <kernel/utils/asm/utils.h>
 #include <stdint.h>
 
 #define OFFSET_OF(type, member) ((uintptr_t)(&((type *)0)->member))
-
-#define ALIGN_START(x, s)       ( (x) & ~((s)-1) )
-
-#define ALIGN_END(x, s)         ( ALIGN_START((x) + s - 1, (s)) )
 
 #define OFFSET_OF_PTR(x, s)     ( (uintptr_t)(x) & ((s)-1) )
 
