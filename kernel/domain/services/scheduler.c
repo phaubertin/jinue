@@ -83,7 +83,7 @@ static thread_t *select_next_ready_thread(bool current_can_run) {
         panic("No thread to schedule");
     }
 
-    to->credits = SCHEDULER_BASE_CREDITS;
+    to->credits += SCHEDULER_BASE_CREDITS;
 
     return to;
 }
