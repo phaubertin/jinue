@@ -164,7 +164,7 @@ static void load_selectors(percpu_t *cpu_data, boot_alloc_t *boot_alloc) {
 
     /* load new GDT and TSS */
     pseudo->addr    = (addr_t)&cpu_data->gdt;
-    pseudo->limit   = GDT_LENGTH * 8 - 1;
+    pseudo->limit   = GDT_NUM_ENTRIES * 8 - 1;
 
     lgdt(pseudo);
 

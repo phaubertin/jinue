@@ -111,12 +111,11 @@ typedef struct {
 } tss_t;
 
 struct percpu_t {
+    /* Assembly language code accesses members in this structure. Make sure to
+     * update the PERCPU_OFFSET_... definitions when you change its layout. */
     struct percpu_t     *self;
     addr_space_t        *current_addr_space;
-    seg_descriptor_t     gdt[GDT_LENGTH];
-    /* The assembly-language system call entry point for the SYSCALL instruction
-     * (fast_amd_entry in trap.asm) makes assumptions regarding the location of
-     * the TSS within this structure. */
+    seg_descriptor_t     gdt[GDT_NUM_ENTRIES];
     tss_t                tss;
 };
 

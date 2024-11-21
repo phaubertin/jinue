@@ -28,6 +28,8 @@
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <kernel/infrastructure/i686/asm/descriptors.h>
+#include <kernel/infrastructure/i686/asm/percpu.h>
+#include <kernel/infrastructure/i686/asm/tss.h>
 #include <kernel/interface/i686/asm/irq.h>
 #include <kernel/machine/asm/machine.h>
 
@@ -261,9 +263,9 @@ fast_amd_entry:
     ; instruction.
     mov edx, SEG_SELECTOR(GDT_PER_CPU_DATA, RPL_KERNEL)
     mov gs, dx                          ; load gs with per-cpu data segment selector
-    mov esp, [gs:GDT_LENGTH * 8 + 4]    ; load kernel stack pointer from TSS
-                                        ; Stack pointer is at offset 4 in the TSS, and
-                                        ; the TSS follows the GDT (see percpu_t).
+    
+    ; load kernel stack pointer from TSS
+    mov esp, [gs:PERCPU_OFFSET_TSS + TSS_OFFSET_ESP0]
     
     ; For details on the stack layout, see comments in interrupt_entry above and
     ; the definition of the trapframe_t type.
