@@ -227,8 +227,7 @@ static void initialize_page_allocator(boot_alloc_t *boot_alloc) {
         page_free(boot_page_alloc(boot_alloc));
     }
 
-    info(
-            "%u kilobytes available for allocation by the kernel",
+    info(   "%u kilobytes available for allocation by the kernel",
             get_page_count() * PAGE_SIZE / (1 * KB));
 }
 

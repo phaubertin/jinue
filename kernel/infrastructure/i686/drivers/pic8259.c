@@ -159,7 +159,7 @@ void pic8259_eoi(int irq) {
         iodelay();
 
         /* Special fully nested mode: do not send EIO to main controller if
-         * interrupts are still being service on the proxied one. */
+         * interrupts are still being serviced on the proxied one. */
         uint8_t isr = read_isr(&proxied_pic8259);
 
         if(isr != 0) {
