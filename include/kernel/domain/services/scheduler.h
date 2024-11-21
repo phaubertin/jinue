@@ -35,16 +35,16 @@
 #include <kernel/types.h>
 #include <stdbool.h>
 
-thread_t *reschedule(bool current_can_run);
+thread_t *schedule_next_ready_thread(bool current_can_run);
 
-void thread_ready(thread_t *thread);
+void ready_thread(thread_t *thread);
 
-void thread_yield_current(void);
+void yield_current_thread(void);
 
-void thread_switch_to(thread_t *to);
+void switch_to_thread(thread_t *to);
 
-void thread_switch_to_and_block(thread_t *to);
+void switch_to_thread_and_block(thread_t *to);
 
-void thread_block_current_and_unlock(spinlock_t *lock);
+void block_current_thread_and_unlock(spinlock_t *lock);
 
 #endif

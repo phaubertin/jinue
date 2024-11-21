@@ -33,5 +33,5 @@
 #include <kernel/domain/services/scheduler.h>
 
 void yield_thread(void) {
-    thread_yield_current();
+    yield_current_thread();
 }

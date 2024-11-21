@@ -68,7 +68,7 @@ static thread_t *dequeue_ready_thread(void) {
  * @return thread ready to run
  *
  */
-thread_t *reschedule(bool current_can_run) {
+thread_t *schedule_next_ready_thread(bool current_can_run) {
     thread_t *to = dequeue_ready_thread();
     
     if(to == NULL) {
@@ -92,8 +92,8 @@ thread_t *reschedule(bool current_can_run) {
 /**
  * Add a thread to the ready queue (without locking)
  * 
- * This funtion contains the business logic for thread_ready() without the
- * locking. Some functions beside thread_ready() that need to block and then
+ * This funtion contains the business logic for ready_thread() without the
+ * locking. Some functions beside ready_thread() that need to block and then
  * unlock call it, hence why it is a separate function.
  * 
  * @param thread the thread
@@ -112,7 +112,7 @@ static void thread_ready_locked(thread_t *thread) {
  * @param thread the thread
  *
  */
-void thread_ready(thread_t *thread) {
+void ready_thread(thread_t *thread) {
     spin_lock(&ready_queue.lock);
 
     thread_ready_locked(thread);
@@ -126,9 +126,9 @@ void thread_ready(thread_t *thread) {
  * The current thread is added at the tail of the ready queue. It continues
  * running if no other thread is ready to run.
  */
-void thread_yield_current(void) {
+void yield_current_thread(void) {
     thread_t *current   = get_current_thread();
-    thread_t *to        = reschedule(true);
+    thread_t *to        = schedule_next_ready_thread(true);
 
     if(to == current) {
         return;
@@ -155,7 +155,7 @@ void thread_yield_current(void) {
  * @param to thread to switch to
  *
  */
-void thread_switch_to(thread_t *to) {
+void switch_to_thread(thread_t *to) {
     thread_t *current   = get_current_thread();
 
     to->state           = THREAD_STATE_RUNNING;
@@ -177,7 +177,7 @@ void thread_switch_to(thread_t *to) {
  * @param to thread to switch to
  *
  */
-void thread_switch_to_and_block(thread_t *to) {
+void switch_to_thread_and_block(thread_t *to) {
     thread_t *current   = get_current_thread();
     current->state      = THREAD_STATE_BLOCKED;
     to->state           = THREAD_STATE_RUNNING;
@@ -204,11 +204,11 @@ void thread_switch_to_and_block(thread_t *to) {
  * @param lock the lock to unlock after switching thread
  *
  */
-void thread_block_current_and_unlock(spinlock_t *lock) {
+void block_current_thread_and_unlock(spinlock_t *lock) {
     thread_t *current   = get_current_thread();
     current->state      = THREAD_STATE_BLOCKED;
 
-    thread_t *to        = reschedule(false);
+    thread_t *to        = schedule_next_ready_thread(false);
     to->state           = THREAD_STATE_RUNNING;
 
     if(current->process != to->process) {

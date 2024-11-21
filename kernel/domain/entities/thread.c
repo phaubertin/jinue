@@ -182,7 +182,7 @@ void thread_run_first(thread_t *thread) {
 void thread_run(thread_t *thread) {
     thread_is_starting(thread);
 
-    thread_ready(thread);
+    ready_thread(thread);
 }
 
 /**
@@ -202,7 +202,7 @@ void thread_terminate_current(void) {
     current->state = THREAD_STATE_ZOMBIE;
 
     if(current->awaiter != NULL) {
-        thread_ready(current->awaiter);
+        ready_thread(current->awaiter);
     }
 
     spin_unlock(&current->await_lock);
@@ -212,7 +212,7 @@ void thread_terminate_current(void) {
         current->sender = NULL;
     }
 
-    thread_t *to    = reschedule(false);
+    thread_t *to    = schedule_next_ready_thread(false);
     to->state       = THREAD_STATE_RUNNING;
     
     if(current->process != to->process) {
@@ -257,7 +257,7 @@ int thread_await(thread_t *thread) {
     if(thread->state == THREAD_STATE_ZOMBIE) {
         spin_unlock(&thread->await_lock);
     } else {
-        thread_block_current_and_unlock(&thread->await_lock);
+        block_current_thread_and_unlock(&thread->await_lock);
     }
 
     return 0;
