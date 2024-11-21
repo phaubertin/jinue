@@ -64,7 +64,7 @@
 #define GDT_USER_TLS_DATA        7
 
 /** number of descriptors in GDT */
-#define GDT_LENGTH               8
+#define GDT_NUM_ENTRIES          8
 
 /** offset of descriptor type in descriptor */
 #define SEG_FLAGS_OFFSET            40
