@@ -212,23 +212,7 @@ void thread_terminate_current(void) {
         current->sender = NULL;
     }
 
-    thread_t *to    = schedule_next_ready_thread(false);
-    to->state       = THREAD_STATE_RUNNING;
-    
-    if(current->process != to->process) {
-        process_switch_to(to->process);
-    }
-
-    /* This must be done after switching process since it will destroy the process
-     * if the current thread is the last one. We don't want to destroy the address
-     * space we are still running in... */
-    process_remove_running_thread(current->process);
-
-    /* This function takes care of safely decrementing the reference count on
-     * the thread after having switched to the other one. We cannot just do it
-     * here because that will possibly free the current thread, which we don't
-     * want to do while it is still running. */
-    machine_switch_and_unref_thread(current, to);
+    switch_from_exiting_thread();
 }
 
 /**

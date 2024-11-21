@@ -35,8 +35,6 @@
 #include <kernel/types.h>
 #include <stdbool.h>
 
-thread_t *schedule_next_ready_thread(bool current_can_run);
-
 void ready_thread(thread_t *thread);
 
 void yield_current_thread(void);
@@ -46,5 +44,7 @@ void switch_to_thread(thread_t *to);
 void switch_to_thread_and_block(thread_t *to);
 
 void block_current_thread_and_unlock(spinlock_t *lock);
+
+void switch_from_exiting_thread(void);
 
 #endif

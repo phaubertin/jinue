@@ -68,7 +68,7 @@ static thread_t *dequeue_ready_thread(void) {
  * @return thread ready to run
  *
  */
-thread_t *schedule_next_ready_thread(bool current_can_run) {
+static thread_t *select_next_ready_thread(bool current_can_run) {
     thread_t *to = dequeue_ready_thread();
     
     if(to == NULL) {
@@ -128,7 +128,7 @@ void ready_thread(thread_t *thread) {
  */
 void yield_current_thread(void) {
     thread_t *current   = get_current_thread();
-    thread_t *to        = schedule_next_ready_thread(true);
+    thread_t *to        = select_next_ready_thread(true);
 
     if(to == current) {
         return;
@@ -208,7 +208,7 @@ void block_current_thread_and_unlock(spinlock_t *lock) {
     thread_t *current   = get_current_thread();
     current->state      = THREAD_STATE_BLOCKED;
 
-    thread_t *to        = schedule_next_ready_thread(false);
+    thread_t *to        = select_next_ready_thread(false);
     to->state           = THREAD_STATE_RUNNING;
 
     if(current->process != to->process) {
@@ -216,4 +216,32 @@ void block_current_thread_and_unlock(spinlock_t *lock) {
     }
 
     machine_switch_thread_and_unlock(current, to, lock);
+}
+
+/**
+ * Switch away from exiting thread
+ * 
+ * This must be done with care since both the current process and thread might
+ * be destroyed and/or freed while doing this.
+ */
+void switch_from_exiting_thread(void) {
+    thread_t *current   = get_current_thread();
+    
+    thread_t *to        = select_next_ready_thread(false);
+    to->state           = THREAD_STATE_RUNNING;
+    
+    if(current->process != to->process) {
+        process_switch_to(to->process);
+    }
+
+    /* This must be done after switching process since it will destroy the process
+     * if the current thread is the last one. We don't want to destroy the address
+     * space we are still running in... */
+    process_remove_running_thread(current->process);
+
+    /* This function takes care of safely decrementing the reference count on
+     * the thread after having switched to the other one. We cannot just do it
+     * here because that will possibly free the current thread, which we don't
+     * want to do while it is still running. */
+    machine_switch_and_unref_thread(current, to);
 }
