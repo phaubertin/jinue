@@ -2,8 +2,8 @@
 
 ## Description
 
-Receive a message from an IPC endpoint. If no message is available, this call
-blocks until one becomes available.
+Receive a message from another thread through an IPC endpoint. If no message
+is available, this call blocks until one becomes available.
 
 On a successful receive, this function sets the following members in the
 [jinue_message_t structure](../../include/jinue/shared/ipc.h) passed as
