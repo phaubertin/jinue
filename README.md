@@ -179,5 +179,5 @@ Documentation
 -------------
 
 There is some documentation in the `doc/` directory]. It is still a work
-in progress and some of it is not up to date. The [documentation file
-README](doc/README.md) links to the parts that are up to date.
+in progress and some of it is not up to date. The [documentation
+README.md file](doc/README.md) links to the parts that are up to date.
