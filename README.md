@@ -156,15 +156,17 @@ configuration entry might look something like this:
 ```
 menuentry 'Jinue (32-bit boot protocol, test app)' {
     # Replace with the appropriate GRUB module for your filesystem.
-	insmod ext2
+    insmod ext2
+
     # Replace with the partition where you installed Jinue.
-	set root='hd0,msdos7'
-	set gfxpayload='text'
-	echo 'Loading Jinue microkernel...'
+    set root='hd0,msdos7'
+    set gfxpayload='text'
+    echo 'Loading Jinue microkernel...'
+
     # See command line documentation for details on the command line options.
-	linux /boot/jinue vga_enable=yes serial_enable=no DEBUG_DUMP_MEMORY_MAP=1 DEBUG_DUMP_SYSCALL_IMPLEMENTATION=1 DEBUG_DUMP_RAMDISK=1 RUN_TEST_IPC=1
-	echo 'Loading test application initial RAM disk...'
-	initrd /boot/jinue-testapp-initrd.tar.gz
+    linux /boot/jinue vga_enable=yes serial_enable=no DEBUG_DUMP_MEMORY_MAP=1 DEBUG_DUMP_SYSCALL_IMPLEMENTATION=1 DEBUG_DUMP_RAMDISK=1 RUN_TEST_IPC=1
+    echo 'Loading test application initial RAM disk...'
+    initrd /boot/jinue-testapp-initrd.tar.gz
 }
 ```
 
