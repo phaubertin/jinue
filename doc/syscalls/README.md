@@ -36,21 +36,26 @@
 #### Reserved Function Numbers
 
 Any function marked as reserved returns -1 (in `arg0`) and sets error number
-JINUE_ENOSYS (in `arg1`).
+`JINUE_ENOSYS` (in `arg1`).
 
 ### Error Reference
 
-| Number | Name         | Description                            |
-|--------|--------------|----------------------------------------|
-| 1      | JINUE_ENOMEM | Not enough memory                      |
-| 2      | JINUE_ENOSYS | Not supported                          |
-| 3      | JINUE_EINVAL | Invalid argument                       |
-| 4      | JINUE_EAGAIN | Currently unavailable, try again later |
-| 5      | JINUE_EBADF  | Bad/invalid descriptor                 |
-| 6      | JINUE_EIO    | Input/output error                     |
-| 7      | JINUE_EPERM  | Operation not permitted                |
-| 8      | JINUE_E2BIG  | Not enough space in output buffer      |
-| 9      | JINUE_ENOMSG | No message                             |
+| Number | Name             | Description                            |
+|--------|------------------|----------------------------------------|
+| 1      |`JINUE_ENOMEM`    | Not enough memory                      |
+| 2      |`JINUE_ENOSYS`    | Function not supported                 |
+| 3      |`JINUE_EINVAL`    | Invalid argument                       |
+| 4      |`JINUE_EAGAIN`    | Currently unavailable, try again later |
+| 5      |`JINUE_EBADF`     | Bad/invalid descriptor                 |
+| 6      |`JINUE_EIO`       | Input/output error                     |
+| 7      |`JINUE_EPERM`     | Operation not permitted                |
+| 8      |`JINUE_E2BIG`     | Not enough space in output buffer      |
+| 9      |`JINUE_ENOMSG`    | No message                             |
+| 10     |`JINUE_ENOTSUP`   | Not supported                          |
+| 11     |`JINUE_EBUSY`     | Device or resource busy                |
+| 12     |`JINUE_ESRCH`     | No such thread/process                 |
+| 13     |`JINUE_EDEADLK`   | Resource deadlock would occur          |
+| 14     |`JINUE_EPROTO`    | Protocol error                         |
 
 ## Overview
 
