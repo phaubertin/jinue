@@ -57,8 +57,13 @@ JINUE_ENOSYS (in `arg1`).
 ### System Call Registers
 
 During a system call, information is passed back and forth between user space
-and the microkernel through four pointer-sized logical registers named `arg0` to
-`arg3`.
+and the microkernel through four pointer-sized logical registers named `arg0`
+to `arg3`.
+
+The mapping of these four system call registers to actual CPU registers is
+architecture dependent. However, the system call specification given in terms
+arguments and return values set in the system call registers is independent of
+the architecture.
 
 ### System Call Implementations
 
