@@ -30,11 +30,14 @@
  */
 
 #include <kernel/domain/services/logging.h>
+#include <kernel/infrastructure/i686/drivers/asm/vga.h>
 #include <kernel/infrastructure/i686/drivers/acpi.h>
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+
+static const acpi_rsdp_t *rsdp;
 
 static uint8_t compute_checksum(const void *buffer, size_t buflen) {
     uint8_t sum = 0;
@@ -71,16 +74,6 @@ static bool check_rsdp(const acpi_rsdp_t *rsdp) {
 }
 
 static const acpi_rsdp_t *find_rsdp(void) {
-    const char *ebda = (const char *)(16 * (*(uint16_t *)ACPI_BDA_EBDA));
-
-    for(const char *addr = ebda; addr < ebda + 1024; addr += 16) {
-        const acpi_rsdp_t *rsdp = (const acpi_rsdp_t *)addr;
-
-        if(check_rsdp(rsdp)) {
-            return rsdp;
-        }
-    }
-
     const char *const start = (const char *)0x0e0000;
     const char *const end   = (const char *)0x100000;
 
@@ -92,25 +85,29 @@ static const acpi_rsdp_t *find_rsdp(void) {
         }
     }
 
+    const char *bottom  = (const char *)0x10000;
+    const char *top     = (const char *)(0xa0000 - 1024);
+    const char *ebda    = (const char *)(16 * (*(uint16_t *)ACPI_BDA_EBDA));
+
+    if(ebda < bottom || ebda > top) {
+        return NULL;
+    }
+
+    for(const char *addr = ebda; addr < ebda + 1024; addr += 16) {
+        const acpi_rsdp_t *rsdp = (const acpi_rsdp_t *)addr;
+
+        if(check_rsdp(rsdp)) {
+            return rsdp;
+        }
+    }
+
     return NULL;
 }
 
 void acpi_init(void) {
-    const acpi_rsdp_t *rsdp = find_rsdp();
+    rsdp = find_rsdp();
+}
 
-    if(rsdp == NULL) {
-        warning("ACPI RSDP not found");
-        return;
-    }
-
-    info("ACPI:");
-    info("  RSDP:       %#08p", rsdp);
-    info("  Version:    %s", rsdp->revision == ACPI_V1_REVISION ? "1.0" : "2.x");
-    info("  RSDT addr:  0x%08" PRIx32, rsdp->rsdt_address);
-
-    if(rsdp->revision == ACPI_V1_REVISION) {
-        return;
-    }
-
-    info("  XSDT addr:  %#" PRIx64, rsdp->xsdt_address);
+const acpi_rsdp_t *acpi_get_rsdp(void) {
+    return rsdp;
 }

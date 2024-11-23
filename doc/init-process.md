@@ -171,6 +171,7 @@ The following table lists the auxiliary vectors:
 | 6          | `JINUE_AT_ENTRY`      | Address of program entry point            |
 | 7          | `JINUE_AT_STACKBASE`  | Stack base address                        |
 | 8          | `JINUE_AT_HOWSYSCALL` | System call implementation                |
+| 9          | `JINUE_AT_ACPI_RSDP`  | Physical address of ACPI RSDP             |
 
 The value of the `JINUE_AT_HOWSYSCALL` auxiliary vector identifies the
 system call implementation to use on architectures where there can be

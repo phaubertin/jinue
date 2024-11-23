@@ -59,4 +59,7 @@
 /** System call implementation */
 #define JINUE_AT_HOWSYSCALL     8
 
+/** Address of RSDP (ACPI) */
+#define JINUE_AT_ACPI_RSDP      9
+
 #endif

@@ -36,5 +36,7 @@
 
 uint32_t machine_at_howsyscall(void);
 
+uint32_t machine_at_acpi_rsdp(void);
+
 #endif
 

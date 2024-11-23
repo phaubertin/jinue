@@ -29,9 +29,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <kernel/infrastructure/i686/drivers/acpi.h>
 #include <kernel/interface/i686/trap.h>
 #include <kernel/machine/auxv.h>
 
 uint32_t machine_at_howsyscall(void) {
     return syscall_implementation;
+}
+
+uint32_t machine_at_acpi_rsdp(void) {
+    return (uint32_t)acpi_get_rsdp();
 }

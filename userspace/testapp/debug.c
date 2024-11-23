@@ -88,6 +88,7 @@ static const char *auxv_type_name(int type) {
             {"AT_ENTRY",        JINUE_AT_ENTRY},
             {"AT_STACKBASE",    JINUE_AT_STACKBASE},
             {"AT_HOWSYSCALL",   JINUE_AT_HOWSYSCALL},
+            {"AT_ACPI_RSDP",    JINUE_AT_ACPI_RSDP},
             {NULL, 0}
     };
 

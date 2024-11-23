@@ -443,7 +443,7 @@ static void initialize_stack(
 
     /* Auxiliary vectors */
     Elf32_auxv_t *auxvp = (Elf32_auxv_t *)&wlocal[index];
-    index += 8 * sizeof(auxvp[0]) / sizeof(wlocal[0]);
+    index += 9 * sizeof(auxvp[0]) / sizeof(wlocal[0]);
 
     auxvp[0].a_type     = JINUE_AT_PHDR;
     auxvp[0].a_un.a_val = (uint32_t)elf_info->at_phdr;
@@ -466,8 +466,11 @@ static void initialize_stack(
     auxvp[6].a_type     = JINUE_AT_HOWSYSCALL;
     auxvp[6].a_un.a_val = getauxval(JINUE_AT_HOWSYSCALL);
 
-    auxvp[7].a_type     = JINUE_AT_NULL;
-    auxvp[7].a_un.a_val = 0;
+    auxvp[7].a_type     = JINUE_AT_ACPI_RSDP;
+    auxvp[7].a_un.a_val = getauxval(JINUE_AT_ACPI_RSDP);
+
+    auxvp[8].a_type     = JINUE_AT_NULL;
+    auxvp[8].a_un.a_val = 0;
 
     char *const args = (char *)&wlocal[index];
 
