@@ -38,4 +38,6 @@
 
 #define ACPI_V2_REVISION    2
 
+#define ACPI_V1_RSDP_SIZE   20
+
 #endif

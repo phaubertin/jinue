@@ -35,6 +35,7 @@
 #include <kernel/domain/services/logging.h>
 #include <kernel/domain/services/panic.h>
 #include <kernel/infrastructure/i686/asm/msr.h>
+#include <kernel/infrastructure/i686/drivers/acpi.h>
 #include <kernel/infrastructure/i686/drivers/pic8259.h>
 #include <kernel/infrastructure/i686/drivers/pit8253.h>
 #include <kernel/infrastructure/i686/drivers/uart16550a.h>
@@ -372,6 +373,8 @@ void machine_init(const config_t *config) {
      * be interrupted until the first user space thread starts. */
     pit8253_init();
     pic8259_unmask(IRQ_TIMER);
+
+    acpi_init();
 
     exec_file_t kernel;
     get_kernel_exec_file(&kernel, bootinfo);

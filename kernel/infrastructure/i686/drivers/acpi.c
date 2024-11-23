@@ -29,7 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <kernel/domain/services/logging.h>
 #include <kernel/infrastructure/i686/drivers/acpi.h>
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -51,7 +53,7 @@ static bool check_rsdp(const acpi_rsdp_t *rsdp) {
         return false;
     }
 
-    uint8_t checksum = compute_checksum(rsdp, sizeof(acpiv1_rsdp_t));
+    uint8_t checksum = compute_checksum(rsdp, ACPI_V1_RSDP_SIZE);
 
     if(checksum != 0) {
         return false;
@@ -68,8 +70,7 @@ static bool check_rsdp(const acpi_rsdp_t *rsdp) {
     return compute_checksum(rsdp, sizeof(acpi_rsdp_t)) == 0;
 }
 
-const acpi_rsdp_t *acpi_find_rsdp(void) {
-    
+static const acpi_rsdp_t *find_rsdp(void) {
     const char *ebda = (const char *)(16 * (*(uint16_t *)ACPI_BDA_EBDA));
 
     for(const char *addr = ebda; addr < ebda + 1024; addr += 16) {
@@ -92,4 +93,24 @@ const acpi_rsdp_t *acpi_find_rsdp(void) {
     }
 
     return NULL;
+}
+
+void acpi_init(void) {
+    const acpi_rsdp_t *rsdp = find_rsdp();
+
+    if(rsdp == NULL) {
+        warning("ACPI RSDP not found");
+        return;
+    }
+
+    info("ACPI:");
+    info("  RSDP:       %#08p", rsdp);
+    info("  Version:    %s", rsdp->revision == ACPI_V1_REVISION ? "1.0" : "2.x");
+    info("  RSDT addr:  0x%08" PRIx32, rsdp->rsdt_address);
+
+    if(rsdp->revision == ACPI_V1_REVISION) {
+        return;
+    }
+
+    info("  XSDT addr:  %#" PRIx64, rsdp->xsdt_address);
 }
