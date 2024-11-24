@@ -34,8 +34,6 @@
 
 #include <kernel/types.h>
 
-int set_acpi(const jinue_acpi_tables_t *tables);
-
 int await_thread(int fd);
 
 int close(int fd);
@@ -73,6 +71,8 @@ int reply(const jinue_message_t *message);
 int reply_error(uintptr_t errcode);
 
 int send(uintptr_t *errcode, int fd, int function, const jinue_message_t *message);
+
+int set_acpi(const jinue_acpi_tables_t *tables);
 
 void set_thread_local(void *addr, size_t size);
 
