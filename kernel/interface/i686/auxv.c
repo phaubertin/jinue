@@ -38,5 +38,5 @@ uint32_t machine_at_howsyscall(void) {
 }
 
 uint32_t machine_at_acpi_rsdp(void) {
-    return (uint32_t)acpi_get_rsdp();
+    return acpi_get_rsdp_paddr();
 }

@@ -32,13 +32,20 @@
 #include <kernel/infrastructure/i686/drivers/asm/vga.h>
 #include <kernel/infrastructure/i686/drivers/acpi.h>
 #include <kernel/machine/acpi.h>
-#include <inttypes.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
-static const acpi_rsdp_t *rsdp;
+static uint32_t rsdp_paddr = 0;
 
+/**
+ * Verify the checksum of an ACPI data structure
+ *
+ * @param buffer pointer to ACPI data structure
+ * @param buflen size of ACPI data structure
+ * @return true for correct checksum, false for checksum mismatch
+ */
 static bool verify_checksum(const void *buffer, size_t buflen) {
     uint8_t sum = 0;
 
@@ -49,6 +56,16 @@ static bool verify_checksum(const void *buffer, size_t buflen) {
     return sum == 0;
 }
 
+/**
+ * Validate the ACPI RSDP
+ * 
+ * At the stage of the boot process where this function is called, the memory
+ * where the RSDP is located is mapped 1:1 so a pointer to the RSDP has the
+ * same value as its physical address.
+ *
+ * @param rsdp pointer to ACPI RSDP
+ * @return true is RSDP is valid, false otherwise
+ */
 static bool check_rsdp(const acpi_rsdp_t *rsdp) {
     const char *const signature = "RSD PTR ";
 
@@ -71,6 +88,15 @@ static bool check_rsdp(const acpi_rsdp_t *rsdp) {
     return verify_checksum(rsdp, sizeof(acpi_rsdp_t));
 }
 
+/**
+ * Find the RSDP in memory
+ * 
+ * At the stage of the boot process where this function is called, the memory
+ * where the RSDP is located is mapped 1:1 so a pointer to the RSDP has the
+ * same value as its physical address.
+ *
+ * @return pointer to RSDP if found, NULL otherwise
+ */
 static const acpi_rsdp_t *find_rsdp(void) {
     const char *const start = (const char *)0x0e0000;
     const char *const end   = (const char *)0x100000;
@@ -102,14 +128,30 @@ static const acpi_rsdp_t *find_rsdp(void) {
     return NULL;
 }
 
+/**
+ * Initialize ACPI
+ */
 void acpi_init(void) {
-    rsdp = find_rsdp();
+    /* At the stage of the boot process where this function is called, the memory
+     * where the RSDP is located is mapped 1:1 so a pointer to the RSDP has the
+     * same value as its physical address. */
+    rsdp_paddr = (uint32_t)find_rsdp();
 }
 
-const acpi_rsdp_t *acpi_get_rsdp(void) {
-    return rsdp;
+/**
+ * Get the physical address of the ACPI RSDP
+ *
+ * @return physical address of RSDP if found, zero otherwise
+ */
+uint32_t acpi_get_rsdp_paddr(void) {
+    return rsdp_paddr;
 }
 
+/**
+ * Process the ACPI tables mapped by user space
+ *
+ * @param tables structure with pointers to ACPI tables
+ */
 void machine_set_acpi_tables(const jinue_acpi_tables_t *tables) {
     /* TODO implement this */
 }

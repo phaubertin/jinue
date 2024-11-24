@@ -49,6 +49,6 @@ typedef struct {
 
 void acpi_init(void);
 
-const acpi_rsdp_t *acpi_get_rsdp(void);
+uint32_t acpi_get_rsdp_paddr(void);
 
 #endif
