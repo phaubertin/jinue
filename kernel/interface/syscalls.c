@@ -564,7 +564,7 @@ static void sys_acpi(jinue_syscall_args_t *args) {
 
     const jinue_acpi_tables_t tables = *userspace_tables;
 
-    int retval = acpi(&tables);
+    int retval = set_acpi(&tables);
     set_return_value_or_error(args, retval);
 }
 
@@ -645,7 +645,7 @@ void handle_syscall(jinue_syscall_args_t *args) {
         case JINUE_SYS_REPLY_ERROR:
             sys_reply_error(args);
             break;
-        case JINUE_SYS_ACPI:
+        case JINUE_SYS_SET_ACPI:
             sys_acpi(args);
             break;
         default:

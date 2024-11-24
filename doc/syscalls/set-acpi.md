@@ -1,4 +1,4 @@
-# MMAP - Provide Mapped ACPI Tables
+# SET_ACPI - Provide Mapped ACPI Tables
 
 ## Description
 

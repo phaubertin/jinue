@@ -349,7 +349,7 @@ int load_acpi_tables(void) {
 
     dump_acpi_tables(&tables);
 
-    int status = jinue_acpi(&tables, &errno);
+    int status = jinue_set_acpi(&tables, &errno);
 
     if(status != 0) {
         jinue_error("error: ACPI call failed: %s", strerror(errno));

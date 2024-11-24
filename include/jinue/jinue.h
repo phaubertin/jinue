@@ -119,6 +119,6 @@ int jinue_await_thread(int fd, int *perrno);
 
 int jinue_reply_error(uintptr_t errcode, int *perrno);
 
-int jinue_acpi(jinue_acpi_tables_t *tables, int *perrno);
+int jinue_set_acpi(jinue_acpi_tables_t *tables, int *perrno);
 
 #endif

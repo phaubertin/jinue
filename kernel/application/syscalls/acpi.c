@@ -34,7 +34,7 @@
 #include <kernel/domain/entities/process.h>
 #include <kernel/machine/acpi.h>
 
-int acpi(const jinue_acpi_tables_t *tables) {
+int set_acpi(const jinue_acpi_tables_t *tables) {
     process_t *process = get_current_process();
 
     if(process->id != PROCESS_ID_LOADER) {

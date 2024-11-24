@@ -49,17 +49,17 @@ void run_acpi_test(void) {
     tables.fadt = NULL;
     tables.madt = NULL;
 
-    int status = jinue_acpi(&tables, &errno);
+    int status = jinue_set_acpi(&tables, &errno);
 
     if(status >= 0) {
-        jinue_error("error: jinue_acpi() unexpectedly succeeded");
+        jinue_error("error: jinue_set_acpi() unexpectedly succeeded");
         return;
     }
 
     if(errno != JINUE_ENOSYS) {
-        jinue_error("error: jinue_acpi() failed: %s.", strerror(errno));
+        jinue_error("error: jinue_set_acpi() failed: %s.", strerror(errno));
         return;
     }
 
-    jinue_info("expected: jinue_acpi() set errno to: %s.", strerror(errno));
+    jinue_info("expected: jinue_set_acpi() set errno to: %s.", strerror(errno));
 }

@@ -337,10 +337,10 @@ int jinue_reply_error(uintptr_t errcode, int *perrno) {
     return call_with_usual_convention(&args, perrno);
 }
 
-int jinue_acpi(jinue_acpi_tables_t *tables, int *perrno) {
+int jinue_set_acpi(jinue_acpi_tables_t *tables, int *perrno) {
     jinue_syscall_args_t args;
 
-    args.arg0 = JINUE_SYS_ACPI;
+    args.arg0 = JINUE_SYS_SET_ACPI;
     args.arg1 = (uintptr_t)tables;
     args.arg2 = 0;
     args.arg3 = 0;

@@ -34,7 +34,7 @@
 
 #include <kernel/types.h>
 
-int acpi(const jinue_acpi_tables_t *tables);
+int set_acpi(const jinue_acpi_tables_t *tables);
 
 int await_thread(int fd);
 
