@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,37 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_SHARED_ASM_AUXV_H
-#define _JINUE_SHARED_ASM_AUXV_H
+#ifndef TESTAPP_TEST_ACPI_H_
+#define TESTAPP_TEST_ACPI_H_
 
-/** Last entry  */
-#define JINUE_AT_NULL           0
-
-/** Ignore entry */
-#define JINUE_AT_IGNORE         1
-
-/** Program headers address */
-#define JINUE_AT_PHDR           2
-
-/** Size of program header entry */
-#define JINUE_AT_PHENT          3
-
-/** Number of program header entries */
-#define JINUE_AT_PHNUM          4
-
-/** Page size */
-#define JINUE_AT_PAGESZ         5
-
-/** Program entry point */
-#define JINUE_AT_ENTRY          6
-
-/** Stack base address for main thread */
-#define JINUE_AT_STACKBASE      7
-
-/** System call implementation */
-#define JINUE_AT_HOWSYSCALL     8
-
-/** Address of RSDP (ACPI) */
-#define JINUE_AT_ACPI_RSDP      9
+void run_acpi_test(void);
 
 #endif

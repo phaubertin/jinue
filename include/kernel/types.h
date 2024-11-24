@@ -87,10 +87,17 @@ struct descriptor_t {
     uintptr_t        cookie;
 };
 
+typedef enum {
+    PROCESS_ID_KERNEL,
+    PROCESS_ID_LOADER,
+    PROCESS_ID_USER
+} process_id;
+
 typedef struct {
     object_header_t header;
     addr_space_t    addr_space;
     int             running_threads_count;
+    process_id      id;
     spinlock_t      descriptors_lock;
     descriptor_t    descriptors[JINUE_DESC_NUM];
 } process_t;

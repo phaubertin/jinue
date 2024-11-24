@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,37 +29,26 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_SHARED_ASM_AUXV_H
-#define _JINUE_SHARED_ASM_AUXV_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_DRIVERS_ACPI_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_DRIVERS_ACPI_H
 
-/** Last entry  */
-#define JINUE_AT_NULL           0
+#include <kernel/infrastructure/i686/drivers/asm/acpi.h>
+#include <stdint.h>
 
-/** Ignore entry */
-#define JINUE_AT_IGNORE         1
+typedef struct {
+    char        signature[8];
+    uint8_t     checksum;
+    char        oemid[6];
+    uint8_t     revision;
+    uint32_t    rsdt_address;
+    uint32_t    length;
+    uint64_t    xsdt_address;
+    uint8_t     extended_checksum;
+    uint8_t     reserved[3];
+} acpi_rsdp_t;
 
-/** Program headers address */
-#define JINUE_AT_PHDR           2
+void acpi_init(void);
 
-/** Size of program header entry */
-#define JINUE_AT_PHENT          3
-
-/** Number of program header entries */
-#define JINUE_AT_PHNUM          4
-
-/** Page size */
-#define JINUE_AT_PAGESZ         5
-
-/** Program entry point */
-#define JINUE_AT_ENTRY          6
-
-/** Stack base address for main thread */
-#define JINUE_AT_STACKBASE      7
-
-/** System call implementation */
-#define JINUE_AT_HOWSYSCALL     8
-
-/** Address of RSDP (ACPI) */
-#define JINUE_AT_ACPI_RSDP      9
+uint32_t acpi_get_rsdp_paddr(void);
 
 #endif

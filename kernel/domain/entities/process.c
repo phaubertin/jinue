@@ -37,6 +37,7 @@
 #include <kernel/machine/atomic.h>
 #include <kernel/machine/pmap.h>
 #include <kernel/machine/process.h>
+#include <kernel/machine/spinlock.h>
 #include <kernel/machine/thread.h>
 #include <stddef.h>
 #include <string.h>
@@ -83,6 +84,7 @@ static slab_cache_t process_cache;
 static void cache_ctor_op(void *buffer, size_t ignore) {
     process_t *process = buffer;
     object_init_header(&process->header, object_type_process);
+    init_spinlock(&process->descriptors_lock);
 }
 
 /**
@@ -121,6 +123,8 @@ process_t *process_new(void) {
     process_t *process = slab_cache_alloc(&process_cache);
 
     if(process != NULL) {
+        process->running_threads_count  = 0;
+        process->id                     = PROCESS_ID_USER;
         initialize_descriptors(process);
 
         if(!machine_init_process(process)) {

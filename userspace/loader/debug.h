@@ -32,6 +32,11 @@
 #ifndef LOADER_DEBUG_H_
 #define LOADER_DEBUG_H_
 
+#include <jinue/jinue.h>
+#include <jinue/loader.h>
+
 void dump_ramdisk(const jinue_dirent_t *root);
+
+void dump_acpi_tables(const jinue_acpi_tables_t *tables);
 
 #endif

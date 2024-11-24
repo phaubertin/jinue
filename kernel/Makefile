@@ -63,6 +63,7 @@ sources.kernel.c = \
 	application/interrupts/hardware.c \
 	application/interrupts/spurious.c \
 	application/interrupts/tick.c \
+	application/syscalls/acpi.c \
 	application/syscalls/close.c \
 	application/syscalls/create_endpoint.c \
 	application/syscalls/create_process.c \
@@ -100,10 +101,11 @@ sources.kernel.c = \
 	domain/services/panic.c \
 	domain/services/scheduler.c \
 	domain/config.c \
-	infrastructure/i686/drivers/vga.c \
+	infrastructure/i686/drivers/acpi.c \
 	infrastructure/i686/drivers/pic8259.c \
 	infrastructure/i686/drivers/pit8253.c \
 	infrastructure/i686/drivers/uart16550a.c \
+	infrastructure/i686/drivers/vga.c \
 	infrastructure/i686/pmap/nopae.c \
 	infrastructure/i686/pmap/pmap.c \
 	infrastructure/i686/pmap/pae.c \

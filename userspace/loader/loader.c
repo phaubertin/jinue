@@ -35,6 +35,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include "acpi/acpi.h"
 #include "binfmt/elf.h"
 #include "core/meminfo.h"
 #include "core/server.h"
@@ -176,14 +177,14 @@ static int start_initial_thread(thread_params_t *thread_params) {
         &errno
     );
 
-    if (status != 0) {
+    if(status != 0) {
         jinue_error("error: could not start thread: %s", strerror(errno));
         return EXIT_FAILURE;
     }
 
     status = jinue_close(INIT_THREAD_DESCRIPTOR, &errno);
 
-    if (status != 0) {
+    if(status != 0) {
         jinue_error("error: could not close thread descriptor: %s", strerror(errno));
         return EXIT_FAILURE;
     }
@@ -193,6 +194,12 @@ static int start_initial_thread(thread_params_t *thread_params) {
 
 int main(int argc, char *argv[]) {
     jinue_info("Jinue user space loader (%s) started.", argv[0]);
+
+    int status = load_acpi_tables();
+
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
 
     initialize_meminfo();
 
@@ -205,7 +212,7 @@ int main(int argc, char *argv[]) {
 
     ramdisk_t ramdisk;
 
-    int status = map_ramdisk(&ramdisk, map);
+    status = map_ramdisk(&ramdisk, map);
 
     if(status != EXIT_SUCCESS) {
         return status;

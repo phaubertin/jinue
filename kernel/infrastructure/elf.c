@@ -456,7 +456,7 @@ static void initialize_stack(
 
     /* Auxiliary vectors */
     Elf32_auxv_t *auxvp = (Elf32_auxv_t *)sp;
-    sp = (uintptr_t *)(auxvp + 8);
+    sp = (uintptr_t *)(auxvp + 9);
 
     auxvp[0].a_type     = JINUE_AT_PHDR;
     auxvp[0].a_un.a_val = (uint32_t)elf_info->at_phdr;
@@ -479,8 +479,11 @@ static void initialize_stack(
     auxvp[6].a_type     = JINUE_AT_HOWSYSCALL;
     auxvp[6].a_un.a_val = machine_at_howsyscall();
 
-    auxvp[7].a_type     = JINUE_AT_NULL;
-    auxvp[7].a_un.a_val = 0;
+    auxvp[7].a_type     = JINUE_AT_ACPI_RSDP;
+    auxvp[7].a_un.a_val = machine_at_acpi_rsdp();
+
+    auxvp[8].a_type     = JINUE_AT_NULL;
+    auxvp[8].a_un.a_val = 0;
 
     /* Write arguments and environment variables (i.e. the actual strings). */
     char *const args = (char *)sp;

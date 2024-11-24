@@ -37,6 +37,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include "tests/acpi.h"
 #include "tests/ipc.h"
 #include "debug.h"
 #include "utils.h"
@@ -61,6 +62,7 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
+    run_acpi_test();
     run_ipc_test();
 
     if(bool_getenv("DEBUG_DO_REBOOT")) {

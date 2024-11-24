@@ -115,12 +115,12 @@ endif
 #
 # These flags are used when preprocessing C and assembly language files.
 CPPFLAGS.includes    = -I$(includes)
-CPPFLAGS.arch          = -m32 -march=i686
+CPPFLAGS.arch        = -m32 -march=i686
 CPPFLAGS.others      = -nostdinc
 CPPFLAGS             = $(CPPFLAGS.arch) $(CPPFLAGS.includes) $(CPPFLAGS.debug) $(CPPFLAGS.others) $(CPPFLAGS.extra)
 
 # C compiler flags
-CFLAGS.warnings      = -std=c99 -pedantic -Wall -Werror=implicit -Werror=uninitialized -Werror=return-type
+CFLAGS.warnings      = -std=c99 -pedantic -Wall -Wno-array-bounds -Werror=implicit -Werror=uninitialized -Werror=return-type
 CFLAGS.arch          = -m32 -march=i686
 CFLAGS.optimization  = -O3
 CFLAGS.others        = -ffreestanding -fno-pie -fno-common -fno-omit-frame-pointer -fno-delete-null-pointer-checks

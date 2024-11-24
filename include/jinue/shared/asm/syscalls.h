@@ -92,6 +92,9 @@
 /** reply to current message with an error code */
 #define JINUE_SYS_REPLY_ERROR           22
 
+/** provide the mapped ACPI tables */
+#define JINUE_SYS_SET_ACPI              23
+
 /** start of function numbers for user space messages */
 #define JINUE_SYS_USER_BASE             4096
 
