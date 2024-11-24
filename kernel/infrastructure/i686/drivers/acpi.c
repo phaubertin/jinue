@@ -29,7 +29,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/domain/services/logging.h>
 #include <kernel/infrastructure/i686/drivers/asm/vga.h>
 #include <kernel/infrastructure/i686/drivers/acpi.h>
 #include <inttypes.h>
@@ -39,14 +38,14 @@
 
 static const acpi_rsdp_t *rsdp;
 
-static uint8_t compute_checksum(const void *buffer, size_t buflen) {
+static bool verify_checksum(const void *buffer, size_t buflen) {
     uint8_t sum = 0;
 
     for(int idx = 0; idx < buflen; ++idx) {
         sum += ((const uint8_t *)buffer)[idx];
     }
 
-    return sum;
+    return sum == 0;
 }
 
 static bool check_rsdp(const acpi_rsdp_t *rsdp) {
@@ -56,9 +55,7 @@ static bool check_rsdp(const acpi_rsdp_t *rsdp) {
         return false;
     }
 
-    uint8_t checksum = compute_checksum(rsdp, ACPI_V1_RSDP_SIZE);
-
-    if(checksum != 0) {
+    if(!verify_checksum(rsdp, ACPI_V1_RSDP_SIZE)) {
         return false;
     }
 
@@ -70,7 +67,7 @@ static bool check_rsdp(const acpi_rsdp_t *rsdp) {
         return false;
     }
 
-    return compute_checksum(rsdp, sizeof(acpi_rsdp_t)) == 0;
+    return verify_checksum(rsdp, sizeof(acpi_rsdp_t));
 }
 
 static const acpi_rsdp_t *find_rsdp(void) {

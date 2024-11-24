@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,14 +29,53 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LOADER_DEBUG_H_
-#define LOADER_DEBUG_H_
+#ifndef LOADER_ACPI_ACPI_H_
+#define LOADER_ACPI_ACPI_H_
 
-#include <jinue/jinue.h>
-#include <jinue/loader.h>
+#include <stdint.h>
 
-void dump_ramdisk(const jinue_dirent_t *root);
+#define ACPI_V1_REVISION    0
 
-void dump_acpi_tables(const jinue_acpi_tables_t *tables);
+#define ACPI_V1_RSDP_SIZE   20
+
+/* Arbitrary value expected to be large enough to accomodate any real table
+ * while ensuring we don't create arbitrary large mappings because of garbage
+ * data in length members. */
+#define ACPI_TABLE_MAX_SIZE (32 * 1024)
+
+typedef struct {
+    char        signature[8];
+    uint8_t     checksum;
+    char        oemid[6];
+    uint8_t     revision;
+    uint32_t    rsdt_address;
+    uint32_t    length;
+    uint64_t    xsdt_address;
+    uint8_t     extended_checksum;
+    uint8_t     reserved[3];
+} acpi_rsdp_t;
+
+typedef struct {
+    char        signature[4];
+    uint32_t    length;
+    uint8_t     revision;
+    uint8_t     checksum;
+    /* There are more fields but we are not interested in them. */
+} acpi_header_t;
+
+typedef struct {
+    char        signature[4];
+    uint32_t    length;
+    uint8_t     revision;
+    uint8_t     checksum;
+    char        oemid[6];
+    char        oem_table_id[8];
+    uint32_t    oem_revision;
+    uint32_t    creator_id;
+    uint32_t    creator_revision;
+    uint32_t    entries[];
+} acpi_rsdt_t;
+
+int load_acpi_tables(void);
 
 #endif

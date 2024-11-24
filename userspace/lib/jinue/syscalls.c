@@ -336,3 +336,9 @@ int jinue_reply_error(uintptr_t errcode, int *perrno) {
 
     return call_with_usual_convention(&args, perrno);
 }
+
+int jinue_acpi(jinue_acpi_tables_t *tables, int *perrno) {
+    /* TODO implement this */
+    set_errno(perrno, JINUE_ENOSYS);
+    return -1;
+}
