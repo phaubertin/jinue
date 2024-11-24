@@ -29,19 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/errno.h>
-#include <kernel/application/syscalls.h>
-#include <kernel/domain/entities/process.h>
-#include <kernel/machine/acpi.h>
+#ifndef TESTAPP_TEST_ACPI_H_
+#define TESTAPP_TEST_ACPI_H_
 
-int acpi(const jinue_acpi_tables_t *tables) {
-    process_t *process = get_current_process();
+void run_acpi_test(void);
 
-    if(process->id != PROCESS_ID_LOADER) {
-        return -JINUE_ENOSYS;
-    }
-
-    machine_set_acpi_tables(tables);
-
-    return 0;
-}
+#endif

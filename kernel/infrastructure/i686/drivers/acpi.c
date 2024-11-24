@@ -31,6 +31,7 @@
 
 #include <kernel/infrastructure/i686/drivers/asm/vga.h>
 #include <kernel/infrastructure/i686/drivers/acpi.h>
+#include <kernel/machine/acpi.h>
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -107,4 +108,8 @@ void acpi_init(void) {
 
 const acpi_rsdp_t *acpi_get_rsdp(void) {
     return rsdp;
+}
+
+void machine_set_acpi_tables(const jinue_acpi_tables_t *tables) {
+    /* TODO implement this */
 }

@@ -5,18 +5,18 @@
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- *
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- *
+ * 
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- *
+ * 
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,19 +29,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/errno.h>
-#include <kernel/application/syscalls.h>
-#include <kernel/domain/entities/process.h>
-#include <kernel/machine/acpi.h>
+#ifndef JINUE_KERNEL_MACHINE_ACPI_H
+#define JINUE_KERNEL_MACHINE_ACPI_H
 
-int acpi(const jinue_acpi_tables_t *tables) {
-    process_t *process = get_current_process();
+#include <jinue/shared/types.h>
+#include <stdint.h>
 
-    if(process->id != PROCESS_ID_LOADER) {
-        return -JINUE_ENOSYS;
-    }
+void machine_set_acpi_tables(const jinue_acpi_tables_t *tables);
 
-    machine_set_acpi_tables(tables);
+#endif
 
-    return 0;
-}

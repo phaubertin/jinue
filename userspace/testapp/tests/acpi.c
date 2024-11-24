@@ -29,19 +29,37 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/errno.h>
-#include <kernel/application/syscalls.h>
-#include <kernel/domain/entities/process.h>
-#include <kernel/machine/acpi.h>
+#include <jinue/jinue.h>
+#include <jinue/utils.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
+#include "../utils.h"
+#include "acpi.h"
 
-int acpi(const jinue_acpi_tables_t *tables) {
-    process_t *process = get_current_process();
-
-    if(process->id != PROCESS_ID_LOADER) {
-        return -JINUE_ENOSYS;
+void run_acpi_test(void) {
+    if(! bool_getenv("RUN_TEST_ACPI")) {
+        return;
     }
 
-    machine_set_acpi_tables(tables);
+    jinue_info("Running ACPI test...");
 
-    return 0;
+    jinue_acpi_tables_t tables;
+    tables.rsdt = NULL;
+    tables.fadt = NULL;
+    tables.madt = NULL;
+
+    int status = jinue_acpi(&tables, &errno);
+
+    if(status >= 0) {
+        jinue_error("error: jinue_acpi() unexpectedly succeeded");
+        return;
+    }
+
+    if(errno != JINUE_ENOSYS) {
+        jinue_error("error: jinue_acpi() failed: %s.", strerror(errno));
+        return;
+    }
+
+    jinue_info("expected: jinue_acpi() set errno to: %s.", strerror(errno));
 }
