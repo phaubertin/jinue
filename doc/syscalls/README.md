@@ -28,8 +28,9 @@
 | 19      | [MINT](mint.md)                         | Mint a Descriptor                    |
 | 20      | [START_THREAD](start-thread.md)         | Start a Thread                       |
 | 21      | [AWAIT_THREAD](await-thread.md)         | Wait for a Thread to Exit            |
-| 22      | [REPLY_ERROR](reply-error.md)           | Reply to Message with an Error       !
-| 23-4095 | -                                       | Reserved                             |
+| 22      | [REPLY_ERROR](reply-error.md)           | Reply to Message with an Error       |
+| 23      | [ACPI](acpi.md)                         | Provide Mapped ACPI Tables           |
+| 24-4095 | -                                       | Reserved                             |
 | 4096+   | [SEND](send.md)                         | Send Message                         |
 
 #### Reserved Function Numbers

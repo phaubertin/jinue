@@ -63,6 +63,7 @@ sources.kernel.c = \
 	application/interrupts/hardware.c \
 	application/interrupts/spurious.c \
 	application/interrupts/tick.c \
+	application/syscalls/acpi.c \
 	application/syscalls/close.c \
 	application/syscalls/create_endpoint.c \
 	application/syscalls/create_process.c \
