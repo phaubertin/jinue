@@ -31,7 +31,6 @@
 #include <kernel/infrastructure/i686/drivers/asm/pic8259.h>
 #include <kernel/infrastructure/i686/asm/descriptors.h>
 #include <kernel/interface/i686/asm/boot.h>
-#include <kernel/interface/i686/asm/e820.h>
 
 %define CODE_SEG        1
 %define DATA_SEG        2

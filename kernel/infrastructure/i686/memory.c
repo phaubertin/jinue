@@ -32,10 +32,10 @@
 #include <jinue/shared/asm/errno.h>
 #include <kernel/domain/services/logging.h>
 #include <kernel/domain/services/panic.h>
+#include <kernel/infrastructure/acpi/asm/addrmap.h>
 #include <kernel/infrastructure/i686/pmap/pmap.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
 #include <kernel/infrastructure/i686/memory.h>
-#include <kernel/interface/i686/asm/e820.h>
 #include <kernel/interface/i686/boot.h>
 #include <kernel/machine/memory.h>
 #include <kernel/utils/utils.h>
@@ -81,7 +81,7 @@ static bool range_is_in_available_memory(
         entry_range.start   = entry->addr;
         entry_range.end     = entry->addr + entry->size;
 
-        if(entry->type == E820_RAM) {
+        if(entry->type == ACPI_ADDR_RANGE_MEMORY) {
             if(memory_range_is_within(range, &entry_range)) {
                 retval = true;
             }
@@ -176,7 +176,7 @@ static uint64_t memory_find_top(const bootinfo_t *bootinfo) {
         const e820_t *entry = &bootinfo->e820_map[idx];
 
         /* Only consider available memory entries. */
-        if(entry->type != E820_RAM) {
+        if(entry->type != ACPI_ADDR_RANGE_MEMORY) {
             continue;
         }
 
@@ -253,11 +253,11 @@ void *memory_lookup_page(uint64_t paddr) {
 
 static int map_memory_type(int e820_type) {
     switch(e820_type) {
-    case E820_RAM:
+    case ACPI_ADDR_RANGE_MEMORY:
         return JINUE_MEM_TYPE_AVAILABLE;
-    case E820_ACPI:
+    case ACPI_ADDR_RANGE_ACPI:
         return JINUE_MEM_TYPE_ACPI;
-    case E820_RESERVED:
+    case ACPI_ADDR_RANGE_RESERVED:
     default:
         return JINUE_MEM_TYPE_BIOS_RESERVED;
     }
@@ -279,7 +279,7 @@ static void align_range(memory_range_t *dest, bool is_available) {
 static void assign_and_align_entry(memory_range_t *dest, const e820_t *entry) {
     dest->start = entry->addr;
     dest->end   = entry->addr + entry->size;
-    align_range(dest, entry->type == E820_RAM);
+    align_range(dest, entry->type == ACPI_ADDR_RANGE_MEMORY);
 }
 
 static void clip_memory_range(memory_range_t *dest, const memory_range_t *clipping) {
@@ -321,7 +321,7 @@ static void clip_available_range(memory_range_t *dest, const bootinfo_t *bootinf
     for(int idx = 0; idx < bootinfo->e820_entries; ++idx) {
         const e820_t *entry = &bootinfo->e820_map[idx];
 
-        if(entry->type == E820_RAM) {
+        if(entry->type == ACPI_ADDR_RANGE_MEMORY) {
             continue;
         }
 
@@ -345,7 +345,7 @@ static void find_range_for_loader(memory_range_t *dest, const bootinfo_t *bootin
     for(int idx = 0; idx < bootinfo->e820_entries; ++idx) {
         const e820_t *entry = &bootinfo->e820_map[idx];
 
-        if(entry->type != E820_RAM) {
+        if(entry->type != ACPI_ADDR_RANGE_MEMORY) {
             continue;
         }
 
@@ -371,7 +371,7 @@ static void find_range_for_loader(memory_range_t *dest, const bootinfo_t *bootin
     for(int idx = 0; idx < bootinfo->e820_entries; ++idx) {
         const e820_t *entry = &bootinfo->e820_map[idx];
 
-        if(entry->type != E820_RAM) {
+        if(entry->type != ACPI_ADDR_RANGE_MEMORY) {
             continue;
         }
 
