@@ -200,7 +200,7 @@ static void dump_phys_memory_map(const jinue_mem_map_t *map) {
         if(entry->type == JINUE_MEMYPE_MEMORY || !ram_only) {
             jinue_info(
                     "  %c [%016" PRIx64 "-%016" PRIx64 "] %s",
-                    (entry->type==JINUE_MEMYPE_MEMORY)?'*':' ',
+                    (entry->type==JINUE_MEMYPE_MEMORY) ? '*' : ' ',
                     entry->addr,
                     entry->addr + entry->size - 1,
                     phys_memory_type_description(entry->type)
