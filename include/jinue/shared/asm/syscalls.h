@@ -47,11 +47,11 @@
 /** set address and size of thread local storage for current thread */
 #define JINUE_SYS_SET_THREAD_LOCAL      6
 
-/** get free memory block list for management by user space */
-#define JINUE_SYS_GET_USER_MEMORY       8
+/** get system and kernel address map */
+#define JINUE_SYS_GET_ADDRESS_MAP       8
 
 /** create an IPC object to receive messages */
-#define JINUE_SYS_CREATE_ENDPOINT            9
+#define JINUE_SYS_CREATE_ENDPOINT       9
 
 /** receive a message on an IPC object */
 #define JINUE_SYS_RECEIVE               10

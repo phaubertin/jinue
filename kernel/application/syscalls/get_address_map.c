@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,13 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_I686_ASM_E820_H
-#define JINUE_KERNEL_I686_ASM_E820_H
+#include <kernel/application/syscalls.h>
+#include <kernel/machine/memory.h>
 
-#define E820_RAM        1
-
-#define E820_RESERVED   2
-
-#define E820_ACPI       3
-
-#endif
+int get_address_map(const jinue_buffer_t *buffer) {
+    return machine_get_address_map(buffer);
+}

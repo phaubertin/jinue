@@ -35,18 +35,6 @@
 #include <kernel/infrastructure/i686/drivers/asm/acpi.h>
 #include <stdint.h>
 
-typedef struct {
-    char        signature[8];
-    uint8_t     checksum;
-    char        oemid[6];
-    uint8_t     revision;
-    uint32_t    rsdt_address;
-    uint32_t    length;
-    uint64_t    xsdt_address;
-    uint8_t     extended_checksum;
-    uint8_t     reserved[3];
-} acpi_rsdp_t;
-
 void acpi_init(void);
 
 uint32_t acpi_get_rsdp_paddr(void);

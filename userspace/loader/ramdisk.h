@@ -47,7 +47,7 @@ typedef struct {
     jinue_dirent_t  *root;
 } extracted_ramdisk_t;
 
-int map_ramdisk(ramdisk_t *ramdisk, const jinue_mem_map_t *map);
+int map_ramdisk(ramdisk_t *ramdisk, const jinue_addr_map_t *map);
 
 int extract_ramdisk(extracted_ramdisk_t *extracted, const ramdisk_t *ramdisk);
 

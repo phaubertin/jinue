@@ -40,7 +40,7 @@ void dump_auxvec(void);
 
 void dump_syscall_implementation(void);
 
-void dump_user_memory(void);
+void dump_address_map(void);
 
 void dump_loader_memory_info(void);
 

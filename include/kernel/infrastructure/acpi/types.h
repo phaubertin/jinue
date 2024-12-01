@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,21 +29,27 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_SHARED_ASM_MEMORY_H
-#define _JINUE_SHARED_ASM_MEMORY_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_ACPI_TYPES_H
+#define JINUE_KERNEL_INFRASTRUCTURE_ACPI_TYPES_H
 
-#define JINUE_MEM_TYPE_BIOS_RESERVED    0
+#include <stdint.h>
 
-#define JINUE_MEM_TYPE_AVAILABLE        1
+typedef struct {
+    uint64_t addr;
+    uint64_t size;
+    uint32_t type;
+} acpi_addr_range_t;
 
-#define JINUE_MEM_TYPE_ACPI             2
-
-#define JINUE_MEM_TYPE_RAMDISK          3
-
-#define JINUE_MEM_TYPE_KERNEL_IMAGE     4
-
-#define JINUE_MEM_TYPE_KERNEL_RESERVED  5
-
-#define JINUE_MEM_TYPE_LOADER_AVAILABLE 6
+typedef struct {
+    char        signature[8];
+    uint8_t     checksum;
+    char        oemid[6];
+    uint8_t     revision;
+    uint32_t    rsdt_address;
+    uint32_t    length;
+    uint64_t    xsdt_address;
+    uint8_t     extended_checksum;
+    uint8_t     reserved[3];
+} acpi_rsdp_t;
 
 #endif

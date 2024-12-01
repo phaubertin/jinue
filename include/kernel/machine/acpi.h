@@ -38,4 +38,3 @@
 void machine_set_acpi_tables(const jinue_acpi_tables_t *tables);
 
 #endif
-

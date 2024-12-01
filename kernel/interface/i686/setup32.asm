@@ -27,7 +27,7 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-; ------------------------------------------------------------------------------
+; -----------------------------------------------------------------------------
 
 ; This setup code performs a few tasks to support the kernel's initialization,
 ; which include:
@@ -50,7 +50,7 @@
 ; |       kernel command line         |                          | allocations
 ; +-----------------------------------+ bootinfo.cmdline         |
 ; |     BIOS physical memory map      |                          |
-; +-----------------------------------+ bootinfo.e820_map        |
+; +-----------------------------------+ bootinfo.acpi_addr_map   |
 ; |       kernel data segment         |                          |
 ; |     (copied from ELF binary)      |                          v
 ; +-----------------------------------+ bootinfo.data_physaddr ---
@@ -263,7 +263,7 @@ start:
 
     ; copy BIOS memory map
     mov esi, dword [esp + VAR_ZERO_PAGE]
-    call copy_e820_memory_map
+    call copy_acpi_address_map
 
     ; copy command line
     mov esi, dword [esp + VAR_ZERO_PAGE]
@@ -291,7 +291,7 @@ start:
     add dword [ebp + BOOTINFO_LOADER_START],   BOOT_OFFSET_FROM_1MB
     add dword [ebp + BOOTINFO_IMAGE_START],    BOOT_OFFSET_FROM_1MB
     add dword [ebp + BOOTINFO_IMAGE_TOP],      BOOT_OFFSET_FROM_1MB
-    add dword [ebp + BOOTINFO_E820_MAP],       BOOT_OFFSET_FROM_1MB
+    add dword [ebp + BOOTINFO_ACPI_ADDR_MAP],       BOOT_OFFSET_FROM_1MB
     add dword [ebp + BOOTINFO_CMDLINE],        BOOT_OFFSET_FROM_1MB
     add dword [ebp + BOOTINFO_BOOT_HEAP],      BOOT_OFFSET_FROM_1MB
     add dword [ebp + BOOTINFO_BOOT_END],       BOOT_OFFSET_FROM_1MB
@@ -332,10 +332,10 @@ just_right_here:
 
     ;                              *  *  *
 
-    ; --------------------------------------------------------------------------
-    ; Function: copy_e820_memory_map
-    ; --------------------------------------------------------------------------
-    ; Copy BIOS memory map.
+    ; -------------------------------------------------------------------------
+    ; Function: copy_acpi_address_map
+    ; -------------------------------------------------------------------------
+    ; Copy ACPI address map.
     ;
     ; Arguments:
     ;       esi real mode code start/zero-page address
@@ -345,15 +345,16 @@ just_right_here:
     ; Returns:
     ;       edi end of memory map
     ;       ecx, esi are caller saved
-copy_e820_memory_map:
+    ; -------------------------------------------------------------------------
+copy_acpi_address_map:
     ; Set memory map address in bootinfo_t structure
-    mov dword [ebp + BOOTINFO_E820_MAP], edi
+    mov dword [ebp + BOOTINFO_ACPI_ADDR_MAP], edi
 
     ; Source address
-    add esi, BOOT_E820_MAP
+    add esi, BOOT_ADDR_MAP
 
     ; Compute size to copy
-    mov ecx, dword [ebp + BOOTINFO_E820_ENTRIES]
+    mov ecx, dword [ebp + BOOTINFO_ADDR_MAP_ENTRIES]
     lea ecx, [5 * ecx]              ; times 20 (size of one entry), which is 5 ...
     shl ecx, 2                      ; ... times 2^2
 
@@ -362,9 +363,9 @@ copy_e820_memory_map:
 
     ret
 
-    ; --------------------------------------------------------------------------
+    ; -------------------------------------------------------------------------
     ; Function: copy_cmdline
-    ; --------------------------------------------------------------------------
+    ; -------------------------------------------------------------------------
     ; Copy kernel command line
     ;
     ; Arguments:
@@ -375,6 +376,7 @@ copy_e820_memory_map:
     ; Returns:
     ;       edi end of kernel command line
     ;       eax, ecx, esi are caller saved
+    ; -------------------------------------------------------------------------
 copy_cmdline:
     mov dword [ebp + BOOTINFO_CMDLINE], empty_string
 
@@ -402,21 +404,21 @@ copy_cmdline:
     stosb
     ret
 
-    ; --------------------------------------------------------------------------
+    ; -------------------------------------------------------------------------
     ; Function: initialize_bootinfo
-    ; --------------------------------------------------------------------------
+    ; -------------------------------------------------------------------------
     ; Initialize most fields in the bootinfo_t structure, specifically:
     ;
-    ;       kernel_start    (ebp + BOOTINFO_KERNEL_START)
-    ;       kernel_size     (ebp + BOOTINFO_KERNEL_SIZE)
-    ;       loader_start    (ebp + BOOTINFO_LOADER_START)
-    ;       loader_size     (ebp + BOOTINFO_LOADER_SIZE)
-    ;       image_start     (ebp + BOOTINFO_IMAGE_START)
-    ;       image_top       (ebp + BOOTINFO_IMAGE_TOP)
-    ;       ramdisk_start   (ebp + BOOTINFO_RAMDISK_START)
-    ;       ramdisk_size    (ebp + BOOTINFO_RAMDISK_SIZE)
-    ;       setup_signature (ebp + BOOTINFO_SETUP_SIGNATURE)
-    ;       e820_entries    (ebp + BOOTINFO_E820_ENTRIES)
+    ;       kernel_start        (ebp + BOOTINFO_KERNEL_START)
+    ;       kernel_size         (ebp + BOOTINFO_KERNEL_SIZE)
+    ;       loader_start        (ebp + BOOTINFO_LOADER_START)
+    ;       loader_size         (ebp + BOOTINFO_LOADER_SIZE)
+    ;       image_start         (ebp + BOOTINFO_IMAGE_START)
+    ;       image_top           (ebp + BOOTINFO_IMAGE_TOP)
+    ;       ramdisk_start       (ebp + BOOTINFO_RAMDISK_START)
+    ;       ramdisk_size        (ebp + BOOTINFO_RAMDISK_SIZE)
+    ;       setup_signature     (ebp + BOOTINFO_SETUP_SIGNATURE)
+    ;       addr_map_entries    (ebp + BOOTINFO_ADDR_MAP_ENTRIES)
     ;
     ; Arguments:
     ;       esi real mode code start/zero-page address
@@ -424,6 +426,7 @@ copy_cmdline:
     ;
     ; Returns:
     ;       eax is caller saved
+    ; -------------------------------------------------------------------------
 initialize_bootinfo:
     ; Values provided by linker.
     mov dword [ebp + BOOTINFO_KERNEL_START], kernel_start
@@ -446,15 +449,15 @@ initialize_bootinfo:
     mov dword [ebp + BOOTINFO_SETUP_SIGNATURE], eax
 
     ; Number of entries in BIOS memory map
-    mov al, byte [esi + BOOT_E820_ENTRIES]
+    mov al, byte [esi + BOOT_ADDR_MAP_ENTRIES]
     movzx eax, al
-    mov dword [ebp + BOOTINFO_E820_ENTRIES], eax
+    mov dword [ebp + BOOTINFO_ADDR_MAP_ENTRIES], eax
 
     ret
 
-    ; --------------------------------------------------------------------------
+    ; -------------------------------------------------------------------------
     ; Function: prepare_data_segment
-    ; --------------------------------------------------------------------------
+    ; -------------------------------------------------------------------------
     ; Find and copy the kernel's data segment, add zero padding for
     ; uninitialized data and set its location and size in the bootinfo_t
     ; structure.
@@ -466,6 +469,7 @@ initialize_bootinfo:
     ; Returns:
     ;       edi address of top of copied data segment (for subsequent allocations)
     ;       eax, ebx, ecx, edx, esi are caller saved
+    ; -------------------------------------------------------------------------
 prepare_data_segment:
     ; Check magic numbers at the beginning of the ELF header.
     mov eax, kernel_start
@@ -559,9 +563,9 @@ prepare_data_segment:
     ; Return value: edi is unchanged
     ret
 
-    ; --------------------------------------------------------------------------
+    ; -------------------------------------------------------------------------
     ; Function: allocate_page_tables
-    ; --------------------------------------------------------------------------
+    ; -------------------------------------------------------------------------
     ; Allocate initial non-PAE page tables and page directory.
     ;
     ; Page tables that need to be allocated:
@@ -577,6 +581,7 @@ prepare_data_segment:
     ;
     ; Returns:
     ;       edi end of allocations
+    ; -------------------------------------------------------------------------
 allocate_page_tables:
     ; Align allocation address to page size before allocating page tables.
     add edi, PAGE_SIZE - 1              ; align address up...
@@ -600,9 +605,9 @@ allocate_page_tables:
 
     ret
 
-    ; --------------------------------------------------------------------------
+    ; -------------------------------------------------------------------------
     ; Function: map_kernel_image_1mb
-    ; --------------------------------------------------------------------------
+    ; -------------------------------------------------------------------------
     ; Map the 1MB of memory that starts with the kernel image, followed by boot
     ; stack/heap and initial memory allocations.
     ;
@@ -613,6 +618,7 @@ allocate_page_tables:
     ; Returns:
     ;       edi address of first page table entry after mapped 1MB
     ;       eax, ebx, ecx are caller saved
+    ; -------------------------------------------------------------------------
 map_kernel_image_1mb:
     ; Compute number of entries to map kernel image
     mov ecx, dword [ebp + BOOTINFO_IMAGE_TOP]      ; end of image
@@ -640,9 +646,9 @@ map_kernel_image_1mb:
 
     ret
 
-    ; --------------------------------------------------------------------------
+    ; -------------------------------------------------------------------------
     ; Function: map_kernel
-    ; --------------------------------------------------------------------------
+    ; -------------------------------------------------------------------------
     ; Map the 1MB of memory that starts with the kernel image, followed by boot
     ; stack/heap and initial memory allocations.
     ;
@@ -653,6 +659,7 @@ map_kernel_image_1mb:
     ; Returns:
     ;       edi address of first page table entry after mapped 1MB
     ;       eax, ebx, ecx are caller saved
+    ; -------------------------------------------------------------------------
 map_kernel:
     ; remember edi for later
     push edi
@@ -753,9 +760,9 @@ map_kernel:
 
     ret
 
-    ; --------------------------------------------------------------------------
+    ; -------------------------------------------------------------------------
     ; Function: initialize_page_tables
-    ; --------------------------------------------------------------------------
+    ; -------------------------------------------------------------------------
     ; Initialize initial non-PAE page tables.
     ;
     ; Arguments:
@@ -763,6 +770,7 @@ map_kernel:
     ;
     ; Returns:
     ;       eax, ebx, ecx, edi are caller saved
+    ; -------------------------------------------------------------------------
 initialize_page_tables:
     ; ----------------------------------------------
     ; First page table: first 4 MB of memory (1:1)
@@ -802,9 +810,9 @@ initialize_page_tables:
 
     ret
 
-    ; --------------------------------------------------------------------------
+    ; -------------------------------------------------------------------------
     ; Function: initialize_page_directory
-    ; --------------------------------------------------------------------------
+    ; -------------------------------------------------------------------------
     ; Initialize initial non-PAE page directory.
     ;
     ; Arguments:
@@ -812,6 +820,7 @@ initialize_page_tables:
     ;
     ; Returns:
     ;       eax, ecx, edi are caller saved
+    ; -------------------------------------------------------------------------
 initialize_page_directory:
     ; clear initial page directory
     mov edi, dword [ebp + BOOTINFO_PAGE_DIRECTORY] ; write address
@@ -839,9 +848,9 @@ initialize_page_directory:
 
     ret
 
-    ; --------------------------------------------------------------------------
+    ; -------------------------------------------------------------------------
     ; Function: enable_paging
-    ; --------------------------------------------------------------------------
+    ; -------------------------------------------------------------------------
     ; Enable paging and protect read-only pages from being written to by the
     ; kernel.
     ;
@@ -850,6 +859,7 @@ initialize_page_directory:
     ;
     ; Returns:
     ;       eax is caller saved
+    ; -------------------------------------------------------------------------
 enable_paging:
     ; set page directory address in CR3
     mov eax, [ebp + BOOTINFO_PAGE_DIRECTORY]
@@ -862,9 +872,9 @@ enable_paging:
 
     ret
 
-    ; --------------------------------------------------------------------------
+    ; -------------------------------------------------------------------------
     ; Function: map_linear
-    ; --------------------------------------------------------------------------
+    ; -------------------------------------------------------------------------
     ; Initialize consecutive non-PAE page table entries to map consecutive
     ; pages of physical memory (i.e. page frames).
     ;
@@ -876,6 +886,7 @@ enable_paging:
     ; Returns:
     ;       edi updated write address
     ;       eax, ecx are caller saved
+    ; -------------------------------------------------------------------------
 map_linear:
     ; page table entry flags
     or eax, X86_PTE_PRESENT
@@ -893,9 +904,9 @@ map_linear:
 
     ret
 
-    ; --------------------------------------------------------------------------
+    ; -------------------------------------------------------------------------
     ; Function: clear_ptes
-    ; --------------------------------------------------------------------------
+    ; -------------------------------------------------------------------------
     ; clear consecutive non-PAE page table entries.
     ;
     ; Arguments:
@@ -905,6 +916,7 @@ map_linear:
     ; Returns:
     ;       edi updated write address
     ;       eax, ecx are caller saved
+    ; -------------------------------------------------------------------------
 clear_ptes:
     xor eax, eax                        ; write value: 0
     rep stosd                           ; clear entries

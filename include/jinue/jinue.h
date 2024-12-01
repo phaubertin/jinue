@@ -37,7 +37,7 @@
 #include <jinue/shared/asm/logging.h>
 #include <jinue/shared/asm/machine.h>
 #include <jinue/shared/asm/mman.h>
-#include <jinue/shared/asm/memory.h>
+#include <jinue/shared/asm/memtype.h>
 #include <jinue/shared/asm/permissions.h>
 #include <jinue/shared/asm/stack.h>
 #include <jinue/shared/asm/syscalls.h>
@@ -65,7 +65,7 @@ void jinue_putc(char c);
 
 int jinue_puts(int loglevel, const char *str, size_t n, int *perrno);
 
-int jinue_get_user_memory(jinue_mem_map_t *buffer, size_t buffer_size, int *perrno);
+int jinue_get_address_map(const jinue_buffer_t *buffer, int *perrno);
 
 int jinue_mmap(
         int          process,

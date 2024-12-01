@@ -36,6 +36,6 @@
 
 bool bool_getenv(const char *name);
 
-const jinue_mem_entry_t *get_mem_map_entry_by_type(const jinue_mem_map_t *map, int type);
+const jinue_addr_map_entry_t *get_addr_map_entry_by_type(const jinue_addr_map_t *map, int type);
 
 #endif

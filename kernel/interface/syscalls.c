@@ -51,17 +51,17 @@
 
 
 static void set_return_value(jinue_syscall_args_t *args, int retval) {
-    args->arg0	= (uintptr_t)retval;
-	args->arg1	= 0;
-	args->arg2	= 0;
-	args->arg3	= 0;
+    args->arg0  = (uintptr_t)retval;
+    args->arg1  = 0;
+    args->arg2  = 0;
+    args->arg3  = 0;
 }
 
 static void set_error(jinue_syscall_args_t *args, int error) {
-	args->arg0	= (uintptr_t)-1;
-	args->arg1	= (uintptr_t)error;
-	args->arg2	= 0;
-	args->arg3	= 0;
+    args->arg0  = (uintptr_t)-1;
+    args->arg1  = (uintptr_t)error;
+    args->arg2  = 0;
+    args->arg3  = 0;
 }
 
 static void set_return_value_or_error(jinue_syscall_args_t *args, int retval) {
@@ -142,7 +142,7 @@ static void sys_set_thread_local(jinue_syscall_args_t *args) {
     set_return_value(args, 0);
 }
 
-static void sys_get_user_memory(jinue_syscall_args_t *args) {
+static void sys_get_address_map(jinue_syscall_args_t *args) {
     jinue_buffer_t buffer;
 
     buffer.addr     = (void *)args->arg1;
@@ -153,7 +153,7 @@ static void sys_get_user_memory(jinue_syscall_args_t *args) {
         return;
     }
 
-    int retval = get_user_memory(&buffer);
+    int retval = get_address_map(&buffer);
     set_return_value_or_error(args, retval);
 }
 
@@ -600,8 +600,8 @@ void handle_syscall(jinue_syscall_args_t *args) {
         case JINUE_SYS_SET_THREAD_LOCAL:
             sys_set_thread_local(args);
             break;
-        case JINUE_SYS_GET_USER_MEMORY:
-            sys_get_user_memory(args);
+        case JINUE_SYS_GET_ADDRESS_MAP:
+            sys_get_address_map(args);
             break;
         case JINUE_SYS_CREATE_ENDPOINT:
             sys_create_endpoint(args);

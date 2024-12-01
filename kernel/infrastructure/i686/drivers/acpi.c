@@ -31,6 +31,7 @@
 
 #include <kernel/infrastructure/i686/drivers/asm/vga.h>
 #include <kernel/infrastructure/i686/drivers/acpi.h>
+#include <kernel/infrastructure/acpi/types.h>
 #include <kernel/machine/acpi.h>
 #include <stdbool.h>
 #include <stdint.h>

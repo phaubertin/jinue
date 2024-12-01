@@ -230,7 +230,7 @@ An empty message with message number 4096 (JINUE_MSG_GET_MEMINFO)
 allows the initial process to request information from the loader
 regarding memory it has used to extract the initial RAM disk and for
 the initial process itself. This information should be used alongside
-the information from the [GET_USER_MEMORY](syscalls/get-user-memory.md)
+the information from the [GET_ADDRESS_MAP](syscalls/get-address-map.md)
 system call to determine what memory is available for use.
 
 Note the loader does not report information about memory it itself is
@@ -296,7 +296,7 @@ The memory information structure contains the following members:
 
 As long as the loader has exited, the initial process is free to 
 allocate memory anywhere that is described as user memory by the kernel 
-memory map (see the [GET_USER_MEMORY](syscalls/get-user-memory.md) 
+memory map (see the [GET_ADDRESS_MAP](syscalls/get-address-map.md) 
 system call) and that is not identified as in use by one of the segment 
 structures. It is also free to either map the extracted RAM disk for 
 its own use or instead reclaim that memory. However, early in its 
@@ -330,7 +330,7 @@ Segments may overlap in the following ways:
 * Future direction: if the RAM disk image has the right format and is
   uncompressed, the memory range of the extracted RAM disk might be
   identical to the RAM disk image as described by the
-  [GET_USER_MEMORY](syscalls/get-user-memory.md) system call, i.e. the
+  [GET_ADDRESS_MAP](syscalls/get-address-map.md) system call, i.e. the
   loader might be using the RAM disk image in place.
 
 #### The Mapping Structure

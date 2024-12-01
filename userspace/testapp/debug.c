@@ -145,26 +145,37 @@ void dump_syscall_implementation(void) {
 
 static const char *phys_memory_type_description(uint32_t type) {
     switch(type) {
-    case JINUE_MEM_TYPE_AVAILABLE:
+    case JINUE_MEMYPE_MEMORY:
         return "Available";
-    case JINUE_MEM_TYPE_BIOS_RESERVED:
-        return "Unavailable/Reserved";
-    case JINUE_MEM_TYPE_ACPI:
-        return "Unavailable/ACPI";
-    case JINUE_MEM_TYPE_RAMDISK:
-        return "Compressed RAM Disk";
-    case JINUE_MEM_TYPE_KERNEL_IMAGE:
-        return "Kernel Image";
-    case JINUE_MEM_TYPE_KERNEL_RESERVED:
-        return "Unavailable/Kernel Data";
-    case JINUE_MEM_TYPE_LOADER_AVAILABLE:
-        return "Available (Loader Hint)";
+    case JINUE_MEMYPE_RESERVED:
+        return "Reserved";
+    case JINUE_MEMYPE_ACPI:
+        return "Reserved/ACPI";
+    case JINUE_MEMYPE_NVS:
+        return "Reserved/NVS";
+    case JINUE_MEMYPE_UNUSABLE:
+        return "Reserved/Unusable";
+    case JINUE_MEMYPE_DISABLED:
+        return "Reserved/Disabled";
+    case JINUE_MEMYPE_PERSISTENT:
+        return "Available/Persistent";
+    case JINUE_MEMYPE_OEM:
+        return "Reserved/OEM";
+    case JINUE_MEMYPE_KERNEL_RESERVED:
+        return "Jinue/Reserved";
+    case JINUE_MEMYPE_KERNEL_IMAGE:
+        return "Jinue/Kernel Image";
+    case JINUE_MEMYPE_RAMDISK:
+        return "Jinue/Compressed RAM Disk";
+    case JINUE_MEMYPE_LOADER_AVAILABLE:
+        return "Jinue/Available (Loader Hint)";
     default:
-        return "Unavailable/???";
+        /* escaped to prevent trigraph */
+        return "Reserved (??\?)";
     }
 }
 
-static void dump_phys_memory_map(const jinue_mem_map_t *map) {
+static void dump_phys_memory_map(const jinue_addr_map_t *map) {
     const char *name    = "DEBUG_DUMP_MEMORY_MAP";
     const char *value   = getenv(name);
 
@@ -184,12 +195,12 @@ static void dump_phys_memory_map(const jinue_mem_map_t *map) {
     jinue_info("Dump of the BIOS memory map%s:", ram_only?" (showing only available entries)":"");
 
     for(int idx = 0; idx < map->num_entries; ++idx) {
-        const jinue_mem_entry_t *entry = &map->entry[idx];
+        const jinue_addr_map_entry_t *entry = &map->entry[idx];
 
-        if(entry->type == JINUE_MEM_TYPE_AVAILABLE || !ram_only) {
+        if(entry->type == JINUE_MEMYPE_MEMORY || !ram_only) {
             jinue_info(
                     "  %c [%016" PRIx64 "-%016" PRIx64 "] %s",
-                    (entry->type==JINUE_MEM_TYPE_AVAILABLE)?'*':' ',
+                    (entry->type==JINUE_MEMYPE_MEMORY) ? '*' : ' ',
                     entry->addr,
                     entry->addr + entry->size - 1,
                     phys_memory_type_description(entry->type)
@@ -198,19 +209,22 @@ static void dump_phys_memory_map(const jinue_mem_map_t *map) {
     }
 }
 
-void dump_user_memory(void) {
-    char call_buffer[MAP_BUFFER_SIZE];
+void dump_address_map(void) {
+    char map_buffer[MAP_BUFFER_SIZE];
 
-    jinue_mem_map_t *map = (jinue_mem_map_t *)&call_buffer;
+    jinue_buffer_t call_buffer;
+    call_buffer.addr = map_buffer;
+    call_buffer.size = sizeof(map_buffer);
 
     /* get free memory blocks from microkernel */
-    int status = jinue_get_user_memory(map, sizeof(call_buffer), &errno);
+    int status = jinue_get_address_map(&call_buffer, &errno);
 
     if(status != 0) {
         jinue_error("error: could not get memory map from kernel: %s", strerror(errno));
         return;
     }
 
+    const jinue_addr_map_t *map = (const jinue_addr_map_t *)&map_buffer;
     dump_phys_memory_map(map);
 }
 

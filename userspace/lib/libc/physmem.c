@@ -81,26 +81,35 @@ static int initialize_range_from_loader_info(void) {
     return status;
 }
 
+static const jinue_addr_map_entry_t *find_range_by_type(const jinue_addr_map_t *map, int type) {
+    for(int idx = 0; idx < map->num_entries; ++idx) {
+        const jinue_addr_map_entry_t *entry = &map->entry[idx];
+
+        if(entry->type == type) {
+            return entry;
+        }
+    }
+
+    return NULL;
+}
+
 static int initialize_range_from_kernel_info(void) {
     char map_buffer[BUFFER_SIZE];
-    jinue_mem_map_t *map = (void *)map_buffer;
 
-    int status = jinue_get_user_memory(map, sizeof(map_buffer), NULL);
+    jinue_buffer_t call_buffer;
+    call_buffer.addr = map_buffer;
+    call_buffer.size = sizeof(map_buffer);
+
+    int status = jinue_get_address_map(&call_buffer, NULL);
 
     if(status < 0) {
         return EXIT_FAILURE;
     }
 
-    const jinue_mem_entry_t *entry = NULL;
+    const jinue_addr_map_t *map         = (const jinue_addr_map_t *)map_buffer;
+    const jinue_addr_map_entry_t *entry = find_range_by_type(map, JINUE_MEMYPE_LOADER_AVAILABLE);
 
-    for(int idx = 0; idx < map->num_entries; ++idx) {
-        entry = &map->entry[idx];
-        if(entry->type == JINUE_MEM_TYPE_LOADER_AVAILABLE) {
-            break;
-        }
-    }
-
-    if(entry == NULL || entry->type != JINUE_MEM_TYPE_LOADER_AVAILABLE) {
+    if(entry == NULL) {
         return EXIT_FAILURE;
     }
 
