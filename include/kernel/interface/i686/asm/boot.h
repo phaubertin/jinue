@@ -54,9 +54,9 @@
 
 #define BOOT_RAMDISK_IMAGE      0x218
 
-#define BOOT_RAMDISK_SIZE      	0x21C
+#define BOOT_RAMDISK_SIZE       0x21C
 
-#define BOOT_CMD_LINE_PTR     	0x228
+#define BOOT_CMD_LINE_PTR       0x228
 
 #define BOOT_E820_MAP           0x2d0
 

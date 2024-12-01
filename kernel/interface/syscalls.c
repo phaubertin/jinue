@@ -51,17 +51,17 @@
 
 
 static void set_return_value(jinue_syscall_args_t *args, int retval) {
-    args->arg0	= (uintptr_t)retval;
-	args->arg1	= 0;
-	args->arg2	= 0;
-	args->arg3	= 0;
+    args->arg0  = (uintptr_t)retval;
+    args->arg1  = 0;
+    args->arg2  = 0;
+    args->arg3  = 0;
 }
 
 static void set_error(jinue_syscall_args_t *args, int error) {
-	args->arg0	= (uintptr_t)-1;
-	args->arg1	= (uintptr_t)error;
-	args->arg2	= 0;
-	args->arg3	= 0;
+    args->arg0  = (uintptr_t)-1;
+    args->arg1  = (uintptr_t)error;
+    args->arg2  = 0;
+    args->arg3  = 0;
 }
 
 static void set_return_value_or_error(jinue_syscall_args_t *args, int retval) {
