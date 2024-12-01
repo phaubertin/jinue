@@ -36,8 +36,6 @@
 %define DATA_SEG        2
 %define SETUP_SEG       3
 
-%define E820_SMAP       0x534d4150
-
     bits 16
 
     ; defined by linker - see image.lds linker script
@@ -46,44 +44,44 @@
 
 bootsect_start:
 
-    times BOOT_E820_ENTRIES -($-$$) db 0
+    times BOOT_ADDR_MAP_ENTRIES -($-$$) db 0
 
-e820_entries:       db 0
+address_map_entries:    db 0
 
     times BOOT_SETUP_SECTS -($-$$) db 0
 
-setup_sects:        db setup_size_div512
-root_flags:         dw 1
-sysize:             dd kernel_size_div16
-ram_size:           dw 0
-vid_mode:           dw 0xffff
-root_dev:           dw 0
-signature:          dw BOOT_MAGIC
+setup_sects:            db setup_size_div512
+root_flags:             dw 1
+sysize:                 dd kernel_size_div16
+ram_size:               dw 0
+vid_mode:               dw 0xffff
+root_dev:               dw 0
+signature:              dw BOOT_MAGIC
 
     jmp short start
 
-header:             db "HdrS"
-version:            dw 0x0206
-realmode_swtch:     dd 0
-start_sys:          dw 0x1000
-kernel_version:     dw str_version
-type_of_loader:     db 0
-loadflags:          db 1
-setup_move_size:    dw 0
-code32_start:       dd BOOT_SETUP32_ADDR
-ramdisk_image:      dd 0
-ramdisk_size:       dd 0
-bootsect_kludge:    dd 0
-heap_end_ptr:       dw 0
-pad1:               dw 0
-cmd_line_ptr:       dd 0
+header:                 db "HdrS"
+version:                dw 0x0206
+realmode_swtch:         dd 0
+start_sys:              dw 0x1000
+kernel_version:         dw str_version
+type_of_loader:         db 0
+loadflags:              db 1
+setup_move_size:        dw 0
+code32_start:           dd BOOT_SETUP32_ADDR
+ramdisk_image:          dd 0
+ramdisk_size:           dd 0
+bootsect_kludge:        dd 0
+heap_end_ptr:           dw 0
+pad1:                   dw 0
+cmd_line_ptr:           dd 0
 initrd_addr_max:
-ramdisk_max:        dd BOOT_RAMDISK_LIMIT - 1
-kernel_alignment:   dd 0    ; Not relevant because kernel is not relocatable...
-relocatable_kernel: db 0    ; ... as indicated here
-min_alignment:      db 0    ; not relevant, protocol 2.10+
-xloadflags:         dw 0    ; not relevant, protocol 2.12+
-cmdline_size:       dd CMDLINE_MAX_VALID_LENGTH
+ramdisk_max:            dd BOOT_RAMDISK_LIMIT - 1
+kernel_alignment:       dd 0    ; Not relevant: kernel is not relocatable...
+relocatable_kernel:     db 0    ; ... as indicated here
+min_alignment:          db 0    ; not relevant, protocol 2.10+
+xloadflags:             dw 0    ; not relevant, protocol 2.12+
+cmdline_size:           dd CMDLINE_MAX_VALID_LENGTH
 
 start:
     ; Setup the segment registers
@@ -173,25 +171,25 @@ code_32:
     ; Jump to the kernel entry point
     jmp dword SEG_SELECTOR(CODE_SEG, RPL_KERNEL):BOOT_SETUP32_ADDR
     
+;------------------------------------------------------------------------------
+; ACPI Address Map
+;
+; Warning: The ACPI address map starts here and IT OVERWRITES the code below.
+; Only code that runs *before* the address map is generated should go here.
+;------------------------------------------------------------------------------
+
     ; This adds only a few bytes (or none). The main reason for this line is to
     ; ensure an error is generated (TIMES value is negative) if the code above
-    ; crosses into the e820 memory map.
-    times BOOT_E820_MAP -($-$$) db 0
+    ; crosses into the address map.
+    times BOOT_ADDR_MAP -($-$$) db 0
 
-;------------------------------------------------------------------------
-; E820 Memory map
-;
-; The e820 memory map starts here. The code below gets overwritten by the
-; memory map. Only code that runs *before* the memory map is generated
-; should go here.
-;------------------------------------------------------------------------
-e820_map:
+address_map:
 
-;------------------------------------------------------------------------
+;------------------------------------------------------------------------------
 ; FUNCTION:    check_a20
 ; DESCRIPTION:    Check if A20 gate is activated. Return with ZF=0 if it 
 ;                is.
-;------------------------------------------------------------------------
+;------------------------------------------------------------------------------
 check_a20:    
     ; Save segment registers
     push ds
@@ -233,10 +231,10 @@ check_a20:
     sti
     ret
 
-;------------------------------------------------------------------------
+;------------------------------------------------------------------------------
 ; FUNCTION:    enable_a20
 ; DESCRIPTION:    Activate the A20 gate.
-;------------------------------------------------------------------------
+;------------------------------------------------------------------------------
 enable_a20:
     ; If we are lucky, there is nothing to do...
     call check_a20
@@ -285,30 +283,33 @@ enable_a20:
     jnz .empty_8042
     ret
     
-    ; Skip to end of e820 memory map
-    times BOOT_E820_MAP_END-($-$$) db 0
-
-;------------------------------------------------------------------------
-; End of E820 Memory map
+;------------------------------------------------------------------------------
+; End of ACPI Address map
 ;
-; Code below is safe: it does not get overwritten by the e820 memory map.
-;------------------------------------------------------------------------
-e820_map_end:
+; Code below is safe: it does not get overwritten by the ACPI address map.
+;------------------------------------------------------------------------------
 
-;------------------------------------------------------------------------
+    ; Skip to the end of the ACPI address map
+    times BOOT_ADDR_MAP_END-($-$$) db 0
+
+address_map_end:
+
+;------------------------------------------------------------------------------
 ; FUNCTION:    iodelay
 ; DESCRIPTION:    Wait for about 1 µs.
-;------------------------------------------------------------------------
+;------------------------------------------------------------------------------
 iodelay:
     out 0x80, al
     ret
 
-;------------------------------------------------------------------------
+;------------------------------------------------------------------------------
 ; FUNCTION:    bios_e820
 ; DESCRIPTION:    Obtain physical memory map from BIOS.
-;------------------------------------------------------------------------
+;------------------------------------------------------------------------------
+    %define E820_SMAP       0x534d4150
+    
 bios_e820:
-    mov di, e820_map        ; Buffer (start of memory map)
+    mov di, address_map     ; Buffer (start of memory map)
     mov ebx, 0              ; Continuation set to 0
     cld
     
@@ -339,26 +340,26 @@ bios_e820:
     
     mov ax, di              ; Check that we can still fit one more entry
     add ax, 20
-    cmp ax, e820_map_end
+    cmp ax, address_map_end
     jbe .loop
     
 .exit:
     ; Compute number of entries
     mov ax, di              ; Size is end ...
-    sub ax, e820_map        ; ... minus start
+    sub ax, address_map     ; ... minus start
     xor dx, dx              ; High 16-bits of dx:ax (i.e. dx) are zero
     mov bx, 20              ; Divide by 20
     div bx
     
     ; Set number of entries
-    mov byte [BOOT_E820_ENTRIES], al
+    mov byte [BOOT_ADDR_MAP_ENTRIES], al
         
     ret
 
-;------------------------------------------------------------------------
+;------------------------------------------------------------------------------
 ; FUNCTION:    reset_fpu
 ; DESCRIPTION:    Reset the floating-point unit.
-;------------------------------------------------------------------------
+;------------------------------------------------------------------------------
 reset_fpu:
     xor ax, ax
     out 0xf0, al
@@ -369,16 +370,16 @@ reset_fpu:
     
     ret
 
-;------------------------------------------------------------------------
+;------------------------------------------------------------------------------
 ; Data section
-;------------------------------------------------------------------------
+;------------------------------------------------------------------------------
 str_version:
     db "Test kernel v0.0", 0
 
 
-;------------------------------------------------------------------------
+;------------------------------------------------------------------------------
 ; Global Descriptor Table (minimal)
-;------------------------------------------------------------------------
+;------------------------------------------------------------------------------
     align 16
 
 gdt:

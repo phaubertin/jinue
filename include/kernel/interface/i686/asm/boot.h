@@ -36,7 +36,7 @@
 #include <kernel/machine/asm/machine.h>
 #include <kernel/utils/asm/utils.h>
 
-#define BOOT_E820_ENTRIES       0x1e8
+#define BOOT_ADDR_MAP_ENTRIES   0x1e8
 
 #define BOOT_SETUP_SECTS        0x1f1
 
@@ -58,17 +58,17 @@
 
 #define BOOT_CMD_LINE_PTR       0x228
 
-#define BOOT_E820_MAP           0x2d0
+#define BOOT_ADDR_MAP           0x2d0
 
-#define BOOT_E820_MAP_END       0xd00
+#define BOOT_ADDR_MAP_END       0xd00
 
-#define BOOT_E820_MAP_SIZE      (BOOT_E820_MAP_END - BOOT_E820_MAP)
+#define BOOT_ADDR_MAP_SIZE      (BOOT_ADDR_MAP_END - BOOT_ADDR_MAP)
 
 #define BOOT_SETUP32_ADDR       MEMORY_ADDR_1MB
 
 #define BOOT_SETUP32_SIZE       PAGE_SIZE
 
-#define BOOT_DATA_STRUCT        BOOT_E820_ENTRIES
+#define BOOT_DATA_STRUCT        BOOT_ADDR_MAP_ENTRIES
 
 #define BOOT_STACK_HEAP_SIZE    (4 * PAGE_SIZE)
 
