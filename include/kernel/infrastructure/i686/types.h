@@ -38,12 +38,6 @@
 #include <kernel/types.h>
 #include <sys/elf.h>
 
-typedef struct {
-    uint64_t addr;
-    uint64_t size;
-    uint32_t type;
-} acpi_addr_range_t;
-
 typedef uint64_t seg_descriptor_t;
 
 typedef uint32_t seg_selector_t;

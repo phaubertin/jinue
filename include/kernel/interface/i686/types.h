@@ -32,6 +32,7 @@
 #ifndef JINUE_KERNEL_INTERFACE_I686_TYPES_H
 #define JINUE_KERNEL_INTERFACE_I686_TYPES_H
 
+#include <kernel/infrastructure/acpi/types.h>
 #include <kernel/infrastructure/i686/types.h>
 #include <kernel/types.h>
 #include <sys/elf.h>

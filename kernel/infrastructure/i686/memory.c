@@ -33,6 +33,7 @@
 #include <kernel/domain/services/logging.h>
 #include <kernel/domain/services/panic.h>
 #include <kernel/infrastructure/acpi/asm/addrmap.h>
+#include <kernel/infrastructure/acpi/types.h>
 #include <kernel/infrastructure/i686/pmap/pmap.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
 #include <kernel/infrastructure/i686/memory.h>
@@ -251,7 +252,7 @@ void *memory_lookup_page(uint64_t paddr) {
     return (void *)memory_array[entry_index];
 }
 
-static int map_memory_type(uint32_t e820_type) {
+static int map_memory_type(const acpi_addr_range_t *addr_range) {
     /* The values of the JINUE_MEMYPE_... constants are based on the ACPI
      * address range types, i.e. all non OEM-defined values are the same
      * between both.
@@ -259,11 +260,11 @@ static int map_memory_type(uint32_t e820_type) {
      * We reserve the OEM defined range from 0xf0000000 for Jinue-specific
      * values, so we fold all OEM defined values from the system address map
      * into a single value that means "OEM defined". */
-    if(e820_type >= ACPI_ADDR_RANGE_OEM_START) {
+    if(addr_range->type >= ACPI_ADDR_RANGE_OEM_START) {
         return JINUE_MEMYPE_OEM;
     }
 
-    switch(e820_type) {
+    switch(addr_range->type) {
     case ACPI_ADDR_RANGE_MEMORY:
     case ACPI_ADDR_RANGE_RESERVED:
     case ACPI_ADDR_RANGE_ACPI:
@@ -274,7 +275,7 @@ static int map_memory_type(uint32_t e820_type) {
     case ACPI_ADDR_RANGE_OEM:
         /* ACPI address range types and Jinue memory type have the same value
          * for these types. */
-        return e820_type;
+        return addr_range->type;
     default:
         /* The ACPI specification states that any undefined type value should
          * be treated as reserved. */
@@ -467,9 +468,10 @@ int machine_get_address_map(const jinue_buffer_t *buffer) {
     }
 
     for(unsigned int idx = 0; idx < addr_map_entries; ++idx) {
-        map->entry[idx].addr = bootinfo->acpi_addr_map[idx].addr;
-        map->entry[idx].size = bootinfo->acpi_addr_map[idx].size;
-        map->entry[idx].type = map_memory_type(bootinfo->acpi_addr_map[idx].type);
+        const acpi_addr_range_t *addr_range = &bootinfo->acpi_addr_map[idx];
+        map->entry[idx].addr = addr_range->addr;
+        map->entry[idx].size = addr_range->size;
+        map->entry[idx].type = map_memory_type(addr_range);
     }
 
     for(unsigned int idx = 0; idx < kernel_entries; ++idx) {
