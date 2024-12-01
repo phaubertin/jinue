@@ -60,11 +60,11 @@
 /** Offset of the ramdisk_size bootinfo_t member */
 #define BOOTINFO_RAMDISK_SIZE       28
 
-/** Offset of the e820_entries bootinfo_t member */
-#define BOOTINFO_E820_ENTRIES       32
+/** Offset of the acpi_addr_map bootinfo_t member */
+#define BOOTINFO_ACPI_ADDR_MAP      32
 
-/** Offset of the e820_map bootinfo_t member */
-#define BOOTINFO_E820_MAP           36
+/** Offset of the addr_map_entries bootinfo_t member */
+#define BOOTINFO_ADDR_MAP_ENTRIES   36
 
 /** Offset of the cmdline bootinfo_t member */
 #define BOOTINFO_CMDLINE            40

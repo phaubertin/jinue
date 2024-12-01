@@ -74,12 +74,12 @@ static bool range_is_in_available_memory(
 
     bool retval = false;
 
-    for(int idx = 0; idx < bootinfo->e820_entries; ++idx) {
+    for(int idx = 0; idx < bootinfo->addr_map_entries; ++idx) {
         memory_range_t entry_range;
 
-        const e820_t *entry = &bootinfo->e820_map[idx];
-        entry_range.start   = entry->addr;
-        entry_range.end     = entry->addr + entry->size;
+        const acpi_addr_range_t *entry  = &bootinfo->acpi_addr_map[idx];
+        entry_range.start               = entry->addr;
+        entry_range.end                 = entry->addr + entry->size;
 
         if(entry->type == ACPI_ADDR_RANGE_MEMORY) {
             if(memory_range_is_within(range, &entry_range)) {
@@ -172,8 +172,8 @@ void check_memory(const bootinfo_t *bootinfo) {
 static uint64_t memory_find_top(const bootinfo_t *bootinfo) {
     uint64_t memory_top = 0;
 
-    for(int idx = 0; idx < bootinfo->e820_entries; ++idx) {
-        const e820_t *entry = &bootinfo->e820_map[idx];
+    for(int idx = 0; idx < bootinfo->addr_map_entries; ++idx) {
+        const acpi_addr_range_t *entry = &bootinfo->acpi_addr_map[idx];
 
         /* Only consider available memory entries. */
         if(entry->type != ACPI_ADDR_RANGE_MEMORY) {
@@ -252,21 +252,32 @@ void *memory_lookup_page(uint64_t paddr) {
 }
 
 static int map_memory_type(uint32_t e820_type) {
+    /* The values of the JINUE_MEMYPE_... constants are based on the ACPI
+     * address range types, i.e. all non OEM-defined values are the same
+     * between both.
+     * 
+     * We reserve the OEM defined range from 0xf0000000 for Jinue-specific
+     * values, so we fold all OEM defined values from the system address map
+     * into a single value that means "OEM defined". */
     if(e820_type >= ACPI_ADDR_RANGE_OEM_START) {
         return JINUE_MEMYPE_OEM;
     }
 
     switch(e820_type) {
     case ACPI_ADDR_RANGE_MEMORY:
+    case ACPI_ADDR_RANGE_RESERVED:
     case ACPI_ADDR_RANGE_ACPI:
     case ACPI_ADDR_RANGE_NVS:
     case ACPI_ADDR_RANGE_UNUSABLE:
     case ACPI_ADDR_RANGE_DISABLED:
     case ACPI_ADDR_RANGE_PERSISTENT:
     case ACPI_ADDR_RANGE_OEM:
+        /* ACPI address range types and Jinue memory type have the same value
+         * for these types. */
         return e820_type;
-    case ACPI_ADDR_RANGE_RESERVED:
     default:
+        /* The ACPI specification states that any undefined type value should
+         * be treated as reserved. */
         return JINUE_MEMYPE_RESERVED;
     }
 }
@@ -284,7 +295,7 @@ static void align_range(memory_range_t *dest, bool is_available) {
     }
 }
 
-static void assign_and_align_entry(memory_range_t *dest, const e820_t *entry) {
+static void assign_and_align_entry(memory_range_t *dest, const acpi_addr_range_t *entry) {
     dest->start = entry->addr;
     dest->end   = entry->addr + entry->size;
     align_range(dest, entry->type == ACPI_ADDR_RANGE_MEMORY);
@@ -326,8 +337,8 @@ static void clip_memory_range(memory_range_t *dest, const memory_range_t *clippi
 }
 
 static void clip_available_range(memory_range_t *dest, const bootinfo_t *bootinfo) {
-    for(int idx = 0; idx < bootinfo->e820_entries; ++idx) {
-        const e820_t *entry = &bootinfo->e820_map[idx];
+    for(int idx = 0; idx < bootinfo->addr_map_entries; ++idx) {
+        const acpi_addr_range_t *entry = &bootinfo->acpi_addr_map[idx];
 
         if(entry->type == ACPI_ADDR_RANGE_MEMORY) {
             continue;
@@ -350,8 +361,8 @@ static void find_range_for_loader(memory_range_t *dest, const bootinfo_t *bootin
     /* First, find the largest available range over the 4GB mark. */
     memory_range_t largest_over_4gb = {0};
 
-    for(int idx = 0; idx < bootinfo->e820_entries; ++idx) {
-        const e820_t *entry = &bootinfo->e820_map[idx];
+    for(int idx = 0; idx < bootinfo->addr_map_entries; ++idx) {
+        const acpi_addr_range_t *entry = &bootinfo->acpi_addr_map[idx];
 
         if(entry->type != ACPI_ADDR_RANGE_MEMORY) {
             continue;
@@ -376,8 +387,8 @@ static void find_range_for_loader(memory_range_t *dest, const bootinfo_t *bootin
     /* Then, compare this to the region just above the kernel data. */
     memory_range_t under_4gb = {0};
 
-    for(int idx = 0; idx < bootinfo->e820_entries; ++idx) {
-        const e820_t *entry = &bootinfo->e820_map[idx];
+    for(int idx = 0; idx < bootinfo->addr_map_entries; ++idx) {
+        const acpi_addr_range_t *entry = &bootinfo->acpi_addr_map[idx];
 
         if(entry->type != ACPI_ADDR_RANGE_MEMORY) {
             continue;
@@ -439,9 +450,9 @@ int machine_get_address_map(const jinue_buffer_t *buffer) {
         }
     };
 
-    const size_t e820_entries       = bootinfo->e820_entries;
+    const size_t addr_map_entries       = bootinfo->addr_map_entries;
     const size_t kernel_entries     = sizeof(kernel_regions) / sizeof(kernel_regions[0]);
-    const size_t total_entries      = e820_entries + kernel_entries;
+    const size_t total_entries      = addr_map_entries + kernel_entries;
     const size_t result_size        =
             sizeof(jinue_addr_map_t) + total_entries * sizeof(jinue_addr_map_entry_t);
 
@@ -455,14 +466,14 @@ int machine_get_address_map(const jinue_buffer_t *buffer) {
         return -JINUE_E2BIG;
     }
 
-    for(unsigned int idx = 0; idx < e820_entries; ++idx) {
-        map->entry[idx].addr = bootinfo->e820_map[idx].addr;
-        map->entry[idx].size = bootinfo->e820_map[idx].size;
-        map->entry[idx].type = map_memory_type(bootinfo->e820_map[idx].type);
+    for(unsigned int idx = 0; idx < addr_map_entries; ++idx) {
+        map->entry[idx].addr = bootinfo->acpi_addr_map[idx].addr;
+        map->entry[idx].size = bootinfo->acpi_addr_map[idx].size;
+        map->entry[idx].type = map_memory_type(bootinfo->acpi_addr_map[idx].type);
     }
 
     for(unsigned int idx = 0; idx < kernel_entries; ++idx) {
-        map->entry[e820_entries + idx] = kernel_regions[idx];
+        map->entry[addr_map_entries + idx] = kernel_regions[idx];
     }
 
     return 0;

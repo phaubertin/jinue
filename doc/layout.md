@@ -96,7 +96,7 @@ looks like this:
   |         kernel command line           |                              | allocations
   +---------------------------------------+ bootinfo.cmdline             |
   |       BIOS physical memory map        |                              |
-  +---------------------------------------+ bootinfo.e820_map            |    
+  +---------------------------------------+ bootinfo.acpi_addr_map            |    
   |         kernel data segment           |                              |                ^
   |                                       |                              |                |
   +---------------------------------------+ bootinfo.data_physaddr     -+-       address |

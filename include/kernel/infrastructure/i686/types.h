@@ -42,7 +42,7 @@ typedef struct {
     uint64_t addr;
     uint64_t size;
     uint32_t type;
-} e820_t;
+} acpi_addr_range_t;
 
 typedef uint64_t seg_descriptor_t;
 

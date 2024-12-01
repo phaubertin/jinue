@@ -43,27 +43,27 @@
  *
  * See also the setup code, i.e. kernel/i686/setup32.asm. */
 typedef struct {
-    Elf32_Ehdr      *kernel_start;
-    size_t           kernel_size;
-    Elf32_Ehdr      *loader_start;
-    size_t           loader_size;
-    void            *image_start;
-    void            *image_top;
-    kern_paddr_t     ramdisk_start;
-    size_t	         ramdisk_size;
-    uint32_t         e820_entries;
-    const e820_t    *e820_map;
-    void            *cmdline;
-    void            *boot_heap;
-    void            *boot_end;
-    pte_t           *page_table_1mb;
-    pte_t           *page_table_16mb;
-    pte_t           *page_table_klimit;
-    pte_t           *page_directory;
-    uint32_t         setup_signature;
-    void            *data_start;
-    size_t           data_size;
-    size_t           data_physaddr;
+    Elf32_Ehdr              *kernel_start;
+    size_t                   kernel_size;
+    Elf32_Ehdr              *loader_start;
+    size_t                   loader_size;
+    void                    *image_start;
+    void                    *image_top;
+    kern_paddr_t             ramdisk_start;
+    size_t	                 ramdisk_size;
+    const acpi_addr_range_t *acpi_addr_map;
+    uint32_t                 addr_map_entries;
+    void                    *cmdline;
+    void                    *boot_heap;
+    void                    *boot_end;
+    pte_t                   *page_table_1mb;
+    pte_t                   *page_table_16mb;
+    pte_t                   *page_table_klimit;
+    pte_t                   *page_directory;
+    uint32_t                 setup_signature;
+    void                    *data_start;
+    size_t                   data_size;
+    size_t                   data_physaddr;
 } bootinfo_t;
 
 typedef struct {
