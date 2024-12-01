@@ -95,14 +95,18 @@ static const jinue_addr_map_entry_t *find_range_by_type(const jinue_addr_map_t *
 
 static int initialize_range_from_kernel_info(void) {
     char map_buffer[BUFFER_SIZE];
-    jinue_addr_map_t *map = (void *)map_buffer;
 
-    int status = jinue_get_address_map(map, sizeof(map_buffer), NULL);
+    jinue_buffer_t call_buffer;
+    call_buffer.addr = map_buffer;
+    call_buffer.size = sizeof(map_buffer);
+
+    int status = jinue_get_address_map(&call_buffer, NULL);
 
     if(status < 0) {
         return EXIT_FAILURE;
     }
 
+    const jinue_addr_map_t *map         = (const jinue_addr_map_t *)map_buffer;
     const jinue_addr_map_entry_t *entry = find_range_by_type(map, JINUE_MEMYPE_LOADER_AVAILABLE);
 
     if(entry == NULL) {

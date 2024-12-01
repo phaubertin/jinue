@@ -210,18 +210,21 @@ static void dump_phys_memory_map(const jinue_addr_map_t *map) {
 }
 
 void dump_address_map(void) {
-    char call_buffer[MAP_BUFFER_SIZE];
+    char map_buffer[MAP_BUFFER_SIZE];
 
-    jinue_addr_map_t *map = (jinue_addr_map_t *)&call_buffer;
+    jinue_buffer_t call_buffer;
+    call_buffer.addr = map_buffer;
+    call_buffer.size = sizeof(map_buffer);
 
     /* get free memory blocks from microkernel */
-    int status = jinue_get_address_map(map, sizeof(call_buffer), &errno);
+    int status = jinue_get_address_map(&call_buffer, &errno);
 
     if(status != 0) {
         jinue_error("error: could not get memory map from kernel: %s", strerror(errno));
         return;
     }
 
+    const jinue_addr_map_t *map = (const jinue_addr_map_t *)&map_buffer;
     dump_phys_memory_map(map);
 }
 

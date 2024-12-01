@@ -48,7 +48,11 @@
 #define MAP_BUFFER_SIZE 16384
 
 static jinue_addr_map_t *get_address_map(void *buffer, size_t bufsize) {
-    int status = jinue_get_address_map(buffer, bufsize, &errno);
+    jinue_buffer_t call_buffer;
+    call_buffer.addr = buffer;
+    call_buffer.size = bufsize;
+
+    int status = jinue_get_address_map(&call_buffer, &errno);
 
     if(status != 0) {
         jinue_error("error: could not get memory map from kernel: %s", strerror(errno));

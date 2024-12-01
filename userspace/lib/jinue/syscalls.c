@@ -114,12 +114,12 @@ int jinue_puts(int loglevel, const char *str, size_t n, int *perrno) {
     return call_with_usual_convention(&args, perrno);
 }
 
-int jinue_get_address_map(jinue_addr_map_t *buffer, size_t buffer_size, int *perrno) {
+int jinue_get_address_map(const jinue_buffer_t *buffer, int *perrno) {
     jinue_syscall_args_t args;
 
     args.arg0 = JINUE_SYS_GET_ADDRESS_MAP;
-    args.arg1 = (uintptr_t)buffer;
-    args.arg2 = buffer_size;
+    args.arg1 = (uintptr_t)buffer->addr;
+    args.arg2 = buffer->size;
     args.arg3 = 0;
 
     return call_with_usual_convention(&args, perrno);
