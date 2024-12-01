@@ -37,7 +37,7 @@
 #include <jinue/shared/asm/logging.h>
 #include <jinue/shared/asm/machine.h>
 #include <jinue/shared/asm/mman.h>
-#include <jinue/shared/asm/memory.h>
+#include <jinue/shared/asm/memtype.h>
 #include <jinue/shared/asm/permissions.h>
 #include <jinue/shared/asm/stack.h>
 #include <jinue/shared/asm/syscalls.h>

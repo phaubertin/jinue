@@ -24,17 +24,37 @@ Each map entry contains the following fields, in this order:
 
 * `addr` (64 bits) the address of the start of the memory block.
 * `size` (64 bits) the size of the block, in bytes.
-* `type` (32 bits) the type of the block, as described in the table below.
+* `type` (32 bits) the type of the block.
 
-| Type Number | Name                            | Description                                                                                                                                                                                                                                                                                             |
-|-------------|---------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 0           | JINUE_MEM_TYPE_BIOS_RESERVED    | Memory reported as unusable by the system firmware.<br><br>This range comes directly from the memory map provided by the system firmware, without filtering or processing. No assumption should be made regarding alignment, overlap, etc.                                                              |
-| 1           | JINUE_MEM_TYPE_AVAILABLE        | Memory reported as available for use by the system firmware.<br><br>This range comes directly from the memory map provided by the system firmware, without filtering or processing. No assumption should be made regarding alignment, overlap, etc.                                                     |
-| 2           | JINUE_MEM_TYPE_ACPI             | Memory reported by the system firmware as used for ACPI tables and reclaimable once these tables have been read.<br><br>This range comes directly from the memory map provided by the system firmware, without filtering or processing. No assumption should be made regarding alignment, overlap, etc. |
-| 3           | JINUE_MEM_TYPE_RAMDISK          | Compressed RAM disk image.<br><br>This region can be mapped read only. There will be exactly one entry with this type.                                                                                                                                                                                  |
-| 4           | JINUE_MEM_TYPE_KERNEL_IMAGE     | Kernel image.<br><br>This region can be mapped read only. There will be exactly one entry with this type.                                                                                                                                                                                               |
-| 5           | JINUE_MEM_TYPE_KERNEL_RESERVED  | Memory reserved for kernel use.<br><br>Cannot be mapped. Entries of this type reflect the situation at the end of kernel initialization. They can no longer be relied upon once the memory manager in user space has started giving memory to or reclaiming memory from the kernel.                     |
-| 6           | JINUE_MEM_TYPE_LOADER_AVAILABLE | This entry is a hint to the user space loader for memory that it can use for it's own needs.<br><br>There will be exactly one entry with this type.                                                                                                                                                     |
+The type numbers are described in the table below and are based on the
+[ACPI address range types](https://uefi.org/specs/ACPI/6.4_A/15_System_Address_Map_Interfaces.html).
+
+| Type Number | Name                            | Description                                                                                                                                                                                   |
+|-------------|---------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1           | `JINUE_MEMYPE_MEMORY`           | Memory available for use.<br><br>Equivalent to ACPI address range type `AddressRangeMemory`.                                                                                                  |
+| 2           | `JINUE_MEMYPE_RESERVED`         | Reserved, do not use.<br><br>Equivalent to ACPI address range type `AddressRangeReserved`.                                                                                                    |
+| 3           | `JINUE_MEMYPE_ACPI`             | ACPI tables are located in this range. Once the ACPI tables are no longer needed, this range can be used as normal memory.<br><br>Equivalent to ACPI address range type `AddressRangeACPI`.   |
+| 4           | `JINUE_MEMYPE_NVS`              | Reserved, do not use. Must be saved and restored across Non-Volatile Sleep (NVS).<br><br>Equivalent to ACPI address range type `AddressRangeNVS`.                                             |
+| 5           | `JINUE_MEMYPE_UNUSABLE`         | Reserved, do not use.<br><br>Equivalent to ACPI address range type `AddressRangeUnusable`.                                                                                                    |
+| 6           | `JINUE_MEMYPE_DISABLED`         | Reserved, do not use.<br><br>Equivalent to ACPI address range type `AddressRangeDisabled`.                                                                                                    |
+| 7           | `JINUE_MEMYPE_PERSISTENT`       | This range is available for use and has byte-addressable non-volatile memory rather that standard RAM.<br><br>Equivalent to ACPI address range type `AddressRangePersistent-Memory`.          |
+| 12/0xc      | `JINUE_MEMYPE_OEM`              | Reserved, do not use.<br><br>Equivalent to ACPI "OEM defined" address range type.                                                                                                             |
+| 0xf0000000  | `JINUE_MEMYPE_KERNEL_RESERVED`  | Memory reserved for kernel use. This address range cannot be mapped in user space.<br><br>Ranges of this type are page aligned.<br><br>See the Future Direction section below.                |
+| 0xf0000001  | `JINUE_MEMYPE_KERNEL_IMAGE`     | Kernel image.<br><br>This address range can be mapped read only in user space. There will be exactly one entry with this type. This range is page aligned.                                    |
+| 0xf0000002  | `JINUE_MEMYPE_RAMDISK`          | Compressed RAM disk image.<br><br>This address range can be mapped read only in user space. There will be exactly one entry with this type. This range is page aligned.                       |
+| 0xf0000003  | `JINUE_MEMYPE_LOADER_AVAILABLE` | This entry is a hint to the user space loader for memory that it can use for it's own needs. The [Get Memory Information](../init-process.md#get-memory-information-jinue_msg_get_meminfo) message provides a similar functionality for the initial process.<br><br>There will be exactly one entry with this type. This range is page aligned. |
+| Any Other   | N/A                             | Reserved, do not use. Should be treated in the same way as a `JINUE_MEMYPE_RESERVED` range.                                                                                                   |
+
+Notes:
+
+* The system ranges comes directly from the memory map provided by the system
+  firmware, without filtering or processing. No assumption should be made
+  regarding alignment, overlap, etc.
+* A memory manager in user space should use the information reported by this
+  function in conjunction with the information provided by the
+  [Get Memory Information](../init-process.md#get-memory-information-jinue_msg_get_meminfo)
+  message of the [Initial Process Execution Environment](../init-process.md) to
+  determine which memory ranges it can allocate to applications.
 
 ## Arguments
 
@@ -74,3 +94,13 @@ an error number is set (in `arg1`).
 
 * JINUE_EINVAL if any part of the destination buffer belongs to the kernel.
 * JINUE_E2BIG if the output buffer is too small to fit the result.
+
+## Future Direction
+
+The memory map reported by this function is static and represents the situation
+at the start of the initial user space process. System calls will be added that
+will allow a memory manager in user space to give memory to or reclaim memory
+from the kernel. The user space memory manager will be responsible for keeping
+track of memory ownership changes that it causes. The memory map reported by
+this function, specifically the `JINUE_MEMYPE_KERNEL_RESERVED` entries, will not
+reflect these changes.

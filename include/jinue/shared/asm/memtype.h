@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Philippe Aubertin.
+ * Copyright (C) 2023-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,21 +29,34 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_SHARED_ASM_MEMORY_H
-#define _JINUE_SHARED_ASM_MEMORY_H
+#ifndef _JINUE_SHARED_ASM_MEMTYPE_H
+#define _JINUE_SHARED_ASM_MEMTYPE_H
 
-#define JINUE_MEM_TYPE_BIOS_RESERVED    0
+/* Assignments: use the same values as the ACPI/e820 address range types. Use
+ * the 0xf0000000 to 0xffffffff OEM defined range for custom values. */
 
-#define JINUE_MEM_TYPE_AVAILABLE        1
+#define JINUE_MEMYPE_MEMORY             1
 
-#define JINUE_MEM_TYPE_ACPI             2
+#define JINUE_MEMYPE_RESERVED           2
 
-#define JINUE_MEM_TYPE_RAMDISK          3
+#define JINUE_MEMYPE_ACPI               3
 
-#define JINUE_MEM_TYPE_KERNEL_IMAGE     4
+#define JINUE_MEMYPE_NVS                4
 
-#define JINUE_MEM_TYPE_KERNEL_RESERVED  5
+#define JINUE_MEMYPE_UNUSABLE           5
 
-#define JINUE_MEM_TYPE_LOADER_AVAILABLE 6
+#define JINUE_MEMYPE_DISABLED           6
+
+#define JINUE_MEMYPE_PERSISTENT         7
+
+#define JINUE_MEMYPE_OEM                12
+
+#define JINUE_MEMYPE_KERNEL_RESERVED    0xf0000000
+
+#define JINUE_MEMYPE_KERNEL_IMAGE       (JINUE_MEMYPE_KERNEL_RESERVED + 1)
+
+#define JINUE_MEMYPE_RAMDISK            (JINUE_MEMYPE_KERNEL_RESERVED + 2)
+
+#define JINUE_MEMYPE_LOADER_AVAILABLE   (JINUE_MEMYPE_KERNEL_RESERVED + 3)
 
 #endif

@@ -95,12 +95,12 @@ static int initialize_range_from_kernel_info(void) {
 
     for(int idx = 0; idx < map->num_entries; ++idx) {
         entry = &map->entry[idx];
-        if(entry->type == JINUE_MEM_TYPE_LOADER_AVAILABLE) {
+        if(entry->type == JINUE_MEMYPE_LOADER_AVAILABLE) {
             break;
         }
     }
 
-    if(entry == NULL || entry->type != JINUE_MEM_TYPE_LOADER_AVAILABLE) {
+    if(entry == NULL || entry->type != JINUE_MEMYPE_LOADER_AVAILABLE) {
         return EXIT_FAILURE;
     }
 

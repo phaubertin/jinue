@@ -251,15 +251,23 @@ void *memory_lookup_page(uint64_t paddr) {
     return (void *)memory_array[entry_index];
 }
 
-static int map_memory_type(int e820_type) {
+static int map_memory_type(uint32_t e820_type) {
+    if(e820_type >= ACPI_ADDR_RANGE_OEM_START) {
+        return JINUE_MEMYPE_OEM;
+    }
+
     switch(e820_type) {
     case ACPI_ADDR_RANGE_MEMORY:
-        return JINUE_MEM_TYPE_AVAILABLE;
     case ACPI_ADDR_RANGE_ACPI:
-        return JINUE_MEM_TYPE_ACPI;
+    case ACPI_ADDR_RANGE_NVS:
+    case ACPI_ADDR_RANGE_UNUSABLE:
+    case ACPI_ADDR_RANGE_DISABLED:
+    case ACPI_ADDR_RANGE_PERSISTENT:
+    case ACPI_ADDR_RANGE_OEM:
+        return e820_type;
     case ACPI_ADDR_RANGE_RESERVED:
     default:
-        return JINUE_MEM_TYPE_BIOS_RESERVED;
+        return JINUE_MEMYPE_RESERVED;
     }
 }
 
@@ -412,22 +420,22 @@ int machine_get_memory_map(const jinue_buffer_t *buffer) {
         {
             .addr = bootinfo->ramdisk_start,
             .size = bootinfo->ramdisk_size,
-            .type = JINUE_MEM_TYPE_RAMDISK
+            .type = JINUE_MEMYPE_RAMDISK
         },
         {
             .addr = VIRT_TO_PHYS_AT_16MB(bootinfo->image_start),
             .size = kernel_image_size,
-            .type = JINUE_MEM_TYPE_KERNEL_IMAGE
+            .type = JINUE_MEMYPE_KERNEL_IMAGE
         },
         {
             .addr = VIRT_TO_PHYS_AT_16MB(bootinfo->image_top),
             .size = BOOT_SIZE_AT_16MB - kernel_image_size,
-            .type = JINUE_MEM_TYPE_KERNEL_RESERVED
+            .type = JINUE_MEMYPE_KERNEL_RESERVED
         },
         {
             .addr = loader_range.start,
             .size = loader_range.end - loader_range.start,
-            .type = JINUE_MEM_TYPE_LOADER_AVAILABLE
+            .type = JINUE_MEMYPE_LOADER_AVAILABLE
         }
     };
 

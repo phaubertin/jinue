@@ -145,22 +145,33 @@ void dump_syscall_implementation(void) {
 
 static const char *phys_memory_type_description(uint32_t type) {
     switch(type) {
-    case JINUE_MEM_TYPE_AVAILABLE:
+    case JINUE_MEMYPE_MEMORY:
         return "Available";
-    case JINUE_MEM_TYPE_BIOS_RESERVED:
-        return "Unavailable/Reserved";
-    case JINUE_MEM_TYPE_ACPI:
-        return "Unavailable/ACPI";
-    case JINUE_MEM_TYPE_RAMDISK:
-        return "Compressed RAM Disk";
-    case JINUE_MEM_TYPE_KERNEL_IMAGE:
-        return "Kernel Image";
-    case JINUE_MEM_TYPE_KERNEL_RESERVED:
-        return "Unavailable/Kernel Data";
-    case JINUE_MEM_TYPE_LOADER_AVAILABLE:
-        return "Available (Loader Hint)";
+    case JINUE_MEMYPE_RESERVED:
+        return "Reserved";
+    case JINUE_MEMYPE_ACPI:
+        return "Reserved/ACPI";
+    case JINUE_MEMYPE_NVS:
+        return "Reserved/NVS";
+    case JINUE_MEMYPE_UNUSABLE:
+        return "Reserved/Unusable";
+    case JINUE_MEMYPE_DISABLED:
+        return "Reserved/Disabled";
+    case JINUE_MEMYPE_PERSISTENT:
+        return "Available/Persistent";
+    case JINUE_MEMYPE_OEM:
+        return "Reserved/OEM";
+    case JINUE_MEMYPE_KERNEL_RESERVED:
+        return "Jinue/Reserved";
+    case JINUE_MEMYPE_KERNEL_IMAGE:
+        return "Jinue/Kernel Image";
+    case JINUE_MEMYPE_RAMDISK:
+        return "Jinue/Compressed RAM Disk";
+    case JINUE_MEMYPE_LOADER_AVAILABLE:
+        return "Jinue/Available (Loader Hint)";
     default:
-        return "Unavailable/???";
+        /* escaped to prevent trigraph */
+        return "Reserved (??\?)";
     }
 }
 
@@ -186,10 +197,10 @@ static void dump_phys_memory_map(const jinue_mem_map_t *map) {
     for(int idx = 0; idx < map->num_entries; ++idx) {
         const jinue_mem_entry_t *entry = &map->entry[idx];
 
-        if(entry->type == JINUE_MEM_TYPE_AVAILABLE || !ram_only) {
+        if(entry->type == JINUE_MEMYPE_MEMORY || !ram_only) {
             jinue_info(
                     "  %c [%016" PRIx64 "-%016" PRIx64 "] %s",
-                    (entry->type==JINUE_MEM_TYPE_AVAILABLE)?'*':' ',
+                    (entry->type==JINUE_MEMYPE_MEMORY)?'*':' ',
                     entry->addr,
                     entry->addr + entry->size - 1,
                     phys_memory_type_description(entry->type)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -37,5 +37,17 @@
 #define ACPI_ADDR_RANGE_RESERVED    2
 
 #define ACPI_ADDR_RANGE_ACPI        3
+
+#define ACPI_ADDR_RANGE_NVS         4
+
+#define ACPI_ADDR_RANGE_UNUSABLE    5
+
+#define ACPI_ADDR_RANGE_DISABLED    6
+
+#define ACPI_ADDR_RANGE_PERSISTENT  7
+
+#define ACPI_ADDR_RANGE_OEM         12
+
+#define ACPI_ADDR_RANGE_OEM_START   0xf0000000
 
 #endif

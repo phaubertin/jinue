@@ -69,7 +69,7 @@ static struct stream_initializer stream_initializers[] = {
 int map_ramdisk(ramdisk_t *ramdisk, const jinue_mem_map_t *map) {
     const jinue_mem_entry_t *ramdisk_entry = get_mem_map_entry_by_type(
         map,
-        JINUE_MEM_TYPE_RAMDISK
+        JINUE_MEMYPE_RAMDISK
     );
 
     if(ramdisk_entry == NULL || ramdisk_entry->addr == 0 || ramdisk_entry->size == 0) {
