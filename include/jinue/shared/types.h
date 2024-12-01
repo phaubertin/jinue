@@ -82,14 +82,14 @@ typedef struct {
 } jinue_message_t;
 
 typedef struct {
-	uint64_t	addr;
-	uint64_t	size;
-	uint32_t 	type;
+    uint64_t    addr;
+    uint64_t    size;
+    uint32_t    type;
 } jinue_addr_map_entry_t;
 
 typedef struct {
-	uint32_t			    num_entries;
-	jinue_addr_map_entry_t  entry[];
+    uint32_t                num_entries;
+    jinue_addr_map_entry_t  entry[];
 } jinue_addr_map_t;
 
 typedef struct {
