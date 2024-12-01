@@ -1,13 +1,14 @@
-# GET_USER_MEMORY - Get User Memory Map
+# GET_ADDRESS_MAP - Get Memory Address Map
 
 ## Description
 
-This function writes the system memory map to a buffer provided by the caller.
+This function writes the system and kernel memory address map to a buffer
+provided by the caller.
 
 Specifically, the data written in the buffer is a
-[jinue_mem_map_t structure](../../include/jinue/shared/types.h) (the header)
+[jinue_addr_map_t structure](../../include/jinue/shared/types.h) (the header)
 followed by an array of
-[jinue_mem_entry_t structures](../../include/jinue/shared/types.h) (the map
+[jinue_addr_map_entry_t structures](../../include/jinue/shared/types.h) (the map
 entries).
 
 Each map entry describes a contiguous block of memory. Some entries describe

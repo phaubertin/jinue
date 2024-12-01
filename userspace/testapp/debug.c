@@ -175,7 +175,7 @@ static const char *phys_memory_type_description(uint32_t type) {
     }
 }
 
-static void dump_phys_memory_map(const jinue_mem_map_t *map) {
+static void dump_phys_memory_map(const jinue_addr_map_t *map) {
     const char *name    = "DEBUG_DUMP_MEMORY_MAP";
     const char *value   = getenv(name);
 
@@ -195,7 +195,7 @@ static void dump_phys_memory_map(const jinue_mem_map_t *map) {
     jinue_info("Dump of the BIOS memory map%s:", ram_only?" (showing only available entries)":"");
 
     for(int idx = 0; idx < map->num_entries; ++idx) {
-        const jinue_mem_entry_t *entry = &map->entry[idx];
+        const jinue_addr_map_entry_t *entry = &map->entry[idx];
 
         if(entry->type == JINUE_MEMYPE_MEMORY || !ram_only) {
             jinue_info(
@@ -209,13 +209,13 @@ static void dump_phys_memory_map(const jinue_mem_map_t *map) {
     }
 }
 
-void dump_user_memory(void) {
+void dump_address_map(void) {
     char call_buffer[MAP_BUFFER_SIZE];
 
-    jinue_mem_map_t *map = (jinue_mem_map_t *)&call_buffer;
+    jinue_addr_map_t *map = (jinue_addr_map_t *)&call_buffer;
 
     /* get free memory blocks from microkernel */
-    int status = jinue_get_user_memory(map, sizeof(call_buffer), &errno);
+    int status = jinue_get_address_map(map, sizeof(call_buffer), &errno);
 
     if(status != 0) {
         jinue_error("error: could not get memory map from kernel: %s", strerror(errno));

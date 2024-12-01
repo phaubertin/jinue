@@ -71,7 +71,7 @@ sources.kernel.c = \
 	application/syscalls/destroy.c \
 	application/syscalls/dup.c \
 	application/syscalls/exit_thread.c \
-	application/syscalls/get_user_memory.c \
+	application/syscalls/get_address_map.c \
 	application/syscalls/await_thread.c \
 	application/syscalls/mint.c \
 	application/syscalls/mmap.c \

@@ -32,6 +32,6 @@
 #include <kernel/application/syscalls.h>
 #include <kernel/machine/memory.h>
 
-int get_user_memory(const jinue_buffer_t *buffer) {
-    return machine_get_memory_map(buffer);
+int get_address_map(const jinue_buffer_t *buffer) {
+    return machine_get_address_map(buffer);
 }

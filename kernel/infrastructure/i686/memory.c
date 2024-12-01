@@ -407,7 +407,7 @@ static void find_range_for_loader(memory_range_t *dest, const bootinfo_t *bootin
     }
 }
 
-int machine_get_memory_map(const jinue_buffer_t *buffer) {
+int machine_get_address_map(const jinue_buffer_t *buffer) {
     const bootinfo_t *bootinfo = get_bootinfo();
 
     const uintptr_t kernel_image_size =
@@ -416,7 +416,7 @@ int machine_get_memory_map(const jinue_buffer_t *buffer) {
     memory_range_t loader_range;
     find_range_for_loader(&loader_range, bootinfo);
 
-    const jinue_mem_entry_t kernel_regions[] = {
+    const jinue_addr_map_entry_t kernel_regions[] = {
         {
             .addr = bootinfo->ramdisk_start,
             .size = bootinfo->ramdisk_size,
@@ -443,11 +443,11 @@ int machine_get_memory_map(const jinue_buffer_t *buffer) {
     const size_t kernel_entries     = sizeof(kernel_regions) / sizeof(kernel_regions[0]);
     const size_t total_entries      = e820_entries + kernel_entries;
     const size_t result_size        =
-            sizeof(jinue_mem_map_t) + total_entries * sizeof(jinue_mem_entry_t);
+            sizeof(jinue_addr_map_t) + total_entries * sizeof(jinue_addr_map_entry_t);
 
-    jinue_mem_map_t *map = buffer->addr;
+    jinue_addr_map_t *map = buffer->addr;
 
-    if(buffer->size >= sizeof(jinue_mem_map_t)) {
+    if(buffer->size >= sizeof(jinue_addr_map_t)) {
         map->num_entries = total_entries;
     }
 

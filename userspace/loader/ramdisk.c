@@ -66,8 +66,8 @@ static struct stream_initializer stream_initializers[] = {
  * @return EXIT_SUCCESS on success, other value on failure
  *
  * */
-int map_ramdisk(ramdisk_t *ramdisk, const jinue_mem_map_t *map) {
-    const jinue_mem_entry_t *ramdisk_entry = get_mem_map_entry_by_type(
+int map_ramdisk(ramdisk_t *ramdisk, const jinue_addr_map_t *map) {
+    const jinue_addr_map_entry_t *ramdisk_entry = get_addr_map_entry_by_type(
         map,
         JINUE_MEMYPE_RAMDISK
     );

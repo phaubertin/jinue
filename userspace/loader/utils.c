@@ -50,7 +50,7 @@ bool bool_getenv(const char *name) {
             strcmp(value, "1") == 0;
 }
 
-const jinue_mem_entry_t *get_mem_map_entry_by_type(const jinue_mem_map_t *map, int type) {
+const jinue_addr_map_entry_t *get_addr_map_entry_by_type(const jinue_addr_map_t *map, int type) {
     for(int idx = 0; idx < map->num_entries; ++idx) {
         if(map->entry[idx].type == type) {
             return &map->entry[idx];

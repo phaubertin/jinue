@@ -52,7 +52,7 @@ void exit_thread(void);
 
 void *get_thread_local(void);
 
-int get_user_memory(const jinue_buffer_t *buffer);
+int get_address_map(const jinue_buffer_t *buffer);
 
 int mclone(int src, int dest, const jinue_mclone_args_t *args);
 

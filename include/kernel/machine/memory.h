@@ -34,6 +34,6 @@
 
 #include <kernel/types.h>
 
-int machine_get_memory_map(const jinue_buffer_t *buffer);
+int machine_get_address_map(const jinue_buffer_t *buffer);
 
 #endif
