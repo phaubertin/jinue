@@ -40,7 +40,7 @@
  *      <kernel/typedeps.h>
  *          ^       ^
  *          |       |
- *          |   e.g. <kernel/infrastructure/i686/exports.h> for i686
+ *          |   e.g. <kernel/infrastructure/i686/exports/types.h> for i686
  *          |       ^
  *          |       |
  *          |   <kernel/machine/types.h>
