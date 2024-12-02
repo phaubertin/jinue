@@ -9,29 +9,29 @@
 | 0       | -                                       | Reserved                             |
 | 1       | -                                       | Reserved                             |
 | 2       | [REBOOT](reboot.md)                     | Reboot the System                    |
-| 3       | [PUTS](puts.md)                         | Write String to Console              |
+| 3       | [PUTS](puts.md)                         | Write string to console              |
 | 4       | [CREATE_THREAD](create-thread.md)       | Create a thread                      |
-| 5       | [YIELD_THREAD](yield-thread.md)         | Yield the Current Thread             |
-| 6       | [SET_THREAD_LOCAL](set-thread-local.md) | Set Thread-Local Storage             |
+| 5       | [YIELD_THREAD](yield-thread.md)         | Yield the current thread             |
+| 6       | [SET_THREAD_LOCAL](set-thread-local.md) | Set Thread-Local Storage (TLS)       |
 | 7       | -                                       | Reserved                             |
-| 8       | [GET_ADDRESS_MAP](get-address-map.md)   | Get Memory Address Map               |
-| 9       | [CREATE_ENDPOINT](create-endpoint.md)   | Create IPC Endpoint                  |
-| 10      | [RECEIVE](receive.md)                   | Receive Message                      |
-| 11      | [REPLY](reply.md)                       | Reply to Message                     |
-| 12      | [EXIT_THREAD](exit-thread.md)           | Terminate the Current Thread         |
-| 13      | [MMAP](mmap.md)                         | Map Memory                           |
-| 14      | [CREATE_PROCESS](create-process.md)     | Create Process                       |
-| 15      | [MCLONE](mclone.md)                     | Clone a Memory Mapping               |
-| 16      | [DUP](dup.md)                           | Duplicate a Descriptor               |
-| 17      | [CLOSE](close.md)                       | Close a Descriptor                   |
-| 18      | [DESTROY](destroy.md)                   | Destroy a Kernel Object              |
-| 19      | [MINT](mint.md)                         | Mint a Descriptor                    |
-| 20      | [START_THREAD](start-thread.md)         | Start a Thread                       |
-| 21      | [AWAIT_THREAD](await-thread.md)         | Wait for a Thread to Exit            |
-| 22      | [REPLY_ERROR](reply-error.md)           | Reply to Message with an Error       |
-| 23      | [SET_ACPI](set-acpi.md)                 | Provide Mapped ACPI Tables           |
+| 8       | [GET_ADDRESS_MAP](get-address-map.md)   | Get memory address map               |
+| 9       | [CREATE_ENDPOINT](create-endpoint.md)   | Create IPC endpoint                  |
+| 10      | [RECEIVE](receive.md)                   | Receive message                      |
+| 11      | [REPLY](reply.md)                       | Reply to message                     |
+| 12      | [EXIT_THREAD](exit-thread.md)           | Terminate the current thread         |
+| 13      | [MMAP](mmap.md)                         | Map memory                           |
+| 14      | [CREATE_PROCESS](create-process.md)     | Create a process                     |
+| 15      | [MCLONE](mclone.md)                     | Clone a memory mapping               |
+| 16      | [DUP](dup.md)                           | Duplicate a descriptor               |
+| 17      | [CLOSE](close.md)                       | Close a descriptor                   |
+| 18      | [DESTROY](destroy.md)                   | Destroy a kernel object              |
+| 19      | [MINT](mint.md)                         | Mint a descriptor                    |
+| 20      | [START_THREAD](start-thread.md)         | Start a thread                       |
+| 21      | [AWAIT_THREAD](await-thread.md)         | Wait for a thread to exit            |
+| 22      | [REPLY_ERROR](reply-error.md)           | Reply to message with an error       |
+| 23      | [SET_ACPI](set-acpi.md)                 | Provide mapped ACPI tables           |
 | 24-4095 | -                                       | Reserved                             |
-| 4096+   | [SEND](send.md)                         | Send Message                         |
+| 4096+   | [SEND](send.md)                         | Send a message                       |
 
 #### Reserved Function Numbers
 
