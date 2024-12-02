@@ -31,17 +31,22 @@
 
 #include <jinue/shared/asm/logging.h>
 #include <kernel/domain/services/logging.h>
+#include <kernel/machine/spinlock.h>
 #include <kernel/utils/list.h>
 #include <kernel/types.h>
 #include <stdio.h>
 
-list_t loggers = STATIC_LIST;
+static list_t loggers = LIST_INITIALIZER;
+
+static spinlock_t logging_spinlock = SPINLOCK_INITIALIZER;
 
 void register_logger(logger_t *logger) {
     list_enqueue(&loggers, &logger->loggers);
 }
 
 static void log_message(int loglevel, const char *restrict format, va_list args) {
+    spin_lock(&logging_spinlock);
+
     /* TODO implement kernel logs ring buffer and get rid of this buffer
      *
      * This is static so it does not take a big chunk of the thread's stack. The
@@ -50,6 +55,8 @@ static void log_message(int loglevel, const char *restrict format, va_list args)
 
     size_t length = vsnprintf(message, sizeof(message), format, args);
     logging_add_message(loglevel, message, length);
+
+    spin_unlock(&logging_spinlock);
 }
 
 void logging_add_message(int loglevel, const char *message, size_t n) {

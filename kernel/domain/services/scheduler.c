@@ -41,8 +41,8 @@ static struct {
     list_t          queue;
     spinlock_t      lock;
 } ready_queue = {
-    .queue  = STATIC_LIST,
-    .lock   = SPINLOCK_STATIC
+    .queue  = LIST_INITIALIZER,
+    .lock   = SPINLOCK_INITIALIZER
 };
 
 /**

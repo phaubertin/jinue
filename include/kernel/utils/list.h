@@ -49,7 +49,7 @@ typedef struct  {
 
 typedef list_node_t **list_cursor_t;
 
-#define STATIC_LIST   {.head = NULL, .tail = NULL}
+#define LIST_INITIALIZER {.head = NULL, .tail = NULL}
 
 static inline void init_list(list_t *list) {
     list->head = NULL;

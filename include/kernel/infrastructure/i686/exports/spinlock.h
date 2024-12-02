@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,42 +29,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_TYPEDEPS_H
-#define JINUE_KERNEL_TYPEDEPS_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_EXPORTS_SPINLOCK_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_EXPORTS_SPINLOCK_H
 
-/** This header file exists to resolve circular dependencies. <kernel/types.h>
- * includes a machine-dependent type definitions header file through
- * <kernel/machine/types.h>. This header file contain definitions needed by
- * both and isn't intended to be included elsewhere.
- * 
- *      <kernel/typedeps.h>
- *          ^       ^
- *          |       |
- *          |   e.g. <kernel/infrastructure/i686/exports/types.h> for i686
- *          |       ^
- *          |       |
- *          |   <kernel/machine/types.h>
- *          |       ^
- *          |       |
- *      <kernel/types.h>
- * */
-
-#include <inttypes.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdbool.h>
-
-/** Virtual memory address (pointer) with pointer arithmetic allowed */
-typedef unsigned char *addr_t;
-
-typedef struct {
-    const char *start;
-    size_t      length;
-} cmdline_token_t;
-
-typedef struct {
-    const char  *name;
-    int          enum_value;
-} cmdline_enum_def_t;
+/** static initializer for a spinlock */
+#define SPINLOCK_INITIALIZER { .lock = 0 }
 
 #endif

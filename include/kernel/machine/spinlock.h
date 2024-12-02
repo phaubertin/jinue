@@ -34,7 +34,10 @@
 
 #include <kernel/machine/types.h>
 
-#define SPINLOCK_STATIC { .lock = 0 }
+/* Must define SPINLOCK_INITIALIZER. */
+#ifdef __i686__
+#include <kernel/infrastructure/i686/exports/spinlock.h>
+#endif
 
 void init_spinlock(spinlock_t *lock);
 
@@ -43,4 +46,3 @@ void spin_lock(spinlock_t *lock);
 void spin_unlock(spinlock_t *lock);
 
 #endif
-

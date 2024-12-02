@@ -33,7 +33,7 @@
 #define JINUE_KERNEL_INFRASTRUCTURE_I686_TYPES_H
 
 #include <kernel/infrastructure/i686/asm/descriptors.h>
-#include <kernel/infrastructure/i686/exports.h>
+#include <kernel/infrastructure/i686/exports/types.h>
 #include <kernel/machine/types.h>
 #include <kernel/types.h>
 #include <sys/elf.h>
