@@ -34,6 +34,7 @@
 #include <kernel/domain/alloc/vmalloc.h>
 #include <kernel/machine/asm/machine.h>
 #include <kernel/machine/pmap.h>
+#include <kernel/machine/spinlock.h>
 #include <string.h>
 
 
@@ -43,7 +44,9 @@ struct alloc_page {
 
 static struct alloc_page *head_page = NULL;
 
-unsigned int page_count = 0;
+static unsigned int page_count = 0;
+
+static spinlock_t alloc_lock;
 
 /**
  * Allocate a page of kernel memory.
@@ -55,12 +58,16 @@ unsigned int page_count = 0;
  *
  * */
 void *page_alloc(void) {
+    spin_lock(&alloc_lock);
+
     struct alloc_page *alloc_page = head_page;
 
     if(alloc_page != NULL) {
         head_page = alloc_page->next;
         --page_count;
     }
+
+    spin_unlock(&alloc_lock);
 
     return alloc_page;
 }
@@ -79,10 +86,14 @@ void *page_alloc(void) {
  *
  * */
 void page_free(void *page) {
+    spin_lock(&alloc_lock);
+
     struct alloc_page *alloc_page = page;
     alloc_page->next    = head_page;
     head_page           = alloc_page;
     ++page_count;
+
+    spin_unlock(&alloc_lock);
 }
 
 /** 
