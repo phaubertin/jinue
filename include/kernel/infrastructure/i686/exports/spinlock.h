@@ -29,20 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_MACHINE_SPINLOCK_H
-#define JINUE_KERNEL_MACHINE_SPINLOCK_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_EXPORTS_SPINLOCK_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_EXPORTS_SPINLOCK_H
 
-#include <kernel/machine/types.h>
-
-/* Must define SPINLOCK_STATIC. */
-#ifdef __i686__
-#include <kernel/infrastructure/i686/exports/spinlock.h>
-#endif
-
-void init_spinlock(spinlock_t *lock);
-
-void spin_lock(spinlock_t *lock);
-
-void spin_unlock(spinlock_t *lock);
+#define SPINLOCK_STATIC { .lock = 0 }
 
 #endif
