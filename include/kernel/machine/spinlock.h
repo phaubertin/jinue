@@ -34,7 +34,7 @@
 
 #include <kernel/machine/types.h>
 
-/* Must define SPINLOCK_STATIC. */
+/* Must define SPINLOCK_INITIALIZER. */
 #ifdef __i686__
 #include <kernel/infrastructure/i686/exports/spinlock.h>
 #endif

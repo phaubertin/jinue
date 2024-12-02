@@ -32,6 +32,7 @@
 #ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_EXPORTS_SPINLOCK_H
 #define JINUE_KERNEL_INFRASTRUCTURE_I686_EXPORTS_SPINLOCK_H
 
-#define SPINLOCK_STATIC { .lock = 0 }
+/** static initializer for a spinlock */
+#define SPINLOCK_INITIALIZER { .lock = 0 }
 
 #endif

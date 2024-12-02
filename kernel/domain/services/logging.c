@@ -36,9 +36,9 @@
 #include <kernel/types.h>
 #include <stdio.h>
 
-static list_t loggers = STATIC_LIST;
+static list_t loggers = LIST_INITIALIZER;
 
-static spinlock_t logging_spinlock = SPINLOCK_STATIC;
+static spinlock_t logging_spinlock = SPINLOCK_INITIALIZER;
 
 void register_logger(logger_t *logger) {
     list_enqueue(&loggers, &logger->loggers);
