@@ -70,7 +70,7 @@ bzip2                = $(lib)/bzip2
 loader               = $(userspace)/loader
 testapp              = $(userspace)/testapp
 testapp_initrd       = $(testapp)/jinue-testapp-initrd.tar.gz
-libjinue_syscalls    = $(libjinue)/libjinue-syscalls.a
+libjinue_syscalls    = $(libjinue)/libjinue.a
 libjinue_utils       = $(libjinue)/libjinue-utils.a
 
 # object files
