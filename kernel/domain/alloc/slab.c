@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -32,6 +32,7 @@
 #include <kernel/domain/alloc/page_alloc.h>
 #include <kernel/domain/alloc/slab.h>
 #include <kernel/domain/services/logging.h>
+#include <kernel/domain/services/panic.h>
 #include <kernel/machine/cpuinfo.h>
 #include <kernel/utils/utils.h>
 #include <kernel/types.h>
@@ -40,7 +41,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-
 
 /**
  * @file
@@ -59,42 +59,34 @@
 
 static void init_and_add_slab(slab_cache_t *cache, void *slab_addr);
 
+static void destroy_slab(slab_cache_t *cache, slab_t *slab);
+
 /**
- * Destroy a slab that is no longer needed.
- *
- * The slab must be free of allocated objects before this function is called. It
- * must also have been unlinked from the free list.
- *
- * This function calls the cache's destructor function, if any, on each free
- * object and then returns the memory to the page allocator.
- *
- * @param cache the cache to which the slab belongs
- * @param slab the slab to destroy.
- *
- * */
-static void destroy_slab(slab_cache_t *cache, slab_t *slab) {
-    /** ASSERTION: no object is allocated on slab. */
-    assert(slab->obj_count == 0);
+ * Compute object alignment based on intialization arguments
+ * 
+ * @param alignment the minimum object alignment, or zero for no constraint
+ * @param flags slab_cache_init() see description
+ * @return object alignment
+ */
+static size_t compute_alignment(size_t alignment, int flags) {
+    size_t cache_alignment;
 
-    addr_t start_addr = ALIGN_START_PTR(slab, SLAB_SIZE);
+    if(alignment == 0) {
+        cache_alignment = sizeof(uintptr_t);
+    }
+    else {
+        cache_alignment = alignment;
+    }
 
-    /* Call destructor.
-     *
-     * If the SLAB_POISON flag has been specified when initializing the cache,
-     * uninitialized and free objects are filled with recognizable patterns to
-     * help detect uninitialized members and writes to freed objects. Obviously,
-     * this destroys the constructed state. So, with this debugging feature
-     * enabled, the constructor/destructor functions are called when each object
-     * is allocated/deallocated instead of when initializing/destroying a slab,
-     * i.e. not here. */
-    if(cache->dtor != NULL && ! (cache->flags & SLAB_POISON)) {
-        for(addr_t buffer = start_addr + slab->colour; buffer < (addr_t)slab; buffer += cache->alloc_size) {
-            cache->dtor((void *)buffer, cache->obj_size);
-        }
+    unsigned int dcache_alignment = machine_get_cpu_dcache_alignment();
+    
+    if((flags & SLAB_HWCACHE_ALIGN) && cache_alignment < dcache_alignment) {
+        cache_alignment = dcache_alignment;
     }
     
-    /* return the memory */
-    page_free(start_addr);
+    cache_alignment = ALIGN_END(cache_alignment, sizeof(uint32_t));
+
+    return cache_alignment;
 }
 
 /**
@@ -155,22 +147,7 @@ void slab_cache_init(
     cache->flags            = flags;
     cache->next_colour      = 0;
     cache->working_set      = SLAB_DEFAULT_WORKING_SET;
-    
-    /* Compute actual alignment. */
-    if(alignment == 0) {
-        cache->alignment = sizeof(uint32_t);
-    }
-    else {
-        cache->alignment = alignment;
-    }
-
-    unsigned int dcache_alignment = machine_get_cpu_dcache_alignment();
-    
-    if((flags & SLAB_HWCACHE_ALIGN) && cache->alignment < dcache_alignment) {
-        cache->alignment = dcache_alignment;
-    }
-    
-    cache->alignment = ALIGN_END(cache->alignment, sizeof(uint32_t));
+    cache->alignment        = compute_alignment(alignment, flags);
     
     /* Reserve space for bufctl and/or redzone word. */
     cache->obj_size = ALIGN_END(size, sizeof(uint32_t));
@@ -211,7 +188,13 @@ void slab_cache_init(
      *
      * This is needed to allow a few objects to be allocated during kernel
      * initialization. */
-    init_and_add_slab(cache, page_alloc());
+    void *slab_page = page_alloc();
+
+    if(slab_page == NULL) {
+        panic("Could not allocate page for first slab");
+    }
+
+    init_and_add_slab(cache, slab_page);
 }
 
 /**
@@ -227,20 +210,20 @@ void slab_cache_init(
  *
  * */
 void *slab_cache_alloc(slab_cache_t *cache) {
-    slab_t          *slab;
+    slab_t *slab;
     
     if(cache->slabs_partial != NULL) {
         slab = cache->slabs_partial;
     }
     else {
         if(cache->slabs_empty == NULL) {
-            void *slab_addr = page_alloc();
+            void *slab_page = page_alloc();
 
-            if(slab_addr == NULL) {
+            if(slab_page == NULL) {
                 return NULL;
             }
 
-            init_and_add_slab(cache, slab_addr);
+            init_and_add_slab(cache, slab_page);
         }
         
         slab = cache->slabs_empty;
@@ -528,6 +511,44 @@ static void init_and_add_slab(slab_cache_t *cache, void *slab_addr) {
         bufctl->next = next;
         bufctl = next;
     }
+}
+
+/**
+ * Destroy a slab that is no longer needed.
+ *
+ * The slab must be free of allocated objects before this function is called. It
+ * must also have been unlinked from the free list.
+ *
+ * This function calls the cache's destructor function, if any, on each free
+ * object and then returns the memory to the page allocator.
+ *
+ * @param cache the cache to which the slab belongs
+ * @param slab the slab to destroy.
+ *
+ * */
+static void destroy_slab(slab_cache_t *cache, slab_t *slab) {
+    /** ASSERTION: no object is allocated on slab. */
+    assert(slab->obj_count == 0);
+
+    addr_t start_addr = ALIGN_START_PTR(slab, SLAB_SIZE);
+
+    /* Call destructor.
+     *
+     * If the SLAB_POISON flag has been specified when initializing the cache,
+     * uninitialized and free objects are filled with recognizable patterns to
+     * help detect uninitialized members and writes to freed objects. Obviously,
+     * this destroys the constructed state. So, with this debugging feature
+     * enabled, the constructor/destructor functions are called when each object
+     * is allocated/deallocated instead of when initializing/destroying a slab,
+     * i.e. not here. */
+    if(cache->dtor != NULL && ! (cache->flags & SLAB_POISON)) {
+        for(addr_t buffer = start_addr + slab->colour; buffer < (addr_t)slab; buffer += cache->alloc_size) {
+            cache->dtor((void *)buffer, cache->obj_size);
+        }
+    }
+    
+    /* return the memory */
+    page_free(start_addr);
 }
 
 /**
