@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -33,6 +33,7 @@
 #define JINUE_KERNEL_DOMAIN_SLAB_H
 
 #include <kernel/machine/asm/machine.h>
+#include <kernel/machine/spinlock.h>
 #include <kernel/utils/pmap.h>
 #include <kernel/types.h>
 
@@ -76,6 +77,7 @@ struct slab_cache_t {
     slab_ctor_t          dtor;
     char                *name;
     int                  flags;
+    spinlock_t           lock;
 };
 
 struct slab_bufctl_t {
@@ -87,9 +89,7 @@ typedef struct slab_bufctl_t slab_bufctl_t;
 struct slab_t {
     struct slab_t   *prev;
     struct slab_t   *next;
-    
     slab_cache_t    *cache;
-    
     unsigned int     obj_count;
     size_t           colour;
     slab_bufctl_t   *free_list;
@@ -98,7 +98,6 @@ struct slab_t {
 typedef struct slab_t slab_t;
 
 extern slab_cache_t *slab_cache_list;
-
 
 void slab_cache_init(
         slab_cache_t    *cache,

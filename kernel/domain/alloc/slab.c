@@ -198,18 +198,13 @@ void slab_cache_init(
 }
 
 /**
- * Allocate an object from the specified cache.
- *
- * The cache must have been initialized with slab_cache_init(). If no more space
- * is available on existing slabs, this function tries to allocate a new slab
- * using the kernel's page allocator (i.e. page_alloc()). It page allocation
- * fails, this function fails by returning NULL.
+ * Implementation for slab_cache_alloc() under lock
  *
  * @param cache the cache from which to allocate an object
  * @return the address of the allocated object, or NULL if allocation failed
  *
  * */
-void *slab_cache_alloc(slab_cache_t *cache) {
+void *slab_cache_alloc_locked(slab_cache_t *cache) {
     slab_t *slab;
     
     if(cache->slabs_partial != NULL) {
@@ -335,6 +330,28 @@ void *slab_cache_alloc(slab_cache_t *cache) {
 }
 
 /**
+ * Allocate an object from the specified cache.
+ *
+ * The cache must have been initialized with slab_cache_init(). If no more space
+ * is available on existing slabs, this function tries to allocate a new slab
+ * using the kernel's page allocator (i.e. page_alloc()). If page allocation
+ * fails, this function fails by returning NULL.
+ *
+ * @param cache the cache from which to allocate an object
+ * @return the address of the allocated object, or NULL if allocation failed
+ *
+ * */
+void *slab_cache_alloc(slab_cache_t *cache) {
+    spin_lock(&cache->lock);
+
+    void *buffer = slab_cache_alloc_locked(cache);
+
+    spin_unlock(&cache->lock);
+
+    return buffer;
+}
+
+/**
  * Free an object.
  *
  * @param buffer the object to free
@@ -348,6 +365,8 @@ void slab_cache_free(void *buffer) {
     /* obtain address of cache and bufctl */
     slab_cache_t *cache     = slab->cache;
     slab_bufctl_t *bufctl   = (slab_bufctl_t *)((char *)buffer + cache->bufctl_offset);
+
+    spin_lock(&cache->lock);
     
     /* If slab is on the full slabs list, move it to the partial list
      * since we are about to return a buffer to it. */
@@ -430,7 +449,9 @@ void slab_cache_free(void *buffer) {
         }
         
         ++(cache->empty_count);
-    }     
+    }
+
+    spin_unlock(&cache->lock);
 }
 
 /**
@@ -560,6 +581,8 @@ static void destroy_slab(slab_cache_t *cache, slab_t *slab) {
  *
  * */
 void slab_cache_reap(slab_cache_t *cache) {
+    spin_lock(&cache->lock);
+
     while(cache->empty_count > cache->working_set) {
         /* select the first empty slab */
         slab_t *slab = cache->slabs_empty;
@@ -571,6 +594,8 @@ void slab_cache_reap(slab_cache_t *cache) {
         /* destroy slab */
         destroy_slab(cache, slab);
     }
+
+    spin_unlock(&cache->lock);
 }
 
 /**
@@ -587,5 +612,9 @@ void slab_cache_reap(slab_cache_t *cache) {
  *
  * */
 void slab_cache_set_working_set(slab_cache_t *cache, unsigned int n) {
+    spin_lock(&cache->lock);
+
     cache->working_set = n;
+
+    spin_unlock(&cache->lock);
 }
