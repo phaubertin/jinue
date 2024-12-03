@@ -2,7 +2,7 @@
 
 **Work in progress**: this is still very much incomplete.
 
-![Screenshot](https://raw.githubusercontent.com/phaubertin/jinue/master/doc/screenshot.png)
+![Screenshot](https://raw.githubusercontent.com/phaubertin/jinue/master/doc/images/screenshot.png)
 
 Overview of Build Artifacts
 ---------------------------
