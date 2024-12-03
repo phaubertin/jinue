@@ -1,7 +1,7 @@
 # Jinue libc
 
 This library provides a small subset of the standard C and POSIX functions. Its
-goal is not be a complete standard C library: an operating system build on top
+goal is not be a complete standard C library: an operating system built on top
 of the Jinue microkernel is expected to provide its own. Rather, this library
 aims:
 
