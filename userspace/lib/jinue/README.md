@@ -16,3 +16,5 @@ Build artifacts:
   * `<jinue/logging.h>` contains declarations for logging functions.
   * `<jinue/loader.h>` contains declarations for interfacing with the [user
     space loader](../../loader/).
+
+![Dependencies](../../../doc/images/libjinue-deps.png)

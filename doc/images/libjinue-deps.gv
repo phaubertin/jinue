@@ -1,0 +1,29 @@
+digraph "libjinue-deps" {
+    ranksep="1.0";
+    
+    utils[label="libjinue-utils"];
+    libc[label="libc"];
+    libjinue[label="libjinue"];
+    
+    utils->libc;
+    utils->libjinue;
+    libc->libjinue;
+    
+    {
+        rank=same;
+        node[shape="box"];
+        edge[style="invis"];
+        jinue_h[label="<jinue/jinue.h>"];
+        libjinue->jinue_h;
+    }
+    
+    {
+        rank=same;
+        node[shape="box"];
+        edge[style="invis"];
+        utils_h[label="<jinue/utils.h>"];
+        loader_h[label="<jinue/loader.h>"];
+        utils->loader_h;
+        utils->utils_h;
+    }
+}
