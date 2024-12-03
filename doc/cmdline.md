@@ -39,15 +39,16 @@ For user space environment variables, the behaviour is undefined.
 
 ## Supported Kernel Options
 
-| Name             | Type    | Description                                                  |
-|------------------|---------|--------------------------------------------------------------|
-| on_panic         | string  | Action to take after a kernel panic                          |
-| pae              | string  | Controls whether Physical Address Extension (PAE) is enabled |
-| serial_enable    | boolean | Enable/disable logging on the serial port                    |
-| serial_baud_rate | integer | Baud rate for serial port logging                            |
-| serial_ioport    | integer | I/O port address for serial port logging                     |
-| serial_dev       | string  | Serial port device used for logging                          |
-| vga_enable       | boolean | Enable/disable logging to video (VGA)                        |
+| Name                | Type    | Description                                                  |
+|---------------------|---------|--------------------------------------------------------------|
+| `init`              | string  | Path to initial program in initial RAM disk                  |
+| `on_panic`          | string  | Action to take after a kernel panic                          |
+| `pae`               | string  | Controls whether Physical Address Extension (PAE) is enabled |
+| `serial_enable`     | boolean | Enable/disable logging on the serial port                    |
+| `serial_baud_rate`  | integer | Baud rate for serial port logging                            |
+| `serial_ioport`     | integer | I/O port address for serial port logging                     |
+| `serial_dev`        | string  | Serial port device used for logging                          |
+| `vga_enable`        | boolean | Enable/disable logging to video (VGA)                        |
 
 For boolean options:
 
@@ -58,6 +59,17 @@ For boolean options:
 Integer option values can be specified as a decimal number without any leading
 zero (e.g. `42` but not `042`) or as an hexadecimal number prepended with `0x`
 (e.g. `0x3f8`).
+
+### Initial Program Path - `init`
+
+Path to initial program in extracted initial RAM disk.
+
+Type: string
+
+The user space loader loads this executable binary as the initial process. It
+must be an ELF binary.
+
+The default for this option is `/sbin/init`.
 
 ### Kernel Panic Action - `on_panic`
 
