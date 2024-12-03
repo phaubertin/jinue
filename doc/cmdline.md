@@ -62,7 +62,7 @@ zero (e.g. `42` but not `042`) or as an hexadecimal number prepended with `0x`
 
 ### Initial Program Path - `init`
 
-Path to initial program in extracted initial RAM disk.
+Path to initial program in the extracted initial RAM disk.
 
 Type: string
 
