@@ -96,7 +96,6 @@ $(testapp_initrd): testapp-initrd
 
 $(temp_iso_fs): $(grub_config)
 	mkdir -p $(temp_iso_fs)/boot/grub/i386-pc
-	cp $(grub_modules)/* $(temp_iso_fs)/boot/grub/i386-pc/
 	cp $(grub_config) $(temp_iso_fs)/boot/grub/
 	touch $(temp_iso_fs)
 
@@ -113,7 +112,7 @@ $(grub_image): $(initrd_copy) $(kernel_img_copy)
 		--format i386-pc-eltorito \
 		--compression auto \
 		--config $(grub_config) \
-		biosdisk iso9660
+		biosdisk iso9660 linux linux16
 
 $(jinue_iso): $(grub_image)
 	xorriso \
@@ -124,14 +123,11 @@ $(jinue_iso): $(grub_image)
 		-boot-load-size 4 \
 		-boot-info-table \
 		--grub2-boot-info \
-		--grub2-mbr \
-		$(grub_modules)/boot_hybrid.img \
+		--grub2-mbr $(grub_modules)/boot_hybrid.img \
 		--protective-msdos-label \
 		-o $(jinue_iso) \
 		-r $(temp_iso_fs) \
-		--sort-weight 0 \
-		/ \
-		--sort-weight 1 \
-		/boot
+		--sort-weight 0 / \
+		--sort-weight 1 /boot
 
 $(run_log): run-no-display
