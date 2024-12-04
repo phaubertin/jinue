@@ -32,8 +32,9 @@ include $(jinue_root)/header.mk
 
 QEMU_CPU            ?= core2duo
 QEMU_MEM            ?= 128
+
 CMDLINE             = \
-	on_panic=reboot \
+    on_panic=reboot \
     serial_enable=yes \
     serial_dev=/dev/ttyS0 \
     DEBUG_DUMP_MEMORY_MAP=1 \
