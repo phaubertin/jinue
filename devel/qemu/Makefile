@@ -111,7 +111,6 @@ $(grub_image): $(initrd_copy) $(kernel_img_copy)
 		--output $(grub_image) \
 		--format i386-pc-eltorito \
 		--compression auto \
-		--config $(grub_config) \
 		biosdisk iso9660 linux linux16
 
 $(jinue_iso): $(grub_image)
