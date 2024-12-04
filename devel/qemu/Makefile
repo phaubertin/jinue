@@ -32,50 +32,54 @@ include $(jinue_root)/header.mk
 
 QEMU_CPU            ?= core2duo
 QEMU_MEM            ?= 128
+CMDLINE             = \
+	on_panic=reboot \
+    serial_enable=yes \
+    serial_dev=/dev/ttyS0 \
+    DEBUG_DUMP_MEMORY_MAP=1 \
+    DEBUG_DUMP_SYSCALL_IMPLEMENTATION=1 \
+    DEBUG_DUMP_RAMDISK=1 \
+    DEBUG_DO_REBOOT=1 \
+    RUN_TEST_ACPI=1 \
+    RUN_TEST_IPC=1
 
-# GRUB location (for creation of bootable ISO for virtual machine)
-#
-# TODO this should probably be configurable through some sort of configure script
-grub_modules         = /usr/lib/grub/i386-pc
-
-temp_iso_fs          = iso-tmp
-grub_config          = grub.cfg
-jinue_iso            = jinue.iso
-grub_image_rel       = boot/grub/i386-pc/jinue.img
-grub_image           = $(temp_iso_fs)/$(grub_image_rel)
-kernel_img_copy      = $(temp_iso_fs)/boot/$(notdir $(kernel_img))
-initrd_copy          = $(temp_iso_fs)/boot/$(notdir $(testapp_initrd))
 run_log              = run-jinue.log
 check_script         = check-log.sh
-
-target               = $(jinue_iso)
-unclean_recursive    = $(temp_iso_fs)
+deps                 = $(kernel_img) $(testapp_initrd)
+targets.phony        = all-deps
 
 include $(common)
 
+.PHONY: all-deps
+all-deps: $(deps)
+
 .PHONY: run
-run: $(jinue_iso)
-	qemu-system-i386                                \
-	-cpu $(QEMU_CPU)                                \
-	-m $(QEMU_MEM)                                  \
-	-no-reboot                                      \
-	-drive format=raw,media=cdrom,file=$(jinue_iso) \
-	-serial stdio                                   \
-	-smp 1                                          \
-	-usb                                            \
+run: $(deps)
+	qemu-system-i386            \
+	-cpu $(QEMU_CPU)            \
+	-m $(QEMU_MEM)              \
+	-no-reboot                  \
+	-kernel $(kernel_img)       \
+	-initrd $(testapp_initrd)   \
+	-append "$(CMDLINE)"        \
+	-serial stdio               \
+	-smp 1                      \
+	-usb                        \
 	-vga std | tee $(run_log)
 
 .PHONY: run-no-display
-run-no-display: $(jinue_iso)
-	qemu-system-i386                                \
-	-cpu $(QEMU_CPU)                                \
-	-m $(QEMU_MEM)                                  \
-	-no-reboot                                      \
-	-drive format=raw,media=cdrom,file=$(jinue_iso) \
-	-serial stdio                                   \
-	-display none                                   \
-	-smp 1                                          \
-	-usb                                            \
+run-no-display: $(deps)
+	qemu-system-i386            \
+	-cpu $(QEMU_CPU)            \
+	-m $(QEMU_MEM)              \
+	-no-reboot                  \
+	-kernel $(kernel_img)       \
+	-initrd $(testapp_initrd)   \
+	-append "$(CMDLINE)"        \
+	-serial stdio               \
+	-display none               \
+	-smp 1                      \
+	-usb                        \
 	-vga std | tee $(run_log)
 
 .PHONY: check
@@ -93,40 +97,5 @@ testapp-initrd:
 $(kernel_img): kernel-image
 
 $(testapp_initrd): testapp-initrd
-
-$(temp_iso_fs): $(grub_config)
-	mkdir -p $(temp_iso_fs)/boot/grub/i386-pc
-	cp $(grub_config) $(temp_iso_fs)/boot/grub/
-	touch $(temp_iso_fs)
-
-$(kernel_img_copy): $(kernel_img) $(temp_iso_fs) kernel-image
-	cp $< $@
-
-$(initrd_copy): $(testapp_initrd) $(temp_iso_fs) testapp-initrd
-	cp $< $@
-
-$(grub_image): $(initrd_copy) $(kernel_img_copy)
-	`grub2-mkimage --version > /dev/null 2>&1 && echo grub2-mkimage || echo grub-mkimage` \
-		--prefix '/boot/grub' \
-		--output $(grub_image) \
-		--format i386-pc-eltorito \
-		--compression auto \
-		biosdisk iso9660 linux linux16
-
-$(jinue_iso): $(grub_image)
-	xorriso \
-		-as mkisofs \
-		-graft-points \
-		-b $(grub_image_rel) \
-		-no-emul-boot \
-		-boot-load-size 4 \
-		-boot-info-table \
-		--grub2-boot-info \
-		--grub2-mbr $(grub_modules)/boot_hybrid.img \
-		--protective-msdos-label \
-		-o $(jinue_iso) \
-		-r $(temp_iso_fs) \
-		--sort-weight 0 / \
-		--sort-weight 1 /boot
 
 $(run_log): run-no-display
