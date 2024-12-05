@@ -20,10 +20,6 @@ be provided by the user in order to use the kernel. However, an initial
 RAM disk containing a test application can be built from this
 repository.
 
-Finally, this repository makes it easy to run the kernel and test
-application in QEMU. For this purpose, it builds a bootable ISO image
-that contains the kernel image and the initial RAM disk.
-
 Build Requirements
 ------------------
 
@@ -32,9 +28,6 @@ with GNU make and a C compiler that can create 32-bit x86 ELF binaries.
 This software is known to build with GCC and clang.
 
 You also need the Netwide Assembler (NASM).
-
-If you wish to build the ISO image for use with QEMU, which is optional,
-you need GRUB and GNU xorriso in addition to the above.
 
 Run Time Requirements
 ---------------------
@@ -70,25 +63,13 @@ do this once, not each time you build.
 ./configure
 ```
 
-To build the ISO image for use with QEMU, build the `qemu` target with
-make:
-
-```
-make qemu
-```
-
-This builds the kernel image and the test application, and then creates
-a bootable ISO image.
-
-If you will not be using QEMU and only want to build the kernel image,
-this can be done with the default make target:
+To build the kernel image, use the default make target:
 
 ```
 make
 ```
 
-Similarly, the test application can be built separately with the
-`testapp` make target:
+To build the test application, use the `testapp` make target:
 
 ```
 make testapp
@@ -126,8 +107,8 @@ make qemu-check
 How to Install
 --------------
 
-If you will not be using QEMU for testing, you can copy the kernel image
-to `/boot` by running the following:
+If you will be testing on real hardware instead of in QEMU, you can copy the
+kernel image to `/boot` by running the following:
 
 ```
 sudo make install
