@@ -72,7 +72,7 @@ vbox-debug:
 vbox-run:
 	make -C $(virtualbox) run
 	
-# build the ISO file (CDROM image) needed by the QEMU
+# build the dependencies for running the test application in QEMU
 .PHONY: qemu
 qemu:
 	make -C $(qemu)
