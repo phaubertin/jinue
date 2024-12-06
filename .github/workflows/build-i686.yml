@@ -39,9 +39,6 @@ jobs:
     - name: make testapp
       run: ${{ env.MAKE }} testapp
     
-    - name: make qemu
-      run: ${{ env.MAKE }} qemu
-    
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -52,5 +49,5 @@ jobs:
           userspace/lib/jinue/libjinue-utils.a
           userspace/testapp/jinue-testapp-initrd.tar.gz
     
-    - name: make qemu-check
-      run: ${{ env.MAKE }} qemu-check
+    - name: Run tests
+      run: ${{ env.MAKE }} check
