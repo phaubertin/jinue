@@ -35,4 +35,8 @@ check_no_error
 
 check_no_warning
 
+# Only the user space loader is allowed to call this system call
+echo "*Check the SET_ACPI system call fails with JINUE_ENOSYS"
+grep -F "expected: jinue_set_acpi() set errno to: function not supported" $LOG || fail
+
 check_reboot
