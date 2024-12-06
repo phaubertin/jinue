@@ -39,13 +39,19 @@ subdirs = \
 	$(zlib) \
 	$(bzip2) \
 	$(qemu) \
-	$(virtualbox)
+	$(virtualbox) \
+	tests
 
 # make all (default target) will build the kernel image
 targets.phony = kernel
 
 # main targets
 include $(common)
+
+# Run functional tests
+.PHONY: check
+check:
+	make -C tests check
 
 # install kernel image in /boot
 .PHONY: install

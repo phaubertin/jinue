@@ -1,4 +1,5 @@
-# Copyright (C) 2019 Philippe Aubertin.
+#!/bin/bash
+# Copyright (C) 2024 Philippe Aubertin.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -26,40 +27,44 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-# ------------------------------------------------------------------------------
-# object files
-*.o
 
-# Build dependency information
-*.d
+fail () {
+    echo "*** [ FAIL ] ***" >&2
+    exit 1
+}
 
-# static libraries
-*.a
+usage () {
+    echo "USAGE: $(basename $0) log_file" >&2
+    exit 1
+}
 
-# pre-processed NASM assembly language files
-*.nasm
+[[ $# -ne 1 ]] && usage
 
-# pre-processed linker scripts
-*.ld
+echo "* Check log file exists"
+[[ -f $1 ]] || fail
 
-# auto-generated files
-*.gen.h
-*.gen.sh
+echo "* Check kernel started"
+grep -F "Jinue microkernel started." $1 || fail
 
-# stripped executables
-*-stripped
+echo "* Check kernel did not panic"
+grep -F -A 20 "KERNEL PANIC" $1 && fail
 
-# Eclipse IDE workspace metadata
-.metadata/
-RemoteSystemsTempFiles/
+echo "* Check no error occurred"
+grep -E "^error:" $1 && fail
 
-# log files
-*.log
+echo "* Check PAE was enabled"
+grep -F "Enabling Physical Address Extension (PAE)" $1 || fail
 
-# directory for storing local temporary/debugging files
-wrk/
+echo "* Check no warning was reported"
+grep -E "^warning:" $1 && fail
 
-# Userspace executables
-userspace/loader/loader
-userspace/testapp/testapp
+echo "* Check user space loader started"
+grep -F "Jinue user space loader (jinue-userspace-loader) started." $1 || fail
+
+echo "* Check test application started"
+grep -F "Jinue test app (/sbin/init) started." $1 || fail
+
+echo "* Check the test application initiated the reboot"
+grep -F "Rebooting." $1 || fail
+
+echo "[ PASS ]"

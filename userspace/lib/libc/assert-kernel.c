@@ -40,7 +40,7 @@ void __assert_failed(
     const char      *func ) {
     
     error(
-        "ASSERTION FAILED [%s]: %s at line %u in function %s.",
+        "error: ASSERTION FAILED [%s]: %s at line %u in function %s.",
         expr, file, line, func );
 
     panic("Assertion failed.");

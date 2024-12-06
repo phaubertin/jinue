@@ -67,7 +67,7 @@ typedef struct {
  *
  * */
 static bool check_failed(const char *message) {
-    error("Invalid ELF binary: %s", message);
+    error("error: invalid ELF binary: %s", message);
     return false;
 }
 

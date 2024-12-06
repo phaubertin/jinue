@@ -1,4 +1,5 @@
-# Copyright (C) 2019 Philippe Aubertin.
+#!/bin/bash
+# Copyright (C) 2024 Philippe Aubertin.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -26,40 +27,6 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-# ------------------------------------------------------------------------------
-# object files
-*.o
 
-# Build dependency information
-*.d
-
-# static libraries
-*.a
-
-# pre-processed NASM assembly language files
-*.nasm
-
-# pre-processed linker scripts
-*.ld
-
-# auto-generated files
-*.gen.h
-*.gen.sh
-
-# stripped executables
-*-stripped
-
-# Eclipse IDE workspace metadata
-.metadata/
-RemoteSystemsTempFiles/
-
-# log files
-*.log
-
-# directory for storing local temporary/debugging files
-wrk/
-
-# Userspace executables
-userspace/loader/loader
-userspace/testapp/testapp
+CPU=core2duo
+CMDLINE="DEBUG_DUMP_SYSCALL_IMPLEMENTATION=1"

@@ -115,7 +115,7 @@ static bool maybe_enable_pae(
     }
 
     if(! use_pae) {
-        warning("Warning: Physical Address Extension (PAE) not enabled. NX protection disabled.");
+        warning("warning: physical Address Extension (PAE) not enabled. NX protection disabled.");
         pmap_set_no_pae();
     }
     else {

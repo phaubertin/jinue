@@ -686,7 +686,7 @@ int tar_extract(extracted_ramdisk_t *extracted, stream_t *stream) {
         }
             break;
         case LNKTYPE:
-            jinue_warning("hard links not supported, skipping %s", filename);
+            jinue_warning("warning: hard links not supported, skipping %s", filename);
             continue;
         case SYMTYPE:
             type = JINUE_DIRENT_TYPE_SYMLINK;
