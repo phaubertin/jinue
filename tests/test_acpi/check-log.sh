@@ -28,31 +28,11 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-fail () {
-    echo "*** [ FAIL ] ***" >&2
-    exit 1
-}
+echo "* Check the ACPI test ran"
+grep -F "Running ACPI test" $LOG || fail
 
-usage () {
-    echo "USAGE: $(basename $0) log_file" >&2
-    exit 1
-}
+check_no_error
 
-[[ $# -ne 1 ]] && usage
+check_no_warning
 
-echo "* Check log file exists"
-[[ -f $1 ]] || fail
-
-echo "* Check ACPI test ran"
-grep -F "Running ACPI test" $1 || fail
-
-echo "* Check no error occurred"
-grep -E "^error:" $1 && fail
-
-echo "* Check no warning was reported"
-grep -E "^warning:" $1 && fail
-
-echo "* Check the test application initiated the reboot"
-grep -F "Rebooting." $1 || fail
-
-echo "[ PASS ]"
+check_reboot

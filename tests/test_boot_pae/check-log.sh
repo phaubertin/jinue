@@ -28,43 +28,21 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-fail () {
-    echo "*** [ FAIL ] ***" >&2
-    exit 1
-}
+check_kernel_start
 
-usage () {
-    echo "USAGE: $(basename $0) log_file" >&2
-    exit 1
-}
+# If check_no_panic, check_no_error would also fail, but check_no_panic provides
+# more relevant context in the log.
+check_no_panic
 
-[[ $# -ne 1 ]] && usage
-
-echo "* Check log file exists"
-[[ -f $1 ]] || fail
-
-echo "* Check kernel started"
-grep -F "Jinue microkernel started." $1 || fail
-
-echo "* Check kernel did not panic"
-grep -F -A 20 "KERNEL PANIC" $1 && fail
-
-echo "* Check no error occurred"
-grep -E "^error:" $1 && fail
+check_no_error
 
 echo "* Check PAE was enabled"
-grep -F "Enabling Physical Address Extension (PAE)" $1 || fail
+grep -F "Enabling Physical Address Extension (PAE)" $LOG || fail
 
-echo "* Check no warning was reported"
-grep -E "^warning:" $1 && fail
+check_no_warning
 
-echo "* Check user space loader started"
-grep -F "Jinue user space loader (jinue-userspace-loader) started." $1 || fail
+check_loader_start
 
-echo "* Check test application started"
-grep -F "Jinue test app (/sbin/init) started." $1 || fail
+check_testapp_start
 
-echo "* Check the test application initiated the reboot"
-grep -F "Rebooting." $1 || fail
-
-echo "[ PASS ]"
+check_reboot

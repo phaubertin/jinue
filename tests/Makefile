@@ -31,10 +31,12 @@ jinue_root = ..
 include $(jinue_root)/header.mk
 
 test_script			= run-all-tests.gen.sh
-check_script        = check-log.sh
-setup_script        = setup-test.sh
+check_test_script   = check-test.sh
 run_script          = run-test.sh
+setup_script        = setup-test.sh
+check_log_script    = check-log.sh
 run_log             = run-test.log
+
 deps                = $(kernel_img) $(testapp_initrd)
 
 tests = \
@@ -54,10 +56,7 @@ $(test_script): Makefile
 	echo "#!/bin/bash -e" > $@
 	echo "# Generated file - see Makefile" >> $@
 	echo "" >> $@; \
-	echo "fail () {" >> $@; \
-    echo "    echo '*** [ FAIL ] ***' >&2" >> $@; \
-    echo "    exit 1" >> $@; \
-	echo "}" >> $@; \
+	echo "source utils.sh" >> $@; \
 	echo "" >> $@; \
 	echo "fail_count=0" >> $@; \
 	for t in $(tests); do \
@@ -70,7 +69,7 @@ $(test_script): Makefile
 		echo "echo =============================================================" >> $@; \
 		echo "echo ==== CHECK $$t" >> $@; \
 		echo "echo =============================================================" >> $@; \
-		echo "./$$t/$(check_script) $$t/$(run_log) || fail_count=\$$((fail_count + 1))" >> $@; \
+		echo "./$(check_test_script) ./$$t/$(check_log_script) $$t/$(run_log) || fail_count=\$$((fail_count + 1))" >> $@; \
 	done
 	echo "" >> $@; \
 	echo "echo =============================================================" >> $@; \

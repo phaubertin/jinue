@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 # Copyright (C) 2024 Philippe Aubertin.
 # All rights reserved.
 #
@@ -28,20 +28,21 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-check_kernel_start
+source utils.sh
 
-# If check_no_panic, check_no_error would also fail, but check_no_panic provides
-# more relevant context in the log.
-check_no_panic
+usage () {
+    echo "USAGE: $(basename $0) check_script log_file" >&2
+    exit 1
+}
 
-check_no_error
+[[ $# -ne 2 ]] && usage
 
-echo "* Check PAE was not enabled"
-grep -F "Enabling Physical Address Extension (PAE)" $LOG && fail
-grep -F "warning: physical Address Extension (PAE) not enabled" $LOG || fail
+echo "* Check log file exists"
+[[ -f $2 ]] || fail
 
-check_loader_start
+CHECK_SCRIPT=$1
+LOG=$2
 
-check_testapp_start
+source $CHECK_SCRIPT || exit 1
 
-check_reboot
+echo "[ PASS ]"

@@ -28,20 +28,42 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-check_kernel_start
+fail () {
+    echo "*** [ FAIL ] ***" >&2
+    exit 1
+}
 
-# If check_no_panic, check_no_error would also fail, but check_no_panic provides
-# more relevant context in the log.
-check_no_panic
+check_no_panic () {
+    echo "* Check kernel did not panic"
+    grep -F -A 20 "KERNEL PANIC" $LOG && fail
+}
 
-check_no_error
+check_no_error () {
+    echo "* Check no error occurred"
+    grep -E "^error:" $LOG && fail
+}
 
-echo "* Check PAE was not enabled"
-grep -F "Enabling Physical Address Extension (PAE)" $LOG && fail
-grep -F "warning: physical Address Extension (PAE) not enabled" $LOG || fail
+check_no_warning () {
+    echo "* Check no warning was reported"
+    grep -E "^warning:" $LOG && fail
+}
 
-check_loader_start
+check_reboot () {
+    echo "* Check the test application initiated the reboot"
+    grep -F "Rebooting." $LOG || fail
+}
 
-check_testapp_start
+check_kernel_start () {
+    echo "* Check kernel started"
+    grep -F "Jinue microkernel started." $LOG || fail
+}
 
-check_reboot
+check_loader_start () {
+    echo "* Check user space loader started"
+    grep -F "Jinue user space loader (jinue-userspace-loader) started." $LOG || fail
+}
+
+check_testapp_start () {
+    echo "* Check test application started"
+    grep -F "Jinue test app (/sbin/init) started." $LOG || fail
+}
