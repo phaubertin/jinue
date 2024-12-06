@@ -1,0 +1,2 @@
+file kernel/interface/i686/kernel
+target extended-remote localhost:1234

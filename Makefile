@@ -93,6 +93,21 @@ qemu-run:
 qemu-run-no-display:
 	make -C $(qemu) run-no-display
 
+# Run test application in QEMU and debug in gdb
+.PHONY: qemu-debug
+qemu-debug:
+	make -C $(qemu) debug
+
+# Run test application in QEMU without VGA display and debug in gdb
+.PHONY: qemu-debug-no-display
+qemu-debug-no-display:
+	make -C $(qemu) debug-no-display
+
+# Connect to the running gdb debugging session
+.PHONY: gdb
+gdb:
+	gdb -x $(gdb)/gdbinit
+
 # Run cppcheck on the kernel sources
 # Note: there are known failures
 .PHONY: cppcheck-kernel

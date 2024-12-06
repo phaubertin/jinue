@@ -81,6 +81,37 @@ run-no-display: $(deps)
 	-usb                                   \
 	-vga std | tee $(run_log)
 
+.PHONY: debug
+debug: $(deps)
+	qemu-system-i386            \
+	-cpu $(QEMU_CPU)            \
+	-m $(QEMU_MEM)              \
+	-no-reboot                  \
+	-kernel $(kernel_img)       \
+	-initrd $(testapp_initrd)   \
+	-append "$(CMDLINE)"        \
+	-serial stdio               \
+	-smp 1                      \
+	-usb                        \
+	-s -S                       \
+	-vga std | tee $(run_log)
+
+.PHONY: debug-no-display
+debug-no-display: $(deps)
+	qemu-system-i386                       \
+	-cpu $(QEMU_CPU)                       \
+	-m $(QEMU_MEM)                         \
+	-no-reboot                             \
+	-kernel $(kernel_img)                  \
+	-initrd $(testapp_initrd)              \
+	-append "$(CMDLINE) DEBUG_DO_REBOOT=1" \
+	-serial stdio                          \
+	-display none                          \
+	-smp 1                                 \
+	-usb                                   \
+	-s -S                                  \
+	-vga std | tee $(run_log)
+
 .PHONY: kernel-image
 kernel-image:
 	make -C $(jinue_root)/kernel
