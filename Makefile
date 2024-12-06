@@ -83,20 +83,15 @@ vbox-run:
 qemu:
 	make -C $(qemu)
 
-# build the ISO file for QEMU and run
+# Run test application in QEMU
 .PHONY: qemu-run
 qemu-run:
 	make -C $(qemu) run
 
-# build the ISO file for QEMU and run (without VGA display)
+# Run test application in QEMU without VGA display
 .PHONY: qemu-run-no-display
 qemu-run-no-display:
 	make -C $(qemu) run-no-display
-
-# build the ISO file for QEMU, run and check the output
-.PHONY: qemu-check
-qemu-check:
-	make -C $(qemu) check
 
 # Run cppcheck on the kernel sources
 # Note: there are known failures

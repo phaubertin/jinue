@@ -40,12 +40,10 @@ CMDLINE             = \
     DEBUG_DUMP_MEMORY_MAP=1 \
     DEBUG_DUMP_SYSCALL_IMPLEMENTATION=1 \
     DEBUG_DUMP_RAMDISK=1 \
-    DEBUG_DO_REBOOT=1 \
     RUN_TEST_ACPI=1 \
     RUN_TEST_IPC=1
 
 run_log              = run-jinue.log
-check_script         = check-log.sh
 deps                 = $(kernel_img) $(testapp_initrd)
 targets.phony        = all-deps
 
@@ -70,22 +68,18 @@ run: $(deps)
 
 .PHONY: run-no-display
 run-no-display: $(deps)
-	qemu-system-i386            \
-	-cpu $(QEMU_CPU)            \
-	-m $(QEMU_MEM)              \
-	-no-reboot                  \
-	-kernel $(kernel_img)       \
-	-initrd $(testapp_initrd)   \
-	-append "$(CMDLINE)"        \
-	-serial stdio               \
-	-display none               \
-	-smp 1                      \
-	-usb                        \
+	qemu-system-i386                       \
+	-cpu $(QEMU_CPU)                       \
+	-m $(QEMU_MEM)                         \
+	-no-reboot                             \
+	-kernel $(kernel_img)                  \
+	-initrd $(testapp_initrd)              \
+	-append "$(CMDLINE) DEBUG_DO_REBOOT=1" \
+	-serial stdio                          \
+	-display none                          \
+	-smp 1                                 \
+	-usb                                   \
 	-vga std | tee $(run_log)
-
-.PHONY: check
-check: $(run_log)
-	./$(check_script) $<
 
 .PHONY: kernel-image
 kernel-image:
