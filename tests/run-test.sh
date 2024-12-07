@@ -1,4 +1,5 @@
-# Copyright (C) 2019 Philippe Aubertin.
+#!/bin/bash -e
+# Copyright (C) 2024 Philippe Aubertin.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -26,40 +27,47 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-# ------------------------------------------------------------------------------
-# object files
-*.o
 
-# Build dependency information
-*.d
+# Default test setup parameters
+CPU=core2duo
+MEM=128
+CMDLINE=""
 
-# static libraries
-*.a
+usage () {
+    echo "USAGE: $(basename $0) kernel_image initrd test_script log_file" >&2
+    exit 1
+}
 
-# pre-processed NASM assembly language files
-*.nasm
+[[ $# -ne 4 ]] && usage
 
-# pre-processed linker scripts
-*.ld
+KERNEL_IMAGE=$1
+INITRD=$2
+TEST_SCRIPT=$3
+LOG=$4
 
-# auto-generated files
-*.gen.h
-*.gen.sh
+run () {
+    BASE_CMDLINE="on_panic=reboot serial_enable=yes serial_dev=/dev/ttyS0 DEBUG_DO_REBOOT=1"
 
-# stripped executables
-*-stripped
+    qemu-system-i386 \
+        -cpu ${CPU} \
+        -m ${MEM} \
+        -no-reboot \
+        -kernel "${KERNEL_IMAGE}" \
+        -initrd "${INITRD}" \
+        -append "${BASE_CMDLINE} ${CMDLINE}" \
+        -serial stdio \
+        -display none \
+        -smp 1 \
+        -usb \
+        -vga std | tee $LOG
+    
+    echo =============================================================
+}
 
-# Eclipse IDE workspace metadata
-.metadata/
-RemoteSystemsTempFiles/
+# This ensures the test reliably fails if "run" is never called.
+[ -f $LOG ] && rm -v $LOG
 
-# log files
-*.log
+source utils.sh
+( source $TEST_SCRIPT ) || report_fail
 
-# directory for storing local temporary/debugging files
-wrk/
-
-# Userspace executables
-userspace/loader/loader
-userspace/testapp/testapp
+report_success

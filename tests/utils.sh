@@ -1,4 +1,5 @@
-# Copyright (C) 2019 Philippe Aubertin.
+#!/bin/bash
+# Copyright (C) 2024 Philippe Aubertin.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -26,40 +27,51 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-# ------------------------------------------------------------------------------
-# object files
-*.o
 
-# Build dependency information
-*.d
+fail () {
+    exit 1
+}
 
-# static libraries
-*.a
+check_no_panic () {
+    echo "* Check kernel did not panic"
+    grep -F -A 20 "KERNEL PANIC" $LOG && fail
+}
 
-# pre-processed NASM assembly language files
-*.nasm
+check_no_error () {
+    echo "* Check no error occurred"
+    grep -E "^error:" $LOG && fail
+}
 
-# pre-processed linker scripts
-*.ld
+check_no_warning () {
+    echo "* Check no warning was reported"
+    grep -E "^warning:" $LOG && fail
+}
 
-# auto-generated files
-*.gen.h
-*.gen.sh
+check_reboot () {
+    echo "* Check the test application initiated the reboot"
+    grep -F "Rebooting." $LOG || fail
+}
 
-# stripped executables
-*-stripped
+check_kernel_start () {
+    echo "* Check kernel started"
+    grep -F "Jinue microkernel started." $LOG || fail
+}
 
-# Eclipse IDE workspace metadata
-.metadata/
-RemoteSystemsTempFiles/
+check_loader_start () {
+    echo "* Check user space loader started"
+    grep -F "Jinue user space loader (jinue-userspace-loader) started." $LOG || fail
+}
 
-# log files
-*.log
+check_testapp_start () {
+    echo "* Check test application started"
+    grep -F "Jinue test app (/sbin/init) started." $LOG || fail
+}
 
-# directory for storing local temporary/debugging files
-wrk/
+report_fail () {
+    echo "*** [ FAIL ] ***" >&2
+    exit 1
+}
 
-# Userspace executables
-userspace/loader/loader
-userspace/testapp/testapp
+report_success () {
+    echo "[ PASS ]"
+}

@@ -40,7 +40,7 @@
 
 void machine_dump_call_stack(void) {
     if(!check_bootinfo(false)) {
-        warning("Cannot dump call stack because boot information structure is invalid.");
+        warning("warning: cannot dump call stack because boot information structure is invalid.");
         return;
     }
 

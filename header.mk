@@ -61,6 +61,7 @@ kernel_img           = $(kernel)/interface/i686/jinue
 scripts              = $(jinue_root)/scripts
 userspace            = $(jinue_root)/userspace
 qemu                 = $(devel)/qemu
+gdb                  = $(devel)/gdb
 virtualbox           = $(devel)/virtualbox
 lib                  = $(userspace)/lib
 libjinue             = $(lib)/jinue

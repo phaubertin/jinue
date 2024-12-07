@@ -16,8 +16,8 @@ kernel, such as GRUB.
 
 During the boot process, the user space loader expects an initial RAM
 disk to have been loaded in memory by the bootloader. This would usually
-be provided by the user in order to use the kernel. However, an initial
-RAM disk containing a test application can be built from this
+be provided by an operating system built on top of the microkernel. However, an
+initial RAM disk containing a test application can be built from this
 repository.
 
 Build Requirements
@@ -77,6 +77,7 @@ make testapp
 
 How to Run in QEMU
 -------------------
+
 You can run the kernel and test application in QEMU using the `qemu-run`
 make target:
 
@@ -96,12 +97,11 @@ make qemu-run-no-display
 In either case, this generates a log file called `run-jinue.log` in
 `devel/qemu/` with the full kernel and test application output.
 
-Finally, you can run the kernel and test application, and then run a
-script that performs checks on the log file by using the `qemu-check`
+Finally, you can run the functional tests in QEMU by using the `check`
 make target:
 
 ```
-make qemu-check
+make check
 ```
 
 How to Install

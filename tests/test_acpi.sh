@@ -1,4 +1,5 @@
-# Copyright (C) 2019 Philippe Aubertin.
+#!/bin/bash
+# Copyright (C) 2024 Philippe Aubertin.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -26,40 +27,20 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-# ------------------------------------------------------------------------------
-# object files
-*.o
 
-# Build dependency information
-*.d
+CMDLINE="RUN_TEST_ACPI=1"
 
-# static libraries
-*.a
+run
 
-# pre-processed NASM assembly language files
-*.nasm
+echo "* Check the ACPI test ran"
+grep -F "Running ACPI test" $LOG || fail
 
-# pre-processed linker scripts
-*.ld
+check_no_error
 
-# auto-generated files
-*.gen.h
-*.gen.sh
+check_no_warning
 
-# stripped executables
-*-stripped
+# Only the user space loader is allowed to call this system call
+echo "* Check the SET_ACPI system call fails with JINUE_ENOSYS"
+grep -F "expected: jinue_set_acpi() set errno to: function not supported" $LOG || fail
 
-# Eclipse IDE workspace metadata
-.metadata/
-RemoteSystemsTempFiles/
-
-# log files
-*.log
-
-# directory for storing local temporary/debugging files
-wrk/
-
-# Userspace executables
-userspace/loader/loader
-userspace/testapp/testapp
+check_reboot

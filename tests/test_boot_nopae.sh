@@ -1,4 +1,5 @@
-# Copyright (C) 2019 Philippe Aubertin.
+#!/bin/bash
+# Copyright (C) 2024 Philippe Aubertin.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -26,40 +27,26 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-# ------------------------------------------------------------------------------
-# object files
-*.o
 
-# Build dependency information
-*.d
+CPU=pentium2
+CMDLINE="DEBUG_DUMP_SYSCALL_IMPLEMENTATION=1"
 
-# static libraries
-*.a
+run
 
-# pre-processed NASM assembly language files
-*.nasm
+check_kernel_start
 
-# pre-processed linker scripts
-*.ld
+# If check_no_panic, check_no_error would also fail, but check_no_panic provides
+# more relevant context in the log.
+check_no_panic
 
-# auto-generated files
-*.gen.h
-*.gen.sh
+check_no_error
 
-# stripped executables
-*-stripped
+echo "* Check PAE was not enabled"
+grep -F "Enabling Physical Address Extension (PAE)" $LOG && fail
+grep -F "warning: physical Address Extension (PAE) not enabled" $LOG || fail
 
-# Eclipse IDE workspace metadata
-.metadata/
-RemoteSystemsTempFiles/
+check_loader_start
 
-# log files
-*.log
+check_testapp_start
 
-# directory for storing local temporary/debugging files
-wrk/
-
-# Userspace executables
-userspace/loader/loader
-userspace/testapp/testapp
+check_reboot

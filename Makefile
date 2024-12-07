@@ -39,13 +39,19 @@ subdirs = \
 	$(zlib) \
 	$(bzip2) \
 	$(qemu) \
-	$(virtualbox)
+	$(virtualbox) \
+	tests
 
 # make all (default target) will build the kernel image
 targets.phony = kernel
 
 # main targets
 include $(common)
+
+# Run functional tests
+.PHONY: check
+check:
+	make -C tests check
 
 # install kernel image in /boot
 .PHONY: install
@@ -77,20 +83,30 @@ vbox-run:
 qemu:
 	make -C $(qemu)
 
-# build the ISO file for QEMU and run
+# Run test application in QEMU
 .PHONY: qemu-run
 qemu-run:
 	make -C $(qemu) run
 
-# build the ISO file for QEMU and run (without VGA display)
+# Run test application in QEMU without VGA display
 .PHONY: qemu-run-no-display
 qemu-run-no-display:
 	make -C $(qemu) run-no-display
 
-# build the ISO file for QEMU, run and check the output
-.PHONY: qemu-check
-qemu-check:
-	make -C $(qemu) check
+# Run test application in QEMU and debug in gdb
+.PHONY: qemu-debug
+qemu-debug:
+	make -C $(qemu) debug
+
+# Run test application in QEMU without VGA display and debug in gdb
+.PHONY: qemu-debug-no-display
+qemu-debug-no-display:
+	make -C $(qemu) debug-no-display
+
+# Connect to the running gdb debugging session
+.PHONY: gdb
+gdb:
+	gdb -x $(gdb)/gdbinit
 
 # Run cppcheck on the kernel sources
 # Note: there are known failures

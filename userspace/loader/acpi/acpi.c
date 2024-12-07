@@ -156,12 +156,12 @@ static const acpi_header_t *map_header(uint64_t paddr) {
  * */
 static const void *map_table(uint64_t paddr, const acpi_header_t *header, const char *name) {
     if(header->length < sizeof(acpi_header_t)) {
-        jinue_warning("Value of ACPI table length member is too small (%" PRIu32 ", %s)", name);
+        jinue_warning("warning: value of ACPI table length member is too small (%" PRIu32 ", %s)", name);
         return NULL;
     }
 
     if(header->length > ACPI_TABLE_MAX_SIZE) {
-        jinue_warning("Value of ACPI table length member is too large (%" PRIu32 ", %s)", name);
+        jinue_warning("warning: value of ACPI table length member is too large (%" PRIu32 ", %s)", name);
         return NULL;
     }
 
@@ -179,13 +179,13 @@ static const void *map_table(uint64_t paddr, const acpi_header_t *header, const 
         const void *extension   = map_size(paddr + allocated, extsize);
 
         if(extension == NULL) {
-            jinue_warning("Failed mapping ACPI table (%s)", name);
+            jinue_warning("warning: failed mapping ACPI table (%s)", name);
             return NULL;
         }
     }
 
     if(! verify_checksum(header, header->length)) {
-        jinue_warning("ACPI table checksum mismatch (%s)", name);
+        jinue_warning("warning: ACPI table checksum mismatch (%s)", name);
         return NULL;
     }
     
@@ -213,12 +213,12 @@ static const acpi_rsdt_t *map_rsdt(uint64_t paddr, bool is_xsdt) {
     const char *const signature = is_xsdt ? "XSDT" : "RSDT";
 
     if(! verify_signature(header, signature)) {
-        jinue_warning("Signature mismatch for ACPI %s", signature);
+        jinue_warning("warning: signature mismatch for ACPI %s", signature);
         return NULL;
     }
 
     if(header->length < RSDT_BASE_SIZE) {
-        jinue_warning("ACPI %s table is too small", signature);
+        jinue_warning("warning: ACPI %s table is too small", signature);
         return NULL;
     }
 

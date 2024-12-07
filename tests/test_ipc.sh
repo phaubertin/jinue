@@ -28,53 +28,31 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-fail () {
-    echo "*** [ FAIL ] ***" >&2
-    exit 1
-}
+CMDLINE="RUN_TEST_IPC=1"
 
-usage () {
-    echo "USAGE: $(basename $0) log_file" >&2
-    exit 1
-}
+run
 
-[[ $# -ne 1 ]] && usage
+echo "* Check the threading and IPC test ran"
+grep -F "Running threading and IPC test" $LOG || fail
 
-echo "* Check log file exists"
-[[ -f $1 ]] || fail
+check_no_error
 
-echo "* Check kernel started"
-grep -F "Jinue microkernel started." $1 || fail
-
-echo "* Check no error occurred"
-grep -E "^error:" $1 && fail
-
-echo "* Check kernel did not panic"
-grep -F -A 20 "KERNEL PANIC" $1 && fail
-
-echo "* Check user space loader started"
-grep -F "Jinue user space loader (jinue-userspace-loader) started." $1 || fail
-
-echo "* Check test application started"
-grep -F "Jinue test app (/sbin/init) started." $1 || fail
-
-echo "* Check threading and IPC test ran"
-grep -F "Running threading and IPC test" $1 || fail
+check_no_warning
 
 echo "* Check the main thread tried to receive on the send-only descriptor"
-grep -F "Attempting to call jinue_receive() on the send-only descriptor." $1 || fail
+grep -F "Attempting to call jinue_receive() on the send-only descriptor." $LOG || fail
 
 echo "* Check errno was set to JINUE_EPERM"
-RESULT=`grep -F -A 1 "Attempting to call jinue_receive() on the send-only descriptor." $1`
+RESULT=`grep -F -A 1 "Attempting to call jinue_receive() on the send-only descriptor." $LOG`
 echo "$RESULT" | grep -F 'operation not permitted' || fail
 
 echo "* Check client thread started and got the right argument"
-grep -F "Client thread is starting with argument: 0xb01dface" $1 || fail
+grep -F "Client thread is starting with argument: 0xb01dface" $LOG || fail
 
 echo "* Check main thread received message from client thread"
-grep -F "Main thread received message" $1 || fail
+grep -F "Main thread received message" $LOG || fail
 
-MESSAGE=`grep -F -A 5 "Main thread received message:" $1`
+MESSAGE=`grep -F -A 5 "Main thread received message:" $LOG`
 
 echo "* Check message data"
 echo "$MESSAGE" | grep -E 'data:[ ]+"Hello World!"' || fail
@@ -89,9 +67,9 @@ echo "* Check cookie"
 echo "$MESSAGE" | grep -E 'cookie:[ ]+0xca11ab1e$' || fail
 
 echo "* Check client thread received reply from main thread"
-grep -F "Client thread got reply from main thread" $1 || fail
+grep -F "Client thread got reply from main thread" $LOG || fail
 
-REPLY=`grep -F -A 2 "Client thread got reply from main thread:" $1`
+REPLY=`grep -F -A 2 "Client thread got reply from main thread:" $LOG`
 
 echo "* Check reply data"
 echo "$REPLY" | grep -E 'data:[ ]+"Hi, Main Thread!"' || fail
@@ -100,24 +78,22 @@ echo "* Check message size"
 echo "$REPLY" | grep -E 'size:[ ]+17$' || fail
 
 echo "* Check client thread attempted to send the message a second time"
-grep -F "Client thread is re-sending message." $1 || fail
+grep -F "Client thread is re-sending message." $LOG || fail
 
 echo "* Check main thread closed the receive descriptor while the client was send blocked"
-RESULT=`grep -F -A 1 "Client thread is re-sending message." $1`
+RESULT=`grep -F -A 1 "Client thread is re-sending message." $LOG`
 echo "$RESULT" | grep -F 'Closing receiver descriptor.' || fail
 
 echo "* Check closing the receive descriptor caused JINUE_EIO in the send-blocked thread"
-RESULT=`grep -F -A 1 "Closing receiver descriptor." $1`
+RESULT=`grep -F -A 1 "Closing receiver descriptor." $LOG`
 echo "$RESULT" | grep -F 'I/O error' || fail
 
 echo "* Check client thread exited cleanly"
-grep -F "Client thread is exiting." $1 || fail
+grep -F "Client thread is exiting." $LOG || fail
 
 echo "* Check main thread joined the client thread and retrieved its exit value"
-grep -F "Client thread exit value is 0xdeadbeef." $1 || fail
+grep -F "Client thread exit value is 0xdeadbeef." $LOG || fail
 
 echo "* Check the main thread initiated the reboot"
-grep -F "Main thread is running." $1 || fail
-grep -F "Rebooting." $1 || fail
-
-echo "[ PASS ]"
+grep -F "Main thread is running." $LOG || fail
+grep -F "Rebooting." $LOG || fail
