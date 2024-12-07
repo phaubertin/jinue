@@ -28,5 +28,19 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-CPU=core2duo
-CMDLINE="DEBUG_DUMP_SYSCALL_IMPLEMENTATION=1"
+CMDLINE="RUN_TEST_ACPI=1"
+
+run
+
+echo "* Check the ACPI test ran"
+grep -F "Running ACPI test" $LOG || fail
+
+check_no_error
+
+check_no_warning
+
+# Only the user space loader is allowed to call this system call
+echo "* Check the SET_ACPI system call fails with JINUE_ENOSYS"
+grep -F "expected: jinue_set_acpi() set errno to: function not supported" $LOG || fail
+
+check_reboot

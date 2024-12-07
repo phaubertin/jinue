@@ -29,7 +29,6 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 fail () {
-    echo "*** [ FAIL ] ***" >&2
     exit 1
 }
 
@@ -66,4 +65,13 @@ check_loader_start () {
 check_testapp_start () {
     echo "* Check test application started"
     grep -F "Jinue test app (/sbin/init) started." $LOG || fail
+}
+
+report_fail () {
+    echo "*** [ FAIL ] ***" >&2
+    exit 1
+}
+
+report_success () {
+    echo "[ PASS ]"
 }

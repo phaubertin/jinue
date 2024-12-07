@@ -28,6 +28,11 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+CPU=pentium2
+CMDLINE="DEBUG_DUMP_SYSCALL_IMPLEMENTATION=1"
+
+run
+
 check_kernel_start
 
 # If check_no_panic, check_no_error would also fail, but check_no_panic provides

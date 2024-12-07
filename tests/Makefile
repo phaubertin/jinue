@@ -30,11 +30,8 @@
 jinue_root = ..
 include $(jinue_root)/header.mk
 
-test_script			= run-all-tests.gen.sh
-check_test_script   = check-test.sh
+test_script         = run-all-tests.gen.sh
 run_script          = run-test.sh
-setup_script        = setup-test.sh
-check_log_script    = check-log.sh
 run_log             = run-test.log
 
 deps                = $(kernel_img) $(testapp_initrd)
@@ -45,7 +42,7 @@ tests = \
 	test_boot_pae \
 	test_ipc
 
-logs := $(foreach d,$(tests),$(d)/$(run_log))
+logs := $(foreach t,$(tests),$(t).log)
 
 target          = $(test_script)
 unclean.extra   = $(logs)
@@ -62,14 +59,9 @@ $(test_script): Makefile
 	for t in $(tests); do \
 		echo "" >> $@; \
 		echo "echo =============================================================" >> $@; \
-		echo "echo ==== RUN $$t" >> $@; \
+		echo "echo ==== TEST $$t" >> $@; \
 		echo "echo =============================================================" >> $@; \
-		echo "./$(run_script) $(kernel_img) $(testapp_initrd) $$t/$(setup_script) | tee $$t/$(run_log)" >> $@; \
-		echo "" >> $@; \
-		echo "echo =============================================================" >> $@; \
-		echo "echo ==== CHECK $$t" >> $@; \
-		echo "echo =============================================================" >> $@; \
-		echo "./$(check_test_script) ./$$t/$(check_log_script) $$t/$(run_log) || fail_count=\$$((fail_count + 1))" >> $@; \
+		echo "./$(run_script) $(kernel_img) $(testapp_initrd) ./$$t.sh $$t.log || fail_count=\$$((fail_count + 1))" >> $@; \
 	done
 	echo "" >> $@; \
 	echo "echo =============================================================" >> $@; \
@@ -78,8 +70,8 @@ $(test_script): Makefile
 	echo "echo Total:    $(words $(tests))" >> $@; \
 	echo "echo Success:  \$$(($(words $(tests)) - fail_count))" >> $@; \
 	echo "echo Failures: \$$((fail_count))" >> $@; \
-	echo '[ "$$fail_count" -gt "0" ] && fail' >> $@; \
-	echo "echo '[ PASS ]'" >> $@; \
+	echo '[ "$$fail_count" -gt "0" ] && report_fail' >> $@; \
+	echo "report_success" >> $@; \
 	chmod 755 $@
 
 .PHONY: check

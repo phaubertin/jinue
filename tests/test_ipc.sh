@@ -28,6 +28,10 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+CMDLINE="RUN_TEST_IPC=1"
+
+run
+
 echo "* Check the threading and IPC test ran"
 grep -F "Running threading and IPC test" $LOG || fail
 

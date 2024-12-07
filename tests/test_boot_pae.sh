@@ -28,4 +28,26 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-CMDLINE="RUN_TEST_IPC=1"
+CPU=core2duo
+CMDLINE="DEBUG_DUMP_SYSCALL_IMPLEMENTATION=1"
+
+run
+
+check_kernel_start
+
+# If check_no_panic, check_no_error would also fail, but check_no_panic provides
+# more relevant context in the log.
+check_no_panic
+
+check_no_error
+
+echo "* Check PAE was enabled"
+grep -F "Enabling Physical Address Extension (PAE)" $LOG || fail
+
+check_no_warning
+
+check_loader_start
+
+check_testapp_start
+
+check_reboot
