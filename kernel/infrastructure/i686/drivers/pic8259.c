@@ -110,7 +110,7 @@ static uint8_t read_isr(pic8259_t *pic8259) {
     return inb(pic8259->io_base + 0);
 }
 
-void pic8259_init() {
+void pic8259_init(void) {
     initialize(&main_pic8259);
     initialize(&proxied_pic8259);
 }
