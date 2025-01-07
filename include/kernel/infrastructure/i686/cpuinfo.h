@@ -37,21 +37,21 @@
 #include <stdint.h>
 
 typedef struct {
-    unsigned int     maxphyaddr;
-    unsigned int     dcache_alignment;
-    uint32_t         features;
-    int              vendor;
-    int              family;
-    int              model;
-    int              stepping;
+    unsigned int    maxphyaddr;
+    unsigned int    dcache_alignment;
+    uint32_t        features;
+    int             vendor;
+    unsigned int    family;
+    unsigned int    model;
+    unsigned int    stepping;
 } cpuinfo_t;
 
-extern cpuinfo_t cpuinfo;
+extern cpuinfo_t bsp_cpuinfo;
 
 void detect_cpu_features(void);
 
 static inline bool cpu_has_feature(uint32_t mask) {
-    return (cpuinfo.features & mask) == mask;
+    return (bsp_cpuinfo.features & mask) == mask;
 }
 
 #endif

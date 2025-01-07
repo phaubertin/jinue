@@ -322,7 +322,7 @@ static pdpt_t *initialize_boot_page_tables(
 void pae_enable(boot_alloc_t *boot_alloc, const bootinfo_t *bootinfo) {
     pgtable_format_pae      = true;
     entries_per_page_table  = PAE_PAGE_TABLE_PTES;
-    page_frame_number_mask  = ((UINT64_C(1) << cpuinfo.maxphyaddr) - 1) & (~PAGE_MASK);
+    page_frame_number_mask  = ((UINT64_C(1) << bsp_cpuinfo.maxphyaddr) - 1) & (~PAGE_MASK);
 
     pdpt_t *pdpt = initialize_boot_page_tables(boot_alloc, bootinfo);
 
