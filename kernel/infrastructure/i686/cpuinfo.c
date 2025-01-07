@@ -52,7 +52,7 @@ static void check_cpuid_is_supported(void) {
     temp_eflags ^= EFLAGS_ID;
     set_eflags(temp_eflags);
     
-    if(temp_eflags != get_eflags()) {
+    if((temp_eflags & EFLAGS_ID) != (get_eflags() & EFLAGS_ID)) {
         error("CPUID instruction is not supported");
         too_old();
     }
