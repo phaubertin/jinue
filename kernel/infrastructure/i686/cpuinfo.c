@@ -59,7 +59,7 @@ static void check_cpuid_is_supported(void) {
 }
 
 static void call_cpuid(x86_cpuid_leafs *leafs) {
-    memset(leafs, 0, sizeof(leafs));
+    memset(leafs, 0, sizeof(x86_cpuid_leafs));
 
     const uint32_t ext_base = 0x80000000;
     
