@@ -35,7 +35,7 @@
 #include <kernel/infrastructure/i686/drivers/asm/pic8259.h>
 #include <stdbool.h>
 
-void pic8259_init();
+void pic8259_init(void);
 
 void pic8259_mask(int irq);
 

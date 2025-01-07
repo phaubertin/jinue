@@ -48,7 +48,6 @@ static void ipc_test_run_client(void) {
     char reply2[5];
     char reply1[6];
     char reply3[40];
-    int errno;
 
     const char hello[] = "Hello ";
     const char world[] = "World!";
