@@ -36,7 +36,6 @@
 #include <kernel/infrastructure/i686/isa/regs.h>
 #include <kernel/infrastructure/i686/cpuinfo.h>
 #include <kernel/machine/cpuinfo.h>
-#include <kernel/machine/halt.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
@@ -509,8 +508,6 @@ void detect_cpu_features(void) {
     identify_maxphyaddr(&bsp_cpuinfo, &cpuid_leafs);
 
     dump_cpu_features(&bsp_cpuinfo);
-
-    machine_halt();
 }
 
 /**
