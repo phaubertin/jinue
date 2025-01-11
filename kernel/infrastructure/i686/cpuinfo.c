@@ -36,7 +36,6 @@
 #include <kernel/infrastructure/i686/isa/regs.h>
 #include <kernel/infrastructure/i686/cpuinfo.h>
 #include <kernel/machine/cpuinfo.h>
-#include <kernel/machine/halt.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
@@ -603,8 +602,6 @@ static void dump_cpu_features(const cpuinfo_t *cpuinfo) {
     info("  Brand string: %s", cpuinfo->brand_string);
     info("  Data cache alignment: %u bytes", cpuinfo->dcache_alignment);
     info("  Physical address size: %u bits", cpuinfo->maxphyaddr);
-
-    machine_halt();
 }
 
 static const char *get_hypervisor_string(const cpuinfo_t *cpuinfo) {
