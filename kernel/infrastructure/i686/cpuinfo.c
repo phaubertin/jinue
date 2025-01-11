@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2019-2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -68,18 +68,21 @@ static void check_cpuid_is_supported(void) {
 }
 
 /**
- * Call the CPUID instruction and fill the provided CPUID leafs structure
+ * Fill the provided leafs structure by calling the CPUID instruction
  * 
  * @param leafs CPUID leafs structure (OUT)
  */
-static void call_cpuid(x86_cpuid_leafs *leafs) {
+static void get_cpuid_leafs(x86_cpuid_leafs *leafs) {
     memset(leafs, 0, sizeof(x86_cpuid_leafs));
 
     const uint32_t ext_base = 0x80000000;
+    const uint32_t soft_base = 0x40000000;
     
     leafs->basic0.eax = 0;
     leafs->basic1.eax = 1;
     leafs->ext0.eax = ext_base;
+
+    /* leaf 0x00000000 */
 
     uint32_t basic_max = cpuid(&leafs->basic0);
 
@@ -88,14 +91,22 @@ static void call_cpuid(x86_cpuid_leafs *leafs) {
         too_old();
     }
 
+    /* leaf 0x000000001 */
+
     (void)cpuid(&leafs->basic1);
 
+    /* leaf 0x80000000 */
+
     uint32_t ext_max = cpuid(&leafs->ext0);
+
+    /* leaf 0x80000001 */
 
     if(ext_max >= ext_base + 1) {
         leafs->ext1.eax = ext_base + 1;
         (void)cpuid(&leafs->ext1);
     }
+
+    /* leafs 0x80000002-0x80000004 (CPU brand string) */
 
     leafs->ext4_valid = ext_max >= ext_base + 4;
 
@@ -108,70 +119,177 @@ static void call_cpuid(x86_cpuid_leafs *leafs) {
         (void)cpuid(&leafs->ext4);
     }
 
+    /* leaf 0x80000008 */
+
     leafs->ext8_valid = ext_max >= ext_base + 8;
 
     if(leafs->ext8_valid) {
         leafs->ext8.eax = ext_base + 8;
         (void)cpuid(&leafs->ext8);
     }
+
+    /* leaf 0x40000000 (software/hypervisor) */
+
+    leafs->soft0.eax = soft_base;
+    (void)cpuid(&leafs->soft0);
+
+    /* Regarding KVM:
+     *
+     * " Note also that old hosts set eax value to 0x0. This should be
+     *   interpreted as if the value was 0x40000001. "
+     *
+     * https://docs.kernel.org/virt/kvm/x86/cpuid.html */
+    bool needs_kvm_eax_fix =
+           leafs->soft0.eax == 0
+        && leafs->soft0.ebx == CPUID_HYPERVISOR_KVM_EBX
+        && leafs->soft0.ecx == CPUID_HYPERVISOR_KVM_ECX
+        && leafs->soft0.edx == CPUID_HYPERVISOR_KVM_EDX;
+
+    if(needs_kvm_eax_fix) {
+        leafs->soft0.eax = soft_base + 1;
+    }
+
+    uint32_t soft0_eax = leafs->soft0.eax;
+    leafs->soft0_valid = soft0_eax >= soft_base && soft0_eax < soft_base + 0x10000000;
 }
 
 typedef struct {
-    int         vendor;
-    uint32_t    vendor_dw0;
-    uint32_t    vendor_dw1;
-    uint32_t    vendor_dw2;
-} cpuid_vendor_t;
+    int         id;
+    uint32_t    signature_ebx;
+    uint32_t    signature_ecx;
+    uint32_t    signature_edx;
+} cpuid_signature_t;
 
-static const cpuid_vendor_t cpuid_vendors[] = {
-    {
-        .vendor     = CPUINFO_VENDOR_AMD,
-        .vendor_dw0 = CPUID_VENDOR_AMD_DW0,
-        .vendor_dw1 = CPUID_VENDOR_AMD_DW1,
-        .vendor_dw2 = CPUID_VENDOR_AMD_DW2
-    },
-    {
-        .vendor     = CPUINFO_VENDOR_INTEL,
-        .vendor_dw0 = CPUID_VENDOR_INTEL_DW0,
-        .vendor_dw1 = CPUID_VENDOR_INTEL_DW1,
-        .vendor_dw2 = CPUID_VENDOR_INTEL_DW2
+/**
+ * Map a CPUID signature to an ID for the kernel's internal use
+ * 
+ * For use with:
+ *  - Vendor signature in CPUID leaf 0x00000000
+ *  - Hypervisor signature in CPUID leaf 0x40000000
+ * 
+ * @param regs relevant CPUID leaf
+ * @param mapping mapping entries
+ * @param default_value default ID if no mapping entry matches
+ */
+static int map_signature(
+        const x86_cpuid_regs_t  *regs,
+        const cpuid_signature_t  mapping[],
+        int                      default_value
+) {
+    for(int idx = 0; mapping[idx].id >= 0; ++idx) {
+        if(regs->ebx != mapping[idx].signature_ebx) {
+            continue;
+        }
+
+        if(regs->ecx != mapping[idx].signature_ecx) {
+            continue;
+        }
+
+        if(regs->edx != mapping[idx].signature_edx) {
+            continue;
+        }
+
+        return mapping[idx].id;
     }
-};
+
+    return default_value;
+}
 
 /**
  * Identify the CPU vendor based on CPUID results
  * 
  * @param cpuinfo structure in which to set the vendor (OUT)
- * @param leafs CPUID leafs structure filled by a call_cpuid()
+ * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
  */
 static void identify_vendor(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
-    const x86_cpuid_regs_t *regs = &leafs->basic0;
-    
-    for(int idx = 0; idx < sizeof(cpuid_vendors) / sizeof(cpuid_vendors[0]); ++idx) {
-        if(regs->ebx != cpuid_vendors[idx].vendor_dw0) {
-            continue;
+    static const cpuid_signature_t mapping[] = {
+        {
+            .id             = CPUINFO_VENDOR_AMD,
+            .signature_ebx  = CPUID_VENDOR_AMD_EBX,
+            .signature_ecx  = CPUID_VENDOR_AMD_ECX,
+            .signature_edx  = CPUID_VENDOR_AMD_EDX
+        },
+        {
+            .id             = CPUINFO_VENDOR_INTEL,
+            .signature_ebx  = CPUID_VENDOR_INTEL_EBX,
+            .signature_ecx  = CPUID_VENDOR_INTEL_ECX,
+            .signature_edx  = CPUID_VENDOR_INTEL_EDX
+        },
+        {
+            .id             = -1,
+            .signature_ebx  = 0,
+            .signature_ecx  = 0,
+            .signature_edx  = 0
         }
+    };
 
-        if(regs->edx != cpuid_vendors[idx].vendor_dw1) {
-            continue;
+    cpuinfo->vendor = map_signature(&leafs->basic0, mapping, CPUINFO_VENDOR_GENERIC);
+}
+
+/**
+ * Identify the hypervisor
+ * 
+ * @param cpuinfo structure in which to set the hypervisor ID (OUT)
+ * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
+ */
+static void identify_hypervisor(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
+    static const cpuid_signature_t mapping[] = {
+        {
+            .id             = HYPERVISOR_ID_ACRN,
+            .signature_ebx  = CPUID_HYPERVISOR_ACRN,
+            .signature_ecx  = CPUID_HYPERVISOR_ACRN,
+            .signature_edx  = CPUID_HYPERVISOR_ACRN
+        },
+        {
+            .id             = HYPERVISOR_ID_BHYVE,
+            .signature_ebx  = CPUID_HYPERVISOR_BHYVE_EBX,
+            .signature_ecx  = CPUID_HYPERVISOR_BHYVE_ECX,
+            .signature_edx  = CPUID_HYPERVISOR_BHYVE_EDX
+        },
+        {
+            .id             = HYPERVISOR_ID_KVM,
+            .signature_ebx  = CPUID_HYPERVISOR_KVM_EBX,
+            .signature_ecx  = CPUID_HYPERVISOR_KVM_ECX,
+            .signature_edx  = CPUID_HYPERVISOR_KVM_EDX
+        },
+        {
+            .id             = HYPERVISOR_ID_QEMU,
+            .signature_ebx  = CPUID_HYPERVISOR_QEMU_EBX,
+            .signature_ecx  = CPUID_HYPERVISOR_QEMU_ECX,
+            .signature_edx  = CPUID_HYPERVISOR_QEMU_EDX
+        },
+        {
+            .id             = HYPERVISOR_ID_VMWARE,
+            .signature_ebx  = CPUID_HYPERVISOR_VMWARE_EBX,
+            .signature_ecx  = CPUID_HYPERVISOR_VMWARE_ECX,
+            .signature_edx  = CPUID_HYPERVISOR_VMWARE_EDX
+        },
+        {
+            .id             = HYPERVISOR_ID_XEN,
+            .signature_ebx  = CPUID_HYPERVISOR_XEN_EBX,
+            .signature_ecx  = CPUID_HYPERVISOR_XEN_ECX,
+            .signature_edx  = CPUID_HYPERVISOR_XEN_EDX
+        },
+        {
+            .id             = -1,
+            .signature_ebx  = 0,
+            .signature_ecx  = 0,
+            .signature_edx  = 0
         }
+    };
 
-        if(regs->ecx != cpuid_vendors[idx].vendor_dw2) {
-            continue;
-        }
-
-        cpuinfo->vendor = cpuid_vendors[idx].vendor;
-        return;
+    if(! leafs->soft0_valid) {
+        cpuinfo->hypervisor = HYPERVISOR_ID_NONE;
+    } else {
+        cpuinfo->hypervisor = map_signature(&leafs->soft0, mapping, HYPERVISOR_ID_UNKNOWN);
     }
-
-    cpuinfo->vendor = CPUINFO_VENDOR_GENERIC;
 }
 
 /**
  * Identify the CPU family, model and stepping
  * 
  * @param cpuinfo structure in which to set the information (OUT)
- * @param leafs CPUID leafs structure filled by a call_cpuid()
+ * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
  */
 static void identify_model(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
     uint32_t signature   = leafs->basic1.eax;
@@ -248,7 +366,7 @@ static void clean_brand_string(char *buffer) {
  * Sets an empty string if the brand string cannot be retrieved.
  * 
  * @param cpuinfo structure in which to set the brand string (OUT)
- * @param leafs CPUID leafs structure filled by a call_cpuid()
+ * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
  */
 static void get_brand_string(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
     if(! leafs->ext4_valid) {
@@ -283,7 +401,7 @@ static void get_brand_string(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
  * Defaults to 32 if the data cache alignment is not reported by the CPUID instruction.
  * 
  * @param cpuinfo structure in which to set the cache alignment (OUT)
- * @param leafs CPUID leafs structure filled by a call_cpuid()
+ * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
  */
 static void identify_dcache_alignment(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
     const x86_cpuid_regs_t *regs = &leafs->basic1;
@@ -332,7 +450,7 @@ static bool is_amd_or_intel(const cpuinfo_t *cpuinfo) {
  * is supported.
  * 
  * @param cpuinfo structure in which to set the feature flag (OUT)
- * @param leafs CPUID leafs structure filled by a call_cpuid()
+ * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
  */
 static void detect_sysenter_instruction(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
     if(!(leafs->basic1.edx & CPUID_FEATURE_SEP)) {
@@ -353,7 +471,7 @@ static void detect_sysenter_instruction(cpuinfo_t *cpuinfo, const x86_cpuid_leaf
  * is supported.
  * 
  * @param cpuinfo structure in which to set the feature flag (OUT)
- * @param leafs CPUID leafs structure filled by a call_cpuid()
+ * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
  */
 static void detect_syscall_instruction(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
     if(!is_amd(cpuinfo)) {
@@ -372,7 +490,7 @@ static void detect_syscall_instruction(cpuinfo_t *cpuinfo, const x86_cpuid_leafs
  * sets feature flag in the CPU information structure accordingly.
  * 
  * @param cpuinfo structure in which to set the feature flags (OUT)
- * @param leafs CPUID leafs structure filled by a call_cpuid()
+ * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
  */
 static void enumerate_features(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
     uint32_t flags = leafs->basic1.edx;
@@ -413,7 +531,7 @@ static void enumerate_features(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs)
  * Identify the number of bits of physical addresses
  * 
  * @param cpuinfo structure in which to set the number of address bits (OUT)
- * @param leafs CPUID leafs structure filled by a call_cpuid()
+ * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
  */
 static void identify_maxphyaddr(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
     if((cpuinfo->features & CPUINFO_FEATURE_PAE) && leafs->ext8_valid) {
@@ -486,6 +604,35 @@ static void dump_cpu_features(const cpuinfo_t *cpuinfo) {
     info("  Physical address size: %u bits", cpuinfo->maxphyaddr);
 }
 
+static const char *get_hypervisor_string(const cpuinfo_t *cpuinfo) {
+    switch(cpuinfo->hypervisor) {
+        case HYPERVISOR_ID_ACRN:
+            return "ACRN";
+        case HYPERVISOR_ID_BHYVE:
+            return "bhyve";
+        case HYPERVISOR_ID_HYPER_V:
+            return "Microsoft Hyper-V";
+        case HYPERVISOR_ID_KVM:
+            return "Linux KVM";
+        case HYPERVISOR_ID_QEMU:
+            return "QEMU TCG";
+        case HYPERVISOR_ID_VMWARE:
+            return "VMware";
+        case HYPERVISOR_ID_XEN:
+            return "Xen";
+        default:
+            return "Unknown";
+    }
+}
+
+static void dump_hypervisor(const cpuinfo_t *cpuinfo) {
+    if(cpuinfo->hypervisor == HYPERVISOR_ID_NONE) {
+        info("No virtualization");
+    } else {
+        info("Virtualization environment: %s", get_hypervisor_string(cpuinfo));
+    }
+}
+
 /**
  * Detect the features of the bootstrap processor (BSP)
  */
@@ -493,9 +640,11 @@ void detect_cpu_features(void) {
     check_cpuid_is_supported();
 
     x86_cpuid_leafs cpuid_leafs;
-    call_cpuid(&cpuid_leafs);
+    get_cpuid_leafs(&cpuid_leafs);
     
     identify_vendor(&bsp_cpuinfo, &cpuid_leafs);
+
+    identify_hypervisor(&bsp_cpuinfo, &cpuid_leafs);
 
     identify_model(&bsp_cpuinfo, &cpuid_leafs);
 
@@ -508,6 +657,8 @@ void detect_cpu_features(void) {
     identify_maxphyaddr(&bsp_cpuinfo, &cpuid_leafs);
 
     dump_cpu_features(&bsp_cpuinfo);
+
+    dump_hypervisor(&bsp_cpuinfo);
 }
 
 /**

@@ -50,8 +50,11 @@ typedef struct {
     x86_cpuid_regs_t    ext3;
     x86_cpuid_regs_t    ext4;
     x86_cpuid_regs_t    ext8;
+    x86_cpuid_regs_t    soft0;
     bool                ext4_valid;
     bool                ext8_valid;
+    bool                soft0_valid;
+
 } x86_cpuid_leafs;
 
 void cli(void);

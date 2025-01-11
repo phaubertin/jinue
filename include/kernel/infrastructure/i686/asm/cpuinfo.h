@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2019-2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -53,5 +53,25 @@
 #define CPUINFO_VENDOR_AMD          1
 
 #define CPUINFO_VENDOR_INTEL        2
+
+/* hypervisors */
+
+#define HYPERVISOR_ID_NONE          0
+
+#define HYPERVISOR_ID_UNKNOWN       1
+
+#define HYPERVISOR_ID_ACRN          2
+
+#define HYPERVISOR_ID_BHYVE         3
+
+#define HYPERVISOR_ID_HYPER_V       4
+
+#define HYPERVISOR_ID_KVM           5
+
+#define HYPERVISOR_ID_QEMU          6
+
+#define HYPERVISOR_ID_VMWARE        7
+
+#define HYPERVISOR_ID_XEN           8
 
 #endif

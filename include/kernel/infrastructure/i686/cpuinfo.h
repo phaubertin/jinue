@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2019-2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -41,6 +41,7 @@ typedef struct {
     unsigned int    dcache_alignment;
     uint32_t        features;
     int             vendor;
+    int             hypervisor;
     unsigned int    family;
     unsigned int    model;
     unsigned int    stepping;
