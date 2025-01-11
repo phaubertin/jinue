@@ -36,6 +36,7 @@
 #include <kernel/infrastructure/i686/isa/regs.h>
 #include <kernel/infrastructure/i686/cpuinfo.h>
 #include <kernel/machine/cpuinfo.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -94,6 +95,17 @@ static void call_cpuid(x86_cpuid_leafs *leafs) {
     if(ext_max >= ext_base + 1) {
         leafs->ext1.eax = ext_base + 1;
         (void)cpuid(&leafs->ext1);
+    }
+
+    leafs->ext4_valid = ext_max >= ext_base + 4;
+
+    if(leafs->ext4_valid) {
+        leafs->ext2.eax = ext_base + 2;
+        leafs->ext3.eax = ext_base + 3;
+        leafs->ext4.eax = ext_base + 4;
+        (void)cpuid(&leafs->ext2);
+        (void)cpuid(&leafs->ext3);
+        (void)cpuid(&leafs->ext4);
     }
 
     leafs->ext8_valid = ext_max >= ext_base + 8;
@@ -174,6 +186,95 @@ static void identify_model(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
         error("CPU family: %u", cpuinfo->family);
         too_old();
     }
+}
+
+typedef enum {
+    CLEAN_STATE_START,
+    CLEAN_STATE_IDLE,
+    CLEAN_STATE_SPACE,
+} clean_state_t;
+
+/**
+ * Clean the CPU brand string
+ * 
+ * Remove leading and trailing whitespace characters, coalesce sequences of
+ * whitespace charaters and remove non-printable characters.
+ * 
+ * @param buffer string buffer containing brand string
+ */
+static void clean_brand_string(char *buffer) {
+    clean_state_t state = CLEAN_STATE_START;
+
+    int dest = 0;
+    int src = 0;
+
+    /* Invariant: dest is always at or before src, so what happens at dest
+     * never affects the condition of this loop. */
+    while(true) {
+        int c = buffer[src];
+
+        if(c == '\0') {
+            /* Add a single space character if there is a pending space. This
+             * ensure space/tab sequences are coalesced into a single space
+             * charater and leading spaces are trimmed. */
+            if(state == CLEAN_STATE_SPACE) {
+                buffer[dest++] = ' ';
+            }
+
+            buffer[dest++] = '\0';
+            break;
+        } else if(isblank(c)) {
+            /* Transition to the space state only if at least one printable
+             * character was encountered since the start of the string. */
+            if(state == CLEAN_STATE_IDLE) {
+                state = CLEAN_STATE_SPACE;
+            }
+        } else if(isprint(c) && !isspace(c)) {
+            if(state == CLEAN_STATE_SPACE) {
+                buffer[dest++] = ' ';
+            }
+
+            buffer[dest++] = c;
+            state = CLEAN_STATE_IDLE;
+        }
+
+        ++src;
+    }
+}
+
+/**
+ * Get the CPU brand string
+ * 
+ * Sets an empty string if the brand string cannot be retrieved.
+ * 
+ * @param cpuinfo structure in which to set the brand string (OUT)
+ * @param leafs CPUID leafs structure filled by a call_cpuid()
+ */
+static void get_brand_string(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
+    if(! leafs->ext4_valid) {
+        cpuinfo->brand_string[0] = '\0';
+        return;
+    }
+
+    snprintf(
+        cpuinfo->brand_string,
+        sizeof(cpuinfo->brand_string),
+        "%.4s%.4s%.4s%.4s%.4s%.4s%.4s%.4s%.4s%.4s%.4s%.4s",
+        (const char *)&leafs->ext2.eax,
+        (const char *)&leafs->ext2.ebx,
+        (const char *)&leafs->ext2.ecx,
+        (const char *)&leafs->ext2.edx,
+        (const char *)&leafs->ext3.eax,
+        (const char *)&leafs->ext3.ebx,
+        (const char *)&leafs->ext3.ecx,
+        (const char *)&leafs->ext3.edx,
+        (const char *)&leafs->ext4.eax,
+        (const char *)&leafs->ext4.ebx,
+        (const char *)&leafs->ext4.ecx,
+        (const char *)&leafs->ext4.edx
+    );
+
+    clean_brand_string(cpuinfo->brand_string);
 }
 
 /**
@@ -342,7 +443,7 @@ static void dump_features(const cpuinfo_t *cpuinfo) {
         (cpuinfo->features & CPUINFO_FEATURE_SYSENTER) ? " sysenter" : ""
     );
 
-    info("CPU features:%s", buffer);
+    info("  Features:%s", buffer);
 }
 
 /**
@@ -368,8 +469,10 @@ static const char *get_vendor_string(const cpuinfo_t *cpuinfo) {
  * @param cpuinfo CPU information structure
  */
 static void dump_cpu_features(const cpuinfo_t *cpuinfo) {
+    info("CPU information:");
+
     info(
-        "CPU vendor: %s family: %u model: %u stepping: %u",
+        "  Vendor: %s family: %u model: %u stepping: %u",
         get_vendor_string(cpuinfo),
         cpuinfo->family,
         cpuinfo->model,
@@ -378,8 +481,9 @@ static void dump_cpu_features(const cpuinfo_t *cpuinfo) {
     
     dump_features(cpuinfo);
 
-    info("CPU data cache alignment: %u bytes", cpuinfo->dcache_alignment);
-    info("CPU physical address size: %u bits", cpuinfo->maxphyaddr);
+    info("  Brand string: %s", cpuinfo->brand_string);
+    info("  Data cache alignment: %u bytes", cpuinfo->dcache_alignment);
+    info("  Physical address size: %u bits", cpuinfo->maxphyaddr);
 }
 
 /**
@@ -394,6 +498,8 @@ void detect_cpu_features(void) {
     identify_vendor(&bsp_cpuinfo, &cpuid_leafs);
 
     identify_model(&bsp_cpuinfo, &cpuid_leafs);
+
+    get_brand_string(&bsp_cpuinfo, &cpuid_leafs);
 
     identify_dcache_alignment(&bsp_cpuinfo, &cpuid_leafs);
 

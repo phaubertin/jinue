@@ -44,6 +44,7 @@ typedef struct {
     unsigned int    family;
     unsigned int    model;
     unsigned int    stepping;
+    char            brand_string[49];
 } cpuinfo_t;
 
 extern cpuinfo_t bsp_cpuinfo;
