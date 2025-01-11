@@ -36,6 +36,7 @@
 #include <kernel/infrastructure/i686/isa/regs.h>
 #include <kernel/infrastructure/i686/cpuinfo.h>
 #include <kernel/machine/cpuinfo.h>
+#include <kernel/machine/halt.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
@@ -196,6 +197,9 @@ typedef enum {
 
 /**
  * Clean the CPU brand string
+ * 
+ * Remove leading and trailing whitespace characters, coalesce sequences of
+ * whitespace charaters and remove non-printable characters.
  * 
  * @param buffer string buffer containing brand string
  */
@@ -505,6 +509,8 @@ void detect_cpu_features(void) {
     identify_maxphyaddr(&bsp_cpuinfo, &cpuid_leafs);
 
     dump_cpu_features(&bsp_cpuinfo);
+
+    machine_halt();
 }
 
 /**
