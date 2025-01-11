@@ -36,6 +36,7 @@
 #include <kernel/infrastructure/i686/isa/regs.h>
 #include <kernel/infrastructure/i686/cpuinfo.h>
 #include <kernel/machine/cpuinfo.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -187,28 +188,54 @@ static void identify_model(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
     }
 }
 
+typedef enum {
+    CLEAN_STATE_START,
+    CLEAN_STATE_IDLE,
+    CLEAN_STATE_SPACE,
+} clean_state_t;
+
 /**
- * Coalesce spaces in a string
+ * Clean the CPU brand string
  * 
- * @param cpuinfo structure in which to set the brand string (OUT)
- * @param leafs CPUID leafs structure filled by a call_cpuid()
+ * @param buffer string buffer containing brand string
  */
-static void coalesce_spaces(char *buffer) {
-    for(int idx = 0; buffer[idx] != '\0'; ++idx) {
-        if(buffer[idx] != ' ' || buffer[idx + 1] != ' ') {
-            continue;
+static void clean_brand_string(char *buffer) {
+    clean_state_t state = CLEAN_STATE_START;
+
+    int dest = 0;
+    int src = 0;
+
+    /* Invariant: dest is always at or before src, so what happens at dest
+     * never affects the condition of this loop. */
+    while(true) {
+        int c = buffer[src];
+
+        if(c == '\0') {
+            /* Add a single space character if there is a pending space. This
+             * ensure space/tab sequences are coalesced into a single space
+             * charater and leading spaces are trimmed. */
+            if(state == CLEAN_STATE_SPACE) {
+                buffer[dest++] = ' ';
+            }
+
+            buffer[dest++] = '\0';
+            break;
+        } else if(isblank(c)) {
+            /* Transition to the space state only if at least one printable
+             * character was encountered since the start of the string. */
+            if(state == CLEAN_STATE_IDLE) {
+                state = CLEAN_STATE_SPACE;
+            }
+        } else if(isprint(c) && !isspace(c)) {
+            if(state == CLEAN_STATE_SPACE) {
+                buffer[dest++] = ' ';
+            }
+
+            buffer[dest++] = c;
+            state = CLEAN_STATE_IDLE;
         }
 
-        int src = idx + 2;
-
-        while(buffer[src] == ' ') {
-            ++src;
-        }
-
-        /* Warning: the strings overlap, so we are relying here on behaviour of
-         * our strcpy() implementation that is undefined behaviour according to
-         * the standard. */
-        strcpy(&buffer[idx + 1], &buffer[src]);
+        ++src;
     }
 }
 
@@ -244,9 +271,7 @@ static void get_brand_string(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
         (const char *)&leafs->ext4.edx
     );
 
-    /* The brand string in CPUID leafs 0x80000002-0x80000004 sometimes contains
-     * sequences of multiple spaces. */
-    coalesce_spaces(cpuinfo->brand_string);
+    clean_brand_string(cpuinfo->brand_string);
 }
 
 /**

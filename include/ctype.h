@@ -40,4 +40,16 @@ static inline int isxdigit(int c) {
     return isdigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
 }
 
+static inline int isblank(int c) {
+    return c == ' ' || c == '\t';
+}
+
+static inline int isspace(int c) {
+    return isblank(c) || c == '\n' || c == '\r' || c == '\v';
+}
+
+static inline int isprint(int c) {
+    return c >= ' ' && c <= '~';
+}
+
 #endif
