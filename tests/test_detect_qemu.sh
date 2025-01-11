@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 # Copyright (C) 2024 Philippe Aubertin.
 # All rights reserved.
 #
@@ -28,48 +28,15 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# Default test setup parameters
-CPU=core2duo
-MEM=128
-CMDLINE=""
-OPTIONS=""
+run
 
-usage () {
-    echo "USAGE: $(basename $0) kernel_image initrd test_script log_file" >&2
-    exit 1
-}
+check_kernel_start
 
-[[ $# -ne 4 ]] && usage
+check_no_error
 
-KERNEL_IMAGE=$1
-INITRD=$2
-TEST_SCRIPT=$3
-LOG=$4
+check_no_warning
 
-run () {
-    BASE_CMDLINE="on_panic=reboot serial_enable=yes serial_dev=/dev/ttyS0 DEBUG_DO_REBOOT=1"
+echo "* Check the kernel detects QEMU"
+grep -F "Virtualization environment: QEMU TCG" $LOG || fail
 
-    qemu-system-i386 \
-        -cpu ${CPU} \
-        -m ${MEM} \
-        -no-reboot \
-        $OPTIONS \
-        -kernel "${KERNEL_IMAGE}" \
-        -initrd "${INITRD}" \
-        -append "${BASE_CMDLINE} ${CMDLINE}" \
-        -serial stdio \
-        -display none \
-        -smp 1 \
-        -usb \
-        -vga std | tee $LOG
-    
-    echo =============================================================
-}
-
-# This ensures the test reliably fails if "run" is never called.
-[ -f $LOG ] && rm -v $LOG
-
-source utils.sh
-( source $TEST_SCRIPT ) || report_fail
-
-report_success
+check_reboot
