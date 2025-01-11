@@ -34,6 +34,11 @@
 #include <kernel/machine/tls.h>
 #include <string.h>
 
+/**
+ * Initialize the Task State Segment (TSS) in a per-CPU structure
+ * 
+ * @param percpu per-CPU structure (OUT)
+ */
 static void initialize_tss(percpu_t *percpu) {
     tss_t *tss = &percpu->tss;
 
@@ -56,6 +61,17 @@ static void initialize_tss(percpu_t *percpu) {
     tss->iomap = TSS_LIMIT;
 }
 
+/**
+ * Initialize a Global Descriptor Table (GDT) entry for a code or data segment
+ * 
+ * The type argument should be set to the bitwise OR of the following:
+ * - SEG_TYPE_CODE (code segment) or SEG_TYPE_DATA (data segment)
+ * - SEG_FLAG_KERNEL (kernel segment) or SEG_FLAG_USER (user segment)
+ * 
+ * @param percpu per-CPU structure (OUT)
+ * @param index index of the GDT entry
+ * @param type type flags
+ */
 static void set_normal_segment(percpu_t *percpu, int index, int type) {
     percpu->gdt[index] = SEG_DESCRIPTOR(
         0,
@@ -64,6 +80,13 @@ static void set_normal_segment(percpu_t *percpu, int index, int type) {
     );
 }
 
+/**
+ * Set the Thread-Local Storage (TLS) segment the GDT
+ * 
+ * @param percpu per-CPU structure (OUT)
+ * @param addr address of the TLS
+ * @param size size of the TLS in bytes
+ */
 static void set_tls_segment(percpu_t *percpu, void *addr, size_t size) {
     percpu->gdt[GDT_USER_TLS_DATA] = SEG_DESCRIPTOR(
         addr,
@@ -72,6 +95,18 @@ static void set_tls_segment(percpu_t *percpu, void *addr, size_t size) {
     );
 }
 
+/**
+ * Initialize the Global Descriptor Table (GDT) in a per-CPU structure
+ * 
+ * Each CPU has its own GDT because of these segments:
+ * - The kernel per-CPU data segment (GDT_PER_CPU_DATA)
+ * - The TSS segment (GDT_TSS) which contains the kernel stack address of the
+ *   thread currently running on the current CPU.
+ * - The thread local storage segment (GDT_USER_TLS_DATA) which represents the
+ *   TLS of the thread currently running on the current CPU.
+ * 
+ * @param percpu per-CPU structure (OUT)
+ */
 static void initialize_gdt(percpu_t *percpu) {
     percpu->gdt[GDT_NULL] = SEG_DESCRIPTOR(0, 0, 0);
 
@@ -103,6 +138,11 @@ static void initialize_gdt(percpu_t *percpu) {
     set_tls_segment(percpu, NULL, 0);
 }
 
+/**
+ * Initialize per-CPU data structure for the current CPU
+ * 
+ * @param percpu per-CPU structure (OUT)
+ */
 void init_percpu_data(percpu_t *percpu) {
     /* initialize with zeroes  */
     memset(percpu, '\0', sizeof(percpu_t));
@@ -114,6 +154,11 @@ void init_percpu_data(percpu_t *percpu) {
     initialize_gdt(percpu);
 }
 
+/**
+ * Set the TLS segment for the currently running thread
+ * 
+ * @param thread current thread
+ */
 void machine_set_thread_local_storage(const thread_t *thread) {
     percpu_t *percpu = get_percpu_data();
     set_tls_segment(percpu, thread->local_storage_addr, thread->local_storage_size);

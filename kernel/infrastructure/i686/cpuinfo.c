@@ -41,10 +41,18 @@
 
 cpuinfo_t bsp_cpuinfo;
 
+/**
+ * Report CPU is too old to be supported and panic
+ * 
+ * This function never returns.
+ */
 static void too_old(void) {
     panic("Pentium CPU or later is required");
 }
 
+/**
+ * Check whether the CPUID instruction is supported, panic otherwise
+ */
 static void check_cpuid_is_supported(void) {
     /* The CPUID instruction is available if we can change the value of eflags
      * bit 21 (ID) */
@@ -58,6 +66,11 @@ static void check_cpuid_is_supported(void) {
     }
 }
 
+/**
+ * Call the CPUID instruction and fill the provided CPUID leafs structure
+ * 
+ * @param leafs CPUID leafs structure (OUT)
+ */
 static void call_cpuid(x86_cpuid_leafs *leafs) {
     memset(leafs, 0, sizeof(x86_cpuid_leafs));
 
@@ -92,10 +105,10 @@ static void call_cpuid(x86_cpuid_leafs *leafs) {
 }
 
 typedef struct {
-    int vendor;
-    uint32_t vendor_dw0;
-    uint32_t vendor_dw1;
-    uint32_t vendor_dw2;
+    int         vendor;
+    uint32_t    vendor_dw0;
+    uint32_t    vendor_dw1;
+    uint32_t    vendor_dw2;
 } cpuid_vendor_t;
 
 static const cpuid_vendor_t cpuid_vendors[] = {
@@ -113,6 +126,12 @@ static const cpuid_vendor_t cpuid_vendors[] = {
     }
 };
 
+/**
+ * Identify the CPU vendor based on CPUID results
+ * 
+ * @param cpuinfo structure in which to set the vendor (OUT)
+ * @param leafs CPUID leafs structure filled by a call_cpuid()
+ */
 static void identify_vendor(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
     const x86_cpuid_regs_t *regs = &leafs->basic0;
     
@@ -136,6 +155,12 @@ static void identify_vendor(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
     cpuinfo->vendor = CPUINFO_VENDOR_GENERIC;
 }
 
+/**
+ * Identify the CPU family, model and stepping
+ * 
+ * @param cpuinfo structure in which to set the information (OUT)
+ * @param leafs CPUID leafs structure filled by a call_cpuid()
+ */
 static void identify_model(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
     uint32_t signature   = leafs->basic1.eax;
     cpuinfo->family      = (signature>>8)  & 0xf;
@@ -151,6 +176,14 @@ static void identify_model(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
     }
 }
 
+/**
+ * Identify the data cache alignment
+ * 
+ * Defaults to 32 if the data cache alignment is not reported by the CPUID instruction.
+ * 
+ * @param cpuinfo structure in which to set the cache alignment (OUT)
+ * @param leafs CPUID leafs structure filled by a call_cpuid()
+ */
 static void identify_dcache_alignment(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
     const x86_cpuid_regs_t *regs = &leafs->basic1;
 
@@ -161,18 +194,45 @@ static void identify_dcache_alignment(cpuinfo_t *cpuinfo, const x86_cpuid_leafs 
     }
 }
 
+/**
+ * Utility function that determines whether CPU vendor is AMD
+ * 
+ * @param cpuinfo CPU information structure
+ * @return true if CPU vendor is AMD, false otherwise
+ */
 static bool is_amd(const cpuinfo_t *cpuinfo) {
     return cpuinfo->vendor == CPUINFO_VENDOR_AMD;
 }
 
+/**
+ * Utility function that determines whether CPU vendor is Intel
+ * 
+ * @param cpuinfo CPU information structure
+ * @return true if CPU vendor is Intel, false otherwise
+ */
 static bool is_intel(const cpuinfo_t *cpuinfo) {
     return cpuinfo->vendor == CPUINFO_VENDOR_INTEL;
 }
 
+/**
+ * Utility function that determines whether CPU vendor is AMD or Intel
+ * 
+ * @param cpuinfo CPU information structure
+ * @return true if CPU vendor is AMD or Intel, false otherwise
+ */
 static bool is_amd_or_intel(const cpuinfo_t *cpuinfo) {
     return cpuinfo->vendor == CPUINFO_VENDOR_AMD || cpuinfo->vendor == CPUINFO_VENDOR_INTEL;
 }
 
+/**
+ * Detect whether the CPU supports the SYSENTER fast system call instruction
+ * 
+ * Sets the CPUINFO_FEATURE_SYSENTER feature flag if the SYSENTER instruction
+ * is supported.
+ * 
+ * @param cpuinfo structure in which to set the feature flag (OUT)
+ * @param leafs CPUID leafs structure filled by a call_cpuid()
+ */
 static void detect_sysenter_instruction(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
     if(!(leafs->basic1.edx & CPUID_FEATURE_SEP)) {
         return;
@@ -185,6 +245,15 @@ static void detect_sysenter_instruction(cpuinfo_t *cpuinfo, const x86_cpuid_leaf
     cpuinfo->features |= CPUINFO_FEATURE_SYSENTER;
 }
 
+/**
+ * Detect whether the CPU supports the SYSCALL fast system call instruction
+ * 
+ * Sets the CPUINFO_FEATURE_SYSCALL feature flag if the SYSCALL instruction
+ * is supported.
+ * 
+ * @param cpuinfo structure in which to set the feature flag (OUT)
+ * @param leafs CPUID leafs structure filled by a call_cpuid()
+ */
 static void detect_syscall_instruction(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
     if(!is_amd(cpuinfo)) {
         return;
@@ -195,6 +264,15 @@ static void detect_syscall_instruction(cpuinfo_t *cpuinfo, const x86_cpuid_leafs
     }
 }
 
+/**
+ * Enumerate CPU features
+ * 
+ * This function detects various features that may be supported by the CPU and
+ * sets feature flag in the CPU information structure accordingly.
+ * 
+ * @param cpuinfo structure in which to set the feature flags (OUT)
+ * @param leafs CPUID leafs structure filled by a call_cpuid()
+ */
 static void enumerate_features(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
     uint32_t flags = leafs->basic1.edx;
     uint32_t ext_flags = leafs->ext1.edx;
@@ -230,6 +308,12 @@ static void enumerate_features(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs)
     }
 }
 
+/**
+ * Identify the number of bits of physical addresses
+ * 
+ * @param cpuinfo structure in which to set the number of address bits (OUT)
+ * @param leafs CPUID leafs structure filled by a call_cpuid()
+ */
 static void identify_maxphyaddr(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
     if((cpuinfo->features & CPUINFO_FEATURE_PAE) && leafs->ext8_valid) {
         cpuinfo->maxphyaddr = leafs->ext8.eax & 0xff;
@@ -238,6 +322,11 @@ static void identify_maxphyaddr(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs
     }
 }
 
+/**
+ * Log a string representation of the CPU feature flags
+ * 
+ * @param cpuinfo CPU information structure
+ */
 static void dump_features(const cpuinfo_t *cpuinfo) {
     char buffer[40];
 
@@ -256,6 +345,12 @@ static void dump_features(const cpuinfo_t *cpuinfo) {
     info("CPU features:%s", buffer);
 }
 
+/**
+ * Return the name of the CPU vendor
+ * 
+ * @param cpuinfo CPU information structure
+ * @return CPU vendor name string
+ */
 static const char *get_vendor_string(const cpuinfo_t *cpuinfo) {
     switch(cpuinfo->vendor) {
         case CPUINFO_VENDOR_AMD:
@@ -267,7 +362,12 @@ static const char *get_vendor_string(const cpuinfo_t *cpuinfo) {
     }
 }
 
-static void dump_cpuinfo(const cpuinfo_t *cpuinfo) {
+/**
+ * Log the contents of the CPU information structure
+ * 
+ * @param cpuinfo CPU information structure
+ */
+static void dump_cpu_features(const cpuinfo_t *cpuinfo) {
     info(
         "CPU vendor: %s family: %u model: %u stepping: %u",
         get_vendor_string(cpuinfo),
@@ -282,6 +382,9 @@ static void dump_cpuinfo(const cpuinfo_t *cpuinfo) {
     info("CPU physical address size: %u bits", cpuinfo->maxphyaddr);
 }
 
+/**
+ * Detect the features of the bootstrap processor (BSP)
+ */
 void detect_cpu_features(void) {
     check_cpuid_is_supported();
 
@@ -298,9 +401,14 @@ void detect_cpu_features(void) {
 
     identify_maxphyaddr(&bsp_cpuinfo, &cpuid_leafs);
 
-    dump_cpuinfo(&bsp_cpuinfo);
+    dump_cpu_features(&bsp_cpuinfo);
 }
 
+/**
+ * Get the data cache alignment of the BSP
+ * 
+ * @return data cache alignment in bytes
+ */
 unsigned int machine_get_cpu_dcache_alignment(void) {
     return bsp_cpuinfo.dcache_alignment;
 }
