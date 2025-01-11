@@ -96,6 +96,17 @@ static void call_cpuid(x86_cpuid_leafs *leafs) {
         (void)cpuid(&leafs->ext1);
     }
 
+    leafs->ext4_valid = ext_max >= ext_base + 4;
+
+    if(leafs->ext4_valid) {
+        leafs->ext2.eax = ext_base + 2;
+        leafs->ext3.eax = ext_base + 3;
+        leafs->ext4.eax = ext_base + 4;
+        (void)cpuid(&leafs->ext2);
+        (void)cpuid(&leafs->ext3);
+        (void)cpuid(&leafs->ext4);
+    }
+
     leafs->ext8_valid = ext_max >= ext_base + 8;
 
     if(leafs->ext8_valid) {
@@ -174,6 +185,68 @@ static void identify_model(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
         error("CPU family: %u", cpuinfo->family);
         too_old();
     }
+}
+
+/**
+ * Coalesce spaces in a string
+ * 
+ * @param cpuinfo structure in which to set the brand string (OUT)
+ * @param leafs CPUID leafs structure filled by a call_cpuid()
+ */
+static void coalesce_spaces(char *buffer) {
+    for(int idx = 0; buffer[idx] != '\0'; ++idx) {
+        if(buffer[idx] != ' ' || buffer[idx + 1] != ' ') {
+            continue;
+        }
+
+        int src = idx + 2;
+
+        while(buffer[src] == ' ') {
+            ++src;
+        }
+
+        /* Warning: the strings overlap, so we are relying here on behaviour of
+         * our strcpy() implementation that is undefined behaviour according to
+         * the standard. */
+        strcpy(&buffer[idx + 1], &buffer[src]);
+    }
+}
+
+/**
+ * Get the CPU brand string
+ * 
+ * Sets an empty string if the brand string cannot be retrieved.
+ * 
+ * @param cpuinfo structure in which to set the brand string (OUT)
+ * @param leafs CPUID leafs structure filled by a call_cpuid()
+ */
+static void get_brand_string(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
+    if(! leafs->ext4_valid) {
+        cpuinfo->brand_string[0] = '\0';
+        return;
+    }
+
+    snprintf(
+        cpuinfo->brand_string,
+        sizeof(cpuinfo->brand_string),
+        "%.4s%.4s%.4s%.4s%.4s%.4s%.4s%.4s%.4s%.4s%.4s%.4s",
+        (const char *)&leafs->ext2.eax,
+        (const char *)&leafs->ext2.ebx,
+        (const char *)&leafs->ext2.ecx,
+        (const char *)&leafs->ext2.edx,
+        (const char *)&leafs->ext3.eax,
+        (const char *)&leafs->ext3.ebx,
+        (const char *)&leafs->ext3.ecx,
+        (const char *)&leafs->ext3.edx,
+        (const char *)&leafs->ext4.eax,
+        (const char *)&leafs->ext4.ebx,
+        (const char *)&leafs->ext4.ecx,
+        (const char *)&leafs->ext4.edx
+    );
+
+    /* The brand string in CPUID leafs 0x80000002-0x80000004 sometimes contains
+     * sequences of multiple spaces. */
+    coalesce_spaces(cpuinfo->brand_string);
 }
 
 /**
@@ -342,7 +415,7 @@ static void dump_features(const cpuinfo_t *cpuinfo) {
         (cpuinfo->features & CPUINFO_FEATURE_SYSENTER) ? " sysenter" : ""
     );
 
-    info("CPU features:%s", buffer);
+    info("  Features:%s", buffer);
 }
 
 /**
@@ -368,8 +441,10 @@ static const char *get_vendor_string(const cpuinfo_t *cpuinfo) {
  * @param cpuinfo CPU information structure
  */
 static void dump_cpu_features(const cpuinfo_t *cpuinfo) {
+    info("CPU information:");
+
     info(
-        "CPU vendor: %s family: %u model: %u stepping: %u",
+        "  Vendor: %s family: %u model: %u stepping: %u",
         get_vendor_string(cpuinfo),
         cpuinfo->family,
         cpuinfo->model,
@@ -378,8 +453,9 @@ static void dump_cpu_features(const cpuinfo_t *cpuinfo) {
     
     dump_features(cpuinfo);
 
-    info("CPU data cache alignment: %u bytes", cpuinfo->dcache_alignment);
-    info("CPU physical address size: %u bits", cpuinfo->maxphyaddr);
+    info("  Brand string: %s", cpuinfo->brand_string);
+    info("  Data cache alignment: %u bytes", cpuinfo->dcache_alignment);
+    info("  Physical address size: %u bits", cpuinfo->maxphyaddr);
 }
 
 /**
@@ -394,6 +470,8 @@ void detect_cpu_features(void) {
     identify_vendor(&bsp_cpuinfo, &cpuid_leafs);
 
     identify_model(&bsp_cpuinfo, &cpuid_leafs);
+
+    get_brand_string(&bsp_cpuinfo, &cpuid_leafs);
 
     identify_dcache_alignment(&bsp_cpuinfo, &cpuid_leafs);
 

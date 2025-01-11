@@ -46,7 +46,11 @@ typedef struct {
     x86_cpuid_regs_t    basic1;
     x86_cpuid_regs_t    ext0;
     x86_cpuid_regs_t    ext1;
+    x86_cpuid_regs_t    ext2;
+    x86_cpuid_regs_t    ext3;
+    x86_cpuid_regs_t    ext4;
     x86_cpuid_regs_t    ext8;
+    bool                ext4_valid;
     bool                ext8_valid;
 } x86_cpuid_leafs;
 
