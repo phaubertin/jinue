@@ -32,15 +32,18 @@
 #ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_CPUID_H
 #define JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_CPUID_H
 
-/* Basic leaf 0 (0x00000000) ebx, ecx, edx */
+/* Basic leaf 0 (0x00000000)
+ *
+ * Note be careful about the register order: the signature is in ebx, edx, ecx
+ * in this order. */
 
 #define CPUID_VENDOR_AMD_EBX            0x68747541  /* Auth */
-#define CPUID_VENDOR_AMD_ECX            0x69746e65  /* enti */
-#define CPUID_VENDOR_AMD_EDX            0x444d4163  /* cAMD */
+#define CPUID_VENDOR_AMD_EDX            0x69746e65  /* enti */
+#define CPUID_VENDOR_AMD_ECX            0x444d4163  /* cAMD */
 
 #define CPUID_VENDOR_INTEL_EBX          0x756e6547  /* Genu */
-#define CPUID_VENDOR_INTEL_ECX          0x49656e69  /* ineI */
-#define CPUID_VENDOR_INTEL_EDX          0x6c65746e  /* ntel */
+#define CPUID_VENDOR_INTEL_EDX          0x49656e69  /* ineI */
+#define CPUID_VENDOR_INTEL_ECX          0x6c65746e  /* ntel */
 
 /* Basic leaf 1 (0x00000001) ecx */
 
