@@ -41,6 +41,15 @@ typedef struct {
     uint32_t edx;
 } x86_cpuid_regs_t;
 
+typedef struct {
+    x86_cpuid_regs_t    basic0;
+    x86_cpuid_regs_t    basic1;
+    x86_cpuid_regs_t    ext0;
+    x86_cpuid_regs_t    ext1;
+    x86_cpuid_regs_t    ext8;
+    bool                ext8_valid;
+} x86_cpuid_leafs;
+
 void cli(void);
 
 void sti(void);
