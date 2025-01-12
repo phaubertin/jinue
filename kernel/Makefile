@@ -98,6 +98,7 @@ sources.kernel.c = \
 	domain/services/exec.c \
 	domain/services/ipc.c \
 	domain/services/logging.c \
+	domain/services/mman.c \
 	domain/services/panic.c \
 	domain/services/scheduler.c \
 	domain/config.c \
