@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -38,30 +38,93 @@
  * it is set in kernel/i686/crt.asm. */
 bootinfo_t *bootinfo;
 
+/**
+ * Get the boot information structure
+ * 
+ * @return boot information structure
+ */
 const bootinfo_t *get_bootinfo(void) {
     return bootinfo;
 }
 
-bool check_bootinfo(bool panic_on_failure) {
-    const char *error_description = NULL;
-
+/**
+ * Check the presence and signature of the boot information structure
+ * 
+ * @param bootinfo boot information structure
+ * @return NULL on success, error string otherwise
+ */
+static const char *check_structure(const bootinfo_t *bootinfo) {
     /* This data structure is accessed early during the boot process, when the
      * first two megabytes of memory are still identity mapped. This means, if
      * bootinfo is NULL and we dereference it, it does *not* cause a page fault
      * or any other CPU exception. */
     if(bootinfo == NULL) {
-        error_description = "Boot information structure pointer is NULL.";
+        return "Boot information structure pointer is NULL.";
     }
-    else if(bootinfo->setup_signature != BOOT_SETUP_MAGIC) {
-        error_description = "Bad setup header signature.";
+    
+    if(bootinfo->setup_signature != BOOT_SETUP_MAGIC) {
+        return "Bad setup header signature.";
     }
-    else if(page_offset_of(bootinfo->image_start) != 0) {
-        error_description = "Bad image alignment.";
+    
+    return NULL;
+}
+
+/**
+ * Check the setup code properly set up the kernel data segment
+ * 
+ * @param bootinfo boot information structure
+ * @return NULL on success, error string otherwise
+ */
+static const char *check_data_segment(const bootinfo_t *bootinfo) {
+    if(     bootinfo->data_start == 0 ||
+            bootinfo->data_size == 0 ||
+            bootinfo->data_physaddr == 0) {
+        return "Setup code wasn't able to load kernel data segment";
     }
-    else if(page_offset_of(bootinfo->kernel_start) != 0) {
-        error_description = "Bad kernel alignment.";
+
+    return NULL;
+}
+
+/**
+ * Check the alignment of the kernel image and ELF file
+ * 
+ * @param bootinfo boot information structure
+ * @return NULL on success, error string otherwise
+ */
+static const char *check_kernel_alignment(const bootinfo_t *bootinfo) {
+    if(page_offset_of(bootinfo->image_start) != 0) {
+        return "Kernel image start is not aligned on a page boundary";
     }
-    else {
+
+    if(page_offset_of(bootinfo->image_top) != 0) {
+        return "Top of kernel image is not aligned on a page boundary";
+    }
+
+    if(page_offset_of(bootinfo->kernel_start) != 0) {
+        return "Kernel ELF binary is not aligned on a page boundary";
+    }
+
+    return NULL;
+}
+
+/**
+ * Validate the boot information structure
+ * 
+ * @param panic_on_failure whether to panic if the structure is invalid
+ * @return true if valid, false otherwise
+ */
+bool check_bootinfo(bool panic_on_failure) {
+    const char *error_description = check_structure(bootinfo);
+
+    if(error_description == NULL) {
+        error_description = check_data_segment(bootinfo);
+    }
+
+    if(error_description == NULL) {
+        error_description = check_kernel_alignment(bootinfo);
+    }
+
+    if(error_description == NULL) {
         return true;
     }
 
