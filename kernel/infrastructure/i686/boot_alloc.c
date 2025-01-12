@@ -46,7 +46,7 @@
  *
  * This function sets up the allocator to allocate pages after the kernel loaded
  * at 0x100000 (1MB). Once the kernel has been moved to 0x1000000 (16MB), the
- * boot_reinit_at_16mb() function has to be called to start allocating pages
+ * boot_alloc_reinit_at_16mb() function has to be called to start allocating pages
  * there.
  *
  * @param boot_alloc the allocator state initialized by this function
@@ -71,7 +71,7 @@ void boot_alloc_init(boot_alloc_t *boot_alloc, const bootinfo_t *bootinfo) {
  * @param boot_alloc the allocator state initialized by this function
  *
  * */
-void boot_reinit_at_16mb(boot_alloc_t *boot_alloc) {
+void boot_alloc_reinit_at_16mb(boot_alloc_t *boot_alloc) {
     boot_alloc->current_page        = boot_alloc->first_page_at_16mb;
     boot_alloc->page_limit          = (char *)MEMORY_ADDR_16MB + BOOT_SIZE_AT_16MB;
 }
@@ -90,7 +90,7 @@ void boot_reinit_at_16mb(boot_alloc_t *boot_alloc) {
  * @param boot_alloc the allocator state initialized by this function
  *
  * */
-void boot_reinit_at_klimit(boot_alloc_t *boot_alloc) {
+void boot_alloc_reinit_at_klimit(boot_alloc_t *boot_alloc) {
     boot_alloc->current_page        = (void *)PHYS_TO_VIRT_AT_16MB(boot_alloc->current_page);
     boot_alloc->page_limit          = (char *)KLIMIT + BOOT_SIZE_AT_16MB;
 }

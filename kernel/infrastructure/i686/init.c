@@ -342,7 +342,7 @@ void machine_init(const config_t *config) {
      * Do this after enabling PAE: we want the temporary PAE page tables to be
      * allocated after 1MB because we won't need them anymore once the final
      * address space is created. */
-    boot_reinit_at_16mb(&boot_alloc);
+    boot_alloc_reinit_at_16mb(&boot_alloc);
 
     /* allocate per-CPU data
      * 
@@ -390,10 +390,8 @@ void machine_init(const config_t *config) {
      * panic handler itself will then attempt to log). */
     remap_text_video_memory();
 
-    /* From this point, we are ready to switch to the new address space, so we
-     * don't need to allocate any more pages from the boot allocator. Transfer
-     * the remaining pages to the run-time page allocator. */
-    boot_reinit_at_klimit(&boot_alloc);
+    /* Transfer the remaining pages to the run-time page allocator. */
+    boot_alloc_reinit_at_klimit(&boot_alloc);
     initialize_page_allocator(&boot_alloc);
 
     /* create slab cache to allocate PDPTs
