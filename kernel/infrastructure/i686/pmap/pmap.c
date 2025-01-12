@@ -535,18 +535,6 @@ void pmap_switch_addr_space(addr_space_t *addr_space) {
     cpu_data->current_addr_space = addr_space;
 }
 
-void pmap_boot_map(void *addr, uint32_t paddr, int num_entries) {
-    int offset = (uintptr_t)((char *)addr - KLIMIT) / PAGE_SIZE;
-
-    initialize_page_table_linear(
-            get_pte_with_offset(
-                    (pte_t *)PTR_TO_PHYS_ADDR_AT_16MB(kernel_page_tables),
-                    offset),
-            paddr,
-            X86_PTE_READ_WRITE,
-            num_entries);
-}
-
 static pte_t *pmap_lookup_page_table(
         addr_space_t    *addr_space,
         void            *addr,

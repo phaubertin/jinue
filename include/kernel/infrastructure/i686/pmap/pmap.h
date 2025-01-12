@@ -77,8 +77,6 @@ void pmap_destroy_addr_space(addr_space_t *addr_space);
 
 void pmap_switch_addr_space(addr_space_t *addr_space);
 
-void pmap_boot_map(void *addr, uint32_t paddr, int num_entries);
-
 void pmap_map_kernel_page(void *vaddr, kern_paddr_t paddr, int flags);
 
 void pmap_unmap_kernel_page(void *addr);

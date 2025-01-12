@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2019-2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,10 +29,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <jinue/shared/asm/mman.h>
 #include <jinue/shared/asm/syscalls.h>
 #include <kernel/domain/alloc/page_alloc.h>
 #include <kernel/domain/services/cmdline.h>
 #include <kernel/domain/services/logging.h>
+#include <kernel/domain/services/mman.h>
 #include <kernel/domain/services/panic.h>
 #include <kernel/infrastructure/i686/asm/msr.h>
 #include <kernel/infrastructure/i686/drivers/acpi.h>
@@ -199,28 +201,22 @@ static void load_selectors(percpu_t *cpu_data, boot_alloc_t *boot_alloc) {
     boot_heap_pop(boot_alloc);
 }
 
-static void remap_text_video_memory(boot_alloc_t *boot_alloc) {
-    size_t video_buffer_size    = VGA_TEXT_VID_TOP - VGA_TEXT_VID_BASE;
-    size_t num_pages            = video_buffer_size / PAGE_SIZE;
-
-    void *buffer = boot_page_alloc_n(boot_alloc, num_pages);
-    void *mapped = (void *)PHYS_TO_VIRT_AT_16MB(buffer);
-
-    pmap_boot_map(mapped, VGA_TEXT_VID_BASE, num_pages);
-
-    info("Remapping text video memory at %#p", mapped);
-
-    /* Note: after this call to vga_set_base_addr() until we switch to the new
-     * new address space, VGA output is not possible. Attempting it will cause
-     * a kernel panic due to a page fault (and the panic handler itself attempts
-     * to log). */
-    vga_set_base_addr(mapped);
-}
-
 static void enable_global_pages(void) {
     if(cpu_has_feature(CPUINFO_FEATURE_PGE)) {
         set_cr4(get_cr4() | X86_CR4_PGE);
     }
+}
+
+static void remap_text_video_memory(void) {
+    void *mapped = map_in_kernel(
+        VGA_TEXT_VID_BASE,
+        VGA_TEXT_VID_TOP - VGA_TEXT_VID_BASE,
+        JINUE_PROT_READ | JINUE_PROT_WRITE
+    );
+
+    vga_set_base_addr(mapped);
+
+    info("Remapped text video memory at %#p", mapped);    
 }
 
 static void initialize_page_allocator(boot_alloc_t *boot_alloc) {
@@ -346,7 +342,7 @@ void machine_init(const config_t *config) {
      * Do this after enabling PAE: we want the temporary PAE page tables to be
      * allocated after 1MB because we won't need them anymore once the final
      * address space is created. */
-    boot_reinit_at_16mb(&boot_alloc);
+    boot_alloc_reinit_at_16mb(&boot_alloc);
 
     /* allocate per-CPU data
      * 
@@ -383,21 +379,19 @@ void machine_init(const config_t *config) {
 
     memory_initialize_array(&boot_alloc, bootinfo);
 
-    /* After this, VGA output is not possible until we switch to the
-     * new address space (see the call to pmap_switch_addr_space() below).
-     * Attempting it will cause a kernel panic due to a page fault (and the
-     * panic handler itself attempts to log). */
-    remap_text_video_memory(&boot_alloc);
-
     /* switch to new address space */
     pmap_switch_addr_space(addr_space);
 
     enable_global_pages();
+    
+    /* This should be done early after calling pmap_switch_addr_space()
+     * because, until it's done, any attempt to log anything to VGA will
+     * result in a kernel panic caused by a kernel page fault (and the
+     * panic handler itself will then attempt to log). */
+    remap_text_video_memory();
 
-    /* From this point, we are ready to switch to the new address space, so we
-     * don't need to allocate any more pages from the boot allocator. Transfer
-     * the remaining pages to the run-time page allocator. */
-    boot_reinit_at_klimit(&boot_alloc);
+    /* Transfer the remaining pages to the run-time page allocator. */
+    boot_alloc_reinit_at_klimit(&boot_alloc);
     initialize_page_allocator(&boot_alloc);
 
     /* create slab cache to allocate PDPTs

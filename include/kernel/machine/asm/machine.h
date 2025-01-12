@@ -34,6 +34,10 @@
 
 #include <jinue/shared/asm/machine.h>
 
+#ifdef __i686__
+#include <kernel/infrastructure/i686/exports/asm/machine.h>
+#endif
+
 /** number of bits in a virtual address that represent the offset within a page */
 #define PAGE_BITS   JINUE_PAGE_BITS
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,44 +29,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_BOOT_ALLOC_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_BOOT_ALLOC_H
+#ifndef JINUE_KERNEL_SERVICES_MMAN_H
+#define JINUE_KERNEL_SERVICES_MMAN_H
 
-#include <kernel/infrastructure/i686/types.h>
-#include <kernel/interface/i686/types.h>
+#include <kernel/machine/types.h>
+#include <stddef.h>
 
-void boot_alloc_init(boot_alloc_t *boot_alloc, const bootinfo_t *bootinfo);
-
-void boot_alloc_reinit_at_16mb(boot_alloc_t *boot_alloc);
-
-void boot_alloc_reinit_at_klimit(boot_alloc_t *boot_alloc);
-
-/**
- * Allocate an object on the boot heap.
- *
- * The object returned by the allocator is cleared (i.e. all bytes set to zero).
- *
- * This macro is a wrapper for boot_heap_alloc_size that takes a type as the
- * second argument instead of an object size.
- *
- * @param boot_alloc the boot allocator state
- * @param t the type of object to allocate
- * @param align the required start address alignment of the object, zero for no constraint
- * @return the allocated object
- *
- * */
-#define boot_heap_alloc(boot_alloc, t, align) ((t *)boot_heap_alloc_size(boot_alloc, sizeof(t), align))
-
-void *boot_heap_alloc_size(boot_alloc_t *boot_alloc, size_t size, size_t align);
-
-void boot_heap_push(boot_alloc_t *boot_alloc);
-
-void boot_heap_pop(boot_alloc_t *boot_alloc);
-
-void *boot_page_alloc(boot_alloc_t *boot_alloc);
-
-void *boot_page_alloc_n(boot_alloc_t *boot_alloc, int num_pages);
-
-bool boot_page_alloc_is_empty(boot_alloc_t *boot_alloc);
+void *map_in_kernel(kern_paddr_t paddr, size_t size, int prot);
 
 #endif
