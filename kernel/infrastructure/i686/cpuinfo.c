@@ -18,14 +18,14 @@
  *    without specific prior written permission.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * SIGNATURE_ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE FOR ANY
+ * DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE FOR SIGNATURE_ANY
  * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
  * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * ON SIGNATURE_ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN SIGNATURE_ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include <kernel/domain/services/logging.h>
@@ -160,6 +160,8 @@ typedef struct {
     uint32_t    signature_edx;
 } cpuid_signature_t;
 
+#define SIGNATURE_ANY (-1)
+
 /**
  * Map a CPUID signature to an ID for the kernel's internal use
  * 
@@ -169,30 +171,25 @@ typedef struct {
  * 
  * @param regs relevant CPUID leaf
  * @param mapping mapping entries
- * @param default_value default ID if no mapping entry matches
  */
-static int map_signature(
-        const x86_cpuid_regs_t  *regs,
-        const cpuid_signature_t  mapping[],
-        int                      default_value
-) {
-    for(int idx = 0; mapping[idx].id >= 0; ++idx) {
-        if(regs->ebx != mapping[idx].signature_ebx) {
+static int map_signature(const x86_cpuid_regs_t *regs, const cpuid_signature_t mapping[]) {
+    for(int idx = 0;; ++idx) {
+        const cpuid_signature_t *entry = &mapping[idx];
+
+        if(regs->ebx != entry->signature_ebx && entry->signature_ebx != SIGNATURE_ANY) {
             continue;
         }
 
-        if(regs->ecx != mapping[idx].signature_ecx) {
+        if(regs->ecx != entry->signature_ecx && entry->signature_ecx != SIGNATURE_ANY) {
             continue;
         }
 
-        if(regs->edx != mapping[idx].signature_edx) {
+        if(regs->edx != entry->signature_edx && entry->signature_edx != SIGNATURE_ANY) {
             continue;
         }
 
         return mapping[idx].id;
     }
-
-    return default_value;
 }
 
 /**
@@ -216,14 +213,14 @@ static void identify_vendor(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
             .signature_edx  = CPUID_VENDOR_INTEL_EDX
         },
         {
-            .id             = -1,
-            .signature_ebx  = 0,
-            .signature_ecx  = 0,
-            .signature_edx  = 0
+            .id             = CPUINFO_VENDOR_GENERIC,
+            .signature_ebx  = SIGNATURE_ANY,
+            .signature_ecx  = SIGNATURE_ANY,
+            .signature_edx  = SIGNATURE_ANY
         }
     };
 
-    cpuinfo->vendor = map_signature(&leafs->basic0, mapping, CPUINFO_VENDOR_GENERIC);
+    cpuinfo->vendor = map_signature(&leafs->basic0, mapping);
 }
 
 /**
@@ -271,17 +268,17 @@ static void identify_hypervisor(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs
             .signature_edx  = CPUID_HYPERVISOR_XEN_EDX
         },
         {
-            .id             = -1,
-            .signature_ebx  = 0,
-            .signature_ecx  = 0,
-            .signature_edx  = 0
+            .id             = HYPERVISOR_ID_UNKNOWN,
+            .signature_ebx  = SIGNATURE_ANY,
+            .signature_ecx  = SIGNATURE_ANY,
+            .signature_edx  = SIGNATURE_ANY
         }
     };
 
     if(! leafs->soft0_valid) {
         cpuinfo->hypervisor = HYPERVISOR_ID_NONE;
     } else {
-        cpuinfo->hypervisor = map_signature(&leafs->soft0, mapping, HYPERVISOR_ID_UNKNOWN);
+        cpuinfo->hypervisor = map_signature(&leafs->soft0, mapping);
     }
 }
 
