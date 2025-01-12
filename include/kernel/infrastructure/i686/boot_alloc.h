@@ -55,7 +55,8 @@ void boot_alloc_reinit_at_klimit(boot_alloc_t *boot_alloc);
  * @return the allocated object
  *
  * */
-#define boot_heap_alloc(boot_alloc, t, align) ((t *)boot_heap_alloc_size(boot_alloc, sizeof(t), align))
+#define boot_heap_alloc(boot_alloc, T, align) \
+    ((T *)boot_heap_alloc_size(boot_alloc, sizeof(T), align))
 
 void *boot_heap_alloc_size(boot_alloc_t *boot_alloc, size_t size, size_t align);
 

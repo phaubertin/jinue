@@ -144,29 +144,20 @@ static void init_idt(void) {
     }
 }
 
-static void load_selectors(percpu_t *cpu_data, boot_alloc_t *boot_alloc) {
-    /* Pseudo-descriptor allocation is temporary for the duration of this
-     * function only. Remember heap pointer on entry so we can free the
-     * pseudo-allocator when we are done. */
-    boot_heap_push(boot_alloc);
-
-    pseudo_descriptor_t *pseudo =
-        boot_heap_alloc(boot_alloc, pseudo_descriptor_t, sizeof(pseudo_descriptor_t));
+static void load_selectors(percpu_t *cpu_data) {
+    pseudo_descriptor_t pseudo;
 
     /* load interrupt descriptor table */
-    pseudo->addr  = (addr_t)idt;
-    pseudo->limit = IDT_VECTOR_COUNT * sizeof(seg_descriptor_t) - 1;
+    pseudo.addr  = (addr_t)idt;
+    pseudo.limit = IDT_VECTOR_COUNT * sizeof(seg_descriptor_t) - 1;
 
-    lidt(pseudo);
+    lidt(&pseudo);
 
     /* load new GDT */
-    pseudo->addr    = (addr_t)&cpu_data->gdt;
-    pseudo->limit   = GDT_NUM_ENTRIES * 8 - 1;
+    pseudo.addr    = (addr_t)&cpu_data->gdt;
+    pseudo.limit   = GDT_NUM_ENTRIES * 8 - 1;
 
-    lgdt(pseudo);
-    
-    /* free pseudo-descriptor. */
-    boot_heap_pop(boot_alloc);
+    lgdt(&pseudo);
 
     /* load new segment descriptors */
     uint32_t code_selector      = SEG_SELECTOR(GDT_KERNEL_CODE,  RPL_KERNEL);
@@ -337,7 +328,7 @@ void machine_init(const config_t *config) {
     init_idt();
 
     /* load segment selectors */
-    load_selectors(cpu_data, &boot_alloc);
+    load_selectors(cpu_data);
 
     /* Initialize programmable interrupt_controller. */
     pic8259_init();
