@@ -42,6 +42,21 @@
 
 cpuinfo_t bsp_cpuinfo;
 
+typedef struct {
+    x86_cpuid_regs_t    basic0;
+    x86_cpuid_regs_t    basic1;
+    x86_cpuid_regs_t    ext0;
+    x86_cpuid_regs_t    ext1;
+    x86_cpuid_regs_t    ext2;
+    x86_cpuid_regs_t    ext3;
+    x86_cpuid_regs_t    ext4;
+    x86_cpuid_regs_t    ext8;
+    x86_cpuid_regs_t    soft0;
+    bool                ext4_valid;
+    bool                ext8_valid;
+    bool                soft0_valid;
+} cpuid_leafs_set;
+
 /**
  * Report CPU is too old to be supported and panic
  * 
@@ -72,8 +87,8 @@ static void check_cpuid_is_supported(void) {
  * 
  * @param leafs CPUID leafs structure (OUT)
  */
-static void get_cpuid_leafs(x86_cpuid_leafs *leafs) {
-    memset(leafs, 0, sizeof(x86_cpuid_leafs));
+static void get_cpuid_leafs(cpuid_leafs_set *leafs) {
+    memset(leafs, 0, sizeof(cpuid_leafs_set));
 
     const uint32_t ext_base = 0x80000000;
     const uint32_t soft_base = 0x40000000;
@@ -198,7 +213,7 @@ static int map_signature(const x86_cpuid_regs_t *regs, const cpuid_signature_t m
  * @param cpuinfo structure in which to set the vendor (OUT)
  * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
  */
-static void identify_vendor(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
+static void identify_vendor(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs) {
     static const cpuid_signature_t mapping[] = {
         {
             .id             = CPUINFO_VENDOR_AMD,
@@ -229,7 +244,7 @@ static void identify_vendor(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
  * @param cpuinfo structure in which to set the hypervisor ID (OUT)
  * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
  */
-static void identify_hypervisor(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
+static void identify_hypervisor(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs) {
     static const cpuid_signature_t mapping[] = {
         {
             .id             = HYPERVISOR_ID_ACRN,
@@ -288,7 +303,7 @@ static void identify_hypervisor(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs
  * @param cpuinfo structure in which to set the information (OUT)
  * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
  */
-static void identify_model(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
+static void identify_model(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs) {
     uint32_t signature   = leafs->basic1.eax;
     cpuinfo->family      = (signature>>8)  & 0xf;
     cpuinfo->model       = (signature>>4)  & 0xf;
@@ -365,7 +380,7 @@ static void clean_brand_string(char *buffer) {
  * @param cpuinfo structure in which to set the brand string (OUT)
  * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
  */
-static void get_brand_string(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
+static void get_brand_string(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs) {
     if(! leafs->ext4_valid) {
         cpuinfo->brand_string[0] = '\0';
         return;
@@ -400,7 +415,7 @@ static void get_brand_string(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
  * @param cpuinfo structure in which to set the cache alignment (OUT)
  * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
  */
-static void identify_dcache_alignment(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
+static void identify_dcache_alignment(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs) {
     const x86_cpuid_regs_t *regs = &leafs->basic1;
 
     if(regs->edx & CPUID_FEATURE_CLFLUSH) {
@@ -449,7 +464,7 @@ static bool is_amd_or_intel(const cpuinfo_t *cpuinfo) {
  * @param cpuinfo structure in which to set the feature flag (OUT)
  * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
  */
-static void detect_sysenter_instruction(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
+static void detect_sysenter_instruction(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs) {
     if(!(leafs->basic1.edx & CPUID_FEATURE_SEP)) {
         return;
     }
@@ -470,7 +485,7 @@ static void detect_sysenter_instruction(cpuinfo_t *cpuinfo, const x86_cpuid_leaf
  * @param cpuinfo structure in which to set the feature flag (OUT)
  * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
  */
-static void detect_syscall_instruction(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
+static void detect_syscall_instruction(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs) {
     if(!is_amd(cpuinfo)) {
         return;
     }
@@ -489,7 +504,7 @@ static void detect_syscall_instruction(cpuinfo_t *cpuinfo, const x86_cpuid_leafs
  * @param cpuinfo structure in which to set the feature flags (OUT)
  * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
  */
-static void enumerate_features(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
+static void enumerate_features(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs) {
     uint32_t flags = leafs->basic1.edx;
     uint32_t ext_flags = leafs->ext1.edx;
     
@@ -530,7 +545,7 @@ static void enumerate_features(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs)
  * @param cpuinfo structure in which to set the number of address bits (OUT)
  * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
  */
-static void identify_maxphyaddr(cpuinfo_t *cpuinfo, const x86_cpuid_leafs *leafs) {
+static void identify_maxphyaddr(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs) {
     if((cpuinfo->features & CPUINFO_FEATURE_PAE) && leafs->ext8_valid) {
         cpuinfo->maxphyaddr = leafs->ext8.eax & 0xff;
     } else {
@@ -636,7 +651,7 @@ static void dump_hypervisor(const cpuinfo_t *cpuinfo) {
 void detect_cpu_features(void) {
     check_cpuid_is_supported();
 
-    x86_cpuid_leafs cpuid_leafs;
+    cpuid_leafs_set cpuid_leafs;
     get_cpuid_leafs(&cpuid_leafs);
     
     identify_vendor(&bsp_cpuinfo, &cpuid_leafs);
