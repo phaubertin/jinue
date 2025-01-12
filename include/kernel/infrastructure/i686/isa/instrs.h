@@ -54,7 +54,6 @@ typedef struct {
     bool                ext4_valid;
     bool                ext8_valid;
     bool                soft0_valid;
-
 } x86_cpuid_leafs;
 
 void cli(void);
