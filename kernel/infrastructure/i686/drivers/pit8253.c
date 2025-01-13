@@ -33,7 +33,6 @@
 #include <kernel/infrastructure/i686/drivers/iodelay.h>
 #include <kernel/infrastructure/i686/drivers/pit8253.h>
 #include <kernel/infrastructure/i686/isa/io.h>
-#include <kernel/infrastructure/i686/isa/io.h>
 #include <kernel/utils/utils.h>
 
 void pit8253_init(void) {
