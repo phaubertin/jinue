@@ -39,6 +39,9 @@
 #include <stddef.h>
 
 void machine_dump_call_stack(void) {
+    /* This function is called by the panic handler and one potential reason
+     * for a kernel panic is an early boot check that the boot information
+     * structure is valid. We can't assume that it is valid here. */
     if(!check_bootinfo(false)) {
         warning("warning: cannot dump call stack because boot information structure is invalid.");
         return;

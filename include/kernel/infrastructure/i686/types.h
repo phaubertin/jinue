@@ -42,6 +42,10 @@ typedef uint64_t seg_descriptor_t;
 
 typedef uint32_t seg_selector_t;
 
+
+/* There are alignment constraints that apply to this structure if it is used
+ * with the sgdt/sidt instructions but, currently, the kernel only uses lgdt
+ * and lidt for which these aligment constraints do not apply. */
 typedef struct {
     uint16_t    padding;
     uint16_t    limit;
@@ -104,11 +108,12 @@ typedef struct {
     uint16_t    iomap;
 } tss_t;
 
+/* Assembly language code accesses members in this structure. Make sure to
+ * update the PERCPU_OFFSET_... definitions when you change its layout. */
 struct percpu_t {
-    /* Assembly language code accesses members in this structure. Make sure to
-     * update the PERCPU_OFFSET_... definitions when you change its layout. */
     struct percpu_t     *self;
     addr_space_t        *current_addr_space;
+    /* should be aligned on an 8-byte boundary for performance. */
     seg_descriptor_t     gdt[GDT_NUM_ENTRIES];
     tss_t                tss;
 };

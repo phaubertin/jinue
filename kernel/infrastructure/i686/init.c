@@ -5,18 +5,18 @@
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -71,24 +71,6 @@
 /** Specifies the entry point to use for system calls */
 int syscall_implementation;
 
-static void check_data_segment(const bootinfo_t *bootinfo) {
-    if(     bootinfo->data_start == 0 ||
-            bootinfo->data_size == 0 ||
-            bootinfo->data_physaddr == 0) {
-        panic("Setup code wasn't able to load kernel data segment");
-    }
-}
-
-static void check_alignment(const bootinfo_t *bootinfo) {
-    if(page_offset_of(bootinfo->image_start) != 0) {
-        panic("Kernel image start is not aligned on a page boundary");
-    }
-
-    if(page_offset_of(bootinfo->image_top) != 0) {
-        panic("Top of kernel image is not aligned on a page boundary");
-    }
-}
-
 static void move_kernel_at_16mb(const bootinfo_t *bootinfo) {
     move_and_remap_kernel(
             (addr_t)bootinfo->page_table_1mb,
@@ -135,11 +117,11 @@ static void init_idt(void) {
         addr_t addr = (addr_t)(uintptr_t)idt[idx];
 
         /* Set interrupt gate flags.
-         * 
+         *
          * Because we are using an interrupt gate, the IF flag is cleared when
          * the interrupt routine is entered, which means interrupts are
          * disabled.
-         * 
+         *
          * See Intel 64 and IA-32 Architectures Software Developer’s Manual
          * Volume 3 section 7.12.1.3 "Flag Usage By Exception- or Interrupt-
          * Handler Procedure".
@@ -162,25 +144,20 @@ static void init_idt(void) {
     }
 }
 
-static void load_selectors(percpu_t *cpu_data, boot_alloc_t *boot_alloc) {
-    /* Pseudo-descriptor allocation is temporary for the duration of this
-     * function only. Remember heap pointer on entry so we can free the
-     * pseudo-allocator when we are done. */
-    boot_heap_push(boot_alloc);
-
-    pseudo_descriptor_t *pseudo =
-            boot_heap_alloc(boot_alloc, pseudo_descriptor_t, sizeof(pseudo_descriptor_t));
+static void load_selectors(percpu_t *cpu_data) {
+    pseudo_descriptor_t pseudo;
 
     /* load interrupt descriptor table */
-    pseudo->addr  = (addr_t)idt;
-    pseudo->limit = IDT_VECTOR_COUNT * sizeof(seg_descriptor_t) - 1;
-    lidt(pseudo);
+    pseudo.addr  = (addr_t)idt;
+    pseudo.limit = IDT_VECTOR_COUNT * sizeof(seg_descriptor_t) - 1;
 
-    /* load new GDT and TSS */
-    pseudo->addr    = (addr_t)&cpu_data->gdt;
-    pseudo->limit   = GDT_NUM_ENTRIES * 8 - 1;
+    lidt(&pseudo);
 
-    lgdt(pseudo);
+    /* load new GDT */
+    pseudo.addr    = (addr_t)&cpu_data->gdt;
+    pseudo.limit   = GDT_NUM_ENTRIES * 8 - 1;
+
+    lgdt(&pseudo);
 
     /* load new segment descriptors */
     uint32_t code_selector      = SEG_SELECTOR(GDT_KERNEL_CODE,  RPL_KERNEL);
@@ -196,9 +173,6 @@ static void load_selectors(percpu_t *cpu_data, boot_alloc_t *boot_alloc) {
 
     /* load TSS segment into task register */
     ltr( SEG_SELECTOR(GDT_TSS, RPL_KERNEL) );
-
-    /* free pseudo-descriptor. */
-    boot_heap_pop(boot_alloc);
 }
 
 static void enable_global_pages(void) {
@@ -216,7 +190,7 @@ static void remap_text_video_memory(void) {
 
     vga_set_base_addr(mapped);
 
-    info("Remapped text video memory at %#p", mapped);    
+    info("Remapped text video memory at %#p", mapped);
 }
 
 static void initialize_page_allocator(boot_alloc_t *boot_alloc) {
@@ -293,7 +267,7 @@ static void get_loader_elf(exec_file_t *loader, const bootinfo_t *bootinfo) {
 static void get_ramdisk(kern_mem_block_t *ramdisk, const bootinfo_t *bootinfo) {
     ramdisk->start  = bootinfo->ramdisk_start;
     ramdisk->size   = bootinfo->ramdisk_size;
-    
+
     if(ramdisk->start == 0 || ramdisk->size == 0) {
         panic("No initial RAM disk loaded.");
     }
@@ -318,13 +292,9 @@ void machine_init(const config_t *config) {
     /* Validate the boot information structure before using it. */
     (void)check_bootinfo(true);
 
-    const bootinfo_t *bootinfo = get_bootinfo();
-
     detect_cpu_features();
 
-    check_data_segment(bootinfo);
-
-    check_alignment(bootinfo);
+    const bootinfo_t *bootinfo = get_bootinfo();
 
     check_memory(bootinfo);
 
@@ -345,45 +315,39 @@ void machine_init(const config_t *config) {
     boot_alloc_reinit_at_16mb(&boot_alloc);
 
     /* allocate per-CPU data
-     * 
+     *
      * We need to ensure that the Task State Segment (TSS) contained in this
      * memory block does not cross a page boundary. */
     assert(sizeof(percpu_t) < PERCPU_DATA_ALIGNMENT);
     percpu_t *cpu_data = boot_heap_alloc(&boot_alloc, percpu_t, PERCPU_DATA_ALIGNMENT);
-    
+
     /* initialize per-CPU data */
     init_percpu_data(cpu_data);
-    
+
     /* Initialize interrupt descriptor table (IDT) */
     init_idt();
 
     /* load segment selectors */
-    load_selectors(cpu_data, &boot_alloc);
+    load_selectors(cpu_data);
 
-    /* Initialize programmable interrupt_controller. */
-    pic8259_init();
-
-    /* Initialize programmable interval timer and enable timer interrupt.
-     *
-     * Interrupts are disabled during initialization so the CPU won't actually
-     * be interrupted until the first user space thread starts. */
-    pit8253_init();
-    pic8259_unmask(IRQ_TIMER);
-
+    /* We must look for the ACPI RDSP while the relevant memory is still
+     * identity mapped before we swith to the initial address space. */
     acpi_init();
+
+    /* This must be done before we switch to the new address space because only
+     * the boot allocator can allocate multiple consecutive pages. */
+    memory_initialize_array(&boot_alloc, bootinfo);
 
     exec_file_t kernel;
     get_kernel_exec_file(&kernel, bootinfo);
 
     addr_space_t *addr_space = pmap_create_initial_addr_space(&kernel, &boot_alloc, bootinfo);
 
-    memory_initialize_array(&boot_alloc, bootinfo);
-
     /* switch to new address space */
     pmap_switch_addr_space(addr_space);
 
     enable_global_pages();
-    
+
     /* This should be done early after calling pmap_switch_addr_space()
      * because, until it's done, any attempt to log anything to VGA will
      * result in a kernel panic caused by a kernel page fault (and the
@@ -400,10 +364,21 @@ void machine_init(const config_t *config) {
      * because the slab allocator needs to allocate a slab to allocate the new
      * slab cache on the slab cache cache.
      *
-     * This must be done before the first time pmap_create_addr_space() is called. */
+     * This must be done before the first time pmap_create_addr_space() is
+     * called, which happens when the first process is created. */
     if(pae_enabled) {
         pae_create_pdpt_cache();
     }
+
+    /* Initialize programmable interrupt_controller. */
+    pic8259_init();
+
+    /* Initialize programmable interval timer and enable timer interrupt.
+     *
+     * Interrupts are disabled during initialization so the CPU won't actually
+     * be interrupted until the first user space thread starts. */
+    pit8253_init();
+    pic8259_unmask(IRQ_TIMER);
 
     /* choose a system call implementation */
     select_syscall_implementation();
