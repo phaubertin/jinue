@@ -125,43 +125,6 @@ void *boot_heap_alloc_size(boot_alloc_t *boot_alloc, size_t size, size_t align) 
 }
 
 /**
- * Push the current state of the boot allocator heap.
- *
- * All heap allocations performed after calling this function are freed by the
- * matching call to boot_heap_pop(). This function can be called multiple times
- * before calling boot_heap_pop(). Heap states pushed by this function are
- * popped by boot_heap_pop()() in the reverse order they were pushed.
- *
- * @param boot_alloc the boot allocator state
- *
- * */
-void boot_heap_push(boot_alloc_t *boot_alloc) {
-    struct boot_heap_pushed_state *pushed_state =
-            boot_heap_alloc(boot_alloc, struct boot_heap_pushed_state, 0);
-
-    pushed_state->next              = boot_alloc->heap_pushed_state;
-    boot_alloc->heap_pushed_state   = pushed_state;
-}
-
-/**
- * Pop the last pushed boot allocator heap.
- *
- * This function frees all heap allocations performed since the matching call to
- * boot_heap_push().
- *
- * @param boot_alloc the boot allocator state
- *
- * */
-void boot_heap_pop(boot_alloc_t *boot_alloc) {
-    if(boot_alloc->heap_pushed_state == NULL) {
-        panic("No more boot heap pushed state to pop.");
-    }
-
-    boot_alloc->heap_ptr            = boot_alloc->heap_pushed_state;
-    boot_alloc->heap_pushed_state   = boot_alloc->heap_pushed_state->next;
-}
-
-/**
  * Early page allocation.
  *
  * This function allocates pages sequentially following the kernel image and the

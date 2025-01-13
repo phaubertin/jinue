@@ -60,10 +60,6 @@ void boot_alloc_reinit_at_klimit(boot_alloc_t *boot_alloc);
 
 void *boot_heap_alloc_size(boot_alloc_t *boot_alloc, size_t size, size_t align);
 
-void boot_heap_push(boot_alloc_t *boot_alloc);
-
-void boot_heap_pop(boot_alloc_t *boot_alloc);
-
 void *boot_page_alloc(boot_alloc_t *boot_alloc);
 
 void *boot_page_alloc_n(boot_alloc_t *boot_alloc, int num_pages);
