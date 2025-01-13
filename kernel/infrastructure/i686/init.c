@@ -292,9 +292,9 @@ void machine_init(const config_t *config) {
     /* Validate the boot information structure before using it. */
     (void)check_bootinfo(true);
 
-    const bootinfo_t *bootinfo = get_bootinfo();
-
     detect_cpu_features();
+
+    const bootinfo_t *bootinfo = get_bootinfo();
 
     check_memory(bootinfo);
 
@@ -330,24 +330,18 @@ void machine_init(const config_t *config) {
     /* load segment selectors */
     load_selectors(cpu_data);
 
-    /* Initialize programmable interrupt_controller. */
-    pic8259_init();
-
-    /* Initialize programmable interval timer and enable timer interrupt.
-     *
-     * Interrupts are disabled during initialization so the CPU won't actually
-     * be interrupted until the first user space thread starts. */
-    pit8253_init();
-    pic8259_unmask(IRQ_TIMER);
-
+    /* We must look for the ACPI RDSP while the relevant memory is still
+     * identity mapped before we swith to the initial address space. */
     acpi_init();
+
+    /* This must be done before we switch to the new address space because only
+     * the boot allocator can allocate multiple consecutive pages. */
+    memory_initialize_array(&boot_alloc, bootinfo);
 
     exec_file_t kernel;
     get_kernel_exec_file(&kernel, bootinfo);
 
     addr_space_t *addr_space = pmap_create_initial_addr_space(&kernel, &boot_alloc, bootinfo);
-
-    memory_initialize_array(&boot_alloc, bootinfo);
 
     /* switch to new address space */
     pmap_switch_addr_space(addr_space);
@@ -370,10 +364,21 @@ void machine_init(const config_t *config) {
      * because the slab allocator needs to allocate a slab to allocate the new
      * slab cache on the slab cache cache.
      *
-     * This must be done before the first time pmap_create_addr_space() is called. */
+     * This must be done before the first time pmap_create_addr_space() is
+     * called, which happens when the first process is created. */
     if(pae_enabled) {
         pae_create_pdpt_cache();
     }
+
+    /* Initialize programmable interrupt_controller. */
+    pic8259_init();
+
+    /* Initialize programmable interval timer and enable timer interrupt.
+     *
+     * Interrupts are disabled during initialization so the CPU won't actually
+     * be interrupted until the first user space thread starts. */
+    pit8253_init();
+    pic8259_unmask(IRQ_TIMER);
 
     /* choose a system call implementation */
     select_syscall_implementation();
