@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,12 +29,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_SERVICES_PANIC_H
-#define JINUE_KERNEL_SERVICES_PANIC_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_COMPILER_H
+#define JINUE_KERNEL_INFRASTRUCTURE_COMPILER_H
 
-#include <kernel/infrastructure/compiler.h>
-
-NORETURN void panic(const char *message);
-
+#ifdef __GNUC__
+#define NORETURN __attribute__((noreturn))
+#else
+#define NORETURN
 #endif
 
+#endif
