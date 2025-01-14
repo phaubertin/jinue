@@ -92,3 +92,26 @@ void *map_in_kernel(kern_paddr_t paddr, size_t size, int prot) {
 
     return start + offset;
 }
+
+/**
+ * Undo a mapping established by map_in_kernel()
+ * 
+ * This function is intended for use during boot and has the following caveats:
+ * - *All* mappings done since the one identified by the argument are undone.
+ *   Typical usage of this function is to undo the last mapping performed.
+ * - This function does not perform locking. It is intended for use by the
+ *   first running CPU only during boot.
+ * 
+ * @param addr address returned by map_in_kernel() for the mapping being undone
+ * 
+*/
+void undo_map_in_kernel(void *addr) {
+    void *start = ALIGN_START_PTR(addr, PAGE_SIZE);
+    void *end   = alloc_state.addr;
+
+    for(addr_t page_addr = start; page_addr < (addr_t)end; ++page_addr) {
+        machine_unmap_kernel_page(page_addr);
+    }
+
+    alloc_state.addr = start;
+}

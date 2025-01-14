@@ -37,4 +37,6 @@
 
 void *map_in_kernel(kern_paddr_t paddr, size_t size, int prot);
 
+void undo_map_in_kernel(void *addr);
+
 #endif
