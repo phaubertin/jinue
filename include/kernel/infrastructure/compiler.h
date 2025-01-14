@@ -33,7 +33,7 @@
 #define JINUE_KERNEL_INFRASTRUCTURE_COMPILER_H
 
 #ifdef __GNUC__
-#define NORETURN __attribute__((noreturn))
+#define NORETURN __attribute__((__noreturn__))
 #else
 #define NORETURN
 #endif
