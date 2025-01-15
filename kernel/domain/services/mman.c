@@ -94,6 +94,34 @@ void *map_in_kernel(kern_paddr_t paddr, size_t size, int prot) {
 }
 
 /**
+ * Expand a mapping established by map_in_kernel()
+ * 
+ * This function is intended for use during boot and has the following caveats:
+ * - It assumes the mapping being expanded is the last mapping performed.
+ * - This function does not perform locking. It is intended for use by the
+ *   first running CPU only during boot.
+ * 
+ * @param addr address returned by map_in_kernel() for the mapping being expanded
+ * @param size size of memory to map
+ * @param prot mapping protection flags
+ * 
+*/
+void expand_map_in_kernel(const void *addr, size_t size, int prot) {
+    void *start     = ALIGN_START_PTR(addr, PAGE_SIZE);
+    addr_t old_end  = alloc_state.addr;
+    addr_t new_end  = ALIGN_END_PTR((addr_t)addr + size, PAGE_SIZE);
+
+    kern_paddr_t paddr = machine_lookup_kernel_paddr(start) + (new_end - old_end);
+
+    for(addr_t page_addr = old_end; page_addr < (addr_t)new_end; page_addr += PAGE_SIZE) {
+        machine_map_kernel_page(page_addr, paddr, prot);
+        ++paddr;
+    }
+
+    alloc_state.addr = new_end;
+}
+
+/**
  * Undo a mapping established by map_in_kernel()
  * 
  * This function is intended for use during boot and has the following caveats:
@@ -109,7 +137,7 @@ void undo_map_in_kernel(void *addr) {
     void *start = ALIGN_START_PTR(addr, PAGE_SIZE);
     void *end   = alloc_state.addr;
 
-    for(addr_t page_addr = start; page_addr < (addr_t)end; ++page_addr) {
+    for(addr_t page_addr = start; page_addr < (addr_t)end; page_addr += PAGE_SIZE) {
         machine_unmap_kernel_page(page_addr);
     }
 

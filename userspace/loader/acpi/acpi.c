@@ -192,7 +192,7 @@ static const void *map_table(uint64_t paddr, const acpi_header_t *header, const 
     return header;
 }
 
-/* Size of the fixed part of the RSDT, excluding hte entries. */
+/* Size of the fixed part of the RSDT, excluding the entries. */
 #define RSDT_BASE_SIZE ((size_t)(const char *)&(((const acpi_rsdt_t *)0)->entries))
 
 /**

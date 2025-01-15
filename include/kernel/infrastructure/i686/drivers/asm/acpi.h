@@ -40,4 +40,9 @@
 
 #define ACPI_V1_RSDP_SIZE   20
 
+/* Arbitrary value expected to be large enough to accomodate any real table
+ * while ensuring we don't create arbitrary large mappings because of garbage
+ * data in length members. */
+#define ACPI_TABLE_MAX_SIZE (128 * 1024)
+
 #endif

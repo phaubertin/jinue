@@ -332,7 +332,7 @@ void machine_init(const config_t *config) {
 
     /* We must look for the ACPI RDSP while the relevant memory is still
      * identity mapped before we swith to the initial address space. */
-    acpi_init();
+    find_acpi_rsdp();
 
     /* This must be done before we switch to the new address space because only
      * the boot allocator can allocate multiple consecutive pages. */
@@ -357,6 +357,8 @@ void machine_init(const config_t *config) {
     /* Transfer the remaining pages to the run-time page allocator. */
     boot_alloc_reinit_at_klimit(&boot_alloc);
     initialize_page_allocator(&boot_alloc);
+
+    init_acpi();
 
     /* create slab cache to allocate PDPTs
      *
