@@ -37,7 +37,6 @@ run_log             = run-test.log
 deps                = $(kernel_img) $(testapp_initrd)
 
 tests = \
-	test_acpi \
 	test_detect_qemu \
 	test_boot_nopae \
 	test_boot_pae \

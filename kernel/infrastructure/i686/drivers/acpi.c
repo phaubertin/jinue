@@ -36,7 +36,6 @@
 #include <kernel/infrastructure/i686/drivers/acpi.h>
 #include <kernel/infrastructure/acpi/types.h>
 #include <kernel/infrastructure/i686/types.h>
-#include <kernel/machine/acpi.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -379,13 +378,4 @@ void init_acpi(void) {
  */
 kern_paddr_t acpi_get_rsdp_paddr(void) {
     return rsdp_paddr;
-}
-
-/**
- * Process the ACPI tables mapped by user space
- *
- * @param tables structure with pointers to ACPI tables
- */
-void machine_set_acpi_tables(const jinue_acpi_tables_t *tables) {
-    /* TODO implement this */
 }

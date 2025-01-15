@@ -554,20 +554,6 @@ static void sys_reply_error(jinue_syscall_args_t *args) {
     set_return_value_or_error(args, retval);
 }
 
-static void sys_acpi(jinue_syscall_args_t *args) {
-    const jinue_acpi_tables_t *userspace_tables = (const void *)args->arg1;
-
-    if(! check_userspace_buffer(userspace_tables, sizeof(jinue_acpi_tables_t))) {
-        set_error(args, JINUE_EINVAL);
-        return;
-    }
-
-    const jinue_acpi_tables_t tables = *userspace_tables;
-
-    int retval = set_acpi(&tables);
-    set_return_value_or_error(args, retval);
-}
-
 /**
  * System call dispatching function
  *
@@ -644,9 +630,6 @@ void handle_syscall(jinue_syscall_args_t *args) {
             break;
         case JINUE_SYS_REPLY_ERROR:
             sys_reply_error(args);
-            break;
-        case JINUE_SYS_SET_ACPI:
-            sys_acpi(args);
             break;
         default:
             sys_nosys(args);
