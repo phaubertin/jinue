@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Philippe Aubertin.
+ * Copyright (C) 2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,32 +29,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_ACPI_TYPES_H
-#define JINUE_KERNEL_INFRASTRUCTURE_ACPI_TYPES_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_ACPI_ACPI_H
+#define JINUE_KERNEL_INFRASTRUCTURE_ACPI_ACPI_H
 
-#include <stdint.h>
+#include <kernel/machine/types.h>
+#include <kernel/infrastructure/acpi/types.h>
+#include <stdbool.h>
+#include <stddef.h>
 
-typedef struct {
-    uint64_t addr;
-    uint64_t size;
-    uint32_t type;
-} acpi_addr_range_t;
+bool verify_acpi_checksum(const void *buffer, size_t buflen);
 
-typedef struct {
-    char        signature[4];
-    uint32_t    length;
-    uint8_t     revision;
-    uint8_t     checksum;
-    char        oemid[6];
-    char        oem_table_id[8];
-    uint32_t    oem_revision;
-    uint32_t    creator_id;
-    uint32_t    creator_revision;
-} acpi_table_header_t;
-
-typedef struct {
-    const char   *signature;
-    const void  **ptr;
-} acpi_table_def_t;
+void map_acpi_tables(kern_paddr_t rsdp_paddr, const acpi_table_def_t *table_defs);
 
 #endif

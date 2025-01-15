@@ -29,38 +29,19 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/mman.h>
+// TODO remove this #include
 #include <kernel/domain/services/logging.h>
-#include <kernel/domain/services/mman.h>
+#include <kernel/infrastructure/acpi/acpi.h>
 #include <kernel/infrastructure/i686/drivers/asm/vga.h>
 #include <kernel/infrastructure/i686/drivers/acpi.h>
-#include <kernel/infrastructure/acpi/types.h>
 #include <kernel/infrastructure/i686/types.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdlib.h>
 #include <string.h>
 
 static kern_paddr_t rsdp_paddr = 0;
 
 static acpi_tables_t tables;
-
-/**
- * Verify the checksum of an ACPI data structure
- *
- * @param buffer pointer to ACPI data structure
- * @param buflen size of ACPI data structure
- * @return true for correct checksum, false for checksum mismatch
- */
-static bool verify_checksum(const void *buffer, size_t buflen) {
-    uint8_t sum = 0;
-
-    for(int idx = 0; idx < buflen; ++idx) {
-        sum += ((const uint8_t *)buffer)[idx];
-    }
-
-    return sum == 0;
-}
 
 /**
  * Validate the ACPI RSDP
@@ -79,7 +60,7 @@ static bool check_rsdp(const acpi_rsdp_t *rsdp) {
         return false;
     }
 
-    if(!verify_checksum(rsdp, ACPI_V1_RSDP_SIZE)) {
+    if(!verify_acpi_checksum(rsdp, ACPI_V1_RSDP_SIZE)) {
         return false;
     }
 
@@ -91,7 +72,7 @@ static bool check_rsdp(const acpi_rsdp_t *rsdp) {
         return false;
     }
 
-    return verify_checksum(rsdp, sizeof(acpi_rsdp_t));
+    return verify_acpi_checksum(rsdp, sizeof(acpi_rsdp_t));
 }
 
 /**
@@ -145,200 +126,12 @@ void find_acpi_rsdp(void) {
     rsdp_paddr = (kern_paddr_t)find_rsdp();
 }
 
-/**
- * Verify the checksum of an ACPI table header
- *
- * @param header mapped ACPI table header
- * @param signature expected signature
- * @return true if the signature matches, false otherwise
- *
- * */
-static bool verify_signature(const acpi_table_header_t *header, const char *signature) {
-    return strncmp(header->signature, signature, sizeof(header->signature)) == 0;
-}
-
-/**
- * Map ACPI RSDP
- * 
- * We don't validate the contents (checksum, revision) because this has already
- * been done by find_acpi_rsdp().
- *
- * @param paddr physical memory address of ACPI RSDP
- * @return pointer to mapped RSDP on success, NULL on error
- *
- * */
-static const acpi_rsdp_t *map_rsdp(uint64_t paddr) {
-    return map_in_kernel(paddr, sizeof(acpi_rsdp_t), JINUE_PROT_READ);
-}
-
-/**
- * Extend the existing mapping of a table header to the full table
- *
- * @param header mapped ACPI table header
- * @return pointer to mapped table on success, NULL on error
- *
- * */
-static const void *map_table(const acpi_table_header_t *header) {
-    if(header->length < sizeof(acpi_table_header_t)) {
-        return NULL;
-    }
-
-    if(header->length > ACPI_TABLE_MAX_SIZE) {
-        return NULL;
-    }
-
-    expand_map_in_kernel(header, header->length, JINUE_PROT_READ);
-
-    if(! verify_checksum(header, header->length)) {
-        return NULL;
-    }
-    
-    return header;
-}
-
-/**
- * Map ACPI table header
- *
- * @param paddr physical memory address of ACPI table header
- * @return pointer to mapped header on success, NULL on error
- *
- * */
-static const acpi_table_header_t *map_header(kern_paddr_t paddr) {
-    return map_in_kernel(paddr, sizeof(acpi_table_header_t), JINUE_PROT_READ);
-}
-
-/* Size of the fixed part of the RSDT, excluding the entries. */
-#define RSDT_BASE_SIZE ((size_t)(const char *)&(((const acpi_rsdt_t *)0)->entries))
-
-/**
- * Map the RSDT/XSDT
- *
- * @param rsdt_paddr physical memory address of RSDT/XSDT
- * @param is_xsdt whether the table is a XSDT (true) or a RSDT (false)
- * @return mapped RSDT/XSDT on success, NULL on error
- *
- * */
-static const acpi_rsdt_t *map_rsdt(uint64_t rsdt_paddr, bool is_xsdt) {
-    const acpi_table_header_t *header = map_header(rsdt_paddr);
-
-    if(header == NULL) {
-        return NULL;
-    }
-
-    const char *const signature = is_xsdt ? "XSDT" : "RSDT";
-
-    if(! verify_signature(header, signature)) {
-        undo_map_in_kernel((void *)header);
-        return NULL;
-    }
-
-    if(header->length < RSDT_BASE_SIZE) {
-        undo_map_in_kernel((void *)header);
-        return NULL;
-    }
-
-    const acpi_rsdt_t *rsdt = map_table(header);
-
-    if(rsdt == NULL) {
-        undo_map_in_kernel((void *)header);
-        return NULL;
-    }
-
-    return rsdt;
-}
-
-/**
- * Process the entries of the mapped RSDT/XSDT to find relevant tables
- *
- * @param rsdt mapped RSDT/XSDT
- * @param is_xsdt whether the table is a XSDT (true) or RSDT (false)
- *
- * */
-void process_rsdt(const acpi_rsdt_t *rsdt, bool is_xsdt) {
-    size_t entries = (rsdt->header.length - RSDT_BASE_SIZE) / sizeof(uint32_t);
-
-    if(is_xsdt && entries % 2 != 0) {
-        --entries;
-    }
-
-    for(int idx = 0; idx < entries; ++idx) {
-        /* x86 is little endian */
-        uint64_t paddr = rsdt->entries[idx];
-
-        if(is_xsdt) {
-            paddr |= ((uint64_t)rsdt->entries[++idx]) << 32;
-        }
-
-        const acpi_table_header_t *header = map_header(paddr);
-
-        if(header == NULL) {
-            continue;
-        }
-
-        const char *signature = "FACP";
-
-        if(verify_signature(header, signature) && tables.fadt == NULL) {
-            tables.fadt = map_table(header);
-            continue;;
-        }
-
-        signature = "APIC";
-
-        if(verify_signature(header, signature) && tables.madt == NULL) {
-            tables.madt = map_table(header);
-            continue;
-        }
-
-        signature = "HPET";
-
-        if(verify_signature(header, signature) && tables.hpet == NULL) {
-            tables.hpet = map_table(header);
-            continue;
-        }
-
-        undo_map_in_kernel((void *)header);
-    }
-}
-
-/**
- * Map the ACPI tables in the kernel's mapping area
- * 
- * @param rsdp_paddr physical memory address of the RSDP
- * 
- */
-static void load_acpi_tables(kern_paddr_t rsdp_paddr) {
-    memset(&tables, 0, sizeof(tables));
-
-    if(rsdp_paddr == 0) {
-        return;
-    }
-
-    const acpi_rsdp_t *rsdp = map_rsdp(rsdp_paddr);
-
-    tables.rsdp = rsdp;
-
-    uint64_t rsdt_paddr;
-    bool is_xsdt;
-
-    if(rsdp->revision == ACPI_V1_REVISION) {
-        rsdt_paddr  = rsdp->rsdt_address;
-        is_xsdt     = false;
-    } else {
-        /* TODO handle the case where the address > 4GB and PAE is disabled. */
-        rsdt_paddr  = rsdp->xsdt_address;
-        is_xsdt     = true;
-    }
-
-    const acpi_rsdt_t *rsdt = map_rsdt(rsdt_paddr, is_xsdt);
-
-    if(rsdt == NULL) {
-        return;
-    }
-
-    tables.rsdt = rsdt;
-
-    process_rsdt(rsdt, is_xsdt);
-}
+static const acpi_table_def_t table_defs[] = {
+    { .signature = "FACP", .ptr = (const void **)&tables.fadt },
+    { .signature = "APIC", .ptr = (const void **)&tables.madt },
+    { .signature = "HPET", .ptr = (const void **)&tables.hpet },
+    { .signature = NULL, .ptr = NULL },
+};
 
 // TODO delete this function
 static void dump_table(const acpi_table_header_t *table, const char *name) {
@@ -353,11 +146,7 @@ static void dump_table(const acpi_table_header_t *table, const char *name) {
 
 // TODO delete this function
 void dump_acpi_tables(void) {
-    const acpi_table_header_t *rsdt = &tables.rsdt->header; 
-    const char *rsdt_name           = (rsdt != NULL && rsdt->signature[0] == 'X') ? "XSDT" : "RSDT";
-
     info("ACPI tables:");
-    dump_table(rsdt, rsdt_name);
     dump_table(&tables.fadt->header, "FADT");
     dump_table(&tables.madt->header, "MADT");
     dump_table(&tables.hpet->header, "HPET");
@@ -367,7 +156,13 @@ void dump_acpi_tables(void) {
  * Initialize ACPI
  */
 void init_acpi(void) {
-    load_acpi_tables(rsdp_paddr);
+    memset(&tables, 0, sizeof(tables));
+
+    if(rsdp_paddr == 0) {
+        return;
+    }
+
+    map_acpi_tables(rsdp_paddr, table_defs);
     dump_acpi_tables();
 }
 

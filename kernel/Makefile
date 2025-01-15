@@ -101,6 +101,7 @@ sources.kernel.c = \
 	domain/services/panic.c \
 	domain/services/scheduler.c \
 	domain/config.c \
+	infrastructure/acpi/acpi.c \
 	infrastructure/i686/drivers/acpi.c \
 	infrastructure/i686/drivers/pic8259.c \
 	infrastructure/i686/drivers/pit8253.c \

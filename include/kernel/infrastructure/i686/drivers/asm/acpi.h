@@ -32,17 +32,8 @@
 #ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_DRIVERS_ASM_ACPI_H
 #define JINUE_KERNEL_INFRASTRUCTURE_I686_DRIVERS_ASM_ACPI_H
 
+#include <kernel/infrastructure/acpi/asm/acpi.h>
+
 #define ACPI_BDA_EBDA       0x40e
-
-#define ACPI_V1_REVISION    0
-
-#define ACPI_V2_REVISION    2
-
-#define ACPI_V1_RSDP_SIZE   20
-
-/* Arbitrary value expected to be large enough to accomodate any real table
- * while ensuring we don't create arbitrary large mappings because of garbage
- * data in length members. */
-#define ACPI_TABLE_MAX_SIZE (128 * 1024)
 
 #endif

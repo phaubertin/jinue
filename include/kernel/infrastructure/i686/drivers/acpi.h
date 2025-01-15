@@ -32,14 +32,13 @@
 #ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_DRIVERS_ACPI_H
 #define JINUE_KERNEL_INFRASTRUCTURE_I686_DRIVERS_ACPI_H
 
+#include <kernel/infrastructure/acpi/tables.h>
 #include <kernel/infrastructure/acpi/types.h>
 #include <kernel/infrastructure/i686/drivers/asm/acpi.h>
 #include <kernel/infrastructure/i686/types.h>
 #include <stdint.h>
 
 typedef struct {
-    const acpi_rsdp_t *rsdp;
-    const acpi_rsdt_t *rsdt;
     const acpi_fadt_t *fadt;
     const acpi_madt_t *madt;
     const acpi_hpet_t *hpet;
