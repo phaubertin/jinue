@@ -32,6 +32,8 @@
 #ifndef LOADER_DEBUG_H_
 #define LOADER_DEBUG_H_
 
+#include <jinue/loader.h>
+
 void dump_ramdisk(const jinue_dirent_t *root);
 
 #endif

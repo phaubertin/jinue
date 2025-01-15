@@ -30,7 +30,6 @@
  */
 
 #include <jinue/jinue.h>
-#include <jinue/loader.h>
 #include <jinue/utils.h>
 #include <inttypes.h>
 #include "debug.h"
