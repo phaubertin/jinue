@@ -40,6 +40,13 @@ static kern_paddr_t rsdp_paddr = 0;
 
 static acpi_tables_t acpi_tables;
 
+static const acpi_table_def_t table_defs[] = {
+    { .signature = "FACP", .ptr = (const void **)&acpi_tables.fadt },
+    { .signature = "APIC", .ptr = (const void **)&acpi_tables.madt },
+    { .signature = "HPET", .ptr = (const void **)&acpi_tables.hpet },
+    { .signature = NULL, .ptr = NULL },
+};
+
 /**
  * Validate the ACPI RSDP
  * 
@@ -121,13 +128,6 @@ void find_acpi_rsdp(void) {
      * same value as its physical address. */
     rsdp_paddr = (kern_paddr_t)find_rsdp();
 }
-
-static const acpi_table_def_t table_defs[] = {
-    { .signature = "FACP", .ptr = (const void **)&acpi_tables.fadt },
-    { .signature = "APIC", .ptr = (const void **)&acpi_tables.madt },
-    { .signature = "HPET", .ptr = (const void **)&acpi_tables.hpet },
-    { .signature = NULL, .ptr = NULL },
-};
 
 /**
  * Initialize ACPI
