@@ -116,7 +116,7 @@ static const acpi_table_header_t *map_header(kern_paddr_t paddr) {
     return map_in_kernel(paddr, sizeof(acpi_table_header_t), JINUE_PROT_READ);
 }
 
-/* Size of the fixed part of the RSDT, excluding the entries. */
+/** Size of the fixed part of the RSDT, excluding the entries. */
 #define RSDT_BASE_SIZE ((size_t)(const char *)&(((const acpi_rsdt_t *)0)->entries))
 
 /**
@@ -156,6 +156,15 @@ static const acpi_rsdt_t *map_rsdt(uint64_t rsdt_paddr, bool is_xsdt) {
     return rsdt;
 }
 
+/**
+ * Match a table to a table definition
+ * 
+ * If there is a match, map the table and assign it. Otherwise, unmap the
+ * header.
+ * 
+ * @param header table header
+ * @param table_defs table definitions array terminated by a NULL signature
+ */
 static void match_table(const acpi_table_header_t *header, const acpi_table_def_t *table_defs) {
     for(int idx = 0; table_defs[idx].signature != NULL; ++idx) {
         const acpi_table_def_t *def = &table_defs[idx];
@@ -174,6 +183,7 @@ static void match_table(const acpi_table_header_t *header, const acpi_table_def_
  *
  * @param rsdt mapped RSDT/XSDT
  * @param is_xsdt whether the table is a XSDT (true) or RSDT (false)
+ * @param table_defs table definitions array terminated by a NULL signature
  *
  * */
 static void process_rsdt(const acpi_rsdt_t *rsdt, bool is_xsdt, const acpi_table_def_t *table_defs) {
@@ -205,7 +215,7 @@ static void process_rsdt(const acpi_rsdt_t *rsdt, bool is_xsdt, const acpi_table
  * Map the ACPI tables in the kernel's mapping area
  * 
  * @param rsdp_paddr physical memory address of the RSDP
- * 
+ * @param table_defs table definitions array terminated by a NULL signature
  */
 void map_acpi_tables(kern_paddr_t rsdp_paddr, const acpi_table_def_t *table_defs) {
     const acpi_rsdp_t *rsdp = map_rsdp(rsdp_paddr);

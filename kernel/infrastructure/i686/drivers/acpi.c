@@ -29,10 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-// TODO remove this #include
-#include <kernel/domain/services/logging.h>
 #include <kernel/infrastructure/acpi/acpi.h>
-#include <kernel/infrastructure/i686/drivers/asm/vga.h>
 #include <kernel/infrastructure/i686/drivers/acpi.h>
 #include <kernel/infrastructure/i686/types.h>
 #include <stdbool.h>
@@ -41,7 +38,7 @@
 
 static kern_paddr_t rsdp_paddr = 0;
 
-static acpi_tables_t tables;
+static acpi_tables_t acpi_tables;
 
 /**
  * Validate the ACPI RSDP
@@ -117,7 +114,6 @@ static const acpi_rsdp_t *find_rsdp(void) {
 
 /**
  * Locate the ACPI RSDP in memory
- * 
  */
 void find_acpi_rsdp(void) {
     /* At the stage of the boot process where this function is called, the memory
@@ -127,43 +123,23 @@ void find_acpi_rsdp(void) {
 }
 
 static const acpi_table_def_t table_defs[] = {
-    { .signature = "FACP", .ptr = (const void **)&tables.fadt },
-    { .signature = "APIC", .ptr = (const void **)&tables.madt },
-    { .signature = "HPET", .ptr = (const void **)&tables.hpet },
+    { .signature = "FACP", .ptr = (const void **)&acpi_tables.fadt },
+    { .signature = "APIC", .ptr = (const void **)&acpi_tables.madt },
+    { .signature = "HPET", .ptr = (const void **)&acpi_tables.hpet },
     { .signature = NULL, .ptr = NULL },
 };
-
-// TODO delete this function
-static void dump_table(const acpi_table_header_t *table, const char *name) {
-    info("  %s:", name);
-    info("    address:  %#p", table);
-
-    if(table != NULL) {
-        info("    revision: %" PRIu8, table->revision);
-        info("    length:   %" PRIu32, table->length);
-    }
-}
-
-// TODO delete this function
-void dump_acpi_tables(void) {
-    info("ACPI tables:");
-    dump_table(&tables.fadt->header, "FADT");
-    dump_table(&tables.madt->header, "MADT");
-    dump_table(&tables.hpet->header, "HPET");
-}
 
 /**
  * Initialize ACPI
  */
 void init_acpi(void) {
-    memset(&tables, 0, sizeof(tables));
+    memset(&acpi_tables, 0, sizeof(acpi_tables));
 
     if(rsdp_paddr == 0) {
         return;
     }
 
     map_acpi_tables(rsdp_paddr, table_defs);
-    dump_acpi_tables();
 }
 
 /**
