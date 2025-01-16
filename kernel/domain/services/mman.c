@@ -29,6 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <jinue/shared/asm/mman.h>
 #include <kernel/domain/services/mman.h>
 #include <kernel/domain/services/panic.h>
 #include <kernel/machine/asm/machine.h>
@@ -37,11 +38,13 @@
 #include <kernel/utils/utils.h>
 
 static struct {
-    addr_t      addr;
-    spinlock_t  lock;
+    addr_t       addr;
+    const void  *latest_addr;
+    int          latest_prot;
 } alloc_state = {
-    .addr   = (addr_t)MAPPING_AREA_ADDR,
-    .lock   = SPINLOCK_INITIALIZER
+    .addr           = (addr_t)MAPPING_AREA_ADDR,
+    .latest_addr    = NULL,
+    .latest_prot    = JINUE_PROT_NONE,
 };
 
 /**
@@ -63,17 +66,14 @@ void *map_in_kernel(kern_paddr_t paddr, size_t size, int prot) {
     
     size += offset;
 
-    spin_lock(&alloc_state.lock);
-
     if((addr_t)MAPPING_AREA_END - alloc_state.addr < size) {
-        spin_unlock(&alloc_state.lock);
         panic("No more space to map memory in kernel");
     }
 
     addr_t start = alloc_state.addr;
-    alloc_state.addr = ALIGN_END_PTR(start + size, PAGE_SIZE);
-
-    spin_unlock(&alloc_state.lock);
+    alloc_state.addr            = ALIGN_END_PTR(start + size, PAGE_SIZE);
+    alloc_state.latest_addr     = start + offset;
+    alloc_state.latest_prot     = prot;
 
     addr_t map_addr = start;
     kern_paddr_t map_paddr = paddr - offset;
@@ -94,19 +94,14 @@ void *map_in_kernel(kern_paddr_t paddr, size_t size, int prot) {
 }
 
 /**
- * Expand a mapping established by map_in_kernel()
+ * Expand the latest mapping established by map_in_kernel()
  * 
- * This function is intended for use during boot and has the following caveats:
- * - It assumes the mapping being expanded is the last mapping performed.
- * - This function does not perform locking. It is intended for use by the
- *   first running CPU only during boot.
- * 
- * @param addr address returned by map_in_kernel() for the mapping being expanded
  * @param size size of memory to map
- * @param prot mapping protection flags
- * 
-*/
-void expand_map_in_kernel(const void *addr, size_t size, int prot) {
+ */
+void expand_map_in_kernel(size_t size) {
+    const void *addr    = alloc_state.latest_addr;
+    int prot            = alloc_state.latest_prot;
+
     void *start     = ALIGN_START_PTR(addr, PAGE_SIZE);
     addr_t old_end  = alloc_state.addr;
     addr_t new_end  = ALIGN_END_PTR((addr_t)addr + size, PAGE_SIZE);
@@ -122,18 +117,13 @@ void expand_map_in_kernel(const void *addr, size_t size, int prot) {
 }
 
 /**
- * Undo a mapping established by map_in_kernel()
- * 
- * This function is intended for use during boot and has the following caveats:
- * - *All* mappings done since the one identified by the argument are undone.
- *   Typical usage of this function is to undo the last mapping performed.
- * - This function does not perform locking. It is intended for use by the
- *   first running CPU only during boot.
+ * Undo (unmap) the latest mapping established by map_in_kernel()
  * 
  * @param addr address returned by map_in_kernel() for the mapping being undone
- * 
-*/
-void undo_map_in_kernel(void *addr) {
+ */
+void undo_map_in_kernel(void) {
+    const void *addr = alloc_state.latest_addr;
+
     void *start = ALIGN_START_PTR(addr, PAGE_SIZE);
     void *end   = alloc_state.addr;
 
@@ -141,5 +131,7 @@ void undo_map_in_kernel(void *addr) {
         machine_unmap_kernel_page(page_addr);
     }
 
-    alloc_state.addr = start;
+    alloc_state.addr        = start;
+    alloc_state.latest_addr = NULL;
+    alloc_state.latest_prot = JINUE_PROT_NONE;
 }

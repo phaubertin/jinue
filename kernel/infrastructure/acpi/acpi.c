@@ -96,7 +96,7 @@ static const void *map_table(const acpi_table_header_t *header) {
         return NULL;
     }
 
-    expand_map_in_kernel(header, header->length, JINUE_PROT_READ);
+    expand_map_in_kernel(header->length);
 
     if(! verify_acpi_checksum(header, header->length)) {
         return NULL;
@@ -137,19 +137,19 @@ static const acpi_rsdt_t *map_rsdt(uint64_t rsdt_paddr, bool is_xsdt) {
     const char *const signature = is_xsdt ? "XSDT" : "RSDT";
 
     if(! verify_signature(header, signature)) {
-        undo_map_in_kernel((void *)header);
+        undo_map_in_kernel();
         return NULL;
     }
 
     if(header->length < RSDT_BASE_SIZE) {
-        undo_map_in_kernel((void *)header);
+        undo_map_in_kernel();
         return NULL;
     }
 
     const acpi_rsdt_t *rsdt = map_table(header);
 
     if(rsdt == NULL) {
-        undo_map_in_kernel((void *)header);
+        undo_map_in_kernel();
         return NULL;
     }
 
@@ -175,7 +175,7 @@ static void match_table(const acpi_table_header_t *header, const acpi_table_def_
         }
     }
 
-    undo_map_in_kernel((void *)header);
+    undo_map_in_kernel();
 }
 
 /**
