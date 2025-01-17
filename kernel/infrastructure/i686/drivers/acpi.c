@@ -38,7 +38,11 @@
 
 static kern_paddr_t rsdp_paddr = 0;
 
-static acpi_tables_t acpi_tables;
+static struct {
+    const acpi_fadt_t *fadt;
+    const acpi_madt_t *madt;
+    const acpi_hpet_t *hpet;
+} acpi_tables;
 
 static const acpi_table_def_t table_defs[] = {
     { .signature = "FACP", .ptr = (const void **)&acpi_tables.fadt },

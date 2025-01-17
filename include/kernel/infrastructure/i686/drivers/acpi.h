@@ -38,12 +38,6 @@
 #include <kernel/infrastructure/i686/types.h>
 #include <stdint.h>
 
-typedef struct {
-    const acpi_fadt_t *fadt;
-    const acpi_madt_t *madt;
-    const acpi_hpet_t *hpet;
-} acpi_tables_t;
-
 void find_acpi_rsdp(void);
 
 void init_acpi(void);
