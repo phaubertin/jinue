@@ -29,9 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <jinue/jinue.h>
 #include <jinue/utils.h>
 #include <inttypes.h>
-#include "acpi/acpi.h"
 #include "debug.h"
 #include "utils.h"
 
@@ -114,28 +114,4 @@ void dump_ramdisk(const jinue_dirent_t *root) {
 
         dirent = jinue_dirent_get_next(dirent);
     }
-}
-
-static void dump_table(const acpi_header_t *table, const char *name) {
-    jinue_info("  %s:", name);
-    jinue_info("    address:  %#p", table);
-
-    if(table != NULL) {
-        jinue_info("    revision: %" PRIu8, table->revision);
-        jinue_info("    length:   %" PRIu32, table->length);
-    }
-}
-
-void dump_acpi_tables(const jinue_acpi_tables_t *tables) {
-    if(! bool_getenv("DEBUG_DUMP_ACPI_TABLES")) {
-        return;
-    }
-
-    const acpi_header_t *rsdt   = tables->rsdt; 
-    const char *rsdt_name       = (rsdt != NULL && rsdt->signature[0] == 'X') ? "XSDT" : "RSDT";
-
-    jinue_info("ACPI tables:");
-    dump_table(rsdt, rsdt_name);
-    dump_table(tables->fadt, "FADT");
-    dump_table(tables->madt, "MADT");
 }

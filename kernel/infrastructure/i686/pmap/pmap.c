@@ -125,7 +125,7 @@ static inline const pte_t *get_pte_with_offset_const(
  * @param addr virtual address
  * @return entry offset of address within page table
  */
-static unsigned int page_table_offset_of(void *addr) {
+static unsigned int page_table_offset_of(const void *addr) {
     if(pgtable_format_pae) {
         return pae_page_table_offset_of(addr);
     }
@@ -140,7 +140,7 @@ static unsigned int page_table_offset_of(void *addr) {
  * @param addr virtual address
  * @return entry offset of address within page directory
  */
-static unsigned int page_directory_offset_of(void *addr) {
+static unsigned int page_directory_offset_of(const void *addr) {
     if(pgtable_format_pae) {
         return pae_page_directory_offset_of(addr);
     }
@@ -537,7 +537,7 @@ void pmap_switch_addr_space(addr_space_t *addr_space) {
 
 static pte_t *pmap_lookup_page_table(
         addr_space_t    *addr_space,
-        void            *addr,
+        const void      *addr,
         bool             create_as_needed,
         bool            *reload_cr3) {
 
@@ -617,7 +617,7 @@ static pte_t *pmap_lookup_page_table(
  * */
 static pte_t *lookup_page_table_entry(
         addr_space_t    *addr_space,
-        void            *addr,
+        const void      *addr,
         bool             create_as_needed,
         bool            *reload_cr3) {
 
@@ -779,6 +779,7 @@ static bool map_page(
  * @param prot protections flags
  */
 void machine_map_kernel_page(void *vaddr, kern_paddr_t paddr, int prot) {
+    /* TODO the kern_paddr_t type prevents this function from supporting addresses above 4GB. */
     assert(is_kernel_pointer(vaddr));
     map_page(NULL, vaddr, paddr, map_page_access_flags(prot) | X86_PTE_GLOBAL);
 }
@@ -936,7 +937,7 @@ bool machine_clone_userspace_mapping(
  * @param addr virtual address of kernel page
  * @return physical address of page frame
  */
-kern_paddr_t machine_lookup_kernel_paddr(void *addr) {
+kern_paddr_t machine_lookup_kernel_paddr(const void *addr) {
     assert( is_kernel_pointer(addr) );
 
     pte_t *pte = lookup_page_table_entry(NULL, addr, false, NULL);

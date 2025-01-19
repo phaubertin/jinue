@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- *
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- *
+ * 
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- *
+ * 
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,19 +29,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/errno.h>
-#include <kernel/application/syscalls.h>
-#include <kernel/domain/entities/process.h>
-#include <kernel/machine/acpi.h>
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_ACPI_ACPI_H
+#define JINUE_KERNEL_INFRASTRUCTURE_ACPI_ACPI_H
 
-int set_acpi(const jinue_acpi_tables_t *tables) {
-    process_t *process = get_current_process();
+#include <kernel/machine/types.h>
+#include <kernel/infrastructure/acpi/tables.h>
+#include <kernel/infrastructure/acpi/types.h>
+#include <stdbool.h>
+#include <stddef.h>
 
-    if(process->id != PROCESS_ID_LOADER) {
-        return -JINUE_ENOSYS;
-    }
+bool verify_acpi_rsdp(const acpi_rsdp_t *rsdp);
 
-    machine_set_acpi_tables(tables);
+void map_acpi_tables(kern_paddr_t rsdp_paddr, const acpi_table_def_t *table_defs);
 
-    return 0;
-}
+#endif

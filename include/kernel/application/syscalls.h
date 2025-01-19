@@ -72,8 +72,6 @@ int reply_error(uintptr_t errcode);
 
 int send(uintptr_t *errcode, int fd, int function, const jinue_message_t *message);
 
-int set_acpi(const jinue_acpi_tables_t *tables);
-
 void set_thread_local(void *addr, size_t size);
 
 int start_thread(int fd, const thread_params_t *params);

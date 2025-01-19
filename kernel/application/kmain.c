@@ -91,7 +91,6 @@ void kmain(const char *cmdline) {
         panic("Could not create initial process.");
     }
 
-    process->id = PROCESS_ID_LOADER;
     process_switch_to(process);
 
     /* create user space loader main thread */

@@ -69,7 +69,7 @@ void nopae_destroy_addr_space(addr_space_t *addr_space) {
  * @param addr virtual address
  * @return entry offset of address within page table
  */
-unsigned int nopae_page_table_offset_of(void *addr) {
+unsigned int nopae_page_table_offset_of(const void *addr) {
     return PAGE_TABLE_OFFSET_OF(addr);
 }
 
@@ -79,7 +79,7 @@ unsigned int nopae_page_table_offset_of(void *addr) {
  * @param addr virtual address
  * @return entry offset of address within page directory
  */
-unsigned int nopae_page_directory_offset_of(void *addr) {
+unsigned int nopae_page_directory_offset_of(const void *addr) {
     return PAGE_DIRECTORY_OFFSET_OF(addr);
 }
 

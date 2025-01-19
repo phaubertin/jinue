@@ -78,7 +78,7 @@ static uint64_t page_frame_number_mask;
 /** Get the Page Directory Pointer Table (PDPT) index of a virtual address
  *  @param addr virtual address
  * */
-static inline unsigned int pdpt_offset_of(void *addr) {
+static inline unsigned int pdpt_offset_of(const void *addr) {
     return (uintptr_t)addr >> (32 - PDPT_BITS);
 }
 
@@ -438,7 +438,7 @@ void pae_destroy_addr_space(addr_space_t *addr_space) {
  */
 pte_t *pae_lookup_page_directory(
         addr_space_t    *addr_space,
-        void            *addr,
+        const void      *addr,
         bool             create_as_needed,
         bool            *reload_cr3) {
 
@@ -484,7 +484,7 @@ pte_t *pae_lookup_page_directory(
  * @param addr virtual address
  * @return entry offset of address within page table
  */
-unsigned int pae_page_table_offset_of(void *addr) {
+unsigned int pae_page_table_offset_of(const void *addr) {
     return PAGE_TABLE_OFFSET_OF(addr);
 }
 
@@ -494,7 +494,7 @@ unsigned int pae_page_table_offset_of(void *addr) {
  * @param addr virtual address
  * @return entry offset of address within page directory
  */
-unsigned int pae_page_directory_offset_of(void *addr) {
+unsigned int pae_page_directory_offset_of(const void *addr) {
     return PAGE_DIRECTORY_OFFSET_OF(addr);
 }
 

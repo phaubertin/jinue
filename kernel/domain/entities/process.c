@@ -123,8 +123,7 @@ process_t *process_new(void) {
     process_t *process = slab_cache_alloc(&process_cache);
 
     if(process != NULL) {
-        process->running_threads_count  = 0;
-        process->id                     = PROCESS_ID_USER;
+        process->running_threads_count = 0;
         initialize_descriptors(process);
 
         if(!machine_init_process(process)) {

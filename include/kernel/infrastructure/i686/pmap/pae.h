@@ -52,13 +52,13 @@ void pae_destroy_addr_space(addr_space_t *addr_space);
 
 pte_t *pae_lookup_page_directory(
         addr_space_t    *addr_space,
-        void            *addr,
+        const void      *addr,
         bool             create_as_needed,
         bool            *reload_cr3);
 
-unsigned int pae_page_table_offset_of(void *addr);
+unsigned int pae_page_table_offset_of(const void *addr);
 
-unsigned int pae_page_directory_offset_of(void *addr);
+unsigned int pae_page_directory_offset_of(const void *addr);
 
 pte_t *pae_get_pte_with_offset(pte_t *pte, unsigned int offset);
 

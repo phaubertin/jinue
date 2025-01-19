@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 202-2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- *
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- *
+ * 
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- *
+ * 
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,9 +29,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TESTAPP_TEST_ACPI_H_
-#define TESTAPP_TEST_ACPI_H_
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_ACPI_ASM_ACPI_H
+#define JINUE_KERNEL_INFRASTRUCTURE_ACPI_ASM_ACPI_H
 
-void run_acpi_test(void);
+#define ACPI_V1_REVISION    0
+
+#define ACPI_V2_REVISION    2
+
+#define ACPI_V1_RSDP_SIZE   20
+
+/* Arbitrary value expected to be large enough to accomodate any real table
+ * while ensuring we don't create arbitrary large mappings because of garbage
+ * data in length members. */
+#define ACPI_TABLE_MAX_SIZE (128 * 1024)
 
 #endif

@@ -31,7 +31,6 @@ jinue_root = ../..
 include $(jinue_root)/header.mk
 
 sources.c        = \
-	acpi/acpi.c \
 	archives/alloc.c \
 	archives/tar.c \
 	binfmt/elf.c \

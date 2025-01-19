@@ -44,9 +44,9 @@ void nopae_create_addr_space(addr_space_t *addr_space, pte_t *page_directory);
 
 void nopae_destroy_addr_space(addr_space_t *addr_space);
 
-unsigned int nopae_page_table_offset_of(void *addr);
+unsigned int nopae_page_table_offset_of(const void *addr);
 
-unsigned int nopae_page_directory_offset_of(void *addr);
+unsigned int nopae_page_directory_offset_of(const void *addr);
 
 pte_t *nopae_lookup_page_directory(addr_space_t *addr_space);
 

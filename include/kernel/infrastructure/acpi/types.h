@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2024-2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -34,6 +34,8 @@
 
 #include <stdint.h>
 
+/* ACPI 6.4 section 15.1 INT 15H, E820H - Query System Address Map */
+
 typedef struct {
     uint64_t addr;
     uint64_t size;
@@ -41,15 +43,8 @@ typedef struct {
 } acpi_addr_range_t;
 
 typedef struct {
-    char        signature[8];
-    uint8_t     checksum;
-    char        oemid[6];
-    uint8_t     revision;
-    uint32_t    rsdt_address;
-    uint32_t    length;
-    uint64_t    xsdt_address;
-    uint8_t     extended_checksum;
-    uint8_t     reserved[3];
-} acpi_rsdp_t;
+    const char   *signature;
+    const void  **ptr;
+} acpi_table_def_t;
 
 #endif

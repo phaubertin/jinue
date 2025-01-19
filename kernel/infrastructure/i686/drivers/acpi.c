@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2024-2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,65 +29,30 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/infrastructure/i686/drivers/asm/vga.h>
-#include <kernel/infrastructure/i686/drivers/acpi.h>
+#include <kernel/infrastructure/acpi/acpi.h>
+#include <kernel/infrastructure/acpi/tables.h>
 #include <kernel/infrastructure/acpi/types.h>
-#include <kernel/machine/acpi.h>
+#include <kernel/infrastructure/i686/drivers/asm/bios.h>
+#include <kernel/infrastructure/i686/drivers/acpi.h>
+#include <kernel/infrastructure/i686/types.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdlib.h>
 #include <string.h>
 
-static uint32_t rsdp_paddr = 0;
+static kern_paddr_t rsdp_paddr = 0;
 
-/**
- * Verify the checksum of an ACPI data structure
- *
- * @param buffer pointer to ACPI data structure
- * @param buflen size of ACPI data structure
- * @return true for correct checksum, false for checksum mismatch
- */
-static bool verify_checksum(const void *buffer, size_t buflen) {
-    uint8_t sum = 0;
+static struct {
+    const acpi_fadt_t *fadt;
+    const acpi_madt_t *madt;
+    const acpi_hpet_t *hpet;
+} acpi_tables;
 
-    for(int idx = 0; idx < buflen; ++idx) {
-        sum += ((const uint8_t *)buffer)[idx];
-    }
-
-    return sum == 0;
-}
-
-/**
- * Validate the ACPI RSDP
- * 
- * At the stage of the boot process where this function is called, the memory
- * where the RSDP is located is mapped 1:1 so a pointer to the RSDP has the
- * same value as its physical address.
- *
- * @param rsdp pointer to ACPI RSDP
- * @return true is RSDP is valid, false otherwise
- */
-static bool check_rsdp(const acpi_rsdp_t *rsdp) {
-    const char *const signature = "RSD PTR ";
-
-    if(strncmp(rsdp->signature, signature, strlen(signature)) != 0) {
-        return false;
-    }
-
-    if(!verify_checksum(rsdp, ACPI_V1_RSDP_SIZE)) {
-        return false;
-    }
-
-    if(rsdp->revision == ACPI_V1_REVISION) {
-        return true;
-    }
-
-    if(rsdp->revision != ACPI_V2_REVISION) {
-        return false;
-    }
-
-    return verify_checksum(rsdp, sizeof(acpi_rsdp_t));
-}
+static const acpi_table_def_t table_defs[] = {
+    { .signature = ACPI_FADT_SIGNATURE, .ptr = (const void **)&acpi_tables.fadt },
+    { .signature = ACPI_MADT_SIGNATURE, .ptr = (const void **)&acpi_tables.madt },
+    { .signature = ACPI_HPET_SIGNATURE, .ptr = (const void **)&acpi_tables.hpet },
+    { .signature = NULL, .ptr = NULL },
+};
 
 /**
  * Find the RSDP in memory
@@ -103,16 +68,19 @@ static const acpi_rsdp_t *find_rsdp(void) {
     const char *const end   = (const char *)0x100000;
 
     for(const char *addr = start; addr < end; addr += 16) {
+        /* At the stage of the boot process where this function is called, the
+         * memory where the RSDP is located is mapped 1:1 so a pointer to the
+         * RSDP has the same value as its physical address. */
         const acpi_rsdp_t *rsdp = (const acpi_rsdp_t *)addr;
 
-        if(check_rsdp(rsdp)) {
+        if(verify_acpi_rsdp(rsdp)) {
             return rsdp;
         }
     }
 
     const char *bottom  = (const char *)0x10000;
     const char *top     = (const char *)(0xa0000 - 1024);
-    const char *ebda    = (const char *)(16 * (*(uint16_t *)ACPI_BDA_EBDA));
+    const char *ebda    = (const char *)(16 * (*(uint16_t *)BIOS_BDA_EBDA_SEGMENT));
 
     if(ebda < bottom || ebda > top) {
         return NULL;
@@ -121,7 +89,7 @@ static const acpi_rsdp_t *find_rsdp(void) {
     for(const char *addr = ebda; addr < ebda + 1024; addr += 16) {
         const acpi_rsdp_t *rsdp = (const acpi_rsdp_t *)addr;
 
-        if(check_rsdp(rsdp)) {
+        if(verify_acpi_rsdp(rsdp)) {
             return rsdp;
         }
     }
@@ -130,13 +98,26 @@ static const acpi_rsdp_t *find_rsdp(void) {
 }
 
 /**
- * Initialize ACPI
+ * Locate the ACPI RSDP in memory
  */
-void acpi_init(void) {
+void find_acpi_rsdp(void) {
     /* At the stage of the boot process where this function is called, the memory
      * where the RSDP is located is mapped 1:1 so a pointer to the RSDP has the
      * same value as its physical address. */
-    rsdp_paddr = (uint32_t)find_rsdp();
+    rsdp_paddr = (kern_paddr_t)find_rsdp();
+}
+
+/**
+ * Initialize ACPI
+ */
+void init_acpi(void) {
+    memset(&acpi_tables, 0, sizeof(acpi_tables));
+
+    if(rsdp_paddr == 0) {
+        return;
+    }
+
+    map_acpi_tables(rsdp_paddr, table_defs);
 }
 
 /**
@@ -144,15 +125,6 @@ void acpi_init(void) {
  *
  * @return physical address of RSDP if found, zero otherwise
  */
-uint32_t acpi_get_rsdp_paddr(void) {
+kern_paddr_t acpi_get_rsdp_paddr(void) {
     return rsdp_paddr;
-}
-
-/**
- * Process the ACPI tables mapped by user space
- *
- * @param tables structure with pointers to ACPI tables
- */
-void machine_set_acpi_tables(const jinue_acpi_tables_t *tables) {
-    /* TODO implement this */
 }

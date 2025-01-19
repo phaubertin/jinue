@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2024-2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- *
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- *
+ * 
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- *
+ * 
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,53 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LOADER_ACPI_ACPI_H_
-#define LOADER_ACPI_ACPI_H_
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_DRIVERS_ASM_BIOS_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_DRIVERS_ASM_BIOS_H
 
-#include <stdint.h>
-
-#define ACPI_V1_REVISION    0
-
-#define ACPI_V1_RSDP_SIZE   20
-
-/* Arbitrary value expected to be large enough to accomodate any real table
- * while ensuring we don't create arbitrary large mappings because of garbage
- * data in length members. */
-#define ACPI_TABLE_MAX_SIZE (32 * 1024)
-
-typedef struct {
-    char        signature[8];
-    uint8_t     checksum;
-    char        oemid[6];
-    uint8_t     revision;
-    uint32_t    rsdt_address;
-    uint32_t    length;
-    uint64_t    xsdt_address;
-    uint8_t     extended_checksum;
-    uint8_t     reserved[3];
-} acpi_rsdp_t;
-
-typedef struct {
-    char        signature[4];
-    uint32_t    length;
-    uint8_t     revision;
-    uint8_t     checksum;
-    /* There are more fields but we are not interested in them. */
-} acpi_header_t;
-
-typedef struct {
-    char        signature[4];
-    uint32_t    length;
-    uint8_t     revision;
-    uint8_t     checksum;
-    char        oemid[6];
-    char        oem_table_id[8];
-    uint32_t    oem_revision;
-    uint32_t    creator_id;
-    uint32_t    creator_revision;
-    uint32_t    entries[];
-} acpi_rsdt_t;
-
-int load_acpi_tables(void);
+#define BIOS_BDA_EBDA_SEGMENT   0x40e
 
 #endif

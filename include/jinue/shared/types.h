@@ -113,10 +113,4 @@ typedef struct {
     uintptr_t   cookie;
 } jinue_mint_args_t;
 
-typedef struct {
-    const void *rsdt;
-    const void *fadt;
-    const void *madt;
-} jinue_acpi_tables_t;
-
 #endif
