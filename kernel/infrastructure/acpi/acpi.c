@@ -121,7 +121,7 @@ static const void *map_table(const acpi_table_header_t *header) {
         return NULL;
     }
 
-    expand_map_in_kernel(header->length);
+    resize_map_in_kernel(header->length);
 
     if(! verify_checksum(header, header->length)) {
         return NULL;

@@ -98,13 +98,21 @@ void *map_in_kernel(kern_paddr_t paddr, size_t size, int prot) {
  * 
  * @param size size of memory to map
  */
-void expand_map_in_kernel(size_t size) {
+void resize_map_in_kernel(size_t size) {
     const void *addr    = alloc_state.latest_addr;
     int prot            = alloc_state.latest_prot;
 
-    void *start     = ALIGN_START_PTR(addr, PAGE_SIZE);
-    addr_t old_end  = alloc_state.addr;
-    addr_t new_end  = ALIGN_END_PTR((addr_t)addr + size, PAGE_SIZE);
+    void *start         = ALIGN_START_PTR(addr, PAGE_SIZE);
+    addr_t old_end      = alloc_state.addr;
+    addr_t new_end      = ALIGN_END_PTR((addr_t)addr + size, PAGE_SIZE);
+
+    /* Unmap additional pages if the mapping is shrunk. */
+
+    for(addr_t page_addr = new_end; page_addr < (addr_t)old_end; page_addr += PAGE_SIZE) {
+        machine_unmap_kernel_page(page_addr);
+    }
+
+    /* Map additional pages if the mapping is grown. */
 
     kern_paddr_t paddr = machine_lookup_kernel_paddr(start) + (new_end - old_end);
 
