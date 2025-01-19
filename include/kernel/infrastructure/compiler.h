@@ -38,4 +38,6 @@
 #define NORETURN
 #endif
 
+#define PACKED_STRUCT struct __attribute__((__packed__))
+
 #endif

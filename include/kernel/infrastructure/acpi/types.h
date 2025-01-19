@@ -34,23 +34,13 @@
 
 #include <stdint.h>
 
+/* ACPI 6.4 section 15.1 INT 15H, E820H - Query System Address Map */
+
 typedef struct {
     uint64_t addr;
     uint64_t size;
     uint32_t type;
 } acpi_addr_range_t;
-
-typedef struct {
-    char        signature[4];
-    uint32_t    length;
-    uint8_t     revision;
-    uint8_t     checksum;
-    char        oemid[6];
-    char        oem_table_id[8];
-    uint32_t    oem_revision;
-    uint32_t    creator_id;
-    uint32_t    creator_revision;
-} acpi_table_header_t;
 
 typedef struct {
     const char   *signature;
