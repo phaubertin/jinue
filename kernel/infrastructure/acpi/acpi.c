@@ -60,9 +60,7 @@ static bool verify_checksum(const void *buffer, size_t buflen) {
  * @return true is RSDP is valid, false otherwise
  */
 bool verify_acpi_rsdp(const acpi_rsdp_t *rsdp) {
-    const char *const signature = "RSD PTR ";
-
-    if(strncmp(rsdp->signature, signature, strlen(signature)) != 0) {
+    if(strncmp(rsdp->signature, ACPI_RSDP_SIGNATURE, sizeof(rsdp->signature)) != 0) {
         return false;
     }
 
@@ -161,7 +159,7 @@ static const acpi_rsdt_t *map_rsdt(uint64_t rsdt_paddr, bool is_xsdt) {
         return NULL;
     }
 
-    const char *const signature = is_xsdt ? "XSDT" : "RSDT";
+    const char *const signature = is_xsdt ? ACPI_XSDT_SIGNATURE : ACPI_RSDT_SIGNATURE;
 
     if(! verify_table_signature(header, signature)) {
         undo_map_in_kernel();

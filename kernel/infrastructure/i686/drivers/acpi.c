@@ -48,9 +48,9 @@ static struct {
 } acpi_tables;
 
 static const acpi_table_def_t table_defs[] = {
-    { .signature = "FACP", .ptr = (const void **)&acpi_tables.fadt },
-    { .signature = "APIC", .ptr = (const void **)&acpi_tables.madt },
-    { .signature = "HPET", .ptr = (const void **)&acpi_tables.hpet },
+    { .signature = ACPI_FADT_SIGNATURE, .ptr = (const void **)&acpi_tables.fadt },
+    { .signature = ACPI_MADT_SIGNATURE, .ptr = (const void **)&acpi_tables.madt },
+    { .signature = ACPI_HPET_SIGNATURE, .ptr = (const void **)&acpi_tables.hpet },
     { .signature = NULL, .ptr = NULL },
 };
 
