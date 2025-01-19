@@ -30,6 +30,9 @@
  */
 
 #include <kernel/infrastructure/acpi/acpi.h>
+#include <kernel/infrastructure/acpi/tables.h>
+#include <kernel/infrastructure/acpi/types.h>
+#include <kernel/infrastructure/i686/drivers/asm/acpi.h>
 #include <kernel/infrastructure/i686/drivers/acpi.h>
 #include <kernel/infrastructure/i686/types.h>
 #include <stdbool.h>

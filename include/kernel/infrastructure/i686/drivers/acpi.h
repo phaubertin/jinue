@@ -32,9 +32,6 @@
 #ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_DRIVERS_ACPI_H
 #define JINUE_KERNEL_INFRASTRUCTURE_I686_DRIVERS_ACPI_H
 
-#include <kernel/infrastructure/acpi/tables.h>
-#include <kernel/infrastructure/acpi/types.h>
-#include <kernel/infrastructure/i686/drivers/asm/acpi.h>
 #include <kernel/infrastructure/i686/types.h>
 #include <stdint.h>
 
