@@ -32,7 +32,7 @@
 #include <kernel/infrastructure/acpi/acpi.h>
 #include <kernel/infrastructure/acpi/tables.h>
 #include <kernel/infrastructure/acpi/types.h>
-#include <kernel/infrastructure/i686/drivers/asm/acpi.h>
+#include <kernel/infrastructure/i686/drivers/asm/bios.h>
 #include <kernel/infrastructure/i686/drivers/acpi.h>
 #include <kernel/infrastructure/i686/types.h>
 #include <stdbool.h>
@@ -80,7 +80,7 @@ static const acpi_rsdp_t *find_rsdp(void) {
 
     const char *bottom  = (const char *)0x10000;
     const char *top     = (const char *)(0xa0000 - 1024);
-    const char *ebda    = (const char *)(16 * (*(uint16_t *)ACPI_BDA_EBDA));
+    const char *ebda    = (const char *)(16 * (*(uint16_t *)BIOS_BDA_EBDA_SEGMENT));
 
     if(ebda < bottom || ebda > top) {
         return NULL;

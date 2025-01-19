@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2024-2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,11 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_DRIVERS_ASM_ACPI_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_DRIVERS_ASM_ACPI_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_DRIVERS_ASM_BIOS_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_DRIVERS_ASM_BIOS_H
 
-#include <kernel/infrastructure/acpi/asm/acpi.h>
-
-#define ACPI_BDA_EBDA       0x40e
+#define BIOS_BDA_EBDA_SEGMENT   0x40e
 
 #endif
