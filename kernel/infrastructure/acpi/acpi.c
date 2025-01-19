@@ -33,7 +33,6 @@
 #include <kernel/domain/services/mman.h>
 #include <kernel/infrastructure/acpi/asm/acpi.h>
 #include <kernel/infrastructure/acpi/acpi.h>
-#include <kernel/infrastructure/acpi/tables.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -44,7 +43,7 @@
  * @param buflen size of ACPI data structure
  * @return true for correct checksum, false for checksum mismatch
  */
-bool verify_acpi_checksum(const void *buffer, size_t buflen) {
+static bool verify_checksum(const void *buffer, size_t buflen) {
     uint8_t sum = 0;
 
     for(int idx = 0; idx < buflen; ++idx) {
@@ -55,6 +54,34 @@ bool verify_acpi_checksum(const void *buffer, size_t buflen) {
 }
 
 /**
+ * Validate the ACPI RSDP
+ * 
+ * @param rsdp pointer to ACPI RSDP
+ * @return true is RSDP is valid, false otherwise
+ */
+bool verify_acpi_rsdp(const acpi_rsdp_t *rsdp) {
+    const char *const signature = "RSD PTR ";
+
+    if(strncmp(rsdp->signature, signature, strlen(signature)) != 0) {
+        return false;
+    }
+
+    if(!verify_checksum(rsdp, ACPI_V1_RSDP_SIZE)) {
+        return false;
+    }
+
+    if(rsdp->revision == ACPI_V1_REVISION) {
+        return true;
+    }
+
+    if(rsdp->revision != ACPI_V2_REVISION) {
+        return false;
+    }
+
+    return verify_checksum(rsdp, sizeof(acpi_rsdp_t));
+}
+
+/**
  * Verify the checksum of an ACPI table header
  *
  * @param header mapped ACPI table header
@@ -62,7 +89,7 @@ bool verify_acpi_checksum(const void *buffer, size_t buflen) {
  * @return true if the signature matches, false otherwise
  *
  * */
-static bool verify_signature(const acpi_table_header_t *header, const char *signature) {
+static bool verify_table_signature(const acpi_table_header_t *header, const char *signature) {
     return strncmp(header->signature, signature, sizeof(header->signature)) == 0;
 }
 
@@ -98,7 +125,7 @@ static const void *map_table(const acpi_table_header_t *header) {
 
     expand_map_in_kernel(header->length);
 
-    if(! verify_acpi_checksum(header, header->length)) {
+    if(! verify_checksum(header, header->length)) {
         return NULL;
     }
     
@@ -136,7 +163,7 @@ static const acpi_rsdt_t *map_rsdt(uint64_t rsdt_paddr, bool is_xsdt) {
 
     const char *const signature = is_xsdt ? "XSDT" : "RSDT";
 
-    if(! verify_signature(header, signature)) {
+    if(! verify_table_signature(header, signature)) {
         undo_map_in_kernel();
         return NULL;
     }
@@ -169,7 +196,7 @@ static void match_table(const acpi_table_header_t *header, const acpi_table_def_
     for(int idx = 0; table_defs[idx].signature != NULL; ++idx) {
         const acpi_table_def_t *def = &table_defs[idx];
         
-        if(*def->ptr == NULL && verify_signature(header, def->signature)) {
+        if(*def->ptr == NULL && verify_table_signature(header, def->signature)) {
             *def->ptr = map_table(header);
             return;
         }

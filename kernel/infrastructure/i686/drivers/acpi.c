@@ -52,38 +52,6 @@ static const acpi_table_def_t table_defs[] = {
 };
 
 /**
- * Validate the ACPI RSDP
- * 
- * At the stage of the boot process where this function is called, the memory
- * where the RSDP is located is mapped 1:1 so a pointer to the RSDP has the
- * same value as its physical address.
- *
- * @param rsdp pointer to ACPI RSDP
- * @return true is RSDP is valid, false otherwise
- */
-static bool check_rsdp(const acpi_rsdp_t *rsdp) {
-    const char *const signature = "RSD PTR ";
-
-    if(strncmp(rsdp->signature, signature, strlen(signature)) != 0) {
-        return false;
-    }
-
-    if(!verify_acpi_checksum(rsdp, ACPI_V1_RSDP_SIZE)) {
-        return false;
-    }
-
-    if(rsdp->revision == ACPI_V1_REVISION) {
-        return true;
-    }
-
-    if(rsdp->revision != ACPI_V2_REVISION) {
-        return false;
-    }
-
-    return verify_acpi_checksum(rsdp, sizeof(acpi_rsdp_t));
-}
-
-/**
  * Find the RSDP in memory
  * 
  * At the stage of the boot process where this function is called, the memory
@@ -97,9 +65,12 @@ static const acpi_rsdp_t *find_rsdp(void) {
     const char *const end   = (const char *)0x100000;
 
     for(const char *addr = start; addr < end; addr += 16) {
+        /* At the stage of the boot process where this function is called, the
+         * memory where the RSDP is located is mapped 1:1 so a pointer to the
+         * RSDP has the same value as its physical address. */
         const acpi_rsdp_t *rsdp = (const acpi_rsdp_t *)addr;
 
-        if(check_rsdp(rsdp)) {
+        if(verify_acpi_rsdp(rsdp)) {
             return rsdp;
         }
     }
@@ -115,7 +86,7 @@ static const acpi_rsdp_t *find_rsdp(void) {
     for(const char *addr = ebda; addr < ebda + 1024; addr += 16) {
         const acpi_rsdp_t *rsdp = (const acpi_rsdp_t *)addr;
 
-        if(check_rsdp(rsdp)) {
+        if(verify_acpi_rsdp(rsdp)) {
             return rsdp;
         }
     }
