@@ -107,6 +107,7 @@ sources.kernel.c = \
 	infrastructure/i686/drivers/uart16550a.c \
 	infrastructure/i686/drivers/vga.c \
 	infrastructure/i686/firmware/acpi.c \
+	infrastructure/i686/firmware/bios.c \
 	infrastructure/i686/pmap/nopae.c \
 	infrastructure/i686/pmap/pmap.c \
 	infrastructure/i686/pmap/pae.c \
