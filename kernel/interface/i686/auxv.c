@@ -29,7 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/infrastructure/i686/drivers/acpi.h>
+#include <kernel/infrastructure/i686/firmware/acpi.h>
 #include <kernel/interface/i686/trap.h>
 #include <kernel/machine/auxv.h>
 
