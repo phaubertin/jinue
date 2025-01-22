@@ -102,11 +102,11 @@ sources.kernel.c = \
 	domain/services/scheduler.c \
 	domain/config.c \
 	infrastructure/acpi/acpi.c \
-	infrastructure/i686/drivers/acpi.c \
 	infrastructure/i686/drivers/pic8259.c \
 	infrastructure/i686/drivers/pit8253.c \
 	infrastructure/i686/drivers/uart16550a.c \
 	infrastructure/i686/drivers/vga.c \
+	infrastructure/i686/firmware/acpi.c \
 	infrastructure/i686/pmap/nopae.c \
 	infrastructure/i686/pmap/pmap.c \
 	infrastructure/i686/pmap/pae.c \

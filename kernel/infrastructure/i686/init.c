@@ -37,11 +37,11 @@
 #include <kernel/domain/services/mman.h>
 #include <kernel/domain/services/panic.h>
 #include <kernel/infrastructure/i686/asm/msr.h>
-#include <kernel/infrastructure/i686/drivers/acpi.h>
 #include <kernel/infrastructure/i686/drivers/pic8259.h>
 #include <kernel/infrastructure/i686/drivers/pit8253.h>
 #include <kernel/infrastructure/i686/drivers/uart16550a.h>
 #include <kernel/infrastructure/i686/drivers/vga.h>
+#include <kernel/infrastructure/i686/firmware/acpi.h>
 #include <kernel/infrastructure/i686/isa/instrs.h>
 #include <kernel/infrastructure/i686/isa/regs.h>
 #include <kernel/infrastructure/i686/pmap/init.h>
