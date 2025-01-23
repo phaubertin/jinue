@@ -38,7 +38,12 @@
 #define MP_FLOATING_PTR_SIGNATURE   "_MP_"
 
 
-#define MP_FEATURE2_IMCRP           (1 << 7)
+/* Table 4-1. MP Floating Pointer Structure Fields, flags in the MP Feature
+ * Information byte 2 field. Bit 6 is defined in Appendix E Errata. */
+
+#define MP_FEATURE2_IMCRP                   (1 << 7)
+
+#define MP_FEATURE2_MULTIPLE_CLK_SOURCES    (1 << 6)
 
 /* Multiprocessor Specification 1.4 section 4.2 MP Configuration Table
  * Header */
