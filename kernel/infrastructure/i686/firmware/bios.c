@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Philippe Aubertin.
+ * Copyright (C) 2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -30,9 +30,11 @@
  */
 
 #include <kernel/infrastructure/i686/firmware/bios.h>
+#include <kernel/utils/asm/utils.h>
 #include <stdlib.h>
 
-uintptr_t get_bios_ebda_addr(void) {
+/* The return value must be aligned on 16 bytes. */
+uint32_t get_bios_ebda_addr(void) {
     uintptr_t ebda = 16 * (*(uint16_t *)BIOS_BDA_EBDA_SEGMENT);
 
     /* TODO define some PC address map somewhere, use in VGA driver as well */
@@ -41,4 +43,15 @@ uintptr_t get_bios_ebda_addr(void) {
     }
 
     return ebda;
+}
+
+/* The return value must be aligned on 16 bytes */
+size_t get_bios_base_memory_size(void) {
+    size_t size_kb = *(uint16_t *)BIOS_BDA_MEMORY_SIZE;
+
+    if(size_kb < 512 || size_kb > 640) {
+        return 0;
+    }
+
+    return size_kb * KB;
 }

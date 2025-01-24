@@ -50,6 +50,10 @@
 
 #define MP_CONF_TABLE_SIGNATURE     "PCMP"
 
+#define MP_REVISION_V1_1            1
+
+#define MP_REVISION_V1_4            4
+
 /* Multiprocessor Specification 1.4 Table 4-3 Base MP Configuration Table Entry
  * Types */
 

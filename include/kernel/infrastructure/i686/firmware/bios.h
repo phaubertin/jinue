@@ -33,8 +33,11 @@
 #define JINUE_KERNEL_INFRASTRUCTURE_I686_FIRMWARE_BIOS_H
 
 #include <kernel/infrastructure/i686/firmware/asm/bios.h>
+#include <stddef.h>
 #include <stdint.h>
 
-uintptr_t get_bios_ebda_addr(void);
+uint32_t get_bios_ebda_addr(void);
+
+size_t get_bios_base_memory_size(void);
 
 #endif

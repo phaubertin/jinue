@@ -38,6 +38,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+bool verify_acpi_checksum(const void *buffer, size_t buflen);
+
 bool verify_acpi_rsdp(const acpi_rsdp_t *rsdp);
 
 void map_acpi_tables(kern_paddr_t rsdp_paddr, const acpi_table_def_t *table_defs);

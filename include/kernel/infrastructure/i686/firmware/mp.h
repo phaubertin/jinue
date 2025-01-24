@@ -32,6 +32,7 @@
 #ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_FIRMWARE_MP_H
 #define JINUE_KERNEL_INFRASTRUCTURE_I686_FIRMWARE_MP_H
 
+#include <kernel/infrastructure/i686/firmware/asm/mp.h>
 #include <stdint.h>
 
 /* Multiprocessor Specification 1.4 section 4.1 MP Floating Pointer
@@ -46,7 +47,7 @@ typedef struct {
     uint8_t     feature1;
     uint8_t     feature2;
     uint8_t     feature_reserved[3];
-} mp_floating_ptr_t;
+} mp_ptr_struct_t;
 
 /* Multiprocessor Specification 1.4 section 4.2 MP Configuration Table
  * Header */
@@ -65,7 +66,7 @@ typedef struct {
     uint16_t    ext_table_length;
     uint8_t     ext_table_checksum;
     uint8_t     reserved;
-    char        entries[];    
+    const char  entries[];
 } mp_conf_table_t;
 
 /* Multiprocessor Specification 1.4 section 4.3.1 Processor Entries */
@@ -111,5 +112,9 @@ typedef struct {
     uint8_t     dest_apic_id;
     uint8_t     dest_apic_intn;
 } mp_entry_intr_t;
+
+void find_mp(void);
+
+void init_mp(void);
 
 #endif

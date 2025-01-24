@@ -34,4 +34,6 @@
 
 #define BIOS_BDA_EBDA_SEGMENT   0x40e
 
+#define BIOS_BDA_MEMORY_SIZE    0x413
+
 #endif
