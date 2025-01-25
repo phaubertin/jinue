@@ -43,6 +43,7 @@ typedef struct {
 } acpi_addr_range_t;
 
 typedef struct {
+    const char   *name;
     const char   *signature;
     const void  **ptr;
 } acpi_table_def_t;

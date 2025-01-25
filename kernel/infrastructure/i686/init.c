@@ -361,6 +361,9 @@ void machine_init(const config_t *config) {
     initialize_page_allocator(&boot_alloc);
 
     init_acpi();
+    
+    report_acpi_tables();
+
     init_mp();
 
     /* create slab cache to allocate PDPTs

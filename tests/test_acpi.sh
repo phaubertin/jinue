@@ -38,10 +38,9 @@ check_no_panic
 
 check_no_error
 
-echo "* Check floating pointer structure was found"
-grep -E "Floating pointer structure found at address 0x[1-9a-f][0-9a-f]{4}$" $LOG || fail
-
-echo "* Check configuration table was found and mapped"
-grep -E "Configuration table version 1.[14] at address 0x[1-9a-f][0-9a-f]{4}$" $LOG || fail
+for t in FADT HPET MADT; do
+    echo "* Check $t table was found"
+    grep -E "Found $t table" $LOG || fail
+done
 
 check_reboot

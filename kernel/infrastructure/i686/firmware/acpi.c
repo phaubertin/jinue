@@ -29,6 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <kernel/domain/services/logging.h>
 #include <kernel/infrastructure/acpi/acpi.h>
 #include <kernel/infrastructure/acpi/tables.h>
 #include <kernel/infrastructure/acpi/types.h>
@@ -51,10 +52,22 @@ static struct {
 } acpi_tables;
 
 static const acpi_table_def_t table_defs[] = {
-    { .signature = ACPI_FADT_SIGNATURE, .ptr = (const void **)&acpi_tables.fadt },
-    { .signature = ACPI_MADT_SIGNATURE, .ptr = (const void **)&acpi_tables.madt },
-    { .signature = ACPI_HPET_SIGNATURE, .ptr = (const void **)&acpi_tables.hpet },
-    { .signature = NULL, .ptr = NULL },
+    {
+        .name       = ACPI_FADT_NAME,
+        .signature  = ACPI_FADT_SIGNATURE,
+        .ptr        = (const void **)&acpi_tables.fadt
+    },
+    {
+        .name       = ACPI_MADT_NAME,
+        .signature  = ACPI_MADT_SIGNATURE,
+        .ptr        = (const void **)&acpi_tables.madt
+    },
+    {
+        .name       = ACPI_HPET_NAME,
+        .signature  = ACPI_HPET_SIGNATURE,
+        .ptr        = (const void **)&acpi_tables.hpet
+    },
+    { .signature  = NULL },
 };
 
 /**
@@ -126,6 +139,18 @@ void init_acpi(void) {
     }
 
     map_acpi_tables(rsdp_paddr, table_defs);
+}
+
+void report_acpi_tables(void) {
+    info("ACPI:");
+
+    for(int idx = 0; table_defs[idx].signature != NULL; ++idx) {
+        const acpi_table_def_t *def = &table_defs[idx];
+
+        if(*def->ptr != NULL) {
+            info("  Found %s table", def->name);
+        }
+    }
 }
 
 /**
