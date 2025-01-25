@@ -225,7 +225,7 @@ static const mp_conf_table_t *map_configuration_table(const mp_ptr_struct_t *ptr
 /**
  * Log information regarding Multiprocessor Specification (MP) data structures
  */
-static void log_mp_info(void) {
+static void report_mp_info(void) {
     info("Multiprocessor Specification (MP):");
 
     const char *float_ptr = "Floating pointer structure";
@@ -251,5 +251,5 @@ static void log_mp_info(void) {
 void init_mp(void) {
     mp.ptrst = map_pointer_structure(mp.ptrst_paddr);
     mp.table = map_configuration_table(mp.ptrst);
-    log_mp_info();
+    report_mp_info();
 }
