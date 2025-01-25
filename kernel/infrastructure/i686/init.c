@@ -42,6 +42,7 @@
 #include <kernel/infrastructure/i686/drivers/uart16550a.h>
 #include <kernel/infrastructure/i686/drivers/vga.h>
 #include <kernel/infrastructure/i686/firmware/acpi.h>
+#include <kernel/infrastructure/i686/firmware/mp.h>
 #include <kernel/infrastructure/i686/isa/instrs.h>
 #include <kernel/infrastructure/i686/isa/regs.h>
 #include <kernel/infrastructure/i686/pmap/init.h>
@@ -331,8 +332,9 @@ void machine_init(const config_t *config) {
     load_selectors(cpu_data);
 
     /* We must look for the ACPI RDSP while the relevant memory is still
-     * identity mapped before we swith to the initial address space. */
+     * identity mapped before we switch to the initial address space. */
     find_acpi_rsdp();
+    find_mp();
 
     /* This must be done before we switch to the new address space because only
      * the boot allocator can allocate multiple consecutive pages. */
@@ -359,6 +361,7 @@ void machine_init(const config_t *config) {
     initialize_page_allocator(&boot_alloc);
 
     init_acpi();
+    init_mp();
 
     /* create slab cache to allocate PDPTs
      *

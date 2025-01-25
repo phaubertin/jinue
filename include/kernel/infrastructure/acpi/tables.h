@@ -150,7 +150,7 @@ typedef PACKED_STRUCT {
     acpi_table_header_t header;
     uint32_t            local_intr_controller_addr;
     uint32_t            flags;
-    char                entries[];
+    const char          entries[];
 } acpi_madt_t;
 
 typedef PACKED_STRUCT {

@@ -37,13 +37,17 @@
 #include <string.h>
 
 /**
- * Verify the checksum of an ACPI data structure
+ * Verify the checksum of an ACPI data structure (RSDP, RSDT, ACPI table)
+ * 
+ * On x86, this function is also used to verify the checksum of the floating
+ * pointer structure and MP configuration table header from Intel's
+ * Multiprocessor Specification since the checksum algorithm is the same.
  *
- * @param buffer pointer to ACPI data structure
+ * @param buffer pointer to ACPI (or MP) data structure
  * @param buflen size of ACPI data structure
  * @return true for correct checksum, false for checksum mismatch
  */
-static bool verify_checksum(const void *buffer, size_t buflen) {
+bool verify_acpi_checksum(const void *buffer, size_t buflen) {
     uint8_t sum = 0;
 
     for(int idx = 0; idx < buflen; ++idx) {
@@ -64,7 +68,7 @@ bool verify_acpi_rsdp(const acpi_rsdp_t *rsdp) {
         return false;
     }
 
-    if(!verify_checksum(rsdp, ACPI_V1_RSDP_SIZE)) {
+    if(!verify_acpi_checksum(rsdp, ACPI_V1_RSDP_SIZE)) {
         return false;
     }
 
@@ -76,7 +80,7 @@ bool verify_acpi_rsdp(const acpi_rsdp_t *rsdp) {
         return false;
     }
 
-    return verify_checksum(rsdp, sizeof(acpi_rsdp_t));
+    return verify_acpi_checksum(rsdp, sizeof(acpi_rsdp_t));
 }
 
 /**
@@ -123,7 +127,7 @@ static const void *map_table(const acpi_table_header_t *header) {
 
     resize_map_in_kernel(header->length);
 
-    if(! verify_checksum(header, header->length)) {
+    if(! verify_acpi_checksum(header, header->length)) {
         return NULL;
     }
     

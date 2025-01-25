@@ -32,9 +32,10 @@
 #include <kernel/infrastructure/acpi/acpi.h>
 #include <kernel/infrastructure/acpi/tables.h>
 #include <kernel/infrastructure/acpi/types.h>
-#include <kernel/infrastructure/i686/firmware/asm/bios.h>
 #include <kernel/infrastructure/i686/firmware/acpi.h>
+#include <kernel/infrastructure/i686/firmware/bios.h>
 #include <kernel/infrastructure/i686/types.h>
+#include <kernel/utils/asm/utils.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -78,15 +79,14 @@ static const acpi_rsdp_t *find_rsdp(void) {
         }
     }
 
-    const char *bottom  = (const char *)0x10000;
-    const char *top     = (const char *)(0xa0000 - 1024);
-    const char *ebda    = (const char *)(16 * (*(uint16_t *)BIOS_BDA_EBDA_SEGMENT));
+    const char *top     = (const char *)(0xa0000 - KB);
+    const char *ebda    = (const char *)get_bios_ebda_addr();
 
-    if(ebda < bottom || ebda > top) {
+    if(ebda == NULL || ebda > top) {
         return NULL;
     }
 
-    for(const char *addr = ebda; addr < ebda + 1024; addr += 16) {
+    for(const char *addr = ebda; addr < ebda + KB; addr += 16) {
         const acpi_rsdp_t *rsdp = (const acpi_rsdp_t *)addr;
 
         if(verify_acpi_rsdp(rsdp)) {

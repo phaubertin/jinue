@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Philippe Aubertin.
+ * Copyright (C) 2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,11 +29,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_FIRMWARE_ASM_BIOS_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_FIRMWARE_ASM_BIOS_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_FIRMWARE_BIOS_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_FIRMWARE_BIOS_H
 
-#define BIOS_BDA_EBDA_SEGMENT   0x40e
+#include <kernel/infrastructure/i686/firmware/asm/bios.h>
+#include <stddef.h>
+#include <stdint.h>
 
-#define BIOS_BDA_MEMORY_SIZE    0x413
+uint32_t get_bios_ebda_addr(void);
+
+size_t get_bios_base_memory_size(void);
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Philippe Aubertin.
+ * Copyright (C) 2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,11 +29,46 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_FIRMWARE_ASM_BIOS_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_FIRMWARE_ASM_BIOS_H
+#include <kernel/infrastructure/i686/firmware/bios.h>
+#include <kernel/utils/asm/utils.h>
+#include <stdlib.h>
 
-#define BIOS_BDA_EBDA_SEGMENT   0x40e
+/**
+ * Get address of the Extended BIOS Data Area (EBDA)
+ * 
+ * The returned address is guaranteed to be aligned on a 16-byte boundary. This
+ * information is read from the Bios Data Area (BDA). This function must be
+ * called early in the boot process while conventional memory is still mapped
+ * 1:1 in virtual memory.
+ * 
+ * @return address of EBDA, 0 for none or if it could not be determined
+ */
+uint32_t get_bios_ebda_addr(void) {
+    uintptr_t ebda = 16 * (*(uint16_t *)BIOS_BDA_EBDA_SEGMENT);
 
-#define BIOS_BDA_MEMORY_SIZE    0x413
+    if(ebda < 0x80000 || ebda >= 0xa0000) {
+        return NULL;
+    }
 
-#endif
+    return ebda;
+}
+
+/**
+ * Get the base (aka. conventional) memory size from the BIOS
+ * 
+ * The returned size is guaranteed to be a multiple of 1 kB. This information
+ * is read from the Bios Data Area (BDA). This function must be called early in
+ * the boot process while conventional memory is still mapped 1:1 in virtual
+ * memory.
+ * 
+ * @return base memory size, 0 if it could not be determined
+ */
+size_t get_bios_base_memory_size(void) {
+    size_t size_kb = *(uint16_t *)BIOS_BDA_MEMORY_SIZE;
+
+    if(size_kb < 512 || size_kb > 640) {
+        return 0;
+    }
+
+    return size_kb * KB;
+}
