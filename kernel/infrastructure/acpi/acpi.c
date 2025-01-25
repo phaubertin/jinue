@@ -30,6 +30,7 @@
  */
 
 #include <jinue/shared/asm/mman.h>
+#include <kernel/domain/services/logging.h>
 #include <kernel/domain/services/mman.h>
 #include <kernel/infrastructure/acpi/asm/acpi.h>
 #include <kernel/infrastructure/acpi/acpi.h>
@@ -63,7 +64,7 @@ bool verify_acpi_checksum(const void *buffer, size_t buflen) {
  * @param rsdp pointer to ACPI RSDP
  * @return true is RSDP is valid, false otherwise
  */
-bool verify_acpi_rsdp(const acpi_rsdp_t *rsdp) {
+bool validate_acpi_rsdp(const acpi_rsdp_t *rsdp) {
     if(strncmp(rsdp->signature, ACPI_RSDP_SIGNATURE, sizeof(rsdp->signature)) != 0) {
         return false;
     }
@@ -268,4 +269,21 @@ void map_acpi_tables(kern_paddr_t rsdp_paddr, const acpi_table_def_t *table_defs
     }
 
     process_rsdt(rsdt, is_xsdt, table_defs);
+}
+
+/**
+ * Log information regarding ACPI tables that were found
+ * 
+ * @param table_defs table definitions array terminated by a NULL signature
+ */
+void report_acpi_tables(const acpi_table_def_t *table_defs) {
+    info("ACPI:");
+
+    for(int idx = 0; table_defs[idx].signature != NULL; ++idx) {
+        const acpi_table_def_t *def = &table_defs[idx];
+
+        if(*def->ptr != NULL) {
+            info("  Found %s table", def->name);
+        }
+    }
 }
