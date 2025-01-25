@@ -39,7 +39,7 @@ void find_acpi_rsdp(void);
 
 void init_acpi(void);
 
-void report_acpi_tables(void);
+void report_acpi(void);
 
 kern_paddr_t acpi_get_rsdp_paddr(void);
 

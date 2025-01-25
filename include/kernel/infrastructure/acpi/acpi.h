@@ -44,4 +44,6 @@ bool validate_acpi_rsdp(const acpi_rsdp_t *rsdp);
 
 void map_acpi_tables(kern_paddr_t rsdp_paddr, const acpi_table_def_t *table_defs);
 
+void report_acpi_tables(const acpi_table_def_t *table_defs);
+
 #endif

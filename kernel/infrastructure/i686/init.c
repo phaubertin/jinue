@@ -362,7 +362,7 @@ void machine_init(const config_t *config) {
 
     init_acpi();
     
-    report_acpi_tables();
+    report_acpi();
 
     init_mp();
 

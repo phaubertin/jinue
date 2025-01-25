@@ -29,7 +29,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/domain/services/logging.h>
 #include <kernel/infrastructure/acpi/acpi.h>
 #include <kernel/infrastructure/acpi/tables.h>
 #include <kernel/infrastructure/acpi/types.h>
@@ -151,18 +150,10 @@ void init_acpi(void) {
 }
 
 /**
- * Log information regarding ACPI tables that were found
+ * Log information regarding ACPI
  */
-void report_acpi_tables(void) {
-    info("ACPI:");
-
-    for(int idx = 0; table_defs[idx].signature != NULL; ++idx) {
-        const acpi_table_def_t *def = &table_defs[idx];
-
-        if(*def->ptr != NULL) {
-            info("  Found %s table", def->name);
-        }
-    }
+void report_acpi(void) {
+    report_acpi_tables(table_defs);
 }
 
 /**
