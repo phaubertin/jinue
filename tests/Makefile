@@ -40,6 +40,7 @@ tests = \
 	test_detect_qemu \
 	test_boot_nopae \
 	test_boot_pae \
+	test_mp \
 	test_ipc
 
 logs := $(foreach t,$(tests),$(t).log)
