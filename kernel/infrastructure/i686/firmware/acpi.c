@@ -113,20 +113,17 @@ static uint32_t scan_address_range(uint32_t from, uint32_t to) {
  * @return address of RSDP if found, PADDR_NULL otherwise
  */
 static uint32_t scan_for_rsdp(void) {
-    uint32_t rsdp = scan_address_range(0x0e0000, 0x100000);
+    uint32_t ebda = get_bios_ebda_addr();
 
-    if(rsdp != PADDR_NULL) {
-        return rsdp;
+    if(ebda != 0 && ebda <= 0xa0000 - KB) {
+        uint32_t rsdp = scan_address_range(ebda, ebda + KB);
+        
+        if(rsdp != PADDR_NULL) {
+            return rsdp;
+        }
     }
 
-    uint32_t top    = 0xa0000 - KB;
-    uint32_t ebda   = get_bios_ebda_addr();
-
-    if(ebda == 0 || ebda > top) {
-        return PADDR_NULL;
-    }
-
-    return scan_address_range(ebda, ebda + KB);
+    return scan_address_range(0x0e0000, 0x100000);
 }
 
 /**
