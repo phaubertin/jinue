@@ -98,7 +98,7 @@ typedef struct {
     uint8_t     apic_version;
     uint8_t     flag;
     uint32_t    addr;
-} mp_entry_io_apic_t;
+} mp_entry_ioapic_t;
 
 /* Multiprocessor Specification 1.4 section 4.3.4 I/O Interrupt Assignment
  * Entries and 4.3.5 Local Interrupt Assignment Entries */
