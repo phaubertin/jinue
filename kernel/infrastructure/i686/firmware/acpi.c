@@ -141,6 +141,9 @@ void init_acpi(void) {
     map_acpi_tables(rsdp_paddr, table_defs);
 }
 
+/**
+ * Log information regarding ACPI tables that were found
+ */
 void report_acpi_tables(void) {
     info("ACPI:");
 
