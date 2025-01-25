@@ -46,7 +46,6 @@
 uint32_t get_bios_ebda_addr(void) {
     uintptr_t ebda = 16 * (*(uint16_t *)BIOS_BDA_EBDA_SEGMENT);
 
-    /* TODO define some PC address map somewhere, use in VGA driver as well */
     if(ebda < 0x80000 || ebda >= 0xa0000) {
         return NULL;
     }

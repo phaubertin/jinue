@@ -156,7 +156,6 @@ static uint32_t scan_for_pointer_structure(void) {
         }
     }
 
-    /* TODO define some PC address map somewhere, use in VGA driver as well */
     return scan_address_range(0xf0000, 0x100000);
 }
 

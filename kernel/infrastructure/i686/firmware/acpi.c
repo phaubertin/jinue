@@ -79,7 +79,6 @@ static const acpi_rsdp_t *find_rsdp(void) {
         }
     }
 
-    /* TODO define some PC address map somewhere, use in VGA driver as well */
     const char *top     = (const char *)(0xa0000 - KB);
     const char *ebda    = (const char *)get_bios_ebda_addr();
 
