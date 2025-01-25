@@ -105,7 +105,7 @@ static bool validate_configuration_table_header(const mp_conf_table_t *table) {
  * @return physical address of structure, PADDR_NULL if not found
  */
 static uint32_t scan_address_range(uint32_t from, uint32_t to) {
-    for(uint32_t addr = from; addr < to; addr += 16) {
+    for(uintptr_t addr = from; addr < to; addr += 16) {
         /* At the stage of the boot process where this function is called, the
          * memory where the floating pointer structure can be located is mapped
          * 1:1 so a pointer to the structure has the same value as its physical

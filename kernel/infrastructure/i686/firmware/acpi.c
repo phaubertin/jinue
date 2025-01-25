@@ -40,7 +40,9 @@
 #include <stdint.h>
 #include <string.h>
 
-static kern_paddr_t rsdp_paddr = 0;
+#define PADDR_NULL 0
+
+static uint32_t rsdp_paddr = 0;
 
 static struct {
     const acpi_fadt_t *fadt;
@@ -56,55 +58,61 @@ static const acpi_table_def_t table_defs[] = {
 };
 
 /**
- * Find the RSDP in memory
+ * Scan a range of physical memory to find the RSDP
  * 
- * At the stage of the boot process where this function is called, the memory
- * where the RSDP is located is mapped 1:1 so a pointer to the RSDP has the
- * same value as its physical address.
+ * The start and end addresses must both be aligned on a 16-byte boundary.
  *
- * @return pointer to RSDP if found, NULL otherwise
+ * @param from start address of scan
+ * @param to end address of scan
+ * @return address of RSDP if found, PADDR_NULL otherwise
  */
-static const acpi_rsdp_t *find_rsdp(void) {
-    const char *const start = (const char *)0x0e0000;
-    const char *const end   = (const char *)0x100000;
-
-    for(const char *addr = start; addr < end; addr += 16) {
+static uint32_t scan_address_range(uint32_t from, uint32_t to) {
+    for(uintptr_t addr = from; addr < to; addr += 16) {
         /* At the stage of the boot process where this function is called, the
-         * memory where the RSDP is located is mapped 1:1 so a pointer to the
-         * RSDP has the same value as its physical address. */
+         * memory where the floating pointer structure can be located is mapped
+         * 1:1 so a pointer to the structure has the same value as its physical
+         * address.*/
         const acpi_rsdp_t *rsdp = (const acpi_rsdp_t *)addr;
 
         if(validate_acpi_rsdp(rsdp)) {
-            return rsdp;
+            return addr;
         }
     }
 
-    const char *top     = (const char *)(0xa0000 - KB);
-    const char *ebda    = (const char *)get_bios_ebda_addr();
+    return PADDR_NULL;
+}
 
-    if(ebda == NULL || ebda > top) {
-        return NULL;
+/**
+ * Scan memory for RSDP
+ *
+ * @return address of RSDP if found, PADDR_NULL otherwise
+ */
+static uint32_t scan_for_rsdp(void) {
+    uint32_t rsdp = scan_address_range(0x0e0000, 0x100000);
+
+    if(rsdp != PADDR_NULL) {
+        return rsdp;
     }
 
-    for(const char *addr = ebda; addr < ebda + KB; addr += 16) {
-        const acpi_rsdp_t *rsdp = (const acpi_rsdp_t *)addr;
+    uint32_t top    = 0xa0000 - KB;
+    uint32_t ebda   = get_bios_ebda_addr();
 
-        if(validate_acpi_rsdp(rsdp)) {
-            return rsdp;
-        }
+    if(ebda == 0 || ebda > top) {
+        return PADDR_NULL;
     }
 
-    return NULL;
+    return scan_address_range(ebda, ebda + KB);
 }
 
 /**
  * Locate the ACPI RSDP in memory
+ * 
+ * At the stage of the boot process where this function is called, the memory
+ * where the ACPI can be located has to be mapped 1:1 so a pointer to the RSDP
+ * has the same value as its physical address.
  */
 void find_acpi_rsdp(void) {
-    /* At the stage of the boot process where this function is called, the memory
-     * where the RSDP is located is mapped 1:1 so a pointer to the RSDP has the
-     * same value as its physical address. */
-    rsdp_paddr = (kern_paddr_t)find_rsdp();
+    rsdp_paddr = scan_for_rsdp();
 }
 
 /**
@@ -113,7 +121,7 @@ void find_acpi_rsdp(void) {
 void init_acpi(void) {
     memset(&acpi_tables, 0, sizeof(acpi_tables));
 
-    if(rsdp_paddr == 0) {
+    if(rsdp_paddr == PADDR_NULL) {
         return;
     }
 

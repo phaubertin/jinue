@@ -10,7 +10,8 @@
         "unordered_map": "c",
         "vector": "c",
         "string_view": "c",
-        "initializer_list": "c"
+        "initializer_list": "c",
+        "iterator": "c"
     },
     "C_Cpp.default.intelliSenseMode": "linux-gcc-x86"
 }
