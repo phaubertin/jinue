@@ -97,6 +97,18 @@ static uint32_t scan_address_range(uint32_t from, uint32_t to) {
 
 /**
  * Scan memory for RSDP
+ * 
+ * The ranges where the RSDP can be located are defined in section 5.2.5.1 of
+ * the ACPI Specification:
+ * 
+ * " OSPM finds the Root System Description Pointer (RSDP) structure by
+ *   searching physical memory ranges on 16-byte boundaries for a valid Root
+ *   System Description Pointer structure signature and checksum match as
+ *   follows:
+ *     * The first 1 KB of the Extended BIOS Data Area (EBDA). For EISA or MCA
+ *       systems, the EBDA can be found in the two-byte location 40:0Eh on the
+ *       BIOS data area.
+ *     * The BIOS read-only memory space between 0E0000h and 0FFFFFh. "
  *
  * @return address of RSDP if found, PADDR_NULL otherwise
  */
