@@ -74,7 +74,7 @@ static const acpi_rsdp_t *find_rsdp(void) {
          * RSDP has the same value as its physical address. */
         const acpi_rsdp_t *rsdp = (const acpi_rsdp_t *)addr;
 
-        if(verify_acpi_rsdp(rsdp)) {
+        if(validate_acpi_rsdp(rsdp)) {
             return rsdp;
         }
     }
@@ -89,7 +89,7 @@ static const acpi_rsdp_t *find_rsdp(void) {
     for(const char *addr = ebda; addr < ebda + KB; addr += 16) {
         const acpi_rsdp_t *rsdp = (const acpi_rsdp_t *)addr;
 
-        if(verify_acpi_rsdp(rsdp)) {
+        if(validate_acpi_rsdp(rsdp)) {
             return rsdp;
         }
     }

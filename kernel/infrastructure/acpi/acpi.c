@@ -63,7 +63,7 @@ bool verify_acpi_checksum(const void *buffer, size_t buflen) {
  * @param rsdp pointer to ACPI RSDP
  * @return true is RSDP is valid, false otherwise
  */
-bool verify_acpi_rsdp(const acpi_rsdp_t *rsdp) {
+bool validate_acpi_rsdp(const acpi_rsdp_t *rsdp) {
     if(strncmp(rsdp->signature, ACPI_RSDP_SIGNATURE, sizeof(rsdp->signature)) != 0) {
         return false;
     }
