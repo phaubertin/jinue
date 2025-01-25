@@ -33,7 +33,16 @@
 #include <kernel/utils/asm/utils.h>
 #include <stdlib.h>
 
-/* The return value must be aligned on 16 bytes. */
+/**
+ * Get address of the Extended BIOS Data Area (EBDA)
+ * 
+ * The returned address is guaranteed to be aligned on a 16-byte boundary. This
+ * information is read from the Bios Data Area (BDA). This function must be
+ * called early in the boot process while conventional memory is still mapped
+ * 1:1 in virtual memory.
+ * 
+ * @return address of EBDA, 0 for none or if it could not be determined
+ */
 uint32_t get_bios_ebda_addr(void) {
     uintptr_t ebda = 16 * (*(uint16_t *)BIOS_BDA_EBDA_SEGMENT);
 
@@ -45,7 +54,16 @@ uint32_t get_bios_ebda_addr(void) {
     return ebda;
 }
 
-/* The return value must be aligned on 16 bytes */
+/**
+ * Get the base (aka. conventional) memory size from the BIOS
+ * 
+ * The returned size is guaranteed to be a multiple of 1 kB. This information
+ * is read from the Bios Data Area (BDA). This function must be called early in
+ * the boot process while conventional memory is still mapped 1:1 in virtual
+ * memory.
+ * 
+ * @return base memory size, 0 if it could not be determined
+ */
 size_t get_bios_base_memory_size(void) {
     size_t size_kb = *(uint16_t *)BIOS_BDA_MEMORY_SIZE;
 
