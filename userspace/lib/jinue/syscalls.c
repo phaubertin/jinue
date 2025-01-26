@@ -222,31 +222,6 @@ int jinue_create_process(int fd, int *perrno) {
     return call_with_usual_convention(&args, perrno);
 }
 
-int jinue_mclone(
-        int      src,
-        int      dest,
-        void    *src_addr,
-        void    *dest_addr,
-        size_t   length,
-        int      prot,
-        int     *perrno) {
-
-    jinue_syscall_args_t args;
-    jinue_mclone_args_t mclone_args;
-
-    mclone_args.src_addr = src_addr;
-    mclone_args.dest_addr = dest_addr;
-    mclone_args.length = length;
-    mclone_args.prot = prot;
-
-    args.arg0 = JINUE_SYS_MCLONE;
-    args.arg1 = src;
-    args.arg2 = dest;
-    args.arg3 = (uintptr_t)&mclone_args;
-
-    return call_with_usual_convention(&args, perrno);
-}
-
 int jinue_dup(int process, int src, int dest, int *perrno) {
     jinue_syscall_args_t args;
 

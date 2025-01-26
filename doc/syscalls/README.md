@@ -21,7 +21,7 @@
 | 12      | [EXIT_THREAD](exit-thread.md)           | Terminate the current thread         |
 | 13      | [MMAP](mmap.md)                         | Map memory                           |
 | 14      | [CREATE_PROCESS](create-process.md)     | Create a process                     |
-| 15      | [MCLONE](mclone.md)                     | Clone a memory mapping               |
+| 15      | -                                       | Reserved                             |
 | 16      | [DUP](dup.md)                           | Duplicate a descriptor               |
 | 17      | [CLOSE](close.md)                       | Close a descriptor                   |
 | 18      | [DESTROY](destroy.md)                   | Destroy a kernel object              |
@@ -30,7 +30,7 @@
 | 21      | [AWAIT_THREAD](await-thread.md)         | Wait for a thread to exit            |
 | 22      | [REPLY_ERROR](reply-error.md)           | Reply to message with an error       |
 | 23-4095 | -                                       | Reserved                             |
-| 4096+   | [SEND](send.md)                         | Send a message                         |
+| 4096+   | [SEND](send.md)                         | Send a message                       |
 
 #### Reserved Function Numbers
 

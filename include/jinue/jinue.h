@@ -90,15 +90,6 @@ int jinue_create_endpoint(int fd, int *perrno);
 
 int jinue_create_process(int fd, int *perrno);
 
-int jinue_mclone(
-        int      src,
-        int      dest,
-        void    *src_addr,
-        void    *dest_addr,
-        size_t   length,
-        int      prot,
-        int     *perrno);
-
 int jinue_dup(int process, int src, int dest, int *perrno);
 
 int jinue_close(int fd, int *perrno);

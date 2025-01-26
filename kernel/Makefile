@@ -74,7 +74,6 @@ sources.kernel.c = \
 	application/syscalls/await_thread.c \
 	application/syscalls/mint.c \
 	application/syscalls/mmap.c \
-	application/syscalls/mclone.c \
 	application/syscalls/puts.c \
 	application/syscalls/reboot.c \
 	application/syscalls/receive.c \

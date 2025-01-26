@@ -375,59 +375,6 @@ static void sys_create_process(jinue_syscall_args_t *args) {
     set_return_value_or_error(args, retval);
 }
 
-static void sys_mclone(jinue_syscall_args_t *args) {
-    const jinue_mclone_args_t *userspace_mclone_args;
-
-    int src                 = get_descriptor(args->arg1);
-    int dest                = get_descriptor(args->arg2);
-    userspace_mclone_args   = (void *)args->arg3;
-
-    if(src < 0) {
-        set_return_value_or_error(args, src);
-        return;
-    }
-
-    if(dest < 0) {
-        set_return_value_or_error(args, dest);
-        return;
-    }
-
-    if(! check_userspace_buffer(userspace_mclone_args, sizeof(jinue_mclone_args_t))) {
-        set_error(args, JINUE_EINVAL);
-        return;
-    }
-
-    jinue_mclone_args_t mclone_args = *userspace_mclone_args;
-
-    if(OFFSET_OF_PTR(mclone_args.src_addr, PAGE_SIZE) != 0) {
-        set_error(args, JINUE_EINVAL);
-        return;
-    }
-
-    if(OFFSET_OF_PTR(mclone_args.dest_addr, PAGE_SIZE) != 0) {
-        set_error(args, JINUE_EINVAL);
-        return;
-    }
-
-    if((mclone_args.length & (PAGE_SIZE -1)) != 0) {
-        set_error(args, JINUE_EINVAL);
-        return;
-    }
-
-    if((mclone_args.prot & ~ALL_PROT_FLAGS) != 0) {
-        set_error(args, JINUE_EINVAL);
-        return;
-    }
-
-    if((mclone_args.prot & WRITE_EXEC) == WRITE_EXEC) {
-        set_error(args, JINUE_ENOTSUP);
-        return;
-    }
-
-    int retval = mclone(src, dest, &mclone_args);
-    set_return_value_or_error(args, retval);
-}
-
 static void sys_dup(jinue_syscall_args_t *args) {
     int process_fd  = get_descriptor(args->arg1);
     int src         = get_descriptor(args->arg2);
@@ -606,9 +553,6 @@ void handle_syscall(jinue_syscall_args_t *args) {
             break;
         case JINUE_SYS_CREATE_PROCESS:
             sys_create_process(args);
-            break;
-        case JINUE_SYS_MCLONE:
-            sys_mclone(args);
             break;
         case JINUE_SYS_DUP:
             sys_dup(args);
