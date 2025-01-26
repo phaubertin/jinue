@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,50 +29,73 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/jinue.h>
-#include <jinue/loader.h>
 #include <jinue/utils.h>
-#include <errno.h>
-#include <inttypes.h>
-#include <stdint.h>
+#include <pthread.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include "tests/abcd.h"
-#include "tests/ipc.h"
-#include "debug.h"
-#include "utils.h"
+#include "../utils.h"
+#include "abcd.h"
 
-int main(int argc, char *argv[]) {
-    /* Say hello. */
-    jinue_info("Jinue test app (%s) started.", argv[0]);
+#define THREADS_NUM 8
 
-    dump_cmdline_arguments(argc, argv);
-    dump_environ();
-    dump_auxvec();
-    dump_syscall_implementation();
-    dump_address_map();
-    dump_loader_memory_info();
-    dump_loader_ramdisk();
+static void *thread_func(void *arg) {
+    while(true) {
+        jinue_info("%s", (const char *)arg);
+    }
 
-    jinue_info("Blocking until loader exits.");
+    return NULL;
+}
 
-    int status = jinue_exit_loader();
+bool start_thread(pthread_t *thread, const char *str) {
+    pthread_attr_t attr;
+    
+    int status = pthread_attr_init(&attr);
 
-    if(status < 0) {
+    if(status != 0) {
+        jinue_error("error: pthread_attr_init() failed: %s", strerror(status));
         return EXIT_FAILURE;
     }
 
-    run_abcd_test();
-    run_ipc_test();
+    status = pthread_attr_setstacksize(&attr, PTHREAD_STACK_MIN);
 
-    if(bool_getenv("DEBUG_DO_REBOOT")) {
-        jinue_info("Rebooting.");
-        jinue_reboot();
+    if(status != 0) {
+        jinue_error("error: pthread_attr_setstacksize() failed: %s", strerror(status));
+        return EXIT_FAILURE;
     }
 
-    while (1) {
-        jinue_yield_thread();
+    status = pthread_create(thread, &attr, thread_func, (char *)str);
+
+    if(status != 0) {
+        jinue_error("error: could not create thread: %s", strerror(status));
+        return EXIT_FAILURE;
     }
-    
+
     return EXIT_SUCCESS;
+}
+
+void run_abcd_test(void) {
+    pthread_t threads[THREADS_NUM];
+    char strs[THREADS_NUM][2 * THREADS_NUM + 1];
+
+    if(! bool_getenv("RUN_TEST_ABCD")) {
+        return;
+    }
+
+    for(int idx = 0; idx < THREADS_NUM; ++idx) {
+        memset(strs[idx], ' ', sizeof(strs[idx]));
+        strs[idx][2 * idx]          = 'A' + idx;
+        strs[idx][2 * THREADS_NUM]  = '\0';
+
+        int status = start_thread(&threads[idx], strs[idx]);
+
+        if(status != EXIT_SUCCESS) {
+            return;
+        }
+    }
+
+    for(int idx = 0; idx < THREADS_NUM; ++idx) {
+        void *client_exit_value;
+        pthread_join(threads[idx], &client_exit_value);
+    }
 }
