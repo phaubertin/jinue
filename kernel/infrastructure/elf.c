@@ -150,7 +150,7 @@ bool elf_check(Elf32_Ehdr *ehdr) {
 static void checked_map_userspace_page(
         process_t       *process,
         void            *vaddr,
-        user_paddr_t     paddr,
+        paddr_t          paddr,
         int              flags) {
 
     /* TODO check user space pointers

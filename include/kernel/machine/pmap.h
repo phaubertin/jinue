@@ -42,7 +42,7 @@ bool machine_map_userspace(
         process_t       *process,
         void            *vaddr,
         size_t           length,
-        user_paddr_t     paddr,
+        paddr_t          paddr,
         int              prot);
 
 bool machine_clone_userspace_mapping(

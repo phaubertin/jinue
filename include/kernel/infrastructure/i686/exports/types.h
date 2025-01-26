@@ -40,8 +40,8 @@
 /** Physical memory address for use by the kernel */
 typedef uint32_t kern_paddr_t;
 
-/** Physical memory address for use by user space */
-typedef uint64_t user_paddr_t;
+/** Physical memory address */
+typedef uint64_t paddr_t;
 
 #define PRIxKPADDR PRIx32
 

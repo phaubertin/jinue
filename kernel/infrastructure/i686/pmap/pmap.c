@@ -209,7 +209,7 @@ void copy_ptes(pte_t *dest, const pte_t *src, int n) {
  * @param paddr physical address of page frame
  * @param flags flags
  */
-static void set_pte(pte_t *pte, user_paddr_t paddr, uint64_t flags) {
+static void set_pte(pte_t *pte, paddr_t paddr, uint64_t flags) {
     if(pgtable_format_pae) {
         pae_set_pte(pte, paddr, flags);
     }
@@ -256,7 +256,7 @@ void clear_ptes(pte_t *pte, int n) {
  * @param pte page table or page directory entry array
  * @return physical address
  */
-static user_paddr_t get_pte_paddr(const pte_t *pte) {
+static paddr_t get_pte_paddr(const pte_t *pte) {
     if(pgtable_format_pae) {
         return pae_get_pte_paddr(pte);
     }
@@ -743,7 +743,7 @@ static uint64_t map_page_access_flags(int prot) {
 static bool map_page(
         addr_space_t    *addr_space,
         void            *vaddr,
-        user_paddr_t     paddr,
+        paddr_t          paddr,
         uint64_t         flags) {
 
     /** ASSERTION: we assume vaddr is aligned on a page boundary */
@@ -799,7 +799,7 @@ void machine_map_kernel_page(void *vaddr, kern_paddr_t paddr, int prot) {
 static bool map_userspace_page(
         addr_space_t    *addr_space,
         void            *vaddr,
-        user_paddr_t     paddr,
+        paddr_t          paddr,
         int              prot) {
 
     assert(is_userspace_pointer(vaddr));
@@ -823,7 +823,7 @@ bool machine_map_userspace(
         process_t       *process,
         void            *vaddr,
         size_t           length,
-        user_paddr_t     paddr,
+        paddr_t          paddr,
         int              prot) {
 
     addr_t addr                 = vaddr;
@@ -917,7 +917,7 @@ bool machine_clone_userspace_mapping(
             unmap_page(dest_addr_space, dest_addr);
         }
         else {
-            user_paddr_t paddr = get_pte_paddr(src_pte);
+            paddr_t paddr = get_pte_paddr(src_pte);
 
             if(!map_userspace_page(dest_addr_space, dest_addr, paddr, prot)) {
                 return false;
