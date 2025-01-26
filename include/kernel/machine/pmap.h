@@ -45,14 +45,6 @@ bool machine_map_userspace(
         paddr_t          paddr,
         int              prot);
 
-bool machine_clone_userspace_mapping(
-        process_t   *dest_process,
-        addr_t       dest_addr,
-        process_t   *src_process,
-        addr_t       src_addr,
-        size_t       length,
-        int          prot) ;
-
 paddr_t machine_lookup_kernel_paddr(const void *addr);
 
 #endif
