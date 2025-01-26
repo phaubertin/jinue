@@ -40,7 +40,6 @@ CMDLINE             = \
     DEBUG_DUMP_MEMORY_MAP=1 \
     DEBUG_DUMP_SYSCALL_IMPLEMENTATION=1 \
     DEBUG_DUMP_RAMDISK=1 \
-    RUN_TEST_ACPI=1 \
     RUN_TEST_IPC=1
 
 run_log              = run-jinue.log

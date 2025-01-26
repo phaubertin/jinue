@@ -30,7 +30,7 @@
 jinue_root = ../..
 include $(jinue_root)/header.mk
 
-sources.c       	 = tests/ipc.c debug.c testapp.c utils.c
+sources.c       	 = tests/abcd.c tests/ipc.c debug.c testapp.c utils.c
 testapp         	 = testapp
 stripped             = $(testapp)-stripped
 temp_ramdisk_fs		 = ramdisk-tmp
