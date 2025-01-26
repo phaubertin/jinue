@@ -51,7 +51,7 @@ typedef struct {
     void                    *image_start;
     void                    *image_top;
     uint32_t                 ramdisk_start;
-    size_t	                 ramdisk_size;
+    size_t                   ramdisk_size;
     const acpi_addr_range_t *acpi_addr_map;
     uint32_t                 addr_map_entries;
     void                    *cmdline;
