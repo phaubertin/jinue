@@ -881,56 +881,6 @@ void machine_unmap_kernel_page(void *addr) {
 }
 
 /**
- * Clone mappings in range from one process' address space to another.
- *
- * After the operation, the range in the destination address space maps the same
- * memory as the range in the source address space. Any portion of the range
- * that does not point to memory in the source address space is unmapped in the
- * destination address space. The permissions of the new mappings are specified
- * by the prot argument.
- *
- * @param dest_process destination process
- * @param src_process source process
- * @param dest_addr start of range in destination address space
- * @param src_addr start of range in source address space
- * @param length length of mapping range
- * @param prot protections flags
- */
-bool machine_clone_userspace_mapping(
-        process_t   *dest_process,
-        addr_t       dest_addr,
-        process_t   *src_process,
-        addr_t       src_addr,
-        size_t       length,
-        int          prot) {
-    
-    addr_space_t *src_addr_space    = &src_process->addr_space;
-    addr_space_t *dest_addr_space   = &dest_process->addr_space;
-
-    for(size_t idx = 0; idx < length / PAGE_SIZE; ++idx) {
-        /* TODO We should be able to optimize by not looking up the page table
-         * for each entry, both for source and destination. */
-        pte_t *src_pte = lookup_page_table_entry(src_addr_space, src_addr, false, NULL);
-
-        if(src_pte == NULL || !pte_is_present(src_pte)) {
-            unmap_page(dest_addr_space, dest_addr);
-        }
-        else {
-            paddr_t paddr = get_pte_paddr(src_pte);
-
-            if(!map_userspace_page(dest_addr_space, dest_addr, paddr, prot)) {
-                return false;
-            }
-        }
-
-        src_addr += PAGE_SIZE;
-        dest_addr += PAGE_SIZE;
-    }
-
-    return true;
-}
-
-/**
  * Look up the physical address of an existing kernel-mapped page frame.
  *
  * @param addr virtual address of kernel page
