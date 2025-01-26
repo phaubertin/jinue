@@ -75,7 +75,7 @@ void kmain(const char *cmdline) {
     machine_get_ramdisk(&ramdisk);
 
     info(
-        "Found RAM disk with size %zu bytes at address %#" PRIxKPADDR ".",
+        "Found RAM disk with size %zu bytes at address %#" PRIxPADDR ".",
         ramdisk.size,
         ramdisk.start
     );

@@ -118,7 +118,7 @@ unsigned int get_page_count(void) {
  * @return true if the function succeeded
  *
  * */
-bool add_page_frame(kern_paddr_t paddr) {
+bool add_page_frame(paddr_t paddr) {
     void *page = vmalloc();
 
     if(page == NULL) {
@@ -149,7 +149,7 @@ bool add_page_frame(kern_paddr_t paddr) {
  * @return physical address of the freed page frame, or PFNULL if none is available
  *
  * */
-kern_paddr_t remove_page_frame(void) {
+paddr_t remove_page_frame(void) {
     void *page = page_alloc();
 
     if(page == NULL) {
@@ -161,7 +161,7 @@ kern_paddr_t remove_page_frame(void) {
      * for exploiting vulnerabilities. */
     clear_page(page);
 
-    kern_paddr_t paddr = machine_lookup_kernel_paddr(page);
+    paddr_t paddr = machine_lookup_kernel_paddr(page);
 
     machine_unmap_kernel_page(page);
 

@@ -106,7 +106,7 @@ static bool verify_table_signature(const acpi_table_header_t *header, const char
  * @return pointer to mapped RSDP on success, NULL on error
  *
  * */
-static const acpi_rsdp_t *map_rsdp(uint64_t paddr) {
+static const acpi_rsdp_t *map_rsdp(paddr_t paddr) {
     return map_in_kernel(paddr, sizeof(acpi_rsdp_t), JINUE_PROT_READ);
 }
 
@@ -142,7 +142,7 @@ static const void *map_table(const acpi_table_header_t *header) {
  * @return pointer to mapped header on success, NULL on error
  *
  * */
-static const acpi_table_header_t *map_header(kern_paddr_t paddr) {
+static const acpi_table_header_t *map_header(paddr_t paddr) {
     return map_in_kernel(paddr, sizeof(acpi_table_header_t), JINUE_PROT_READ);
 }
 
@@ -225,6 +225,7 @@ static void process_rsdt(const acpi_rsdt_t *rsdt, bool is_xsdt, const acpi_table
 
     for(int idx = 0; idx < entries; ++idx) {
         /* x86 is little endian */
+        /* TODO this part is not portable across architectures */
         uint64_t paddr = rsdt->entries[idx];
 
         if(is_xsdt) {
@@ -247,7 +248,7 @@ static void process_rsdt(const acpi_rsdt_t *rsdt, bool is_xsdt, const acpi_table
  * @param rsdp_paddr physical memory address of the RSDP
  * @param table_defs table definitions array terminated by a NULL signature
  */
-void map_acpi_tables(kern_paddr_t rsdp_paddr, const acpi_table_def_t *table_defs) {
+void map_acpi_tables(paddr_t rsdp_paddr, const acpi_table_def_t *table_defs) {
     const acpi_rsdp_t *rsdp = map_rsdp(rsdp_paddr);
 
     uint64_t rsdt_paddr;

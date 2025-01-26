@@ -375,10 +375,10 @@ bool pae_create_addr_space(addr_space_t *addr_space, pte_t *first_page_directory
     }
 
     /* Lookup the physical address of the page where the PDPT resides. */
-    kern_paddr_t pdpt_page_paddr = machine_lookup_kernel_paddr((addr_t)page_address_of(pdpt));
+    paddr_t pdpt_page_paddr = machine_lookup_kernel_paddr((addr_t)page_address_of(pdpt));
 
     /* physical address of PDPT */
-    kern_paddr_t pdpt_paddr = pdpt_page_paddr | page_offset_of(pdpt);
+    paddr_t pdpt_paddr = pdpt_page_paddr | page_offset_of(pdpt);
 
     addr_space->top_level.pdpt  = pdpt;
     addr_space->cr3             = pdpt_paddr;

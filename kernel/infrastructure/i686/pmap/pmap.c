@@ -778,8 +778,7 @@ static bool map_page(
  * @param paddr address of page frame
  * @param prot protections flags
  */
-void machine_map_kernel_page(void *vaddr, kern_paddr_t paddr, int prot) {
-    /* TODO the kern_paddr_t type prevents this function from supporting addresses above 4GB. */
+void machine_map_kernel_page(void *vaddr, paddr_t paddr, int prot) {
     assert(is_kernel_pointer(vaddr));
     map_page(NULL, vaddr, paddr, map_page_access_flags(prot) | X86_PTE_GLOBAL);
 }
@@ -937,12 +936,12 @@ bool machine_clone_userspace_mapping(
  * @param addr virtual address of kernel page
  * @return physical address of page frame
  */
-kern_paddr_t machine_lookup_kernel_paddr(const void *addr) {
+paddr_t machine_lookup_kernel_paddr(const void *addr) {
     assert( is_kernel_pointer(addr) );
 
     pte_t *pte = lookup_page_table_entry(NULL, addr, false, NULL);
 
     assert(pte != NULL && pte_is_present(pte));
 
-    return (kern_paddr_t)get_pte_paddr(pte);
+    return get_pte_paddr(pte);
 }

@@ -50,7 +50,7 @@ typedef struct {
     size_t                   loader_size;
     void                    *image_start;
     void                    *image_top;
-    kern_paddr_t             ramdisk_start;
+    uint32_t                 ramdisk_start;
     size_t	                 ramdisk_size;
     const acpi_addr_range_t *acpi_addr_map;
     uint32_t                 addr_map_entries;

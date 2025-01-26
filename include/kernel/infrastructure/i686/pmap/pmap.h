@@ -49,16 +49,16 @@
 #define VIRT_TO_PHYS_AT_1MB(x)      (((uintptr_t)(x)) - BOOT_OFFSET_FROM_1MB)
 
 /** convert pointer to physical address for kernel loaded at 0x100000 (1MB) */
-#define PTR_TO_PHYS_ADDR_AT_1MB(x)  ((kern_paddr_t)VIRT_TO_PHYS_AT_1MB(x))
+#define PTR_TO_PHYS_ADDR_AT_1MB(x)  ((paddr_t)VIRT_TO_PHYS_AT_1MB(x))
 
 /** convert physical to virtual address for kernel loaded at 0x1000000 (16MB) */
-#define PHYS_TO_VIRT_AT_16MB(x)      (((uintptr_t)(x)) + BOOT_OFFSET_FROM_16MB)
+#define PHYS_TO_VIRT_AT_16MB(x)     (((uintptr_t)(x)) + BOOT_OFFSET_FROM_16MB)
 
 /** convert virtual to physical address for kernel loaded at 0x1000000 (16MB) */
-#define VIRT_TO_PHYS_AT_16MB(x)      (((uintptr_t)(x)) - BOOT_OFFSET_FROM_16MB)
+#define VIRT_TO_PHYS_AT_16MB(x)     (((uintptr_t)(x)) - BOOT_OFFSET_FROM_16MB)
 
 /** convert pointer to physical address for kernel loaded at 0x1000000 (16MB) */
-#define PTR_TO_PHYS_ADDR_AT_16MB(x)  ((kern_paddr_t)VIRT_TO_PHYS_AT_16MB(x))
+#define PTR_TO_PHYS_ADDR_AT_16MB(x)  ((paddr_t)VIRT_TO_PHYS_AT_16MB(x))
 
 #define ADDR_4GB    UINT64_C(0x100000000)
 
@@ -77,19 +77,4 @@ void pmap_destroy_addr_space(addr_space_t *addr_space);
 
 void pmap_switch_addr_space(addr_space_t *addr_space);
 
-void pmap_map_kernel_page(void *vaddr, kern_paddr_t paddr, int flags);
-
-void pmap_unmap_kernel_page(void *addr);
-
-void pmap_unmap_userspace(addr_space_t *addr_space, void *addr);
-
-bool pmap_clone_range(
-        addr_space_t    *dest_addr_space,
-        addr_space_t    *src_addr_space,
-        addr_t           dest_addr,
-        addr_t           src_addr,
-        size_t           length,
-        int              prot);
-
 #endif
-

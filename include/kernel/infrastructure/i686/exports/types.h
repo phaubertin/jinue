@@ -37,15 +37,10 @@
 /* This file contains the machine-specific definitions that need to be visible
  * outside the machine-specific parts of the code. */
 
-/** Physical memory address for use by the kernel */
-typedef uint32_t kern_paddr_t;
-
 /** Physical memory address */
 typedef uint64_t paddr_t;
 
-#define PRIxKPADDR PRIx32
-
-#define PRIxUPADDR PRIx64
+#define PRIxPADDR PRIx64
 
 /** incomplete structure declaration for a page table entry
  *

@@ -161,6 +161,6 @@ void report_acpi(void) {
  *
  * @return physical address of RSDP if found, zero otherwise
  */
-kern_paddr_t acpi_get_rsdp_paddr(void) {
+uint32_t acpi_get_rsdp_paddr(void) {
     return rsdp_paddr;
 }

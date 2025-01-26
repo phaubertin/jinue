@@ -34,7 +34,7 @@
 
 #include <kernel/types.h>
 
-#define PFNULL ((kern_paddr_t)-1)
+#define PFNULL ((paddr_t)-1)
 
 void *page_alloc(void);
 
@@ -42,9 +42,9 @@ void page_free(void *page);
 
 unsigned int get_page_count(void);
 
-bool add_page_frame(kern_paddr_t paddr);
+bool add_page_frame(paddr_t paddr);
 
-kern_paddr_t remove_page_frame(void);
+paddr_t remove_page_frame(void);
 
 void clear_page(void *page);
 

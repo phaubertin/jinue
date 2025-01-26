@@ -35,7 +35,7 @@
 #include <kernel/machine/types.h>
 #include <stddef.h>
 
-void *map_in_kernel(kern_paddr_t paddr, size_t size, int prot);
+void *map_in_kernel(paddr_t paddr, size_t size, int prot);
 
 void resize_map_in_kernel(size_t size);
 
