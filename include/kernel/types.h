@@ -146,8 +146,8 @@ typedef struct {
 } exec_file_t;
 
 typedef struct {
-    kern_paddr_t    start;
-    size_t          size;
+    paddr_t start;
+    size_t  size;
 } kern_mem_block_t;
 
 typedef struct {

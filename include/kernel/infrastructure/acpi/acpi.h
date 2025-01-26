@@ -35,6 +35,7 @@
 #include <kernel/machine/types.h>
 #include <kernel/infrastructure/acpi/tables.h>
 #include <kernel/infrastructure/acpi/types.h>
+#include <kernel/machine/types.h>
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -42,7 +43,7 @@ bool verify_acpi_checksum(const void *buffer, size_t buflen);
 
 bool validate_acpi_rsdp(const acpi_rsdp_t *rsdp);
 
-void map_acpi_tables(kern_paddr_t rsdp_paddr, const acpi_table_def_t *table_defs);
+void map_acpi_tables(paddr_t rsdp_paddr, const acpi_table_def_t *table_defs);
 
 void report_acpi_tables(const acpi_table_def_t *table_defs);
 

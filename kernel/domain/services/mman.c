@@ -61,7 +61,7 @@ static struct {
  * @param size size of memory to map
  * @param prot mapping protection flags
  */
-void *map_in_kernel(kern_paddr_t paddr, size_t size, int prot) {
+void *map_in_kernel(paddr_t paddr, size_t size, int prot) {
     size_t offset = paddr % PAGE_SIZE;
     
     size += offset;
@@ -76,7 +76,7 @@ void *map_in_kernel(kern_paddr_t paddr, size_t size, int prot) {
     alloc_state.latest_prot     = prot;
 
     addr_t map_addr = start;
-    kern_paddr_t map_paddr = paddr - offset;
+    paddr_t map_paddr = paddr - offset;
 
     while(true) {
         machine_map_kernel_page(map_addr, map_paddr, prot);
@@ -114,10 +114,11 @@ void resize_map_in_kernel(size_t size) {
 
     /* Map additional pages if the mapping is grown. */
 
-    kern_paddr_t paddr = machine_lookup_kernel_paddr(start) + (new_end - old_end);
+    paddr_t paddr = machine_lookup_kernel_paddr(start) + (new_end - old_end);
 
     for(addr_t page_addr = old_end; page_addr < (addr_t)new_end; page_addr += PAGE_SIZE) {
         machine_map_kernel_page(page_addr, paddr, prot);
+        /* TODO recheck this */
         ++paddr;
     }
 

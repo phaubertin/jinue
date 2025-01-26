@@ -41,6 +41,6 @@ void init_acpi(void);
 
 void report_acpi(void);
 
-kern_paddr_t acpi_get_rsdp_paddr(void);
+uint32_t acpi_get_rsdp_paddr(void);
 
 #endif

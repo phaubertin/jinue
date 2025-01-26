@@ -34,7 +34,7 @@
 
 #include <kernel/types.h>
 
-void machine_map_kernel_page(void *vaddr, kern_paddr_t paddr, int prot);
+void machine_map_kernel_page(void *vaddr, paddr_t paddr, int prot);
 
 void machine_unmap_kernel_page(void *addr);
 
@@ -42,7 +42,7 @@ bool machine_map_userspace(
         process_t       *process,
         void            *vaddr,
         size_t           length,
-        user_paddr_t     paddr,
+        paddr_t          paddr,
         int              prot);
 
 bool machine_clone_userspace_mapping(
@@ -53,6 +53,6 @@ bool machine_clone_userspace_mapping(
         size_t       length,
         int          prot) ;
 
-kern_paddr_t machine_lookup_kernel_paddr(const void *addr);
+paddr_t machine_lookup_kernel_paddr(const void *addr);
 
 #endif
