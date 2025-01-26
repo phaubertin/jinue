@@ -83,7 +83,7 @@ void run_abcd_test(void) {
     }
 
     for(int idx = 0; idx < THREADS_NUM; ++idx) {
-        memset(strs[idx], ' ', sizeof(strs[idx]));
+        memset(strs[idx], '.', sizeof(strs[idx]));
         strs[idx][2 * idx]          = 'A' + idx;
         strs[idx][2 * THREADS_NUM]  = '\0';
 
