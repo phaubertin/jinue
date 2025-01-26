@@ -32,6 +32,7 @@
 #include <kernel/application/interrupts.h>
 #include <kernel/domain/services/logging.h>
 #include <kernel/domain/services/panic.h>
+#include <kernel/infrastructure/i686/drivers/lapic.h>
 #include <kernel/infrastructure/i686/drivers/pic8259.h>
 #include <kernel/infrastructure/i686/isa/regs.h>
 #include <kernel/interface/i686/asm/exceptions.h>
@@ -82,6 +83,11 @@ void handle_interrupt(trapframe_t *trapframe) {
 
     if(ivt <= IDT_LAST_EXCEPTION) {
         handle_exception(ivt, trapframe->eip, trapframe->errcode);
+    } else if(ivt == IDT_APIC_TIMER) {
+        tick_interrupt();
+        local_apic_eoi();
+    } else if(ivt == IDT_APIC_SPURIOUS) {
+        spurious_interrupt();
     } else if(ivt >= IDT_PIC8259_BASE && ivt < IDT_PIC8259_BASE + PIC8259_IRQ_COUNT) {
         handle_hardware_interrupt(ivt);
     } else {
