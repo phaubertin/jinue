@@ -74,20 +74,27 @@ bool start_thread(pthread_t *thread, const char *str) {
     return EXIT_SUCCESS;
 }
 
+static void initialize_string(char *str, int thread_index) {
+    for(int idx = 0; idx < THREADS_NUM; ++idx) {
+        str[2 * idx]        = '.';
+        str[2 * idx + 1]    = ' ';
+    }
+
+    str[2 * thread_index]   = 'A' + thread_index;
+    str[2 * THREADS_NUM]    = '\0';
+}
+
 void run_abcd_test(void) {
     pthread_t threads[THREADS_NUM];
-    char strs[THREADS_NUM][2 * THREADS_NUM + 1];
+    char strings[THREADS_NUM][2 * THREADS_NUM + 1];
 
     if(! bool_getenv("RUN_TEST_ABCD")) {
         return;
     }
 
     for(int idx = 0; idx < THREADS_NUM; ++idx) {
-        memset(strs[idx], '.', sizeof(strs[idx]));
-        strs[idx][2 * idx]          = 'A' + idx;
-        strs[idx][2 * THREADS_NUM]  = '\0';
-
-        int status = start_thread(&threads[idx], strs[idx]);
+        initialize_string(strings[idx], idx);
+        int status = start_thread(&threads[idx], strings[idx]);
 
         if(status != EXIT_SUCCESS) {
             return;
