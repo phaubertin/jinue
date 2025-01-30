@@ -39,10 +39,12 @@
 
 static struct {
     addr_t       addr;
+    size_t       size_remaining;
     const void  *latest_addr;
     int          latest_prot;
 } alloc_state = {
     .addr           = (addr_t)MAPPING_AREA_ADDR,
+    .size_remaining = MAPPING_AREA_SIZE,
     .latest_addr    = NULL,
     .latest_prot    = JINUE_PROT_NONE,
 };
@@ -66,28 +68,22 @@ void *map_in_kernel(paddr_t paddr, size_t size, int prot) {
     
     size += offset;
 
-    if((addr_t)MAPPING_AREA_END - alloc_state.addr < size) {
+    if(alloc_state.size_remaining < size) {
         panic("No more space to map memory in kernel");
     }
 
-    addr_t start = alloc_state.addr;
-    alloc_state.addr            = ALIGN_END_PTR(start + size, PAGE_SIZE);
+    addr_t start    = alloc_state.addr;
+    addr_t end      = ALIGN_END_PTR(start + size, PAGE_SIZE);
+
+    alloc_state.addr            = end;
     alloc_state.latest_addr     = start + offset;
     alloc_state.latest_prot     = prot;
 
-    addr_t map_addr = start;
     paddr_t map_paddr = paddr - offset;
 
-    while(true) {
-        machine_map_kernel_page(map_addr, map_paddr, prot);
-
-        if(size <= PAGE_SIZE) {
-            break;
-        }
-
-        map_addr += PAGE_SIZE;
+    for(addr_t page_addr = start; page_addr < end; page_addr += PAGE_SIZE) {
+        machine_map_kernel_page(page_addr, map_paddr, prot);
         map_paddr += PAGE_SIZE;
-        size -= PAGE_SIZE;
     }
 
     return start + offset;
@@ -114,11 +110,11 @@ void resize_map_in_kernel(size_t size) {
 
     /* Map additional pages if the mapping is grown. */
 
-    paddr_t paddr = machine_lookup_kernel_paddr(start) + (new_end - old_end);
+    paddr_t map_paddr = machine_lookup_kernel_paddr(start) + (new_end - old_end);
 
     for(addr_t page_addr = old_end; page_addr < (addr_t)new_end; page_addr += PAGE_SIZE) {
-        machine_map_kernel_page(page_addr, paddr, prot);
-        paddr += PAGE_SIZE;
+        machine_map_kernel_page(page_addr, map_paddr, prot);
+        map_paddr += PAGE_SIZE;
     }
 
     alloc_state.addr = new_end;
