@@ -118,8 +118,7 @@ void resize_map_in_kernel(size_t size) {
 
     for(addr_t page_addr = old_end; page_addr < (addr_t)new_end; page_addr += PAGE_SIZE) {
         machine_map_kernel_page(page_addr, paddr, prot);
-        /* TODO recheck this */
-        ++paddr;
+        paddr += PAGE_SIZE;
     }
 
     alloc_state.addr = new_end;
