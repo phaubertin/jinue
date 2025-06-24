@@ -358,7 +358,7 @@ void machine_init(const config_t *config) {
         pic8259_unmask(IRQ_TIMER);
     }
 
-    /* Initializa local APIC, including local APIC timer. */
+    /* Initialize local APIC, including local APIC timer. */
     local_apic_init();
 
     /* choose a system call implementation */
