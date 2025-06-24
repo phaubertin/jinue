@@ -61,7 +61,7 @@ static void expand_mapping(paddr_t paddr, addr_t new_end, int prot) {
     addr_t old_end  = alloc_state.addr;
     size_t size     = new_end - old_end;
 
-    if(new_end - old_end > alloc_state.size_remaining) {
+    if(size > alloc_state.size_remaining) {
         panic("No more space to map memory in kernel");
     }
 
@@ -73,7 +73,7 @@ static void expand_mapping(paddr_t paddr, addr_t new_end, int prot) {
     }
 
     alloc_state.addr            = new_end;
-    alloc_state.size_remaining  -= new_end - old_end;
+    alloc_state.size_remaining  -= size;
 }
 
 /**
