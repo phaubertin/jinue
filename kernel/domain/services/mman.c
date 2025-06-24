@@ -145,8 +145,8 @@ void resize_map_in_kernel(size_t size) {
     } else {
         int prot        = alloc_state.latest_prot;
 
-        void *start     = ALIGN_START_PTR(addr, PAGE_SIZE);
-        paddr_t paddr   = machine_lookup_kernel_paddr(start) + (new_end - old_end);
+        addr_t start    = ALIGN_START_PTR(addr, PAGE_SIZE);
+        paddr_t paddr   = machine_lookup_kernel_paddr(start) + (old_end - start);
 
         expand_mapping(paddr, new_end, prot);
     }
