@@ -535,6 +535,33 @@ void pmap_switch_addr_space(addr_space_t *addr_space) {
     cpu_data->current_addr_space = addr_space;
 }
 
+/**
+ * Lookup page table entry for specified kernel address
+ *
+ * @param addr kernel address to look up
+ * @return pointer to page table entry
+ *
+ * */
+static pte_t *lookup_kernel_page_table_entry(const void *addr) {
+    /** ASSERTION: addr is aligned on a page boundary */
+    assert( page_offset_of(addr) == 0 );
+
+    /** ASSERTION: addr is a kernel pointer */
+    assert( is_kernel_pointer(addr) );
+
+    /* Fast path for global allocations by the kernel:
+     *  - The page tables for the region just above KLIMIT are pre-allocated
+     *    during the creation of the address space, so there is no need to
+     *    check if they are allocated or to allocate them;
+     *  - The page tables are mapped contiguously at a known location
+     *    during initialization, so no need for a table walk to find them;
+     *  - The mappings for this region are global, so we don't need to
+     *    specify an address space. */
+    return get_pte_with_offset(
+        kernel_page_tables,
+        page_number_of((uintptr_t)addr - KLIMIT));
+}
+
 static pte_t *lookup_userspace_page_table(
         addr_space_t    *addr_space,
         const void      *addr,
@@ -590,33 +617,6 @@ static pte_t *lookup_userspace_page_table(
     }
 
     return page_table;
-}
-
-/**
- * Lookup page table entry for specified kernel address
- *
- * @param addr kernel address to look up
- * @return pointer to page table entry
- *
- * */
-static pte_t *lookup_kernel_page_table_entry(const void *addr) {
-    /** ASSERTION: addr is aligned on a page boundary */
-    assert( page_offset_of(addr) == 0 );
-
-    /** ASSERTION: addr is a kernel pointer */
-    assert( is_kernel_pointer(addr) );
-
-    /* Fast path for global allocations by the kernel:
-     *  - The page tables for the region just above KLIMIT are pre-allocated
-     *    during the creation of the address space, so there is no need to
-     *    check if they are allocated or to allocate them;
-     *  - The page tables are mapped contiguously at a known location
-     *    during initialization, so no need for a table walk to find them;
-     *  - The mappings for this region are global, so we don't need to
-     *    specify an address space. */
-    return get_pte_with_offset(
-        kernel_page_tables,
-        page_number_of((uintptr_t)addr - KLIMIT));
 }
 
 /**
