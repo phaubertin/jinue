@@ -540,8 +540,7 @@ void pmap_switch_addr_space(addr_space_t *addr_space) {
  *
  * @param addr kernel address to look up
  * @return pointer to page table entry
- *
- * */
+ */
 static pte_t *lookup_kernel_page_table_entry(const void *addr) {
     /** ASSERTION: addr is aligned on a page boundary */
     assert( page_offset_of(addr) == 0 );
@@ -640,8 +639,7 @@ static pte_t *lookup_userspace_page_table(
  * @param create_as_needed whether a page table is allocated if it does not exist
  * @param reload_cr3 (out) set to true if CR3 needs to be reloaded
  * @return pointer to page table entry on success, NULL otherwise
- *
- * */
+ */
 static pte_t *lookup_userspace_page_table_entry(
         addr_space_t    *addr_space,
         const void      *addr,
@@ -665,46 +663,6 @@ static pte_t *lookup_userspace_page_table_entry(
     }
 
     return get_pte_with_offset(page_table, page_table_offset_of(addr));
-}
-
-/**
- * Invalidate the mapping of a single page.
- *
- * If reload_cr3 is true, the invalidation is performed by reloading the CR3
- * control register. This is necessary when PAE is enabled when the PDPT was
- * just modified. If reload_cr3 is false, which is the common case, the invlpg
- * instruction is used instead.
- *
- * The invalidation is only performed is the specified address space is the
- * currently active one or if the mapping is a kernel mapping, since kernel
- * mappings are global.
- *
- * @param addr_space address space in which a mapping change was performed
- * @param addr virtual address of mapping change
- * @param reload_cr3 true if CR3 register must be reloaded
- */
-static void invalidate_mapping(
-        addr_space_t    *addr_space,
-        void            *addr,
-        bool             reload_cr3) {
-    
-    /* TODO split this function too */
-
-    assert(addr_space != NULL || is_kernel_pointer(addr));
-
-    uint32_t cr3 = get_cr3();
-
-    /* Be careful with condition order here (short-circuit evaluation): if addr
-     * is a kernel pointer, addr_space is allowed to be NULL, so we musn't
-     * dereference it. */
-    if(is_kernel_pointer(addr) || cr3 == addr_space->cr3) {
-        if(reload_cr3) {
-            set_cr3(cr3);
-        }
-        else {
-            invlpg(addr);
-        }
-    }
 }
 
 /**
@@ -760,7 +718,7 @@ void machine_map_kernel_page(void *vaddr, paddr_t paddr, int prot) {
 
     set_pte(pte, paddr, map_page_access_flags(prot) | X86_PTE_GLOBAL);
 
-    invalidate_mapping(NULL, vaddr, false);
+    invlpg(vaddr);
 }
 
 /**
@@ -793,7 +751,18 @@ static bool map_userspace_page(
 
     set_pte(pte, paddr, map_page_access_flags(prot) | X86_PTE_USER);
 
-    invalidate_mapping(addr_space, vaddr, reload_cr3);
+    uint32_t cr3 = get_cr3();
+
+    if(cr3 != addr_space->cr3) {
+        return true;
+    }
+
+    if(reload_cr3) {
+        set_cr3(cr3);
+    }
+    else {
+        invlpg(vaddr);
+    }
 
     return true;
 }
@@ -854,7 +823,7 @@ void machine_unmap_kernel_page(void *addr) {
     
     clear_pte(pte);
 
-    invalidate_mapping(NULL, addr, false);
+    invlpg(addr);
 }
 
 /**
