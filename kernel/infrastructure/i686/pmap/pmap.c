@@ -712,12 +712,16 @@ void machine_map_kernel(addr_t addr, size_t size, paddr_t paddr, int prot) {
     /** ASSERTION: we assume vaddr is aligned on a page boundary */
     assert( page_offset_of(addr) == 0 );
 
+    pte_t *pte = lookup_kernel_page_table_entry(addr);
+
+    assert(pte != NULL);
+
     for(size_t offset = 0; offset < size; offset += PAGE_SIZE) {
-        pte_t *pte = lookup_kernel_page_table_entry(addr + offset);
-
-        assert(pte != NULL);
-
-        set_pte(pte, paddr, map_page_access_flags(prot) | X86_PTE_GLOBAL);
+        set_pte(
+            get_pte_with_offset(pte, offset / PAGE_SIZE),
+            paddr + offset,
+            map_page_access_flags(prot) | X86_PTE_GLOBAL
+        );
 
         invlpg(addr + offset);
     }
@@ -815,12 +819,12 @@ void machine_unmap_kernel(addr_t addr, size_t size) {
     /** ASSERTION: addr is aligned on a page boundary */
     assert( page_offset_of(addr) == 0 );
 
-    for(size_t offset = 0; offset < size; offset += PAGE_SIZE) {
-        pte_t *pte = lookup_kernel_page_table_entry(addr + offset);
+    pte_t *pte = lookup_kernel_page_table_entry(addr);
 
-        assert(pte != NULL);
-    
-        clear_pte(pte);
+    assert(pte != NULL);
+
+    for(size_t offset = 0; offset < size; offset += PAGE_SIZE) {
+        clear_pte( get_pte_with_offset(pte, offset / PAGE_SIZE) );
 
         invlpg(addr + offset);
     }
