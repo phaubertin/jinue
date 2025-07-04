@@ -708,17 +708,19 @@ static uint64_t map_page_access_flags(int prot) {
  * @param paddr address of page frame
  * @param prot protections flags
  */
-void machine_map_kernel_page(void *vaddr, paddr_t paddr, int prot) {
+void machine_map_kernel(addr_t addr, size_t size, paddr_t paddr, int prot) {
     /** ASSERTION: we assume vaddr is aligned on a page boundary */
-    assert( page_offset_of(vaddr) == 0 );
+    assert( page_offset_of(addr) == 0 );
 
-    pte_t *pte = lookup_kernel_page_table_entry(vaddr);
+    for(size_t offset = 0; offset < size; offset += PAGE_SIZE) {
+        pte_t *pte = lookup_kernel_page_table_entry(addr + offset);
 
-    assert(pte != NULL);
+        assert(pte != NULL);
 
-    set_pte(pte, paddr, map_page_access_flags(prot) | X86_PTE_GLOBAL);
+        set_pte(pte, paddr, map_page_access_flags(prot) | X86_PTE_GLOBAL);
 
-    invlpg(vaddr);
+        invlpg(addr + offset);
+    }
 }
 
 /**
@@ -782,23 +784,19 @@ static bool map_userspace_page(
  */
 bool machine_map_userspace(
         process_t       *process,
-        void            *vaddr,
-        size_t           length,
+        addr_t           addr,
+        size_t           size,
         paddr_t          paddr,
         int              prot) {
 
-    addr_t addr                 = vaddr;
-    addr_space_t *addr_space    = &process->addr_space;
+    addr_space_t *addr_space = &process->addr_space;
 
-    for(size_t idx = 0; idx < length / PAGE_SIZE; ++idx) {
+    for(size_t offset = 0; offset < size; offset += PAGE_SIZE) {
         /* TODO We should be able to optimize by not looking up the page table
          * for each entry. */
-        if(!map_userspace_page(addr_space, addr, paddr, prot)) {
+        if(!map_userspace_page(addr_space, addr + offset, paddr + offset, prot)) {
             return false;
         }
-
-        addr += PAGE_SIZE;
-        paddr += PAGE_SIZE;
     }
 
     return true;
@@ -813,17 +811,19 @@ bool machine_map_userspace(
  *
  * @param addr address of page to unmap
  */
-void machine_unmap_kernel_page(void *addr) {
+void machine_unmap_kernel(addr_t addr, size_t size) {
     /** ASSERTION: addr is aligned on a page boundary */
     assert( page_offset_of(addr) == 0 );
 
-    pte_t *pte = lookup_kernel_page_table_entry(addr);
+    for(size_t offset = 0; offset < size; offset += PAGE_SIZE) {
+        pte_t *pte = lookup_kernel_page_table_entry(addr + offset);
 
-    assert(pte != NULL);
+        assert(pte != NULL);
     
-    clear_pte(pte);
+        clear_pte(pte);
 
-    invlpg(addr);
+        invlpg(addr + offset);
+    }
 }
 
 /**

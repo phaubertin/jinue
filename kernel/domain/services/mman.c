@@ -65,12 +65,7 @@ static void expand_mapping(paddr_t paddr, addr_t new_end, int prot) {
         panic("No more space to map memory in kernel");
     }
 
-    /* Be careful about the possible address overflow here since the mapping
-     * area is at the very top of the address space. This is why we are using
-     * a condition on the offset rather than the address. */
-    for(int offset = 0; offset < size; offset += PAGE_SIZE) {
-        machine_map_kernel_page(old_end + offset, paddr + offset, prot);
-    }
+    machine_map_kernel(old_end, size, paddr, prot);
 
     alloc_state.addr            = new_end;
     alloc_state.size_remaining  -= size;
@@ -85,13 +80,8 @@ static void shrink_mapping(addr_t new_end) {
     addr_t old_end  = alloc_state.addr;
     size_t size     = old_end - new_end;
 
-    /* Be careful about the possible address overflow here since the mapping
-     * area is at the very top of the address space. This is why we are using
-     * a condition on the offset rather than the address. */
-    for(int offset = 0; offset < size; offset += PAGE_SIZE) {
-        machine_unmap_kernel_page(new_end + offset);
-    }
-    
+    machine_unmap_kernel(new_end, size);
+
     alloc_state.addr            = new_end;
     alloc_state.size_remaining  += size;
 }
