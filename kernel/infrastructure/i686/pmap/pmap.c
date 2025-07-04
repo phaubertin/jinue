@@ -728,52 +728,6 @@ void machine_map_kernel(addr_t addr, size_t size, paddr_t paddr, int prot) {
 }
 
 /**
- * Establish a userspace virtual memory mapping for a single page.
- *
- * Page tables are allocated as needed. If an allocation fails, this function
- * returns false to indicate failure.
- *
- * @param addr_space address space in which to map
- * @param vaddr virtual address of mapping
- * @param paddr address of page frame
- * @param prot protections flags
- * @return true on success, false on page table allocation error
- */
-static bool map_userspace_page(
-        addr_space_t    *addr_space,
-        void            *vaddr,
-        paddr_t          paddr,
-        int              prot) {
-
-    /** ASSERTION: we assume vaddr is aligned on a page boundary */
-    assert( page_offset_of(vaddr) == 0 );
-
-    bool reload_cr3 = false;
-    pte_t *pte = lookup_userspace_page_table_entry(addr_space, vaddr, true, &reload_cr3);
-
-    if(pte == NULL) {
-        return false;
-    }
-
-    set_pte(pte, paddr, map_page_access_flags(prot) | X86_PTE_USER);
-
-    uint32_t cr3 = get_cr3();
-
-    if(cr3 != addr_space->cr3) {
-        return true;
-    }
-
-    if(reload_cr3) {
-        set_cr3(cr3);
-    }
-    else {
-        invlpg(vaddr);
-    }
-
-    return true;
-}
-
-/**
  * Establish a userspace virtual memory mapping.
  *
  * Page tables are allocated as needed. If an allocation fails, this function
@@ -793,14 +747,40 @@ bool machine_map_userspace(
         paddr_t          paddr,
         int              prot) {
 
+    /** ASSERTION: we assume vaddr is aligned on a page boundary */
+    assert( page_offset_of(addr) == 0 );
+
     addr_space_t *addr_space = &process->addr_space;
+
+    uint32_t cr3 = get_cr3();
+
+    bool needs_invalidation = (cr3 == addr_space->cr3);
+
+    bool reload_cr3 = false;
 
     for(size_t offset = 0; offset < size; offset += PAGE_SIZE) {
         /* TODO We should be able to optimize by not looking up the page table
          * for each entry. */
-        if(!map_userspace_page(addr_space, addr + offset, paddr + offset, prot)) {
+        pte_t *pte = lookup_userspace_page_table_entry(
+            addr_space,
+            addr + offset,
+            true,
+            &reload_cr3
+        );
+
+        if(pte == NULL) {
             return false;
         }
+
+        set_pte(pte, paddr + offset, map_page_access_flags(prot) | X86_PTE_USER);
+
+        if(needs_invalidation && !reload_cr3) {
+            invlpg(addr + offset);
+        }
+    }
+
+    if(needs_invalidation && reload_cr3) {
+        set_cr3(cr3);
     }
 
     return true;
