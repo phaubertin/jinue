@@ -535,7 +535,55 @@ void pmap_switch_addr_space(addr_space_t *addr_space) {
     cpu_data->current_addr_space = addr_space;
 }
 
-static pte_t *pmap_lookup_page_table(
+/**
+ * Lookup page table entry for specified kernel address
+ *
+ * @param addr kernel address to look up
+ * @return pointer to page table entry
+ */
+static pte_t *lookup_kernel_page_table_entry(const void *addr) {
+    /** ASSERTION: addr is aligned on a page boundary */
+    assert( page_offset_of(addr) == 0 );
+
+    /** ASSERTION: addr is a kernel pointer */
+    assert( is_kernel_pointer(addr) );
+
+    /* Fast path for global allocations by the kernel:
+     *  - The page tables for the region just above KLIMIT are pre-allocated
+     *    during the creation of the address space, so there is no need to
+     *    check if they are allocated or to allocate them;
+     *  - The page tables are mapped contiguously at a known location
+     *    during initialization, so no need for a table walk to find them;
+     *  - The mappings for this region are global, so we don't need to
+     *    specify an address space. */
+    return get_pte_with_offset(
+        kernel_page_tables,
+        page_number_of((uintptr_t)addr - KLIMIT));
+}
+
+/**
+ * Lookup a page table for a specified userspace address and address space
+ *
+ * If the create_as_needed argument is true, new page tables are allocated as
+ * needed, and NULL is only returned if allocation of new page tables fail.
+ * If the create_as_needed argument is false, NULL is returned if there is
+ * currently no page table entry for the specified address and address space.
+ *
+ * If a new page table is allocated (when create_as_needed is true), CR3 may
+ * need to be reloaded. If it's the case, the boolean pointed to by reload_cr3
+ * is set to true. Initially setting this boolean to false is the caller's
+ * responsibility.
+ *
+ * reload_cr3 must not be NULL if create_as_needed is true but is ignored and
+ * can be set to NULL if create_as_needed is false.
+ *
+ * @param addr_space address space in which the address is looked up.
+ * @param addr userspace address to look up
+ * @param create_as_needed whether a page table is allocated if it does not exist
+ * @param reload_cr3 (out) set to true if CR3 needs to be reloaded
+ * @return pointer to page table on success, NULL otherwise
+ */
+static pte_t *lookup_userspace_page_table(
         addr_space_t    *addr_space,
         const void      *addr,
         bool             create_as_needed,
@@ -546,12 +594,19 @@ static pte_t *pmap_lookup_page_table(
     /** ASSERTION: addr_space cannot be NULL for non-global mappings */
     assert(addr_space != NULL);
 
+    /** ASSERTION: addr is aligned on a page boundary */
+    assert( page_offset_of(addr) == 0 );
+
+    /** ASSERTION: addr is a userspace pointer */
+    assert( is_userspace_pointer(addr) );
+
     if(pgtable_format_pae) {
         page_directory = pae_lookup_page_directory(
-                addr_space,
-                addr,
-                create_as_needed,
-                reload_cr3);
+            addr_space,
+            addr,
+            create_as_needed,
+            reload_cr3
+        );
     }
     else {
         page_directory = nopae_lookup_page_directory(addr_space);
@@ -593,103 +648,6 @@ static pte_t *pmap_lookup_page_table(
 }
 
 /**
- * Lookup a page table entry for a specified address and address space.
- *
- * If the create_as_needed argument is true, new page tables are allocated as
- * needed, and NULL is only returned if allocation of new page tables fail.
- * If the create_as_needed argument is false, NULL is returned if there is
- * currently no page table entry for the specified address and address space.
- *
- * If a new page table is allocated (when create_as_needed is true), CR3 may
- * need to be reloaded. If it's the case, the boolean pointed to by reload_cr3
- * is set to true. Initially setting this boolean to false it the caller's
- * responsibility. The expected sequence of events is as follow:
- *
- * reload_cr3 must not be NULL if create_as_needed is true but is ignored and
- * can be set to NULL if create_as_needed is false.
- *
- * @param addr_space address space in which the address is looked up.
- * @param addr address to look up
- * @param create_as_needed whether a page table is allocated if it does not exist
- * @param reload_cr3 (out) set to true if CR3 needs to be reloaded
- * @return pointer to page table entry on success, NULL otherwise
- *
- * */
-static pte_t *lookup_page_table_entry(
-        addr_space_t    *addr_space,
-        const void      *addr,
-        bool             create_as_needed,
-        bool            *reload_cr3) {
-
-    /** ASSERTION: addr is aligned on a page boundary */
-    assert( page_offset_of(addr) == 0 );
-
-    if(is_kernel_pointer(addr)) {
-        /* Fast path for global allocations by the kernel:
-         *  - The page tables for the region just above KLIMIT are pre-allocated
-         *    during the creation of the address space, so there is no need to
-         *    check if they are allocated or to allocate them;
-         *  - The page tables are mapped contiguously at a known location
-         *    during initialization, so no need for a table walk to find them;
-         *  - The mappings for this region are global, so we don't care
-         *    about the specified address space.  */
-        return get_pte_with_offset(
-                kernel_page_tables,
-                page_number_of((uintptr_t)addr - KLIMIT));
-    }
-
-    pte_t *page_table = pmap_lookup_page_table(
-            addr_space,
-            addr,
-            create_as_needed,
-            reload_cr3);
-
-    if(page_table == NULL) {
-        return NULL;
-    }
-
-    return get_pte_with_offset(page_table, page_table_offset_of(addr));
-}
-
-/**
- * Invalidate the mapping of a single page.
- *
- * If reload_cr3 is true, the invalidation is performed by reloading the CR3
- * control register. This is necessary when PAE is enabled when the PDPT was
- * just modified. If reload_cr3 is false, which is the common case, the invlpg
- * instruction is used instead.
- *
- * The invalidation is only performed is the specified address space is the
- * currently active one or if the mapping is a kernel mapping, since kernel
- * mappings are global.
- *
- * @param addr_space address space in which a mapping change was performed
- * @param addr virtual address of mapping change
- * @param reload_cr3 true if CR3 register must be reloaded
- */
-static void invalidate_mapping(
-        addr_space_t    *addr_space,
-        void            *addr,
-        bool             reload_cr3) {
-
-    assert(addr_space != NULL || is_kernel_pointer(addr));
-
-    uint32_t cr3 = get_cr3();
-
-    /* Be careful with condition order here (short-circuit evaluation): if addr
-     * is a kernel pointer, addr_space is allowed to be NULL, so we musn't
-     * dereference it. */
-    if(is_kernel_pointer(addr) || cr3 == addr_space->cr3) {
-        if(reload_cr3) {
-            set_cr3(cr3);
-        }
-        else {
-            invlpg(addr);
-        }
-    }
-}
-
-/**
  * Translate architecture-independent protection flags to architecture-dependent flags
  *
  * Argument should be either JINUE_PROT_NONE (no access) or any combination of
@@ -722,52 +680,6 @@ static uint64_t map_page_access_flags(int prot) {
 }
 
 /**
- * Map a page frame (physical page) to a virtual memory page.
- *
- * This function is intended to be called by map_userspace_page()) and
- * machine_map_kernel_page(). Either of these functions should be called
- * elsewhere instead of calling this function directly.
- *
- * There is no need to specify an address space for kernel mappings since
- * kernel mappings are global.
- *
- * Page tables are allocated as needed. If an allocation fails, this function
- * returns false to indicate failure.
- *
- * @param addr_space address space in which to map, NULL for kernel mappings
- * @param vaddr virtual address of mapping
- * @param paddr address of page frame
- * @param flags flags used for mapping (see X86_PTE_... constants)
- * @return true on success, false on page table allocation error
- */
-static bool map_page(
-        addr_space_t    *addr_space,
-        void            *vaddr,
-        paddr_t          paddr,
-        uint64_t         flags) {
-
-    /** ASSERTION: we assume vaddr is aligned on a page boundary */
-    assert( page_offset_of(vaddr) == 0 );
-    
-    bool reload_cr3 = false;
-    pte_t *pte = lookup_page_table_entry(addr_space, vaddr, true, &reload_cr3);
-    
-    /* kernel page tables are pre-allocated so this should always succeed for
-     * kernel mappings. */
-    assert(pte != NULL || is_userspace_pointer(vaddr));
-    
-    if(pte == NULL) {
-        return false;
-    }
-
-    set_pte(pte, paddr, flags);
-
-    invalidate_mapping(addr_space, vaddr, reload_cr3);
-
-    return true;
-}
-
-/**
  * Establish a kernel virtual memory mapping for a single page.
  *
  * Kernel page tables are pre-allocated during kernel initialization so this is
@@ -778,31 +690,23 @@ static bool map_page(
  * @param paddr address of page frame
  * @param prot protections flags
  */
-void machine_map_kernel_page(void *vaddr, paddr_t paddr, int prot) {
-    assert(is_kernel_pointer(vaddr));
-    map_page(NULL, vaddr, paddr, map_page_access_flags(prot) | X86_PTE_GLOBAL);
-}
+void machine_map_kernel(addr_t addr, size_t size, paddr_t paddr, int prot) {
+    /** ASSERTION: we assume vaddr is aligned on a page boundary */
+    assert( page_offset_of(addr) == 0 );
 
-/**
- * Establish a userspace virtual memory mapping for a single page.
- *
- * Page tables are allocated as needed. If an allocation fails, this function
- * returns false to indicate failure.
- *
- * @param addr_space address space in which to map
- * @param vaddr virtual address of mapping
- * @param paddr address of page frame
- * @param prot protections flags
- * @return true on success, false on page table allocation error
- */
-static bool map_userspace_page(
-        addr_space_t    *addr_space,
-        void            *vaddr,
-        paddr_t          paddr,
-        int              prot) {
+    pte_t *pte = lookup_kernel_page_table_entry(addr);
 
-    assert(is_userspace_pointer(vaddr));
-    return map_page(addr_space, vaddr, paddr, map_page_access_flags(prot) | X86_PTE_USER);
+    assert(pte != NULL);
+
+    for(size_t offset = 0; offset < size; offset += PAGE_SIZE) {
+        set_pte(
+            get_pte_with_offset(pte, offset / PAGE_SIZE),
+            paddr + offset,
+            map_page_access_flags(prot) | X86_PTE_GLOBAL
+        );
+
+        invlpg(addr + offset);
+    }
 }
 
 /**
@@ -820,50 +724,60 @@ static bool map_userspace_page(
  */
 bool machine_map_userspace(
         process_t       *process,
-        void            *vaddr,
-        size_t           length,
+        addr_t           addr,
+        size_t           size,
         paddr_t          paddr,
         int              prot) {
 
-    addr_t addr                 = vaddr;
-    addr_space_t *addr_space    = &process->addr_space;
+    /** ASSERTION: we assume vaddr is aligned on a page boundary */
+    assert( page_offset_of(addr) == 0 );
 
-    for(size_t idx = 0; idx < length / PAGE_SIZE; ++idx) {
-        /* TODO We should be able to optimize by not looking up the page table
-         * for each entry. */
-        if(!map_userspace_page(addr_space, addr, paddr, prot)) {
-            return false;
+    addr_space_t *addr_space = &process->addr_space;
+    bool needs_invalidation = (get_cr3() == addr_space->cr3);
+
+    int pte_index   = page_table_offset_of(addr);
+
+    bool reload_cr3 = false;
+    pte_t *pte      = lookup_userspace_page_table(addr_space, addr, true, &reload_cr3);
+
+    if(pte == NULL) {
+        return false;
+    }
+
+    for(size_t offset = 0; offset < size; offset += PAGE_SIZE) {
+        if(pte_index >= entries_per_page_table) {
+            pte = lookup_userspace_page_table(
+                addr_space,
+                addr + offset,
+                true,
+                &reload_cr3
+            );
+
+            if(pte == NULL) {
+                return false;
+            }
+
+            pte_index = 0;
         }
 
-        addr += PAGE_SIZE;
-        paddr += PAGE_SIZE;
+        set_pte(
+            get_pte_with_offset(pte, pte_index),
+            paddr + offset,
+            map_page_access_flags(prot) | X86_PTE_USER
+        );
+
+        if(needs_invalidation && !reload_cr3) {
+            invlpg(addr + offset);
+        }
+
+        ++pte_index;
+    }
+
+    if(needs_invalidation && reload_cr3) {
+        set_cr3(get_cr3());
     }
 
     return true;
-}
-
-/**
- * Unmap a page from virtual memory.
- *
- * There is no need to specify an address space for kernel mappings since
- * kernel mappings are global.
- *
- * This function does not perform any page table deallocation.
- *
- * @param addr_space address space from which to unmap, NULL for kernel mappings
- * @param addr address of page to unmap
- */
-static void unmap_page(addr_space_t *addr_space, void *addr) {
-    /** ASSERTION: addr is aligned on a page boundary */
-    assert( page_offset_of(addr) == 0 );
-    
-    pte_t *pte = lookup_page_table_entry(addr_space, addr, false, NULL);
-    
-    if(pte != NULL) {
-        clear_pte(pte);
-
-        invalidate_mapping(addr_space, addr, false);
-    }
 }
 
 /**
@@ -875,9 +789,19 @@ static void unmap_page(addr_space_t *addr_space, void *addr) {
  *
  * @param addr address of page to unmap
  */
-void machine_unmap_kernel_page(void *addr) {
-    assert(is_kernel_pointer(addr));
-    unmap_page(NULL, addr);
+void machine_unmap_kernel(addr_t addr, size_t size) {
+    /** ASSERTION: addr is aligned on a page boundary */
+    assert( page_offset_of(addr) == 0 );
+
+    pte_t *pte = lookup_kernel_page_table_entry(addr);
+
+    assert(pte != NULL);
+
+    for(size_t offset = 0; offset < size; offset += PAGE_SIZE) {
+        clear_pte( get_pte_with_offset(pte, offset / PAGE_SIZE) );
+
+        invlpg(addr + offset);
+    }
 }
 
 /**
@@ -887,9 +811,7 @@ void machine_unmap_kernel_page(void *addr) {
  * @return physical address of page frame
  */
 paddr_t machine_lookup_kernel_paddr(const void *addr) {
-    assert( is_kernel_pointer(addr) );
-
-    pte_t *pte = lookup_page_table_entry(NULL, addr, false, NULL);
+    pte_t *pte = lookup_kernel_page_table_entry(addr);
 
     assert(pte != NULL && pte_is_present(pte));
 

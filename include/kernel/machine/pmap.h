@@ -34,13 +34,13 @@
 
 #include <kernel/types.h>
 
-void machine_map_kernel_page(void *vaddr, paddr_t paddr, int prot);
+void machine_map_kernel(addr_t addr, size_t size, paddr_t paddr, int prot);
 
-void machine_unmap_kernel_page(void *addr);
+void machine_unmap_kernel(addr_t addr, size_t size);
 
 bool machine_map_userspace(
         process_t       *process,
-        void            *vaddr,
+        addr_t           addr,
         size_t           length,
         paddr_t          paddr,
         int              prot);

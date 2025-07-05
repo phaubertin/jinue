@@ -125,7 +125,7 @@ bool add_page_frame(paddr_t paddr) {
         return false;
     }
 
-    machine_map_kernel_page(page, paddr, JINUE_PROT_READ | JINUE_PROT_WRITE);
+    machine_map_kernel(page, PAGE_SIZE, paddr, JINUE_PROT_READ | JINUE_PROT_WRITE);
 
     /* Since this page is coming from userspace, is is important to clear it:
      * 1) The page may contain sensitive information, which we don't want to
@@ -163,7 +163,7 @@ paddr_t remove_page_frame(void) {
 
     paddr_t paddr = machine_lookup_kernel_paddr(page);
 
-    machine_unmap_kernel_page(page);
+    machine_unmap_kernel(page, PAGE_SIZE);
 
     /* The page may be in the image region instead of the allocations region if
      * it was allocated during kernel initialization.
