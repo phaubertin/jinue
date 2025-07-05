@@ -561,6 +561,28 @@ static pte_t *lookup_kernel_page_table_entry(const void *addr) {
         page_number_of((uintptr_t)addr - KLIMIT));
 }
 
+/**
+ * Lookup a page table for a specified userspace address and address space
+ *
+ * If the create_as_needed argument is true, new page tables are allocated as
+ * needed, and NULL is only returned if allocation of new page tables fail.
+ * If the create_as_needed argument is false, NULL is returned if there is
+ * currently no page table entry for the specified address and address space.
+ *
+ * If a new page table is allocated (when create_as_needed is true), CR3 may
+ * need to be reloaded. If it's the case, the boolean pointed to by reload_cr3
+ * is set to true. Initially setting this boolean to false is the caller's
+ * responsibility.
+ *
+ * reload_cr3 must not be NULL if create_as_needed is true but is ignored and
+ * can be set to NULL if create_as_needed is false.
+ *
+ * @param addr_space address space in which the address is looked up.
+ * @param addr userspace address to look up
+ * @param create_as_needed whether a page table is allocated if it does not exist
+ * @param reload_cr3 (out) set to true if CR3 needs to be reloaded
+ * @return pointer to page table on success, NULL otherwise
+ */
 static pte_t *lookup_userspace_page_table(
         addr_space_t    *addr_space,
         const void      *addr,
@@ -572,12 +594,19 @@ static pte_t *lookup_userspace_page_table(
     /** ASSERTION: addr_space cannot be NULL for non-global mappings */
     assert(addr_space != NULL);
 
+    /** ASSERTION: addr is aligned on a page boundary */
+    assert( page_offset_of(addr) == 0 );
+
+    /** ASSERTION: addr is a userspace pointer */
+    assert( is_userspace_pointer(addr) );
+
     if(pgtable_format_pae) {
         page_directory = pae_lookup_page_directory(
-                addr_space,
-                addr,
-                create_as_needed,
-                reload_cr3);
+            addr_space,
+            addr,
+            create_as_needed,
+            reload_cr3
+        );
     }
     else {
         page_directory = nopae_lookup_page_directory(addr_space);
@@ -616,53 +645,6 @@ static pte_t *lookup_userspace_page_table(
     }
 
     return page_table;
-}
-
-/**
- * Lookup page table entry for specified userspace address and address space
- *
- * If the create_as_needed argument is true, new page tables are allocated as
- * needed, and NULL is only returned if allocation of new page tables fail.
- * If the create_as_needed argument is false, NULL is returned if there is
- * currently no page table entry for the specified address and address space.
- *
- * If a new page table is allocated (when create_as_needed is true), CR3 may
- * need to be reloaded. If it's the case, the boolean pointed to by reload_cr3
- * is set to true. Initially setting this boolean to false is the caller's
- * responsibility.
- *
- * reload_cr3 must not be NULL if create_as_needed is true but is ignored and
- * can be set to NULL if create_as_needed is false.
- *
- * @param addr_space address space in which the address is looked up.
- * @param addr userspace address to look up
- * @param create_as_needed whether a page table is allocated if it does not exist
- * @param reload_cr3 (out) set to true if CR3 needs to be reloaded
- * @return pointer to page table entry on success, NULL otherwise
- */
-static pte_t *lookup_userspace_page_table_entry(
-        addr_space_t    *addr_space,
-        const void      *addr,
-        bool             create_as_needed,
-        bool            *reload_cr3) {
-    
-    /** ASSERTION: addr is aligned on a page boundary */
-    assert( page_offset_of(addr) == 0 );
-
-    /** ASSERTION: addr is a userspace pointer */
-    assert( is_userspace_pointer(addr) );
-
-    pte_t *page_table = lookup_userspace_page_table(
-        addr_space,
-        addr,
-        create_as_needed,
-        reload_cr3);
-
-    if(page_table == NULL) {
-        return NULL;
-    }
-
-    return get_pte_with_offset(page_table, page_table_offset_of(addr));
 }
 
 /**
@@ -751,36 +733,48 @@ bool machine_map_userspace(
     assert( page_offset_of(addr) == 0 );
 
     addr_space_t *addr_space = &process->addr_space;
+    bool needs_invalidation = (get_cr3() == addr_space->cr3);
 
-    uint32_t cr3 = get_cr3();
-
-    bool needs_invalidation = (cr3 == addr_space->cr3);
+    int pte_index   = page_table_offset_of(addr);
 
     bool reload_cr3 = false;
+    pte_t *pte      = lookup_userspace_page_table(addr_space, addr, true, &reload_cr3);
+
+    if(pte == NULL) {
+        return false;
+    }
 
     for(size_t offset = 0; offset < size; offset += PAGE_SIZE) {
-        /* TODO We should be able to optimize by not looking up the page table
-         * for each entry. */
-        pte_t *pte = lookup_userspace_page_table_entry(
-            addr_space,
-            addr + offset,
-            true,
-            &reload_cr3
-        );
+        if(pte_index >= entries_per_page_table) {
+            pte = lookup_userspace_page_table(
+                addr_space,
+                addr + offset,
+                true,
+                &reload_cr3
+            );
 
-        if(pte == NULL) {
-            return false;
+            if(pte == NULL) {
+                return false;
+            }
+
+            pte_index = 0;
         }
 
-        set_pte(pte, paddr + offset, map_page_access_flags(prot) | X86_PTE_USER);
+        set_pte(
+            get_pte_with_offset(pte, pte_index),
+            paddr + offset,
+            map_page_access_flags(prot) | X86_PTE_USER
+        );
 
         if(needs_invalidation && !reload_cr3) {
             invlpg(addr + offset);
         }
+
+        ++pte_index;
     }
 
     if(needs_invalidation && reload_cr3) {
-        set_cr3(cr3);
+        set_cr3(get_cr3());
     }
 
     return true;
