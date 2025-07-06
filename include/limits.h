@@ -40,4 +40,6 @@
 
 #define PAGESIZE PAGE_SIZE
 
+#define PTHREAD_STACK_MIN 16384
+
 #endif

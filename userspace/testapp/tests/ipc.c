@@ -34,6 +34,7 @@
 #include <errno.h>
 #include <internals.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <pthread.h>
 #include <string.h>
 #include "../utils.h"
