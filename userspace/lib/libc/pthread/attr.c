@@ -31,6 +31,7 @@
 
 #include <jinue/jinue.h>
 #include <errno.h>
+#include <limits.h>
 #include <pthread.h>
 #include <stdint.h>
 #include <string.h>
@@ -118,7 +119,7 @@ int pthread_attr_setstack(pthread_attr_t *attr, void *stackaddr, size_t stacksiz
         return EINVAL;
     }
 
-    if((uintptr_t)stackaddr % JINUE_PAGE_SIZE != 0) {
+    if((uintptr_t)stackaddr % PAGE_SIZE != 0) {
         return EINVAL;
     }
 

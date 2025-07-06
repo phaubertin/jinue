@@ -30,6 +30,7 @@
  */
 
 #include <jinue/utils.h>
+#include <limits.h>
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdlib.h>

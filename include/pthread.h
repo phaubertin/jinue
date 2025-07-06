@@ -34,8 +34,6 @@
 
 #include <stddef.h>
 
-#define PTHREAD_STACK_MIN 16384
-
 typedef struct __pthread *pthread_t;
 
 typedef struct {

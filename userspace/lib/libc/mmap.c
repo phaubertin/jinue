@@ -33,6 +33,7 @@
 #include <sys/mman.h>
 #include <errno.h>
 #include <internals.h>
+#include <limits.h>
 #include "mmap.h"
 #include "physmem.h"
 
@@ -87,10 +88,10 @@ void *__mmap_perrno(
         return MAP_FAILED;
     }
 
-    size_t aligned_length = (len + JINUE_PAGE_SIZE - 1) & ~(JINUE_PAGE_SIZE - 1);
+    size_t aligned_length = (len + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
 
     if(flags & MAP_FIXED) {
-        if(addr == NULL || ((uintptr_t)addr & (JINUE_PAGE_SIZE - 1)) != 0) {
+        if(addr == NULL || ((uintptr_t)addr & (PAGE_SIZE - 1)) != 0) {
             *perrno = EINVAL;
             return MAP_FAILED;
         }
@@ -109,7 +110,7 @@ void *__mmap_perrno(
         return MAP_FAILED;
     }
 
-    if(off < 0 || (off & (JINUE_PAGE_SIZE - 1)) != 0) {
+    if(off < 0 || (off & (PAGE_SIZE - 1)) != 0) {
         *perrno = EINVAL;
         return MAP_FAILED;
     }

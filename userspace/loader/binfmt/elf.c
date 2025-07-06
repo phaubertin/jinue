@@ -35,6 +35,7 @@
 #include <sys/elf.h>
 #include <sys/mman.h>
 #include <errno.h>
+#include <limits.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -232,9 +233,9 @@ static int load_segments(elf_info_t *elf_info, const file_t *exec_file) {
             continue;
         }
 
-        const uintptr_t diff    = phdr->p_vaddr % JINUE_PAGE_SIZE;
+        const uintptr_t diff    = phdr->p_vaddr % PAGE_SIZE;
         const char *vaddr       = (char *)phdr->p_vaddr - diff;
-        const size_t memsize    = (phdr->p_memsz + diff + JINUE_PAGE_SIZE - 1) & ~JINUE_PAGE_MASK;
+        const size_t memsize    = (phdr->p_memsz + diff + PAGE_SIZE - 1) & ~JINUE_PAGE_MASK;
 
         bool is_writable        = !!(phdr->p_flags & PF_W);
         bool needs_padding      = (phdr->p_filesz != phdr->p_memsz);
@@ -455,7 +456,7 @@ static void initialize_stack(
     auxvp[2].a_un.a_val = (uint32_t)elf_info->at_phnum;
 
     auxvp[3].a_type     = JINUE_AT_PAGESZ;
-    auxvp[3].a_un.a_val = JINUE_PAGE_SIZE;
+    auxvp[3].a_un.a_val = PAGE_SIZE;
 
     auxvp[4].a_type     = JINUE_AT_ENTRY;
     auxvp[4].a_un.a_val = (uint32_t)elf_info->entry;

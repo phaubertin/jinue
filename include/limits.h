@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Philippe Aubertin.
+ * Copyright (C) 2022-2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -32,6 +32,14 @@
 #ifndef _JINUE_LIBC_LIMITS_H
 #define _JINUE_LIBC_LIMITS_H
 
+#include <jinue/shared/asm/machine.h>
+
 #define INT_MAX 2147483647
+
+#define PAGE_SIZE JINUE_PAGE_SIZE
+
+#define PAGESIZE PAGE_SIZE
+
+#define PTHREAD_STACK_MIN 16384
 
 #endif

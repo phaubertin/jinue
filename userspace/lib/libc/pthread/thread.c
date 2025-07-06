@@ -32,6 +32,7 @@
 #include <jinue/jinue.h>
 #include <sys/mman.h>
 #include <internals.h>
+#include <limits.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include "../descriptors.h"
@@ -109,7 +110,7 @@ static int setup_stack(pthread_t thread, const pthread_attr_t *attr, int *perrno
         return 0;
     }
 
-    size_t stacksize    = (attr->stacksize + JINUE_PAGE_SIZE - 1) & ~JINUE_PAGE_MASK;
+    size_t stacksize    = (attr->stacksize + PAGE_SIZE - 1) & ~JINUE_PAGE_MASK;
     void *stackaddr     = allocate_stack(stacksize, perrno);
 
     if(stackaddr == NULL) {
