@@ -131,14 +131,14 @@ static void initialize_boot_mapping_at_16mb(
 }
 
 /**
- * Initialize boot-time page table for mapping at KLIMIT
+ * Initialize boot-time page table for mapping at JINUE_KLIMIT
  *
- * @param page_table_klimit page table for mapping at KLIMIT
+ * @param page_table_klimit page table for mapping at JINUE_KLIMIT
  *
  * */
 static void initialize_boot_mapping_at_klimit(
         pte_t               *page_table_klimit,
-        const bootinfo_t   *bootinfo) {
+        const bootinfo_t    *bootinfo) {
 
     uint32_t size_at_16mb = (uint32_t)bootinfo->page_table_1mb - MEMORY_ADDR_1MB;
     uint32_t num_entries_at_16mb = size_at_16mb / PAGE_SIZE;
@@ -154,7 +154,7 @@ static void initialize_boot_mapping_at_klimit(
             image_pages);
 
     /* map kernel data segment */
-    size_t offset = ((uintptr_t)bootinfo->data_start - KLIMIT) / PAGE_SIZE;
+    size_t offset = ((uintptr_t)bootinfo->data_start - JINUE_KLIMIT) / PAGE_SIZE;
 
     initialize_page_table_linear(
             pae_get_pte_with_offset(page_table_klimit, offset),
@@ -198,10 +198,10 @@ static void initialize_boot_low_page_directory(
 }
 
 /**
- * Initialize boot-time page directory for mapping at KLIMIT
+ * Initialize boot-time page directory for mapping at JINUE_KLIMIT
  *
- * @param page_directory_klimit page directory for mapping at KLIMIT
- * @param page_table_klimit page table for mapping at KLIMIT
+ * @param page_directory_klimit page directory for mapping at JINUE_KLIMIT
+ * @param page_table_klimit page table for mapping at JINUE_KLIMIT
  *
  * */
 static void initialize_boot_page_directory_klimit(
@@ -211,7 +211,7 @@ static void initialize_boot_page_directory_klimit(
     pae_set_pte(
             pae_get_pte_with_offset(
                     page_directory_klimit,
-                    pae_page_directory_offset_of((addr_t)KLIMIT)),
+                    pae_page_directory_offset_of((addr_t)JINUE_KLIMIT)),
             (uintptr_t)page_table_klimit,
             X86_PTE_READ_WRITE | X86_PTE_PRESENT);
 }
@@ -221,7 +221,7 @@ static void initialize_boot_page_directory_klimit(
  *
  * @param pdpt Page Directory Pointer Table (PDPT)
  * @param low_page_directory first page directory
- * @param page_directory_klimit page directory for mapping at KLIMIT
+ * @param page_directory_klimit page directory for mapping at JINUE_KLIMIT
  *
  * */
 static void initialize_boot_pdpt(
@@ -235,7 +235,7 @@ static void initialize_boot_pdpt(
             X86_PTE_PRESENT);
 
     pae_set_pte(
-            &pdpt->pd[pdpt_offset_of((addr_t)KLIMIT)],
+            &pdpt->pd[pdpt_offset_of((addr_t)JINUE_KLIMIT)],
             (uintptr_t)page_directory_klimit,
             X86_PTE_PRESENT);
 }
@@ -249,7 +249,7 @@ static void initialize_boot_pdpt(
  * 1) First two megabytes of memory are identity mapped.
  * 2) Some megabytes of memory at 0x1000000 (16M) are also identity mapped.
  * 3) The kernel image and following stack, heap and other initial allocations
- *    are mapped at KLIMIT.
+ *    are mapped at JINUE_KLIMIT.
  *
  * See doc/layout.md for detail on mappings.
  *
@@ -268,7 +268,7 @@ static void initialize_boot_pdpt(
  * */
 static pdpt_t *initialize_boot_page_tables(
         boot_alloc_t        *boot_alloc,
-        const bootinfo_t   *bootinfo) {
+        const bootinfo_t    *bootinfo) {
 
     /* First mapping */
     pte_t *page_table_1mb = boot_page_alloc(boot_alloc);
@@ -342,7 +342,7 @@ void pae_create_initial_addr_space(
     /* Allocate initial PDPT. PDPT must be 32-byte aligned. */
     initial_pdpt = boot_heap_alloc(boot_alloc, pdpt_t, 32);
 
-    int offset = pdpt_offset_of((void *)KLIMIT);
+    int offset = pdpt_offset_of((void *)JINUE_KLIMIT);
     initialize_page_table_linear(
             &initial_pdpt->pd[offset],
             (uintptr_t)page_directories,
@@ -363,7 +363,7 @@ bool pae_create_addr_space(addr_space_t *addr_space, pte_t *first_page_directory
 
     clear_pdpt(pdpt);
 
-    unsigned int klimit_offset = pdpt_offset_of((void *)KLIMIT);
+    unsigned int klimit_offset = pdpt_offset_of((void *)JINUE_KLIMIT);
 
     pae_set_pte(
             &pdpt->pd[klimit_offset],
@@ -389,7 +389,7 @@ bool pae_create_addr_space(addr_space_t *addr_space, pte_t *first_page_directory
 void pae_destroy_addr_space(addr_space_t *addr_space) {
     pdpt_t *pdpt = addr_space->top_level.pdpt;
 
-    for(unsigned int idx = 0; idx < pdpt_offset_of((void *)KLIMIT); ++idx) {
+    for(unsigned int idx = 0; idx < pdpt_offset_of((void *)JINUE_KLIMIT); ++idx) {
         pte_t *pdpte = &pdpt->pd[idx];
 
         if(pte_is_present(pdpte)) {
@@ -399,25 +399,26 @@ void pae_destroy_addr_space(addr_space_t *addr_space) {
         }
     }
 
-    /* Depending on the value of KLIMIT, there are two possible cases with
-     * regards to the first kernel page directory, i.e. the first page directory
-     * that links kernel page tables:
+    /* Depending on the value of JINUE_KLIMIT, there are two possible cases
+     * with regards to the first kernel page directory, i.e. the first page
+     * directory that links kernel page tables:
      *
      * 1. That page directory links *only* kernel page tables, i.e. the page
-     *    directory entry for address KLIMIT is the first entry of that page
-     *    directory. In this case, this page directory is shared by all address
-     *    spaces and we must do nothing here. We must not free the kernel page
-     *    tables it links to nor the page directory itself.
+     *    directory entry for address JINUE_KLIMIT is the first entry of that
+     *    page directory. In this case, this page directory is shared by all
+     *    address spaces and we must do nothing here. We must not free the
+     *    kernel page tables it links to nor the page directory itself.
      *
      * 2. That page directory is split between userspace and the kernel. It
-     *    starts with userspace entries, followed by kernel entries, because the
-     *    entry for address KLIMIT is at some non-zero offset within this page
-     *    directory. In this case, we must free the userspace page tables, but
-     *    not the kernel page tables, and then free the page directory. */
-    unsigned int klimit_offset = pae_page_directory_offset_of((void *)KLIMIT);
+     *    starts with userspace entries, followed by kernel entries, because
+     *    the entry for address JINUE_KLIMIT is at some non-zero offset
+     *    within this page directory. In this case, we must free the
+     *    userspace page tables, but not the kernel page tables, and then free
+     *    the page directory. */
+    unsigned int klimit_offset = pae_page_directory_offset_of((void *)JINUE_KLIMIT);
 
     if(klimit_offset > 0) {
-        pte_t *pdpte = &pdpt->pd[pdpt_offset_of((void *)KLIMIT)];
+        pte_t *pdpte = &pdpt->pd[pdpt_offset_of((void *)JINUE_KLIMIT)];
 
         assert(pte_is_present(pdpte));
 

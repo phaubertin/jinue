@@ -81,7 +81,7 @@ void boot_alloc_reinit_at_16mb(boot_alloc_t *boot_alloc) {
  *
  * Once the address space has been switched, memory starting at physical address
  * 0x1000000 (i.e. 16MB) is no longer identity mapped at virtual address
- * 0x1000000 but is instead only mapped at KLIMIT.
+ * 0x1000000 but is instead only mapped starting at KERNEL_BASE.
  *
  * After this function is called, the boot page allocator continues allocating
  * sequentially from the same physical address somewhere after 0x1000000 but
@@ -92,7 +92,7 @@ void boot_alloc_reinit_at_16mb(boot_alloc_t *boot_alloc) {
  * */
 void boot_alloc_reinit_at_klimit(boot_alloc_t *boot_alloc) {
     boot_alloc->current_page        = (void *)PHYS_TO_VIRT_AT_16MB(boot_alloc->current_page);
-    boot_alloc->page_limit          = (char *)KLIMIT + BOOT_SIZE_AT_16MB;
+    boot_alloc->page_limit          = (char *)KERNEL_BASE + BOOT_SIZE_AT_16MB;
 }
 
 /**

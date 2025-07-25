@@ -239,7 +239,7 @@ void memory_initialize_array(
  *
  * Must only be used for memory owned by the kernel, not for userspace-owned
  * memory. Every page frame owned by the kernel is mapped at exactly one
- * address in the kernel's address space (i.e. somewhere above KLIMIT).
+ * address in the kernel's address space (i.e. somewhere above JINUE_KLIMIT).
  *
  * */
 void *memory_lookup_page(uint64_t paddr) {

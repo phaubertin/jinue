@@ -47,7 +47,7 @@
 /** bit mask for offset in a page */
 #define PAGE_MASK   JINUE_PAGE_MASK
 
-/** start of kernel in virtual memory */
-#define KLIMIT      JINUE_KLIMIT
+/** start of kernel image in virtual memory */
+#define KERNEL_BASE JINUE_KLIMIT
 
 #endif

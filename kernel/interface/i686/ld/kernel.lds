@@ -36,7 +36,7 @@ OUTPUT_ARCH("i386")
 ENTRY(_start)
 
 SECTIONS {
-    . = KLIMIT + BOOT_SETUP32_SIZE + SIZEOF_HEADERS;
+    . = KERNEL_BASE + BOOT_SETUP32_SIZE + SIZEOF_HEADERS;
     .text : {
         *(.text)
         *(.text.*)

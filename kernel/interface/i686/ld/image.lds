@@ -69,8 +69,8 @@ SECTIONS {
     }
     
     /* Everything below this point is loaded consecutively starting at 0x100000
-     * (BOOT_SETUP32_ADDR) and runs at the same address plus KLIMIT, with some
-     * exceptions for the 32-bit setup code - see below.
+     * (BOOT_SETUP32_ADDR) and runs at the same address plus KERNEL_BASE, with
+     * some exceptions for the 32-bit setup code - see below.
      *
      * The section that follows is the 32-bit setup code. Its load address (LMA)
      * has to be explicitly set here to ADDR(setup16) + SIZEOF(setup16) to
@@ -87,15 +87,15 @@ SECTIONS {
      * 32-bit boot protocol is used.
      *
      * This setup code does mainly three things. First, it maps the kernel image
-     * at KLIMIT and enables paging. This means the whole 32-bit kernel runs
-     * above KLIMIT, except for the early parts of this setup code needed to set
-     * up the mapping. Second, it copies the BIOS memory map and kernel command
-     * line for later use by the kernel. Finally, it gathers information about
-     * the location in memory of various parts of the kernel and creates a
-     * structure with this information for the kernel.
+     * at KERNEL_BASE and enables paging. This means the whole 32-bit kernel
+     * runs above JINUE_KLIMIT, except for the early parts of this setup code
+     * needed to set up the mapping. Second, it copies the BIOS memory map and
+     * kernel command line for later use by the kernel. Finally, it gathers
+     * information about the location in memory of various parts of the kernel
+     * and creates a structure with this information for the kernel.
      *
      * Load address of this section:    0x100000 (BOOT_SETUP32_ADDR)
-     * Run address:                     KLIMIT
+     * Run address:                     KERNEL_BASE
      * Needed symbols:                  kernel_start
      *                                  kernel_size
      *                                  loader_start

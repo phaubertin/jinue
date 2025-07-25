@@ -142,13 +142,13 @@ also identity mapped. Early in the initialization process, the kernel move its
 own image there. This region is mapped read/write.
 3. The kernel image as well as some of the initial memory allocations, up to but
 excluding the initial page tables, are mapped at address 0xc000000 (3GB,
-aka. [KLIMIT](../include/kernel/infrastructure/i686/asm/shared.h)). This is the
-address where the kernel expects to be loaded and ran. This is a linear mapping
-with one exception: the kernel's data segment is a copy of the content in the ELF
-binary, with appropriate zero-padding for uninitialized data (i.e. the .bss section)
-and the copy is mapped read/write at the address where the kernel expects to find
-it. The rest of the kernel image is mapped read only and the rest of the region
-(initial allocations) is read/write.
+aka. [JINUE_KLIMIT](../include/kernel/infrastructure/i686/asm/shared.h)). This
+is the address where the kernel expects to be loaded and ran. This is a linear
+mapping with one exception: the kernel's data segment is a copy of the content
+in the ELF binary, with appropriate zero-padding for uninitialized data (i.e.
+the .bss section) and the copy is mapped read/write at the address where the
+kernel expects to find it. The rest of the kernel image is mapped read only and
+the rest of the region (initial allocations) is read/write.
 
 ```
         +=======================================+ 0x100000000 (4GB)
@@ -161,7 +161,7 @@ it. The rest of the kernel image is mapped read only and the rest of the region
     (3) |                                       |
         |   kernel image + initial allocations  |
  +------|                                       |
- |      +=======================================+ 0xc0000000 (KLIMIT)
+ |      +=======================================+ 0xc0000000 (JINUE_KLIMIT)
  |      |                                       |
  |      |                                       |
  |      |               unmapped                |
@@ -191,9 +191,9 @@ One of the first things the kernel does during initialization is to move its
 own image to address 0x1000000 (16MB). More specifically, it copies the image
 and all initial allocations up to but excluding the initial page tables from
 their original location starting at address 0x100000 (1MB) to address 0x1000000
-(16MB) and then modifies the virtual memory mapping at KLIMIT to map the copy.
-This is done in order to free up memory under address 0x1000000 (16MB), i.e. the
-ISA DMA limit.
+(16MB) and then modifies the virtual memory mapping at JINUE_KLIMIT to map the
+copy. This is done in order to free up memory under address 0x1000000 (16MB),
+i.e. the ISA DMA limit.
 
 ```
         +=======================================+ 0x100000000 (4GB)
@@ -206,7 +206,7 @@ ISA DMA limit.
         |                                       |
  +------|   kernel image + initial allocations  |
  |      |                                       |
- |      +=======================================+ 0xc0000000 (KLIMIT)
+ |      +=======================================+ 0xc0000000 (JINUE_KLIMIT)
  |      |                                       |
  |      |                                       |
  |      |               unmapped                |
@@ -288,9 +288,9 @@ address 0x1000000 (16MB).
 
 As part of it initialization, the kernel allocates further memory for its own
 use and eventually creates the initial process address space. In this
-address space, all the virtual memory under KLIMIT belongs to user space. For
-this reason, the kernel also remaps video memory in its own region so it can
-continue to use it for logging.
+address space, all the virtual memory under JINUE_KLIMIT belongs to user space.
+For this reason, the kernel also remaps video memory in its own region so it
+can continue to use it for logging.
 
 Once kernel initialization completes and the kernel passes control to the user
 space loader, the memory layout looks like this:
@@ -302,8 +302,8 @@ space loader, the memory layout looks like this:
   |                                       |                              |
   |  Available for mapping page frames    |                              |
   |      given back by user space         |                              |
-  +=======================================+ KLIMIT + BOOT_SIZE_AT_16MB   |
-  |                                       |                              |
+  +=======================================+ JINUE_KLIMIT                 |
+  |                                       |   + BOOT_SIZE_AT_16MB        |
   | Available for runtime page allocation |                              | kernel
   |                                       |                              |
   +---------------------------------------+                              |
@@ -313,8 +313,8 @@ space loader, the memory layout looks like this:
   |                                       |                              |
   |   kernel image + initial allocations  |                              |                ^
   |                                       |                              |                |  
-  +=======================================+ KLIMIT (0xc0000000 = 3GB)   -+-       address |
-  | (Program arguments, environment, etc.)|                              |      increases |
+  +=======================================+ JINUE_KLIMIT                -+-       address |
+  | (Program arguments, environment, etc.)| (0xc0000000 = 3GB)           |      increases |
   |      User space loader stack          |                              |                |
   +---------------------------------------+                              |                |
   |                                       |                              |
