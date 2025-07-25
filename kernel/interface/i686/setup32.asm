@@ -96,13 +96,12 @@
 ;  3) The part of the second megabyte of physical memory (start address 0x100000)
 ;     that contain the kernel image as well as the following initial allocations
 ;     up to but *excluding* the initial page tables and page directory is mapped
-;     at KLIMIT (0xc0000000). This is where the kernel is intended to be loaded
-;     and ran. This is a linear mapping with one exception: the kernel's data
-;     segment is a copy of the content in the ELF binary, with appropriate
-;     zero-padding for uninitialized data (.bss section) and the copy is mapped
-;     read/write at the address where the kernel expects to find it. The rest of
-;     the kernel image is mapped read only and the rest of the region is
-;     read/write.
+;     at KERNEL_BASE. This is where the kernel is intended to be loaded and ran.
+;     This is a linear mapping with one exception: the kernel's data segment is
+;     a copy of the content in the ELF binary, with appropriate zero-padding for
+;     uninitialized data (.bss section) and the copy is mapped read/write at the
+;     address where the kernel expects to find it. The rest of the kernel image
+; is mapped read only and the rest of the region is read/write.
 ;
 ;       +=======================================+ 0x100000000 (4GB)
 ;       |                                       |
@@ -124,8 +123,8 @@
 ;   |   |             kernel code               |                       |   |
 ;   |   |     this setup code + text segment    | --------------------------+
 ;   v   |             (read only)               |                       |   |
-;  ===  +=======================================+ 0xc0000000 (KLIMIT)   |   |
-;       |                                       |                       |   |
+;  ===  +=======================================+ 0xc0000000            |   |
+;       |                                       | (JINUE_KLIMIT)        |   |
 ;       .                                       .                       |   |
 ;       .               unmapped                .                       |   |
 ;       .                                       .                       |   |
@@ -148,7 +147,7 @@
 ;   |   |                                       |                       |   |
 ;   |   |^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^|                       |   |
 ;   |   |           initial allocations         | <---------------------+   |
-;   |   +---------------------------------------+ bootinfo.image_top       |
+;   |   +---------------------------------------+ bootinfo.image_top        |
 ;   |   |             kernel image              |                           |
 ;   |   |             (read only)               | <-------------------------+
 ;       +---------------------------------------+ 0x100000 (1MB)
@@ -573,7 +572,7 @@ prepare_data_segment:
     ;     located, as well as VGA text video memory.
     ;   - BOOT_PTES_AT_16MB / NOPAE_PAGE_TABLE_PTES for mapping at 0x1000000
     ;     (i.e. at 16MB) where the kernel image will be moved by the kernel.
-    ;   - One for kernel image mapping at KLIMIT
+    ;   - One for kernel image mapping at JINUE_KLIMIT
     ;
     ; Arguments:
     ;       edi address where tables are allocated
@@ -595,7 +594,7 @@ allocate_page_tables:
     mov dword [ebp + BOOTINFO_PAGE_TABLE_16MB], edi
     add edi, PAGE_SIZE * BOOT_PTES_AT_16MB / NOPAE_PAGE_TABLE_PTES
 
-    ; One page table for mapping at KLIMIT
+    ; One page table for mapping at JINUE_KLIMIT
     mov dword [ebp + BOOTINFO_PAGE_TABLE_KLIMIT], edi
     add edi, PAGE_SIZE
 
@@ -772,9 +771,9 @@ map_kernel:
     ;       eax, ebx, ecx, edi are caller saved
     ; -------------------------------------------------------------------------
 initialize_page_tables:
-    ; ----------------------------------------------
+    ; ----------------------------------------------------
     ; First page table: first 4 MB of memory (1:1)
-    ; ----------------------------------------------
+    ; ----------------------------------------------------
 
     ; Map first 1MB read/write. This includes video memory.
     mov eax, X86_PTE_READ_WRITE                     ; start address is 0
@@ -789,9 +788,9 @@ initialize_page_tables:
     mov ecx, 512
     call clear_ptes
 
-    ; ----------------------------------------------
+    ; ----------------------------------------------------
     ; Next few page tables: memory at 16MB (1:1)
-    ; ----------------------------------------------
+    ; ----------------------------------------------------
 
     ; Initialize pages table to map BOOT_SIZE_AT_16MB starting at 0x1000000 (16M)
     ;
@@ -801,9 +800,9 @@ initialize_page_tables:
     mov ecx, BOOT_PTES_AT_16MB          ; number of page table entries
     call map_linear
 
-    ; ----------------------------------------------
-    ; Last page table: kernel image mapped at KLIMIT
-    ; ----------------------------------------------
+    ; ----------------------------------------------------
+    ; Last page table: kernel image mapped at JINUE_KLIMIT
+    ; ----------------------------------------------------
 
     ; map kernel image and read/write memory that follows (1MB)
     call map_kernel
@@ -844,7 +843,7 @@ initialize_page_directory:
     mov edi, dword [ebp + BOOTINFO_PAGE_DIRECTORY]
     mov eax, dword [ebp + BOOTINFO_PAGE_TABLE_KLIMIT]
     or eax, X86_PTE_READ_WRITE | X86_PTE_PRESENT
-    mov dword [edi + 4 * (KLIMIT >> 22)], eax
+    mov dword [edi + 4 * (JINUE_KLIMIT >> 22)], eax
 
     ret
 

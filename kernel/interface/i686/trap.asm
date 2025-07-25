@@ -115,7 +115,7 @@ interrupt_entry:
     
     ; Check to see if we were in the kernel before the interrupt by looking at
     ; the return address
-    cmp dword [esp+52], KLIMIT
+    cmp dword [esp+52], JINUE_KLIMIT
     jb .skip_fp
     
     ; set frame pointer

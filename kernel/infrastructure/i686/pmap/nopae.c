@@ -58,9 +58,9 @@ void nopae_create_addr_space(addr_space_t *addr_space, pte_t *page_directory) {
 void nopae_destroy_addr_space(addr_space_t *addr_space) {
     destroy_page_directory(
             addr_space->top_level.pd,
-            /* Free page tables for addresses 0..KLIMIT, be careful not to free
-             * the kernel page tables starting at KLIMIT. */
-            nopae_page_directory_offset_of((addr_t)KLIMIT));
+            /* Free page tables for addresses 0..JINUE_KLIMIT, be careful not
+             * to free the kernel page tables starting at JINUE_KLIMIT. */
+            nopae_page_directory_offset_of((addr_t)JINUE_KLIMIT));
 }
 
 /**

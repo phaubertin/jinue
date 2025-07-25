@@ -330,7 +330,7 @@ void pmap_write_protect_kernel_image(const bootinfo_t *bootinfo) {
 static void initialize_initial_page_tables(
         pte_t               *page_tables,
         Elf32_Ehdr          *ehdr,
-        const bootinfo_t   *bootinfo) {
+        const bootinfo_t    *bootinfo) {
 
     size_t image_size  = (char *)bootinfo->image_top - (char *)bootinfo->image_start;
     size_t image_pages = image_size / PAGE_SIZE;
@@ -358,16 +358,16 @@ static void initialize_initial_page_tables(
 
     uintptr_t code_vaddr    = ALIGN_START((uintptr_t)phdr->p_vaddr, PAGE_SIZE);
     size_t code_size        = phdr->p_memsz + OFFSET_OF_PTR(phdr->p_vaddr, PAGE_SIZE);
-    size_t code_offset      = (code_vaddr - KLIMIT) / PAGE_SIZE;
+    size_t code_offset      = (code_vaddr - JINUE_KLIMIT) / PAGE_SIZE;
 
     initialize_page_table_linear(
             get_pte_with_offset(page_tables, code_offset),
-            code_vaddr + MEMORY_ADDR_16MB - KLIMIT,
+            VIRT_TO_PHYS_AT_16MB(code_vaddr),
             X86_PTE_GLOBAL,
             code_size / PAGE_SIZE);
 
     /* map kernel data segment */
-    size_t data_offset = ((uintptr_t)bootinfo->data_start - KLIMIT) / PAGE_SIZE;
+    size_t data_offset = ((uintptr_t)bootinfo->data_start - JINUE_KLIMIT) / PAGE_SIZE;
 
     initialize_page_table_linear(
             get_pte_with_offset(page_tables, data_offset),
@@ -381,7 +381,7 @@ static void initialize_initial_page_directories(
         pte_t   *page_tables,
         int      num_page_tables) {
 
-    int offset = page_directory_offset_of((void *)KLIMIT);
+    int offset = page_directory_offset_of((void *)JINUE_KLIMIT);
 
     initialize_page_table_linear(
             get_pte_with_offset(page_directories, offset),
@@ -398,7 +398,7 @@ addr_space_t *pmap_create_initial_addr_space(
     Elf32_Ehdr *ehdr = kernel->start;
 
     /* Pre-allocate all the kernel page tables. */
-    int num_pages           = (ADDR_4GB - KLIMIT) / PAGE_SIZE;
+    int num_pages           = (ADDR_4GB - JINUE_KLIMIT) / PAGE_SIZE;
     int num_page_tables     = num_pages / entries_per_page_table;
 
     /* The number of entries in a pages table (page_table_entries) is also the
@@ -433,7 +433,7 @@ static pte_t *clone_first_kernel_page_directory(void) {
     if(pgtable_format_pae) {
         pd_template = pae_lookup_page_directory(
                 &initial_addr_space,
-                (void *)KLIMIT,
+                (void *)JINUE_KLIMIT,
                 false,
                 NULL);
     }
@@ -443,7 +443,7 @@ static pte_t *clone_first_kernel_page_directory(void) {
 
     assert(pd_template != NULL);
 
-    unsigned int klimit_offset = page_directory_offset_of((void *)KLIMIT);
+    unsigned int klimit_offset = page_directory_offset_of((void *)JINUE_KLIMIT);
 
     if(klimit_offset == 0) {
         /* If the first kernel page directory is completely used by the kernel,
@@ -466,7 +466,7 @@ static pte_t *clone_first_kernel_page_directory(void) {
 }
 
 static void free_first_kernel_page_directory(pte_t *page_directory) {
-    unsigned int klimit_offset = page_directory_offset_of((void *)KLIMIT);
+    unsigned int klimit_offset = page_directory_offset_of((void *)JINUE_KLIMIT);
 
     /* If the first kernel page directory is completely used by the kernel,
      * it is shared between address spaces instead of being cloned. */
@@ -549,16 +549,16 @@ static pte_t *lookup_kernel_page_table_entry(const void *addr) {
     assert( is_kernel_pointer(addr) );
 
     /* Fast path for global allocations by the kernel:
-     *  - The page tables for the region just above KLIMIT are pre-allocated
-     *    during the creation of the address space, so there is no need to
-     *    check if they are allocated or to allocate them;
+     *  - The page tables for the region just above JINUE_KLIMIT are pre-
+     *    allocated during the creation of the address space, so there is no
+     *    need to check if they are allocated or to allocate them;
      *  - The page tables are mapped contiguously at a known location
      *    during initialization, so no need for a table walk to find them;
      *  - The mappings for this region are global, so we don't need to
      *    specify an address space. */
     return get_pte_with_offset(
         kernel_page_tables,
-        page_number_of((uintptr_t)addr - KLIMIT));
+        page_number_of((uintptr_t)addr - JINUE_KLIMIT));
 }
 
 /**

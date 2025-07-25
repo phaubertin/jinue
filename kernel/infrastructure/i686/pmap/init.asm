@@ -42,49 +42,49 @@
 ;           uint32_t cr3_value)
 ; DESCRIPTION:
 ;   Copy the kernel image and boot stack/heap from its original location at
-;   0x100000 (1MB) to 0x1000000 (16MB), then map the copy at KLIMIT where the
-;   original is intially mapped. In more detail:
+;   0x100000 (1MB) to 0x1000000 (16MB), then map the copy at KERNEL_BASE where
+;   the original is intially mapped. In more detail:
 ;
 ;       1. Copy the kernel image and a few allocated pages that immediately
 ;          follow the kernel image and contain the boot stack and heap from
 ;          0x100000 (1MB) to 0x1000000 (16MB). (The initial page tables, which
 ;          are also allocated following the kernel image, are *excluded* from
 ;          the contiguous range that is copied.
-;       2. Modify the initial page tables so the virtual memory range at KLIMIT
-;          points to the copy, not the original.
+;       2. Modify the initial page tables so the virtual memory range at
+;          KERNEL_BASE points to the copy, not the original.
 ;       3. Reload CR3 to flush the TLB.
 ;
-;   +=======================================+
-;   |        initial page directory         |
-;   +---------------------------------------+
-;   |         initial page tables           |
-;   |           (PAE disabled)              |             This range is copied.
-;   +---------------------------------------+                             <--+-
-;   |         kernel command line           |                                |
-;   +---------------------------------------+                                |
-;   |       BIOS physical memory map        |                                |
-;   +---------------------------------------+                                |
-;   |         kernel data segment           |                                |
-;   |       (copied from ELF binary)        |                                |
-;   +---------------------------------------+                                |
-;   |          kernel stack (boot)          |                                |
-;   +-----v---------------------------v-----+ <<< Stack pointer              |
-;   |                                       |                                |
-;   |                . . .                  |                                |
-;   |                                       |                                |
-;   +-----^---------------------------^-----+                                |
-;   |     kernel heap allocations (boot)    | Start of page allocations      |
-;   +=======================================+ End of kernel image            |
-;   |                                       |                                |
-;   |        user space loader (ELF)        |                                |
-;   |                                       |                                |
-;   +---------------------------------------+                                |
-;   |                                       |                                |
-;   |           microkernel (ELF)           |                                |
-;   |                                       |                                |
-;   +---------------------------------------+                                |
-;   |           32-bit setup code           |                                |
-;   +---------------------------------------+ 0x100000 mapped at KLIMIT   <--+-
+;   +====================================+
+;   |      initial page directory        |
+;   +------------------------------------+
+;   |       initial page tables          |
+;   |         (PAE disabled)             |               This range is copied.
+;   +------------------------------------+                                <-+-
+;   |       kernel command line          |                                  |
+;   +------------------------------------+                                  |
+;   |     BIOS physical memory map       |                                  |
+;   +------------------------------------+                                  |
+;   |       kernel data segment          |                                  |
+;   |     (copied from ELF binary)       |                                  |
+;   +------------------------------------+                                  |
+;   |        kernel stack (boot)         |                                  |
+;   +----v--------------------------v----+ <<< Stack pointer                |
+;   |                                    |                                  |
+;   |              . . .                 |                                  |
+;   |                                    |                                  |
+;   +----^--------------------------^----+                                  |
+;   |   kernel heap allocations (boot)   | Start of page allocations        |
+;   +====================================+ End of kernel image              |
+;   |                                    |                                  |
+;   |      user space loader (ELF)       |                                  |
+;   |                                    |                                  |
+;   +------------------------------------+                                  |
+;   |                                    |                                  |
+;   |         microkernel (ELF)          |                                  |
+;   |                                    |                                  |
+;   +------------------------------------+                                  |
+;   |         32-bit setup code          |                                  |
+;   +------------------------------------+ 0x100000 mapped at KERNEL_BASE <-+-
 ;
 ;   We have to be careful while doing this because it has the side effect of
 ;   snapshotting the stack and then using the snapshot as the current stack. We
