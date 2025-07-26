@@ -34,8 +34,10 @@
 
 #include <kernel/machine/asm/machine.h>
 
+/** page number for a given byte offset */
 #define PAGE_NUMBER(x)  ((x) / PAGE_SIZE)
 
+/** number of pages, or page table entries, for a given size in bytes */
 #define NUM_PAGES(x)    (((x) + PAGE_SIZE - 1) / PAGE_SIZE)
 
 #endif
