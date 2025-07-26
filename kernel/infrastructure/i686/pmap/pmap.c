@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2019-2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -316,7 +316,7 @@ pte_t *initialize_page_table_linear(
  */
 void pmap_write_protect_kernel_image(const bootinfo_t *bootinfo) {
     size_t image_size = (char *)bootinfo->image_top - (char *)bootinfo->image_start;
-    size_t image_pages = image_size / PAGE_SIZE;
+    size_t image_pages = NUM_PAGES(image_size);
 
     for(int idx = 0; idx < image_pages; ++idx) {
         set_pte_flags(
@@ -333,7 +333,7 @@ static void initialize_initial_page_tables(
         const bootinfo_t    *bootinfo) {
 
     size_t image_size  = (char *)bootinfo->image_top - (char *)bootinfo->image_start;
-    size_t image_pages = image_size / PAGE_SIZE;
+    size_t image_pages = NUM_PAGES(image_size);
 
     /* map kernel image read only, not executable */
     pte_t *next_pte_after_image = initialize_page_table_linear(
@@ -347,7 +347,7 @@ static void initialize_initial_page_tables(
             next_pte_after_image,
             MEMORY_ADDR_16MB + image_size,
             X86_PTE_GLOBAL | X86_PTE_READ_WRITE | X86_PTE_NX,
-            BOOT_SIZE_AT_16MB / PAGE_SIZE - image_pages);
+            NUM_PAGES(BOOT_SIZE_AT_16MB) - image_pages);
 
     /* make kernel code segment executable */
     const Elf32_Phdr *phdr = elf_executable_program_header(ehdr);
@@ -358,22 +358,22 @@ static void initialize_initial_page_tables(
 
     uintptr_t code_vaddr    = ALIGN_START((uintptr_t)phdr->p_vaddr, PAGE_SIZE);
     size_t code_size        = phdr->p_memsz + OFFSET_OF_PTR(phdr->p_vaddr, PAGE_SIZE);
-    size_t code_offset      = (code_vaddr - JINUE_KLIMIT) / PAGE_SIZE;
+    size_t code_offset      = page_number_of(code_vaddr - JINUE_KLIMIT);
 
     initialize_page_table_linear(
             get_pte_with_offset(page_tables, code_offset),
             VIRT_TO_PHYS_AT_16MB(code_vaddr),
             X86_PTE_GLOBAL,
-            code_size / PAGE_SIZE);
+            NUM_PAGES(code_size));
 
     /* map kernel data segment */
-    size_t data_offset = ((uintptr_t)bootinfo->data_start - JINUE_KLIMIT) / PAGE_SIZE;
+    size_t data_offset = page_number_of((uintptr_t)bootinfo->data_start - JINUE_KLIMIT);
 
     initialize_page_table_linear(
             get_pte_with_offset(page_tables, data_offset),
             bootinfo->data_physaddr + MEMORY_ADDR_16MB - MEMORY_ADDR_1MB,
             X86_PTE_GLOBAL | X86_PTE_READ_WRITE | X86_PTE_NX,
-            bootinfo->data_size / PAGE_SIZE);
+           NUM_PAGES(bootinfo->data_size));
 }
 
 static void initialize_initial_page_directories(
@@ -398,7 +398,7 @@ addr_space_t *pmap_create_initial_addr_space(
     Elf32_Ehdr *ehdr = kernel->start;
 
     /* Pre-allocate all the kernel page tables. */
-    int num_pages           = (ADDR_4GB - JINUE_KLIMIT) / PAGE_SIZE;
+    int num_pages           = NUM_PAGES(ADDR_4GB - JINUE_KLIMIT);
     int num_page_tables     = num_pages / entries_per_page_table;
 
     /* The number of entries in a pages table (page_table_entries) is also the
@@ -700,7 +700,7 @@ void machine_map_kernel(addr_t addr, size_t size, paddr_t paddr, int prot) {
 
     for(size_t offset = 0; offset < size; offset += PAGE_SIZE) {
         set_pte(
-            get_pte_with_offset(pte, offset / PAGE_SIZE),
+            get_pte_with_offset(pte, PAGE_NUMBER(offset)),
             paddr + offset,
             map_page_access_flags(prot) | X86_PTE_GLOBAL
         );
@@ -798,7 +798,7 @@ void machine_unmap_kernel(addr_t addr, size_t size) {
     assert(pte != NULL);
 
     for(size_t offset = 0; offset < size; offset += PAGE_SIZE) {
-        clear_pte( get_pte_with_offset(pte, offset / PAGE_SIZE) );
+        clear_pte( get_pte_with_offset(pte, PAGE_NUMBER(offset)) );
 
         invlpg(addr + offset);
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -42,6 +42,7 @@
 #include <kernel/infrastructure/i686/cpuinfo.h>
 #include <kernel/infrastructure/i686/memory.h>
 #include <kernel/interface/i686/boot.h>
+#include <kernel/utils/pmap.h>
 #include <kernel/utils/utils.h>
 #include <assert.h>
 #include <string.h>
@@ -110,10 +111,10 @@ static void initialize_boot_mapping_at_1mb(pte_t *page_table_1mb) {
  * */
 static void initialize_boot_mapping_at_16mb(
         pte_t               *page_table_16mb,
-        const bootinfo_t   *bootinfo) {
+        const bootinfo_t    *bootinfo) {
 
     size_t image_size = (char *)bootinfo->image_top - (char *)bootinfo->image_start;
-    size_t image_pages = image_size / PAGE_SIZE;
+    size_t image_pages = NUM_PAGES(image_size);
 
     /* map kernel image read only */
     pte_t *next_pte = initialize_page_table_linear(
@@ -127,7 +128,7 @@ static void initialize_boot_mapping_at_16mb(
             next_pte,
             MEMORY_ADDR_16MB + image_size,
             X86_PTE_READ_WRITE,
-            BOOT_PTES_AT_16MB - image_pages);
+            NUM_PAGES(BOOT_SIZE_AT_16MB) - image_pages);
 }
 
 /**
@@ -141,10 +142,10 @@ static void initialize_boot_mapping_at_klimit(
         const bootinfo_t    *bootinfo) {
 
     uint32_t size_at_16mb = (uint32_t)bootinfo->page_table_1mb - MEMORY_ADDR_1MB;
-    uint32_t num_entries_at_16mb = size_at_16mb / PAGE_SIZE;
+    uint32_t num_entries_at_16mb = NUM_PAGES(size_at_16mb);
 
     size_t image_size = (char *)bootinfo->image_top - (char *)bootinfo->image_start;
-    size_t image_pages = image_size / PAGE_SIZE;
+    size_t image_pages = NUM_PAGES(image_size);
 
     /* map kernel image read only */
     pte_t *next_pte_after_image = initialize_page_table_linear(
@@ -154,13 +155,13 @@ static void initialize_boot_mapping_at_klimit(
             image_pages);
 
     /* map kernel data segment */
-    size_t offset = ((uintptr_t)bootinfo->data_start - JINUE_KLIMIT) / PAGE_SIZE;
+    size_t offset = page_number_of((uintptr_t)bootinfo->data_start - JINUE_KLIMIT);
 
     initialize_page_table_linear(
             pae_get_pte_with_offset(page_table_klimit, offset),
             bootinfo->data_physaddr + MEMORY_ADDR_16MB - MEMORY_ADDR_1MB,
             X86_PTE_READ_WRITE,
-            bootinfo->data_size / PAGE_SIZE);
+            NUM_PAGES(bootinfo->data_size));
 
     /* map rest of region read/write */
     initialize_page_table_linear(
@@ -194,7 +195,7 @@ static void initialize_boot_low_page_directory(
                     pae_page_directory_offset_of((addr_t)MEMORY_ADDR_16MB)),
             (uintptr_t)page_table_16mb,
             X86_PTE_READ_WRITE,
-            BOOT_PTES_AT_16MB / PAGE_TABLE_ENTRIES);
+            NUM_PAGES(BOOT_SIZE_AT_16MB) / PAGE_TABLE_ENTRIES);
 }
 
 /**
@@ -278,7 +279,7 @@ static pdpt_t *initialize_boot_page_tables(
     /* Second mapping (a few page tables) */
     pte_t *page_table_16mb = boot_page_alloc_n(
             boot_alloc,
-            BOOT_PTES_AT_16MB / PAGE_TABLE_ENTRIES);
+            NUM_PAGES(BOOT_SIZE_AT_16MB) / PAGE_TABLE_ENTRIES);
 
     initialize_boot_mapping_at_16mb(page_table_16mb, bootinfo);
 
