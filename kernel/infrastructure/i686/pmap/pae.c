@@ -128,7 +128,7 @@ static void initialize_boot_mapping_at_16mb(
             next_pte,
             MEMORY_ADDR_16MB + image_size,
             X86_PTE_READ_WRITE,
-            BOOT_PTES_AT_16MB - image_pages);
+            NUM_PAGES(BOOT_SIZE_AT_16MB) - image_pages);
 }
 
 /**
@@ -195,7 +195,7 @@ static void initialize_boot_low_page_directory(
                     pae_page_directory_offset_of((addr_t)MEMORY_ADDR_16MB)),
             (uintptr_t)page_table_16mb,
             X86_PTE_READ_WRITE,
-            BOOT_PTES_AT_16MB / PAGE_TABLE_ENTRIES);
+            NUM_PAGES(BOOT_SIZE_AT_16MB) / PAGE_TABLE_ENTRIES);
 }
 
 /**
@@ -279,7 +279,7 @@ static pdpt_t *initialize_boot_page_tables(
     /* Second mapping (a few page tables) */
     pte_t *page_table_16mb = boot_page_alloc_n(
             boot_alloc,
-            BOOT_PTES_AT_16MB / PAGE_TABLE_ENTRIES);
+            NUM_PAGES(BOOT_SIZE_AT_16MB) / PAGE_TABLE_ENTRIES);
 
     initialize_boot_mapping_at_16mb(page_table_16mb, bootinfo);
 

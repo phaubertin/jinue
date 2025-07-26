@@ -168,6 +168,7 @@
 #include <kernel/infrastructure/i686/asm/x86.h>
 #include <kernel/interface/i686/asm/boot.h>
 #include <kernel/interface/i686/asm/bootinfo.h>
+#include <kernel/utils/asm/pmap.h>
 #include <sys/asm/elf.h>
 
 ; Stack frame variables and size
@@ -570,8 +571,9 @@ prepare_data_segment:
     ; Page tables that need to be allocated:
     ;   - One for the first 2MB of memory, which is where the kernel image is
     ;     located, as well as VGA text video memory.
-    ;   - BOOT_PTES_AT_16MB / NOPAE_PAGE_TABLE_PTES for mapping at 0x1000000
-    ;     (i.e. at 16MB) where the kernel image will be moved by the kernel.
+    ;   - NUM_PAGES(BOOT_SIZE_AT_16MB) / NOPAE_PAGE_TABLE_PTES for mapping at
+    ;     0x1000000 (i.e. at 16MB) where the kernel image will be moved by the
+    ;     kernel.
     ;   - One for kernel image mapping at JINUE_KLIMIT
     ;
     ; Arguments:
@@ -592,7 +594,7 @@ allocate_page_tables:
 
     ; Page tables for mapping at 0x1000000 (i.e. at 16MB)
     mov dword [ebp + BOOTINFO_PAGE_TABLE_16MB], edi
-    add edi, PAGE_SIZE * BOOT_PTES_AT_16MB / NOPAE_PAGE_TABLE_PTES
+    add edi, PAGE_SIZE * NUM_PAGES(BOOT_SIZE_AT_16MB) / NOPAE_PAGE_TABLE_PTES
 
     ; One page table for mapping at JINUE_KLIMIT
     mov dword [ebp + BOOTINFO_PAGE_TABLE_KLIMIT], edi
@@ -795,9 +797,9 @@ initialize_page_tables:
     ; Initialize pages table to map BOOT_SIZE_AT_16MB starting at 0x1000000 (16M)
     ;
     ; Write address (edi) already has the correct value.
-    mov eax, MEMORY_ADDR_16MB           ; start address
-    or eax, X86_PTE_READ_WRITE          ; access flags
-    mov ecx, BOOT_PTES_AT_16MB          ; number of page table entries
+    mov eax, MEMORY_ADDR_16MB               ; start address
+    or eax, X86_PTE_READ_WRITE              ; access flags
+    mov ecx, NUM_PAGES(BOOT_SIZE_AT_16MB)   ; number of page table entries
     call map_linear
 
     ; ----------------------------------------------------
@@ -836,7 +838,7 @@ initialize_page_directory:
     mov eax, dword [ebp + BOOTINFO_PAGE_TABLE_16MB]
     or eax, X86_PTE_READ_WRITE
     lea edi, [edi + 4 * (MEMORY_ADDR_16MB >> 22)]
-    mov ecx, BOOT_PTES_AT_16MB / NOPAE_PAGE_TABLE_PTES
+    mov ecx, NUM_PAGES(BOOT_SIZE_AT_16MB) / NOPAE_PAGE_TABLE_PTES
     call map_linear
 
     ; add entry for the last page table
