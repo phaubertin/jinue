@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Philippe Aubertin.
+ * Copyright (C) 2019-2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -39,6 +39,7 @@
 #include <kernel/infrastructure/i686/memory.h>
 #include <kernel/interface/i686/boot.h>
 #include <kernel/machine/memory.h>
+#include <kernel/utils/pmap.h>
 #include <kernel/utils/utils.h>
 #include <assert.h>
 #include <inttypes.h>
@@ -217,7 +218,7 @@ void memory_initialize_array(
     const size_t entries_per_page = PAGE_SIZE / sizeof(uintptr_t);
 
     const uint64_t memory_top   = memory_find_top(bootinfo);
-    const size_t num_pages      = memory_top / PAGE_SIZE;
+    const size_t num_pages      = NUM_PAGES(memory_top);
     const size_t array_entries  = ALIGN_END(num_pages, entries_per_page);
     const size_t array_pages    = array_entries / entries_per_page;
 
@@ -227,7 +228,7 @@ void memory_initialize_array(
             addr < MEMORY_ADDR_16MB + BOOT_SIZE_AT_16MB;
             addr += PAGE_SIZE) {
 
-        array[addr / PAGE_SIZE] = PHYS_TO_VIRT_AT_16MB(addr);
+        array[page_number_of(addr)] = PHYS_TO_VIRT_AT_16MB(addr);
     }
 
     memory_array            = (uintptr_t *)PHYS_TO_VIRT_AT_16MB(array);
@@ -243,7 +244,7 @@ void memory_initialize_array(
  *
  * */
 void *memory_lookup_page(uint64_t paddr) {
-    uint64_t entry_index = paddr / PAGE_SIZE;
+    uint64_t entry_index = PAGE_NUMBER(paddr);
 
     if(entry_index >= memory_array_entries) {
         return NULL;
