@@ -11,14 +11,11 @@ version 2.04.
 
 ```
   +---------------------------------------+ (file start)-+-
-  |              boot sector              |              |
-  |            (boot/boot.asm)            |              |
-  +---------------------------------------+              | Real mode code
-  |           16-bit setup code           |              | (16 bits)
-  |            (boot/setup.asm)           |              |
+  |   16-bit boot sector and setup code   |              | Real mode code
+  |            (setup16.asm)              |              | (16 bits)
   +---------------------------------------+             -+-                             |
-  |           32-bit setup code           |              |                         file |
-  |           (boot/setup32.asm)          |              |                       offset |
+  |          32-bit setup code            |              |                         file |
+  |            (setup32.asm)              |              |                       offset |
   +---------------------------------------+              |                    increases |
   |                                       |              |                              |
   |           microkernel (ELF)           |              | Protected mode               V

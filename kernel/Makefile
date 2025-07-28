@@ -46,8 +46,8 @@ kernel_elf       = interface/i686/kernel
 stripped         = $(kernel_elf)-stripped
 image            = interface/i686/$(notdir $(kernel_img))
 kmain			 = application/kmain.o
-setup16          = interface/i686/setup16-nasm.o
-setup32          = interface/i686/setup32-nasm.o
+setup16          = interface/i686/setup/setup16-nasm.o
+setup32          = interface/i686/setup/setup32-nasm.o
 target           = $(image)
 
 unclean.extra    = \
@@ -143,8 +143,8 @@ sources.kernel.nasm = \
 	interface/i686/trap.asm
 
 sources.setup.nasm = \
-	interface/i686/setup16.asm \
-	interface/i686/setup32.asm
+	interface/i686/setup/setup16.asm \
+	interface/i686/setup/setup32.asm
 
 sources.c = $(sources.kernel.c)
 sources.nasm = $(sources.kernel.nasm) $(sources.setup.nasm)

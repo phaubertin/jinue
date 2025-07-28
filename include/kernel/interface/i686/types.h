@@ -42,7 +42,7 @@
  * declaration, the constants in the kernel/interface/i686/asm/boot.h must be updated
  * (member offsets and structure size).
  *
- * See also the setup code, i.e. kernel/i686/setup32.asm. */
+ * See also the setup code, i.e. kernel/i686/setup/setup32.asm. */
 typedef struct {
     Elf32_Ehdr              *kernel_start;
     size_t                   kernel_size;

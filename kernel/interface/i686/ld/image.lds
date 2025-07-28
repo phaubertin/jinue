@@ -34,8 +34,8 @@
 OUTPUT_FORMAT("binary")
 
 TARGET("elf32-i386")
-INPUT("interface/i686/setup16-nasm.o")
-INPUT("interface/i686/setup32-nasm.o")
+INPUT("interface/i686/setup/setup16-nasm.o")
+INPUT("interface/i686/setup/setup32-nasm.o")
 
 /* Even though the next two input files are ELF binaries, we want to insert them
  * whole into the kernel image, hence why the TARGET is specified as binary. Both
@@ -65,7 +65,7 @@ SECTIONS {
      * Needed symbols:                  setup_size_div512
      *                                  kernel_size_div16 */
     setup16 : {
-        interface/i686/setup16-nasm.o
+        interface/i686/setup/setup16-nasm.o
     }
     
     /* Everything below this point is loaded consecutively starting at 0x100000
@@ -101,7 +101,7 @@ SECTIONS {
      *                                  loader_start
      *                                  loader_size */
     setup32 BOOT_SETUP32_ADDR : AT(ADDR(setup16) + SIZEOF(setup16)) {
-        interface/i686/setup32-nasm.o
+        interface/i686/setup/setup32-nasm.o
     }
     
     /* The next section must start at a specific offset (BOOT_SETUP32_SIZE) from
