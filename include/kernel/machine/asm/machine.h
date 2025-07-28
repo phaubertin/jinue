@@ -34,20 +34,22 @@
 
 #include <jinue/shared/asm/machine.h>
 
-#ifdef __i686__
-#include <kernel/infrastructure/i686/exports/asm/machine.h>
-#endif
-
 /** number of bits in a virtual address that represent the offset within a page */
-#define PAGE_BITS   JINUE_PAGE_BITS
+#define PAGE_BITS           JINUE_PAGE_BITS
 
 /** size of a page */
-#define PAGE_SIZE   JINUE_PAGE_SIZE
+#define PAGE_SIZE           JINUE_PAGE_SIZE
 
 /** bit mask for offset in a page */
-#define PAGE_MASK   JINUE_PAGE_MASK
+#define PAGE_MASK           JINUE_PAGE_MASK
+
+/** size of area used by the kernel for permanent mappings */
+#define MAPPING_AREA_SIZE   (16 * MB)
+
+/** start of area used by the kernel for permanent mappings */
+#define MAPPING_AREA_ADDR   JINUE_KLIMIT
 
 /** start of kernel image in virtual memory */
-#define KERNEL_BASE JINUE_KLIMIT
+#define KERNEL_BASE         (MAPPING_AREA_ADDR + MAPPING_AREA_SIZE)
 
 #endif

@@ -337,7 +337,7 @@ static void initialize_initial_page_tables(
 
     /* map kernel image read only, not executable */
     pte_t *next_pte_after_image = initialize_page_table_linear(
-            page_tables,
+            get_pte_with_offset(page_tables, NUM_PAGES(MAPPING_AREA_SIZE)),
             MEMORY_ADDR_16MB,
             X86_PTE_GLOBAL | X86_PTE_NX,
             image_pages);
@@ -373,7 +373,7 @@ static void initialize_initial_page_tables(
             get_pte_with_offset(page_tables, data_offset),
             bootinfo->data_physaddr + MEMORY_ADDR_16MB - MEMORY_ADDR_1MB,
             X86_PTE_GLOBAL | X86_PTE_READ_WRITE | X86_PTE_NX,
-           NUM_PAGES(bootinfo->data_size));
+            NUM_PAGES(bootinfo->data_size));
 }
 
 static void initialize_initial_page_directories(

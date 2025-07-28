@@ -141,15 +141,14 @@ static void initialize_boot_mapping_at_klimit(
         pte_t               *page_table_klimit,
         const bootinfo_t    *bootinfo) {
 
-    uint32_t size_at_16mb = (uint32_t)bootinfo->page_table_1mb - MEMORY_ADDR_1MB;
-    uint32_t num_entries_at_16mb = NUM_PAGES(size_at_16mb);
-
+    /* map kernel image read only */
     size_t image_size = (char *)bootinfo->image_top - (char *)bootinfo->image_start;
     size_t image_pages = NUM_PAGES(image_size);
-
-    /* map kernel image read only */
+    
     pte_t *next_pte_after_image = initialize_page_table_linear(
-            page_table_klimit,
+            pae_get_pte_with_offset(
+                page_table_klimit,
+                page_number_of(MAPPING_AREA_SIZE)),
             MEMORY_ADDR_16MB,
             0,
             image_pages);
@@ -164,6 +163,9 @@ static void initialize_boot_mapping_at_klimit(
             NUM_PAGES(bootinfo->data_size));
 
     /* map rest of region read/write */
+    uint32_t size_at_16mb = (uint32_t)bootinfo->page_table_1mb - MEMORY_ADDR_1MB;
+    uint32_t num_entries_at_16mb = NUM_PAGES(size_at_16mb);
+
     initialize_page_table_linear(
             next_pte_after_image,
             MEMORY_ADDR_16MB + image_size,
@@ -209,12 +211,13 @@ static void initialize_boot_page_directory_klimit(
         pte_t           *page_directory_klimit,
         const pte_t     *page_table_klimit) {
 
-    pae_set_pte(
+    initialize_page_table_linear(
             pae_get_pte_with_offset(
                     page_directory_klimit,
                     pae_page_directory_offset_of((addr_t)JINUE_KLIMIT)),
             (uintptr_t)page_table_klimit,
-            X86_PTE_READ_WRITE | X86_PTE_PRESENT);
+            X86_PTE_READ_WRITE,
+            NUM_PAGES(MAPPING_AREA_SIZE) / PAGE_TABLE_ENTRIES + 1);
 }
 
 /**
@@ -284,7 +287,9 @@ static pdpt_t *initialize_boot_page_tables(
     initialize_boot_mapping_at_16mb(page_table_16mb, bootinfo);
 
     /* Third mapping */
-    pte_t *page_table_klimit = boot_page_alloc(boot_alloc);
+    pte_t *page_table_klimit = boot_page_alloc_n(
+            boot_alloc,
+            NUM_PAGES(MAPPING_AREA_SIZE) / PAGE_TABLE_ENTRIES + 1);
 
     initialize_boot_mapping_at_klimit(page_table_klimit, bootinfo);
 

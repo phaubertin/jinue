@@ -75,7 +75,8 @@ int syscall_implementation;
 static void move_kernel_at_16mb(const bootinfo_t *bootinfo) {
     move_and_remap_kernel(
             (addr_t)bootinfo->page_table_1mb,
-            (addr_t)bootinfo->page_table_klimit,
+            // TODO improve this
+            (addr_t)bootinfo->page_table_klimit + 16384,
             (uint32_t)bootinfo->page_directory);
 
     pmap_write_protect_kernel_image(bootinfo);

@@ -29,12 +29,13 @@
 
 ; -----------------------------------------------------------------------------
 
-; This setup code performs a few tasks to support the kernel's initialization,
-; which include:
+; This setup code performs a few tasks to support kernel initialization, which
+; include:
 ;   - Allocating a boot-time stack and heap;
 ;   - Copying the BIOS memory map and the kernel command line;
-;   - Loading the kernel's data segment; and
-;   - Allocate and initialize the initial page tables, then enabling paging.
+;   - Loading the kernel data segment; and
+;   - Allocating and initializing the initial page tables, then enabling
+;     paging.
 ;
 ; The boot loader loads the kernel image at address 0x100000 (1MB). This setup
 ; code allocates all the memory it needs right after the kernel image. Once it
@@ -77,8 +78,9 @@
 ;
 ; The boot information structure (bootinfo) is a data structure this setup code
 ; allocates on the boot heap and uses to pass information to the kernel. It is
-; declared in the hal/types.h header file, with matching constant declarations
-; in hal/asm/boot.h that specify the offset of each member of the structure.
+; declared in the kernel/interface/i686/types.h header file, with matching
+; constant declarations in kernel/interface/i686/bootinfo.h that specify the
+; offset of each member of the structure.
 ;
 ; The initial page tables initialized by this code define three mappings:
 ;
@@ -91,7 +93,8 @@
 ;
 ;  2) A few megabytes of memory (BOOT_SIZE_AT_16MB) starting at 0x1000000 (i.e.
 ;     16M) are also identity mapped. The kernel moves its own image there as
-;     part of its initialization. This region is mapped read/write.
+;     part of its initialization. This region is mapped read/write by this
+;     setup code.
 ;
 ;  3) The part of the second megabyte of physical memory (start address 0x100000)
 ;     that contain the kernel image as well as the following initial allocations
@@ -101,7 +104,7 @@
 ;     a copy of the content in the ELF binary, with appropriate zero-padding for
 ;     uninitialized data (.bss section) and the copy is mapped read/write at the
 ;     address where the kernel expects to find it. The rest of the kernel image
-; is mapped read only and the rest of the region is read/write.
+;     is mapped read only and the rest of the region is read/write.
 ;
 ;       +=======================================+ 0x100000000 (4GB)
 ;       |                                       |
@@ -114,15 +117,19 @@
 ;   |   |             (read/write)              |
 ;   |   +---------------------------------------+
 ;   |   |          rest of kernel image         |
-;       |             (read only)               | --------------------------+
-;   3)  +---------------------------------------+                           |
-;       |          kernel data segment          |                           |
-;   |   |   copy from ELF binary + zero padded  | ----------------------+   |
-;   |   |             (read/write)              |                       |   |
-;   |   +---------------------------------------+                       |   |
+;   |   |             (read only)               | --------------------------+
+;   |   +---------------------------------------+                           |
+;   |   |          kernel data segment          |                           |
+;       |   copy from ELF binary + zero padded  | ----------------------+   |
+;   3)  |             (read/write)              |                       |   |
+;       +---------------------------------------+                       |   |
 ;   |   |             kernel code               |                       |   |
 ;   |   |     this setup code + text segment    | --------------------------+
-;   v   |             (read only)               |                       |   |
+;   |   |             (read only)               |                       |   |
+;   |   +---------------------------------------+ KERNEL_BASE           |   |
+;   |   |                                       |                       |   |
+;   |   |         Kernel mapping area           |                       |   |
+;   v   |                                       |                       |   |
 ;  ===  +=======================================+ 0xc0000000            |   |
 ;       |                                       | (JINUE_KLIMIT)        |   |
 ;       .                                       .                       |   |
@@ -168,6 +175,7 @@
 #include <kernel/infrastructure/i686/asm/x86.h>
 #include <kernel/interface/i686/asm/boot.h>
 #include <kernel/interface/i686/asm/bootinfo.h>
+#include <kernel/machine/asm/machine.h>
 #include <kernel/utils/asm/pmap.h>
 #include <sys/asm/elf.h>
 
@@ -291,7 +299,7 @@ start:
     add dword [ebp + BOOTINFO_LOADER_START],   BOOT_OFFSET_FROM_1MB
     add dword [ebp + BOOTINFO_IMAGE_START],    BOOT_OFFSET_FROM_1MB
     add dword [ebp + BOOTINFO_IMAGE_TOP],      BOOT_OFFSET_FROM_1MB
-    add dword [ebp + BOOTINFO_ACPI_ADDR_MAP],       BOOT_OFFSET_FROM_1MB
+    add dword [ebp + BOOTINFO_ACPI_ADDR_MAP],  BOOT_OFFSET_FROM_1MB
     add dword [ebp + BOOTINFO_CMDLINE],        BOOT_OFFSET_FROM_1MB
     add dword [ebp + BOOTINFO_BOOT_HEAP],      BOOT_OFFSET_FROM_1MB
     add dword [ebp + BOOTINFO_BOOT_END],       BOOT_OFFSET_FROM_1MB
@@ -571,10 +579,9 @@ prepare_data_segment:
     ; Page tables that need to be allocated:
     ;   - One for the first 2MB of memory, which is where the kernel image is
     ;     located, as well as VGA text video memory.
-    ;   - NUM_PAGES(BOOT_SIZE_AT_16MB) / NOPAE_PAGE_TABLE_PTES for mapping at
-    ;     0x1000000 (i.e. at 16MB) where the kernel image will be moved by the
-    ;     kernel.
-    ;   - One for kernel image mapping at JINUE_KLIMIT
+    ;   - Enough for BOOT_SIZE_AT_16MB for mapping at 0x1000000 (i.e. at 16MB)
+    ;     where the kernel image will be moved by the kernel.
+    ;   - Enough for MAPPING_AREA_SIZE + 1MB for the mapping at JINUE_KLIMIT.
     ;
     ; Arguments:
     ;       edi address where tables are allocated
@@ -596,9 +603,9 @@ allocate_page_tables:
     mov dword [ebp + BOOTINFO_PAGE_TABLE_16MB], edi
     add edi, PAGE_SIZE * NUM_PAGES(BOOT_SIZE_AT_16MB) / NOPAE_PAGE_TABLE_PTES
 
-    ; One page table for mapping at JINUE_KLIMIT
+    ; Page tables for mapping at JINUE_KLIMIT
     mov dword [ebp + BOOTINFO_PAGE_TABLE_KLIMIT], edi
-    add edi, PAGE_SIZE
+    add edi, PAGE_SIZE * (NUM_PAGES(MAPPING_AREA_SIZE) / NOPAE_PAGE_TABLE_PTES + 1)
 
     ; Page directory
     mov dword [ebp + BOOTINFO_PAGE_DIRECTORY], edi
@@ -622,8 +629,8 @@ allocate_page_tables:
     ; -------------------------------------------------------------------------
 map_kernel_image_1mb:
     ; Compute number of entries to map kernel image
-    mov ecx, dword [ebp + BOOTINFO_IMAGE_TOP]      ; end of image
-    sub ecx, dword [ebp + BOOTINFO_IMAGE_START]    ; minus start of image
+    mov ecx, dword [ebp + BOOTINFO_IMAGE_TOP]       ; end of image
+    sub ecx, dword [ebp + BOOTINFO_IMAGE_START]     ; minus start of image
     shr ecx, PAGE_BITS                              ; divide by page size
 
     ; remember number of entries in ebx.
@@ -637,7 +644,7 @@ map_kernel_image_1mb:
     ; allocations.
     mov eax, ebx
     shl eax, PAGE_BITS                              ; image size
-    add eax, dword [ebp + BOOTINFO_IMAGE_START]    ; image end = size + offset
+    add eax, dword [ebp + BOOTINFO_IMAGE_START]     ; image end = size + offset
     or eax, X86_PTE_READ_WRITE                      ; access flags
 
     mov ecx, 256                                    ; number of entries for 1MB
@@ -670,8 +677,8 @@ map_kernel:
     ; ----------------------------------------------
 
     ; compute number of entries to map kernel image
-    mov ecx, dword [ebp + BOOTINFO_IMAGE_TOP]      ; end of image
-    sub ecx, dword [ebp + BOOTINFO_IMAGE_START]    ; minus start of image
+    mov ecx, dword [ebp + BOOTINFO_IMAGE_TOP]       ; end of image
+    sub ecx, dword [ebp + BOOTINFO_IMAGE_START]     ; minus start of image
     shr ecx, PAGE_BITS                              ; divide by page size
 
     ; start address, read only
@@ -705,18 +712,18 @@ map_kernel:
     jz .skip_data
 
     ; start page table entry for data segment
-    mov eax, dword [ebp + BOOTINFO_DATA_START]     ; data segment start
+    mov eax, dword [ebp + BOOTINFO_DATA_START]      ; data segment start
     sub eax, BOOT_OFFSET_FROM_1MB                   ; remove mapping offset
-    sub eax, dword [ebp + BOOTINFO_IMAGE_START]    ; minus image start (offset)
+    sub eax, dword [ebp + BOOTINFO_IMAGE_START]     ; minus image start (offset)
     shr eax, (PAGE_BITS - 2)    ; divide by page size, multiply by entry size
     add edi, eax                ; and add offset
 
     ; number of page table entries in data segment
-    mov ecx, dword [ebp + BOOTINFO_DATA_SIZE]      ; size of data segment
+    mov ecx, dword [ebp + BOOTINFO_DATA_SIZE]       ; size of data segment
     shr ecx, PAGE_BITS                              ; divide by page size
 
     ; map data segment read/write
-    mov eax, dword [ebp + BOOTINFO_DATA_PHYSADDR]  ; physical address
+    mov eax, dword [ebp + BOOTINFO_DATA_PHYSADDR]   ; physical address
     or eax, X86_PTE_READ_WRITE                      ; access flags
 
     call map_linear
@@ -735,7 +742,7 @@ map_kernel:
     mov eax, dword [ebp + BOOTINFO_IMAGE_TOP]
 
     ; number of entries
-    mov ecx, dword [ebp + BOOTINFO_PAGE_TABLE_1MB] ; address of page tables
+    mov ecx, dword [ebp + BOOTINFO_PAGE_TABLE_1MB]  ; address of page tables
     sub ecx, eax                                    ; minus image top
     shr ecx, PAGE_BITS                              ; divide by page size
 
@@ -749,8 +756,8 @@ map_kernel:
     ; ----------------------------------------------
 
     ; number of entries already mapped
-    mov eax, dword [ebp + BOOTINFO_PAGE_TABLE_1MB] ; address of page tables
-    sub eax, dword [ebp + BOOTINFO_IMAGE_TOP]      ; minus image start
+    mov eax, dword [ebp + BOOTINFO_PAGE_TABLE_1MB]  ; address of page tables
+    sub eax, dword [ebp + BOOTINFO_IMAGE_TOP]       ; minus image start
     shr eax, PAGE_BITS                              ; divide by page size
 
     ; number of entries
@@ -773,13 +780,13 @@ map_kernel:
     ;       eax, ebx, ecx, edi are caller saved
     ; -------------------------------------------------------------------------
 initialize_page_tables:
-    ; ----------------------------------------------------
+    ; ---------------------------------------------------------------
     ; First page table: first 4 MB of memory (1:1)
-    ; ----------------------------------------------------
+    ; ---------------------------------------------------------------
 
     ; Map first 1MB read/write. This includes video memory.
     mov eax, X86_PTE_READ_WRITE                     ; start address is 0
-    mov edi, dword [ebp + BOOTINFO_PAGE_TABLE_1MB] ; write address
+    mov edi, dword [ebp + BOOTINFO_PAGE_TABLE_1MB]  ; write address
     mov ecx, 256                                    ; number of entries
     call map_linear
 
@@ -790,11 +797,11 @@ initialize_page_tables:
     mov ecx, 512
     call clear_ptes
 
-    ; ----------------------------------------------------
+    ; ---------------------------------------------------------------
     ; Next few page tables: memory at 16MB (1:1)
-    ; ----------------------------------------------------
+    ; ---------------------------------------------------------------
 
-    ; Initialize pages table to map BOOT_SIZE_AT_16MB starting at 0x1000000 (16M)
+    ; Initialize page tables to map BOOT_SIZE_AT_16MB starting at 0x1000000 (16M)
     ;
     ; Write address (edi) already has the correct value.
     mov eax, MEMORY_ADDR_16MB               ; start address
@@ -802,9 +809,15 @@ initialize_page_tables:
     mov ecx, NUM_PAGES(BOOT_SIZE_AT_16MB)   ; number of page table entries
     call map_linear
 
-    ; ----------------------------------------------------
-    ; Last page table: kernel image mapped at JINUE_KLIMIT
-    ; ----------------------------------------------------
+    ; ---------------------------------------------------------------
+    ; Last page tables: mapping area and kernel image at JINUE_KLIMIT
+    ; ---------------------------------------------------------------
+
+    ; kernel mapping area
+    mov eax, MAPPING_AREA_ADDR              ; start address
+    or eax, X86_PTE_READ_WRITE              ; access flags
+    mov ecx, NUM_PAGES(MAPPING_AREA_SIZE)   ; number of page table entries
+    call map_linear
 
     ; map kernel image and read/write memory that follows (1MB)
     call map_kernel
@@ -824,7 +837,7 @@ initialize_page_tables:
     ; -------------------------------------------------------------------------
 initialize_page_directory:
     ; clear initial page directory
-    mov edi, dword [ebp + BOOTINFO_PAGE_DIRECTORY] ; write address
+    mov edi, dword [ebp + BOOTINFO_PAGE_DIRECTORY]  ; write address
     mov ecx, 1024                       ; write 1024 entries (full table)
     call clear_ptes
 
@@ -841,11 +854,13 @@ initialize_page_directory:
     mov ecx, NUM_PAGES(BOOT_SIZE_AT_16MB) / NOPAE_PAGE_TABLE_PTES
     call map_linear
 
-    ; add entry for the last page table
-    mov edi, dword [ebp + BOOTINFO_PAGE_DIRECTORY]
+    ; add entries for the page tables at JINUE_KLIMIT
     mov eax, dword [ebp + BOOTINFO_PAGE_TABLE_KLIMIT]
-    or eax, X86_PTE_READ_WRITE | X86_PTE_PRESENT
-    mov dword [edi + 4 * (JINUE_KLIMIT >> 22)], eax
+    or eax, X86_PTE_READ_WRITE
+    mov edi, dword [ebp + BOOTINFO_PAGE_DIRECTORY]
+    lea edi, [edi + 4 * (JINUE_KLIMIT >> 22)]
+    mov ecx, NUM_PAGES(MAPPING_AREA_SIZE) / NOPAE_PAGE_TABLE_PTES + 1
+    call map_linear
 
     ret
 
