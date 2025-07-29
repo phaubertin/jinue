@@ -29,36 +29,25 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/interface/i686/asm/boot.h>
-#include <kernel/interface/i686/setup/linkdefs.h>
-#include <kernel/interface/i686/types.h>
+#ifndef JINUE_KERNEL_INTERFACE_I686_SETUP_LINKDEFS_H
+#define JINUE_KERNEL_INTERFACE_I686_SETUP_LINKDEFS_H
 
-void initialize_bootinfo(bootinfo_t *bootinfo, const char *linux_header) {
-    bootinfo->kernel_start      = (Elf32_Ehdr *)&kernel_start;
-    bootinfo->kernel_size       = (size_t)&kernel_size;
-    bootinfo->loader_start      = (Elf32_Ehdr *)&loader_start;
-    bootinfo->loader_size       = (size_t)&loader_size;
-    bootinfo->image_start       = &image_start;
+#include <sys/elf.h>
+#include <stddef.h>
 
-    /* The boot information structure is the first thing allocated right after
-     * the kernel image. */
-    bootinfo->image_top         = bootinfo;
+/* The symbols declared in this file are provided by the linker at link time.
+ * See the kernel/interface/i686/ld/image.lds linker script. */
 
-    bootinfo->ramdisk_start     = *(uint32_t *)(linux_header + BOOT_RAMDISK_IMAGE);
-    bootinfo->ramdisk_size      = *(size_t *)(linux_header + BOOT_RAMDISK_SIZE);
-    bootinfo->setup_signature   = *(uint32_t *)(linux_header + BOOT_SETUP_HEADER);
-    bootinfo->addr_map_entries  = *(uint8_t *)(linux_header + BOOT_ADDR_MAP_ENTRIES);
-}
+typedef struct { int ignore; } linkdef_t;
 
-void adjust_bootinfo_pointers(bootinfo_t *bootinfo) {
-#define ADD_OFFSET(p) (p) = (void *)((char *)(p) + BOOT_OFFSET_FROM_1MB)
-    ADD_OFFSET(bootinfo->kernel_start);
-    ADD_OFFSET(bootinfo->loader_start);
-    ADD_OFFSET(bootinfo->image_start);
-    ADD_OFFSET(bootinfo->image_top);
-    ADD_OFFSET(bootinfo->acpi_addr_map);
-    ADD_OFFSET(bootinfo->cmdline);
-    ADD_OFFSET(bootinfo->boot_heap);
-    ADD_OFFSET(bootinfo->boot_end);
-#undef ADD_OFFSET
-}
+extern linkdef_t kernel_start;
+
+extern linkdef_t kernel_size;
+
+extern linkdef_t loader_start;
+
+extern linkdef_t loader_size;
+
+extern linkdef_t image_start;
+
+#endif

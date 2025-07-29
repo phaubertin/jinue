@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -99,8 +99,10 @@ SECTIONS {
      * Needed symbols:                  kernel_start
      *                                  kernel_size
      *                                  loader_start
-     *                                  loader_size */
+     *                                  loader_size
+     *                                  image_start */
     setup32 BOOT_SETUP32_ADDR : AT(ADDR(setup16) + SIZEOF(setup16)) {
+        image_start = .;
         interface/i686/setup/setup32.o(.text)
     }
     

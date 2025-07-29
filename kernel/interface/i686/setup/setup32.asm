@@ -182,14 +182,11 @@
     bits 32
 
     extern adjust_bootinfo_pointers
+    extern initialize_bootinfo
     
-    ; There are defined by the linker script
+    ; This is defined by the linker script
     extern kernel_start
-    extern kernel_size
-    extern loader_start
-    extern loader_size
 
-image_start:
     jmp start
 
     ; Empty string used to represent an empty kernel command line.
@@ -254,7 +251,12 @@ start:
     ; Initialize most fields in bootinfo_t structure. The rest are initialized
     ; later, except for the location of the boot heap which was already
     ; initialized above.
+    push esi
+    push ebx
+
     call initialize_bootinfo
+
+    add esp, 8
 
     ; copy data segment and set fields regarding its size and location in the
     ; bootinfo_t structure.
@@ -398,57 +400,6 @@ copy_cmdline:
 .too_long:
     mov al, 0                       ; NUL terminate cropped command line
     stosb
-    ret
-
-    ; -------------------------------------------------------------------------
-    ; Function: initialize_bootinfo
-    ; -------------------------------------------------------------------------
-    ; Initialize most fields in the bootinfo_t structure, specifically:
-    ;
-    ;       kernel_start        (ebx + BOOTINFO_KERNEL_START)
-    ;       kernel_size         (ebx + BOOTINFO_KERNEL_SIZE)
-    ;       loader_start        (ebx + BOOTINFO_LOADER_START)
-    ;       loader_size         (ebx + BOOTINFO_LOADER_SIZE)
-    ;       image_start         (ebx + BOOTINFO_IMAGE_START)
-    ;       image_top           (ebx + BOOTINFO_IMAGE_TOP)
-    ;       ramdisk_start       (ebx + BOOTINFO_RAMDISK_START)
-    ;       ramdisk_size        (ebx + BOOTINFO_RAMDISK_SIZE)
-    ;       setup_signature     (ebx + BOOTINFO_SETUP_SIGNATURE)
-    ;       addr_map_entries    (ebx + BOOTINFO_ADDR_MAP_ENTRIES)
-    ;
-    ; Arguments:
-    ;       esi real mode code start/zero-page address
-    ;       ebx address of the bootinfo_t structure
-    ;
-    ; Returns:
-    ;       eax is caller saved
-    ; -------------------------------------------------------------------------
-initialize_bootinfo:
-    ; Values provided by linker.
-    mov dword [ebx + BOOTINFO_KERNEL_START], kernel_start
-    mov dword [ebx + BOOTINFO_KERNEL_SIZE], kernel_size
-    mov dword [ebx + BOOTINFO_LOADER_START], loader_start
-    mov dword [ebx + BOOTINFO_LOADER_SIZE], loader_size
-    mov dword [ebx + BOOTINFO_IMAGE_START], image_start
-
-    ; set pointer to top of kernel image
-    mov dword [ebx + BOOTINFO_IMAGE_TOP], ebx
-
-    ; Copy initial RAM disk address and size
-    mov eax, dword [esi + BOOT_RAMDISK_IMAGE]
-    mov dword [ebx + BOOTINFO_RAMDISK_START], eax
-    mov eax, dword [esi + BOOT_RAMDISK_SIZE]
-    mov dword [ebx + BOOTINFO_RAMDISK_SIZE], eax
-
-    ; Copy signature so it can be checked by the kernel
-    mov eax, dword [esi + BOOT_SETUP_HEADER]
-    mov dword [ebx + BOOTINFO_SETUP_SIGNATURE], eax
-
-    ; Number of entries in BIOS memory map
-    mov al, byte [esi + BOOT_ADDR_MAP_ENTRIES]
-    movzx eax, al
-    mov dword [ebx + BOOTINFO_ADDR_MAP_ENTRIES], eax
-
     ret
 
     ; -------------------------------------------------------------------------
@@ -618,8 +569,8 @@ allocate_page_tables:
     ; -------------------------------------------------------------------------
 map_kernel_image_1mb:
     ; Compute number of entries to map kernel image
-    mov ecx, dword [ebx + BOOTINFO_IMAGE_TOP]      ; end of image
-    sub ecx, dword [ebx + BOOTINFO_IMAGE_START]    ; minus start of image
+    mov ecx, dword [ebx + BOOTINFO_IMAGE_TOP]       ; end of image
+    sub ecx, dword [ebx + BOOTINFO_IMAGE_START]     ; minus start of image
     shr ecx, PAGE_BITS                              ; divide by page size
 
     ; remember number of entries in edx.
@@ -633,7 +584,7 @@ map_kernel_image_1mb:
     ; allocations.
     mov eax, edx
     shl eax, PAGE_BITS                              ; image size
-    add eax, dword [ebx + BOOTINFO_IMAGE_START]    ; image end = size + offset
+    add eax, dword [ebx + BOOTINFO_IMAGE_START]     ; image end = size + offset
     or eax, X86_PTE_READ_WRITE                      ; access flags
 
     mov ecx, 256                                    ; number of entries for 1MB
