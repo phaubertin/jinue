@@ -47,7 +47,7 @@ stripped         = $(kernel_elf)-stripped
 image            = interface/i686/$(notdir $(kernel_img))
 kmain			 = application/kmain.o
 setup16          = interface/i686/setup/setup16-nasm.o
-setup32          = interface/i686/setup/setup32-nasm.o
+setup32          = interface/i686/setup/setup32.o
 target           = $(image)
 
 unclean.extra    = \
@@ -142,14 +142,18 @@ sources.kernel.nasm = \
 	interface/i686/crt.asm \
 	interface/i686/trap.asm
 
-sources.setup.nasm = \
-	interface/i686/setup/setup16.asm \
-	interface/i686/setup/setup32.asm
+sources.setup16.nasm = interface/i686/setup/setup16.asm
+sources.setup32.nasm = interface/i686/setup/setup32.asm
 
-sources.c = $(sources.kernel.c)
-sources.nasm = $(sources.kernel.nasm) $(sources.setup.nasm)
+sources.setup32.c = interface/i686/setup/bootinfo.c
+
+sources.c = $(sources.kernel.c) $(sources.setup32.c)
+sources.nasm = $(sources.kernel.nasm) $(sources.setup16.nasm) $(sources.setup32.nasm)
 
 objects.kernel = $(sources.kernel.nasm:%.asm=%-nasm.o) $(sources.kernel.c:%.c=%.o)
+
+# Assembly files must come first and setup32.asm must be first
+objects.setup32 = $(sources.setup32.nasm:%.asm=%-nasm.o) $(sources.setup32.c:%.c=%.o)
 
 include $(common)
 
@@ -169,7 +173,8 @@ $(kmain): $(kmain:%.o=%.c) $(build_info_h)
 
 $(setup16): $(setup16:%-nasm.o=%.asm)
 
-$(setup32): $(setup32:%-nasm.o=%.asm)
+$(setup32): $(objects.setup32)
+	$(LINK.o) -r $(objects.setup32) -o $@
 
 $(kernel_elf): $(objects.kernel) $(kernel_ldscript) libc
 	$(LINK.o) $(KERNEL_LDFLAGS) $(objects.kernel) $(c.lib) $(KERNEL_LDLIBS) -o $@

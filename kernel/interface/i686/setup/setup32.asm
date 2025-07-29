@@ -180,11 +180,10 @@
 #define deallocate_stack_frame()    add esp, STACK_FRAME_SIZE
 
     bits 32
+
+    extern adjust_bootinfo_pointers
     
-    ; Used to initialize and identify fields that are set by the setup code. The
-    ; actual value does not matter.
-    %define MUST_BE_SET_BELOW 0
-    
+    ; There are defined by the linker script
     extern kernel_start
     extern kernel_size
     extern loader_start
@@ -287,14 +286,11 @@ start:
 
     ; adjust the pointers in the boot information structure so they point in the
     ; kernel alias
-    add dword [ebx + BOOTINFO_KERNEL_START],   BOOT_OFFSET_FROM_1MB
-    add dword [ebx + BOOTINFO_LOADER_START],   BOOT_OFFSET_FROM_1MB
-    add dword [ebx + BOOTINFO_IMAGE_START],    BOOT_OFFSET_FROM_1MB
-    add dword [ebx + BOOTINFO_IMAGE_TOP],      BOOT_OFFSET_FROM_1MB
-    add dword [ebx + BOOTINFO_ACPI_ADDR_MAP],  BOOT_OFFSET_FROM_1MB
-    add dword [ebx + BOOTINFO_CMDLINE],        BOOT_OFFSET_FROM_1MB
-    add dword [ebx + BOOTINFO_BOOT_HEAP],      BOOT_OFFSET_FROM_1MB
-    add dword [ebx + BOOTINFO_BOOT_END],       BOOT_OFFSET_FROM_1MB
+    push ebx
+    
+    call adjust_bootinfo_pointers
+    
+    add esp, 4
 
     ; We won't be using the stack anymore
     deallocate_stack_frame()
