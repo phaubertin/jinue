@@ -145,7 +145,9 @@ sources.kernel.nasm = \
 sources.setup16.nasm = interface/i686/setup/setup16.asm
 sources.setup32.nasm = interface/i686/setup/setup32.asm
 
-sources.setup32.c = interface/i686/setup/bootinfo.c
+sources.setup32.c = \
+	interface/i686/setup/bootinfo.c \
+	interface/i686/setup/pmap.c
 
 sources.c = $(sources.kernel.c) $(sources.setup32.c)
 sources.nasm = $(sources.kernel.nasm) $(sources.setup16.nasm) $(sources.setup32.nasm)

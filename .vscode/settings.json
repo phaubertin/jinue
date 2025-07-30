@@ -11,7 +11,8 @@
         "vector": "c",
         "string_view": "c",
         "initializer_list": "c",
-        "iterator": "c"
+        "iterator": "c",
+        "type_traits": "c"
     },
     "C_Cpp.default.intelliSenseMode": "linux-gcc-x86"
 }

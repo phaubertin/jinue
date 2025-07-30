@@ -39,7 +39,7 @@
 _start:
     ; The 32-bit setup code sets esi to the boot information structure.
     ;
-    ; See boot/setup32.asm.
+    ; See kernel/interface/i686/setup/setup32.asm.
     mov dword [bootinfo], esi
 
     ; Set command line address as first argument to kmain.

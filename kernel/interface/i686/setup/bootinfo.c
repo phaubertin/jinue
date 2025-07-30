@@ -33,6 +33,12 @@
 #include <kernel/interface/i686/setup/linkdefs.h>
 #include <kernel/interface/i686/types.h>
 
+/**
+ * Initialize some fields in the boot information structure
+ *
+ * @param bootinfo boot information structure
+ * @param linux_header Linux x86 boot protocol real-mode kernel header
+ */
 void initialize_bootinfo(bootinfo_t *bootinfo, const char *linux_header) {
     bootinfo->kernel_start      = (Elf32_Ehdr *)&kernel_start;
     bootinfo->kernel_size       = (size_t)&kernel_size;
@@ -50,6 +56,15 @@ void initialize_bootinfo(bootinfo_t *bootinfo, const char *linux_header) {
     bootinfo->addr_map_entries  = *(uint8_t *)(linux_header + BOOT_ADDR_MAP_ENTRIES);
 }
 
+/**
+ * Adjust pointers in the boot information structure
+ * 
+ * The pointers originally contain the physical address for use before paging
+ * is enabled. This function adds the proper offset so they point to the kernel
+ * virtual address space.
+ *
+ * @param bootinfo boot information structure
+ */
 void adjust_bootinfo_pointers(bootinfo_t *bootinfo) {
 #define ADD_OFFSET(p) (p) = (void *)((char *)(p) + BOOT_OFFSET_FROM_1MB)
     ADD_OFFSET(bootinfo->kernel_start);

@@ -181,8 +181,14 @@
 
     bits 32
 
+    ; From bootinfo.c
     extern adjust_bootinfo_pointers
     extern initialize_bootinfo
+
+    ; From pmap.c
+    extern allocate_page_tables
+    extern initialize_page_directory
+    extern initialize_page_tables
     
     ; This is defined by the linker script
     extern kernel_start
@@ -196,6 +202,9 @@ empty_string:
 start:
     ; we are going up
     cld
+
+    ; initialize frame pointer
+    xor ebp, ebp
     
     ; On entry, esi points to the real mode code start/zero-page address
     ;
@@ -271,16 +280,30 @@ start:
     call copy_cmdline
 
     ; Allocate initial page tables and page directory.
+    push ebx
+    push edi
+
     call allocate_page_tables
+
+    mov edi, eax
+    add esp, 8
 
     ; This is the end of allocations made by this setup code.
     mov dword [ebx + BOOTINFO_BOOT_END], edi
 
     ; Initialize initial page tables.
+    push ebx
+
     call initialize_page_tables
+
+    add esp, 4
     
     ; Initialize initial page directory.
+    push ebx
+
     call initialize_page_directory
+
+    add esp, 4
 
     ; Enable paging and protect read-only pages from being written to by the
     ; kernel
@@ -312,9 +335,6 @@ just_right_here:
     xor eax, eax
     push eax
     push eax
-    
-    ; initialize frame pointer
-    xor ebp, ebp
 
     ; compute kernel entry point address
     mov eax, kernel_start           ; ELF header
@@ -508,292 +528,6 @@ prepare_data_segment:
     mov dword [ebx + BOOTINFO_DATA_PHYSADDR], eax
 
     ; Return value: edi is unchanged
-    ret
-
-    ; -------------------------------------------------------------------------
-    ; Function: allocate_page_tables
-    ; -------------------------------------------------------------------------
-    ; Allocate initial non-PAE page tables and page directory.
-    ;
-    ; Page tables that need to be allocated:
-    ;   - One for the first 2MB of memory, which is where the kernel image is
-    ;     located, as well as VGA text video memory.
-    ;   - NUM_PAGES(BOOT_SIZE_AT_16MB) / NOPAE_PAGE_TABLE_PTES for mapping at
-    ;     0x1000000 (i.e. at 16MB) where the kernel image will be moved by the
-    ;     kernel.
-    ;   - One for kernel image mapping at JINUE_KLIMIT
-    ;
-    ; Arguments:
-    ;       edi address where tables are allocated
-    ;       ebx address of the bootinfo_t structure
-    ;
-    ; Returns:
-    ;       edi end of allocations
-    ; -------------------------------------------------------------------------
-allocate_page_tables:
-    ; Align allocation address to page size before allocating page tables.
-    add edi, PAGE_SIZE - 1              ; align address up...
-    and edi, ~PAGE_MASK                 ; ... to a page boundary
-
-    ; One page for the first 2MB of memory
-    mov dword [ebx + BOOTINFO_PAGE_TABLE_1MB], edi
-    add edi, PAGE_SIZE
-
-    ; Page tables for mapping at 0x1000000 (i.e. at 16MB)
-    mov dword [ebx + BOOTINFO_PAGE_TABLE_16MB], edi
-    add edi, PAGE_SIZE * NUM_PAGES(BOOT_SIZE_AT_16MB) / NOPAE_PAGE_TABLE_PTES
-
-    ; One page table for mapping at JINUE_KLIMIT
-    mov dword [ebx + BOOTINFO_PAGE_TABLE_KLIMIT], edi
-    add edi, PAGE_SIZE
-
-    ; Page directory
-    mov dword [ebx + BOOTINFO_PAGE_DIRECTORY], edi
-    add edi, PAGE_SIZE
-
-    ret
-
-    ; -------------------------------------------------------------------------
-    ; Function: map_kernel_image_1mb
-    ; -------------------------------------------------------------------------
-    ; Map the 1MB of memory that starts with the kernel image, followed by boot
-    ; stack/heap and initial memory allocations.
-    ;
-    ; Arguments:
-    ;       edi address of first page table entry
-    ;       ebx address of the bootinfo_t structure
-    ;
-    ; Returns:
-    ;       edi address of first page table entry after mapped 1MB
-    ;       eax, ecx, edx are caller saved
-    ; -------------------------------------------------------------------------
-map_kernel_image_1mb:
-    ; Compute number of entries to map kernel image
-    mov ecx, dword [ebx + BOOTINFO_IMAGE_TOP]       ; end of image
-    sub ecx, dword [ebx + BOOTINFO_IMAGE_START]     ; minus start of image
-    shr ecx, PAGE_BITS                              ; divide by page size
-
-    ; remember number of entries in edx.
-    mov edx, ecx
-
-    ; map kernel image read only
-    mov eax, dword [ebx + BOOTINFO_IMAGE_START]
-    call map_linear
-
-    ; map remaining of MB read/write. This includes boot stack/heap and initial
-    ; allocations.
-    mov eax, edx
-    shl eax, PAGE_BITS                              ; image size
-    add eax, dword [ebx + BOOTINFO_IMAGE_START]     ; image end = size + offset
-    or eax, X86_PTE_READ_WRITE                      ; access flags
-
-    mov ecx, 256                                    ; number of entries for 1MB
-    sub ecx, edx                                    ; minus image entries
-
-    call map_linear
-
-    ret
-
-    ; -------------------------------------------------------------------------
-    ; Function: map_kernel
-    ; -------------------------------------------------------------------------
-    ; Map the 1MB of memory that starts with the kernel image, followed by boot
-    ; stack/heap and initial memory allocations.
-    ;
-    ; Arguments:
-    ;       edi address of first page table entry
-    ;       ebx address of the bootinfo_t structure
-    ;
-    ; Returns:
-    ;       edi address of first page table entry after mapped 1MB
-    ;       eax, ecx, edx are caller saved
-    ; -------------------------------------------------------------------------
-map_kernel:
-    ; remember edi for later
-    push edi
-
-    ; ----------------------------------------------
-    ; map kernel image (read only)
-    ; ----------------------------------------------
-
-    ; compute number of entries to map kernel image
-    mov ecx, dword [ebx + BOOTINFO_IMAGE_TOP]       ; end of image
-    sub ecx, dword [ebx + BOOTINFO_IMAGE_START]     ; minus start of image
-    shr ecx, PAGE_BITS                              ; divide by page size
-
-    ; start address, read only
-    mov eax, dword [ebx + BOOTINFO_IMAGE_START]
-
-    ; Check if we were able to find and copy the data segment earlier. If we
-    ; weren't, let's just map the whole kernel image read/write and let the
-    ; kernel deal with it later.
-    ;
-    ; If we weren't able to find the data segment, its size has been set to
-    ; zero.
-    mov edx, dword [ebx + BOOTINFO_DATA_SIZE]
-    or edx, edx
-    jnz .readonly
-
-    or eax, X86_PTE_READ_WRITE
-
-.readonly:
-    call map_linear
-
-    ; ----------------------------------------------
-    ; map kernel data segment (read/write)
-    ; ----------------------------------------------
-    ; Remember edi for later and restore value from entry.
-    mov eax, edi
-    pop edi
-    push eax
-
-    ; Don't map the data segment if we weren't able to find it.
-    or edx, edx
-    jz .skip_data
-
-    ; start page table entry for data segment
-    mov eax, dword [ebx + BOOTINFO_DATA_START]     ; data segment start
-    sub eax, BOOT_OFFSET_FROM_1MB                   ; remove mapping offset
-    sub eax, dword [ebx + BOOTINFO_IMAGE_START]    ; minus image start (offset)
-    shr eax, (PAGE_BITS - 2)    ; divide by page size, multiply by entry size
-    add edi, eax                ; and add offset
-
-    ; number of page table entries in data segment
-    mov ecx, dword [ebx + BOOTINFO_DATA_SIZE]      ; size of data segment
-    shr ecx, PAGE_BITS                              ; divide by page size
-
-    ; map data segment read/write
-    mov eax, dword [ebx + BOOTINFO_DATA_PHYSADDR]  ; physical address
-    or eax, X86_PTE_READ_WRITE                      ; access flags
-
-    call map_linear
-
-    ; ----------------------------------------------
-    ; map initial allocations (read/write)
-    ; ----------------------------------------------
-    ; Map initial allocations, including kernel boot stack and heap, up to but
-    ; excluding initial page tables and page directory.
-
-    ; go back to first page table entry after the kernel image
-.skip_data:
-    pop edi
-
-    ; physical address
-    mov eax, dword [ebx + BOOTINFO_IMAGE_TOP]
-
-    ; number of entries
-    mov ecx, dword [ebx + BOOTINFO_PAGE_TABLE_1MB] ; address of page tables
-    sub ecx, eax                                    ; minus image top
-    shr ecx, PAGE_BITS                              ; divide by page size
-
-    ; access flags
-    or eax, X86_PTE_READ_WRITE
-
-    call map_linear
-
-    ; ----------------------------------------------
-    ; clear remainder of page table
-    ; ----------------------------------------------
-
-    ; number of entries already mapped
-    mov eax, dword [ebx + BOOTINFO_PAGE_TABLE_1MB] ; address of page tables
-    sub eax, dword [ebx + BOOTINFO_IMAGE_TOP]      ; minus image start
-    shr eax, PAGE_BITS                              ; divide by page size
-
-    ; number of entries
-    mov ecx, 1024                                   ; entries per page table
-    sub ecx, eax                                    ; already mapped
-
-    call clear_ptes
-
-    ret
-
-    ; -------------------------------------------------------------------------
-    ; Function: initialize_page_tables
-    ; -------------------------------------------------------------------------
-    ; Initialize initial non-PAE page tables.
-    ;
-    ; Arguments:
-    ;       ebx address of the bootinfo_t structure
-    ;
-    ; Returns:
-    ;       eax, ecx, edx, edi are caller saved
-    ; -------------------------------------------------------------------------
-initialize_page_tables:
-    ; ----------------------------------------------------
-    ; First page table: first 4 MB of memory (1:1)
-    ; ----------------------------------------------------
-
-    ; Map first 1MB read/write. This includes video memory.
-    mov eax, X86_PTE_READ_WRITE                     ; start address is 0
-    mov edi, dword [ebx + BOOTINFO_PAGE_TABLE_1MB] ; write address
-    mov ecx, 256                                    ; number of entries
-    call map_linear
-
-    ; map kernel image and read/write memory that follows (1MB)
-    call map_kernel_image_1mb
-
-    ; clear remaining half of page table (2MB)
-    mov ecx, 512
-    call clear_ptes
-
-    ; ----------------------------------------------------
-    ; Next few page tables: memory at 16MB (1:1)
-    ; ----------------------------------------------------
-
-    ; Initialize pages table to map BOOT_SIZE_AT_16MB starting at 0x1000000 (16M)
-    ;
-    ; Write address (edi) already has the correct value.
-    mov eax, MEMORY_ADDR_16MB               ; start address
-    or eax, X86_PTE_READ_WRITE              ; access flags
-    mov ecx, NUM_PAGES(BOOT_SIZE_AT_16MB)   ; number of page table entries
-    call map_linear
-
-    ; ----------------------------------------------------
-    ; Last page table: kernel image mapped at JINUE_KLIMIT
-    ; ----------------------------------------------------
-
-    ; map kernel image and read/write memory that follows (1MB)
-    call map_kernel
-
-    ret
-
-    ; -------------------------------------------------------------------------
-    ; Function: initialize_page_directory
-    ; -------------------------------------------------------------------------
-    ; Initialize initial non-PAE page directory.
-    ;
-    ; Arguments:
-    ;       ebx address of the bootinfo_t structure
-    ;
-    ; Returns:
-    ;       eax, ecx, edi are caller saved
-    ; -------------------------------------------------------------------------
-initialize_page_directory:
-    ; clear initial page directory
-    mov edi, dword [ebx + BOOTINFO_PAGE_DIRECTORY] ; write address
-    mov ecx, 1024                       ; write 1024 entries (full table)
-    call clear_ptes
-
-    ; add entry for the first page table
-    mov edi, dword [ebx + BOOTINFO_PAGE_DIRECTORY]
-    mov eax, dword [ebx + BOOTINFO_PAGE_TABLE_1MB]
-    or eax, X86_PTE_READ_WRITE | X86_PTE_PRESENT
-    mov dword [edi], eax
-
-    ; add entries for page tables for memory at 16MB
-    mov eax, dword [ebx + BOOTINFO_PAGE_TABLE_16MB]
-    or eax, X86_PTE_READ_WRITE
-    lea edi, [edi + 4 * (MEMORY_ADDR_16MB >> 22)]
-    mov ecx, NUM_PAGES(BOOT_SIZE_AT_16MB) / NOPAE_PAGE_TABLE_PTES
-    call map_linear
-
-    ; add entry for the last page table
-    mov edi, dword [ebx + BOOTINFO_PAGE_DIRECTORY]
-    mov eax, dword [ebx + BOOTINFO_PAGE_TABLE_KLIMIT]
-    or eax, X86_PTE_READ_WRITE | X86_PTE_PRESENT
-    mov dword [edi + 4 * (JINUE_KLIMIT >> 22)], eax
-
     ret
 
     ; -------------------------------------------------------------------------
