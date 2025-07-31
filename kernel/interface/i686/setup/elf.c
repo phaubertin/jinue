@@ -103,7 +103,7 @@ char *prepare_data_segment(char *alloc_ptr, bootinfo_t *bootinfo) {
     }
 
     if(bootinfo->data_size != 0) {
-        bootinfo->data_physaddr = alloc_ptr;
+        bootinfo->data_physaddr = (size_t)alloc_ptr;
     }
 
     return alloc_ptr + bootinfo->data_size;
