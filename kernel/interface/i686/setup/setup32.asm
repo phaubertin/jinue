@@ -185,6 +185,11 @@
     extern adjust_bootinfo_pointers
     extern initialize_bootinfo
 
+    ; From linux.c
+    extern copy_acpi_address_map
+    extern copy_cmdline
+    extern initialize_from_linux_header
+
     ; From pmap.c
     extern allocate_page_tables
     extern initialize_page_directory
@@ -194,10 +199,6 @@
     extern kernel_start
 
     jmp start
-
-    ; Empty string used to represent an empty kernel command line.
-empty_string:
-    db 0
 
 start:
     ; we are going up
@@ -260,10 +261,16 @@ start:
     ; Initialize most fields in bootinfo_t structure. The rest are initialized
     ; later, except for the location of the boot heap which was already
     ; initialized above.
-    push esi
     push ebx
 
     call initialize_bootinfo
+
+    add esp, 4
+
+    push esi
+    push ebx
+
+    call initialize_from_linux_header
 
     add esp, 8
 
@@ -271,13 +278,22 @@ start:
     ; bootinfo_t structure.
     call prepare_data_segment
 
-    ; copy BIOS memory map
+    ; copy BIOS memory map and command line
     mov esi, dword [esp + VAR_ZERO_PAGE]
+    
+    push esi
+    push ebx
+    push edi
+
     call copy_acpi_address_map
 
-    ; copy command line
-    mov esi, dword [esp + VAR_ZERO_PAGE]
+    pop edi
+    push eax
+
     call copy_cmdline
+
+    mov edi, eax
+    add esp, 12
 
     ; Allocate initial page tables and page directory.
     push ebx
@@ -349,78 +365,6 @@ just_right_here:
     ; ==========================================================================
 
     ;                              *  *  *
-
-    ; -------------------------------------------------------------------------
-    ; Function: copy_acpi_address_map
-    ; -------------------------------------------------------------------------
-    ; Copy ACPI address map.
-    ;
-    ; Arguments:
-    ;       esi real mode code start/zero-page address
-    ;       edi copy destination
-    ;       ebx address of the bootinfo_t structure
-    ;
-    ; Returns:
-    ;       edi end of memory map
-    ;       ecx, esi are caller saved
-    ; -------------------------------------------------------------------------
-copy_acpi_address_map:
-    ; Set memory map address in bootinfo_t structure
-    mov dword [ebx + BOOTINFO_ACPI_ADDR_MAP], edi
-
-    ; Source address
-    add esi, BOOT_ADDR_MAP
-
-    ; Compute size to copy
-    mov ecx, dword [ebx + BOOTINFO_ADDR_MAP_ENTRIES]
-    lea ecx, [5 * ecx]              ; times 20 (size of one entry), which is 5 ...
-    shl ecx, 2                      ; ... times 2^2
-
-    ; Copy memory map
-    rep movsb
-
-    ret
-
-    ; -------------------------------------------------------------------------
-    ; Function: copy_cmdline
-    ; -------------------------------------------------------------------------
-    ; Copy kernel command line
-    ;
-    ; Arguments:
-    ;       esi real mode code start/zero-page address
-    ;       edi copy destination
-    ;       ebx address of the bootinfo_t structure
-    ;
-    ; Returns:
-    ;       edi end of kernel command line
-    ;       eax, ecx, esi are caller saved
-    ; -------------------------------------------------------------------------
-copy_cmdline:
-    mov dword [ebx + BOOTINFO_CMDLINE], empty_string
-
-    mov esi, dword [esi + BOOT_CMD_LINE_PTR]
-    or esi, esi                     ; if command line pointer is NULL...
-    jz .skip                        ; ... skip copy and keep empty string
-
-    mov dword [ebx + BOOTINFO_CMDLINE], edi
-    mov ecx, CMDLINE_MAX_PARSE_LENGTH
-.copy:
-    lodsb                           ; load next character
-    stosb                           ; store character in destination
-
-    dec ecx                         ; decrement max length counter
-    jz .too_long                    ; check if maximum length was reached
-
-    or al, al                       ; if character is not terminating NUL...
-    jnz .copy                       ; ... continue with next character
-
-.skip:
-    ret
-
-.too_long:
-    mov al, 0                       ; NUL terminate cropped command line
-    stosb
-    ret
 
     ; -------------------------------------------------------------------------
     ; Function: prepare_data_segment
@@ -551,56 +495,5 @@ enable_paging:
     mov eax, cr0
     or eax, X86_CR0_PG | X86_CR0_WP
     mov cr0, eax
-
-    ret
-
-    ; -------------------------------------------------------------------------
-    ; Function: map_linear
-    ; -------------------------------------------------------------------------
-    ; Initialize consecutive non-PAE page table entries to map consecutive
-    ; pages of physical memory (i.e. page frames).
-    ;
-    ; Arguments:
-    ;       eax start physical address and access flags
-    ;       ecx number of entries
-    ;       edi start write address, i.e. address of first page table entry
-    ;
-    ; Returns:
-    ;       edi updated write address
-    ;       eax, ecx are caller saved
-    ; -------------------------------------------------------------------------
-map_linear:
-    ; page table entry flags
-    or eax, X86_PTE_PRESENT
-
-.loop:
-    ; store eax in page table entry pointed to by edi, then add 4 to edi to
-    ; point to the next entry
-    stosd
-
-    ; update physical address
-    add eax, PAGE_SIZE
-
-    ; decrement ecx, we are done when it reaches 0, otherwise loop
-    loop .loop
-
-    ret
-
-    ; -------------------------------------------------------------------------
-    ; Function: clear_ptes
-    ; -------------------------------------------------------------------------
-    ; clear consecutive non-PAE page table entries.
-    ;
-    ; Arguments:
-    ;       ecx number of entries
-    ;       edi start write address, i.e. address of first page table entry
-    ;
-    ; Returns:
-    ;       edi updated write address
-    ;       eax, ecx are caller saved
-    ; -------------------------------------------------------------------------
-clear_ptes:
-    xor eax, eax                        ; write value: 0
-    rep stosd                           ; clear entries
 
     ret

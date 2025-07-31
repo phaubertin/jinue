@@ -37,9 +37,8 @@
  * Initialize some fields in the boot information structure
  *
  * @param bootinfo boot information structure
- * @param linux_header Linux x86 boot protocol real-mode kernel header
  */
-void initialize_bootinfo(bootinfo_t *bootinfo, const char *linux_header) {
+void initialize_bootinfo(bootinfo_t *bootinfo) {
     bootinfo->kernel_start      = (Elf32_Ehdr *)&kernel_start;
     bootinfo->kernel_size       = (size_t)&kernel_size;
     bootinfo->loader_start      = (Elf32_Ehdr *)&loader_start;
@@ -49,11 +48,6 @@ void initialize_bootinfo(bootinfo_t *bootinfo, const char *linux_header) {
     /* The boot information structure is the first thing allocated right after
      * the kernel image. */
     bootinfo->image_top         = bootinfo;
-
-    bootinfo->ramdisk_start     = *(uint32_t *)(linux_header + BOOT_RAMDISK_IMAGE);
-    bootinfo->ramdisk_size      = *(size_t *)(linux_header + BOOT_RAMDISK_SIZE);
-    bootinfo->setup_signature   = *(uint32_t *)(linux_header + BOOT_SETUP_HEADER);
-    bootinfo->addr_map_entries  = *(uint8_t *)(linux_header + BOOT_ADDR_MAP_ENTRIES);
 }
 
 /**
