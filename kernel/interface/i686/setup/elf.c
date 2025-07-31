@@ -1,0 +1,110 @@
+/*
+ * Copyright (C) 2025 Philippe Aubertin.
+ * All rights reserved.
+
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 
+ * 3. Neither the name of the author nor the names of other contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE FOR ANY
+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include <kernel/interface/i686/setup/linkdefs.h>
+#include <kernel/interface/i686/types.h>
+#include <kernel/machine/asm/machine.h>
+#include <kernel/utils/utils.h>
+#include <sys/elf.h>
+#include <stdbool.h>
+#include <stddef.h>
+
+/**
+ * Perform sanity check on ELF header
+ * 
+ * @param ehdr ELF header
+ * @return true if the header is likely valid, false if definitely invalid
+ */
+static bool check_header(const Elf32_Ehdr *ehdr) {
+    if(ehdr == NULL) {
+        return false;
+    }
+
+    bool valid = true;
+    
+    valid &= ehdr->e_ident[EI_MAG0] == ELF_MAGIC0;
+    valid &= ehdr->e_ident[EI_MAG1] == ELF_MAGIC1;
+    valid &= ehdr->e_ident[EI_MAG2] == ELF_MAGIC2;
+    valid &= ehdr->e_ident[EI_MAG3] == ELF_MAGIC3;
+    valid &= ehdr->e_ident[EI_CLASS] == ELFCLASS32;
+    valid &= ehdr->e_ident[EI_DATA] == ELFDATA2LSB;
+    valid &= ehdr->e_phnum != 0;
+    valid &= ehdr->e_phoff != 0;
+    valid &= ehdr->e_phentsize == sizeof(Elf32_Phdr);
+
+    return valid;
+}
+
+/**
+ * Load the kernel data segment from its ELF binary
+ * 
+ * @param alloc_ptr allocation pointer, i.e. where to allocate memory
+ * @param bootinfo boot information structure
+ * @return updated allocation pointer
+ */
+char *prepare_data_segment(char *alloc_ptr, bootinfo_t *bootinfo) {
+    const Elf32_Ehdr *ehdr = bootinfo->kernel_start;
+
+    /* These values lets the kernel know that its data segment could not be
+     * loaded and lets it deal with this situation later. */
+    bootinfo->data_physaddr = 0;
+    bootinfo->data_size = 0;
+    bootinfo->data_start = NULL;
+
+    if(!check_header(ehdr)) {
+        return alloc_ptr;
+    }
+
+    const Elf32_Phdr *phdrs = (Elf32_Phdr *)((char *)ehdr + ehdr->e_phoff);
+
+    for(int idx = 0; idx < ehdr->e_phnum; ++idx) {
+        const Elf32_Phdr *phdr = &phdrs[idx];
+
+        if(phdr->p_type != PT_LOAD || !(phdr->p_flags & PF_W)) {
+            continue;
+        }
+
+        bootinfo->data_start    = (void *)phdr->p_vaddr;
+        bootinfo->data_size     = ALIGN_END(phdr->p_memsz, PAGE_SIZE);
+
+        const char *src = (char *)ehdr + phdr->p_offset;
+
+        for(int idy = 0; idy < bootinfo->data_size; ++idy) {
+            alloc_ptr[idy] = (idy < phdr->p_filesz) ? src[idy] : 0;
+        }
+    }
+
+    if(bootinfo->data_size != 0) {
+        bootinfo->data_physaddr = alloc_ptr;
+    }
+
+    return alloc_ptr + bootinfo->data_size;
+}

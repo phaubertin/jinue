@@ -171,19 +171,14 @@
 #include <kernel/utils/asm/pmap.h>
 #include <sys/asm/elf.h>
 
-; Stack frame variables and size
-#define VAR_ZERO_PAGE       0
-#define STACK_FRAME_SIZE    4
-
-; Stack frame allocation
-#define allocate_stack_frame()      sub esp, STACK_FRAME_SIZE
-#define deallocate_stack_frame()    add esp, STACK_FRAME_SIZE
-
     bits 32
 
     ; From bootinfo.c
     extern adjust_bootinfo_pointers
     extern initialize_bootinfo
+
+    ; From elf.c
+    extern prepare_data_segment
 
     ; From linux.c
     extern copy_acpi_address_map
@@ -253,11 +248,6 @@ start:
     ; Function that do not allocate memory do not touch edi.
     mov edi, eax
 
-    allocate_stack_frame()
-
-    ; Store real mode code start/zero-page address for later use.
-    mov dword [esp + VAR_ZERO_PAGE], esi
-
     ; Initialize most fields in bootinfo_t structure. The rest are initialized
     ; later, except for the location of the boot heap which was already
     ; initialized above.
@@ -276,11 +266,15 @@ start:
 
     ; copy data segment and set fields regarding its size and location in the
     ; bootinfo_t structure.
+    push ebx
+    push edi
+
     call prepare_data_segment
 
-    ; copy BIOS memory map and command line
-    mov esi, dword [esp + VAR_ZERO_PAGE]
-    
+    mov edi, eax
+    add esp, 8
+
+    ; copy ACPI address map and command line
     push esi
     push ebx
     push edi
@@ -333,9 +327,6 @@ start:
     
     add esp, 4
 
-    ; We won't be using the stack anymore
-    deallocate_stack_frame()
-
     ; adjust stack pointer to point in kernel alias
     add esp, BOOT_OFFSET_FROM_1MB
 
@@ -365,114 +356,6 @@ just_right_here:
     ; ==========================================================================
 
     ;                              *  *  *
-
-    ; -------------------------------------------------------------------------
-    ; Function: prepare_data_segment
-    ; -------------------------------------------------------------------------
-    ; Find and copy the kernel's data segment, add zero padding for
-    ; uninitialized data and set its location and size in the bootinfo_t
-    ; structure.
-    ;
-    ; Arguments:
-    ;       edi address where data segment will be copied
-    ;       ebx address of the bootinfo_t structure
-    ;
-    ; Returns:
-    ;       edi address of top of copied data segment (for subsequent allocations)
-    ;       eax, ecx, edx, esi are caller saved
-    ; -------------------------------------------------------------------------
-prepare_data_segment:
-    ; Check magic numbers at the beginning of the ELF header.
-    mov eax, kernel_start
-    cmp byte [eax + EI_MAG0], ELF_MAGIC0
-    jnz .fail
-    cmp byte [eax + EI_MAG1], ELF_MAGIC1
-    jnz .fail
-    cmp byte [eax + EI_MAG2], ELF_MAGIC2
-    jnz .fail
-    cmp byte [eax + EI_MAG3], ELF_MAGIC3
-    jnz .fail
-    cmp byte [eax + EI_CLASS], ELFCLASS32
-    jnz .fail
-    cmp byte [eax + EI_DATA], ELFDATA2LSB
-    jnz .fail
-
-    ; Put destination address (edi) in the physical address of data segment
-    ; field in the bootinfo_t structure.
-    mov dword [ebx + BOOTINFO_DATA_PHYSADDR], edi
-
-    ; ecx is the loop counter when iterating on program headers. Set to number
-    ; of program headers.
-    mov ecx, dword [eax + ELF_E_PHNUM]
-
-    ; edx is location of current program header. Set to the first program
-    ; header.
-    mov edx, kernel_start
-    add edx, dword [eax + ELF_E_PHOFF]
-
-.loop_phdr:
-    ; Only consider loadable segments (segment type PT_LOAD)
-    mov eax, dword [edx + ELF_P_TYPE]
-    cmp eax, PT_LOAD
-    jnz .next_phdr
-
-    ; Only consider read/write segments
-    mov eax, dword [edx + ELF_P_FLAGS]
-    and eax, PF_W
-    jz .next_phdr
-
-    ; We found the segment we were looking for.
-
-    ; Set segment start address in bootinfo_t structure
-    mov eax, dword [edx + ELF_P_VADDR]      ; Start of data segment
-    mov dword [ebx + BOOTINFO_DATA_START], eax
-
-    ; Set segment size in bootinfo_t structure
-    mov eax, dword [edx + ELF_P_MEMSZ]      ; Size of data segment in memory
-    add eax, PAGE_SIZE - 1                  ; align address up...
-    and eax, ~PAGE_MASK                     ; ... to a page boundary
-    mov dword [ebx + BOOTINFO_DATA_SIZE], eax
-
-    ; Set source address of data segment copy
-    mov esi, kernel_start                   ; kernel start
-    add esi, dword [edx + ELF_P_OFFSET]     ; plus segment offset
-
-    ; Number of bytes to copy
-    mov ecx, dword [edx + ELF_P_FILESZ]
-
-    ; Remember number of bytes to zero out for padding (.bss section), which is
-    ; size of segment minus size copied. Current value of eax is segment size.
-    sub eax, ecx
-
-    ; Copy data segment data
-    rep movsb
-
-    ; Set up to zero out remaining of data segment.
-    mov ecx, eax    ; size
-    mov eax, 0      ; value
-
-    ; Zero out
-    rep stosb
-
-    ; Return value: edi is now at the end of the copied data segment
-    ret
-
-.next_phdr:
-    add edx, ELF_PHDR_SIZE  ; next program header
-    dec ecx                 ; decrement loop counter
-    jnz .loop_phdr          ; next iteration if loop counter is not zero
-
-.fail:
-    ; We couldn't find a writable segment in the kernel's ELF binary, which
-    ; means something is seriously wrong. Set all data segment-related fields to
-    ; zero and let the kernel deal with this error condition later.
-    xor eax, eax
-    mov dword [ebx + BOOTINFO_DATA_START], eax
-    mov dword [ebx + BOOTINFO_DATA_SIZE], eax
-    mov dword [ebx + BOOTINFO_DATA_PHYSADDR], eax
-
-    ; Return value: edi is unchanged
-    ret
 
     ; -------------------------------------------------------------------------
     ; Function: enable_paging
