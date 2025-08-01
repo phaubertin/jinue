@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2025 Philippe Aubertin.
+ * Copyright (C) 2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,52 +29,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_I686_ASM_BOOT_H
-#define JINUE_KERNEL_I686_ASM_BOOT_H
+#ifndef JINUE_KERNEL_INTERFACE_I686_SETUP_ELF_H
+#define JINUE_KERNEL_INTERFACE_I686_SETUP_ELF_H
 
-#include <kernel/infrastructure/i686/asm/memory.h>
-#include <kernel/machine/asm/machine.h>
-#include <kernel/utils/asm/utils.h>
+#include <kernel/interface/i686/types.h>
 
-#define BOOT_ADDR_MAP_ENTRIES   0x1e8
+char *prepare_data_segment(char *alloc_ptr, bootinfo_t *bootinfo);
 
-#define BOOT_SETUP_SECTS        0x1f1
-
-#define BOOT_MAGIC              0xaa55
-
-#define BOOT_SETUP_HEADER       0x202
-
-#define BOOT_SETUP_MAGIC        0x53726448  /* "HdrS", reversed */
-
-#define BOOT_RAMDISK_IMAGE      0x218
-
-#define BOOT_RAMDISK_SIZE       0x21C
-
-#define BOOT_CMD_LINE_PTR       0x228
-
-#define BOOT_ADDR_MAP           0x2d0
-
-#define BOOT_ADDR_MAP_END       0xd00
-
-#define BOOT_ADDR_MAP_SIZE      (BOOT_ADDR_MAP_END - BOOT_ADDR_MAP)
-
-#define BOOT_SETUP32_ADDR       MEMORY_ADDR_1MB
-
-#define BOOT_SETUP32_SIZE       PAGE_SIZE
-
-#define BOOT_DATA_STRUCT        BOOT_ADDR_MAP_ENTRIES
-
-#define BOOT_STACK_HEAP_SIZE    (4 * PAGE_SIZE)
-
-#define BOOT_OFFSET_FROM_1MB    (KERNEL_BASE - MEMORY_ADDR_1MB)
-
-#define BOOT_OFFSET_FROM_16MB   (KERNEL_BASE - MEMORY_ADDR_16MB)
-
-#define BOOT_SIZE_AT_1MB        (1 * MB)
-
-/* must be a multiple of 4MB (full page tables) */
-#define BOOT_SIZE_AT_16MB       (8 * MB)
-
-#define BOOT_RAMDISK_LIMIT      0xc0000000
+Elf32_Addr get_kernel_entry_point(const bootinfo_t *bootinfo);
 
 #endif

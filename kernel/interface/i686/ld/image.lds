@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -34,8 +34,8 @@
 OUTPUT_FORMAT("binary")
 
 TARGET("elf32-i386")
-INPUT("interface/i686/setup16-nasm.o")
-INPUT("interface/i686/setup32-nasm.o")
+INPUT("interface/i686/setup/setup16-nasm.o")
+INPUT("interface/i686/setup/setup32.o")
 
 /* Even though the next two input files are ELF binaries, we want to insert them
  * whole into the kernel image, hence why the TARGET is specified as binary. Both
@@ -65,7 +65,7 @@ SECTIONS {
      * Needed symbols:                  setup_size_div512
      *                                  kernel_size_div16 */
     setup16 : {
-        interface/i686/setup16-nasm.o
+        interface/i686/setup/setup16-nasm.o(.text)
     }
     
     /* Everything below this point is loaded consecutively starting at 0x100000
@@ -99,9 +99,11 @@ SECTIONS {
      * Needed symbols:                  kernel_start
      *                                  kernel_size
      *                                  loader_start
-     *                                  loader_size */
+     *                                  loader_size
+     *                                  image_start */
     setup32 BOOT_SETUP32_ADDR : AT(ADDR(setup16) + SIZEOF(setup16)) {
-        interface/i686/setup32-nasm.o
+        image_start = .;
+        interface/i686/setup/setup32.o(.text)
     }
     
     /* The next section must start at a specific offset (BOOT_SETUP32_SIZE) from
