@@ -31,9 +31,8 @@
 
 #include <kernel/domain/services/asm/cmdline.h>
 #include <kernel/interface/i686/asm/boot.h>
+#include <kernel/interface/i686/setup/linux.h>
 #include <kernel/interface/i686/types.h>
-
-typedef char linux_header_t[];
 
 #define HEADER_FIELD(h, t, o) *(t*)&(h)[o]
 

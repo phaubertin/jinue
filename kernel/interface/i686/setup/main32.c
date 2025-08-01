@@ -30,24 +30,39 @@
  */
 
 #include <kernel/interface/i686/asm/boot.h>
+#include <kernel/interface/i686/setup/elf.h>
 #include <kernel/interface/i686/setup/linkdefs.h>
+#include <kernel/interface/i686/setup/linux.h>
+#include <kernel/interface/i686/setup/pmap.h>
+#include <kernel/interface/i686/setup/setup32.h>
 #include <kernel/interface/i686/types.h>
 
 /**
  * Initialize some fields in the boot information structure
  *
- * @param bootinfo boot information structure
+ * @param heap_ptr pointer to boot heap (for small allocations)
+ * @param linux_header Linux x86 boot protocol real-mode kernel header
+ * @return boot information structure
  */
-void initialize_bootinfo(bootinfo_t *bootinfo) {
-    bootinfo->kernel_start      = (Elf32_Ehdr *)&kernel_start;
-    bootinfo->kernel_size       = (size_t)&kernel_size;
-    bootinfo->loader_start      = (Elf32_Ehdr *)&loader_start;
-    bootinfo->loader_size       = (size_t)&loader_size;
-    bootinfo->image_start       = &image_start;
+static bootinfo_t *create_bootinfo(char *heap_ptr, const linux_header_t linux_header) {
+    bootinfo_t *bootinfo = (bootinfo_t *)heap_ptr;
+    heap_ptr = (char *)(bootinfo + 1);
+
+    bootinfo->boot_heap     = heap_ptr;
+   
+    bootinfo->kernel_start  = (Elf32_Ehdr *)&kernel_start;
+    bootinfo->kernel_size   = (size_t)&kernel_size;
+    bootinfo->loader_start  = (Elf32_Ehdr *)&loader_start;
+    bootinfo->loader_size   = (size_t)&loader_size;
+    bootinfo->image_start   = &image_start;
 
     /* The boot information structure is the first thing allocated right after
      * the kernel image. */
-    bootinfo->image_top         = bootinfo;
+    bootinfo->image_top     = bootinfo;
+
+    initialize_from_linux_header(bootinfo, linux_header);
+
+    return bootinfo;
 }
 
 /**
@@ -59,7 +74,7 @@ void initialize_bootinfo(bootinfo_t *bootinfo) {
  *
  * @param bootinfo boot information structure
  */
-void adjust_bootinfo_pointers(bootinfo_t *bootinfo) {
+static void adjust_bootinfo_pointers(bootinfo_t *bootinfo) {
 #define ADD_OFFSET(p) (p) = (void *)((char *)(p) + BOOT_OFFSET_FROM_1MB)
     ADD_OFFSET(bootinfo->kernel_start);
     ADD_OFFSET(bootinfo->loader_start);
@@ -70,4 +85,34 @@ void adjust_bootinfo_pointers(bootinfo_t *bootinfo) {
     ADD_OFFSET(bootinfo->boot_heap);
     ADD_OFFSET(bootinfo->boot_end);
 #undef ADD_OFFSET
+}
+
+/**
+ * Orchestrate setup
+ * 
+ * @param alloc_ptr allocation pointer, i.e. where to allocate memory
+ * @param heap_ptr pointer to boot heap (for small allocations)
+ * @param linux_header Linux x86 boot protocol real-mode kernel header
+ */
+void main32(char *alloc_ptr, char *heap_ptr, const linux_header_t linux_header) {
+    bootinfo_t *bootinfo = create_bootinfo(heap_ptr, linux_header);
+
+    alloc_ptr = prepare_data_segment(alloc_ptr, bootinfo);
+
+    alloc_ptr = copy_acpi_address_map(alloc_ptr, bootinfo, linux_header);
+
+    alloc_ptr = copy_cmdline(alloc_ptr, bootinfo, linux_header);
+
+    alloc_ptr = allocate_page_tables(alloc_ptr, bootinfo);
+
+    /* This is the end of allocations made by this setup code. */
+    bootinfo->boot_end = alloc_ptr;
+
+    initialize_page_tables(bootinfo);
+
+    initialize_page_directory(bootinfo);
+
+    enable_paging(bootinfo->page_directory);
+
+    adjust_bootinfo_pointers(bootinfo);
 }

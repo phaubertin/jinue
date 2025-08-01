@@ -173,47 +173,35 @@
 
     bits 32
 
-    ; From bootinfo.c
-    extern adjust_bootinfo_pointers
-    extern initialize_bootinfo
+    ; From elf.h
+    extern get_kernel_entry_point
 
-    ; From elf.c
-    extern prepare_data_segment
+    ; From main32.c
+    extern main32
 
-    ; From linux.c
-    extern copy_acpi_address_map
-    extern copy_cmdline
-    extern initialize_from_linux_header
-
-    ; From pmap.c
-    extern allocate_page_tables
-    extern initialize_page_directory
-    extern initialize_page_tables
-    
     ; This is defined by the linker script
     extern kernel_start
+    extern kernel_top
 
     jmp start
 
 start:
+    ; On entry, esi points to the real mode code start/zero-page address
+
     ; we are going up
     cld
 
     ; initialize frame pointer
     xor ebp, ebp
     
-    ; On entry, esi points to the real mode code start/zero-page address
+    ; This setup code allocates some memory right after the kernel image. See
+    ; doc/layout.md for the exact layout of those allocations.
     ;
-    ; figure out the size of the kernel image
-    mov eax, dword [esi + BOOT_SYSIZE]
-    shl eax, 4              ; times 16
-
-    ; align to page boundary
-    add eax, PAGE_SIZE - 1
-    and eax, ~PAGE_MASK
-
-    ; compute top of kernel image
-    add eax, BOOT_SETUP32_ADDR
+    ; The first thing we allocate are the boot stack and heap. We set ebx to
+    ; the start of the heap, which is also the address of the boot information
+    ; structure since this is the first thing main32() allocates there.
+    mov eax, kernel_top
+    mov ebx, eax
 
     ; We put the boot heap immediately after the kernel image and allocate
     ; the bootinfo_t structure on that heap.
@@ -221,12 +209,6 @@ start:
     ; Set ebx to the start of the bootinfo_t structure. All accesses to that
     ; structure will be relative to ebx.
     mov ebx, eax
-    
-    ; Set heap pointer taking into account allocation of bootinfo_t structure.
-    add eax, BOOTINFO_SIZE
-    add eax, 7                      ; align address up...
-    and eax, ~7                     ; ... to an eight-byte boundary
-    mov dword [ebx + BOOTINFO_BOOT_HEAP], eax
 
     ; setup boot stack and heap, then use new stack
     mov eax, ebx
@@ -235,97 +217,23 @@ start:
     and eax, ~PAGE_MASK                     ; ... to a page boundary
     mov esp, eax                            ; set stack pointer
 
-    ; Set address for next allocations.
-    ;
-    ; This setup code allocates some memory right after the kernel image such
-    ; as the boot stack and heap set up right above as well as the BIOS memory
-    ; map, the initial page tables, etc. See doc/layout.md for the exact layout
-    ; of those allocations.
-    ;
-    ; The edi register is the current top of allocated memory. As a convention,
-    ; the functions that are called below that allocate memory take the current
-    ; allocation address as argument in edi and return the updated value in edi.
-    ; Function that do not allocate memory do not touch edi.
+    ; Bigger allocations such as the page tables go after the boot stack and
+    ; heap.
     mov edi, eax
 
-    ; Initialize most fields in bootinfo_t structure. The rest are initialized
-    ; later, except for the location of the boot heap which was already
-    ; initialized above.
-    push ebx
-
-    call initialize_bootinfo
-
-    add esp, 4
-
-    push esi
-    push ebx
-
-    call initialize_from_linux_header
-
-    add esp, 8
-
-    ; copy data segment and set fields regarding its size and location in the
-    ; bootinfo_t structure.
-    push ebx
-    push edi
-
-    call prepare_data_segment
-
-    mov edi, eax
-    add esp, 8
-
-    ; copy ACPI address map and command line
-    push esi
-    push ebx
-    push edi
-
-    call copy_acpi_address_map
-
-    pop edi
+    ; null-terminate call stack (useful for debugging)
+    xor eax, eax
+    push eax
     push eax
 
-    call copy_cmdline
-
-    mov edi, eax
-    add esp, 12
-
-    ; Allocate initial page tables and page directory.
+    ; Call main32() which does the bulk of the initialization.
+    push esi
     push ebx
     push edi
 
-    call allocate_page_tables
+    call main32
 
-    mov edi, eax
-    add esp, 8
-
-    ; This is the end of allocations made by this setup code.
-    mov dword [ebx + BOOTINFO_BOOT_END], edi
-
-    ; Initialize initial page tables.
-    push ebx
-
-    call initialize_page_tables
-
-    add esp, 4
-    
-    ; Initialize initial page directory.
-    push ebx
-
-    call initialize_page_directory
-
-    add esp, 4
-
-    ; Enable paging and protect read-only pages from being written to by the
-    ; kernel
-    call enable_paging
-
-    ; adjust the pointers in the boot information structure so they point in the
-    ; kernel alias
-    push ebx
-    
-    call adjust_bootinfo_pointers
-    
-    add esp, 4
+    add esp, 12
 
     ; adjust stack pointer to point in kernel alias
     add esp, BOOT_OFFSET_FROM_1MB
@@ -338,17 +246,12 @@ just_right_here:
     mov esi, ebx
     add esi, BOOT_OFFSET_FROM_1MB   ; adjust to point in kernel alias
 
-    ; null-terminate call stack (useful for debugging)
-    xor eax, eax
-    push eax
-    push eax
-
-    ; compute kernel entry point address
-    mov eax, kernel_start           ; ELF header
-    add eax, BOOT_OFFSET_FROM_1MB
-    mov eax, [eax + ELF_E_ENTRY]    ; e_entry member
-
     ; jump to kernel entry point
+    push esi
+
+    call get_kernel_entry_point
+
+    add esp, 4
     jmp eax
 
     ; ==========================================================================
@@ -359,19 +262,17 @@ just_right_here:
 
     ; -------------------------------------------------------------------------
     ; Function: enable_paging
+    ; C prototype: void enable_paging(pte_t *page_directory)
     ; -------------------------------------------------------------------------
     ; Enable paging and protect read-only pages from being written to by the
     ; kernel.
-    ;
-    ; Arguments:
-    ;       ebx address of the bootinfo_t structure
-    ;
-    ; Returns:
-    ;       eax is caller saved
     ; -------------------------------------------------------------------------
+    global enable_paging:function (enable_paging.end - enable_paging)
 enable_paging:
+    ; First argument: page directory address
+    mov eax, dword [esp + 4]
+
     ; set page directory address in CR3
-    mov eax, [ebx + BOOTINFO_PAGE_DIRECTORY]
     mov cr3, eax
 
     ; enable paging (PG), prevent kernel from writing to read-only pages (WP)
@@ -380,3 +281,4 @@ enable_paging:
     mov cr0, eax
 
     ret
+.end:

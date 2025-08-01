@@ -108,3 +108,8 @@ char *prepare_data_segment(char *alloc_ptr, bootinfo_t *bootinfo) {
 
     return alloc_ptr + bootinfo->data_size;
 }
+
+Elf32_Addr get_kernel_entry_point(const bootinfo_t *bootinfo) {
+    const Elf32_Ehdr *ehdr = bootinfo->kernel_start;
+    return ehdr->e_entry;
+}
