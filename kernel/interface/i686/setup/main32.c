@@ -55,10 +55,7 @@ static bootinfo_t *create_bootinfo(char *heap_ptr, const linux_header_t linux_he
     bootinfo->loader_start  = (Elf32_Ehdr *)&loader_start;
     bootinfo->loader_size   = (size_t)&loader_size;
     bootinfo->image_start   = &image_start;
-
-    /* The boot information structure is the first thing allocated right after
-     * the kernel image. */
-    bootinfo->image_top     = bootinfo;
+    bootinfo->image_top     = &image_top;
 
     initialize_from_linux_header(bootinfo, linux_header);
 
@@ -74,16 +71,19 @@ static bootinfo_t *create_bootinfo(char *heap_ptr, const linux_header_t linux_he
  *
  * @param bootinfo boot information structure
  */
-static void adjust_bootinfo_pointers(bootinfo_t *bootinfo) {
+static void adjust_bootinfo_pointers(bootinfo_t **bootinfo) {
 #define ADD_OFFSET(p) (p) = (void *)((char *)(p) + BOOT_OFFSET_FROM_1MB)
-    ADD_OFFSET(bootinfo->kernel_start);
-    ADD_OFFSET(bootinfo->loader_start);
-    ADD_OFFSET(bootinfo->image_start);
-    ADD_OFFSET(bootinfo->image_top);
-    ADD_OFFSET(bootinfo->acpi_addr_map);
-    ADD_OFFSET(bootinfo->cmdline);
-    ADD_OFFSET(bootinfo->boot_heap);
-    ADD_OFFSET(bootinfo->boot_end);
+    ADD_OFFSET((*bootinfo)->kernel_start);
+    ADD_OFFSET((*bootinfo)->loader_start);
+    ADD_OFFSET((*bootinfo)->image_start);
+    ADD_OFFSET((*bootinfo)->image_top);
+#undef ADD_OFFSET
+#define ADD_OFFSET(p) (p) = (void *)((char *)(p) + BOOT_OFFSET_FROM_16MB)
+    ADD_OFFSET((*bootinfo)->acpi_addr_map);
+    ADD_OFFSET((*bootinfo)->cmdline);
+    ADD_OFFSET((*bootinfo)->boot_heap);
+    ADD_OFFSET((*bootinfo)->boot_end);
+    ADD_OFFSET(*bootinfo);
 #undef ADD_OFFSET
 }
 
@@ -105,14 +105,25 @@ void main32(char *alloc_ptr, char *heap_ptr, const linux_header_t linux_header) 
 
     alloc_ptr = allocate_page_tables(alloc_ptr, bootinfo);
 
-    /* This is the end of allocations made by this setup code. */
+    /* This is the end of allocations made by this setup code.
+     *
+     * prepare_for_paging() below does allocate memory, but these are temporary
+     * allocations that are then discarded. */
     bootinfo->boot_end = alloc_ptr;
 
     initialize_page_tables(bootinfo);
 
-    initialize_page_directory(bootinfo);
+    prepare_for_paging(alloc_ptr, bootinfo);
 
     enable_paging(bootinfo->page_directory);
 
-    adjust_bootinfo_pointers(bootinfo);
+    adjust_bootinfo_pointers(&bootinfo);
+
+    adjust_stack();
+
+    cleanup_after_paging(bootinfo);
+
+    /* Reload CR3 to invalidate TLBs so the changes by cleanup_after_paging()
+     * take effect. */
+    enable_paging(bootinfo->page_directory);
 }

@@ -38,6 +38,8 @@ char *allocate_page_tables(char *alloc_ptr, bootinfo_t *bootinfo);
 
 void initialize_page_tables(bootinfo_t *bootinfo);
 
-void initialize_page_directory(bootinfo_t *bootinfo);
+void prepare_for_paging(char *alloc_ptr, const bootinfo_t *bootinfo);
+
+void cleanup_after_paging(const bootinfo_t *bootinfo);
 
 #endif
