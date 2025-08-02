@@ -36,4 +36,6 @@
 
 void enable_paging(pte_t *page_directory);
 
+void adjust_stack(void);
+
 #endif

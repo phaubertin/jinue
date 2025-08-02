@@ -135,7 +135,7 @@ SECTIONS {
         . = ALIGN(PAGE_SIZE);
     }
     
-    kernel_top = .;
+    image_top = .;
     
     kernel_size = kernel_end - kernel_start;
     loader_size = loader_end - loader_start;
@@ -151,5 +151,5 @@ SECTIONS {
      * The second symbol is the total size of the kernel image loaded at 0x100000
      * (i.e. everything except the 16-bit setup code section) in 16-byte units. */
     setup_size_div512   = SIZEOF(setup16) / 512 - 1;
-    kernel_size_div16   = (kernel_top - BOOT_SETUP32_ADDR) / 16;
+    kernel_size_div16   = (image_top - BOOT_SETUP32_ADDR) / 16;
 }

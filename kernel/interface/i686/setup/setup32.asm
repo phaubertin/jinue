@@ -181,7 +181,6 @@
 
     ; This is defined by the linker script
     extern kernel_start
-    extern kernel_top
 
     jmp start
 
@@ -194,21 +193,19 @@ start:
     ; initialize frame pointer
     xor ebp, ebp
     
-    ; This setup code allocates some memory right after the kernel image. See
+    ; This setup code allocates some memory starting at 0x1000000 (16 MB). See
     ; doc/layout.md for the exact layout of those allocations.
     ;
     ; The first thing we allocate are the boot stack and heap. We set ebx to
     ; the start of the heap, which is also the address of the boot information
     ; structure since this is the first thing main32() allocates there.
-    mov eax, kernel_top
-    mov ebx, eax
-
-    ; We put the boot heap immediately after the kernel image and allocate
-    ; the bootinfo_t structure on that heap.
+    ; 
+    ; The first thing main32() allocates on the boot heap is the boot
+    ; information structure so ebx is set to the start of the heap *and* the
+    ; boot information structure.
     ;
-    ; Set ebx to the start of the bootinfo_t structure. All accesses to that
-    ; structure will be relative to ebx.
-    mov ebx, eax
+    ; TODO check the address map to make sure we can write there
+    mov ebx, MEMORY_ADDR_16MB
 
     ; setup boot stack and heap, then use new stack
     mov eax, ebx
@@ -235,16 +232,9 @@ start:
 
     add esp, 12
 
-    ; adjust stack pointer to point in kernel alias
-    add esp, BOOT_OFFSET_FROM_1MB
-
-    ; jump to kernel alias
-    jmp just_right_here + BOOT_OFFSET_FROM_1MB
-just_right_here:
-
     ; set address of boot information structure in esi for use by the kernel
     mov esi, ebx
-    add esi, BOOT_OFFSET_FROM_1MB   ; adjust to point in kernel alias
+    add esi, BOOT_OFFSET_FROM_16MB  ; adjust to point in kernel address space
 
     ; jump to kernel entry point
     push esi
@@ -279,6 +269,53 @@ enable_paging:
     mov eax, cr0
     or eax, X86_CR0_PG | X86_CR0_WP
     mov cr0, eax
+
+    ret
+.end:
+
+    ; -------------------------------------------------------------------------
+    ; Function: adjust_stack
+    ; C prototype: void adjust_stack(void)
+    ; -------------------------------------------------------------------------
+    ; The stack pointer and various pointers on the stack originally contain 
+    ; physical addresses for use before paging is enabled. This function is
+    ; called once paging is enabled to add the proper offset so they point to
+    ; the kernel virtual address space.
+    ; -------------------------------------------------------------------------
+    global adjust_stack:function (adjust_stack.end - adjust_stack)
+adjust_stack:
+    ; Adjust *the caller's* (i.e. main32()'s) return address and saved frame
+    ; pointer.
+    ; 
+    ; When a C function enters, it does the following:
+    ;   1) Push the original frame pointer (ebp) on the stack.
+    ;   2) Set the value of the stack pointer (after the push) as the new frame
+    ;      pointer (in ebp).
+    ;   3) Decrease esp by some amount to allocate the function's stack frame.
+    ;
+    ; This means ebp points to the pushed frame pointer and just above it is
+    ; the return address.
+    ;
+    ;   ebp + 4: return address
+    ;   ebp + 0: pushed frame pointer (original ebp)
+    add dword [ebp + 4], BOOT_OFFSET_FROM_1MB
+
+    ; If the pushed frame pointer is zero, which means the top level, we do not
+    ; want to touch it.
+    mov eax, [ebp + 0]
+    or eax, eax
+    jz .skipebp
+
+    add dword [ebp + 0], BOOT_OFFSET_FROM_16MB
+
+.skipebp
+    ; Adjust *this function's* return address so when we return, the
+    ; instruction pointer will be in the kernel address space.
+    add dword [esp], BOOT_OFFSET_FROM_1MB
+
+    ; Finally, adjust the current stack pointer and frame pointer.
+    add esp, BOOT_OFFSET_FROM_16MB
+    add ebp, BOOT_OFFSET_FROM_16MB
 
     ret
 .end:

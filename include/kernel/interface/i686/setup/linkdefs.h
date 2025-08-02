@@ -50,4 +50,6 @@ extern linkdef_t loader_size;
 
 extern linkdef_t image_start;
 
+extern linkdef_t image_top;
+
 #endif

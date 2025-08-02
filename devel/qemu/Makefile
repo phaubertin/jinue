@@ -37,6 +37,7 @@ CMDLINE             = \
     on_panic=reboot \
     serial_enable=yes \
     serial_dev=/dev/ttyS0 \
+	vga_enable=0 \ # TODO revert this
     DEBUG_DUMP_MEMORY_MAP=1 \
     DEBUG_DUMP_SYSCALL_IMPLEMENTATION=1 \
     DEBUG_DUMP_RAMDISK=1 \
