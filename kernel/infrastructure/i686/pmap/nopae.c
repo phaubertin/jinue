@@ -144,20 +144,6 @@ void nopae_set_pte(pte_t *pte, uint32_t paddr, uint64_t flags) {
 }
 
 /**
- * Set protection and other flags on specified page table entry
- *
- * The appropriate flags for this function are the architecture-dependent flags,
- * i.e. those defined by the X86_PTE_... constants. See map_page_access_flags()
- * for additional context.
- *
- * @param pte page table entry
- * @param pte flags flags
- */
-void nopae_set_pte_flags(pte_t *pte, uint64_t flags) {
-    pte->entry = (pte->entry & ~PAGE_MASK) | filter_pte_flags(flags);
-}
-
-/**
  * Get the physical address set in a page table or page directory entry
  *
  * @param pte page table or page directory entry array

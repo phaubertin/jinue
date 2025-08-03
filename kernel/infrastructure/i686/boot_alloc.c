@@ -58,41 +58,8 @@ void boot_alloc_init(boot_alloc_t *boot_alloc, const bootinfo_t *bootinfo) {
     boot_alloc->heap_ptr = bootinfo->boot_heap;
     /* TODO handle heap limit. */
 
-    boot_alloc->current_page        = (void *)VIRT_TO_PHYS_AT_1MB(bootinfo->boot_end);
-    boot_alloc->page_limit          = (char *)MEMORY_ADDR_1MB + BOOT_SIZE_AT_1MB;
-    boot_alloc->first_page_at_16mb  = (char *)bootinfo->page_table_1mb + 15 * MB;
-}
-
-/**
- * Re-initialize the boot allocator after kernel image was moved.
- *
- * See boot_alloc_init() description for additional details.
- *
- * @param boot_alloc the allocator state initialized by this function
- *
- * */
-void boot_alloc_reinit_at_16mb(boot_alloc_t *boot_alloc) {
-    boot_alloc->current_page        = boot_alloc->first_page_at_16mb;
-    boot_alloc->page_limit          = (char *)MEMORY_ADDR_16MB + BOOT_SIZE_AT_16MB;
-}
-
-/**
- * Re-initialize the boot allocator after switch to kernel address space.
- *
- * Once the address space has been switched, memory starting at physical address
- * 0x1000000 (i.e. 16MB) is no longer identity mapped at virtual address
- * 0x1000000 but is instead only mapped starting at KERNEL_BASE.
- *
- * After this function is called, the boot page allocator continues allocating
- * sequentially from the same physical address somewhere after 0x1000000 but
- * returns the virtual address where the page is actually mapped.
- *
- * @param boot_alloc the allocator state initialized by this function
- *
- * */
-void boot_alloc_reinit_at_klimit(boot_alloc_t *boot_alloc) {
-    boot_alloc->current_page        = (void *)PHYS_TO_VIRT_AT_16MB(boot_alloc->current_page);
-    boot_alloc->page_limit          = (char *)KERNEL_BASE + BOOT_SIZE_AT_16MB;
+    boot_alloc->current_page        = bootinfo->boot_end;
+    boot_alloc->page_limit          = (char *)ALLOC_BASE + BOOT_SIZE_AT_16MB;
 }
 
 /**

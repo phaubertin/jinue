@@ -86,17 +86,16 @@ looks like this:
   +=======================================+ bootinfo.boot_end           -+-
   |        initial page directory         |                              | 
   +---------------------------------------+ bootinfo.page_directory      |
-  |                                       |                              |
-  |         initial page tables           | bootinfo.page_table_klimit   |
-  |           (PAE disabled)              | bootinfo.page_table_16mb     |
-  +---------------------------------------+ bootinfo.page_table_1mb      | setup code
+  |         initial page tables           |                              |
+  |           (PAE disabled)              |                              |
+  +---------------------------------------+ bootinfo.page_tables         | setup code
   |         kernel command line           |                              | allocations
   +---------------------------------------+ bootinfo.cmdline             |
   |       BIOS physical memory map        |                              |
-  +---------------------------------------+ bootinfo.acpi_addr_map            |    
+  +---------------------------------------+ bootinfo.acpi_addr_map       |    
   |         kernel data segment           |                              |                ^
   |                                       |                              |                |
-  +---------------------------------------+ bootinfo.data_physaddr     -+-       address |
+  +---------------------------------------+ bootinfo.data_physaddr     -+-       address  |
   |          kernel stack (boot)          |                              |      increases |
   +-----v---------------------------v-----+ (stack pointer)              |                |
   |                                       |                              |                |
@@ -104,7 +103,7 @@ looks like this:
   |                                       |                              | kernel boot
   +-----^---------------------------^-----+ bootinfo.boot_heap           | stack/heap
   |          kernel heap (boot)           |                              |   
-  |              bootinfo                |                               |
+  |              bootinfo                 |                              |
   +=======================================+ bootinfo.image_top          -+-
   |                                       |                              |
   |        user space loader (ELF)        |                              |
@@ -259,11 +258,10 @@ address 0x1000000 (16MB).
   +=======================================+ bootinfo.boot_end          -+-
   |        initial page directory         |                              |
   |           (PAE disabled)              |                              |
-  +---------------------------------------+ bootinfo.page_directory     |
-  |                                       |                              |
-  |         initial page tables           | bootinfo.page_table_klimit  | setup code
-  |           (PAE disabled)              | bootinfo.page_table_16mb    | allocations
-  +---------------------------------------+ bootinfo.page_table_1mb     |
+  +---------------------------------------+ bootinfo.page_directory      |
+  |         initial page tables           |                              | setup code
+  |           (PAE disabled)              |                              | allocations
+  +---------------------------------------+ bootinfo.page_tables         |
   |                                       |                              |
   |                                       |                              |
   +                                       + bootinfo.data_physaddr     -+-

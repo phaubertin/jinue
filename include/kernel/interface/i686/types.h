@@ -59,8 +59,10 @@ typedef struct {
     void                    *boot_end;
     pte_t                   *page_table_1mb;
     pte_t                   *page_table_16mb;
-    pte_t                   *page_table_klimit;
+    pte_t                   *page_tables;
     pte_t                   *page_directory;
+    uint32_t                 cr3;
+    bool                     use_pae;
     uint32_t                 setup_signature;
     void                    *data_start;
     size_t                   data_size;

@@ -36,7 +36,6 @@
 #include <kernel/infrastructure/i686/asm/msr.h>
 #include <kernel/infrastructure/i686/asm/x86.h>
 #include <kernel/infrastructure/i686/isa/instrs.h>
-#include <kernel/infrastructure/i686/pmap/init.h>
 #include <kernel/infrastructure/i686/pmap/private.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
 #include <kernel/infrastructure/i686/cpuinfo.h>
@@ -320,14 +319,14 @@ static pdpt_t *initialize_boot_page_tables(
  * @param bootinfo boot information structure
  *
  * */
-void pae_enable(boot_alloc_t *boot_alloc, const bootinfo_t *bootinfo) {
+static void pae_enable(boot_alloc_t *boot_alloc, const bootinfo_t *bootinfo) {
     pgtable_format_pae      = true;
     entries_per_page_table  = PAE_PAGE_TABLE_PTES;
     page_frame_number_mask  = ((UINT64_C(1) << bsp_cpuinfo.maxphyaddr) - 1) & (~PAGE_MASK);
 
     pdpt_t *pdpt = initialize_boot_page_tables(boot_alloc, bootinfo);
 
-    enable_pae(PTR_TO_PHYS_ADDR_AT_16MB(pdpt));
+    //enable_pae(PTR_TO_PHYS_ADDR_AT_16MB(pdpt));
 
     /* Enable support for NX/XD bit */
     uint64_t msrval  = rdmsr(MSR_EFER);
@@ -525,20 +524,6 @@ pte_t *pae_get_pte_with_offset(pte_t *pte, unsigned int offset) {
 void pae_set_pte(pte_t *pte, uint64_t paddr, uint64_t flags) {
     assert((paddr & ~page_frame_number_mask) == 0);
     pte->entry = paddr | flags;
-}
-
-/**
- * Set protection and other flags on specified page table entry
- *
- * The appropriate flags for this function are the architecture-dependent flags,
- * i.e. those defined by the X86_PTE_... constants. See map_page_access_flags()
- * for additional context.
- *
- * @param pte page table entry
- * @param pte flags flags
- */
-void pae_set_pte_flags(pte_t *pte, uint64_t flags) {
-    pte->entry = (pte->entry & page_frame_number_mask) | flags;
 }
 
 /**

@@ -150,25 +150,6 @@ static unsigned int page_directory_offset_of(const void *addr) {
 }
 
 /**
- * Set protection and other flags on specified page table entry
- *
- * The appropriate flags for this function are the architecture-dependent flags,
- * i.e. those defined by the X86_PTE_... constants. See map_page_access_flags()
- * for additional context.
- *
- * @param pte page table entry
- * @param pte flags flags
- */
-static void set_pte_flags(pte_t *pte, uint64_t flags) {
-    if(pgtable_format_pae) {
-        pae_set_pte_flags(pte, flags);
-    }
-    else {
-        nopae_set_pte_flags(pte, flags);
-    }
-}
-
-/**
  * Copy a page table or page directory entry
  *
  * @param dest destination page table/directory entry
@@ -266,14 +247,17 @@ static paddr_t get_pte_paddr(const pte_t *pte) {
 }
 
 /**
- * Initialize virtual memory management to not use PAE
+ * Initialize virtual memory management
  *
- * During initialization, the kernel either calls this function or calls
- * pae_enable() to enable PAE.
+ * @param bootinfo boot information structure
  */
-void pmap_set_no_pae(void) {
-    pgtable_format_pae      = false;
-    entries_per_page_table  = NOPAE_PAGE_TABLE_PTES;
+void pmap_init(const bootinfo_t *bootinfo) {
+    kernel_page_tables              = bootinfo->page_tables;
+    initial_addr_space.top_level.pd = bootinfo->page_directory;
+    initial_addr_space.cr3          = bootinfo->cr3;
+    pgtable_format_pae              = bootinfo->use_pae;
+
+    entries_per_page_table = pgtable_format_pae ? PAE_PAGE_TABLE_PTES :  NOPAE_PAGE_TABLE_PTES;
 }
 
 /**
@@ -303,28 +287,6 @@ pte_t *initialize_page_table_linear(
     }
 
     return get_pte_with_offset(page_table, num_entries);
-}
-
-/**
- * Write protect the kernel image at address 0x1000000 (16MB)
- *
- * This function is called during initialization after the kernel image has been
- * moved from address 0x100000 (1MB) to address 0x1000000 (16MB) to ensure the
- * new copy is read only.
- *
- * @param bootinfo boot information structure
- */
-void pmap_write_protect_kernel_image(const bootinfo_t *bootinfo) {
-    size_t image_size = (char *)bootinfo->image_top - (char *)bootinfo->image_start;
-    size_t image_pages = NUM_PAGES(image_size);
-
-    for(int idx = 0; idx < image_pages; ++idx) {
-        set_pte_flags(
-                get_pte_with_offset(bootinfo->page_table_16mb, idx),
-                X86_PTE_PRESENT); /* read only */
-    }
-
-    set_cr3((uintptr_t)bootinfo->page_directory);
 }
 
 static void initialize_initial_page_tables(

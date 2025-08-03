@@ -39,8 +39,6 @@
 #include <kernel/infrastructure/i686/types.h>
 #include <kernel/interface/i686/types.h>
 
-void pae_enable(boot_alloc_t *boot_alloc, const bootinfo_t *bootinfo);
-
 void pae_create_initial_addr_space(
         addr_space_t    *address_space,
         pte_t           *page_directories,
@@ -63,8 +61,6 @@ unsigned int pae_page_directory_offset_of(const void *addr);
 pte_t *pae_get_pte_with_offset(pte_t *pte, unsigned int offset);
 
 void pae_set_pte(pte_t *pte, uint64_t paddr, uint64_t flags);
-
-void pae_set_pte_flags(pte_t *pte, uint64_t flags);
 
 uint64_t pae_get_pte_paddr(const pte_t *pte);
 

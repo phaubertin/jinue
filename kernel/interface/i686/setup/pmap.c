@@ -59,15 +59,18 @@ char *allocate_page_tables(char *alloc_ptr, bootinfo_t *bootinfo) {
     bootinfo->page_table_16mb = NULL;
 
     /* kernel page tables */
-    int num_pages           = NUM_PAGES(ADDR_4GB - JINUE_KLIMIT);
-    int num_page_tables     = num_pages / 1024;
+    int num_pages       = NUM_PAGES(ADDR_4GB - JINUE_KLIMIT);
+    int num_page_tables = num_pages / 1024;
 
-    bootinfo->page_table_klimit = (pte_t *)alloc_ptr;
+    bootinfo->page_tables = (pte_t *)alloc_ptr;
     alloc_ptr += num_page_tables * PAGE_SIZE;
 
     /* page directory */
     bootinfo->page_directory = (pte_t *)alloc_ptr;
     alloc_ptr += PAGE_SIZE;
+
+    bootinfo->cr3       = (uint32_t)bootinfo->page_directory;
+    bootinfo->use_pae   = false;
 
     return alloc_ptr;
 }
@@ -124,9 +127,9 @@ void initialize_page_tables(bootinfo_t *bootinfo) {
      * zero.
      * 
      * TODO should we really be doing this? */
-    pte_t *page_tables = bootinfo->page_table_klimit;
+    pte_t *page_tables = bootinfo->page_tables;
 
-    clear_ptes(bootinfo->page_table_klimit, NUM_PAGES(ADDR_4GB - JINUE_KLIMIT));
+    clear_ptes(page_tables, NUM_PAGES(ADDR_4GB - JINUE_KLIMIT));
 
     uint32_t rwflag = (bootinfo->data_size == 0) ? X86_PTE_READ_WRITE : 0;
     size_t entries  = ((char *)bootinfo->image_top - (char *)bootinfo->image_start) >> PAGE_BITS;

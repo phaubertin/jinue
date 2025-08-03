@@ -60,7 +60,7 @@
 ; |              . . .                |                          | kernel boot
 ; |                                   |                          | stack/heap
 ; +-----^-----------------------^-----+ bootinfo.boot_heap       |
-; |            bootinfo              |                           v
+; |            bootinfo               |                          v
 ; +===================================+ bootinfo.image_top      ===
 ; |                                   |                          ^
 ; |      user space loader (ELF)      |                          |
@@ -252,14 +252,14 @@ start:
 
     ; -------------------------------------------------------------------------
     ; Function: enable_paging
-    ; C prototype: void enable_paging(pte_t *page_directory)
+    ; C prototype: void enable_paging(uint32_t cr3)
     ; -------------------------------------------------------------------------
     ; Enable paging and protect read-only pages from being written to by the
     ; kernel.
     ; -------------------------------------------------------------------------
     global enable_paging:function (enable_paging.end - enable_paging)
 enable_paging:
-    ; First argument: page directory address
+    ; First argument: CR3 value
     mov eax, dword [esp + 4]
 
     ; set page directory address in CR3

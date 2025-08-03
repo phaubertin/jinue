@@ -42,8 +42,8 @@ check_no_panic
 check_no_error
 
 echo "* Check PAE was not enabled"
-grep -F "Enabling Physical Address Extension (PAE)" $LOG && fail
-grep -F "warning: physical Address Extension (PAE) not enabled" $LOG || fail
+grep -F "Physical Address Extension (PAE) and No eXecute (NX) protection are enabled" $LOG && fail
+grep -F "warning: Physical Address Extension (PAE) unsupported" $LOG || fail
 
 check_loader_start
 

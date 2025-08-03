@@ -80,9 +80,11 @@ static void adjust_bootinfo_pointers(bootinfo_t **bootinfo) {
 #undef ADD_OFFSET
 #define ADD_OFFSET(p) (p) = (void *)((char *)(p) + BOOT_OFFSET_FROM_16MB)
     ADD_OFFSET((*bootinfo)->acpi_addr_map);
-    ADD_OFFSET((*bootinfo)->cmdline);
-    ADD_OFFSET((*bootinfo)->boot_heap);
     ADD_OFFSET((*bootinfo)->boot_end);
+    ADD_OFFSET((*bootinfo)->boot_heap);
+    ADD_OFFSET((*bootinfo)->cmdline);
+    ADD_OFFSET((*bootinfo)->page_directory);
+    ADD_OFFSET((*bootinfo)->page_tables);
     ADD_OFFSET(*bootinfo);
 #undef ADD_OFFSET
 }
@@ -115,7 +117,7 @@ void main32(char *alloc_ptr, char *heap_ptr, const linux_header_t linux_header) 
 
     prepare_for_paging(alloc_ptr, bootinfo);
 
-    enable_paging(bootinfo->page_directory);
+    enable_paging(bootinfo->cr3);
 
     adjust_bootinfo_pointers(&bootinfo);
 
@@ -125,5 +127,5 @@ void main32(char *alloc_ptr, char *heap_ptr, const linux_header_t linux_header) 
 
     /* Reload CR3 to invalidate TLBs so the changes by cleanup_after_paging()
      * take effect. */
-    enable_paging(bootinfo->page_directory);
+    enable_paging(bootinfo->cr3);
 }

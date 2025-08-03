@@ -34,7 +34,7 @@
 
 #include <kernel/interface/i686/types.h>
 
-void enable_paging(pte_t *page_directory);
+void enable_paging(uint32_t cr3);
 
 void adjust_stack(void);
 

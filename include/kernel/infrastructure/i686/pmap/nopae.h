@@ -54,8 +54,6 @@ pte_t *nopae_get_pte_with_offset(pte_t *pte, unsigned int offset);
 
 void nopae_set_pte(pte_t *pte, uint32_t paddr, uint64_t flags);
 
-void nopae_set_pte_flags(pte_t *pte, uint64_t flags);
-
 uint32_t nopae_get_pte_paddr(const pte_t *pte);
 
 void nopae_clear_pte(pte_t *pte);

@@ -62,9 +62,7 @@
 
 #define ADDR_4GB    UINT64_C(0x100000000)
 
-void pmap_set_no_pae(void);
-
-void pmap_write_protect_kernel_image(const bootinfo_t *bootinfo);
+void pmap_init(const bootinfo_t *bootinfo);
 
 addr_space_t *pmap_create_initial_addr_space(
         const exec_file_t   *kernel,

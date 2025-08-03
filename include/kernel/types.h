@@ -48,7 +48,6 @@ typedef struct {
     struct boot_heap_pushed_state   *heap_pushed_state;
     void                            *current_page;
     void                            *page_limit;
-    void                            *first_page_at_16mb;
 } boot_alloc_t;
 
 typedef struct slab_cache_t slab_cache_t;
