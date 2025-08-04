@@ -54,10 +54,6 @@ char *allocate_page_tables(char *alloc_ptr, bootinfo_t *bootinfo) {
     /* align to page boundary */
     alloc_ptr = ALIGN_END_PTR(alloc_ptr, PAGE_SIZE);
 
-    /* TODO deprecated, remove these */
-    bootinfo->page_table_1mb = NULL;
-    bootinfo->page_table_16mb = NULL;
-
     /* kernel page tables */
     int num_pages       = NUM_PAGES(ADDR_4GB - JINUE_KLIMIT);
     int num_page_tables = num_pages / 1024;

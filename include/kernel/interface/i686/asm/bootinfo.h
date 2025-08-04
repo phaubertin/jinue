@@ -75,31 +75,25 @@
 /** Offset of the boot_end bootinfo_t member */
 #define BOOTINFO_BOOT_END           48
 
-/** Offset of the page_table_1mb bootinfo_t member */
-#define BOOTINFO_PAGE_TABLE_1MB     52
-
-/** Offset of the page_table_16mb bootinfo_t member */
-#define BOOTINFO_PAGE_TABLE_16MB    56
-
 /** Offset of the page_tables bootinfo_t member */
-#define BOOTINFO_PAGE_TABLES        60
+#define BOOTINFO_PAGE_TABLES        52
 
 /** Offset of the page_directory bootinfo_t member */
-#define BOOTINFO_PAGE_DIRECTORY     64
+#define BOOTINFO_PAGE_DIRECTORY     56
 
 /** Offset of the setup_signature bootinfo_t member */
-#define BOOTINFO_SETUP_SIGNATURE    76
+#define BOOTINFO_SETUP_SIGNATURE    60
 
 /** Offset of the data_start bootinfo_t member */
-#define BOOTINFO_DATA_START         80
+#define BOOTINFO_DATA_START         64
 
 /** Offset of the data_size bootinfo_t member */
-#define BOOTINFO_DATA_SIZE          84
+#define BOOTINFO_DATA_SIZE          76
 
 /** Offset of the data_physaddr bootinfo_t member */
-#define BOOTINFO_DATA_PHYSADDR      88
+#define BOOTINFO_DATA_PHYSADDR      80
 
 /** Size of bootinfo_t */
-#define BOOTINFO_SIZE               92
+#define BOOTINFO_SIZE               84
 
 #endif

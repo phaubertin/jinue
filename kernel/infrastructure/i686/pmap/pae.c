@@ -140,7 +140,8 @@ static void initialize_boot_mapping_at_klimit(
         pte_t               *page_table_klimit,
         const bootinfo_t    *bootinfo) {
 
-    uint32_t size_at_16mb = (uint32_t)bootinfo->page_table_1mb - MEMORY_ADDR_1MB;
+    uint32_t size_at_16mb = 0;
+    //uint32_t size_at_16mb = (uint32_t)bootinfo->page_table_1mb - MEMORY_ADDR_1MB;
     uint32_t num_entries_at_16mb = NUM_PAGES(size_at_16mb);
 
     size_t image_size = (char *)bootinfo->image_top - (char *)bootinfo->image_start;

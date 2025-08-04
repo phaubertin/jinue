@@ -57,8 +57,6 @@ typedef struct {
     void                    *cmdline;
     void                    *boot_heap;
     void                    *boot_end;
-    pte_t                   *page_table_1mb;
-    pte_t                   *page_table_16mb;
     pte_t                   *page_tables;
     pte_t                   *page_directory;
     uint32_t                 cr3;
