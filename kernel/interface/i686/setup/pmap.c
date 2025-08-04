@@ -69,8 +69,7 @@ char *allocate_page_tables(char *alloc_ptr, bootinfo_t *bootinfo) {
     bootinfo->page_directory = (pte_t *)alloc_ptr;
     alloc_ptr += PAGE_SIZE;
 
-    bootinfo->cr3       = (uint32_t)bootinfo->page_directory;
-    bootinfo->use_pae   = false;
+    bootinfo->cr3 = (uint32_t)bootinfo->page_directory;
 
     return alloc_ptr;
 }

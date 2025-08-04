@@ -59,6 +59,10 @@ static bootinfo_t *create_bootinfo(char *heap_ptr, const linux_header_t linux_he
 
     initialize_from_linux_header(bootinfo, linux_header);
 
+    bootinfo->use_pae       = detect_pae();
+    /* TODO remove this */
+    bootinfo->use_pae       = false;
+
     return bootinfo;
 }
 

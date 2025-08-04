@@ -164,6 +164,8 @@
 
 #include <kernel/domain/services/asm/cmdline.h>
 #include <kernel/infrastructure/i686/pmap/asm/pmap.h>
+#include <kernel/infrastructure/i686/asm/cpuid.h>
+#include <kernel/infrastructure/i686/asm/eflags.h>
 #include <kernel/infrastructure/i686/asm/memory.h>
 #include <kernel/infrastructure/i686/asm/x86.h>
 #include <kernel/interface/i686/asm/boot.h>
@@ -317,5 +319,82 @@ adjust_stack:
     add esp, BOOT_OFFSET_FROM_16MB
     add ebp, BOOT_OFFSET_FROM_16MB
 
+    ret
+.end:
+
+    ; -------------------------------------------------------------------------
+    ; Function: detect_pae
+    ; C prototype: bool detect_pae(void)
+    ; -------------------------------------------------------------------------
+    ; Detects whether Physical Address Extension (PAE) and the NX bit are
+    ; supported.
+    ; -------------------------------------------------------------------------
+    global detect_pae:function (detect_pae.end - detect_pae)
+detect_pae:
+    push ebx
+
+    ; Check cpuid instruction is supported
+    ;
+    ; We must be able to change the value of bit 21 (ID) of eflags
+    pushfd                      ; get eflags
+    mov edx, dword [esp]        ; remember original eflags in edx
+    
+    xor dword [esp], EFLAGS_ID  ; invert ID bit
+    popfd                       ; set eflags
+
+    pushfd                      ; get eflags again...
+    pop eax                     ; ...in eax
+
+    xor eax, edx                ; comapre original and new eflags
+    test eax, EFLAGS_ID         ; ID bit...
+    jz .nope                    ; ...should have changed
+
+    ; Check PAE feature flag
+    mov eax, 1
+    cpuid
+
+    test edx, CPUID_FEATURE_PAE
+    jz .nope
+
+    ; Check NX bit
+    mov eax, 0x80000001
+    cpuid
+
+    test edx, CPUID_FEATURE_NXE
+    jz .nope
+
+    ; CPU signature to ensure it's AMD or Intel
+    xor eax, eax
+    cpuid
+
+    cmp ebx, CPUID_VENDOR_INTEL_EBX
+    jz .intel
+
+    cmp ebx, CPUID_VENDOR_AMD_EBX
+    jnz .nope
+
+    cmp ecx, CPUID_VENDOR_AMD_ECX
+    jnz .nope
+
+    cmp edx, CPUID_VENDOR_AMD_EDX
+    jnz .nope
+
+    jmp .yes
+
+.intel:
+
+    cmp ecx, CPUID_VENDOR_INTEL_ECX
+    jnz .nope
+
+    cmp edx, CPUID_VENDOR_INTEL_EDX
+    jnz .nope
+
+.yes:
+    mov eax, 1
+    jmp .ret
+.nope:
+    xor eax, eax
+.ret
+    pop ebx
     ret
 .end:

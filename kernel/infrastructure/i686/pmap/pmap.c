@@ -335,7 +335,7 @@ static void initialize_initial_page_tables(
             get_pte_with_offset(page_tables, data_offset),
             bootinfo->data_physaddr + MEMORY_ADDR_16MB - MEMORY_ADDR_1MB,
             X86_PTE_GLOBAL | X86_PTE_READ_WRITE | X86_PTE_NX,
-           NUM_PAGES(bootinfo->data_size));
+            NUM_PAGES(bootinfo->data_size));
 }
 
 static void initialize_initial_page_directories(
