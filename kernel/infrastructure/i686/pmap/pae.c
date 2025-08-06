@@ -73,7 +73,7 @@ static slab_cache_t pdpt_cache;
 
 static pdpt_t *initial_pdpt;
 
-/* TODO fix this */
+/* TODO fix this (use bsp_cpuinfo.maxphyaddr) */
 static uint64_t page_frame_number_mask = ((UINT64_C(1) << 36) - 1) & (~PAGE_MASK);
 
 /** Get the Page Directory Pointer Table (PDPT) index of a virtual address
@@ -310,30 +310,6 @@ static pdpt_t *initialize_boot_page_tables(
     initialize_boot_pdpt(pdpt, low_page_directory, page_directory_klimit);
 
     return pdpt;
-}
-
-/**
- * Enable Physical Address Extension (PAE)
- *
- * Allocate and initialize boot-time page tables, then enable PAE.
- *
- * @param boot_alloc state of the boot-time allocator
- * @param bootinfo boot information structure
- *
- * */
-static void pae_enable(boot_alloc_t *boot_alloc, const bootinfo_t *bootinfo) {
-    pgtable_format_pae      = true;
-    entries_per_page_table  = PAE_PAGE_TABLE_PTES;
-    page_frame_number_mask  = ((UINT64_C(1) << bsp_cpuinfo.maxphyaddr) - 1) & (~PAGE_MASK);
-
-    pdpt_t *pdpt = initialize_boot_page_tables(boot_alloc, bootinfo);
-
-    //enable_pae(PTR_TO_PHYS_ADDR_AT_16MB(pdpt));
-
-    /* Enable support for NX/XD bit */
-    uint64_t msrval  = rdmsr(MSR_EFER);
-    msrval |= MSR_FLAG_EFER_NXE;
-    wrmsr(MSR_EFER, msrval);
 }
 
 void pae_create_initial_addr_space(

@@ -167,6 +167,7 @@
 #include <kernel/infrastructure/i686/asm/cpuid.h>
 #include <kernel/infrastructure/i686/asm/eflags.h>
 #include <kernel/infrastructure/i686/asm/memory.h>
+#include <kernel/infrastructure/i686/asm/msr.h>
 #include <kernel/infrastructure/i686/asm/x86.h>
 #include <kernel/interface/i686/asm/boot.h>
 #include <kernel/interface/i686/asm/bootinfo.h>
@@ -342,15 +343,21 @@ enable_paging:
     mov eax, dword [esp + 8]    ; second argument: cr3
     mov cr3, eax                ; set cr3
 
-    ; Check if PAE needs to be enabled
+    ; check if PAE needs to be enabled
     mov eax, dword [esp + 4]    ; first argument: use_pae
     or al, al
     jz .nopae                   ; skip if use_pae is not set
 
-    ; Enable PAE.
+    ; enable PAE
     mov eax, cr4
     or eax, X86_CR4_PAE
     mov cr4, eax
+
+    ; enable support for NX/XD bit
+    mov ecx, MSR_EFER
+    rdmsr
+    or eax, MSR_FLAG_EFER_NXE
+    wrmsr
 
 .nopae:
     ; enable paging (PG), prevent kernel from writing to read-only pages (WP)

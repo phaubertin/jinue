@@ -246,11 +246,13 @@ void machine_get_ramdisk(kern_mem_block_t *ramdisk) {
 }
 
 void machine_init_logging(const config_t *config) {
+    /* TOOD should we use before checking? */
+    const bootinfo_t *bootinfo = get_bootinfo();
+
     init_uart16550a(config);
 
     /* This needs to be called before calling vga_init() because that function
      * calls pmap functions to map video memory. */
-    const bootinfo_t *bootinfo = get_bootinfo();
     pmap_init(bootinfo);
 
     vga_init(config);
@@ -299,11 +301,6 @@ void machine_init(const config_t *config) {
 
     exec_file_t kernel;
     get_kernel_exec_file(&kernel, bootinfo);
-
-    //addr_space_t *addr_space = pmap_create_initial_addr_space(&kernel, &boot_alloc, bootinfo);
-
-    /* switch to new address space */
-    ///pmap_switch_addr_space(addr_space);
 
     enable_global_pages();
 

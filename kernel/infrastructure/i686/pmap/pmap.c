@@ -263,6 +263,8 @@ void pmap_init(const bootinfo_t *bootinfo) {
     }
 
     entries_per_page_table = pgtable_format_pae ? PAE_PAGE_TABLE_PTES :  NOPAE_PAGE_TABLE_PTES;
+
+    /* TODO deal with page_frame_number_mask somehow */
 }
 
 /**
@@ -357,7 +359,7 @@ static void initialize_initial_page_directories(
             num_page_tables);
 }
 
-addr_space_t *pmap_create_initial_addr_space(
+static addr_space_t *pmap_create_initial_addr_space(
         const exec_file_t   *kernel,
         boot_alloc_t        *boot_alloc,
         const bootinfo_t    *bootinfo) {

@@ -117,7 +117,7 @@ static pte_t *clear_ptes(bool use_pae, pte_t *table, size_t offset, size_t n) {
  * @param value first physical address and flags
  * @return next page table entry
  */
-static pte_t *map_linear(bool use_pae, pte_t *table, size_t offset, size_t n, uint32_t value) {
+static pte_t *map_linear(bool use_pae, pte_t *table, size_t offset, size_t n, uint64_t value) {
     uint64_t *pte64 = (uint64_t *)table + offset;
     uint32_t *pte32 = (uint32_t *)table + offset;
 
@@ -162,6 +162,7 @@ void initialize_page_tables(bootinfo_t *bootinfo) {
         NUM_PAGES(ADDR_4GB - JINUE_KLIMIT)
     );
 
+    /* TODO make only code segment executable */
     map_linear(
         bootinfo->use_pae,
         bootinfo->page_tables,
@@ -179,7 +180,7 @@ void initialize_page_tables(bootinfo_t *bootinfo) {
             bootinfo->page_tables,
             data_offset >> PAGE_BITS,
             NUM_PAGES(bootinfo->data_size),
-            bootinfo->data_physaddr | X86_PTE_READ_WRITE | X86_PTE_GLOBAL
+            bootinfo->data_physaddr | X86_PTE_READ_WRITE | X86_PTE_GLOBAL | X86_PTE_NX
         );
     }
 
@@ -189,7 +190,7 @@ void initialize_page_tables(bootinfo_t *bootinfo) {
         bootinfo->page_tables,
         (ALLOC_BASE - JINUE_KLIMIT) >> PAGE_BITS,
         NUM_PAGES(BOOT_SIZE_AT_16MB),
-        MEMORY_ADDR_16MB | X86_PTE_READ_WRITE | X86_PTE_GLOBAL
+        MEMORY_ADDR_16MB | X86_PTE_READ_WRITE | X86_PTE_GLOBAL | X86_PTE_NX
     );
 
     /* link page tables in page directory */
@@ -244,6 +245,7 @@ void prepare_for_paging(char *alloc_ptr, const bootinfo_t *bootinfo) {
 
     uint32_t flags  = (bootinfo->data_size == 0) ? X86_PTE_READ_WRITE : 0;
 
+    /* TODO make only code segment executable */
     map_linear(
         bootinfo->use_pae,
         page_tables_1mb,
@@ -263,7 +265,7 @@ void prepare_for_paging(char *alloc_ptr, const bootinfo_t *bootinfo) {
         page_tables_16mb,
         0,
         NUM_PAGES(BOOT_SIZE_AT_16MB),
-        MEMORY_ADDR_16MB | X86_PTE_READ_WRITE
+        MEMORY_ADDR_16MB | X86_PTE_READ_WRITE | X86_PTE_NX
     );
 
     /* Link the temporary page tables into the page directory. */

@@ -64,11 +64,6 @@
 
 void pmap_init(const bootinfo_t *bootinfo);
 
-addr_space_t *pmap_create_initial_addr_space(
-        const exec_file_t   *kernel,
-        boot_alloc_t        *boot_alloc,
-        const bootinfo_t    *bootinfo) ;
-
 bool pmap_create_addr_space(addr_space_t *addr_space);
 
 void pmap_destroy_addr_space(addr_space_t *addr_space);
