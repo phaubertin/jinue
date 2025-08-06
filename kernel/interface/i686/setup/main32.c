@@ -59,10 +59,6 @@ static bootinfo_t *create_bootinfo(char *heap_ptr, const linux_header_t linux_he
 
     initialize_from_linux_header(bootinfo, linux_header);
 
-    bootinfo->use_pae       = detect_pae();
-    /* TODO remove this */
-    bootinfo->use_pae       = false;
-
     return bootinfo;
 }
 
@@ -121,7 +117,7 @@ void main32(char *alloc_ptr, char *heap_ptr, const linux_header_t linux_header) 
 
     prepare_for_paging(alloc_ptr, bootinfo);
 
-    enable_paging(bootinfo->cr3);
+    enable_paging(bootinfo->use_pae, bootinfo->cr3);
 
     adjust_bootinfo_pointers(&bootinfo);
 
@@ -131,5 +127,5 @@ void main32(char *alloc_ptr, char *heap_ptr, const linux_header_t linux_header) 
 
     /* Reload CR3 to invalidate TLBs so the changes by cleanup_after_paging()
      * take effect. */
-    enable_paging(bootinfo->cr3);
+    enable_paging(bootinfo->use_pae, bootinfo->cr3);
 }

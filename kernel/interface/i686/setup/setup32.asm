@@ -254,19 +254,28 @@ start:
 
     ; -------------------------------------------------------------------------
     ; Function: enable_paging
-    ; C prototype: void enable_paging(uint32_t cr3)
+    ; C prototype: void enable_paging(bool use_pae, uint32_t cr3)
     ; -------------------------------------------------------------------------
     ; Enable paging and protect read-only pages from being written to by the
     ; kernel.
     ; -------------------------------------------------------------------------
     global enable_paging:function (enable_paging.end - enable_paging)
 enable_paging:
-    ; First argument: CR3 value
-    mov eax, dword [esp + 4]
+    ; set page directory or PDPT address in CR3
+    mov eax, dword [esp + 8]    ; second argument: cr3
+    mov cr3, eax                ; set cr3
 
-    ; set page directory address in CR3
-    mov cr3, eax
+    ; Check if PAE needs to be enabled
+    mov eax, dword [esp + 4]    ; first argument: use_pae
+    or al, al
+    jz .nopae                   ; skip if use_pae is not set
 
+    ; Enable PAE.
+    mov eax, cr4
+    or eax, X86_CR4_PAE
+    mov cr4, eax
+
+.nopae:
     ; enable paging (PG), prevent kernel from writing to read-only pages (WP)
     mov eax, cr0
     or eax, X86_CR0_PG | X86_CR0_WP
@@ -310,7 +319,7 @@ adjust_stack:
 
     add dword [ebp + 0], BOOT_OFFSET_FROM_16MB
 
-.skipebp
+.skipebp:
     ; Adjust *this function's* return address so when we return, the
     ; instruction pointer will be in the kernel address space.
     add dword [esp], BOOT_OFFSET_FROM_1MB
@@ -345,7 +354,7 @@ detect_pae:
     pushfd                      ; get eflags again...
     pop eax                     ; ...in eax
 
-    xor eax, edx                ; comapre original and new eflags
+    xor eax, edx                ; compare original and new eflags
     test eax, EFLAGS_ID         ; ID bit...
     jz .nope                    ; ...should have changed
 
@@ -394,7 +403,7 @@ detect_pae:
     jmp .ret
 .nope:
     xor eax, eax
-.ret
+.ret:
     pop ebx
     ret
 .end:
