@@ -253,9 +253,14 @@ static paddr_t get_pte_paddr(const pte_t *pte) {
  */
 void pmap_init(const bootinfo_t *bootinfo) {
     kernel_page_tables              = bootinfo->page_tables;
-    initial_addr_space.top_level.pd = bootinfo->page_directory;
     initial_addr_space.cr3          = bootinfo->cr3;
     pgtable_format_pae              = bootinfo->use_pae;
+
+    if(pgtable_format_pae) {
+        initial_addr_space.top_level.pdpt = (pdpt_t *)PHYS_TO_VIRT_AT_16MB(bootinfo->cr3);
+    } else {
+        initial_addr_space.top_level.pd = bootinfo->page_directory;
+    }
 
     entries_per_page_table = pgtable_format_pae ? PAE_PAGE_TABLE_PTES :  NOPAE_PAGE_TABLE_PTES;
 }
