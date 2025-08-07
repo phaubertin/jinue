@@ -100,17 +100,18 @@ static bool validate_configuration_table_header(const mp_conf_table_t *table) {
  * 
  * The start and end addresses must both be aligned on a 16-byte boundary.
  *
+ * @param first1mb mapping of first 1MB of memory
  * @param from start address of scan
  * @param to end address of scan
  * @return physical address of structure, PADDR_NULL if not found
  */
-static uint32_t scan_address_range(uint32_t from, uint32_t to) {
+static uint32_t scan_address_range(const addr_t first1mb, uint32_t from, uint32_t to) {
     for(uintptr_t addr = from; addr < to; addr += 16) {
         /* At the stage of the boot process where this function is called, the
          * memory where the floating pointer structure can be located is mapped
          * 1:1 so a pointer to the structure has the same value as its physical
          * address.*/
-        const mp_ptr_struct_t *ptrst = (const mp_ptr_struct_t *)addr;
+        const mp_ptr_struct_t *ptrst = (const mp_ptr_struct_t *)&first1mb[addr];
 
         if(validate_pointer_structure(ptrst)) {
             return addr;
@@ -132,23 +133,24 @@ static uint32_t scan_address_range(uint32_t from, uint32_t to) {
  *      of base memory) if the EBDA segment is undefined, or
  *   c. In the BIOS ROM address space between 0F0000h and 0FFFFFh. "
  *
+ * @param first1mb mapping of first 1MB of memory
  * @return physical address of structure, PADDR_NULL if not found
  */
-static uint32_t scan_for_pointer_structure(void) {
-    uint32_t ebda = get_bios_ebda_addr();
+static uint32_t scan_for_pointer_structure(const addr_t first1mb) {
+    uint32_t ebda = get_bios_ebda_addr(first1mb);
 
     if(ebda != 0) {
-        uint32_t ptrst = scan_address_range(ebda, ebda + KB);
+        uint32_t ptrst = scan_address_range(first1mb, ebda, ebda + KB);
 
         if(ptrst != PADDR_NULL) {
             return ptrst;
         }
     } else {
         uint32_t ptrst  = PADDR_NULL;
-        uint32_t memtop = get_bios_base_memory_size();
+        uint32_t memtop = get_bios_base_memory_size(first1mb);
 
         if(memtop != 0) {
-            ptrst = scan_address_range(memtop - KB, memtop);
+            ptrst = scan_address_range(first1mb, memtop - KB, memtop);
         }
 
         if(ptrst != PADDR_NULL) {
@@ -156,7 +158,7 @@ static uint32_t scan_for_pointer_structure(void) {
         }
     }
 
-    return scan_address_range(0xf0000, 0x100000);
+    return scan_address_range(first1mb, 0xf0000, 0x100000);
 }
 
 /**
@@ -167,10 +169,11 @@ static uint32_t scan_for_pointer_structure(void) {
  * a pointer to the floating pointer structure has the same value as its
  * physical address.
  * 
+ * @param first1mb mapping of first 1MB of memory
  * @param paddr physical address of the structure, PADDR_NULL if not found
  */
-void find_mp(void) {
-    mp.ptrst_paddr = scan_for_pointer_structure();
+void find_mp(const addr_t first1mb) {
+    mp.ptrst_paddr = scan_for_pointer_structure(first1mb);
 }
 
 /**

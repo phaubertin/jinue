@@ -61,6 +61,7 @@
 #include <kernel/interface/syscalls.h>
 #include <kernel/machine/asm/machine.h>
 #include <kernel/machine/init.h>
+#include <kernel/machine/pmap.h>
 #include <kernel/utils/utils.h>
 #include <assert.h>
 #include <inttypes.h>
@@ -287,15 +288,19 @@ void machine_init(const config_t *config) {
     /* load segment selectors */
     load_selectors(cpu_data);
 
-    /* We must look for the ACPI RDSP while the relevant memory is still
-     * identity mapped before we switch to the initial address space. */
+    /* Map the first megabyte of memory temporarily so we can scan it for ACPI
+     * and MultiProcessor Specification data structures. */
+    void *first1mb = map_in_kernel(0, 1 * MB, JINUE_PROT_READ);
 
-    /* TODO fix this */
-    //find_acpi_rsdp();
-    //find_mp();
+    find_acpi_rsdp(first1mb);
 
-    /* This must be done before we switch to the new address space because only
-     * the boot allocator can allocate multiple consecutive pages. */
+    find_mp(first1mb);
+
+    machine_unmap_kernel(first1mb, 1 * MB);
+
+    /* This must be done before initializing and switching to the page
+     * allocator bcause only the boot allocator can allocate multiple
+     * consecutive pages. */
     memory_initialize_array(&boot_alloc, bootinfo);
 
     exec_file_t kernel;
@@ -304,13 +309,11 @@ void machine_init(const config_t *config) {
     /* Transfer the remaining pages to the run-time page allocator. */
     initialize_page_allocator(&boot_alloc);
 
-    /* TODO fix this */
-
-    //init_acpi();
+    init_acpi();
     
-    //report_acpi();
+    report_acpi();
 
-    //init_mp();
+    init_mp();
 
     /* create slab cache to allocate PDPTs
      *
