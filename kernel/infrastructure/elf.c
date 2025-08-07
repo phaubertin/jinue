@@ -65,7 +65,7 @@ typedef struct {
  * @param elf ELF header, which is at the very beginning of the ELF binary
  * @return always false
  *
- * */
+ */
 static bool check_failed(const char *message) {
     error("error: invalid ELF binary: %s", message);
     return false;
@@ -77,7 +77,7 @@ static bool check_failed(const char *message) {
  * @param ehdr ELF header, which is at the very beginning of the ELF binary
  * @return true if ELF binary is valid, false otherwise
  *
- * */
+ */
 bool elf_check(Elf32_Ehdr *ehdr) {
     /* check: valid ELF binary magic number */
     if(     ehdr->e_ident[EI_MAG0] != ELF_MAGIC0 ||
@@ -146,7 +146,7 @@ bool elf_check(Elf32_Ehdr *ehdr) {
  * @param padds physical address of page frame
  * @param flags mapping flags
  *
- * */
+ */
 static void checked_map_userspace_page(
         process_t       *process,
         void            *vaddr,
@@ -168,7 +168,7 @@ static void checked_map_userspace_page(
  * @param ehdr ELF file header
  * @return program header table
  *
- * */
+ */
 static const Elf32_Phdr *program_header_table(const Elf32_Ehdr *ehdr) {
     return (Elf32_Phdr *)((char *)ehdr + ehdr->e_phoff);
 }
@@ -176,13 +176,10 @@ static const Elf32_Phdr *program_header_table(const Elf32_Ehdr *ehdr) {
 /**
  * Get program header for executable segment
  *
- * This function leads to a kernel panic if the mapping fails because a
- * translation table could not be allocated.
- *
  * @param elf ELF header
  * @return program header if found, NULL otherwise
  *
- * */
+ */
 const Elf32_Phdr *elf_executable_program_header(const Elf32_Ehdr *ehdr) {
     const Elf32_Phdr *phdr = program_header_table(ehdr);
 
@@ -213,7 +210,7 @@ const Elf32_Phdr *elf_executable_program_header(const Elf32_Ehdr *ehdr) {
  * @param n number of entries to initialize
  * @param str pointer to the first string
  *
- * */
+ */
 static void initialize_string_array(const char *array[], size_t n, const char *str) {
     for(int idx = 0; idx < n; ++idx) {
         /* Write address of current string. */
@@ -237,7 +234,7 @@ static void initialize_string_array(const char *array[], size_t n, const char *s
  * @param ehdr ELF file header
  * @return value of AT_PHDR
  *
- * */
+ */
 static addr_t get_at_phdr(const Elf32_Ehdr *ehdr) {
     const Elf32_Phdr *phdrs     = program_header_table(ehdr);
     Elf32_Off phdr_filestart    = ehdr->e_phoff;
@@ -272,7 +269,7 @@ static addr_t get_at_phdr(const Elf32_Ehdr *ehdr) {
  * @param p_flags flags
  * @return start of stack in loader address space
  *
- * */
+ */
 static int map_flags(Elf32_Word p_flags) {
     /* set flags */
     int flags = 0;
@@ -298,7 +295,7 @@ static int map_flags(Elf32_Word p_flags) {
  * @param ehdr ELF header
  * @param process process in which to load the binary
  *
- * */
+ */
 static void load_segments(
         elf_info_t          *elf_info,
         process_t           *process,
@@ -397,7 +394,7 @@ static void load_segments(
  *
  * @param elf_info ELF information structure (output)
 *
- * */
+ */
 static void allocate_stack(elf_info_t *elf_info) {
     /** TODO: check for overlap of stack with loaded segments */
 
@@ -427,7 +424,7 @@ static void allocate_stack(elf_info_t *elf_info) {
  * @param elf_info ELF information structure (output)
  * @param cmdline full kernel command line
  *
- * */
+ */
 static void initialize_stack(
         elf_info_t *elf_info,
         const char *cmdline,
@@ -515,7 +512,7 @@ static void initialize_stack(
  * @param argv0 program name (argv[0])
  * @param cmdline full kernel command line, used for arguments and environment
  *
- * */
+ */
 void machine_load_exec(
         thread_params_t     *thread_params,
         process_t           *process,
@@ -548,7 +545,7 @@ void machine_load_exec(
  * @param ehdr ELF header of ELF binary
  * @return start of ELF file bytes
  *
- * */
+ */
 static const char *elf_file_bytes(const Elf32_Ehdr *ehdr) {
     return (const char *)ehdr;
 }
@@ -563,7 +560,7 @@ static const char *elf_file_bytes(const Elf32_Ehdr *ehdr) {
  * @param index index of the section header
  * @return pointer on section header
  *
- * */
+ */
 static const Elf32_Shdr *elf_get_section_header(const Elf32_Ehdr *ehdr, int index) {
     const char *elf_file        = elf_file_bytes(ehdr);
     const char *section_table   = &elf_file[ehdr->e_shoff];
@@ -581,7 +578,7 @@ static const Elf32_Shdr *elf_get_section_header(const Elf32_Ehdr *ehdr, int inde
  * @param type type of symbol
  * @return pointer on section header if found, NULL otherwise
  *
- * */
+ */
 static const Elf32_Shdr *elf_find_section_header_by_type(
         const Elf32_Ehdr    *ehdr,
         Elf32_Word           type) {
@@ -603,7 +600,7 @@ static const Elf32_Shdr *elf_find_section_header_by_type(
  * @param ehdr ELF header of ELF binary
  * @return pointer on section header if found, NULL otherwise
  *
- * */
+ */
 static const Elf32_Shdr *elf_find_symtab_section_header(const Elf32_Ehdr *ehdr) {
     return elf_find_section_header_by_type(ehdr, SHT_SYMTAB);
 }
@@ -615,7 +612,7 @@ static const Elf32_Shdr *elf_find_symtab_section_header(const Elf32_Ehdr *ehdr) 
  * @param section_header ELF section header
  * @return symbol name as a NUL-terminated string
  *
- * */
+ */
 static const char *elf_section_data(const Elf32_Ehdr *ehdr, const Elf32_Shdr *section_header) {
     const char *elf_file = elf_file_bytes(ehdr);
     return &elf_file[section_header->sh_offset];
@@ -628,7 +625,7 @@ static const char *elf_section_data(const Elf32_Ehdr *ehdr, const Elf32_Shdr *se
  * @param symbol_header ELF symbol header
  * @return symbol name as a NUL-terminated string
  *
- * */
+ */
 const char *elf_symbol_name(const Elf32_Ehdr *ehdr, const Elf32_Sym *symbol_header) {
     /* Here, we can safely assume the symbol table exists because the symbol
      * header passed as argument had to be looked up there. */
@@ -652,7 +649,7 @@ const char *elf_symbol_name(const Elf32_Ehdr *ehdr, const Elf32_Sym *symbol_head
  * @param type type of the symbol
  * @return symbol header if found, NULL otherwise
  *
- * */
+ */
 static const Elf32_Sym *find_symbol_by_address_and_type(
         const Elf32_Ehdr    *ehdr,
         Elf32_Addr           addr,
@@ -697,7 +694,7 @@ static const Elf32_Sym *find_symbol_by_address_and_type(
  * @param addr address to look up
  * @return symbol header if found, NULL otherwise
  *
- * */
+ */
 const Elf32_Sym *elf_find_function_symbol_by_address(const Elf32_Ehdr *ehdr, Elf32_Addr addr) {
     return find_symbol_by_address_and_type(ehdr, addr, STT_FUNCTION);
 }

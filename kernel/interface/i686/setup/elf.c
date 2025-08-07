@@ -64,6 +64,40 @@ static bool check_header(const Elf32_Ehdr *ehdr) {
 }
 
 /**
+ * Get program header table
+ *
+ * @param ehdr ELF file header
+ * @return program header table
+ *
+ */
+static const Elf32_Phdr *program_header_table(const Elf32_Ehdr *ehdr) {
+    return (Elf32_Phdr *)((char *)ehdr + ehdr->e_phoff);
+}
+
+/**
+ * Get program header for writable segment
+ *
+ * @param elf ELF header
+ * @return program header if found, NULL otherwise
+ *
+ */
+static const Elf32_Phdr *writable_program_header(const Elf32_Ehdr *ehdr) {
+    const Elf32_Phdr *phdr = program_header_table(ehdr);
+
+    for(int idx = 0; idx < ehdr->e_phnum; ++idx) {
+        if(phdr[idx].p_type != PT_LOAD) {
+            continue;
+        }
+
+        if(phdr[idx].p_flags & PF_W) {
+            return &phdr[idx];
+        }
+    }
+
+    return NULL;
+}
+
+/**
  * Load the kernel data segment from its ELF binary
  * 
  * @param alloc_ptr allocation pointer, i.e. where to allocate memory
@@ -83,23 +117,19 @@ char *prepare_data_segment(char *alloc_ptr, bootinfo_t *bootinfo) {
         return alloc_ptr;
     }
 
-    const Elf32_Phdr *phdrs = (Elf32_Phdr *)((char *)ehdr + ehdr->e_phoff);
+    const Elf32_Phdr *phdr = writable_program_header(ehdr);
 
-    for(int idx = 0; idx < ehdr->e_phnum; ++idx) {
-        const Elf32_Phdr *phdr = &phdrs[idx];
+    if(phdr == NULL) {
+        return alloc_ptr;
+    }
 
-        if(phdr->p_type != PT_LOAD || !(phdr->p_flags & PF_W)) {
-            continue;
-        }
+    bootinfo->data_start    = (void *)phdr->p_vaddr;
+    bootinfo->data_size     = ALIGN_END(phdr->p_memsz, PAGE_SIZE);
 
-        bootinfo->data_start    = (void *)phdr->p_vaddr;
-        bootinfo->data_size     = ALIGN_END(phdr->p_memsz, PAGE_SIZE);
+    const char *src = (char *)ehdr + phdr->p_offset;
 
-        const char *src = (char *)ehdr + phdr->p_offset;
-
-        for(int idy = 0; idy < bootinfo->data_size; ++idy) {
-            alloc_ptr[idy] = (idy < phdr->p_filesz) ? src[idy] : 0;
-        }
+    for(int idx = 0; idx < bootinfo->data_size; ++idx) {
+        alloc_ptr[idx] = (idx < phdr->p_filesz) ? src[idx] : 0;
     }
 
     if(bootinfo->data_size != 0) {
@@ -109,6 +139,53 @@ char *prepare_data_segment(char *alloc_ptr, bootinfo_t *bootinfo) {
     return alloc_ptr + bootinfo->data_size;
 }
 
+/**
+ * Get program header for executable segment
+ *
+ * @param elf ELF header
+ * @return program header if found, NULL otherwise
+ *
+ */
+const Elf32_Phdr *executable_program_header(const Elf32_Ehdr *ehdr) {
+    const Elf32_Phdr *phdr = program_header_table(ehdr);
+
+    for(int idx = 0; idx < ehdr->e_phnum; ++idx) {
+        if(phdr[idx].p_type != PT_LOAD) {
+            continue;
+        }
+
+        if(phdr[idx].p_flags & PF_X) {
+            return &phdr[idx];
+        }
+    }
+
+    return NULL;
+}
+
+/**
+ * Get ELF program header for kernel code
+ *
+ * @param bootinfo boot information structure
+ * @return program header if found, NULL otherwise
+ *
+ */
+const Elf32_Phdr *kernel_code_program_header(const bootinfo_t *bootinfo) {
+    const Elf32_Ehdr *ehdr = bootinfo->kernel_start;
+
+    if(!check_header(ehdr)) {
+        return NULL;
+    }
+
+    return executable_program_header(ehdr);
+}
+
+/**
+ * Get entry point of kernel ELF binary
+ *
+ * @param bootinfo boot information structure
+ * @return entry point virtual address
+ *
+ */
 Elf32_Addr get_kernel_entry_point(const bootinfo_t *bootinfo) {
     const Elf32_Ehdr *ehdr = bootinfo->kernel_start;
     return ehdr->e_entry;

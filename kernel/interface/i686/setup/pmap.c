@@ -32,11 +32,13 @@
 #include <kernel/infrastructure/i686/pmap/asm/pmap.h>
 #include <kernel/infrastructure/i686/pmap/pmap.h>
 #include <kernel/interface/i686/asm/boot.h>
+#include <kernel/interface/i686/setup/elf.h>
 #include <kernel/interface/i686/setup/pmap.h>
 #include <kernel/interface/i686/setup/setup32.h>
 #include <kernel/interface/i686/types.h>
 #include <kernel/machine/asm/machine.h>
 #include <kernel/utils/pmap.h>
+#include <sys/elf.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -151,14 +153,39 @@ void initialize_page_tables(bootinfo_t *bootinfo) {
         NUM_PAGES(ADDR_4GB - JINUE_KLIMIT)
     );
 
-    /* TODO make only code segment executable */
     map_linear(
         bootinfo->use_pae,
         bootinfo->page_tables,
         (KERNEL_BASE - JINUE_KLIMIT) >> PAGE_BITS,
         ((char *)bootinfo->image_top - (char *)bootinfo->image_start) >> PAGE_BITS,
+        (uint32_t)bootinfo->image_start | X86_PTE_GLOBAL | X86_PTE_NX
+    );
+
+    /* make sure this setup code is executable */
+    map_linear(
+        bootinfo->use_pae,
+        bootinfo->page_tables,
+        (KERNEL_BASE - JINUE_KLIMIT) >> PAGE_BITS,
+        1,
         (uint32_t)bootinfo->image_start | X86_PTE_GLOBAL
     );
+
+    /* make sure kernel code segment is executable */
+    const Elf32_Phdr *phdr = kernel_code_program_header(bootinfo);
+
+    if(phdr != NULL) {
+        uintptr_t code_vaddr    = ALIGN_START((uintptr_t)phdr->p_vaddr, PAGE_SIZE);
+        size_t code_size        = phdr->p_memsz + OFFSET_OF_PTR(phdr->p_vaddr, PAGE_SIZE);
+        size_t code_offset      = page_number_of(code_vaddr - JINUE_KLIMIT);
+
+        map_linear(
+            bootinfo->use_pae,
+            bootinfo->page_tables,
+            code_offset,
+            NUM_PAGES(code_size),
+            VIRT_TO_PHYS_AT_1MB(code_vaddr) | X86_PTE_GLOBAL
+        );
+    }
 
     /* map kernel data segment (read/write) */
     if(bootinfo->data_size != 0) {

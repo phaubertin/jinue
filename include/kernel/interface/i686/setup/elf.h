@@ -36,6 +36,8 @@
 
 char *prepare_data_segment(char *alloc_ptr, bootinfo_t *bootinfo);
 
+const Elf32_Phdr *kernel_code_program_header(const bootinfo_t *bootinfo);
+
 Elf32_Addr get_kernel_entry_point(const bootinfo_t *bootinfo);
 
 #endif
