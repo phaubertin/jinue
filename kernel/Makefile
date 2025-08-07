@@ -159,6 +159,9 @@ objects.kernel = $(sources.kernel.nasm:%.asm=%-nasm.o) $(sources.kernel.c:%.c=%.
 # Assembly files must come first and setup32.asm must be first
 objects.setup32 = $(sources.setup32.nasm:%.asm=%-nasm.o) $(sources.setup32.c:%.c=%.o)
 
+# We optimize the setup code for size
+$(sources.setup32.c:%.c=%.o): CFLAGS.optimization := -Os
+
 include $(common)
 
 .PHONY: image
