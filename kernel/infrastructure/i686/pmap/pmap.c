@@ -42,6 +42,7 @@
 #include <kernel/infrastructure/i686/pmap/pmap.h>
 #include <kernel/infrastructure/i686/pmap/private.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
+#include <kernel/infrastructure/i686/cpuinfo.h>
 #include <kernel/infrastructure/i686/memory.h>
 #include <kernel/infrastructure/i686/percpu.h>
 #include <kernel/infrastructure/elf.h>
@@ -79,6 +80,9 @@ size_t entries_per_page_table;
 
 /** true if PAE is enabled, false otherwise */
 bool pgtable_format_pae;
+
+/** mask of valid page frame number bits */
+uint64_t page_frame_number_mask;
 
 /** First address space created during kernel initialization.
  *
@@ -262,9 +266,13 @@ void pmap_init(const bootinfo_t *bootinfo) {
         initial_addr_space.top_level.pd = bootinfo->page_directory;
     }
 
-    entries_per_page_table = pgtable_format_pae ? PAE_PAGE_TABLE_PTES :  NOPAE_PAGE_TABLE_PTES;
+    entries_per_page_table  = pgtable_format_pae ? PAE_PAGE_TABLE_PTES :  NOPAE_PAGE_TABLE_PTES;
+    page_frame_number_mask  = ((UINT64_C(1) << bsp_cpuinfo.maxphyaddr) - 1) & (~PAGE_MASK);
 
-    /* TODO deal with page_frame_number_mask somehow */
+    /* Enable global pages */
+    if(cpu_has_feature(CPUINFO_FEATURE_PGE)) {
+        set_cr4(get_cr4() | X86_CR4_PGE);
+    }
 }
 
 /**

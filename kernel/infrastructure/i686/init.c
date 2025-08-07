@@ -149,12 +149,6 @@ static void load_selectors(percpu_t *cpu_data) {
     ltr( SEG_SELECTOR(GDT_TSS, RPL_KERNEL) );
 }
 
-static void enable_global_pages(void) {
-    if(cpu_has_feature(CPUINFO_FEATURE_PGE)) {
-        set_cr4(get_cr4() | X86_CR4_PGE);
-    }
-}
-
 static void initialize_page_allocator(boot_alloc_t *boot_alloc) {
     while(! boot_page_alloc_is_empty(boot_alloc)) {
         page_free(boot_page_alloc(boot_alloc));
@@ -246,10 +240,18 @@ void machine_get_ramdisk(kern_mem_block_t *ramdisk) {
 }
 
 void machine_init_logging(const config_t *config) {
-    /* TOOD should we use before checking? */
-    const bootinfo_t *bootinfo = get_bootinfo();
-
+    /* Initialize the UART first since it does not have dependencies and it
+     * will be able to report the few cases of kernel panics that could occur
+     * in the next few steps. */
     init_uart16550a(config);
+
+    /* pmap_init() needs the size of physical addresses (maxphyaddr). */
+    detect_cpu_features();
+
+    /* Validate the boot information structure before using it. */
+    (void)check_bootinfo(true);
+
+    const bootinfo_t *bootinfo = get_bootinfo();
 
     /* This needs to be called before calling vga_init() because that function
      * calls pmap functions to map video memory. */
@@ -259,10 +261,7 @@ void machine_init_logging(const config_t *config) {
 }
 
 void machine_init(const config_t *config) {
-    /* Validate the boot information structure before using it. */
-    (void)check_bootinfo(true);
-
-    detect_cpu_features();
+    report_cpu_features();
 
     const bootinfo_t *bootinfo = get_bootinfo();
 
@@ -301,8 +300,6 @@ void machine_init(const config_t *config) {
 
     exec_file_t kernel;
     get_kernel_exec_file(&kernel, bootinfo);
-
-    enable_global_pages();
 
     /* Transfer the remaining pages to the run-time page allocator. */
     initialize_page_allocator(&boot_alloc);

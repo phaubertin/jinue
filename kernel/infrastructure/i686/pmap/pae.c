@@ -73,9 +73,6 @@ static slab_cache_t pdpt_cache;
 
 static pdpt_t *initial_pdpt;
 
-/* TODO fix this (use bsp_cpuinfo.maxphyaddr) */
-static uint64_t page_frame_number_mask = ((UINT64_C(1) << 36) - 1) & (~PAGE_MASK);
-
 /** Get the Page Directory Pointer Table (PDPT) index of a virtual address
  *  @param addr virtual address
  * */

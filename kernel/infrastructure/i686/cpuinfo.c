@@ -667,7 +667,12 @@ void detect_cpu_features(void) {
     enumerate_features(&bsp_cpuinfo, &cpuid_leafs);
 
     identify_maxphyaddr(&bsp_cpuinfo, &cpuid_leafs);
+}
 
+/**
+ * Report the detected features of the bootstrap processor (BSP)
+ */
+void report_cpu_features(void) {
     dump_cpu_features(&bsp_cpuinfo);
 
     dump_hypervisor(&bsp_cpuinfo);

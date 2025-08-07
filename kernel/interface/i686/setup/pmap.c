@@ -143,18 +143,7 @@ static pte_t *map_linear(bool use_pae, pte_t *table, size_t offset, size_t n, ui
  * @param bootinfo boot information structure
  */
 void initialize_page_tables(bootinfo_t *bootinfo) {
-    /* map the kernel image
-     *
-     * Check if we were able to find and copy the data segment earlier. If we
-     * weren't, let's just map the whole kernel image read/write and let the
-     * kernel deal with it later.
-     *
-     * If we weren't able to find the data segment, its size has been set to
-     * zero.
-     * 
-     * TODO should we really be doing this? */
-    uint32_t rwflag = (bootinfo->data_size == 0) ? X86_PTE_READ_WRITE : 0;
-
+    /* map the kernel image */
     clear_ptes(
         bootinfo->use_pae,
         bootinfo->page_tables,
@@ -168,7 +157,7 @@ void initialize_page_tables(bootinfo_t *bootinfo) {
         bootinfo->page_tables,
         (KERNEL_BASE - JINUE_KLIMIT) >> PAGE_BITS,
         ((char *)bootinfo->image_top - (char *)bootinfo->image_start) >> PAGE_BITS,
-        (uint32_t)bootinfo->image_start | rwflag | X86_PTE_GLOBAL
+        (uint32_t)bootinfo->image_start | X86_PTE_GLOBAL
     );
 
     /* map kernel data segment (read/write) */
@@ -243,15 +232,25 @@ void prepare_for_paging(char *alloc_ptr, const bootinfo_t *bootinfo) {
 
     clear_ptes(bootinfo->use_pae, page_tables_1mb, 0, 1 << per_table_bits);
 
-    uint32_t flags  = (bootinfo->data_size == 0) ? X86_PTE_READ_WRITE : 0;
-
     /* TODO make only code segment executable */
     map_linear(
         bootinfo->use_pae,
         page_tables_1mb,
         MEMORY_ADDR_1MB >> PAGE_BITS,
         ((char *)bootinfo->image_top - (char *)bootinfo->image_start) >> PAGE_BITS,
-        (uint32_t)bootinfo->image_start | flags
+        (uint32_t)bootinfo->image_start | X86_PTE_NX
+    );
+
+    /* Make sure this setup code is executable.
+     *
+     * We don't need to do the same for the kernel code segment here because
+     * these temporary mappings won't be used for long enough. */
+    map_linear(
+        bootinfo->use_pae,
+        page_tables_1mb,
+        MEMORY_ADDR_1MB >> PAGE_BITS,
+        1,
+        (uint32_t)bootinfo->image_start
     );
     
     /* mappings for the initial memory allocations at 0x1000000 (16MB) */
