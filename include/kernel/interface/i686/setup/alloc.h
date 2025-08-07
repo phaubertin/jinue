@@ -29,17 +29,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INTERFACE_I686_SETUP_LINUX_H
-#define JINUE_KERNEL_INTERFACE_I686_SETUP_LINUX_H
+#ifndef JINUE_KERNEL_INTERFACE_I686_SETUP_ALLOC_H
+#define JINUE_KERNEL_INTERFACE_I686_SETUP_ALLOC_H
 
 #include <kernel/interface/i686/types.h>
 
-typedef char linux_header_t[];
+void *alloc_heap(bootinfo_t *bootinfo, size_t size, size_t align);
 
-void initialize_from_linux_header(bootinfo_t *bootinfo, const linux_header_t linux_header);
+void *alloc_pages(bootinfo_t *bootinfo, size_t size);
 
-void copy_cmdline(bootinfo_t *bootinfo, const linux_header_t linux_header);
-
-void copy_acpi_address_map(bootinfo_t *bootinfo, const linux_header_t linux_header);
+void set_alloc_pages_address(bootinfo_t *bootinfo, void *addr);
 
 #endif

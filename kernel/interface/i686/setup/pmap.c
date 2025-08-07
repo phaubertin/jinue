@@ -32,6 +32,7 @@
 #include <kernel/infrastructure/i686/pmap/asm/pmap.h>
 #include <kernel/infrastructure/i686/pmap/pmap.h>
 #include <kernel/interface/i686/asm/boot.h>
+#include <kernel/interface/i686/setup/alloc.h>
 #include <kernel/interface/i686/setup/elf.h>
 #include <kernel/interface/i686/setup/pmap.h>
 #include <kernel/interface/i686/setup/setup32.h>
@@ -49,25 +50,21 @@ struct pte_t {
 /**
  * Allocate initial non-PAE page tables and page directory
  * 
- * @param alloc_ptr allocation pointer, i.e. where to allocate memory
  * @param bootinfo boot information structure
- * @return updated allocation pointer
  */
-char *allocate_page_tables(char *alloc_ptr, bootinfo_t *bootinfo) {
-    /* align to page boundary */
-    alloc_ptr = ALIGN_END_PTR(alloc_ptr, PAGE_SIZE);
-
+void allocate_page_tables(bootinfo_t *bootinfo) {
     /* Detect PAE support */
     bootinfo->use_pae       = detect_pae();
     size_t per_table_bits   = bootinfo->use_pae ? 9 : 10;
 
     /* kernel page tables */
-    bootinfo->page_tables = (pte_t *)alloc_ptr;
-    alloc_ptr += NUM_PAGES(ADDR_4GB - JINUE_KLIMIT) / (1 << per_table_bits) * PAGE_SIZE;
-
+    bootinfo->page_tables = alloc_pages(
+        bootinfo,
+        NUM_PAGES(ADDR_4GB - JINUE_KLIMIT) / (1 << per_table_bits) * PAGE_SIZE
+    );
+    
     /* page directory */
-    bootinfo->page_directory = (pte_t *)alloc_ptr;
-    alloc_ptr += PAGE_SIZE;
+    bootinfo->page_directory = alloc_pages(bootinfo, PAGE_SIZE);
 
     if(!bootinfo->use_pae) {
         bootinfo->cr3 = (uint32_t)bootinfo->page_directory;
@@ -77,11 +74,8 @@ char *allocate_page_tables(char *alloc_ptr, bootinfo_t *bootinfo) {
         bootinfo->boot_heap = ALIGN_END_PTR(bootinfo->boot_heap, 32);
 
         /* allocate PDPT */
-        bootinfo->cr3       = (uint32_t)bootinfo->boot_heap;
-        bootinfo->boot_heap = (char *)bootinfo->boot_heap + 32;
+        bootinfo->cr3       = (uint32_t)alloc_heap(bootinfo, 32, 32);
     }
-
-    return alloc_ptr;
 }
 
 /**
@@ -247,13 +241,14 @@ void initialize_page_tables(bootinfo_t *bootinfo) {
  * these page tables are discarded once the temporary mappings are no longer
  * needed.
  * 
- * @param alloc_ptr allocation pointer, i.e. where to allocate memory
+ * alloc_pages() must not be called between this function and the matching call
+ * to cleanup_after_paging().
+ * 
  * @param bootinfo boot information structure
  */
-void prepare_for_paging(char *alloc_ptr, const bootinfo_t *bootinfo) {
+void prepare_for_paging(bootinfo_t *bootinfo) {
     /* mappings for the kernel image at 0x100000 (1MB) */
-    pte_t *page_tables_1mb = (pte_t *)alloc_ptr;
-    alloc_ptr += PAGE_SIZE;
+    pte_t *page_tables_1mb = alloc_pages(bootinfo, PAGE_SIZE);
 
     size_t per_table_bits = bootinfo->use_pae ? 9 : 10;
 
@@ -281,9 +276,11 @@ void prepare_for_paging(char *alloc_ptr, const bootinfo_t *bootinfo) {
     );
     
     /* mappings for the initial memory allocations at 0x1000000 (16MB) */
-    pte_t *page_tables_16mb = (pte_t *)alloc_ptr;
-    alloc_ptr += NUM_PAGES(BOOT_SIZE_AT_16MB) / (1 << per_table_bits) * PAGE_SIZE;
-    
+    pte_t *page_tables_16mb = alloc_pages(
+        bootinfo,
+        NUM_PAGES(BOOT_SIZE_AT_16MB) / (1 << per_table_bits) * PAGE_SIZE
+    );
+
     clear_ptes(bootinfo->use_pae, page_tables_16mb, 0, NUM_PAGES(BOOT_SIZE_AT_16MB));
 
     map_linear(
@@ -300,7 +297,7 @@ void prepare_for_paging(char *alloc_ptr, const bootinfo_t *bootinfo) {
     if(!bootinfo->use_pae) {
         page_directory = bootinfo->page_directory;
     } else {
-        page_directory = (pte_t *)alloc_ptr;
+        page_directory = alloc_pages(bootinfo, PAGE_SIZE);
         clear_ptes(bootinfo->use_pae, page_directory, 0, (1 << per_table_bits));
     }
 
@@ -324,6 +321,12 @@ void prepare_for_paging(char *alloc_ptr, const bootinfo_t *bootinfo) {
         uint64_t *pdpt = (uint64_t *)bootinfo->cr3;
         pdpt[0] = (uint32_t)page_directory | X86_PTE_PRESENT;
     }
+
+    /* free memory 
+     *
+     * There must be no call to alloc_pages() until cleanup_after_paging() is
+     * called. */
+    set_alloc_pages_address(bootinfo, page_tables_1mb);
 }
 
 /**

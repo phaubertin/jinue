@@ -44,11 +44,6 @@
  * The boot allocator is used for heap and page allocation early during kernel
  * initialization.
  *
- * This function sets up the allocator to allocate pages after the kernel loaded
- * at 0x100000 (1MB). Once the kernel has been moved to 0x1000000 (16MB), the
- * boot_alloc_reinit_at_16mb() function has to be called to start allocating pages
- * there instead.
- *
  * @param boot_alloc the allocator state initialized by this function
  * @param bootinfo boot information structure
  *

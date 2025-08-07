@@ -29,6 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+ #include <kernel/interface/i686/setup/alloc.h>
 #include <kernel/interface/i686/setup/linkdefs.h>
 #include <kernel/interface/i686/types.h>
 #include <kernel/machine/asm/machine.h>
@@ -104,7 +105,7 @@ static const Elf32_Phdr *writable_program_header(const Elf32_Ehdr *ehdr) {
  * @param bootinfo boot information structure
  * @return updated allocation pointer
  */
-char *prepare_data_segment(char *alloc_ptr, bootinfo_t *bootinfo) {
+void prepare_data_segment(bootinfo_t *bootinfo) {
     const Elf32_Ehdr *ehdr = bootinfo->kernel_start;
 
     /* These values lets the kernel know that its data segment could not be
@@ -114,29 +115,30 @@ char *prepare_data_segment(char *alloc_ptr, bootinfo_t *bootinfo) {
     bootinfo->data_start = NULL;
 
     if(!check_header(ehdr)) {
-        return alloc_ptr;
+        return;
     }
 
     const Elf32_Phdr *phdr = writable_program_header(ehdr);
 
     if(phdr == NULL) {
-        return alloc_ptr;
+        return;
+    }
+
+    if(phdr->p_vaddr == 0 || phdr->p_memsz == 0) {
+        return;
     }
 
     bootinfo->data_start    = (void *)phdr->p_vaddr;
     bootinfo->data_size     = ALIGN_END(phdr->p_memsz, PAGE_SIZE);
 
     const char *src = (char *)ehdr + phdr->p_offset;
+    char *dest      = alloc_pages(bootinfo, bootinfo->data_size);
 
     for(int idx = 0; idx < bootinfo->data_size; ++idx) {
-        alloc_ptr[idx] = (idx < phdr->p_filesz) ? src[idx] : 0;
+        dest[idx] = (idx < phdr->p_filesz) ? src[idx] : 0;
     }
 
-    if(bootinfo->data_size != 0) {
-        bootinfo->data_physaddr = (size_t)alloc_ptr;
-    }
-
-    return alloc_ptr + bootinfo->data_size;
+    bootinfo->data_physaddr = (size_t)dest;
 }
 
 /**

@@ -34,7 +34,7 @@
 
 #include <kernel/interface/i686/types.h>
 
-char *prepare_data_segment(char *alloc_ptr, bootinfo_t *bootinfo);
+void prepare_data_segment(bootinfo_t *bootinfo);
 
 const Elf32_Phdr *kernel_code_program_header(const bootinfo_t *bootinfo);
 

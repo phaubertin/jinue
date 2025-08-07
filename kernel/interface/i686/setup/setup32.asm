@@ -188,9 +188,7 @@
     jmp start
 
 start:
-    ; On entry, esi points to the real mode code start/zero-page address
-
-    ; we are going up
+    ; We are going up!
     cld
 
     ; initialize frame pointer
@@ -199,27 +197,11 @@ start:
     ; This setup code allocates some memory starting at 0x1000000 (16 MB). See
     ; doc/layout.md for the exact layout of those allocations.
     ;
-    ; The first thing we allocate are the boot stack and heap. We set ebx to
-    ; the start of the heap, which is also the address of the boot information
-    ; structure since this is the first thing main32() allocates there.
-    ; 
-    ; The first thing main32() allocates on the boot heap is the boot
-    ; information structure so ebx is set to the start of the heap *and* the
-    ; boot information structure.
-    ;
     ; TODO check the address map to make sure we can write there
-    mov ebx, MEMORY_ADDR_16MB
-
-    ; setup boot stack and heap, then use new stack
-    mov eax, ebx
-    add eax, BOOT_STACK_HEAP_SIZE           ; add stack and heap size
-    add eax, PAGE_SIZE - 1                  ; align address up...
-    and eax, ~PAGE_MASK                     ; ... to a page boundary
-    mov esp, eax                            ; set stack pointer
-
-    ; Bigger allocations such as the page tables go after the boot stack and
-    ; heap.
-    mov edi, eax
+    ;
+    ; Setup boot stack.
+    mov esp, MEMORY_ADDR_16MB
+    add esp, BOOT_STACK_HEAP_SIZE
 
     ; null-terminate call stack (useful for debugging)
     xor eax, eax
@@ -227,17 +209,17 @@ start:
     push eax
 
     ; Call main32() which does the bulk of the initialization.
+    ;
+    ; On entry, esi points to the real mode code start/zero-page address
     push esi
-    push ebx
-    push edi
 
     call main32
 
-    add esp, 12
+    add esp, 4
 
-    ; set address of boot information structure in esi for use by the kernel
-    mov esi, ebx
-    add esi, BOOT_OFFSET_FROM_16MB  ; adjust to point in kernel address space
+    ; Set address of boot information structure returned by main32() in esi for
+    ; use by the kernel.
+    mov esi, eax
 
     ; jump to kernel entry point
     push esi

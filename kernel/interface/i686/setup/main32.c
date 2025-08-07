@@ -31,6 +31,7 @@
 
 #include <kernel/interface/i686/asm/boot.h>
 #include <kernel/interface/i686/setup/elf.h>
+#include <kernel/interface/i686/setup/alloc.h>
 #include <kernel/interface/i686/setup/linkdefs.h>
 #include <kernel/interface/i686/setup/linux.h>
 #include <kernel/interface/i686/setup/pmap.h>
@@ -40,15 +41,14 @@
 /**
  * Initialize some fields in the boot information structure
  *
- * @param heap_ptr pointer to boot heap (for small allocations)
  * @param linux_header Linux x86 boot protocol real-mode kernel header
  * @return boot information structure
  */
-static bootinfo_t *create_bootinfo(char *heap_ptr, const linux_header_t linux_header) {
-    bootinfo_t *bootinfo = (bootinfo_t *)heap_ptr;
-    heap_ptr = (char *)(bootinfo + 1);
+static bootinfo_t *create_bootinfo(const linux_header_t linux_header) {
+    bootinfo_t *bootinfo    = (bootinfo_t *)MEMORY_ADDR_16MB;
 
-    bootinfo->boot_heap     = heap_ptr;
+    bootinfo->boot_heap     = (char *)(bootinfo + 1);
+    bootinfo->boot_end      = (char *)MEMORY_ADDR_16MB + BOOT_STACK_HEAP_SIZE;
    
     bootinfo->kernel_start  = (Elf32_Ehdr *)&kernel_start;
     bootinfo->kernel_size   = (size_t)&kernel_size;
@@ -96,26 +96,20 @@ static void adjust_bootinfo_pointers(bootinfo_t **bootinfo) {
  * @param heap_ptr pointer to boot heap (for small allocations)
  * @param linux_header Linux x86 boot protocol real-mode kernel header
  */
-void main32(char *alloc_ptr, char *heap_ptr, const linux_header_t linux_header) {
-    bootinfo_t *bootinfo = create_bootinfo(heap_ptr, linux_header);
+bootinfo_t *main32(const linux_header_t linux_header) {
+    bootinfo_t *bootinfo = create_bootinfo(linux_header);
 
-    alloc_ptr = prepare_data_segment(alloc_ptr, bootinfo);
+    prepare_data_segment(bootinfo);
 
-    alloc_ptr = copy_acpi_address_map(alloc_ptr, bootinfo, linux_header);
+    copy_acpi_address_map(bootinfo, linux_header);
 
-    alloc_ptr = copy_cmdline(alloc_ptr, bootinfo, linux_header);
+    copy_cmdline(bootinfo, linux_header);
 
-    alloc_ptr = allocate_page_tables(alloc_ptr, bootinfo);
-
-    /* This is the end of allocations made by this setup code.
-     *
-     * prepare_for_paging() below does allocate memory, but these are temporary
-     * allocations that are then discarded. */
-    bootinfo->boot_end = alloc_ptr;
+    allocate_page_tables(bootinfo);
 
     initialize_page_tables(bootinfo);
 
-    prepare_for_paging(alloc_ptr, bootinfo);
+    prepare_for_paging(bootinfo);
 
     enable_paging(bootinfo->use_pae, bootinfo->cr3);
 
@@ -128,4 +122,6 @@ void main32(char *alloc_ptr, char *heap_ptr, const linux_header_t linux_header) 
     /* Reload CR3 to invalidate TLBs so the changes by cleanup_after_paging()
      * take effect. */
     enable_paging(bootinfo->use_pae, bootinfo->cr3);
+
+    return bootinfo;
 }

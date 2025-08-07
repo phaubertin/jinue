@@ -145,6 +145,7 @@ sources.setup16.nasm = interface/i686/setup/setup16.asm
 sources.setup32.nasm = interface/i686/setup/setup32.asm
 
 sources.setup32.c = \
+	interface/i686/setup/alloc.c \
 	interface/i686/setup/elf.c \
 	interface/i686/setup/linux.c \
 	interface/i686/setup/main32.c \
