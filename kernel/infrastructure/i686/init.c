@@ -71,10 +71,6 @@
 /** Specifies the entry point to use for system calls */
 int syscall_implementation;
 
-static bool maybe_enable_pae(void) {
-    return cpu_has_feature(CPUINFO_FEATURE_PAE);
-}
-
 static void check_pae(const bootinfo_t *bootinfo, const config_t *config) {
     if(bootinfo->use_pae) {
         info("Physical Address Extension (PAE) and No eXecute (NX) protection are enabled.");

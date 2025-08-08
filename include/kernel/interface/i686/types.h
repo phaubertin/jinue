@@ -62,6 +62,7 @@ typedef struct {
     uint32_t                 cr3;
     bool                     use_pae;
     uint32_t                 setup_signature;
+    /* TODO remove these */
     void                    *data_start;
     size_t                   data_size;
     size_t                   data_physaddr;

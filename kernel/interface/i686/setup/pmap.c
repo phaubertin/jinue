@@ -254,7 +254,6 @@ void prepare_for_paging(bootinfo_t *bootinfo) {
 
     clear_ptes(bootinfo->use_pae, page_tables_1mb, 0, 1 << per_table_bits);
 
-    /* TODO make only code segment executable */
     map_linear(
         bootinfo->use_pae,
         page_tables_1mb,
