@@ -52,6 +52,8 @@ extern cpuinfo_t bsp_cpuinfo;
 
 void detect_cpu_features(void);
 
+void report_cpu_features(void);
+
 static inline bool cpu_has_feature(uint32_t mask) {
     return (bsp_cpuinfo.features & mask) == mask;
 }

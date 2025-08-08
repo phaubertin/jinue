@@ -74,17 +74,18 @@ static const acpi_table_def_t table_defs[] = {
  * 
  * The start and end addresses must both be aligned on a 16-byte boundary.
  *
+ * @param first1mb mapping of first 1MB of memory
  * @param from start address of scan
  * @param to end address of scan
  * @return address of RSDP if found, PADDR_NULL otherwise
  */
-static uint32_t scan_address_range(uint32_t from, uint32_t to) {
+static uint32_t scan_address_range(const addr_t first1mb, uint32_t from, uint32_t to) {
     for(uintptr_t addr = from; addr < to; addr += 16) {
         /* At the stage of the boot process where this function is called, the
          * memory where the floating pointer structure can be located is mapped
          * 1:1 so a pointer to the structure has the same value as its physical
          * address.*/
-        const acpi_rsdp_t *rsdp = (const acpi_rsdp_t *)addr;
+        const acpi_rsdp_t *rsdp = (const acpi_rsdp_t *)&first1mb[addr];
 
         if(validate_acpi_rsdp(rsdp)) {
             return addr;
@@ -109,31 +110,30 @@ static uint32_t scan_address_range(uint32_t from, uint32_t to) {
  *       BIOS data area.
  *     * The BIOS read-only memory space between 0E0000h and 0FFFFFh. "
  *
- * @return address of RSDP if found, PADDR_NULL otherwise
+ * @param first1mb mapping of first 1MB of memory
+ * @return physical address of RSDP if found, PADDR_NULL otherwise
  */
-static uint32_t scan_for_rsdp(void) {
-    uint32_t ebda = get_bios_ebda_addr();
+static uint32_t scan_for_rsdp(const addr_t first1mb) {
+    uint32_t ebda = get_bios_ebda_addr(first1mb);
 
     if(ebda != 0 && ebda <= 0xa0000 - KB) {
-        uint32_t rsdp = scan_address_range(ebda, ebda + KB);
+        uint32_t rsdp = scan_address_range(first1mb, ebda, ebda + KB);
         
         if(rsdp != PADDR_NULL) {
             return rsdp;
         }
     }
 
-    return scan_address_range(0x0e0000, 0x100000);
+    return scan_address_range(first1mb, 0x0e0000, 0x100000);
 }
 
 /**
  * Locate the ACPI RSDP in memory
  * 
- * At the stage of the boot process where this function is called, the memory
- * where the ACPI can be located has to be mapped 1:1 so a pointer to the RSDP
- * has the same value as its physical address.
+ * @param first1mb mapping of first 1MB of memory
  */
-void find_acpi_rsdp(void) {
-    rsdp_paddr = scan_for_rsdp();
+void find_acpi_rsdp(const addr_t first1mb) {
+    rsdp_paddr = scan_for_rsdp(first1mb);
 }
 
 /**

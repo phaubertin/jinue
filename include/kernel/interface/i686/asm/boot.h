@@ -64,11 +64,12 @@
 
 #define BOOT_DATA_STRUCT        BOOT_ADDR_MAP_ENTRIES
 
+/* must be a multiple of page size */
 #define BOOT_STACK_HEAP_SIZE    (4 * PAGE_SIZE)
 
 #define BOOT_OFFSET_FROM_1MB    (KERNEL_BASE - MEMORY_ADDR_1MB)
 
-#define BOOT_OFFSET_FROM_16MB   (KERNEL_BASE - MEMORY_ADDR_16MB)
+#define BOOT_OFFSET_FROM_16MB   (ALLOC_BASE - MEMORY_ADDR_16MB)
 
 #define BOOT_SIZE_AT_1MB        (1 * MB)
 

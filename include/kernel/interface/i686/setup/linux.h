@@ -38,8 +38,8 @@ typedef char linux_header_t[];
 
 void initialize_from_linux_header(bootinfo_t *bootinfo, const linux_header_t linux_header);
 
-char *copy_cmdline(char *alloc_ptr, bootinfo_t *bootinfo, const linux_header_t linux_header);
+void copy_cmdline(bootinfo_t *bootinfo, const linux_header_t linux_header);
 
-char *copy_acpi_address_map(char *alloc_ptr, bootinfo_t *bootinfo, const linux_header_t linux_header);
+void copy_acpi_address_map(bootinfo_t *bootinfo, const linux_header_t linux_header);
 
 #endif

@@ -31,6 +31,7 @@
 
 #include <kernel/domain/services/asm/cmdline.h>
 #include <kernel/interface/i686/asm/boot.h>
+#include <kernel/interface/i686/setup/alloc.h>
 #include <kernel/interface/i686/setup/linux.h>
 #include <kernel/interface/i686/types.h>
 
@@ -52,43 +53,44 @@ void initialize_from_linux_header(bootinfo_t *bootinfo, const linux_header_t lin
 /**
  * Copy the command line string
  * 
- * @param alloc_ptr allocation pointer, i.e. where to allocate memory
- * @param linux_header Linux x86 boot protocol real-mode kernel header
  * @param bootinfo boot information structure
- * @return updated allocation pointer
+ * @param linux_header Linux x86 boot protocol real-mode kernel header
  */
-char *copy_cmdline(char *alloc_ptr, bootinfo_t *bootinfo, const linux_header_t linux_header) {
+void copy_cmdline(bootinfo_t *bootinfo, const linux_header_t linux_header) {
     const char *src = HEADER_FIELD(linux_header, char *, BOOT_CMD_LINE_PTR);
 
-    bootinfo->cmdline = alloc_ptr;
+    size_t length = 0;
 
-    if (src != NULL) {
+    if(src != NULL) {
         for(int idx = 0; idx < CMDLINE_MAX_PARSE_LENGTH && src[idx] != '\0'; ++idx) {
-            *(alloc_ptr++) = src[idx];
+            ++length;
         }
     }
 
-    *alloc_ptr = '\0';
-    return alloc_ptr + 1;
+    char *dest          = alloc_pages(bootinfo, length + 1);
+    bootinfo->cmdline   = dest;
+
+    for(int idx = 0; idx < length; ++idx) {
+        dest[idx] = src[idx];
+    }
+
+    dest[length] = '\0';
 }
 
 /**
  * Copy the ACPI (aka. e820) address map
  * 
- * @param alloc_ptr allocation pointer, i.e. where to allocate memory
- * @param linux_header Linux x86 boot protocol real-mode kernel header
  * @param bootinfo boot information structure
- * @return updated allocation pointer
+ * @param linux_header Linux x86 boot protocol real-mode kernel header
  */
-char *copy_acpi_address_map(char *alloc_ptr, bootinfo_t *bootinfo, const linux_header_t linux_header) {
-    const char *src = &linux_header[BOOT_ADDR_MAP];
+void copy_acpi_address_map(bootinfo_t *bootinfo, const linux_header_t linux_header) {
     size_t size     = 20 * HEADER_FIELD(linux_header, uint8_t, BOOT_ADDR_MAP_ENTRIES);
+    const char *src = &linux_header[BOOT_ADDR_MAP];
+    char *dest      = alloc_pages(bootinfo, size);
 
-    bootinfo->acpi_addr_map = (acpi_addr_range_t *)alloc_ptr;
+    bootinfo->acpi_addr_map = (acpi_addr_range_t *)dest;
 
     for(int idx = 0; idx < size; ++idx) {
-        *(alloc_ptr++) = src[idx];
+        dest[idx] = src[idx];
     }
-
-    return alloc_ptr;
 }

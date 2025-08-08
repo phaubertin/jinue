@@ -45,7 +45,6 @@
 #include <kernel/infrastructure/i686/firmware/mp.h>
 #include <kernel/infrastructure/i686/isa/instrs.h>
 #include <kernel/infrastructure/i686/isa/regs.h>
-#include <kernel/infrastructure/i686/pmap/init.h>
 #include <kernel/infrastructure/i686/pmap/pae.h>
 #include <kernel/infrastructure/i686/pmap/pmap.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
@@ -62,53 +61,24 @@
 #include <kernel/interface/syscalls.h>
 #include <kernel/machine/asm/machine.h>
 #include <kernel/machine/init.h>
+#include <kernel/machine/pmap.h>
 #include <kernel/utils/utils.h>
 #include <assert.h>
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stdint.h>
 
-
 /** Specifies the entry point to use for system calls */
 int syscall_implementation;
 
-static void move_kernel_at_16mb(const bootinfo_t *bootinfo) {
-    move_and_remap_kernel(
-            (addr_t)bootinfo->page_table_1mb,
-            (addr_t)bootinfo->page_table_klimit,
-            (uint32_t)bootinfo->page_directory);
-
-    pmap_write_protect_kernel_image(bootinfo);
-}
-
-static bool maybe_enable_pae(
-        boot_alloc_t        *boot_alloc,
-        const bootinfo_t   *bootinfo,
-        const config_t      *config) {
-
-    bool use_pae;
-
-    if(cpu_has_feature(CPUINFO_FEATURE_PAE)) {
-        use_pae = (config->machine.pae != CONFIG_PAE_DISABLE);
+static void check_pae(const bootinfo_t *bootinfo, const config_t *config) {
+    if(bootinfo->use_pae) {
+        info("Physical Address Extension (PAE) and No eXecute (NX) protection are enabled.");
+    } else if(config->machine.pae != CONFIG_PAE_REQUIRE) {
+        warning("warning: Physical Address Extension (PAE) unsupported. NX protection disabled.");
+    } else {
+        panic("Option pae=require passed on kernel command line but PAE is not supported.");
     }
-    else {
-        if(config->machine.pae == CONFIG_PAE_REQUIRE) {
-            panic("Option pae=require passed on kernel command line but PAE is not supported.");
-        }
-
-        use_pae = false;
-    }
-
-    if(! use_pae) {
-        warning("warning: physical Address Extension (PAE) not enabled. NX protection disabled.");
-        pmap_set_no_pae();
-    }
-    else {
-        info("Enabling Physical Address Extension (PAE).");
-        pae_enable(boot_alloc, bootinfo);
-    }
-
-    return use_pae;
 }
 
 static void init_idt(void) {
@@ -174,24 +144,6 @@ static void load_selectors(percpu_t *cpu_data) {
 
     /* load TSS segment into task register */
     ltr( SEG_SELECTOR(GDT_TSS, RPL_KERNEL) );
-}
-
-static void enable_global_pages(void) {
-    if(cpu_has_feature(CPUINFO_FEATURE_PGE)) {
-        set_cr4(get_cr4() | X86_CR4_PGE);
-    }
-}
-
-static void remap_text_video_memory(void) {
-    void *mapped = map_in_kernel(
-        VGA_TEXT_VID_BASE,
-        VGA_TEXT_VID_TOP - VGA_TEXT_VID_BASE,
-        JINUE_PROT_READ | JINUE_PROT_WRITE
-    );
-
-    vga_set_base_addr(mapped);
-
-    info("Remapped text video memory at %#p", mapped);
 }
 
 static void initialize_page_allocator(boot_alloc_t *boot_alloc) {
@@ -285,35 +237,36 @@ void machine_get_ramdisk(kern_mem_block_t *ramdisk) {
 }
 
 void machine_init_logging(const config_t *config) {
+    /* Initialize the UART first since it does not have dependencies and it
+     * will be able to report the few cases of kernel panics that could occur
+     * in the next few steps before VGA is enabled. */
     init_uart16550a(config);
+
+    /* pmap_init() needs the size of physical addresses (maxphyaddr). */
+    detect_cpu_features();
+
+    /* Validate the boot information structure before using it. */
+    (void)check_bootinfo(true);
+
+    const bootinfo_t *bootinfo = get_bootinfo();
+
+    /* This needs to be called before calling vga_init() because that function
+     * calls pmap functions to map video memory. */
+    pmap_init(bootinfo);
+
     vga_init(config);
 }
 
 void machine_init(const config_t *config) {
-    /* Validate the boot information structure before using it. */
-    (void)check_bootinfo(true);
-
-    detect_cpu_features();
+    report_cpu_features();
 
     const bootinfo_t *bootinfo = get_bootinfo();
 
     check_memory(bootinfo);
-
-    move_kernel_at_16mb(bootinfo);
+    check_pae(bootinfo, config);
 
     boot_alloc_t boot_alloc;
     boot_alloc_init(&boot_alloc, bootinfo);
-
-    bool pae_enabled = maybe_enable_pae(&boot_alloc, bootinfo, config);
-
-    /* Re-initialize the boot page allocator to allocate following the kernel
-     * image at 16MB rather than at 1MB, now that the kernel has been moved
-     * there.
-     *
-     * Do this after enabling PAE: we want the temporary PAE page tables to be
-     * allocated after 1MB because we won't need them anymore once the final
-     * address space is created. */
-    boot_alloc_reinit_at_16mb(&boot_alloc);
 
     /* allocate per-CPU data
      *
@@ -331,33 +284,25 @@ void machine_init(const config_t *config) {
     /* load segment selectors */
     load_selectors(cpu_data);
 
-    /* We must look for the ACPI RDSP while the relevant memory is still
-     * identity mapped before we switch to the initial address space. */
-    find_acpi_rsdp();
-    find_mp();
+    /* Map the first megabyte of memory temporarily so we can scan it for ACPI
+     * and MultiProcessor Specification data structures. */
+    void *first1mb = map_in_kernel(0, 1 * MB, JINUE_PROT_READ);
 
-    /* This must be done before we switch to the new address space because only
-     * the boot allocator can allocate multiple consecutive pages. */
+    find_acpi_rsdp(first1mb);
+
+    find_mp(first1mb);
+
+    machine_unmap_kernel(first1mb, 1 * MB);
+
+    /* This must be done before initializing and switching to the page
+     * allocator bcause only the boot allocator can allocate multiple
+     * consecutive pages. */
     memory_initialize_array(&boot_alloc, bootinfo);
 
     exec_file_t kernel;
     get_kernel_exec_file(&kernel, bootinfo);
 
-    addr_space_t *addr_space = pmap_create_initial_addr_space(&kernel, &boot_alloc, bootinfo);
-
-    /* switch to new address space */
-    pmap_switch_addr_space(addr_space);
-
-    enable_global_pages();
-
-    /* This should be done early after calling pmap_switch_addr_space()
-     * because, until it's done, any attempt to log anything to VGA will
-     * result in a kernel panic caused by a kernel page fault (and the
-     * panic handler itself will then attempt to log). */
-    remap_text_video_memory();
-
     /* Transfer the remaining pages to the run-time page allocator. */
-    boot_alloc_reinit_at_klimit(&boot_alloc);
     initialize_page_allocator(&boot_alloc);
 
     init_acpi();
@@ -374,7 +319,7 @@ void machine_init(const config_t *config) {
      *
      * This must be done before the first time pmap_create_addr_space() is
      * called, which happens when the first process is created. */
-    if(pae_enabled) {
+    if(bootinfo->use_pae) {
         pae_create_pdpt_cache();
     }
 

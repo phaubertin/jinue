@@ -30,7 +30,9 @@
  */
 
 #include <jinue/shared/asm/logging.h>
+#include <jinue/shared/asm/mman.h>
 #include <kernel/domain/services/logging.h>
+#include <kernel/domain/services/mman.h>
 #include <kernel/infrastructure/i686/drivers/vga.h>
 #include <kernel/infrastructure/i686/isa/io.h>
 #include <kernel/infrastructure/i686/pmap/pmap.h>
@@ -46,7 +48,7 @@ static logger_t logger = {
 }; 
 
 /** base address of the VGA text video buffer */
-static unsigned char *video_base_addr = (void *)VGA_TEXT_VID_BASE;
+static unsigned char *video_base_addr;
 
 static void vga_clear(void) {
     unsigned int idx = 0;
@@ -73,15 +75,17 @@ void vga_init(const config_t *config) {
     outb(VGA_CRTC_DATA, 0x0);    
     outb(VGA_CRTC_ADDR, 0x0f);
     outb(VGA_CRTC_DATA, 0x0);
+
+    video_base_addr = map_in_kernel(
+        VGA_TEXT_VID_BASE,
+        VGA_TEXT_VID_TOP - VGA_TEXT_VID_BASE,
+        JINUE_PROT_READ | JINUE_PROT_WRITE
+    );
     
     /* Clear the screen */
     vga_clear();
 
     register_logger(&logger);
-}
-
-void vga_set_base_addr(void *base_addr) {
-    video_base_addr = base_addr;
 }
 
 static vga_pos_t vga_get_cursor_pos(void) {

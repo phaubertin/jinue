@@ -42,6 +42,7 @@
 #include <kernel/infrastructure/i686/pmap/pmap.h>
 #include <kernel/infrastructure/i686/pmap/private.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
+#include <kernel/infrastructure/i686/cpuinfo.h>
 #include <kernel/infrastructure/i686/memory.h>
 #include <kernel/infrastructure/i686/percpu.h>
 #include <kernel/infrastructure/elf.h>
@@ -79,6 +80,9 @@ size_t entries_per_page_table;
 
 /** true if PAE is enabled, false otherwise */
 bool pgtable_format_pae;
+
+/** mask of valid page frame number bits */
+uint64_t page_frame_number_mask;
 
 /** First address space created during kernel initialization.
  *
@@ -146,25 +150,6 @@ static unsigned int page_directory_offset_of(const void *addr) {
     }
     else {
         return nopae_page_directory_offset_of(addr);
-    }
-}
-
-/**
- * Set protection and other flags on specified page table entry
- *
- * The appropriate flags for this function are the architecture-dependent flags,
- * i.e. those defined by the X86_PTE_... constants. See map_page_access_flags()
- * for additional context.
- *
- * @param pte page table entry
- * @param pte flags flags
- */
-static void set_pte_flags(pte_t *pte, uint64_t flags) {
-    if(pgtable_format_pae) {
-        pae_set_pte_flags(pte, flags);
-    }
-    else {
-        nopae_set_pte_flags(pte, flags);
     }
 }
 
@@ -266,165 +251,28 @@ static paddr_t get_pte_paddr(const pte_t *pte) {
 }
 
 /**
- * Initialize virtual memory management to not use PAE
- *
- * During initialization, the kernel either calls this function or calls
- * pae_enable() to enable PAE.
- */
-void pmap_set_no_pae(void) {
-    pgtable_format_pae      = false;
-    entries_per_page_table  = NOPAE_PAGE_TABLE_PTES;
-}
-
-/**
- * Initialize consecutive page table entries to map consecutive page frames
- *
- * @param page_table first page table entry
- * @param start_paddr start physical address
- * @param flags page table entry flags
- * @param num_entries number of entries to initialize
- * @return first page table entry after affected ones
- */
-pte_t *initialize_page_table_linear(
-        pte_t       *page_table,
-        uint64_t     start_paddr,
-        uint64_t     flags,
-        int          num_entries) {
-
-    uint64_t paddr  = start_paddr;
-
-    for(int idx = 0; idx < num_entries; ++idx) {
-        set_pte(
-                get_pte_with_offset(page_table, idx),
-                paddr,
-                flags | X86_PTE_PRESENT);
-
-        paddr += PAGE_SIZE;
-    }
-
-    return get_pte_with_offset(page_table, num_entries);
-}
-
-/**
- * Write protect the kernel image at address 0x1000000 (16MB)
- *
- * This function is called during initialization after the kernel image has been
- * moved from address 0x100000 (1MB) to address 0x1000000 (16MB) to ensure the
- * new copy is read only.
+ * Initialize virtual memory management
  *
  * @param bootinfo boot information structure
  */
-void pmap_write_protect_kernel_image(const bootinfo_t *bootinfo) {
-    size_t image_size = (char *)bootinfo->image_top - (char *)bootinfo->image_start;
-    size_t image_pages = NUM_PAGES(image_size);
-
-    for(int idx = 0; idx < image_pages; ++idx) {
-        set_pte_flags(
-                get_pte_with_offset(bootinfo->page_table_16mb, idx),
-                X86_PTE_PRESENT); /* read only */
-    }
-
-    set_cr3((uintptr_t)bootinfo->page_directory);
-}
-
-static void initialize_initial_page_tables(
-        pte_t               *page_tables,
-        Elf32_Ehdr          *ehdr,
-        const bootinfo_t    *bootinfo) {
-
-    size_t image_size  = (char *)bootinfo->image_top - (char *)bootinfo->image_start;
-    size_t image_pages = NUM_PAGES(image_size);
-
-    /* map kernel image read only, not executable */
-    pte_t *next_pte_after_image = initialize_page_table_linear(
-            page_tables,
-            MEMORY_ADDR_16MB,
-            X86_PTE_GLOBAL | X86_PTE_NX,
-            image_pages);
-
-    /* map rest of region read/write */
-    initialize_page_table_linear(
-            next_pte_after_image,
-            MEMORY_ADDR_16MB + image_size,
-            X86_PTE_GLOBAL | X86_PTE_READ_WRITE | X86_PTE_NX,
-            NUM_PAGES(BOOT_SIZE_AT_16MB) - image_pages);
-
-    /* make kernel code segment executable */
-    const Elf32_Phdr *phdr = elf_executable_program_header(ehdr);
-
-    if(phdr == NULL) {
-        panic("could not find kernel executable segment");
-    }
-
-    uintptr_t code_vaddr    = ALIGN_START((uintptr_t)phdr->p_vaddr, PAGE_SIZE);
-    size_t code_size        = phdr->p_memsz + OFFSET_OF_PTR(phdr->p_vaddr, PAGE_SIZE);
-    size_t code_offset      = page_number_of(code_vaddr - JINUE_KLIMIT);
-
-    initialize_page_table_linear(
-            get_pte_with_offset(page_tables, code_offset),
-            VIRT_TO_PHYS_AT_16MB(code_vaddr),
-            X86_PTE_GLOBAL,
-            NUM_PAGES(code_size));
-
-    /* map kernel data segment */
-    size_t data_offset = page_number_of((uintptr_t)bootinfo->data_start - JINUE_KLIMIT);
-
-    initialize_page_table_linear(
-            get_pte_with_offset(page_tables, data_offset),
-            bootinfo->data_physaddr + MEMORY_ADDR_16MB - MEMORY_ADDR_1MB,
-            X86_PTE_GLOBAL | X86_PTE_READ_WRITE | X86_PTE_NX,
-           NUM_PAGES(bootinfo->data_size));
-}
-
-static void initialize_initial_page_directories(
-        pte_t   *page_directories,
-        pte_t   *page_tables,
-        int      num_page_tables) {
-
-    int offset = page_directory_offset_of((void *)JINUE_KLIMIT);
-
-    initialize_page_table_linear(
-            get_pte_with_offset(page_directories, offset),
-            (uintptr_t)page_tables,
-            X86_PTE_READ_WRITE,
-            num_page_tables);
-}
-
-addr_space_t *pmap_create_initial_addr_space(
-        const exec_file_t   *kernel,
-        boot_alloc_t        *boot_alloc,
-        const bootinfo_t    *bootinfo) {
-    
-    Elf32_Ehdr *ehdr = kernel->start;
-
-    /* Pre-allocate all the kernel page tables. */
-    int num_pages           = NUM_PAGES(ADDR_4GB - JINUE_KLIMIT);
-    int num_page_tables     = num_pages / entries_per_page_table;
-
-    /* The number of entries in a pages table (page_table_entries) is also the
-     * number of entries in a page directory. */
-    int num_page_dirs       = ALIGN_END(num_page_tables, entries_per_page_table) / entries_per_page_table;
-
-    /* allocate tables */
-    pte_t *page_tables      = boot_page_alloc_n(boot_alloc, num_page_tables);
-    pte_t *page_directories = boot_page_alloc_n(boot_alloc, num_page_dirs);
-
-    initialize_initial_page_tables(page_tables, ehdr, bootinfo);
-    initialize_initial_page_directories(page_directories, page_tables, num_page_tables);
-
-    kernel_page_tables      = (pte_t *)PHYS_TO_VIRT_AT_16MB(page_tables);
+void pmap_init(const bootinfo_t *bootinfo) {
+    kernel_page_tables              = bootinfo->page_tables;
+    initial_addr_space.cr3          = bootinfo->cr3;
+    pgtable_format_pae              = bootinfo->use_pae;
 
     if(pgtable_format_pae) {
-        pae_create_initial_addr_space(
-                &initial_addr_space,
-                page_directories,
-                boot_alloc);
-    }
-    else {
-        nopae_create_initial_addr_space(&initial_addr_space, page_directories);
+        initial_addr_space.top_level.pdpt = (pdpt_t *)PHYS_TO_VIRT_AT_16MB(bootinfo->cr3);
+    } else {
+        initial_addr_space.top_level.pd = bootinfo->page_directory;
     }
 
-    return &initial_addr_space;
+    entries_per_page_table  = pgtable_format_pae ? PAE_PAGE_TABLE_PTES :  NOPAE_PAGE_TABLE_PTES;
+    page_frame_number_mask  = ((UINT64_C(1) << bsp_cpuinfo.maxphyaddr) - 1) & (~PAGE_MASK);
+
+    /* Enable global pages */
+    if(cpu_has_feature(CPUINFO_FEATURE_PGE)) {
+        set_cr4(get_cr4() | X86_CR4_PGE);
+    }
 }
 
 static pte_t *clone_first_kernel_page_directory(void) {

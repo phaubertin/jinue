@@ -31,6 +31,7 @@
 
 #include <kernel/interface/i686/asm/boot.h>
 #include <kernel/interface/i686/setup/elf.h>
+#include <kernel/interface/i686/setup/alloc.h>
 #include <kernel/interface/i686/setup/linkdefs.h>
 #include <kernel/interface/i686/setup/linux.h>
 #include <kernel/interface/i686/setup/pmap.h>
@@ -40,25 +41,21 @@
 /**
  * Initialize some fields in the boot information structure
  *
- * @param heap_ptr pointer to boot heap (for small allocations)
  * @param linux_header Linux x86 boot protocol real-mode kernel header
  * @return boot information structure
  */
-static bootinfo_t *create_bootinfo(char *heap_ptr, const linux_header_t linux_header) {
-    bootinfo_t *bootinfo = (bootinfo_t *)heap_ptr;
-    heap_ptr = (char *)(bootinfo + 1);
+static bootinfo_t *create_bootinfo(const linux_header_t linux_header) {
+    bootinfo_t *bootinfo    = (bootinfo_t *)MEMORY_ADDR_16MB;
 
-    bootinfo->boot_heap     = heap_ptr;
+    bootinfo->boot_heap     = (char *)(bootinfo + 1);
+    bootinfo->boot_end      = (char *)MEMORY_ADDR_16MB + BOOT_STACK_HEAP_SIZE;
    
     bootinfo->kernel_start  = (Elf32_Ehdr *)&kernel_start;
     bootinfo->kernel_size   = (size_t)&kernel_size;
     bootinfo->loader_start  = (Elf32_Ehdr *)&loader_start;
     bootinfo->loader_size   = (size_t)&loader_size;
     bootinfo->image_start   = &image_start;
-
-    /* The boot information structure is the first thing allocated right after
-     * the kernel image. */
-    bootinfo->image_top     = bootinfo;
+    bootinfo->image_top     = &image_top;
 
     initialize_from_linux_header(bootinfo, linux_header);
 
@@ -74,16 +71,21 @@ static bootinfo_t *create_bootinfo(char *heap_ptr, const linux_header_t linux_he
  *
  * @param bootinfo boot information structure
  */
-static void adjust_bootinfo_pointers(bootinfo_t *bootinfo) {
+static void adjust_bootinfo_pointers(bootinfo_t **bootinfo) {
 #define ADD_OFFSET(p) (p) = (void *)((char *)(p) + BOOT_OFFSET_FROM_1MB)
-    ADD_OFFSET(bootinfo->kernel_start);
-    ADD_OFFSET(bootinfo->loader_start);
-    ADD_OFFSET(bootinfo->image_start);
-    ADD_OFFSET(bootinfo->image_top);
-    ADD_OFFSET(bootinfo->acpi_addr_map);
-    ADD_OFFSET(bootinfo->cmdline);
-    ADD_OFFSET(bootinfo->boot_heap);
-    ADD_OFFSET(bootinfo->boot_end);
+    ADD_OFFSET((*bootinfo)->kernel_start);
+    ADD_OFFSET((*bootinfo)->loader_start);
+    ADD_OFFSET((*bootinfo)->image_start);
+    ADD_OFFSET((*bootinfo)->image_top);
+#undef ADD_OFFSET
+#define ADD_OFFSET(p) (p) = (void *)((char *)(p) + BOOT_OFFSET_FROM_16MB)
+    ADD_OFFSET((*bootinfo)->acpi_addr_map);
+    ADD_OFFSET((*bootinfo)->boot_end);
+    ADD_OFFSET((*bootinfo)->boot_heap);
+    ADD_OFFSET((*bootinfo)->cmdline);
+    ADD_OFFSET((*bootinfo)->page_directory);
+    ADD_OFFSET((*bootinfo)->page_tables);
+    ADD_OFFSET(*bootinfo);
 #undef ADD_OFFSET
 }
 
@@ -94,25 +96,34 @@ static void adjust_bootinfo_pointers(bootinfo_t *bootinfo) {
  * @param heap_ptr pointer to boot heap (for small allocations)
  * @param linux_header Linux x86 boot protocol real-mode kernel header
  */
-void main32(char *alloc_ptr, char *heap_ptr, const linux_header_t linux_header) {
-    bootinfo_t *bootinfo = create_bootinfo(heap_ptr, linux_header);
+bootinfo_t *main32(const linux_header_t linux_header) {
+    bootinfo_t *bootinfo = create_bootinfo(linux_header);
 
-    alloc_ptr = prepare_data_segment(alloc_ptr, bootinfo);
+    data_segment_t data_segment;
 
-    alloc_ptr = copy_acpi_address_map(alloc_ptr, bootinfo, linux_header);
+    prepare_data_segment(&data_segment, bootinfo);
 
-    alloc_ptr = copy_cmdline(alloc_ptr, bootinfo, linux_header);
+    copy_acpi_address_map(bootinfo, linux_header);
 
-    alloc_ptr = allocate_page_tables(alloc_ptr, bootinfo);
+    copy_cmdline(bootinfo, linux_header);
 
-    /* This is the end of allocations made by this setup code. */
-    bootinfo->boot_end = alloc_ptr;
+    allocate_page_tables(bootinfo);
 
-    initialize_page_tables(bootinfo);
+    initialize_page_tables(bootinfo, &data_segment);
 
-    initialize_page_directory(bootinfo);
+    prepare_for_paging(bootinfo);
 
-    enable_paging(bootinfo->page_directory);
+    enable_paging(bootinfo->use_pae, bootinfo->cr3);
 
-    adjust_bootinfo_pointers(bootinfo);
+    adjust_bootinfo_pointers(&bootinfo);
+
+    adjust_stack();
+
+    cleanup_after_paging(bootinfo);
+
+    /* Reload CR3 to invalidate TLBs so the changes by cleanup_after_paging()
+     * take effect. */
+    enable_paging(bootinfo->use_pae, bootinfo->cr3);
+
+    return bootinfo;
 }

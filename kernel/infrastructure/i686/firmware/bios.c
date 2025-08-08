@@ -36,15 +36,14 @@
 /**
  * Get address of the Extended BIOS Data Area (EBDA)
  * 
- * The returned address is guaranteed to be aligned on a 16-byte boundary. This
- * information is read from the Bios Data Area (BDA). This function must be
- * called early in the boot process while conventional memory is still mapped
- * 1:1 in virtual memory.
+ * The returned address is a physical address guaranteed to be aligned on a
+ * 16-byte boundary. This information is read from the Bios Data Area (BDA).
  * 
+ * @param first1mb mapping of first 1MB of memory
  * @return address of EBDA, 0 for none or if it could not be determined
  */
-uint32_t get_bios_ebda_addr(void) {
-    uintptr_t ebda = 16 * (*(uint16_t *)BIOS_BDA_EBDA_SEGMENT);
+uint32_t get_bios_ebda_addr(const addr_t first1mb) {
+    uintptr_t ebda = 16 * (*(const uint16_t *)&first1mb[BIOS_BDA_EBDA_SEGMENT]);
 
     if(ebda < 0x80000 || ebda >= 0xa0000) {
         return NULL;
@@ -60,11 +59,12 @@ uint32_t get_bios_ebda_addr(void) {
  * is read from the Bios Data Area (BDA). This function must be called early in
  * the boot process while conventional memory is still mapped 1:1 in virtual
  * memory.
- * 
+ *
+ * @param first1mb mapping of first 1MB of memory
  * @return base memory size, 0 if it could not be determined
  */
-size_t get_bios_base_memory_size(void) {
-    size_t size_kb = *(uint16_t *)BIOS_BDA_MEMORY_SIZE;
+size_t get_bios_base_memory_size(const addr_t first1mb) {
+    size_t size_kb = *(const uint16_t *)&first1mb[BIOS_BDA_MEMORY_SIZE];
 
     if(size_kb < 512 || size_kb > 640) {
         return 0;

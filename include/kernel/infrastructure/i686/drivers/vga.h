@@ -37,6 +37,4 @@
 
 void vga_init(const config_t *config);
 
-void vga_set_base_addr(void *base_addr);
-
 #endif

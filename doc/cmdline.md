@@ -43,7 +43,7 @@ For user space environment variables, the behaviour is undefined.
 |---------------------|---------|--------------------------------------------------------------|
 | `init`              | string  | Path to initial program in initial RAM disk                  |
 | `on_panic`          | string  | Action to take after a kernel panic                          |
-| `pae`               | string  | Controls whether Physical Address Extension (PAE) is enabled |
+| `pae`               | string  | Whether Physical Address Extension (PAE) is required         |
 | `serial_enable`     | boolean | Enable/disable logging on the serial port                    |
 | `serial_baud_rate`  | integer | Baud rate for serial port logging                            |
 | `serial_ioport`     | integer | I/O port address for serial port logging                     |
@@ -96,7 +96,6 @@ Type: string
 The following values are recognized:
 
 * `auto` (default) PAE is enabled if supported by the CPU, disabled otherwise.
-* `disable` PAE is disabled.
 * `require` PAE is enabled if supported by the CPU. If not supported, the kernel
   refuses to boot.
 

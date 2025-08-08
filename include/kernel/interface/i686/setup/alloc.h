@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,19 +29,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_PMAP_INIT_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_PMAP_INIT_H
+#ifndef JINUE_KERNEL_INTERFACE_I686_SETUP_ALLOC_H
+#define JINUE_KERNEL_INTERFACE_I686_SETUP_ALLOC_H
 
-/** This header file contains private definitions shared by pmap.c, pae.c
- * and nopae.c in kernel/infrastructure/i686/pmap/. There should be no reason
- * to include it anywhere else. */
+#include <kernel/interface/i686/types.h>
 
-#include <kernel/infrastructure/i686/types.h>
-#include <stdint.h>
+void *alloc_heap(bootinfo_t *bootinfo, size_t size, size_t align);
 
-void move_and_remap_kernel(addr_t end_addr, addr_t pte, uint32_t cr3_value);
+void *alloc_pages(bootinfo_t *bootinfo, size_t size);
 
-void enable_pae(uint32_t cr3_value);
+void set_alloc_pages_address(bootinfo_t *bootinfo, void *addr);
 
 #endif
-

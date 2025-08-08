@@ -35,7 +35,7 @@
 #include <kernel/infrastructure/i686/types.h>
 #include <stdint.h>
 
-void find_acpi_rsdp(void);
+void find_acpi_rsdp(const addr_t first1mb);
 
 void init_acpi(void);
 

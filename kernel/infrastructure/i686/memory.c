@@ -231,7 +231,7 @@ void memory_initialize_array(
         array[page_number_of(addr)] = PHYS_TO_VIRT_AT_16MB(addr);
     }
 
-    memory_array            = (uintptr_t *)PHYS_TO_VIRT_AT_16MB(array);
+    memory_array            = array;
     memory_array_entries    = array_entries;
 }
 

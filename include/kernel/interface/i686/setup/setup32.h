@@ -33,7 +33,12 @@
 #define JINUE_KERNEL_INTERFACE_I686_SETUP_SETUP32_H
 
 #include <kernel/interface/i686/types.h>
+#include <stdbool.h>
 
-void enable_paging(pte_t *page_directory);
+void enable_paging(bool use_pae, uint32_t cr3);
+
+void adjust_stack(void);
+
+bool detect_pae(void);
 
 #endif

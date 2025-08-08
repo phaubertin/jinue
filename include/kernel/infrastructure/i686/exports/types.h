@@ -77,7 +77,6 @@ typedef struct {
 
 typedef enum {
     CONFIG_PAE_AUTO,
-    CONFIG_PAE_DISABLE,
     CONFIG_PAE_REQUIRE
 } config_i686_pae_t;
 

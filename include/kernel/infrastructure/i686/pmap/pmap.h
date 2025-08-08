@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -62,14 +62,7 @@
 
 #define ADDR_4GB    UINT64_C(0x100000000)
 
-void pmap_set_no_pae(void);
-
-void pmap_write_protect_kernel_image(const bootinfo_t *bootinfo);
-
-addr_space_t *pmap_create_initial_addr_space(
-        const exec_file_t   *kernel,
-        boot_alloc_t        *boot_alloc,
-        const bootinfo_t    *bootinfo) ;
+void pmap_init(const bootinfo_t *bootinfo);
 
 bool pmap_create_addr_space(addr_space_t *addr_space);
 

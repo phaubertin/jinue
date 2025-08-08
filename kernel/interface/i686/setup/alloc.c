@@ -29,18 +29,29 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INTERFACE_I686_SETUP_PMAP_H
-#define JINUE_KERNEL_INTERFACE_I686_SETUP_PMAP_H
+#include <kernel/interface/i686/setup/alloc.h>
+#include <kernel/machine/asm/machine.h>
+#include <kernel/utils/utils.h>
 
-#include <kernel/interface/i686/setup/elf.h>
-#include <kernel/interface/i686/types.h>
+void *alloc_heap(bootinfo_t *bootinfo, size_t size, size_t align) {
+    if(align != 0) {
+        bootinfo->boot_heap = ALIGN_END_PTR(bootinfo->boot_heap, align);
+    }
 
-void allocate_page_tables(bootinfo_t *bootinfo);
+    void *object        = bootinfo->boot_heap;
+    bootinfo->boot_heap = (char *)bootinfo->boot_heap + size;
 
-void initialize_page_tables(bootinfo_t *bootinfo, const data_segment_t *data_segment);
+    return object;
+}
 
-void prepare_for_paging(bootinfo_t *bootinfo);
+void *alloc_pages(bootinfo_t *bootinfo, size_t size) {
+    void *retval = bootinfo->boot_end;
+    
+    bootinfo->boot_end  = ALIGN_END_PTR((char *)retval + size, PAGE_SIZE);
 
-void cleanup_after_paging(const bootinfo_t *bootinfo);
+    return retval;
+}
 
-#endif
+void set_alloc_pages_address(bootinfo_t *bootinfo, void *addr) {
+    bootinfo->boot_end = addr;
+}

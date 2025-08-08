@@ -113,7 +113,7 @@ typedef struct {
     uint8_t     dest_apic_intn;
 } mp_entry_intr_t;
 
-void find_mp(void);
+void find_mp(const addr_t first1mb);
 
 void init_mp(void);
 

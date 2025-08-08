@@ -137,7 +137,6 @@ sources.kernel.nasm = \
 	infrastructure/i686/isa/instrs.asm \
 	infrastructure/i686/isa/io.asm \
 	infrastructure/i686/isa/regs.asm \
-	infrastructure/i686/pmap/init.asm \
 	infrastructure/i686/thread.asm \
 	interface/i686/crt.asm \
 	interface/i686/trap.asm
@@ -146,6 +145,7 @@ sources.setup16.nasm = interface/i686/setup/setup16.asm
 sources.setup32.nasm = interface/i686/setup/setup32.asm
 
 sources.setup32.c = \
+	interface/i686/setup/alloc.c \
 	interface/i686/setup/elf.c \
 	interface/i686/setup/linux.c \
 	interface/i686/setup/main32.c \
@@ -158,6 +158,9 @@ objects.kernel = $(sources.kernel.nasm:%.asm=%-nasm.o) $(sources.kernel.c:%.c=%.
 
 # Assembly files must come first and setup32.asm must be first
 objects.setup32 = $(sources.setup32.nasm:%.asm=%-nasm.o) $(sources.setup32.c:%.c=%.o)
+
+# We optimize the setup code for size
+$(sources.setup32.c:%.c=%.o): CFLAGS.optimization := -Os
 
 include $(common)
 

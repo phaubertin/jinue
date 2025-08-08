@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -38,8 +38,6 @@
 
 #include <kernel/infrastructure/i686/types.h>
 
-void nopae_create_initial_addr_space(addr_space_t *addr_space, pte_t *page_directory);
-
 void nopae_create_addr_space(addr_space_t *addr_space, pte_t *page_directory);
 
 void nopae_destroy_addr_space(addr_space_t *addr_space);
@@ -53,8 +51,6 @@ pte_t *nopae_lookup_page_directory(addr_space_t *addr_space);
 pte_t *nopae_get_pte_with_offset(pte_t *pte, unsigned int offset);
 
 void nopae_set_pte(pte_t *pte, uint32_t paddr, uint64_t flags);
-
-void nopae_set_pte_flags(pte_t *pte, uint64_t flags);
 
 uint32_t nopae_get_pte_paddr(const pte_t *pte);
 

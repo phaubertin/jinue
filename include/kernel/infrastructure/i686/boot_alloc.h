@@ -37,10 +37,6 @@
 
 void boot_alloc_init(boot_alloc_t *boot_alloc, const bootinfo_t *bootinfo);
 
-void boot_alloc_reinit_at_16mb(boot_alloc_t *boot_alloc);
-
-void boot_alloc_reinit_at_klimit(boot_alloc_t *boot_alloc);
-
 /**
  * Allocate an object on the boot heap.
  *

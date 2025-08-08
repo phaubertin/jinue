@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -44,11 +44,6 @@
 struct pte_t {
     uint32_t entry;
 };
-
-void nopae_create_initial_addr_space(addr_space_t *addr_space, pte_t *page_directory) {
-    addr_space->top_level.pd = (pte_t *)PHYS_TO_VIRT_AT_16MB(page_directory);
-    addr_space->cr3          = (uintptr_t)page_directory;
-}
 
 void nopae_create_addr_space(addr_space_t *addr_space, pte_t *page_directory) {
     addr_space->top_level.pd = page_directory;
@@ -141,20 +136,6 @@ static uint32_t filter_pte_flags(uint64_t flags) {
 void nopae_set_pte(pte_t *pte, uint32_t paddr, uint64_t flags) {
     assert((paddr & PAGE_MASK) == 0);
     pte->entry = paddr | filter_pte_flags(flags);
-}
-
-/**
- * Set protection and other flags on specified page table entry
- *
- * The appropriate flags for this function are the architecture-dependent flags,
- * i.e. those defined by the X86_PTE_... constants. See map_page_access_flags()
- * for additional context.
- *
- * @param pte page table entry
- * @param pte flags flags
- */
-void nopae_set_pte_flags(pte_t *pte, uint64_t flags) {
-    pte->entry = (pte->entry & ~PAGE_MASK) | filter_pte_flags(flags);
 }
 
 /**
