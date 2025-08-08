@@ -32,11 +32,12 @@
 #ifndef JINUE_KERNEL_INTERFACE_I686_SETUP_PMAP_H
 #define JINUE_KERNEL_INTERFACE_I686_SETUP_PMAP_H
 
+#include <kernel/interface/i686/setup/elf.h>
 #include <kernel/interface/i686/types.h>
 
 void allocate_page_tables(bootinfo_t *bootinfo);
 
-void initialize_page_tables(bootinfo_t *bootinfo);
+void initialize_page_tables(bootinfo_t *bootinfo, const data_segment_t *data_segment);
 
 void prepare_for_paging(bootinfo_t *bootinfo);
 

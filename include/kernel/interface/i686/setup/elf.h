@@ -33,8 +33,15 @@
 #define JINUE_KERNEL_INTERFACE_I686_SETUP_ELF_H
 
 #include <kernel/interface/i686/types.h>
+#include <sys/elf.h>
 
-void prepare_data_segment(bootinfo_t *bootinfo);
+typedef struct {
+    void    *start;
+    size_t   size;
+    size_t   physaddr;
+} data_segment_t;
+
+void prepare_data_segment(data_segment_t *segment, bootinfo_t *bootinfo);
 
 const Elf32_Phdr *kernel_code_program_header(const bootinfo_t *bootinfo);
 

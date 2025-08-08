@@ -99,7 +99,9 @@ static void adjust_bootinfo_pointers(bootinfo_t **bootinfo) {
 bootinfo_t *main32(const linux_header_t linux_header) {
     bootinfo_t *bootinfo = create_bootinfo(linux_header);
 
-    prepare_data_segment(bootinfo);
+    data_segment_t data_segment;
+
+    prepare_data_segment(&data_segment, bootinfo);
 
     copy_acpi_address_map(bootinfo, linux_header);
 
@@ -107,7 +109,7 @@ bootinfo_t *main32(const linux_header_t linux_header) {
 
     allocate_page_tables(bootinfo);
 
-    initialize_page_tables(bootinfo);
+    initialize_page_tables(bootinfo, &data_segment);
 
     prepare_for_paging(bootinfo);
 

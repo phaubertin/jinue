@@ -70,11 +70,8 @@ void allocate_page_tables(bootinfo_t *bootinfo) {
         bootinfo->cr3 = (uint32_t)bootinfo->page_directory;
     }
     else {
-        /* align */
-        bootinfo->boot_heap = ALIGN_END_PTR(bootinfo->boot_heap, 32);
-
         /* allocate PDPT */
-        bootinfo->cr3       = (uint32_t)alloc_heap(bootinfo, 32, 32);
+        bootinfo->cr3 = (uint32_t)alloc_heap(bootinfo, 32, 32);
     }
 }
 
@@ -134,11 +131,21 @@ static pte_t *map_linear(bool use_pae, pte_t *table, size_t offset, size_t n, ui
 }
 
 /**
+ * Get the Page Directory Pointer Table (PDPT)
+ * 
+ * @param bootinfo boot information structure
+ * @return pointer to PDPT
+ */
+static inline uint64_t *get_pdpt(const bootinfo_t *bootinfo) {
+    return (uint64_t *)bootinfo->cr3;
+}
+
+/**
  * Initialize the page tables
  * 
  * @param bootinfo boot information structure
  */
-void initialize_page_tables(bootinfo_t *bootinfo) {
+void initialize_page_tables(bootinfo_t *bootinfo, const data_segment_t *data_segment) {
     /* map the kernel image */
     clear_ptes(
         bootinfo->use_pae,
@@ -182,15 +189,15 @@ void initialize_page_tables(bootinfo_t *bootinfo) {
     }
 
     /* map kernel data segment (read/write) */
-    if(bootinfo->data_size != 0) {
-        size_t data_offset = (uintptr_t)bootinfo->data_start - JINUE_KLIMIT;
+    if(data_segment->size != 0) {
+        size_t data_offset = (uintptr_t)data_segment->start - JINUE_KLIMIT;
 
         map_linear(
             bootinfo->use_pae,
             bootinfo->page_tables,
             data_offset >> PAGE_BITS,
-            NUM_PAGES(bootinfo->data_size),
-            bootinfo->data_physaddr | X86_PTE_READ_WRITE | X86_PTE_GLOBAL | X86_PTE_NX
+            NUM_PAGES(data_segment->size),
+            data_segment->physaddr | X86_PTE_READ_WRITE | X86_PTE_GLOBAL | X86_PTE_NX
         );
     }
 
@@ -221,7 +228,7 @@ void initialize_page_tables(bootinfo_t *bootinfo) {
     }
 
     /* link page directory to PDPT */
-    uint64_t *pdpt = (uint64_t *)bootinfo->cr3;
+    uint64_t *pdpt = get_pdpt(bootinfo);
     pdpt[0] = 0;
     pdpt[1] = 0;
     pdpt[2] = 0;
@@ -317,7 +324,7 @@ void prepare_for_paging(bootinfo_t *bootinfo) {
     );
 
     if(bootinfo->use_pae) {
-        uint64_t *pdpt = (uint64_t *)bootinfo->cr3;
+        uint64_t *pdpt = get_pdpt(bootinfo);
         pdpt[0] = (uint32_t)page_directory | X86_PTE_PRESENT;
     }
 
@@ -335,7 +342,7 @@ void prepare_for_paging(bootinfo_t *bootinfo) {
  */
 void cleanup_after_paging(const bootinfo_t *bootinfo) {
     if(bootinfo->use_pae) {
-        uint64_t *pdpt = (uint64_t *)bootinfo->cr3;
+        uint64_t *pdpt = get_pdpt(bootinfo);
         pdpt[0] = 0;
         return;
     }

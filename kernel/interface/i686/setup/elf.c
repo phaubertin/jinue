@@ -29,7 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
- #include <kernel/interface/i686/setup/alloc.h>
+#include <kernel/interface/i686/setup/alloc.h>
+#include <kernel/interface/i686/setup/elf.h>
 #include <kernel/interface/i686/setup/linkdefs.h>
 #include <kernel/interface/i686/types.h>
 #include <kernel/machine/asm/machine.h>
@@ -69,7 +70,6 @@ static bool check_header(const Elf32_Ehdr *ehdr) {
  *
  * @param ehdr ELF file header
  * @return program header table
- *
  */
 static const Elf32_Phdr *program_header_table(const Elf32_Ehdr *ehdr) {
     return (Elf32_Phdr *)((char *)ehdr + ehdr->e_phoff);
@@ -80,7 +80,6 @@ static const Elf32_Phdr *program_header_table(const Elf32_Ehdr *ehdr) {
  *
  * @param elf ELF header
  * @return program header if found, NULL otherwise
- *
  */
 static const Elf32_Phdr *writable_program_header(const Elf32_Ehdr *ehdr) {
     const Elf32_Phdr *phdr = program_header_table(ehdr);
@@ -105,14 +104,12 @@ static const Elf32_Phdr *writable_program_header(const Elf32_Ehdr *ehdr) {
  * @param bootinfo boot information structure
  * @return updated allocation pointer
  */
-void prepare_data_segment(bootinfo_t *bootinfo) {
+void prepare_data_segment(data_segment_t *segment, bootinfo_t *bootinfo) {
     const Elf32_Ehdr *ehdr = bootinfo->kernel_start;
 
-    /* These values lets the kernel know that its data segment could not be
-     * loaded and lets it deal with this situation later. */
-    bootinfo->data_physaddr = 0;
-    bootinfo->data_size = 0;
-    bootinfo->data_start = NULL;
+    segment->physaddr = 0;
+    segment->size = 0;
+    segment->start = NULL;
 
     if(!check_header(ehdr)) {
         return;
@@ -128,17 +125,17 @@ void prepare_data_segment(bootinfo_t *bootinfo) {
         return;
     }
 
-    bootinfo->data_start    = (void *)phdr->p_vaddr;
-    bootinfo->data_size     = ALIGN_END(phdr->p_memsz, PAGE_SIZE);
+    segment->start = (void *)phdr->p_vaddr;
+    segment->size  = ALIGN_END(phdr->p_memsz, PAGE_SIZE);
 
     const char *src = (char *)ehdr + phdr->p_offset;
-    char *dest      = alloc_pages(bootinfo, bootinfo->data_size);
+    char *dest      = alloc_pages(bootinfo, segment->size);
 
-    for(int idx = 0; idx < bootinfo->data_size; ++idx) {
+    for(int idx = 0; idx < segment->size; ++idx) {
         dest[idx] = (idx < phdr->p_filesz) ? src[idx] : 0;
     }
 
-    bootinfo->data_physaddr = (size_t)dest;
+    segment->physaddr = (size_t)dest;
 }
 
 /**
@@ -146,7 +143,6 @@ void prepare_data_segment(bootinfo_t *bootinfo) {
  *
  * @param elf ELF header
  * @return program header if found, NULL otherwise
- *
  */
 const Elf32_Phdr *executable_program_header(const Elf32_Ehdr *ehdr) {
     const Elf32_Phdr *phdr = program_header_table(ehdr);
@@ -169,7 +165,6 @@ const Elf32_Phdr *executable_program_header(const Elf32_Ehdr *ehdr) {
  *
  * @param bootinfo boot information structure
  * @return program header if found, NULL otherwise
- *
  */
 const Elf32_Phdr *kernel_code_program_header(const bootinfo_t *bootinfo) {
     const Elf32_Ehdr *ehdr = bootinfo->kernel_start;
@@ -186,7 +181,6 @@ const Elf32_Phdr *kernel_code_program_header(const bootinfo_t *bootinfo) {
  *
  * @param bootinfo boot information structure
  * @return entry point virtual address
- *
  */
 Elf32_Addr get_kernel_entry_point(const bootinfo_t *bootinfo) {
     const Elf32_Ehdr *ehdr = bootinfo->kernel_start;

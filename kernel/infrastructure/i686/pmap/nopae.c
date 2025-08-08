@@ -45,11 +45,6 @@ struct pte_t {
     uint32_t entry;
 };
 
-void nopae_create_initial_addr_space(addr_space_t *addr_space, pte_t *page_directory) {
-    addr_space->top_level.pd = (pte_t *)PHYS_TO_VIRT_AT_16MB(page_directory);
-    addr_space->cr3          = (uintptr_t)page_directory;
-}
-
 void nopae_create_addr_space(addr_space_t *addr_space, pte_t *page_directory) {
     addr_space->top_level.pd = page_directory;
     addr_space->cr3          = machine_lookup_kernel_paddr(page_directory);

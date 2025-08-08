@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -38,11 +38,6 @@
 
 #include <kernel/infrastructure/i686/types.h>
 #include <kernel/interface/i686/types.h>
-
-void pae_create_initial_addr_space(
-        addr_space_t    *address_space,
-        pte_t           *page_directories,
-        boot_alloc_t    *boot_alloc);
 
 bool pae_create_addr_space(addr_space_t *addr_space, pte_t *first_page_directory);
 

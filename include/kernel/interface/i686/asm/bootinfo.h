@@ -84,16 +84,7 @@
 /** Offset of the setup_signature bootinfo_t member */
 #define BOOTINFO_SETUP_SIGNATURE    60
 
-/** Offset of the data_start bootinfo_t member */
-#define BOOTINFO_DATA_START         64
-
-/** Offset of the data_size bootinfo_t member */
-#define BOOTINFO_DATA_SIZE          76
-
-/** Offset of the data_physaddr bootinfo_t member */
-#define BOOTINFO_DATA_PHYSADDR      80
-
 /** Size of bootinfo_t */
-#define BOOTINFO_SIZE               84
+#define BOOTINFO_SIZE               64
 
 #endif

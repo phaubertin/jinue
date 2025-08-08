@@ -239,7 +239,7 @@ void machine_get_ramdisk(kern_mem_block_t *ramdisk) {
 void machine_init_logging(const config_t *config) {
     /* Initialize the UART first since it does not have dependencies and it
      * will be able to report the few cases of kernel panics that could occur
-     * in the next few steps. */
+     * in the next few steps before VGA is enabled. */
     init_uart16550a(config);
 
     /* pmap_init() needs the size of physical addresses (maxphyaddr). */

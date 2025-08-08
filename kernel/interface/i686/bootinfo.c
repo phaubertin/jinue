@@ -70,22 +70,6 @@ static const char *check_structure(const bootinfo_t *bootinfo) {
 }
 
 /**
- * Check the setup code properly set up the kernel data segment
- * 
- * @param bootinfo boot information structure
- * @return NULL on success, error string otherwise
- */
-static const char *check_data_segment(const bootinfo_t *bootinfo) {
-    if(     bootinfo->data_start == 0 ||
-            bootinfo->data_size == 0 ||
-            bootinfo->data_physaddr == 0) {
-        return "Setup code wasn't able to load kernel data segment";
-    }
-
-    return NULL;
-}
-
-/**
  * Check the alignment of the kernel image and ELF file
  * 
  * @param bootinfo boot information structure
@@ -115,10 +99,6 @@ static const char *check_kernel_alignment(const bootinfo_t *bootinfo) {
  */
 bool check_bootinfo(bool panic_on_failure) {
     const char *error_description = check_structure(bootinfo);
-
-    if(error_description == NULL) {
-        error_description = check_data_segment(bootinfo);
-    }
 
     if(error_description == NULL) {
         error_description = check_kernel_alignment(bootinfo);

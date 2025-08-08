@@ -86,25 +86,6 @@ static void clear_pdpt(pdpt_t *pdpt) {
     }
 }
 
-void pae_create_initial_addr_space(
-        addr_space_t    *address_space,
-        pte_t           *page_directories,
-        boot_alloc_t    *boot_alloc) {
-
-    /* Allocate initial PDPT. PDPT must be 32-byte aligned. */
-    initial_pdpt = boot_heap_alloc(boot_alloc, pdpt_t, 32);
-
-    int offset = pdpt_offset_of((void *)JINUE_KLIMIT);
-    initialize_page_table_linear(
-            &initial_pdpt->pd[offset],
-            (uintptr_t)page_directories,
-            X86_PTE_PRESENT,
-            PDPT_ENTRIES - offset);
-
-    address_space->top_level.pdpt   = initial_pdpt;
-    address_space->cr3              = VIRT_TO_PHYS_AT_16MB(initial_pdpt);
-}
-
 bool pae_create_addr_space(addr_space_t *addr_space, pte_t *first_page_directory) {
     /* Create a PDPT for the new address space */
     pdpt_t *pdpt = slab_cache_alloc(&pdpt_cache);

@@ -63,12 +63,6 @@ extern bool pgtable_format_pae;
 
 extern uint64_t page_frame_number_mask;
 
-pte_t *initialize_page_table_linear(
-        pte_t       *page_table,
-        uint64_t     start_paddr,
-        uint64_t     flags,
-        int          num_entries);
-
 void destroy_page_directory(void *page_directory, unsigned int last_index);
 
 /**

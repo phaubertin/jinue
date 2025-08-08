@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -37,8 +37,6 @@
  * pmap.c and nopae.c. There should be no reason to include it anywhere else. */
 
 #include <kernel/infrastructure/i686/types.h>
-
-void nopae_create_initial_addr_space(addr_space_t *addr_space, pte_t *page_directory);
 
 void nopae_create_addr_space(addr_space_t *addr_space, pte_t *page_directory);
 
