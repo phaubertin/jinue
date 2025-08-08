@@ -37,8 +37,6 @@
 
 bool elf_check(Elf32_Ehdr *elf);
 
-const Elf32_Phdr *elf_executable_program_header(const Elf32_Ehdr *ehdr);
-
 const char *elf_symbol_name(const Elf32_Ehdr *ehdr, const Elf32_Sym *symbol_header);
 
 const Elf32_Sym *elf_find_function_symbol_by_address(const Elf32_Ehdr *ehdr, Elf32_Addr addr);

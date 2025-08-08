@@ -174,29 +174,6 @@ static const Elf32_Phdr *program_header_table(const Elf32_Ehdr *ehdr) {
 }
 
 /**
- * Get program header for executable segment
- *
- * @param elf ELF header
- * @return program header if found, NULL otherwise
- *
- */
-const Elf32_Phdr *elf_executable_program_header(const Elf32_Ehdr *ehdr) {
-    const Elf32_Phdr *phdr = program_header_table(ehdr);
-
-    for(int idx = 0; idx < ehdr->e_phnum; ++idx) {
-        if(phdr[idx].p_type != PT_LOAD) {
-            continue;
-        }
-
-        if(phdr[idx].p_flags & PF_X) {
-            return &phdr[idx];
-        }
-    }
-
-    return NULL;
-}
-
-/**
  * Initialize the arguments (argv) and environment variables string arrays
  *
  * This function is intended to initialize the string arrays for the command
