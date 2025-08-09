@@ -212,6 +212,7 @@ static void match_table(const acpi_table_header_t *header, const acpi_table_def_
         }
 
         *def->ptr = map_table(header);
+        return;
     }
 
     undo_map_in_kernel();
