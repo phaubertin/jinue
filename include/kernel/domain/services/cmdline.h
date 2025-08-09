@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Philippe Aubertin.
+ * Copyright (C) 2022-2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -55,5 +55,7 @@ bool cmdline_match_enum(
         const cmdline_token_t       *token);
 
 bool cmdline_match_boolean(bool *value, const cmdline_token_t *token);
+
+void cmdline_report_options(const char *cmdline);
 
 #endif

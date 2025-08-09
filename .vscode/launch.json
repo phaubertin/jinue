@@ -1,0 +1,17 @@
+{
+    "configurations": [
+        {
+            "name": "Debug with GDB",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/kernel/interface/i686/kernel",
+            "miDebuggerServerAddress": "localhost:1234",
+            "cwd": "${workspaceRoot}",
+            "externalConsole": true,
+            "linux": {
+                "MIMode": "gdb"
+            }
+        }
+    
+    ]
+}

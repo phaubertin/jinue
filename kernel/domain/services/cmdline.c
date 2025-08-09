@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Philippe Aubertin.
+ * Copyright (C) 2022-2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -1010,4 +1010,45 @@ size_t cmdline_count_environ(const char *cmdline) {
     } while (!context.done);
 
     return count;
+}
+
+/**
+ * Report the command line in the logs
+ * 
+ * Wrap lines so the command line is not truncated. When wrapping, make a
+ * reasonable effort to not break individual options.
+ *
+ * @param cmdline command line string
+ *
+ * */
+void cmdline_report_options(const char *cmdline) {
+#define MAX_LENGTH 80
+#define MIN_LENGTH 40
+
+    info("Command line:");
+
+    const char *line = cmdline;
+
+    while(*line != '\0') {
+        int idx;
+        int last_space = -1;
+
+        /* minus two for the two spaces used as indentation */
+        for(idx = 0; idx < MAX_LENGTH - 2 && line[idx] != '\0'; ++idx) {
+            if(isspace(line[idx])) {
+                last_space = idx;
+            }
+        }
+
+        const char *format = "  %.*s";
+
+        if(last_space >= MIN_LENGTH) {
+            info(format, last_space, line);
+            line = &line[last_space + 1];
+        }
+        else {
+            info(format, idx, line);
+            line = &line[idx];
+        }        
+    }
 }
