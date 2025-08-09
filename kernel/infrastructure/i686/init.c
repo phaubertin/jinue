@@ -236,10 +236,19 @@ void machine_get_ramdisk(kern_mem_block_t *ramdisk) {
     get_ramdisk(ramdisk, bootinfo);
 }
 
+/**
+ * Machine-specific initialization for logging
+ * 
+ * Initializes the UART and VGA for logging. Only the minimal initialization
+ * to support logging should be done here.
+ * 
+ * @param config kernel configuration
+ */
 void machine_init_logging(const config_t *config) {
     /* Initialize the UART first since it does not have dependencies and it
      * will be able to report the few cases of kernel panics that could occur
-     * in the next few steps before VGA is enabled. */
+     * in the next few steps before VGA is enabled. It's the best we can
+     * do... */
     init_uart16550a(config);
 
     /* pmap_init() needs the size of physical addresses (maxphyaddr). */
@@ -250,20 +259,44 @@ void machine_init_logging(const config_t *config) {
 
     const bootinfo_t *bootinfo = get_bootinfo();
 
-    /* This needs to be called before calling vga_init() because that function
-     * calls pmap functions to map video memory. */
+    /* This needs to be called before calling vga_init() and find_acpi_rsdp()
+     * because these functions need to map memory in the mapping area. */
     pmap_init(bootinfo);
+
+    /* Map the first megabyte of memory temporarily so we can scan it for ACPI
+     * and MultiProcessor Specification data structures. */
+    void *first1mb = map_in_kernel(0, 1 * MB, JINUE_PROT_READ);
+
+    find_acpi_rsdp(first1mb);
+
+    find_mp(first1mb);
+
+    machine_unmap_kernel(first1mb, 1 * MB);
+
+    /* ACPI reports whether VGA is present so we want to do this initialization
+     * now before initializing VGA. */
+    init_acpi();
 
     vga_init(config);
 }
 
+/**
+ * Machine-specific initialization
+ * 
+ * @param config kernel configuration
+ */
 void machine_init(const config_t *config) {
-    report_cpu_features();
-
     const bootinfo_t *bootinfo = get_bootinfo();
 
-    check_memory(bootinfo);
     check_pae(bootinfo, config);
+
+    report_cpu_features();
+
+    report_acpi();
+
+    init_mp();
+
+    check_memory(bootinfo);
 
     boot_alloc_t boot_alloc;
     boot_alloc_init(&boot_alloc, bootinfo);
@@ -284,16 +317,6 @@ void machine_init(const config_t *config) {
     /* load segment selectors */
     load_selectors(cpu_data);
 
-    /* Map the first megabyte of memory temporarily so we can scan it for ACPI
-     * and MultiProcessor Specification data structures. */
-    void *first1mb = map_in_kernel(0, 1 * MB, JINUE_PROT_READ);
-
-    find_acpi_rsdp(first1mb);
-
-    find_mp(first1mb);
-
-    machine_unmap_kernel(first1mb, 1 * MB);
-
     /* This must be done before initializing and switching to the page
      * allocator bcause only the boot allocator can allocate multiple
      * consecutive pages. */
@@ -304,12 +327,6 @@ void machine_init(const config_t *config) {
 
     /* Transfer the remaining pages to the run-time page allocator. */
     initialize_page_allocator(&boot_alloc);
-
-    init_acpi();
-    
-    report_acpi();
-
-    init_mp();
 
     /* create slab cache to allocate PDPTs
      *

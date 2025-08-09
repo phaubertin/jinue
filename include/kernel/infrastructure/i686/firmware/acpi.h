@@ -33,6 +33,7 @@
 #define JINUE_KERNEL_INFRASTRUCTURE_I686_FIRMWARE_ACPI_H
 
 #include <kernel/infrastructure/i686/types.h>
+#include <stdbool.h>
 #include <stdint.h>
 
 void find_acpi_rsdp(const addr_t first1mb);
@@ -42,5 +43,7 @@ void init_acpi(void);
 void report_acpi(void);
 
 uint32_t acpi_get_rsdp_paddr(void);
+
+bool acpi_is_vga_present(void);
 
 #endif

@@ -198,11 +198,21 @@ static const acpi_rsdt_t *map_rsdt(uint64_t rsdt_paddr, bool is_xsdt) {
 static void match_table(const acpi_table_header_t *header, const acpi_table_def_t *table_defs) {
     for(int idx = 0; table_defs[idx].signature != NULL; ++idx) {
         const acpi_table_def_t *def = &table_defs[idx];
-        
-        if(*def->ptr == NULL && verify_table_signature(header, def->signature)) {
-            *def->ptr = map_table(header);
-            return;
+
+        if(*def->ptr != NULL) {
+            continue;
         }
+
+        if(!verify_table_signature(header, def->signature)) {
+            continue;
+        }
+
+        if(header->length < def->size) {
+            continue;
+        }
+
+        *def->ptr = map_table(header);
+        return;
     }
 
     undo_map_in_kernel();

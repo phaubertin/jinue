@@ -34,6 +34,7 @@
 #include <kernel/domain/services/logging.h>
 #include <kernel/domain/services/mman.h>
 #include <kernel/infrastructure/i686/drivers/vga.h>
+#include <kernel/infrastructure/i686/firmware/acpi.h>
 #include <kernel/infrastructure/i686/isa/io.h>
 #include <kernel/infrastructure/i686/pmap/pmap.h>
 #include <kernel/utils/asm/ascii.h>
@@ -61,6 +62,10 @@ static void vga_clear(void) {
 
 void vga_init(const config_t *config) {
     if(! config->machine.vga_enable) {
+        return;
+    }
+
+    if(!acpi_is_vga_present()) {
         return;
     }
     
