@@ -83,8 +83,12 @@ typedef PACKED_STRUCT {
     uint32_t            entries[];
 } acpi_rsdt_t;
 
-/* ACPI 6.4 section 5.2.9 Fixed ACPI Description Table (FADT) */
-
+/* ACPI 6.4 section 5.2.9 Fixed ACPI Description Table (FADT)
+ *
+ * QEMU seems to present a cropped version compared to the ACPI Specification.
+ * This definition is cropped in the same way to make the QEMU FADT pass the
+ * length check since we are not using the other fields anyway.
+ */
 typedef PACKED_STRUCT {
     acpi_table_header_t header;
     uint32_t            firmware_ctrl;
@@ -125,23 +129,6 @@ typedef PACKED_STRUCT {
     uint16_t            iapc_boot_arch;
     uint8_t             reserved2;
     uint32_t            flags;
-    acpi_gas_t          reset_reg;
-    uint8_t             reset_value;
-    uint16_t            arm_boot_arch;
-    uint8_t             fadt_minor_version;
-    uint64_t            x_firmware_ctrl;
-    uint64_t            x_dsdt;
-    acpi_gas_t          x_pm1a_evt_blk;
-    acpi_gas_t          x_pm1b_evt_blk;
-    acpi_gas_t          x_pm1a_cnt_blk;
-    acpi_gas_t          x_pm1b_cnt_blk;
-    acpi_gas_t          x_pm2_cnt_blk;
-    acpi_gas_t          x_pm_tmr_blk;
-    acpi_gas_t          x_gpe0_blk;
-    acpi_gas_t          x_gpe1_blk;
-    acpi_gas_t          sleep_control_reg;
-    acpi_gas_t          sleep_status_reg;
-    uint64_t            hypervisor_vendor_identity;
 } acpi_fadt_t;
 
 /* ACPI 6.4 section 5.2.12 Multiple APIC Description Table (MADT) */

@@ -32,6 +32,7 @@
 #ifndef JINUE_KERNEL_INFRASTRUCTURE_ACPI_TYPES_H
 #define JINUE_KERNEL_INFRASTRUCTURE_ACPI_TYPES_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 /* ACPI 6.4 section 15.1 INT 15H, E820H - Query System Address Map */
@@ -45,6 +46,7 @@ typedef struct {
 typedef struct {
     const char   *name;
     const char   *signature;
+    size_t        size;
     const void  **ptr;
 } acpi_table_def_t;
 

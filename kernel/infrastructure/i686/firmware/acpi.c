@@ -54,16 +54,19 @@ static const acpi_table_def_t table_defs[] = {
     {
         .name       = ACPI_FADT_NAME,
         .signature  = ACPI_FADT_SIGNATURE,
+        .size       = sizeof(acpi_fadt_t),
         .ptr        = (const void **)&acpi_tables.fadt
     },
     {
         .name       = ACPI_MADT_NAME,
         .signature  = ACPI_MADT_SIGNATURE,
+        .size       = sizeof(acpi_madt_t),
         .ptr        = (const void **)&acpi_tables.madt
     },
     {
         .name       = ACPI_HPET_NAME,
         .signature  = ACPI_HPET_SIGNATURE,
+        .size       = sizeof(acpi_hpet_t),
         .ptr        = (const void **)&acpi_tables.hpet
     },
     { .signature  = NULL },
