@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Philippe Aubertin.
+ * Copyright (C) 2022-2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -447,6 +447,7 @@ static void parse_precision(conv_spec_t *spec, state_t *state, va_list *args) {
         consume(state);
 
         if(current(state) == '*') {
+            consume(state);
             spec->prec = va_arg(*args, int);
 
             if(spec->prec < 0) {
