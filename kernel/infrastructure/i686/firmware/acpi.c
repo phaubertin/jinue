@@ -167,3 +167,22 @@ void report_acpi(void) {
 uint32_t acpi_get_rsdp_paddr(void) {
     return rsdp_paddr;
 }
+
+/**
+ * Detect presence of VGA
+ * 
+ * From the description if bit 2 "VGA Not Present" of IAPC_BOOT_ARCH in Table
+ * 5.11 of the ACPI Specification:
+ * 
+ * " If set, indicates to OSPM that it must not blindly probe the VGA hardware
+ *   (that responds to MMIO addresses A0000h-BFFFFh and IO ports 3B0h-3BBh and
+ *   3C0h-3DFh) that may cause machine check on this system. If clear,
+ *   indicates to OSPM that it is safe to probe the VGA hardware. "
+ */
+bool acpi_is_vga_present(void) {
+    if(acpi_tables.fadt == NULL) {
+        return true;
+    }
+
+    return !(acpi_tables.fadt->iapc_boot_arch & ACPI_IAPC_BOOT_ARCH_VGA_NOT_PRESENT);
+}
