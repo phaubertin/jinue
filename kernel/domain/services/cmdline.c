@@ -1011,3 +1011,25 @@ size_t cmdline_count_environ(const char *cmdline) {
 
     return count;
 }
+
+/**
+ * Report the command line in the logs
+ *
+ * @param cmdline command line string
+ *
+ * */
+void cmdline_report_options(const char *cmdline) {
+    info("Command line:");
+
+    const char *line = cmdline;
+
+    while(*line != '\0') {
+        int idx;
+
+        for(idx = 0; idx < 78 && line[idx] != '\0'; ++idx) {}
+
+        info("  %.*s", idx, line);
+
+        line = &line[idx];
+    }
+}

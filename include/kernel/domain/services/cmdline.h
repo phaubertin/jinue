@@ -56,4 +56,6 @@ bool cmdline_match_enum(
 
 bool cmdline_match_boolean(bool *value, const cmdline_token_t *token);
 
+void cmdline_report_options(const char *cmdline);
+
 #endif

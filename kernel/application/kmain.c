@@ -59,9 +59,8 @@ void kmain(const char *cmdline) {
 
     info("Jinue microkernel started.");
     info("Kernel revision " GIT_REVISION " built " BUILD_TIME " on " BUILD_HOST);
-    info("Kernel command line:");
-    info("%s", cmdline);
-    info("---");
+
+    cmdline_report_options(cmdline);
 
     /* If there were issues parsing the command line, these will be reported
      * here (i.e. panic), now that logging has been initialized and we can log
