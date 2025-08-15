@@ -32,7 +32,7 @@
 #ifndef JINUE_KERNEL_MACHINE_TYPES_H
 #define JINUE_KERNEL_MACHINE_TYPES_H
 
-#ifdef __i686__
+#ifdef __i386__
 #include <kernel/infrastructure/i686/exports/types.h>
 #endif
 

@@ -1,4 +1,5 @@
-# Copyright (C) 2019-2023 Philippe Aubertin.
+#!/bin/bash
+# Copyright (C) 2025 Philippe Aubertin.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,54 +28,11 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-jinue_root = ../..
-include $(jinue_root)/header.mk
+CPU=486
 
-sources.c        = \
-	archives/alloc.c \
-	archives/tar.c \
-	binfmt/elf.c \
-	core/mappings.c \
-	core/meminfo.c \
-	core/server.c \
-	streams/bzip2.c \
-	streams/gzip.c \
-	streams/raw.c \
-	streams/stream.c \
-	debug.c \
-	loader.c \
-	ramdisk.c \
-	utils.c
-loader           = loader
-target           = $(loader)-stripped
+run
 
-CPPFLAGS        += -I$(zlib) -DZLIB_CONST -I$(bzip2) -DBZ_NO_STDIO
+check_kernel_start
 
-# The linker might not link crt.o from libjinue.a, which is required to
-# provide the _start entry point but otherwise contains no symbol that
-# other object files are interested in. I have seen different behaviour
-# in this regard on different machines with different versions of the
-# linker. By explicitly forcing _start as an undefined symbol, we
-# ensure the linker links the startup code.
-LDFLAGS         += -Wl,-u,_start $(CFLAGS.arch)
-LDLIBS           = -lgcc
-
-unclean.extra    = $(loader)
-
-include $(common)
-
-$(libjinue_syscalls) $(libjinue_utils): FORCE
-	$(MAKE) -C $(libjinue)
-	
-$(libc)/libc.a: FORCE
-	$(MAKE) -C $(libc)
-
-$(zlib)/libz.a: FORCE
-	$(MAKE) CC=$(CC) -C $(zlib) libz.a
-
-$(bzip2)/libbz2.a: FORCE
-	$(MAKE) CC=$(CC) -C $(bzip2) libbz2.a
-
-$(loader): $(objects) $(libjinue_utils) $(zlib)/libz.a $(bzip2)/libbz2.a $(libc)/libc.a $(libjinue_syscalls)
-
-$(target): $(loader)
+echo "* Check CPU was detected as too old"
+grep -F "Pentium CPU or later is required" $LOG || fail
