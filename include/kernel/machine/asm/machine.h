@@ -34,7 +34,7 @@
 
 #include <jinue/shared/asm/machine.h>
 
-#ifdef __i686__
+#ifdef __i386__
 #include <kernel/infrastructure/i686/exports/asm/machine.h>
 #endif
 

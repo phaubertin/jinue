@@ -32,7 +32,7 @@
 #ifndef _JINUE_SHARED_ASM_MACHINE_H
 #define _JINUE_SHARED_ASM_MACHINE_H
 
-#ifdef __i686__
+#ifdef __i386__
 #include <jinue/shared/asm/i686.h>
 #endif
 
