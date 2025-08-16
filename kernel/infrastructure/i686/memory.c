@@ -441,8 +441,8 @@ int machine_get_address_map(const jinue_buffer_t *buffer) {
             .type = JINUE_MEMYPE_KERNEL_IMAGE
         },
         {
-            .addr = VIRT_TO_PHYS_AT_16MB(bootinfo->image_top),
-            .size = BOOT_SIZE_AT_16MB - kernel_image_size,
+            .addr = MEMORY_ADDR_16MB,
+            .size = BOOT_SIZE_AT_16MB ,
             .type = JINUE_MEMYPE_KERNEL_RESERVED
         },
         {
