@@ -43,6 +43,7 @@ struct boot_heap_pushed_state {
     struct boot_heap_pushed_state   *next;
 };
 
+/* TODO move this to machine-specific definitions */
 typedef struct {
     void                            *heap_ptr;
     struct boot_heap_pushed_state   *heap_pushed_state;

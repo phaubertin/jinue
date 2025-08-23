@@ -108,6 +108,8 @@ sources.kernel.c = \
 	infrastructure/i686/firmware/acpi.c \
 	infrastructure/i686/firmware/bios.c \
 	infrastructure/i686/firmware/mp.c \
+	infrastructure/i686/memory/addrmap.c \
+	infrastructure/i686/memory/attr.c \
 	infrastructure/i686/pmap/nopae.c \
 	infrastructure/i686/pmap/pmap.c \
 	infrastructure/i686/pmap/pae.c \
@@ -118,7 +120,6 @@ sources.kernel.c = \
 	infrastructure/i686/debug.c \
 	infrastructure/i686/halt.c \
 	infrastructure/i686/init.c \
-	infrastructure/i686/memory.c \
 	infrastructure/i686/percpu.c \
 	infrastructure/i686/process.c \
 	infrastructure/i686/thread.c \
