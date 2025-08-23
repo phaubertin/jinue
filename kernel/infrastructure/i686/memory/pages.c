@@ -58,7 +58,7 @@ static struct {
  *
  * @param bootinfo boot information structure
  * @return top of memory usable by kernel
- * */
+ */
 static uint64_t memory_find_top(const bootinfo_t *bootinfo) {
     uint64_t memory_top = 0;
 
@@ -97,8 +97,7 @@ static uint64_t memory_find_top(const bootinfo_t *bootinfo) {
  *
  * @param bootinfo boot information structure
  * @param boot_alloc the boot allocator state
- *
- * */
+ */
 void memory_initialize_array(
         boot_alloc_t        *boot_alloc,
         const bootinfo_t    *bootinfo) {
@@ -126,8 +125,7 @@ void memory_initialize_array(
  * Must only be used for memory owned by the kernel, not for userspace-owned
  * memory. Every page frame owned by the kernel is mapped at exactly one
  * address in the kernel's address space (i.e. somewhere above JINUE_KLIMIT).
- *
- * */
+ */
 void *memory_lookup_page(uint64_t paddr) {
     uint64_t entry_index = PAGE_NUMBER(paddr);
 
