@@ -39,9 +39,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
-static uintptr_t *memory_array;
-
-static size_t memory_array_entries;
+static struct {
+    uintptr_t   *array;
+    size_t       size;
+} page_frames;
 
 /**
  * Find the top of memory usable by the kernel
@@ -109,17 +110,14 @@ void memory_initialize_array(
     const size_t array_entries  = ALIGN_END(num_pages, entries_per_page);
     const size_t array_pages    = array_entries / entries_per_page;
 
-    uintptr_t *array = boot_page_alloc_n(boot_alloc, array_pages);
+    page_frames.array           = boot_page_alloc_n(boot_alloc, array_pages);
+    page_frames.size            = array_entries;
 
-    for(    uint32_t addr = MEMORY_ADDR_16MB;
-            addr < MEMORY_ADDR_16MB + BOOT_SIZE_AT_16MB;
-            addr += PAGE_SIZE) {
+    uint32_t top_at_16mb        = MEMORY_ADDR_16MB + BOOT_SIZE_AT_16MB;
 
-        array[page_number_of(addr)] = PHYS_TO_VIRT_AT_16MB(addr);
+    for(uint32_t addr = MEMORY_ADDR_16MB; addr < top_at_16mb; addr += PAGE_SIZE) {
+        page_frames.array[page_number_of(addr)] = PHYS_TO_VIRT_AT_16MB(addr);
     }
-
-    memory_array            = array;
-    memory_array_entries    = array_entries;
 }
 
 /**
@@ -133,9 +131,9 @@ void memory_initialize_array(
 void *memory_lookup_page(uint64_t paddr) {
     uint64_t entry_index = PAGE_NUMBER(paddr);
 
-    if(entry_index >= memory_array_entries) {
+    if(entry_index >= page_frames.size) {
         return NULL;
     }
 
-    return (void *)memory_array[entry_index];
+    return (void *)page_frames.array[entry_index];
 }
