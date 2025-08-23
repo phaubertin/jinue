@@ -36,7 +36,7 @@
 #include <kernel/infrastructure/i686/asm/msr.h>
 #include <kernel/infrastructure/i686/asm/x86.h>
 #include <kernel/infrastructure/i686/isa/instrs.h>
-#include <kernel/infrastructure/i686/memory/attr.h>
+#include <kernel/infrastructure/i686/memory/pages.h>
 #include <kernel/infrastructure/i686/pmap/private.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
 #include <kernel/infrastructure/i686/cpuinfo.h>

@@ -39,7 +39,7 @@
 #include <kernel/domain/services/panic.h>
 #include <kernel/infrastructure/i686/isa/instrs.h>
 #include <kernel/infrastructure/i686/isa/regs.h>
-#include <kernel/infrastructure/i686/memory/attr.h>
+#include <kernel/infrastructure/i686/memory/pages.h>
 #include <kernel/infrastructure/i686/pmap/pmap.h>
 #include <kernel/infrastructure/i686/pmap/private.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>

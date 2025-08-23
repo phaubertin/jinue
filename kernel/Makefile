@@ -109,7 +109,7 @@ sources.kernel.c = \
 	infrastructure/i686/firmware/bios.c \
 	infrastructure/i686/firmware/mp.c \
 	infrastructure/i686/memory/addrmap.c \
-	infrastructure/i686/memory/attr.c \
+	infrastructure/i686/memory/pages.c \
 	infrastructure/i686/pmap/nopae.c \
 	infrastructure/i686/pmap/pmap.c \
 	infrastructure/i686/pmap/pae.c \
