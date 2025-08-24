@@ -66,7 +66,7 @@ static bool memory_range_is_within(
  * @param range2 second range
  * @return true if both ranges intersect, false otherwise
  */
-static bool memory_ranges_overlap(
+static bool memory_ranges_intersect(
         const memory_range_t *range1,
         const memory_range_t *range2) {
 
@@ -102,7 +102,7 @@ static bool range_is_in_available_memory(
             }
         }
         else {
-            if(memory_ranges_overlap(range, &entry_range)) {
+            if(memory_ranges_intersect(range, &entry_range)) {
                 return false;
             }
         }
@@ -245,14 +245,27 @@ static void assign_and_align_entry(memory_range_t *dest, const acpi_addr_range_t
     }
 }
 
+/**
+ * Clip a destination range so it doesn't intersect a clipping range
+ * 
+ * @param dest destination range
+ * @param clipping clipping range
+ */
 static void clip_memory_range(memory_range_t *dest, const memory_range_t *clipping) {
-    if(clipping->start <= dest->start) {
-        if(clipping->end <= dest->start) {
-            return;
-        }
+    /* There is nothing to clip if the clipping range does not intersect the
+     * destination range. */
+    if(! memory_ranges_intersect(dest, clipping)) {
+        return;
+    }
 
+    /* The clipping range starts first (and we know the ranges intersect). */
+    if(clipping->start <= dest->start) {
+        /* Clip the end of the destination range. */
         dest->start = clipping->end;
 
+        /* If the clipping range starts first and ends last, it means the
+         * destination range is completely within the clipping range. In that
+         * case, the size of the destination range is zero. */
         if(dest->end < dest->start) {
             dest->end = dest->start;
         }
@@ -260,15 +273,15 @@ static void clip_memory_range(memory_range_t *dest, const memory_range_t *clippi
         return;
     }
 
-    if(clipping->start >= dest->end) {
-        return;
-    }
-
+    /* The ends last (and we know the ranges intersect). */
     if(clipping->end >= dest->end) {
+        /* Clip the start of the destination range. */
         dest->end = clipping->start;
         return;
     }
 
+    /* Here, the destination range starts first and ends last, which means it
+     * is split in two by the clipping range. Let's keep the biggest chunk. */
     const size_t low_size = clipping->start - dest->start;
     const size_t high_size = dest->end - clipping->end;
 
@@ -280,6 +293,12 @@ static void clip_memory_range(memory_range_t *dest, const memory_range_t *clippi
     dest->end = clipping->start;
 }
 
+/**
+ * Clip an available memory range so it doesn't intersect unavailable ranges
+ * 
+ * @param dest destination available memory range
+ * @param bootinfo boot information structure
+ */
 static void clip_available_range(memory_range_t *dest, const bootinfo_t *bootinfo) {
     for(int idx = 0; idx < bootinfo->addr_map_entries; ++idx) {
         const acpi_addr_range_t *entry = &bootinfo->acpi_addr_map[idx];
@@ -416,7 +435,7 @@ int machine_get_address_map(const jinue_buffer_t *buffer) {
         }
     };
 
-    const size_t addr_map_entries       = bootinfo->addr_map_entries;
+    const size_t addr_map_entries   = bootinfo->addr_map_entries;
     const size_t kernel_entries     = sizeof(kernel_regions) / sizeof(kernel_regions[0]);
     const size_t total_entries      = addr_map_entries + kernel_entries;
     const size_t result_size        =
