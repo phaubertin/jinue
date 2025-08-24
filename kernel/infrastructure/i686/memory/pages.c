@@ -47,7 +47,7 @@ static struct {
 /**
  * Find the top of memory usable by the kernel
  *
- * Checks the BIOS memory map for the top of the highest range of available
+ * Checks the ACPI memory map for the top of the highest range of available
  * memory under the 4GB mark (i.e. address 0x100000000).
  *
  * The kernel can only use the first 4GB of memory on 32-bit x86, even with PAE
@@ -95,9 +95,9 @@ static uint64_t find_top_address_for_kernel(const bootinfo_t *bootinfo) {
 /**
  * Initialize the array used by lookup_page_frame_address()
  *
- * @param bootinfo boot information structure
  * @param boot_alloc the boot allocator state
- */
+ * @param bootinfo boot information structure
+  */
 void initialize_page_frames_array(
         boot_alloc_t        *boot_alloc,
         const bootinfo_t    *bootinfo) {

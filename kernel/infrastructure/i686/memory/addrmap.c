@@ -60,7 +60,7 @@ static bool range_is_within(
 }
 
 /**
- * Determines two memory ranges intersect
+ * Determines whether two memory ranges intersect
  *
  * @param range1 first range
  * @param range2 second range
@@ -77,7 +77,7 @@ static bool ranges_intersect(
  * Determines whether a memory range is in available memory
  * 
  * A range is in available memory if it is completely contained in an available
- * entry of the BIOS address map and if it intersects no unavailable entry.
+ * entry of the ACPI address map and if it intersects no unavailable entry.
  *
  * @param range memory range
  * @param bootinfo boot information structure (for the address map)
@@ -225,7 +225,7 @@ static void page_align_unavailable_range(memory_range_t *range) {
 }
 
 /**
- * Assign and align an entry from the ACPI address map
+ * Assign and align an entry from the ACPI address map to a range
  * 
  * The range is aligned in the correct direction, i.e. by growing or shrinking,
  * based on the entry type.
