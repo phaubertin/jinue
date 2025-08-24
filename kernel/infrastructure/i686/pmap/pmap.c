@@ -39,11 +39,11 @@
 #include <kernel/domain/services/panic.h>
 #include <kernel/infrastructure/i686/isa/instrs.h>
 #include <kernel/infrastructure/i686/isa/regs.h>
+#include <kernel/infrastructure/i686/memory/pages.h>
 #include <kernel/infrastructure/i686/pmap/pmap.h>
 #include <kernel/infrastructure/i686/pmap/private.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
 #include <kernel/infrastructure/i686/cpuinfo.h>
-#include <kernel/infrastructure/i686/memory.h>
 #include <kernel/infrastructure/i686/percpu.h>
 #include <kernel/infrastructure/elf.h>
 #include <kernel/interface/i686/boot.h>
@@ -350,7 +350,7 @@ void destroy_page_directory(void *page_directory, unsigned int last_index) {
 
         if(pte_is_present(pte)) {
             page_free(
-                    memory_lookup_page(
+                    lookup_page_frame_address(
                             get_pte_paddr(pte)));
         }
     }
@@ -469,7 +469,7 @@ static pte_t *lookup_userspace_page_table(
     pte_t *pde = get_pte_with_offset(page_directory, page_directory_offset_of(addr));
 
     if(pte_is_present(pde)) {
-        return memory_lookup_page(get_pte_paddr(pde));
+        return lookup_page_frame_address(get_pte_paddr(pde));
     }
 
     if(! create_as_needed) {

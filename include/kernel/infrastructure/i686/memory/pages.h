@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2019-2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,20 +29,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_MEMORY_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_MEMORY_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_MEMORY_PAGES_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_MEMORY_PAGES_H
 
-#include <jinue/shared/asm/memtype.h>
-#include <kernel/infrastructure/i686/asm/memory.h>
-#include <kernel/infrastructure/i686/types.h>
 #include <kernel/interface/i686/types.h>
 
-void check_memory(const bootinfo_t *bootinfo);
-
-void memory_initialize_array(
+void initialize_page_frames_array(
         boot_alloc_t        *boot_alloc,
         const bootinfo_t    *bootinfo);
 
-void *memory_lookup_page(uint64_t paddr);
+void *lookup_page_frame_address(uint64_t paddr);
 
 #endif

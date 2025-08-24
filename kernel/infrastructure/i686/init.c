@@ -45,12 +45,13 @@
 #include <kernel/infrastructure/i686/firmware/mp.h>
 #include <kernel/infrastructure/i686/isa/instrs.h>
 #include <kernel/infrastructure/i686/isa/regs.h>
+#include <kernel/infrastructure/i686/memory/addrmap.h>
+#include <kernel/infrastructure/i686/memory/pages.h>
 #include <kernel/infrastructure/i686/pmap/pae.h>
 #include <kernel/infrastructure/i686/pmap/pmap.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
 #include <kernel/infrastructure/i686/cpuinfo.h>
 #include <kernel/infrastructure/i686/descriptors.h>
-#include <kernel/infrastructure/i686/memory.h>
 #include <kernel/infrastructure/i686/percpu.h>
 #include <kernel/infrastructure/elf.h>
 #include <kernel/interface/i686/asm/idt.h>
@@ -296,7 +297,7 @@ void machine_init(const config_t *config) {
 
     init_mp();
 
-    check_memory(bootinfo);
+    check_memory_addrmap(bootinfo);
 
     boot_alloc_t boot_alloc;
     boot_alloc_init(&boot_alloc, bootinfo);
@@ -320,7 +321,7 @@ void machine_init(const config_t *config) {
     /* This must be done before initializing and switching to the page
      * allocator bcause only the boot allocator can allocate multiple
      * consecutive pages. */
-    memory_initialize_array(&boot_alloc, bootinfo);
+    initialize_page_frames_array(&boot_alloc, bootinfo);
 
     exec_file_t kernel;
     get_kernel_exec_file(&kernel, bootinfo);

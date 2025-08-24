@@ -30,19 +30,12 @@
  */
 
 #include <jinue/shared/asm/errno.h>
-#include <kernel/domain/services/logging.h>
 #include <kernel/domain/services/panic.h>
 #include <kernel/infrastructure/acpi/asm/addrmap.h>
-#include <kernel/infrastructure/acpi/types.h>
+#include <kernel/infrastructure/i686/memory/addrmap.h>
 #include <kernel/infrastructure/i686/pmap/pmap.h>
-#include <kernel/infrastructure/i686/boot_alloc.h>
-#include <kernel/infrastructure/i686/memory.h>
 #include <kernel/interface/i686/boot.h>
 #include <kernel/machine/memory.h>
-#include <kernel/utils/pmap.h>
-#include <kernel/utils/utils.h>
-#include <assert.h>
-#include <inttypes.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -52,24 +45,44 @@ typedef struct {
     uint64_t    end;
 } memory_range_t;
 
-static uintptr_t *memory_array;
-
-static size_t memory_array_entries;
-
-static bool memory_range_is_within(
+/**
+ * Determines whether a memory range is completely contained within another
+ *
+ * @param enclosed range expected to be within the other
+ * @param enclosing range expected to contain the other
+ * @return true if enclosed is completely within enclosing, false otherwise
+ */
+static bool range_is_within(
         const memory_range_t *enclosed,
         const memory_range_t *enclosing) {
 
     return enclosed->start >= enclosing->start && enclosed->end <= enclosing->end;
 }
 
-static bool memory_ranges_overlap(
+/**
+ * Determines whether two memory ranges intersect
+ *
+ * @param range1 first range
+ * @param range2 second range
+ * @return true if both ranges intersect, false otherwise
+ */
+static bool ranges_intersect(
         const memory_range_t *range1,
         const memory_range_t *range2) {
 
     return !(range1->end <= range2->start || range1->start >= range2->end);
 }
 
+/**
+ * Determines whether a memory range is in available memory
+ * 
+ * A range is in available memory if it is completely contained in an available
+ * entry of the ACPI address map and if it intersects no unavailable entry.
+ *
+ * @param range memory range
+ * @param bootinfo boot information structure (for the address map)
+ * @return true if range is in available memory, false otherwise
+ */
 static bool range_is_in_available_memory(
         const memory_range_t    *range,
         const bootinfo_t        *bootinfo) {
@@ -84,12 +97,12 @@ static bool range_is_in_available_memory(
         entry_range.end                 = entry->addr + entry->size;
 
         if(entry->type == ACPI_ADDR_RANGE_MEMORY) {
-            if(memory_range_is_within(range, &entry_range)) {
+            if(range_is_within(range, &entry_range)) {
                 retval = true;
             }
         }
         else {
-            if(memory_ranges_overlap(range, &entry_range)) {
+            if(ranges_intersect(range, &entry_range)) {
                 return false;
             }
         }
@@ -121,9 +134,8 @@ static bool range_is_in_available_memory(
  * If any of these checks fail, the result is a kernel panic.
  *
  * @param bootinfo boot information structure
- *
- * */
-void check_memory(const bootinfo_t *bootinfo) {
+ */
+void check_memory_addrmap(const bootinfo_t *bootinfo) {
     const memory_range_t range_at_1mb = {
             .start  = MEMORY_ADDR_1MB,
             .end    = MEMORY_ADDR_1MB + 1 * MB
@@ -157,110 +169,18 @@ void check_memory(const bootinfo_t *bootinfo) {
 }
 
 /**
- * Find the top of memory usable by the kernel
- *
- * Checks the BIOS memory map for the top of the highest range of available
- * memory under the 4GB mark (i.e. address 0x100000000).
- *
- * The kernel can only use the first 4GB of memory on 32-bit x86, even with PAE
- * enabled. This is because the architecture requires PDPTs to be in the first
- * 4GB (CR3 is only 32 bits) and we don't want to have to deal with the
- * complexity of having to allocate in the first 4GB only for specific
- * allocations.
+ * Map ACPI address map entry types to Jinue memory types
+ * 
+ * The values of the JINUE_MEMYPE_... constants are based on the ACPI address
+ * range types, i.e. all non OEM-defined values are the same.
+ * 
+ * We reserve the OEM defined range starting at 0xf0000000 for Jinue-specific
+ * values, so we fold all OEM defined values from the ACPI address map into a
+ * single value that means "OEM defined".
  *
  * @param bootinfo boot information structure
- * @return top of memory usable by kernel
- * */
-static uint64_t memory_find_top(const bootinfo_t *bootinfo) {
-    uint64_t memory_top = 0;
-
-    for(int idx = 0; idx < bootinfo->addr_map_entries; ++idx) {
-        const acpi_addr_range_t *entry = &bootinfo->acpi_addr_map[idx];
-
-        /* Only consider available memory entries. */
-        if(entry->type != ACPI_ADDR_RANGE_MEMORY) {
-            continue;
-        }
-
-        /* The kernel can only use the first 4GB of memory. */
-        if(entry->addr >= ADDR_4GB) {
-            continue;
-        }
-
-        uint64_t entry_top = ALIGN_START(entry->addr + entry->size, (uint64_t)PAGE_SIZE);
-
-        if(entry_top >= ADDR_4GB) {
-            /* ADDR_4GB is correctly aligned. */
-            entry_top = ADDR_4GB;
-        }
-
-        if(entry_top > memory_top) {
-            memory_top = entry_top;
-        }
-    }
-
-    info("Top memory address for kernel is %#" PRIx64, memory_top);
-
-    return memory_top;
-}
-
-/**
- * Initialize the array used by memory_lookup_page()
- *
- * @param bootinfo boot information structure
- * @param boot_alloc the boot allocator state
- *
- * */
-void memory_initialize_array(
-        boot_alloc_t        *boot_alloc,
-        const bootinfo_t    *bootinfo) {
-
-    const size_t entries_per_page = PAGE_SIZE / sizeof(uintptr_t);
-
-    const uint64_t memory_top   = memory_find_top(bootinfo);
-    const size_t num_pages      = NUM_PAGES(memory_top);
-    const size_t array_entries  = ALIGN_END(num_pages, entries_per_page);
-    const size_t array_pages    = array_entries / entries_per_page;
-
-    uintptr_t *array = boot_page_alloc_n(boot_alloc, array_pages);
-
-    for(    uint32_t addr = MEMORY_ADDR_16MB;
-            addr < MEMORY_ADDR_16MB + BOOT_SIZE_AT_16MB;
-            addr += PAGE_SIZE) {
-
-        array[page_number_of(addr)] = PHYS_TO_VIRT_AT_16MB(addr);
-    }
-
-    memory_array            = array;
-    memory_array_entries    = array_entries;
-}
-
-/**
- * Lookup the virtual address of a page frame mapped by the kernel
- *
- * Must only be used for memory owned by the kernel, not for userspace-owned
- * memory. Every page frame owned by the kernel is mapped at exactly one
- * address in the kernel's address space (i.e. somewhere above JINUE_KLIMIT).
- *
- * */
-void *memory_lookup_page(uint64_t paddr) {
-    uint64_t entry_index = PAGE_NUMBER(paddr);
-
-    if(entry_index >= memory_array_entries) {
-        return NULL;
-    }
-
-    return (void *)memory_array[entry_index];
-}
-
+ */
 static int map_memory_type(const acpi_addr_range_t *addr_range) {
-    /* The values of the JINUE_MEMYPE_... constants are based on the ACPI
-     * address range types, i.e. all non OEM-defined values are the same
-     * between both.
-     * 
-     * We reserve the OEM defined range from 0xf0000000 for Jinue-specific
-     * values, so we fold all OEM defined values from the system address map
-     * into a single value that means "OEM defined". */
     if(addr_range->type >= ACPI_ADDR_RANGE_OEM_START) {
         return JINUE_MEMYPE_OEM;
     }
@@ -284,33 +204,68 @@ static int map_memory_type(const acpi_addr_range_t *addr_range) {
     }
 }
 
-static void align_range(memory_range_t *dest, bool is_available) {
-    if(is_available) {
-        /* shrink to align ends to page boundaries */
-        dest->start = ALIGN_END(dest->start, PAGE_SIZE);
-        dest->end   = ALIGN_START(dest->end, PAGE_SIZE);
-    }
-    else {
-        /* grow to align ends to page boundaries */
-        dest->start = ALIGN_START(dest->start, PAGE_SIZE);
-        dest->end   = ALIGN_END(dest->end, PAGE_SIZE);
-    }
+/**
+ * Page-align an available range by shrinking to nearest page boundaries
+ *
+ * @param range memory range to align
+ */
+static void page_align_available_range(memory_range_t *range) {
+    range->start    = ALIGN_END(range->start, PAGE_SIZE);
+    range->end      = ALIGN_START(range->end, PAGE_SIZE);
 }
 
-static void assign_and_align_entry(memory_range_t *dest, const acpi_addr_range_t *entry) {
+/**
+ * Page-align an unavailable range by growing to nearest page boundaries
+ *
+ * @param range memory range to align
+ */
+static void page_align_unavailable_range(memory_range_t *range) {
+    range->start    = ALIGN_START(range->start, PAGE_SIZE);
+    range->end      = ALIGN_END(range->end, PAGE_SIZE);
+}
+
+/**
+ * Assign and align an entry from the ACPI address map to a range
+ * 
+ * The range is aligned in the correct direction, i.e. by growing or shrinking,
+ * based on the entry type.
+ *
+ * @param dest memory range to assign
+ * @param entry ACPI address map entry
+ */
+static void assign_and_align_from_acpi(memory_range_t *dest, const acpi_addr_range_t *entry) {
     dest->start = entry->addr;
     dest->end   = entry->addr + entry->size;
-    align_range(dest, entry->type == ACPI_ADDR_RANGE_MEMORY);
+
+    if(entry->type == ACPI_ADDR_RANGE_MEMORY) {
+        page_align_available_range(dest);
+    }
+    else {
+        page_align_unavailable_range(dest);
+    }
 }
 
-static void clip_memory_range(memory_range_t *dest, const memory_range_t *clipping) {
-    if(clipping->start <= dest->start) {
-        if(clipping->end <= dest->start) {
-            return;
-        }
+/**
+ * Clip a destination range so it doesn't intersect a clipping range
+ * 
+ * @param dest destination range
+ * @param clipping clipping range
+ */
+static void clip_range(memory_range_t *dest, const memory_range_t *clipping) {
+    /* There is nothing to clip if the clipping range does not intersect the
+     * destination range. */
+    if(! ranges_intersect(dest, clipping)) {
+        return;
+    }
 
+    /* The clipping range starts first (and we know the ranges intersect). */
+    if(clipping->start <= dest->start) {
+        /* Clip the end of the destination range. */
         dest->start = clipping->end;
 
+        /* If the clipping range starts first and ends last, it means the
+         * destination range is completely within the clipping range. In that
+         * case, the size of the destination range is zero. */
         if(dest->end < dest->start) {
             dest->end = dest->start;
         }
@@ -318,15 +273,15 @@ static void clip_memory_range(memory_range_t *dest, const memory_range_t *clippi
         return;
     }
 
-    if(clipping->start >= dest->end) {
-        return;
-    }
-
+    /* The ends last (and we know the ranges intersect). */
     if(clipping->end >= dest->end) {
+        /* Clip the start of the destination range. */
         dest->end = clipping->start;
         return;
     }
 
+    /* Here, the destination range starts first and ends last, which means it
+     * is split in two by the clipping range. Let's keep the biggest chunk. */
     const size_t low_size = clipping->start - dest->start;
     const size_t high_size = dest->end - clipping->end;
 
@@ -338,6 +293,12 @@ static void clip_memory_range(memory_range_t *dest, const memory_range_t *clippi
     dest->end = clipping->start;
 }
 
+/**
+ * Clip an available memory range so it doesn't intersect unavailable ranges
+ * 
+ * @param dest destination available memory range
+ * @param bootinfo boot information structure
+ */
 static void clip_available_range(memory_range_t *dest, const bootinfo_t *bootinfo) {
     for(int idx = 0; idx < bootinfo->addr_map_entries; ++idx) {
         const acpi_addr_range_t *entry = &bootinfo->acpi_addr_map[idx];
@@ -347,19 +308,28 @@ static void clip_available_range(memory_range_t *dest, const bootinfo_t *bootinf
         }
 
         memory_range_t not_available;
-        assign_and_align_entry(&not_available, entry);
-        clip_memory_range(dest, &not_available);
+        assign_and_align_from_acpi(&not_available, entry);
+        clip_range(dest, &not_available);
     }
 
     memory_range_t ramdisk = {
         .start  = bootinfo->ramdisk_start,
         .end    = bootinfo->ramdisk_start + bootinfo->ramdisk_size
     };
-    align_range(&ramdisk, false);
-    clip_memory_range(dest, &ramdisk);
+    page_align_unavailable_range(&ramdisk);
+    clip_range(dest, &ramdisk);
 }
 
-static void find_range_for_loader(memory_range_t *dest, const bootinfo_t *bootinfo) {
+/**
+ * Find a range that the user space loader can use for allocations
+ * 
+ * This is a hint provided to the user space loader so it can start allocating
+ * memory early without having to parse the full address map.
+ *
+ * @param dest memory range to assign
+ * @param bootinfo boot information structure (for the address map)
+ */
+static void find_available_range_for_loader(memory_range_t *dest, const bootinfo_t *bootinfo) {
     /* First, find the largest available range over the 4GB mark. */
     memory_range_t largest_over_4gb = {0};
 
@@ -375,7 +345,7 @@ static void find_range_for_loader(memory_range_t *dest, const bootinfo_t *bootin
         }
 
         memory_range_t available;
-        assign_and_align_entry(&available, entry);
+        assign_and_align_from_acpi(&available, entry);
         clip_available_range(&available, bootinfo);
 
         uint64_t available_size = available.end - available.start;
@@ -404,7 +374,7 @@ static void find_range_for_loader(memory_range_t *dest, const bootinfo_t *bootin
 
         under_4gb.start = start;
         under_4gb.end   = entry->addr + entry->size;
-        align_range(&under_4gb, true);
+        page_align_available_range(&under_4gb);
         clip_available_range(&under_4gb, bootinfo);
         break;
     }
@@ -420,6 +390,19 @@ static void find_range_for_loader(memory_range_t *dest, const bootinfo_t *bootin
     }
 }
 
+/**
+ * Write the address map for user space to the specified buffer
+ * 
+ * The written address map is the ACPI address map to which a few
+ * Jinue-specific ranges are added:
+ * 
+ * - The location of the kernel image and RAM disk image.
+ * - Memory reserved by the kernel for its own use.
+ * - The allocation hint for the user space loader.
+ *
+ * @param buffer buffer where address map is written
+ * @return zero on success, negated error number on error
+ */
 int machine_get_address_map(const jinue_buffer_t *buffer) {
     const bootinfo_t *bootinfo = get_bootinfo();
 
@@ -427,7 +410,7 @@ int machine_get_address_map(const jinue_buffer_t *buffer) {
             (uintptr_t)bootinfo->image_top - (uintptr_t)bootinfo->image_start;
 
     memory_range_t loader_range;
-    find_range_for_loader(&loader_range, bootinfo);
+    find_available_range_for_loader(&loader_range, bootinfo);
 
     const jinue_addr_map_entry_t kernel_regions[] = {
         {
@@ -452,7 +435,7 @@ int machine_get_address_map(const jinue_buffer_t *buffer) {
         }
     };
 
-    const size_t addr_map_entries       = bootinfo->addr_map_entries;
+    const size_t addr_map_entries   = bootinfo->addr_map_entries;
     const size_t kernel_entries     = sizeof(kernel_regions) / sizeof(kernel_regions[0]);
     const size_t total_entries      = addr_map_entries + kernel_entries;
     const size_t result_size        =
