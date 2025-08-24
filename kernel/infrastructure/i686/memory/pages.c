@@ -59,7 +59,7 @@ static struct {
  * @param bootinfo boot information structure
  * @return top of memory usable by kernel
  */
-static uint64_t memory_find_top(const bootinfo_t *bootinfo) {
+static uint64_t find_top_address_for_kernel(const bootinfo_t *bootinfo) {
     uint64_t memory_top = 0;
 
     for(int idx = 0; idx < bootinfo->addr_map_entries; ++idx) {
@@ -93,18 +93,18 @@ static uint64_t memory_find_top(const bootinfo_t *bootinfo) {
 }
 
 /**
- * Initialize the array used by memory_lookup_page()
+ * Initialize the array used by lookup_page_frame_address()
  *
  * @param bootinfo boot information structure
  * @param boot_alloc the boot allocator state
  */
-void memory_initialize_array(
+void initialize_page_frames_array(
         boot_alloc_t        *boot_alloc,
         const bootinfo_t    *bootinfo) {
 
     const size_t entries_per_page = PAGE_SIZE / sizeof(uintptr_t);
 
-    const uint64_t memory_top   = memory_find_top(bootinfo);
+    const uint64_t memory_top   = find_top_address_for_kernel(bootinfo);
     const size_t num_pages      = NUM_PAGES(memory_top);
     const size_t array_entries  = ALIGN_END(num_pages, entries_per_page);
     const size_t array_pages    = array_entries / entries_per_page;
@@ -126,7 +126,7 @@ void memory_initialize_array(
  * memory. Every page frame owned by the kernel is mapped at exactly one
  * address in the kernel's address space (i.e. somewhere above JINUE_KLIMIT).
  */
-void *memory_lookup_page(uint64_t paddr) {
+void *lookup_page_frame_address(uint64_t paddr) {
     uint64_t entry_index = PAGE_NUMBER(paddr);
 
     if(entry_index >= page_frames.size) {

@@ -34,10 +34,10 @@
 
 #include <kernel/interface/i686/types.h>
 
-void memory_initialize_array(
+void initialize_page_frames_array(
         boot_alloc_t        *boot_alloc,
         const bootinfo_t    *bootinfo);
 
-void *memory_lookup_page(uint64_t paddr);
+void *lookup_page_frame_address(uint64_t paddr);
 
 #endif

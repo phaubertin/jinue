@@ -297,7 +297,7 @@ void machine_init(const config_t *config) {
 
     init_mp();
 
-    check_memory(bootinfo);
+    check_memory_addrmap(bootinfo);
 
     boot_alloc_t boot_alloc;
     boot_alloc_init(&boot_alloc, bootinfo);
@@ -321,7 +321,7 @@ void machine_init(const config_t *config) {
     /* This must be done before initializing and switching to the page
      * allocator bcause only the boot allocator can allocate multiple
      * consecutive pages. */
-    memory_initialize_array(&boot_alloc, bootinfo);
+    initialize_page_frames_array(&boot_alloc, bootinfo);
 
     exec_file_t kernel;
     get_kernel_exec_file(&kernel, bootinfo);

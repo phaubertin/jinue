@@ -35,6 +35,6 @@
 #include <jinue/shared/asm/memtype.h>
 #include <kernel/interface/i686/types.h>
 
-void check_memory(const bootinfo_t *bootinfo);
+void check_memory_addrmap(const bootinfo_t *bootinfo);
 
 #endif

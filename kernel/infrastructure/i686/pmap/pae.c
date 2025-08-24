@@ -127,7 +127,7 @@ void pae_destroy_addr_space(addr_space_t *addr_space) {
 
         if(pte_is_present(pdpte)) {
             destroy_page_directory(
-                    memory_lookup_page(pae_get_pte_paddr(pdpte)),
+                    lookup_page_frame_address(pae_get_pte_paddr(pdpte)),
                     entries_per_page_table);
         }
     }
@@ -156,7 +156,7 @@ void pae_destroy_addr_space(addr_space_t *addr_space) {
         assert(pte_is_present(pdpte));
 
         destroy_page_directory(
-                memory_lookup_page(pae_get_pte_paddr(pdpte)),
+                lookup_page_frame_address(pae_get_pte_paddr(pdpte)),
                 klimit_offset);
     }
 
@@ -186,7 +186,7 @@ pte_t *pae_lookup_page_directory(
     pte_t  *pdpte   = &pdpt->pd[pdpt_offset_of(addr)];
     
     if(pte_is_present(pdpte)) {
-        return memory_lookup_page(pae_get_pte_paddr(pdpte));
+        return lookup_page_frame_address(pae_get_pte_paddr(pdpte));
     }
 
     if(!create_as_needed) {

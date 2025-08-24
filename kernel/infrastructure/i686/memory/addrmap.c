@@ -52,7 +52,7 @@ typedef struct {
  * @param enclosing range expected to contain the other
  * @return true if enclosed is completely within enclosing, false otherwise
  */
-static bool memory_range_is_within(
+static bool range_is_within(
         const memory_range_t *enclosed,
         const memory_range_t *enclosing) {
 
@@ -66,7 +66,7 @@ static bool memory_range_is_within(
  * @param range2 second range
  * @return true if both ranges intersect, false otherwise
  */
-static bool memory_ranges_intersect(
+static bool ranges_intersect(
         const memory_range_t *range1,
         const memory_range_t *range2) {
 
@@ -97,12 +97,12 @@ static bool range_is_in_available_memory(
         entry_range.end                 = entry->addr + entry->size;
 
         if(entry->type == ACPI_ADDR_RANGE_MEMORY) {
-            if(memory_range_is_within(range, &entry_range)) {
+            if(range_is_within(range, &entry_range)) {
                 retval = true;
             }
         }
         else {
-            if(memory_ranges_intersect(range, &entry_range)) {
+            if(ranges_intersect(range, &entry_range)) {
                 return false;
             }
         }
@@ -135,7 +135,7 @@ static bool range_is_in_available_memory(
  *
  * @param bootinfo boot information structure
  */
-void check_memory(const bootinfo_t *bootinfo) {
+void check_memory_addrmap(const bootinfo_t *bootinfo) {
     const memory_range_t range_at_1mb = {
             .start  = MEMORY_ADDR_1MB,
             .end    = MEMORY_ADDR_1MB + 1 * MB
@@ -233,7 +233,7 @@ static void page_align_unavailable_range(memory_range_t *range) {
  * @param dest memory range to assign
  * @param entry ACPI address map entry
  */
-static void assign_and_align_entry(memory_range_t *dest, const acpi_addr_range_t *entry) {
+static void assign_and_align_from_acpi(memory_range_t *dest, const acpi_addr_range_t *entry) {
     dest->start = entry->addr;
     dest->end   = entry->addr + entry->size;
 
@@ -251,10 +251,10 @@ static void assign_and_align_entry(memory_range_t *dest, const acpi_addr_range_t
  * @param dest destination range
  * @param clipping clipping range
  */
-static void clip_memory_range(memory_range_t *dest, const memory_range_t *clipping) {
+static void clip_range(memory_range_t *dest, const memory_range_t *clipping) {
     /* There is nothing to clip if the clipping range does not intersect the
      * destination range. */
-    if(! memory_ranges_intersect(dest, clipping)) {
+    if(! ranges_intersect(dest, clipping)) {
         return;
     }
 
@@ -308,8 +308,8 @@ static void clip_available_range(memory_range_t *dest, const bootinfo_t *bootinf
         }
 
         memory_range_t not_available;
-        assign_and_align_entry(&not_available, entry);
-        clip_memory_range(dest, &not_available);
+        assign_and_align_from_acpi(&not_available, entry);
+        clip_range(dest, &not_available);
     }
 
     memory_range_t ramdisk = {
@@ -317,7 +317,7 @@ static void clip_available_range(memory_range_t *dest, const bootinfo_t *bootinf
         .end    = bootinfo->ramdisk_start + bootinfo->ramdisk_size
     };
     page_align_unavailable_range(&ramdisk);
-    clip_memory_range(dest, &ramdisk);
+    clip_range(dest, &ramdisk);
 }
 
 /**
@@ -329,7 +329,7 @@ static void clip_available_range(memory_range_t *dest, const bootinfo_t *bootinf
  * @param dest memory range to assign
  * @param bootinfo boot information structure (for the address map)
  */
-static void find_range_for_loader(memory_range_t *dest, const bootinfo_t *bootinfo) {
+static void find_available_range_for_loader(memory_range_t *dest, const bootinfo_t *bootinfo) {
     /* First, find the largest available range over the 4GB mark. */
     memory_range_t largest_over_4gb = {0};
 
@@ -345,7 +345,7 @@ static void find_range_for_loader(memory_range_t *dest, const bootinfo_t *bootin
         }
 
         memory_range_t available;
-        assign_and_align_entry(&available, entry);
+        assign_and_align_from_acpi(&available, entry);
         clip_available_range(&available, bootinfo);
 
         uint64_t available_size = available.end - available.start;
@@ -410,7 +410,7 @@ int machine_get_address_map(const jinue_buffer_t *buffer) {
             (uintptr_t)bootinfo->image_top - (uintptr_t)bootinfo->image_start;
 
     memory_range_t loader_range;
-    find_range_for_loader(&loader_range, bootinfo);
+    find_available_range_for_loader(&loader_range, bootinfo);
 
     const jinue_addr_map_entry_t kernel_regions[] = {
         {
