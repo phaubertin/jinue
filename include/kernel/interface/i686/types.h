@@ -64,6 +64,17 @@ typedef struct {
     uint32_t                 setup_signature;
 } bootinfo_t;
 
+struct boot_heap_pushed_state {
+    struct boot_heap_pushed_state *next;
+};
+
+typedef struct {
+    void                            *heap_ptr;
+    struct boot_heap_pushed_state   *heap_pushed_state;
+    void                            *current_page;
+    void                            *page_limit;
+} boot_alloc_t;
+
 typedef struct {
     /* The following four registers are the system call arguments. */
 #define msg_arg0 eax

@@ -39,18 +39,6 @@
 #include <kernel/utils/list.h>
 #include <kernel/typedeps.h>
 
-struct boot_heap_pushed_state {
-    struct boot_heap_pushed_state   *next;
-};
-
-/* TODO move this to machine-specific definitions */
-typedef struct {
-    void                            *heap_ptr;
-    struct boot_heap_pushed_state   *heap_pushed_state;
-    void                            *current_page;
-    void                            *page_limit;
-} boot_alloc_t;
-
 typedef struct slab_cache_t slab_cache_t;
 
 typedef void (*slab_ctor_t)(void *, size_t);
