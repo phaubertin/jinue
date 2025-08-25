@@ -274,6 +274,9 @@ void machine_init_logging(const config_t *config) {
 
     machine_unmap_kernel(first1mb, 1 * MB);
 
+    /* This needs to be called before init_acpi() starts adding shared entries. */
+    initialize_address_map(bootinfo);
+
     /* ACPI reports whether VGA is present so we want to do this initialization
      * now before initializing VGA. */
     init_acpi();
@@ -297,7 +300,7 @@ void machine_init(const config_t *config) {
 
     init_mp();
 
-    check_memory_addrmap(bootinfo);
+    check_system_address_map(bootinfo);
 
     boot_alloc_t boot_alloc;
     boot_alloc_init(&boot_alloc, bootinfo);
