@@ -411,11 +411,36 @@ static void find_available_range_for_loader(memory_range_t *dest, const bootinfo
     }
 }
 
+/**
+ * Add a kernel entry to the address map reported to user space.
+ * 
+ * @param entry kernel entry to add
+ */
 static void add_kernel_entry(const jinue_addr_map_entry_t *entry) {
     kernel_addrmap.map[kernel_addrmap.num_entries] = *entry;
     ++kernel_addrmap.num_entries;
 }
 
+/**
+ * Deduplicate and merge a shared address map entry being added
+ * 
+ * Given a new shared entry to be added, this function:
+ * 
+ * 1) Attempts to find an existing shared entry that intersects the new one
+ *    and, if one is found, extend it to include the range of the new entry.
+ * 2) Determine whether the new entry should be a added or not to the address
+ *    map. It isn't added if it is redundant with an existing entry.
+ * 
+ * This function does not handle all duplication cases. Specifically, a new
+ * entry could make it possible to merge two existing entries by bridging them,
+ * but this case, which would require deleting an existing entry, is not
+ * handled. However, it works well enough to handle commonly encountered cases,
+ * notably ACPI tables which are often multiple structures smaller than a page
+ * packed closely together, with multiple sharing the same page.
+ * 
+ * @param new_entry the new entry being considered
+ * @return true if the entry should be added, false if is shouldn't
+ */
 static bool deduplicate_shared_entry(const jinue_addr_map_entry_t *new_entry) {
     memory_range_t new_range;
 
@@ -455,6 +480,17 @@ static bool deduplicate_shared_entry(const jinue_addr_map_entry_t *new_entry) {
     return true;
 }
 
+/**
+ * Add a shared memory range to the address map.
+ * 
+ * Memory in shared ranges can be mapped read only by user space.
+ * 
+ * This function takes care of page-aligning the range and deduplicating
+ * entries, so it can be used for e.g. individual ACPI tables.
+ * 
+ * @param addr start address of the range
+ * @param size size of the range in bytes
+ */
 void machine_add_shared_to_address_map(uint64_t addr, uint64_t size) {
     jinue_addr_map_entry_t entry;
 
@@ -470,6 +506,11 @@ void machine_add_shared_to_address_map(uint64_t addr, uint64_t size) {
     add_kernel_entry(&entry);
 }
 
+/**
+ * Initialize the address map reported to user space
+ * 
+ * @param bootinfo boot information structure
+ */
 void initialize_address_map(const bootinfo_t *bootinfo) {
     jinue_addr_map_entry_t entry;
 
