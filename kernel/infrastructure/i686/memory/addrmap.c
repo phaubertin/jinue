@@ -45,6 +45,11 @@ typedef struct {
     uint64_t    end;
 } memory_range_t;
 
+static struct {
+    jinue_addr_map_entry_t  map[16];
+    size_t                  num_entries;
+} kernel_addrmap = {0};
+
 /**
  * Determines whether a memory range is completely contained within another
  *
@@ -135,7 +140,7 @@ static bool range_is_in_available_memory(
  *
  * @param bootinfo boot information structure
  */
-void check_memory_addrmap(const bootinfo_t *bootinfo) {
+void check_system_address_map(const bootinfo_t *bootinfo) {
     const memory_range_t range_at_1mb = {
             .start  = MEMORY_ADDR_1MB,
             .end    = MEMORY_ADDR_1MB + 1 * MB
@@ -222,6 +227,22 @@ static void page_align_available_range(memory_range_t *range) {
 static void page_align_unavailable_range(memory_range_t *range) {
     range->start    = ALIGN_START(range->start, PAGE_SIZE);
     range->end      = ALIGN_END(range->end, PAGE_SIZE);
+}
+
+/**
+ * Page-align an unavailable map entry by growing to nearest page boundaries
+ *
+ * @param entry address map entry align
+ */
+static void page_aligned_unavailable_entry(jinue_addr_map_entry_t *entry) {
+    memory_range_t range;
+
+    range.start = entry->addr;
+    range.end   = entry->addr + entry->size;
+    page_align_unavailable_range(&range);
+
+    entry->addr = range.start;
+    entry->size = range.end - range.start;
 }
 
 /**
@@ -391,6 +412,135 @@ static void find_available_range_for_loader(memory_range_t *dest, const bootinfo
 }
 
 /**
+ * Add a kernel entry to the address map reported to user space.
+ * 
+ * @param entry kernel entry to add
+ */
+static void add_kernel_entry(const jinue_addr_map_entry_t *entry) {
+    kernel_addrmap.map[kernel_addrmap.num_entries] = *entry;
+    ++kernel_addrmap.num_entries;
+}
+
+/**
+ * Deduplicate and merge a shared address map entry being added
+ * 
+ * Given a new shared entry to be added, this function:
+ * 
+ * 1) Attempts to find an existing shared entry that intersects the new one
+ *    and, if one is found, extend it to include the range of the new entry.
+ * 2) Determine whether the new entry should be a added or not to the address
+ *    map. It isn't added if it is redundant with an existing entry.
+ * 
+ * This function does not handle all duplication cases. Specifically, a new
+ * entry could make it possible to merge two existing entries by bridging them,
+ * but this case, which would require deleting an existing entry, is not
+ * handled. However, it works well enough to handle commonly encountered cases,
+ * notably ACPI tables which are often multiple structures smaller than a page
+ * packed closely together, with multiple sharing the same page.
+ * 
+ * @param new_entry the new entry being considered
+ * @return true if the entry should be added, false if is shouldn't
+ */
+static bool deduplicate_shared_entry(const jinue_addr_map_entry_t *new_entry) {
+    memory_range_t new_range;
+
+    new_range.start = new_entry->addr;
+    new_range.end   = new_entry->addr + new_entry->size;
+
+    for(int idx = 0; idx < kernel_addrmap.num_entries; ++idx) {
+        jinue_addr_map_entry_t *existing = &kernel_addrmap.map[idx];
+
+        if(existing->type != JINUE_MEMYPE_KERNEL_SHARED) {
+            continue;
+        }
+
+        memory_range_t  existing_range;
+        
+        existing_range.start    = existing->addr;
+        existing_range.end      = existing->addr + existing->size;
+
+        if(!ranges_intersect(&existing_range, &new_range)) {
+            continue;
+        }
+
+        if(new_range.start < existing_range.start) {
+            existing_range.start = new_range.start;
+        }
+
+        if(new_range.end > existing_range.end) {
+            existing_range.end = new_range.end;
+        }
+
+        existing->addr = existing_range.start;
+        existing->size = existing_range.end - existing_range.start;
+
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Add a shared memory range to the address map.
+ * 
+ * Memory in shared ranges can be mapped read only by user space.
+ * 
+ * This function takes care of page-aligning the range and deduplicating
+ * entries, so it can be used for e.g. individual ACPI tables.
+ * 
+ * @param addr start address of the range
+ * @param size size of the range in bytes
+ */
+void machine_add_shared_to_address_map(uint64_t addr, uint64_t size) {
+    jinue_addr_map_entry_t entry;
+
+    entry.type = JINUE_MEMYPE_KERNEL_SHARED;
+    entry.addr = addr;
+    entry.size = size;
+    page_aligned_unavailable_entry(&entry);
+
+    if(!deduplicate_shared_entry(&entry)) {
+        return;
+    }
+
+    add_kernel_entry(&entry);
+}
+
+/**
+ * Initialize the address map reported to user space
+ * 
+ * @param bootinfo boot information structure
+ */
+void initialize_address_map(const bootinfo_t *bootinfo) {
+    jinue_addr_map_entry_t entry;
+
+    entry.type = JINUE_MEMYPE_KERNEL_RESERVED;
+    entry.addr = MEMORY_ADDR_16MB;
+    entry.size = BOOT_SIZE_AT_16MB;
+    add_kernel_entry(&entry);
+
+    entry.type = JINUE_MEMYPE_RAMDISK;
+    entry.addr = bootinfo->ramdisk_start;
+    entry.size = bootinfo->ramdisk_size;
+    machine_add_shared_to_address_map(entry.addr, entry.size);
+    add_kernel_entry(&entry);
+
+    entry.type = JINUE_MEMYPE_KERNEL_IMAGE;
+    entry.addr = VIRT_TO_PHYS_AT_16MB(bootinfo->image_start);
+    entry.size = (uintptr_t)bootinfo->image_top - (uintptr_t)bootinfo->image_start;
+    machine_add_shared_to_address_map(entry.addr, entry.size);
+    add_kernel_entry(&entry);
+
+    memory_range_t loader_range;
+    find_available_range_for_loader(&loader_range, bootinfo);
+
+    entry.type = JINUE_MEMYPE_LOADER_AVAILABLE;
+    entry.addr = loader_range.start;
+    entry.size = loader_range.end - loader_range.start;
+    add_kernel_entry(&entry);
+}
+
+/**
  * Write the address map for user space to the specified buffer
  * 
  * The written address map is the ACPI address map to which a few
@@ -406,38 +556,8 @@ static void find_available_range_for_loader(memory_range_t *dest, const bootinfo
 int machine_get_address_map(const jinue_buffer_t *buffer) {
     const bootinfo_t *bootinfo = get_bootinfo();
 
-    const uintptr_t kernel_image_size =
-            (uintptr_t)bootinfo->image_top - (uintptr_t)bootinfo->image_start;
-
-    memory_range_t loader_range;
-    find_available_range_for_loader(&loader_range, bootinfo);
-
-    const jinue_addr_map_entry_t kernel_regions[] = {
-        {
-            .addr = bootinfo->ramdisk_start,
-            .size = bootinfo->ramdisk_size,
-            .type = JINUE_MEMYPE_RAMDISK
-        },
-        {
-            .addr = VIRT_TO_PHYS_AT_16MB(bootinfo->image_start),
-            .size = kernel_image_size,
-            .type = JINUE_MEMYPE_KERNEL_IMAGE
-        },
-        {
-            .addr = MEMORY_ADDR_16MB,
-            .size = BOOT_SIZE_AT_16MB ,
-            .type = JINUE_MEMYPE_KERNEL_RESERVED
-        },
-        {
-            .addr = loader_range.start,
-            .size = loader_range.end - loader_range.start,
-            .type = JINUE_MEMYPE_LOADER_AVAILABLE
-        }
-    };
-
     const size_t addr_map_entries   = bootinfo->addr_map_entries;
-    const size_t kernel_entries     = sizeof(kernel_regions) / sizeof(kernel_regions[0]);
-    const size_t total_entries      = addr_map_entries + kernel_entries;
+    const size_t total_entries      = addr_map_entries + kernel_addrmap.num_entries;
     const size_t result_size        =
             sizeof(jinue_addr_map_t) + total_entries * sizeof(jinue_addr_map_entry_t);
 
@@ -458,8 +578,8 @@ int machine_get_address_map(const jinue_buffer_t *buffer) {
         map->entry[idx].type = map_memory_type(addr_range);
     }
 
-    for(unsigned int idx = 0; idx < kernel_entries; ++idx) {
-        map->entry[addr_map_entries + idx] = kernel_regions[idx];
+    for(unsigned int idx = 0; idx < kernel_addrmap.num_entries; ++idx) {
+        map->entry[addr_map_entries + idx] = kernel_addrmap.map[idx];
     }
 
     return 0;

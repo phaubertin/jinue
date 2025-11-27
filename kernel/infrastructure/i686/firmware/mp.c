@@ -36,6 +36,7 @@
 #include <kernel/infrastructure/i686/firmware/bios.h>
 #include <kernel/infrastructure/i686/firmware/mp.h>
 #include <kernel/infrastructure/i686/types.h>
+#include <kernel/machine/memory.h>
 #include <kernel/utils/utils.h>
 #include <inttypes.h>
 #include <stdbool.h>
@@ -186,6 +187,8 @@ static const mp_ptr_struct_t *map_pointer_structure(uint32_t paddr) {
         return NULL;
     }
 
+    machine_add_shared_to_address_map(paddr, sizeof(mp_ptr_struct_t));
+
     return map_in_kernel(
         paddr,
         sizeof(mp_ptr_struct_t),
@@ -221,7 +224,9 @@ static const mp_conf_table_t *map_configuration_table(const mp_ptr_struct_t *ptr
         return NULL;
     }
 
-    return table;  
+    machine_add_shared_to_address_map(ptrst->addr, table->base_length);
+
+    return table;
 }
 
 /**

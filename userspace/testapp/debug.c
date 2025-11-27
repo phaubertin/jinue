@@ -163,6 +163,8 @@ static const char *phys_memory_type_description(uint32_t type) {
         return "Reserved/OEM";
     case JINUE_MEMYPE_KERNEL_RESERVED:
         return "Jinue/Reserved";
+    case JINUE_MEMYPE_KERNEL_SHARED:
+        return "Jinue/Shared";
     case JINUE_MEMYPE_KERNEL_IMAGE:
         return "Jinue/Kernel Image";
     case JINUE_MEMYPE_RAMDISK:

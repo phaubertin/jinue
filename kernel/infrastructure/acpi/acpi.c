@@ -34,6 +34,7 @@
 #include <kernel/domain/services/mman.h>
 #include <kernel/infrastructure/acpi/asm/acpi.h>
 #include <kernel/infrastructure/acpi/acpi.h>
+#include <kernel/machine/memory.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -107,6 +108,8 @@ static bool verify_table_signature(const acpi_table_header_t *header, const char
  *
  * */
 static const acpi_rsdp_t *map_rsdp(paddr_t paddr) {
+    machine_add_shared_to_address_map(paddr, sizeof(acpi_rsdp_t));
+
     return map_in_kernel(paddr, sizeof(acpi_rsdp_t), JINUE_PROT_READ);
 }
 
@@ -183,19 +186,22 @@ static const acpi_rsdt_t *map_rsdt(uint64_t rsdt_paddr, bool is_xsdt) {
         return NULL;
     }
 
+    machine_add_shared_to_address_map(rsdt_paddr, header->length);
+
     return rsdt;
 }
 
 /**
  * Match a table to a table definition
  * 
- * If there is a match, map the table and assign it. Otherwise, unmap the
- * header.
+ * If there is a match, resize the existing mapping of the table header to the
+ * whole table.
  * 
  * @param header table header
  * @param table_defs table definitions array terminated by a NULL signature
+ * @return true on successful match, false otherwise
  */
-static void match_table(const acpi_table_header_t *header, const acpi_table_def_t *table_defs) {
+static bool match_table(const acpi_table_header_t *header, const acpi_table_def_t *table_defs) {
     for(int idx = 0; table_defs[idx].signature != NULL; ++idx) {
         const acpi_table_def_t *def = &table_defs[idx];
 
@@ -212,10 +218,11 @@ static void match_table(const acpi_table_header_t *header, const acpi_table_def_
         }
 
         *def->ptr = map_table(header);
-        return;
+        
+        return *def->ptr != NULL;
     }
 
-    undo_map_in_kernel();
+    return false;
 }
 
 /**
@@ -248,7 +255,14 @@ static void process_rsdt(const acpi_rsdt_t *rsdt, bool is_xsdt, const acpi_table
             continue;
         }
 
-        match_table(header, table_defs);
+        const bool matched = match_table(header, table_defs);
+
+        if(!matched) {
+            undo_map_in_kernel();
+            continue;
+        }
+
+        machine_add_shared_to_address_map(paddr, header->length);
     }
 }
 
