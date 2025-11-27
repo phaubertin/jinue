@@ -471,9 +471,6 @@ void machine_add_shared_to_address_map(uint64_t addr, uint64_t size) {
 }
 
 void initialize_address_map(const bootinfo_t *bootinfo) {
-    memory_range_t loader_range;
-    find_available_range_for_loader(&loader_range, bootinfo);
-
     jinue_addr_map_entry_t entry;
 
     entry.type = JINUE_MEMYPE_KERNEL_RESERVED;
@@ -492,6 +489,9 @@ void initialize_address_map(const bootinfo_t *bootinfo) {
     entry.size = (uintptr_t)bootinfo->image_top - (uintptr_t)bootinfo->image_start;
     machine_add_shared_to_address_map(entry.addr, entry.size);
     add_kernel_entry(&entry);
+
+    memory_range_t loader_range;
+    find_available_range_for_loader(&loader_range, bootinfo);
 
     entry.type = JINUE_MEMYPE_LOADER_AVAILABLE;
     entry.addr = loader_range.start;
