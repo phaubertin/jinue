@@ -34,12 +34,14 @@
 
 #include <kernel/interface/i686/types.h>
 
-typedef char linux_header_t[];
+typedef char linux_boot_params_t[];
 
-void initialize_from_linux_header(bootinfo_t *bootinfo, const linux_header_t linux_header);
+void initialize_from_linux_boot_params(
+    bootinfo_t                  *bootinfo,
+    const linux_boot_params_t    linux_boot_params);
 
-void copy_cmdline(bootinfo_t *bootinfo, const linux_header_t linux_header);
+void copy_cmdline(bootinfo_t *bootinfo, const linux_boot_params_t linux_boot_params);
 
-void copy_acpi_address_map(bootinfo_t *bootinfo, const linux_header_t linux_header);
+void copy_acpi_address_map(bootinfo_t *bootinfo, const linux_boot_params_t linux_boot_params);
 
 #endif
