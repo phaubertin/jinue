@@ -40,8 +40,4 @@ void initialize_from_linux_boot_params(
     bootinfo_t                  *bootinfo,
     const linux_boot_params_t    linux_boot_params);
 
-void copy_cmdline(bootinfo_t *bootinfo, const linux_boot_params_t linux_boot_params);
-
-void copy_acpi_address_map(bootinfo_t *bootinfo, const linux_boot_params_t linux_boot_params);
-
 #endif

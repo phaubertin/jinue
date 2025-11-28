@@ -103,10 +103,6 @@ bootinfo_t *main32(const linux_boot_params_t linux_boot_params) {
 
     prepare_data_segment(&data_segment, bootinfo);
 
-    copy_acpi_address_map(bootinfo, linux_boot_params);
-
-    copy_cmdline(bootinfo, linux_boot_params);
-
     allocate_page_tables(bootinfo);
 
     initialize_page_tables(bootinfo, &data_segment);
