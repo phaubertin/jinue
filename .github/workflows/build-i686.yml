@@ -21,12 +21,17 @@ jobs:
 
     steps:
 
-    - name: Install dependencies
-      run: sudo apt update && sudo apt-get install -y gcc-multilib nasm qemu-system-x86
-
+    # Let's keep this step first, before installing the dependencies: sometimes
+    # pulling bzip2 as a submodule fails because the sourceware.org git server
+    # is down. Keeping this step first lets the workflow fail faster. The next
+    # step, installing the dependencies, is about 60% of the workflow total run
+    # time.
     - uses: actions/checkout@v4
       with:
         submodules: recursive
+
+    - name: Install dependencies
+      run: sudo apt update && sudo apt-get install -y gcc-multilib nasm qemu-system-x86
 
     - name: configure
       run: ./configure
