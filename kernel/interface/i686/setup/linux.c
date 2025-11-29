@@ -38,26 +38,13 @@
 #define HEADER_FIELD(h, t, o) *(t*)&(h)[o]
 
 /**
- * Initialize some fields in the boot information structure from Linux header
- *
- * @param bootinfo boot information structure
- * @param linux_header Linux x86 boot protocol real-mode kernel header
- */
-void initialize_from_linux_header(bootinfo_t *bootinfo, const linux_header_t linux_header) {
-    bootinfo->ramdisk_start     = HEADER_FIELD(linux_header, uint32_t, BOOT_RAMDISK_IMAGE);
-    bootinfo->ramdisk_size      = HEADER_FIELD(linux_header, uint32_t, BOOT_RAMDISK_SIZE);
-    bootinfo->setup_signature   = HEADER_FIELD(linux_header, uint32_t, BOOT_SETUP_HEADER);
-    bootinfo->addr_map_entries  = HEADER_FIELD(linux_header, uint8_t, BOOT_ADDR_MAP_ENTRIES);
-}
-
-/**
  * Copy the command line string
  * 
  * @param bootinfo boot information structure
- * @param linux_header Linux x86 boot protocol real-mode kernel header
+ * @param linux_boot_params Linux x86 boot protocol real-mode kernel header
  */
-void copy_cmdline(bootinfo_t *bootinfo, const linux_header_t linux_header) {
-    const char *src = HEADER_FIELD(linux_header, char *, BOOT_CMD_LINE_PTR);
+static void copy_cmdline(bootinfo_t *bootinfo, const linux_boot_params_t linux_boot_params) {
+    const char *src = HEADER_FIELD(linux_boot_params, char *, BOOT_CMD_LINE_PTR);
 
     size_t length = 0;
 
@@ -81,11 +68,11 @@ void copy_cmdline(bootinfo_t *bootinfo, const linux_header_t linux_header) {
  * Copy the ACPI (aka. e820) address map
  * 
  * @param bootinfo boot information structure
- * @param linux_header Linux x86 boot protocol real-mode kernel header
+ * @param linux_boot_params Linux x86 boot protocol real-mode kernel header
  */
-void copy_acpi_address_map(bootinfo_t *bootinfo, const linux_header_t linux_header) {
-    size_t size     = 20 * HEADER_FIELD(linux_header, uint8_t, BOOT_ADDR_MAP_ENTRIES);
-    const char *src = &linux_header[BOOT_ADDR_MAP];
+static void copy_acpi_address_map(bootinfo_t *bootinfo, const linux_boot_params_t linux_boot_params) {
+    size_t size     = 20 * HEADER_FIELD(linux_boot_params, uint8_t, BOOT_ADDR_MAP_ENTRIES);
+    const char *src = &linux_boot_params[BOOT_ADDR_MAP];
     char *dest      = alloc_pages(bootinfo, size);
 
     bootinfo->acpi_addr_map = (acpi_addr_range_t *)dest;
@@ -93,4 +80,24 @@ void copy_acpi_address_map(bootinfo_t *bootinfo, const linux_header_t linux_head
     for(int idx = 0; idx < size; ++idx) {
         dest[idx] = src[idx];
     }
+}
+
+/**
+ * Initialize some fields in the boot information structure from Linux header
+ *
+ * @param bootinfo boot information structure
+ * @param linux_boot_params Linux x86 boot protocol real-mode kernel header
+ */
+void initialize_from_linux_boot_params(
+    bootinfo_t                  *bootinfo,
+    const linux_boot_params_t    linux_boot_params)
+{
+    bootinfo->ramdisk_start     = HEADER_FIELD(linux_boot_params, uint32_t, BOOT_RAMDISK_IMAGE);
+    bootinfo->ramdisk_size      = HEADER_FIELD(linux_boot_params, uint32_t, BOOT_RAMDISK_SIZE);
+    bootinfo->setup_signature   = HEADER_FIELD(linux_boot_params, uint32_t, BOOT_SETUP_HEADER);
+    bootinfo->addr_map_entries  = HEADER_FIELD(linux_boot_params, uint8_t, BOOT_ADDR_MAP_ENTRIES);
+
+    copy_acpi_address_map(bootinfo, linux_boot_params);
+
+    copy_cmdline(bootinfo, linux_boot_params);
 }

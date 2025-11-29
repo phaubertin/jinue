@@ -41,10 +41,10 @@
 /**
  * Initialize some fields in the boot information structure
  *
- * @param linux_header Linux x86 boot protocol real-mode kernel header
+ * @param linux_boot_params Linux x86 boot protocol real-mode kernel header
  * @return boot information structure
  */
-static bootinfo_t *create_bootinfo(const linux_header_t linux_header) {
+static bootinfo_t *create_bootinfo(const linux_boot_params_t linux_boot_params) {
     bootinfo_t *bootinfo    = (bootinfo_t *)MEMORY_ADDR_16MB;
 
     bootinfo->boot_heap     = (char *)(bootinfo + 1);
@@ -57,7 +57,7 @@ static bootinfo_t *create_bootinfo(const linux_header_t linux_header) {
     bootinfo->image_start   = &image_start;
     bootinfo->image_top     = &image_top;
 
-    initialize_from_linux_header(bootinfo, linux_header);
+    initialize_from_linux_boot_params(bootinfo, linux_boot_params);
 
     return bootinfo;
 }
@@ -94,18 +94,14 @@ static void adjust_bootinfo_pointers(bootinfo_t **bootinfo) {
  * 
  * @param alloc_ptr allocation pointer, i.e. where to allocate memory
  * @param heap_ptr pointer to boot heap (for small allocations)
- * @param linux_header Linux x86 boot protocol real-mode kernel header
+ * @param linux_boot_params Linux x86 boot protocol real-mode kernel header
  */
-bootinfo_t *main32(const linux_header_t linux_header) {
-    bootinfo_t *bootinfo = create_bootinfo(linux_header);
+bootinfo_t *main32(const linux_boot_params_t linux_boot_params) {
+    bootinfo_t *bootinfo = create_bootinfo(linux_boot_params);
 
     data_segment_t data_segment;
 
     prepare_data_segment(&data_segment, bootinfo);
-
-    copy_acpi_address_map(bootinfo, linux_header);
-
-    copy_cmdline(bootinfo, linux_header);
 
     allocate_page_tables(bootinfo);
 
