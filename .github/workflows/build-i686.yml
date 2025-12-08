@@ -12,12 +12,10 @@ jobs:
     strategy:
       matrix:
         cc: [gcc, clang]
+        arch: [i686]
 
     runs-on: ubuntu-latest
     timeout-minutes: 5
-
-    env:
-      MAKE: make CC="${{ matrix.cc }} -Werror"
 
     steps:
 
@@ -34,16 +32,16 @@ jobs:
       run: sudo apt update && sudo apt-get install -y gcc-multilib nasm qemu-system-x86
 
     - name: configure
-      run: ./configure
+      run: ./configure --debug --werror --arch ${{ matrix.arch }} --cc ${{ matrix.cc }}
 
     - name: make
-      run: ${{ env.MAKE }}
+      run: make
 
     - name: libjinue
-      run: ${{ env.MAKE }} libjinue
+      run: make libjinue
 
     - name: make testapp
-      run: ${{ env.MAKE }} testapp
+      run: make testapp
     
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
@@ -56,4 +54,4 @@ jobs:
           userspace/testapp/jinue-testapp-initrd.tar.gz
     
     - name: Run tests
-      run: ${{ env.MAKE }} check
+      run: make check

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Copyright (C) 2023 Philippe Aubertin.
 # All rights reserved.
@@ -32,19 +32,81 @@
 ZLIB=userspace/lib/zlib
 BZIP2=userspace/lib/bzip2
 
-ARCH_CFLAGS="-m32 -march=pentium -mtune=generic"
-
-ARCH_LDFLAGS="-Wl,-m,elf_i386"
-
 CFLAGS="-std=c99 -ffreestanding -I../../../include"
 
+# -----------------------------------------------------------------------------
+#  Process command line arguments
+# -----------------------------------------------------------------------------
+arch=i386
+CC=gcc
+DEBUG=0
+WERROR=""
+
+while [ $# -ge 1 ]
+do
+    case "$1" in
+        --arch)
+            shift
+            if [ ! $# -ge 1 ]
+            then
+                echo "*** ERROR: no architecture name specified for --arch"
+                exit 1
+            fi
+            arch=$1
+            shift
+            ;;
+        --cc)
+            shift
+            if [ ! $# -ge 1 ]
+            then
+                echo "*** ERROR: no value specified for --cc"
+                exit 1
+            fi
+            CC=$1
+            shift
+            ;;
+        --debug)
+            DEBUG=1
+            shift
+            ;;
+        --werror)
+            WERROR="-Werror"
+            shift
+            ;;
+        *)
+            echo "*** ERROR: unknown argument: $1"
+            exit 1
+            ;;
+    esac
+done
+
+case "$arch" in
+    i386|i686)
+        ARCH_CFLAGS="-m32 -march=pentium -mtune=generic"
+        ARCH_LDFLAGS="-Wl,-m,elf_i386"
+        ;;
+    *)
+        echo "*** ERROR: unknown architecture name: $arch"
+        exit 1
+        ;;
+esac
+
+# -----------------------------------------------------------------------------
+#  Generate config.gen.mk
+# -----------------------------------------------------------------------------
 echo "Generating config.gen.mk"
 
 cat <<EOF > config.gen.mk
+CONFIG_CC=$CC
 CONFIG_CFLAGS_ARCH=$ARCH_CFLAGS
+CONFIG_DEBUG=$DEBUG
 CONFIG_LDFLAGS_ARCH=$ARCH_LDFLAGS
+CONFIG_WERROR=$WERROR
 EOF
 
+# -----------------------------------------------------------------------------
+#  Configure zlib
+# -----------------------------------------------------------------------------
 echo "Configuring zlib in $ZLIB"
 
 if [ ! -f "$ZLIB/zlib.h" ]; then
@@ -65,6 +127,9 @@ echo "*** Jinue does not use the part of the code in zlib where that warning is 
 
 (cd $ZLIB; CFLAGS="$CFLAGS $ARCH_CFLAGS" ./configure --solo --static --warn --const)
 
+# -----------------------------------------------------------------------------
+#  Configure bzip2
+# -----------------------------------------------------------------------------
 echo "Configuring bzip2 in $ZLIB"
 
 if [ ! -f "$BZIP2/bzlib.h" ]; then

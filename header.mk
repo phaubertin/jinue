@@ -106,11 +106,7 @@ unclean              = $(unclean.build) $(unclean.extra)
 unclean_recursive   ?=
 
 # debug/release build
-#
-# Anything other than DEBUG=yes means release
-DEBUG   ?= yes
-
-ifeq ($(DEBUG), yes)
+ifeq ($(CONFIG_DEBUG), 1)
 	CPPFLAGS.debug		 =
 	CFLAGS.debug 		 = -g3
 	NASMFLAGS.debug		 =
@@ -129,7 +125,8 @@ CPPFLAGS.others      = -nostdinc
 CPPFLAGS             = $(CPPFLAGS.arch) $(CPPFLAGS.includes) $(CPPFLAGS.debug) $(CPPFLAGS.others) $(CPPFLAGS.extra)
 
 # C compiler flags
-CFLAGS.warnings      = -std=c99 -pedantic -Wall -Wno-array-bounds -Werror=implicit -Werror=uninitialized -Werror=return-type
+CC					 = $(CONFIG_CC)
+CFLAGS.warnings      = -std=c99 -pedantic -Wall -Wno-array-bounds -Werror=implicit -Werror=uninitialized -Werror=return-type $(CONFIG_WERROR)
 CFLAGS.arch          = $(CONFIG_CFLAGS_ARCH)
 CFLAGS.optimization  = -O3
 CFLAGS.others        = -ffreestanding -fno-pie -fno-common -fno-omit-frame-pointer -fno-delete-null-pointer-checks -fno-asynchronous-unwind-tables
