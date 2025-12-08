@@ -1,4 +1,4 @@
-name: Build for i686
+name: Build and test
 
 on:
   push:
