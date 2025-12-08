@@ -32,8 +32,18 @@
 ZLIB=userspace/lib/zlib
 BZIP2=userspace/lib/bzip2
 
+ARCH_CFLAGS="-m32 -march=pentium -mtune=generic"
+
+ARCH_LDFLAGS="-Wl,-m,elf_i386"
+
 CFLAGS="-std=c99 -ffreestanding -I../../../include"
-ARCH="-m32"
+
+echo "Generating config.gen.mk"
+
+cat <<EOF > config.gen.mk
+CONFIG_CFLAGS_ARCH=$ARCH_CFLAGS
+CONFIG_LDFLAGS_ARCH=$ARCH_LDFLAGS
+EOF
 
 echo "Configuring zlib in $ZLIB"
 
@@ -53,7 +63,7 @@ fi
 echo "*** Please ignore any warning about vsnprintf() not being found in stdio.h."
 echo "*** Jinue does not use the part of the code in zlib where that warning is relevant."
 
-(cd $ZLIB; CFLAGS="$CFLAGS" ./configure --solo --static --warn --const --archs="$ARCH")
+(cd $ZLIB; CFLAGS="$CFLAGS $ARCH_CFLAGS" ./configure --solo --static --warn --const)
 
 echo "Configuring bzip2 in $ZLIB"
 
@@ -80,7 +90,7 @@ echo "***"
 # There is no configure script for bzip2 but the CFLAGS are hardcoded in the
 # Makefile, so let's patch them there. Let's also remove code related to
 # compression to reduce size and the number of compiler warnings.
-(cd $BZIP2 ; (cat << "EOF") | sed -e "s@%%%-CFLAGS-%%%@$CFLAGS $ARCH@" | patch -Np1 -r-
+(cd $BZIP2 ; (cat << "EOF") | sed -e "s@%%%-CFLAGS-%%%@$CFLAGS $ARCH_CFLAGS@" | patch -Np1 -r-
 diff --git a/Makefile b/Makefile
 index b0fef95..4987a38 100644
 --- a/Makefile

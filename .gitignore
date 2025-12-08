@@ -45,6 +45,7 @@
 
 # auto-generated files
 *.gen.h
+*.gen.mk
 *.gen.sh
 
 # stripped executables
