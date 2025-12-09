@@ -17,6 +17,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
+    env:
+      BUILD_TYPE: ${{ github.ref == 'refs/heads/main' && 'release' || 'debug' }}
+
     steps:
 
     # Let's keep this step first, before installing the dependencies: sometimes
@@ -32,7 +35,17 @@ jobs:
       run: sudo apt update && sudo apt-get install -y gcc-multilib nasm qemu-system-x86
 
     - name: configure
-      run: ./configure --debug --werror --arch ${{ matrix.arch }} --cc ${{ matrix.cc }}
+      run: |
+        echo "Configuring for $BUILD_TYPE build"
+
+        if [ "$BUILD_TYPE" = "release" ]
+        then
+            DEBUG=''
+        else
+            DEBUG='--debug'
+        fi
+
+        ./configure $DEBUG --werror --arch ${{ matrix.arch }} --cc ${{ matrix.cc }}
 
     - name: make
       run: make
