@@ -53,6 +53,14 @@
 # Makefiles that include this file must define this.
 jinue_root          ?= .
 
+config				= $(jinue_root)/config.gen.mk
+
+ifeq (,$(wildcard $(config)))
+$(error Source code copy is not configured: please run ./configure in the top directory before running make.)
+endif
+
+include $(config)
+
 # project directory structure
 devel                = $(jinue_root)/devel
 includes             = $(jinue_root)/include
@@ -98,11 +106,7 @@ unclean              = $(unclean.build) $(unclean.extra)
 unclean_recursive   ?=
 
 # debug/release build
-#
-# Anything other than DEBUG=yes means release
-DEBUG   ?= yes
-
-ifeq ($(DEBUG), yes)
+ifeq ($(CONFIG_DEBUG), 1)
 	CPPFLAGS.debug		 =
 	CFLAGS.debug 		 = -g3
 	NASMFLAGS.debug		 =
@@ -116,19 +120,20 @@ endif
 #
 # These flags are used when preprocessing C and assembly language files.
 CPPFLAGS.includes    = -I$(includes)
-CPPFLAGS.arch        = -m32 -march=pentium -mtune=generic
+CPPFLAGS.arch        = $(CONFIG_CFLAGS_ARCH)
 CPPFLAGS.others      = -nostdinc
 CPPFLAGS             = $(CPPFLAGS.arch) $(CPPFLAGS.includes) $(CPPFLAGS.debug) $(CPPFLAGS.others) $(CPPFLAGS.extra)
 
 # C compiler flags
-CFLAGS.warnings      = -std=c99 -pedantic -Wall -Wno-array-bounds -Werror=implicit -Werror=uninitialized -Werror=return-type
-CFLAGS.arch          = -m32 -march=pentium -mtune=generic
+CC					 = $(CONFIG_CC)
+CFLAGS.warnings      = -std=c99 -pedantic -Wall -Wno-array-bounds -Werror=implicit -Werror=uninitialized -Werror=return-type $(CONFIG_WERROR)
+CFLAGS.arch          = $(CONFIG_CFLAGS_ARCH)
 CFLAGS.optimization  = -O3
 CFLAGS.others        = -ffreestanding -fno-pie -fno-common -fno-omit-frame-pointer -fno-delete-null-pointer-checks -fno-asynchronous-unwind-tables
 CFLAGS               = $(CFLAGS.arch) $(CFLAGS.optimization) $(CFLAGS.debug) $(CFLAGS.warnings) $(CFLAGS.others) $(CFLAGS.extra)
 
 # Linker flags
-LDFLAGS.arch         = -Wl,-m,elf_i386
+LDFLAGS.arch         = $(CONFIG_LDFLAGS_ARCH)
 LDFLAGS.others       = -static -nostdlib -Wl,-z,noexecstack
 LDFLAGS              = $(LDFLAGS.arch) $(LDFLAGS.others) $(LDFLAGS.extra)
 
