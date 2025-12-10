@@ -111,8 +111,8 @@
 #define APIC_LVT_TIMER_TSC_DEADLINE (2 << 17)
 
 
-#define APIC_SVR_ENABLED            0
+#define APIC_SVR_DISABLED           0
 
-#define APIC_SVR_DISABLED           (1 << 8)
+#define APIC_SVR_ENABLED            (1 << 8)
 
 #endif
