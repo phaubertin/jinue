@@ -40,7 +40,7 @@ CMDLINE             = \
     DEBUG_DUMP_MEMORY_MAP=all \
     DEBUG_DUMP_SYSCALL_IMPLEMENTATION=1 \
     DEBUG_DUMP_RAMDISK=1 \
-    RUN_TEST_IPC=1
+    RUN_TEST_ABCD=1
 
 run_log              = run-jinue.log
 deps                 = $(kernel_img) $(testapp_initrd)

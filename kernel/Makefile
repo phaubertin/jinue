@@ -122,6 +122,7 @@ sources.kernel.c = \
 	infrastructure/i686/halt.c \
 	infrastructure/i686/init.c \
 	infrastructure/i686/percpu.c \
+	infrastructure/i686/platform.c \
 	infrastructure/i686/process.c \
 	infrastructure/i686/thread.c \
 	infrastructure/elf.c \

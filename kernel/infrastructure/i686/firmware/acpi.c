@@ -178,6 +178,8 @@ uint32_t acpi_get_rsdp_paddr(void) {
  *   (that responds to MMIO addresses A0000h-BFFFFh and IO ports 3B0h-3BBh and
  *   3C0h-3DFh) that may cause machine check on this system. If clear,
  *   indicates to OSPM that it is safe to probe the VGA hardware. "
+ * 
+ * @return true if present, false otherwise
  */
 bool acpi_is_vga_present(void) {
     if(acpi_tables.fadt == NULL) {
