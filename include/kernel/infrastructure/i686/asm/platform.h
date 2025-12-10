@@ -29,38 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <kernel/infrastructure/i686/firmware/acpi.h>
-#include <kernel/infrastructure/i686/firmware/mp.h>
-#include <kernel/infrastructure/i686/platform.h>
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_PLATFORM_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_PLATFORM_H
 
-/**
- * Detect presence of VGA
- * 
- * @return true if present, false otherwise
- */
-bool platform_is_vga_present(void) {
-    return acpi_is_vga_present();
-}
+#define UNKNOWN_LOCAL_APIC_ADDR 0
 
-/**
- * Determine the physical address of each CPU's local APIC
- * 
- * @return address of local APIC, PLATFORM_UNKNOWN_LOCAL_APIC_ADDR if unknown
- */
-uint32_t platform_get_local_apic_address(void) {
-    uint32_t addr = acpi_get_local_apic_address();
-
-    if(addr != UNKNOWN_LOCAL_APIC_ADDR) {
-        return addr;
-    }
-
-    addr = mp_get_local_apic_addr();
-
-    if(addr != UNKNOWN_LOCAL_APIC_ADDR) {
-        return addr;
-    }
-
-    /* TODO can this come from a MSR as well? */
-
-    return 0xfee00000;
-}
+#endif

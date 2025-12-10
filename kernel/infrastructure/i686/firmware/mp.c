@@ -35,6 +35,7 @@
 #include <kernel/infrastructure/acpi/acpi.h>
 #include <kernel/infrastructure/i686/firmware/bios.h>
 #include <kernel/infrastructure/i686/firmware/mp.h>
+#include <kernel/infrastructure/i686/platform.h>
 #include <kernel/infrastructure/i686/types.h>
 #include <kernel/machine/memory.h>
 #include <kernel/utils/utils.h>
@@ -259,4 +260,17 @@ void init_mp(void) {
     mp.ptrst = map_pointer_structure(mp.ptrst_paddr);
     mp.table = map_configuration_table(mp.ptrst);
     report_mp_info();
+}
+
+/**
+ * Determine the physical address of each CPU's local APIC
+ * 
+ * @return address of local APIC, PLATFORM_UNKNOWN_LOCAL_APIC_ADDR if unknown
+ */
+uint32_t mp_get_local_apic_addr(void) {
+    if(mp.table == NULL) {
+        return UNKNOWN_LOCAL_APIC_ADDR;
+    }
+
+    return mp.table->lapic_addr;
 }

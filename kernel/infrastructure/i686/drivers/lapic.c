@@ -34,6 +34,7 @@
 #include <kernel/domain/services/mman.h>
 #include <kernel/infrastructure/i686/drivers/lapic.h>
 #include <kernel/infrastructure/i686/cpuinfo.h>
+#include <kernel/infrastructure/i686/platform.h>
 #include <kernel/interface/i686/asm/idt.h>
 #include <kernel/types.h>
 #include <stdbool.h>
@@ -79,10 +80,15 @@ static void set_divider(int divider) {
 }
 
 void local_apic_init(void) {
-    // TODO figure out address from firmware table or MSR
-    // TODO some APICs are controlled through MSRs instead of MMIO?
-    // TODO ensure caheability attributes are appropriate (MTRRs?)
-    mmio_addr = map_in_kernel(0xfee00000, 4096, JINUE_PROT_READ | JINUE_PROT_WRITE);
+    /* TODO some APICs are controlled through MSRs instead of MMIO? */
+    /* TODO ensure cacheability attributes are appropriate (MTRRs?) */
+    /* TODO make extra sure this address range is reserved */
+
+    mmio_addr = map_in_kernel(
+        platform_get_local_apic_address(),
+        4096,
+        JINUE_PROT_READ | JINUE_PROT_WRITE
+    );
     
     /* TODO get frequency from CPUID and/or MSRs and/or calibrate
      *

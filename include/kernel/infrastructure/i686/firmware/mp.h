@@ -117,4 +117,6 @@ void find_mp(const addr_t first1mb);
 
 void init_mp(void);
 
+uint32_t mp_get_local_apic_addr(void);
+
 #endif

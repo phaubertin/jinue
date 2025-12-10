@@ -34,6 +34,7 @@
 #include <kernel/infrastructure/acpi/types.h>
 #include <kernel/infrastructure/i686/firmware/acpi.h>
 #include <kernel/infrastructure/i686/firmware/bios.h>
+#include <kernel/infrastructure/i686/platform.h>
 #include <kernel/infrastructure/i686/types.h>
 #include <kernel/utils/asm/utils.h>
 #include <stdbool.h>
@@ -171,14 +172,6 @@ uint32_t acpi_get_rsdp_paddr(void) {
 /**
  * Detect presence of VGA
  * 
- * From the description if bit 2 "VGA Not Present" of IAPC_BOOT_ARCH in Table
- * 5.11 of the ACPI Specification:
- * 
- * " If set, indicates to OSPM that it must not blindly probe the VGA hardware
- *   (that responds to MMIO addresses A0000h-BFFFFh and IO ports 3B0h-3BBh and
- *   3C0h-3DFh) that may cause machine check on this system. If clear,
- *   indicates to OSPM that it is safe to probe the VGA hardware. "
- * 
  * @return true if present, false otherwise
  */
 bool acpi_is_vga_present(void) {
@@ -186,5 +179,26 @@ bool acpi_is_vga_present(void) {
         return true;
     }
 
+    /* From the description if bit 2 "VGA Not Present" of IAPC_BOOT_ARCH in Table
+     * 5.11 of the ACPI Specification:
+     * 
+     * " If set, indicates to OSPM that it must not blindly probe the VGA hardware
+     *   (that responds to MMIO addresses A0000h-BFFFFh and IO ports 3B0h-3BBh and
+     *   3C0h-3DFh) that may cause machine check on this system. If clear,
+     *   indicates to OSPM that it is safe to probe the VGA hardware. "
+     */
     return !(acpi_tables.fadt->iapc_boot_arch & ACPI_IAPC_BOOT_ARCH_VGA_NOT_PRESENT);
+}
+
+/**
+ * Determine the physical address of each CPU's local APIC
+ * 
+ * @return address of local APIC, PLATFORM_UNKNOWN_LOCAL_APIC_ADDR if unknown
+ */
+uint32_t acpi_get_local_apic_address(void) {
+    if(acpi_tables.madt == NULL) {
+        return UNKNOWN_LOCAL_APIC_ADDR;
+    }
+
+    return acpi_tables.madt->local_intr_controller_addr;
 }
