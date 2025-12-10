@@ -345,18 +345,14 @@ void machine_init(const config_t *config) {
         pae_create_pdpt_cache();
     }
 
-    /* Initialize programmable interrupt_controller. */
-    pic8259_init();
-
-    /* Initialize programmable interval timer and enable timer interrupt.
+    /* Initialize programmable interrupt_controller.
      *
      * Interrupts are disabled during initialization so the CPU won't actually
      * be interrupted until the first user space thread starts. */
-    pit8253_init();
+    pic8259_init();
 
-    if(!cpu_has_feature(CPUINFO_FEATURE_LOCAL_APIC)) {
-        pic8259_unmask(IRQ_TIMER);
-    }
+    /* Initialize programmable interval timer and enable timer interrupt. */
+    pit8253_init();
 
     /* Initialize local APIC, including local APIC timer. */
     local_apic_init();

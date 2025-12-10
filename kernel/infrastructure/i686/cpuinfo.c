@@ -63,7 +63,7 @@ typedef struct {
  * This function never returns.
  */
 static void too_old(void) {
-    panic("Pentium CPU or later is required");
+    panic("A Pentium CPU or later with an integrated local APIC is required");
 }
 
 /**
@@ -507,6 +507,12 @@ static void detect_syscall_instruction(cpuinfo_t *cpuinfo, const cpuid_leafs_set
 static void enumerate_features(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs) {
     uint32_t flags = leafs->basic1.edx;
     uint32_t ext_flags = leafs->ext1.edx;
+
+    /* support for local APIC */
+    if(!(flags & CPUID_FEATURE_APIC)) {
+        error("no integrated local APIC");
+        too_old();
+    }
     
     cpuinfo->features = 0;
 
@@ -521,11 +527,6 @@ static void enumerate_features(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs)
 
     if(!is_amd_or_intel(cpuinfo)) {
         return;
-    }
-
-    /* support for local APIC */
-    if(flags & CPUID_FEATURE_APIC) {
-        cpuinfo->features |= CPUINFO_FEATURE_LOCAL_APIC;
     }
 
     /* large 4MB pages in 32-bit (non-PAE) paging mode */
@@ -559,21 +560,14 @@ static void identify_maxphyaddr(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs
  * @param cpuinfo CPU information structure
  */
 static void dump_features(const cpuinfo_t *cpuinfo) {
-    char buffer[40];
-
-    snprintf(
-        buffer,
-        sizeof(buffer),
-        "%s%s%s%s%s%s",
-        (cpuinfo->features & CPUINFO_FEATURE_LOCAL_APIC) ? " apic" : "",
+    info(
+        "  Features: apic%s%s%s%s%s",
         (cpuinfo->features & CPUINFO_FEATURE_PAE) ? " pae" : "",
         (cpuinfo->features & CPUINFO_FEATURE_PGE) ? " pge" : "",
         (cpuinfo->features & CPUINFO_FEATURE_PSE) ? " pse" : "",
         (cpuinfo->features & CPUINFO_FEATURE_SYSCALL) ? " syscall" : "",
         (cpuinfo->features & CPUINFO_FEATURE_SYSENTER) ? " sysenter" : ""
     );
-
-    info("  Features:%s", buffer);
 }
 
 /**

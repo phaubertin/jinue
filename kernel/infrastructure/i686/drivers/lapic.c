@@ -79,10 +79,6 @@ static void set_divider(int divider) {
 }
 
 void local_apic_init(void) {
-    if(!cpu_has_feature(CPUINFO_FEATURE_LOCAL_APIC)) {
-        return;
-    }
-
     // TODO figure out address from firmware table or MSR
     // TODO some APICs are controlled through MSRs instead of MMIO?
     // TODO ensure caheability attributes are appropriate (MTRRs?)
