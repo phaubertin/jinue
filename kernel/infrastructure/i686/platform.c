@@ -47,8 +47,8 @@ bool platform_is_vga_present(void) {
  * 
  * @return address of local APIC, PLATFORM_UNKNOWN_LOCAL_APIC_ADDR if unknown
  */
-uint32_t platform_get_local_apic_address(void) {
-    uint32_t addr = acpi_get_local_apic_address();
+paddr_t platform_get_local_apic_address(void) {
+    paddr_t addr = acpi_get_local_apic_address();
 
     if(addr != UNKNOWN_LOCAL_APIC_ADDR) {
         return addr;
@@ -59,8 +59,6 @@ uint32_t platform_get_local_apic_address(void) {
     if(addr != UNKNOWN_LOCAL_APIC_ADDR) {
         return addr;
     }
-
-    /* TODO can this come from a MSR as well? */
 
     return 0xfee00000;
 }

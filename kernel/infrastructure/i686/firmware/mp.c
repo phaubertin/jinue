@@ -267,7 +267,7 @@ void init_mp(void) {
  * 
  * @return address of local APIC, PLATFORM_UNKNOWN_LOCAL_APIC_ADDR if unknown
  */
-uint32_t mp_get_local_apic_addr(void) {
+paddr_t mp_get_local_apic_addr(void) {
     if(mp.table == NULL) {
         return UNKNOWN_LOCAL_APIC_ADDR;
     }

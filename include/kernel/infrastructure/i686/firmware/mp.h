@@ -33,6 +33,7 @@
 #define JINUE_KERNEL_INFRASTRUCTURE_I686_FIRMWARE_MP_H
 
 #include <kernel/infrastructure/i686/firmware/asm/mp.h>
+#include <kernel/machine/types.h>
 #include <stdint.h>
 
 /* Multiprocessor Specification 1.4 section 4.1 MP Floating Pointer
@@ -117,6 +118,6 @@ void find_mp(const addr_t first1mb);
 
 void init_mp(void);
 
-uint32_t mp_get_local_apic_addr(void);
+paddr_t mp_get_local_apic_addr(void);
 
 #endif

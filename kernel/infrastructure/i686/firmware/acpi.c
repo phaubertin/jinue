@@ -195,10 +195,14 @@ bool acpi_is_vga_present(void) {
  * 
  * @return address of local APIC, PLATFORM_UNKNOWN_LOCAL_APIC_ADDR if unknown
  */
-uint32_t acpi_get_local_apic_address(void) {
+paddr_t acpi_get_local_apic_address(void) {
     if(acpi_tables.madt == NULL) {
         return UNKNOWN_LOCAL_APIC_ADDR;
     }
+
+    /* TODO use 64-bit value in Local APIC Address Override Structure if present
+     * 
+     * See section 5.2.12.8 of the ACPI specification. */
 
     return acpi_tables.madt->local_intr_controller_addr;
 }

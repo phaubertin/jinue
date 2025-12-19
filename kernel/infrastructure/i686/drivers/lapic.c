@@ -141,7 +141,6 @@ static void set_divider(int divider) {
  * Initialize the local APIC, including the local APIC timer
  */
 void local_apic_init(void) {
-    /* TODO some APICs are controlled through MSRs instead of MMIO? */
     /* TODO ensure cacheability attributes are appropriate (MTRRs?) */
     /* TODO make extra sure this address range is reserved */
 
