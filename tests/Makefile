@@ -41,6 +41,7 @@ tests = \
 	test_acpi \
 	test_boot_nopae \
 	test_boot_pae \
+	test_boot_pentium \
 	test_detect_qemu \
 	test_ipc \
 	test_mp

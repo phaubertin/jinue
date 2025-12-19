@@ -31,7 +31,9 @@
 
 #include <jinue/shared/asm/mman.h>
 #include <kernel/application/asm/ticks.h>
+#include <kernel/domain/services/logging.h>
 #include <kernel/domain/services/mman.h>
+#include <kernel/domain/services/panic.h>
 #include <kernel/infrastructure/i686/drivers/lapic.h>
 #include <kernel/infrastructure/i686/cpuinfo.h>
 #include <kernel/infrastructure/i686/platform.h>
@@ -41,9 +43,31 @@
 
 static void *mmio_addr;
 
-static void set_register(int offset, uint32_t value) {
-    uint32_t *reg = (uint32_t *)((addr_t)mmio_addr + offset);
+uint32_t read_register(int offset) {
+    volatile uint32_t *reg = (volatile uint32_t *)((addr_t)mmio_addr + offset);
+    return *reg;
+}
+
+static void write_register(int offset, uint32_t value) {
+    volatile uint32_t *reg = (volatile uint32_t *)((addr_t)mmio_addr + offset);
     *reg = value;
+}
+
+static void check_version(void) {
+    const uint32_t regval = read_register(APIC_REG_VERSION);
+    const int version = regval & 0xff;
+    const int entries = ((regval >> 16) & 0xff) + 1;
+
+    info(
+        "Local APIC version %u (0x%02x) has %u LVT entries",
+        version,
+        version,
+        entries
+    );
+
+    if(version < 0x10) {
+        panic("Local APIC version 16 (0x10) or above is required.");
+    }
 }
 
 static void set_divider(int divider) {
@@ -76,7 +100,7 @@ static void set_divider(int divider) {
             value = 0xb;
     }
 
-     set_register(APIC_REG_DIVIDE_CONF, value);
+     write_register(APIC_REG_DIVIDE_CONF, value);
 }
 
 void local_apic_init(void) {
@@ -89,6 +113,28 @@ void local_apic_init(void) {
         4096,
         JINUE_PROT_READ | JINUE_PROT_WRITE
     );
+
+    check_version();
+
+    /* Setting the mask flag to unmasked/enabled in the spurious vector
+     * enables the local APIC.
+     *
+     * The local APIC does not behave in the same way when it has been disabled
+     * by software compared to when it is disabled in its reset/power-up state.
+     * Notably, if it has been disabled by software, if must be enabled before
+     * any other vector can be unmasked.
+     * 
+     * See section 12.4.7.2 of the Intel 64 and IA-32 Architectures Software
+     * Developer’s Manual Volume 3 (3A, 3B, 3C, & 3D): System Programming
+     * Guide. */
+    write_register(APIC_REG_SPURIOUS_VECT, APIC_SVR_ENABLED | IDT_APIC_SPURIOUS);
+
+    /* Set task priority class to accept all valid interrupts (priority class > 1). */
+    write_register(APIC_REG_TPR, (1 << 4));
+
+    /* Configure timer. */
+    set_divider(1);
+    write_register(APIC_REG_LVT_TIMER, APIC_LVT_TIMER_PERIODIC | IDT_APIC_TIMER);
     
     /* TODO get frequency from CPUID and/or MSRs and/or calibrate
      *
@@ -96,14 +142,12 @@ void local_apic_init(void) {
     const uint32_t clock_freq_hz = 1000000000;
     const uint32_t initial_count = (clock_freq_hz / TICKS_PER_SECOND) - 1;
 
-    /* Configure and start timer. */
-    set_divider(1);
-    set_register(APIC_REG_INITIAL_COUNT, initial_count);
+    /* Writing the initial count starts the timer. */
+    write_register(APIC_REG_INITIAL_COUNT, initial_count);
 
-    set_register(APIC_REG_LVT_TIMER, APIC_LVT_TIMER_PERIODIC | IDT_APIC_TIMER);
-    set_register(APIC_REG_SPURIOUS_VECT, APIC_SVR_ENABLED | IDT_APIC_SPURIOUS);
+    /* TODO should we write to ESR to clear any pending error? */
 }
 
 void local_apic_eoi(void) {
-    set_register(APIC_REG_EOI, 0);
+    write_register(APIC_REG_EOI, 0);
 }
