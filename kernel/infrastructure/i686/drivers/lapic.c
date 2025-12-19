@@ -41,18 +41,44 @@
 #include <kernel/types.h>
 #include <stdbool.h>
 
+/** pointer to start of local APIC memory-mapped register region */
 static void *mmio_addr;
 
-uint32_t read_register(int offset) {
-    volatile uint32_t *reg = (volatile uint32_t *)((addr_t)mmio_addr + offset);
-    return *reg;
+/**
+ * Get pointer to a memory-mapped 32-bit local APIC register
+ * 
+ * @param offset register offset
+ * @return pointer to register
+ */
+static inline volatile uint32_t *apic_register(int offset) {
+    return (volatile uint32_t *)((addr_t)mmio_addr + offset);
 }
 
+/**
+ * Read a 32-bit value from a local APIC register
+ * 
+ * @param offset register offset
+ * @return value read from register
+ */
+static uint32_t read_register(int offset) {
+    return *apic_register(offset);
+}
+
+/**
+ * Write a 32-bit value to a local APIC register
+ * 
+ * @param offset register offset
+ * @param value value to write
+ */
 static void write_register(int offset, uint32_t value) {
-    volatile uint32_t *reg = (volatile uint32_t *)((addr_t)mmio_addr + offset);
-    *reg = value;
+    *apic_register(offset) = value;
 }
 
+/**
+ * Check the version of the local APIC
+ * 
+ * Panic if local API version < 16 (0x10).
+ */
 static void check_version(void) {
     const uint32_t regval = read_register(APIC_REG_VERSION);
     const int version = regval & 0xff;
@@ -70,6 +96,11 @@ static void check_version(void) {
     }
 }
 
+/**
+ * Set the local APIC timer divider
+ * 
+ * @param divider divider (power of two in range 1..128)
+ */
 static void set_divider(int divider) {
     uint32_t value;
 
@@ -96,13 +127,19 @@ static void set_divider(int divider) {
             value = 0;
             break;
         case 1:
-        default:
             value = 0xb;
+            break;
+        default:
+            error("error: attempting to set local APIC timer divider to: %d", divider);
+            panic("Invalid value for local APIC timer divider");
     }
 
      write_register(APIC_REG_DIVIDE_CONF, value);
 }
 
+/**
+ * Initialize the local APIC, including the local APIC timer
+ */
 void local_apic_init(void) {
     /* TODO some APICs are controlled through MSRs instead of MMIO? */
     /* TODO ensure cacheability attributes are appropriate (MTRRs?) */
@@ -148,6 +185,9 @@ void local_apic_init(void) {
     /* TODO should we write to ESR to clear any pending error? */
 }
 
+/**
+ * Signal interrupt servicing completion to local APIC
+ */
 void local_apic_eoi(void) {
     write_register(APIC_REG_EOI, 0);
 }
