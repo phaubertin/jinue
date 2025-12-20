@@ -152,6 +152,24 @@ static void set_divider(int divider) {
 }
 
 /**
+ * Initialize the local APIC timer
+ */
+void init_timer(void) {
+    set_divider(1);
+
+    write_register(APIC_REG_LVT_TIMER, APIC_LVT_TIMER_PERIODIC | IDT_APIC_TIMER);
+    
+    /* TODO get frequency from CPUID and/or MSRs and/or calibrate
+     *
+     * This is QEMU's hardcoded frequency */
+    const uint32_t clock_freq_hz = 1000000000;
+    const uint32_t initial_count = (clock_freq_hz / TICKS_PER_SECOND) - 1;
+
+    /* Writing the initial count starts the timer. */
+    write_register(APIC_REG_INITIAL_COUNT, initial_count);
+}
+
+/**
  * Initialize the local APIC, including the local APIC timer
  */
 void local_apic_init(void) {
@@ -175,18 +193,7 @@ void local_apic_init(void) {
     /* Set task priority class to accept all valid interrupts (priority class > 1). */
     write_register(APIC_REG_TPR, (1 << 4));
 
-    /* Configure timer. */
-    set_divider(1);
-    write_register(APIC_REG_LVT_TIMER, APIC_LVT_TIMER_PERIODIC | IDT_APIC_TIMER);
-    
-    /* TODO get frequency from CPUID and/or MSRs and/or calibrate
-     *
-     * This is QEMU's hardcoded frequency */
-    const uint32_t clock_freq_hz = 1000000000;
-    const uint32_t initial_count = (clock_freq_hz / TICKS_PER_SECOND) - 1;
-
-    /* Writing the initial count starts the timer. */
-    write_register(APIC_REG_INITIAL_COUNT, initial_count);
+    init_timer();
 
     /* TODO should we write to ESR to clear any pending error? */
 }
