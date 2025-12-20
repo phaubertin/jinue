@@ -177,25 +177,30 @@ void local_apic_init(void) {
 
     check_version();
 
-    /* Setting the mask flag to unmasked/enabled in the spurious vector
-     * enables the local APIC.
+    /* Setting the mask flag to unmasked/enabled in the spurious vector enables
+     * the local APIC. Here, we toggle this flag to reset the local APIC to a
+     * known state (i.e. all LVTs masked), and then enable it.
      *
      * The local APIC does not behave in the same way when it has been disabled
      * by software compared to when it is disabled in its reset/power-up state.
-     * Notably, if it has been disabled by software, if must be enabled before
-     * any other vector can be unmasked.
+     * Notably, if it has been disabled by software, as we do here by toggling
+     * the flag, it must be enabled before any other vector can be unmasked.
      * 
      * See section 12.4.7.2 of the Intel 64 and IA-32 Architectures Software
      * Developer’s Manual Volume 3 (3A, 3B, 3C, & 3D): System Programming
      * Guide. */
+    write_register(APIC_REG_SPURIOUS_VECT, APIC_SVR_ENABLED);
+    write_register(APIC_REG_SPURIOUS_VECT, 0);
+
     write_register(APIC_REG_SPURIOUS_VECT, APIC_SVR_ENABLED | IDT_APIC_SPURIOUS);
 
     /* Set task priority class to accept all valid interrupts (priority class > 1). */
     write_register(APIC_REG_TPR, (1 << 4));
 
-    init_timer();
+    /* Clear pending APIC errors, if any. */
+    write_register(APIC_REG_ERROR_STATUS, 0);
 
-    /* TODO should we write to ESR to clear any pending error? */
+    init_timer();
 }
 
 /**
