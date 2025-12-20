@@ -29,6 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <kernel/infrastructure/i686/drivers/lapic.h>
 #include <kernel/infrastructure/i686/firmware/acpi.h>
 #include <kernel/infrastructure/i686/firmware/mp.h>
 #include <kernel/infrastructure/i686/platform.h>
@@ -60,5 +61,5 @@ paddr_t platform_get_local_apic_address(void) {
         return addr;
     }
 
-    return 0xfee00000;
+    return APIC_INIT_ADDR;
 }
