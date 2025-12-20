@@ -90,8 +90,12 @@
  * page cannot be read.
  *
  * This flag is only used for page table entries. Some code assumes this bit is
- * not set in page directory entries. See pte_is_present(). */
-#define X86_PTE_PROT_NONE           (1<<11)
+ * not set in page directory entries. See pte_is_present().
+ * 
+ * This used to be assigned to bit 11 but that bit is used for HLAT paging. Even
+ * though this is not something we support for now, it's best to use a bit that
+ * is never used in any context, given one is available. */
+#define X86_PTE_PROT_NONE           (1<<10)
 
 /** do not execute bit */
 #define X86_PTE_NX                  (UINT64_C(1)<< 63)
