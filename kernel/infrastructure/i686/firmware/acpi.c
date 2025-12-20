@@ -200,9 +200,15 @@ paddr_t acpi_get_local_apic_address(void) {
         return UNKNOWN_LOCAL_APIC_ADDR;
     }
 
-    /* TODO use 64-bit value in Local APIC Address Override Structure if present
-     * 
-     * See section 5.2.12.8 of the ACPI specification. */
+    const madt_entry_header_t *entry = get_acpi_madt_first_by_type(
+        acpi_tables.madt,
+        ACPI_MADT_ENTRY_LOCAL_APIC_ADDR_OVERRIDE
+    );
+
+    if(entry != NULL) {
+        const acpi_madt_lapic_addr_t *override = (const acpi_madt_lapic_addr_t*)entry;
+        return override->lapic_addr;
+    }
 
     return acpi_tables.madt->local_intr_controller_addr;
 }
