@@ -36,6 +36,8 @@
 
 void machine_add_shared_to_address_map(uint64_t addr, uint64_t size);
 
+void machine_add_reserved_to_address_map(uint64_t addr, uint64_t size);
+
 int machine_get_address_map(const jinue_buffer_t *buffer);
 
 #endif

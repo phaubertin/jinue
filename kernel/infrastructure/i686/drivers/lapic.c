@@ -38,6 +38,7 @@
 #include <kernel/infrastructure/i686/cpuinfo.h>
 #include <kernel/infrastructure/i686/platform.h>
 #include <kernel/interface/i686/asm/idt.h>
+#include <kernel/machine/memory.h>
 #include <kernel/types.h>
 #include <stdbool.h>
 
@@ -72,6 +73,19 @@ static uint32_t read_register(int offset) {
  */
 static void write_register(int offset, uint32_t value) {
     *apic_register(offset) = value;
+}
+
+/**
+ * Map the local APIC registers in virtual memory.
+ */
+static void map_registers(void) {
+    paddr_t paddr = platform_get_local_apic_address();
+
+    mmio_addr = map_in_kernel(paddr, APIC_REGS_SIZE, JINUE_PROT_READ | JINUE_PROT_WRITE);
+
+    machine_add_reserved_to_address_map(paddr, APIC_REGS_SIZE);
+
+    /* TODO ensure cacheability attributes are appropriate (MTRRs?) */
 }
 
 /**
@@ -141,14 +155,7 @@ static void set_divider(int divider) {
  * Initialize the local APIC, including the local APIC timer
  */
 void local_apic_init(void) {
-    /* TODO ensure cacheability attributes are appropriate (MTRRs?) */
-    /* TODO make extra sure this address range is reserved */
-
-    mmio_addr = map_in_kernel(
-        platform_get_local_apic_address(),
-        4096,
-        JINUE_PROT_READ | JINUE_PROT_WRITE
-    );
+    map_registers();
 
     check_version();
 
