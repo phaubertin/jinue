@@ -37,8 +37,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define ACPI_UNKNOWN_LOCAL_APIC_ADDR 0
-
 void find_acpi_rsdp(const addr_t first1mb);
 
 void init_acpi(void);

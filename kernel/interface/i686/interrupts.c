@@ -64,11 +64,7 @@ static void handle_pic8259_interrupt(unsigned int irq) {
      * meantime. */
     pic8259_mask(irq);
 
-    /* We ignore the timer interrupt from the 8253 Programmable Interval Timer
-     * (PIT) since we instead handle the APIC timer interrupt. */
-    if(irq != IRQ_TIMER) {
-        hardware_interrupt(irq);
-    }
+    hardware_interrupt(irq);
     
     pic8259_eoi(irq);
 }

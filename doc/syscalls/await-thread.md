@@ -48,7 +48,7 @@ returns -1 and an error number is set (in `arg1`).
 
 * JINUE_EBADF if the thread descriptor is invalid, or does not refer to a
 thread, or is closed.
-* JINUE_ESRCH if the thread has not been started or has already beed awaited.
+* JINUE_ESRCH if the thread has not been started or has already been awaited.
 * JINUE_EDEADLK if a thread attempts to await itself.
 * JINUE_EPERM if the specified thread descriptor does not have the permission
 to await the thread.

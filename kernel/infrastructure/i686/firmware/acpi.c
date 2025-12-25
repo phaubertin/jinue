@@ -193,20 +193,20 @@ bool acpi_is_vga_present(void) {
 /**
  * Determine the physical address of each CPU's local APIC
  * 
- * @return address of local APIC, PLATFORM_UNKNOWN_LOCAL_APIC_ADDR if unknown
+ * @return address of local APIC, UNKNOWN_LOCAL_APIC_ADDR if unknown
  */
 paddr_t acpi_get_local_apic_address(void) {
     if(acpi_tables.madt == NULL) {
         return UNKNOWN_LOCAL_APIC_ADDR;
     }
 
-    const madt_entry_header_t *entry = get_acpi_madt_first_by_type(
-        acpi_tables.madt,
-        ACPI_MADT_ENTRY_LOCAL_APIC_ADDR_OVERRIDE
-    );
+    const acpi_madt_lapic_addr_t *override =
+        (const acpi_madt_lapic_addr_t*)get_acpi_madt_first_by_type(
+            acpi_tables.madt,
+            ACPI_MADT_ENTRY_LOCAL_APIC_ADDR_OVERRIDE
+        );
 
-    if(entry != NULL) {
-        const acpi_madt_lapic_addr_t *override = (const acpi_madt_lapic_addr_t*)entry;
+    if(override != NULL && override->lapic_addr != 0) {
         return override->lapic_addr;
     }
 

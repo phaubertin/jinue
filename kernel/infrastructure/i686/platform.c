@@ -46,7 +46,7 @@ bool platform_is_vga_present(void) {
 /**
  * Determine the physical address of each CPU's local APIC
  * 
- * @return address of local APIC, PLATFORM_UNKNOWN_LOCAL_APIC_ADDR if unknown
+ * @return address of local APIC, UNKNOWN_LOCAL_APIC_ADDR if unknown
  */
 paddr_t platform_get_local_apic_address(void) {
     paddr_t addr = acpi_get_local_apic_address();
