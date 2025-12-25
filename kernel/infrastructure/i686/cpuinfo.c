@@ -561,7 +561,7 @@ static void identify_maxphyaddr(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs
  */
 static void dump_features(const cpuinfo_t *cpuinfo) {
     info(
-        "  Features: %s%s%s%s%s",
+        "  Features:%s%s%s%s%s",
         (cpuinfo->features & CPUINFO_FEATURE_PAE) ? " pae" : "",
         (cpuinfo->features & CPUINFO_FEATURE_PGE) ? " pge" : "",
         (cpuinfo->features & CPUINFO_FEATURE_PSE) ? " pse" : "",
