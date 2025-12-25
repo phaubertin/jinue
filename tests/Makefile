@@ -37,12 +37,14 @@ run_log             = run-test.log
 deps                = $(kernel_img) $(testapp_initrd)
 
 tests = \
+	test_486_too_old \
 	test_acpi \
 	test_boot_nopae \
 	test_boot_pae \
+	test_boot_pentium \
 	test_detect_qemu \
-	test_mp \
-	test_ipc
+	test_ipc \
+	test_mp
 
 logs := $(foreach t,$(tests),$(t).log)
 

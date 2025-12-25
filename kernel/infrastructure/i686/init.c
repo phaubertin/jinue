@@ -37,6 +37,7 @@
 #include <kernel/domain/services/mman.h>
 #include <kernel/domain/services/panic.h>
 #include <kernel/infrastructure/i686/asm/msr.h>
+#include <kernel/infrastructure/i686/drivers/lapic.h>
 #include <kernel/infrastructure/i686/drivers/pic8259.h>
 #include <kernel/infrastructure/i686/drivers/pit8253.h>
 #include <kernel/infrastructure/i686/drivers/uart16550a.h>
@@ -344,15 +345,17 @@ void machine_init(const config_t *config) {
         pae_create_pdpt_cache();
     }
 
-    /* Initialize programmable interrupt_controller. */
-    pic8259_init();
-
-    /* Initialize programmable interval timer and enable timer interrupt.
+    /* Initialize programmable interrupt_controller.
      *
      * Interrupts are disabled during initialization so the CPU won't actually
      * be interrupted until the first user space thread starts. */
+    pic8259_init();
+
+    /* Initialize programmable interval timer and enable timer interrupt. */
     pit8253_init();
-    pic8259_unmask(IRQ_TIMER);
+
+    /* Initialize local APIC, including local APIC timer. */
+    local_apic_init();
 
     /* choose a system call implementation */
     select_syscall_implementation();

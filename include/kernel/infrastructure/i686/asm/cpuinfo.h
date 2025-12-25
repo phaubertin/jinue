@@ -38,13 +38,11 @@
 
 #define CPUINFO_FEATURE_SYSCALL     (1<<1)
 
-#define CPUINFO_FEATURE_LOCAL_APIC  (1<<2)
+#define CPUINFO_FEATURE_PAE         (1<<2)
 
-#define CPUINFO_FEATURE_PAE         (1<<3)
+#define CPUINFO_FEATURE_PGE         (1<<3)
 
-#define CPUINFO_FEATURE_PGE         (1<<4)
-
-#define CPUINFO_FEATURE_PSE         (1<<5)
+#define CPUINFO_FEATURE_PSE         (1<<4)
 
 /* vendors */
 

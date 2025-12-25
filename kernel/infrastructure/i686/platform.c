@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,21 +29,37 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INTERFACE_I686_ASM_IDT_H
-#define JINUE_KERNEL_INTERFACE_I686_ASM_IDT_H
-
-#define IDT_VECTOR_COUNT        256
-
-#define IDT_LAST_EXCEPTION      31
-
-#define IDT_PIC8259_BASE     	(IDT_LAST_EXCEPTION + 1)
-
-#define IDT_APIC_TIMER          0xfe
+#include <kernel/infrastructure/i686/drivers/lapic.h>
+#include <kernel/infrastructure/i686/firmware/acpi.h>
+#include <kernel/infrastructure/i686/firmware/mp.h>
+#include <kernel/infrastructure/i686/platform.h>
 
 /**
- * spurious interrupt vector for local APIC
- * Bits 3..0 must be 1 for compatibility with Pentium and P6 processors.
-*/
-#define IDT_APIC_SPURIOUS       0xff
+ * Detect presence of VGA
+ * 
+ * @return true if present, false otherwise
+ */
+bool platform_is_vga_present(void) {
+    return acpi_is_vga_present();
+}
 
-#endif
+/**
+ * Determine the physical address of each CPU's local APIC
+ * 
+ * @return address of local APIC, UNKNOWN_LOCAL_APIC_ADDR if unknown
+ */
+paddr_t platform_get_local_apic_address(void) {
+    paddr_t addr = acpi_get_local_apic_address();
+
+    if(addr != UNKNOWN_LOCAL_APIC_ADDR) {
+        return addr;
+    }
+
+    addr = mp_get_local_apic_addr();
+
+    if(addr != UNKNOWN_LOCAL_APIC_ADDR) {
+        return addr;
+    }
+
+    return APIC_INIT_ADDR;
+}

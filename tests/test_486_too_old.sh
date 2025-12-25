@@ -32,7 +32,5 @@ CPU=486
 
 run
 
-check_kernel_start
-
 echo "* Check CPU was detected as too old"
-grep -F "Pentium CPU or later is required" $LOG || fail
+grep -E "KERNEL PANIC:.*Pentium CPU or later.*is required" $LOG || fail

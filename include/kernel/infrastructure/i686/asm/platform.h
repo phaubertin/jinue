@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,21 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INTERFACE_I686_ASM_IDT_H
-#define JINUE_KERNEL_INTERFACE_I686_ASM_IDT_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_PLATFORM_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_PLATFORM_H
 
-#define IDT_VECTOR_COUNT        256
-
-#define IDT_LAST_EXCEPTION      31
-
-#define IDT_PIC8259_BASE     	(IDT_LAST_EXCEPTION + 1)
-
-#define IDT_APIC_TIMER          0xfe
-
-/**
- * spurious interrupt vector for local APIC
- * Bits 3..0 must be 1 for compatibility with Pentium and P6 processors.
-*/
-#define IDT_APIC_SPURIOUS       0xff
+#define UNKNOWN_LOCAL_APIC_ADDR 0
 
 #endif

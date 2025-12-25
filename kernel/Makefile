@@ -101,6 +101,7 @@ sources.kernel.c = \
 	domain/services/scheduler.c \
 	domain/config.c \
 	infrastructure/acpi/acpi.c \
+	infrastructure/i686/drivers/lapic.c \
 	infrastructure/i686/drivers/pic8259.c \
 	infrastructure/i686/drivers/pit8253.c \
 	infrastructure/i686/drivers/uart16550a.c \
@@ -121,6 +122,7 @@ sources.kernel.c = \
 	infrastructure/i686/halt.c \
 	infrastructure/i686/init.c \
 	infrastructure/i686/percpu.c \
+	infrastructure/i686/platform.c \
 	infrastructure/i686/process.c \
 	infrastructure/i686/thread.c \
 	infrastructure/elf.c \

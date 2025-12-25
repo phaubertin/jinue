@@ -41,6 +41,9 @@ check_no_panic
 
 check_no_error
 
+echo "* Check CPU vendor, family and model for Core 2 Duo"
+grep -F "Vendor: Intel family: 6 model: 15 stepping:" $LOG || fail
+
 echo "* Check PAE was enabled"
 grep -F "Physical Address Extension (PAE) and No eXecute (NX) protection are enabled" $LOG || fail
 

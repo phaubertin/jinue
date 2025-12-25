@@ -47,4 +47,12 @@ void map_acpi_tables(paddr_t rsdp_paddr, const acpi_table_def_t *table_defs);
 
 void report_acpi_tables(const acpi_table_def_t *table_defs);
 
+const madt_entry_header_t *get_acpi_madt_first(const acpi_madt_t *madt);
+
+const madt_entry_header_t *get_acpi_madt_next(
+    const acpi_madt_t           *madt,
+    const madt_entry_header_t   *current);
+
+const madt_entry_header_t *get_acpi_madt_first_by_type(const acpi_madt_t *madt, int type);
+
 #endif

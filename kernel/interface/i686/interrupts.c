@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2019-2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -32,6 +32,7 @@
 #include <kernel/application/interrupts.h>
 #include <kernel/domain/services/logging.h>
 #include <kernel/domain/services/panic.h>
+#include <kernel/infrastructure/i686/drivers/lapic.h>
 #include <kernel/infrastructure/i686/drivers/pic8259.h>
 #include <kernel/infrastructure/i686/isa/regs.h>
 #include <kernel/interface/i686/asm/exceptions.h>
@@ -51,25 +52,20 @@ static void handle_exception(unsigned int ivt, uintptr_t eip, uint32_t errcode) 
     panic("caught exception");
 }
 
-static void handle_hardware_interrupt(unsigned int ivt) {
-    int irq = ivt - IDT_PIC8259_BASE;
-
+static void handle_pic8259_interrupt(unsigned int irq) {
     if(pic8259_is_spurious(irq)) {
         spurious_interrupt();
         return;
     }
 
-    /* For all hardware interrupts except the timer, we mask the interrupt and
-     * let the driver handling it unmask it when it's done. This prevents us
-     * from being repeatedly interrupted by level-triggered interrupts in the
-     * meantime. We never mask the timer interrupt. */
-    if(irq == IRQ_TIMER) {
-        tick_interrupt();
-    } else {
-        pic8259_mask(irq);
-    }
+    /* For all hardware interrupts, we mask the interrupt and let the driver
+     * handling it unmask it when it's done. This prevents the kernel from
+     * being interrupted repeatedly by level-triggered interrupts in the
+     * meantime. */
+    pic8259_mask(irq);
 
     hardware_interrupt(irq);
+    
     pic8259_eoi(irq);
 }
 
@@ -82,8 +78,13 @@ void handle_interrupt(trapframe_t *trapframe) {
 
     if(ivt <= IDT_LAST_EXCEPTION) {
         handle_exception(ivt, trapframe->eip, trapframe->errcode);
+    } else if(ivt == IDT_APIC_TIMER) {
+        tick_interrupt();
+        local_apic_eoi();
+    } else if(ivt == IDT_APIC_SPURIOUS) {
+        spurious_interrupt();
     } else if(ivt >= IDT_PIC8259_BASE && ivt < IDT_PIC8259_BASE + PIC8259_IRQ_COUNT) {
-        handle_hardware_interrupt(ivt);
+        handle_pic8259_interrupt(ivt - IDT_PIC8259_BASE);
     } else {
         handle_unexpected_interrupt(ivt);
     }

@@ -234,7 +234,7 @@ static void page_align_unavailable_range(memory_range_t *range) {
  *
  * @param entry address map entry align
  */
-static void page_aligned_unavailable_entry(jinue_addr_map_entry_t *entry) {
+static void page_align_unavailable_entry(jinue_addr_map_entry_t *entry) {
     memory_range_t range;
 
     range.start = entry->addr;
@@ -422,12 +422,14 @@ static void add_kernel_entry(const jinue_addr_map_entry_t *entry) {
 }
 
 /**
- * Deduplicate and merge a shared address map entry being added
+ * Deduplicate and merge an unavailable address map entry being added
  * 
- * Given a new shared entry to be added, this function:
+ * Given a new unavailable (i.e. shared or reserved) entry to be added, this
+ * function:
  * 
- * 1) Attempts to find an existing shared entry that intersects the new one
- *    and, if one is found, extend it to include the range of the new entry.
+ * 1) Attempts to find an existing entry of the same type that intersects the
+ *    new one and, if one is found, extend it to include the range of the new
+ *    entry.
  * 2) Determine whether the new entry should be a added or not to the address
  *    map. It isn't added if it is redundant with an existing entry.
  * 
@@ -441,7 +443,7 @@ static void add_kernel_entry(const jinue_addr_map_entry_t *entry) {
  * @param new_entry the new entry being considered
  * @return true if the entry should be added, false if is shouldn't
  */
-static bool deduplicate_shared_entry(const jinue_addr_map_entry_t *new_entry) {
+static bool deduplicate_unavailable_entry(const jinue_addr_map_entry_t *new_entry) {
     memory_range_t new_range;
 
     new_range.start = new_entry->addr;
@@ -450,7 +452,7 @@ static bool deduplicate_shared_entry(const jinue_addr_map_entry_t *new_entry) {
     for(int idx = 0; idx < kernel_addrmap.num_entries; ++idx) {
         jinue_addr_map_entry_t *existing = &kernel_addrmap.map[idx];
 
-        if(existing->type != JINUE_MEMYPE_KERNEL_SHARED) {
+        if(existing->type != new_entry->type) {
             continue;
         }
 
@@ -497,9 +499,35 @@ void machine_add_shared_to_address_map(uint64_t addr, uint64_t size) {
     entry.type = JINUE_MEMYPE_KERNEL_SHARED;
     entry.addr = addr;
     entry.size = size;
-    page_aligned_unavailable_entry(&entry);
+    page_align_unavailable_entry(&entry);
 
-    if(!deduplicate_shared_entry(&entry)) {
+    if(!deduplicate_unavailable_entry(&entry)) {
+        return;
+    }
+
+    add_kernel_entry(&entry);
+}
+
+/**
+ * Add a reserved memory range to the address map.
+ * 
+ * Memory in reserved ranges cannot be mapped at all by user space.
+ * 
+ * This function takes care of page-aligning the range and deduplicating
+ * entries.
+ * 
+ * @param addr start address of the range
+ * @param size size of the range in bytes
+ */
+void machine_add_reserved_to_address_map(uint64_t addr, uint64_t size) {
+    jinue_addr_map_entry_t entry;
+
+    entry.type = JINUE_MEMYPE_KERNEL_RESERVED;
+    entry.addr = addr;
+    entry.size = size;
+    page_align_unavailable_entry(&entry);
+
+    if(!deduplicate_unavailable_entry(&entry)) {
         return;
     }
 

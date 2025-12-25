@@ -312,3 +312,73 @@ void report_acpi_tables(const acpi_table_def_t *table_defs) {
         }
     }
 }
+
+/**
+ * Get the first structure/entry from the MADT
+ * 
+ * @param madt pointer to the MADT (can be NULL)
+ * @return pointer to the first structure if any, NULL otherwise
+ */
+const madt_entry_header_t *get_acpi_madt_first(const acpi_madt_t *madt) {
+    if(madt == NULL) {
+        return NULL;
+    }
+
+    const size_t base_offset = (const char *)&madt->entries - (const char *)madt;
+
+    if(base_offset + sizeof(madt_entry_header_t) > madt->header.length) {
+        return NULL;
+    }
+
+    const madt_entry_header_t *entry = (const madt_entry_header_t *)&madt->entries;
+
+    if(base_offset + entry->length > madt->header.length) {
+        return NULL;
+    }
+
+    return entry;
+}
+
+/**
+ * Get the next structure/entry from the MADT
+ * 
+ * @param madt pointer to the MADT (must not be NULL)
+ * @param current pointer to the current structure
+ * @return pointer to the next structure if any, NULL otherwise
+ */
+const madt_entry_header_t *get_acpi_madt_next(
+    const acpi_madt_t           *madt,
+    const madt_entry_header_t   *current) {
+
+    const char *base            = (const char *)current + current->length;
+    const size_t base_offset    = base - (const char *)madt;
+
+    if(base_offset + sizeof(madt_entry_header_t) > madt->header.length) {
+        return NULL;
+    }
+
+    const madt_entry_header_t *next = (const madt_entry_header_t *)base;
+
+    if(base_offset + next->length > madt->header.length) {
+        return NULL;
+    }
+
+    return next;
+}
+
+/**
+ * Get the first structure/entry with given type from the MADT
+ * 
+ * @param madt pointer to the MADT (can be NULL)
+ * @param type structure type
+ * @return pointer to first structure with given type if any, NULL otherwise
+ */
+const madt_entry_header_t *get_acpi_madt_first_by_type(const acpi_madt_t *madt, int type) {
+    const madt_entry_header_t *entry = get_acpi_madt_first(madt);
+
+    while(entry != NULL && entry->type != type) {
+        entry = get_acpi_madt_next(madt, entry);
+    }
+
+    return entry;
+}
