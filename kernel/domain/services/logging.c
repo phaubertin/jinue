@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Philippe Aubertin.
+ * Copyright (C) 2022-2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -36,14 +36,32 @@
 #include <kernel/types.h>
 #include <stdio.h>
 
+/** log consumers */
 static list_t loggers = LIST_INITIALIZER;
 
 static spinlock_t logging_spinlock = SPINLOCK_INITIALIZER;
 
+/**
+ * Register a log consumer
+ * 
+ * This function does not take any lock. It is assumed to be called only by the
+ * BSP during boot-time initialization.
+ * 
+ * @param logger log consumer
+ */
 void register_logger(logger_t *logger) {
     list_enqueue(&loggers, &logger->loggers);
 }
 
+/**
+ * Log a message
+ * 
+ * This is the common code for error(), warning() and info().
+ * 
+ * @param loglevel log message level/priority
+ * @param format printf-style format string for the message
+ * @param args format string arguments
+ */
 static void log_message(int loglevel, const char *restrict format, va_list args) {
     spin_lock(&logging_spinlock);
 
@@ -59,6 +77,13 @@ static void log_message(int loglevel, const char *restrict format, va_list args)
     spin_unlock(&logging_spinlock);
 }
 
+/**
+ * Log a preformatted message
+ * 
+ * @param loglevel log message level/priority
+ * @param message message string, does not have to be NUL terminated
+ * @param n message length
+ */
 void logging_add_message(int loglevel, const char *message, size_t n) {
     list_cursor_t cur = list_head(&loggers);
 
@@ -75,6 +100,12 @@ void logging_add_message(int loglevel, const char *message, size_t n) {
     }
 }
 
+/**
+ * Log a general information message
+ * 
+ * @param format printf-style format string for the message
+ * @param ... format string arguments
+ */
 void info(const char *restrict format, ...) {
     va_list args;
 
@@ -85,7 +116,13 @@ void info(const char *restrict format, ...) {
     va_end(args);
 }
 
-void warning(const char *restrict format, ...) {
+/**
+ * Log a warning message
+ * 
+ * @param format printf-style format string for the message
+ * @param ... format string arguments
+ */
+void warn(const char *restrict format, ...) {
     va_list args;
 
     va_start(args, format);
@@ -95,6 +132,12 @@ void warning(const char *restrict format, ...) {
     va_end(args);
 }
 
+/**
+ * Log an error message
+ * 
+ * @param format printf-style format string for the message
+ * @param ... format string arguments
+ */
 void error(const char *restrict format, ...) {
     va_list args;
 
