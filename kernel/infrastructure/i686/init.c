@@ -77,7 +77,7 @@ static void check_pae(const bootinfo_t *bootinfo, const config_t *config) {
     if(bootinfo->use_pae) {
         info("Physical Address Extension (PAE) and No eXecute (NX) protection are enabled.");
     } else if(config->machine.pae != CONFIG_PAE_REQUIRE) {
-        warning("warning: Physical Address Extension (PAE) unsupported. NX protection disabled.");
+        warn(WARNING "Physical Address Extension (PAE) unsupported. NX protection disabled.");
     } else {
         panic("Option pae=require passed on kernel command line but PAE is not supported.");
     }

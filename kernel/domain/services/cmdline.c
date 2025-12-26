@@ -829,28 +829,28 @@ void cmdline_report_errors(void) {
         return;
     }
 
-    warning("warning: there are issues with the kernel command line:");
+    warn(WARNING "there are issues with the kernel command line:");
 
     if(cmdline_errors & CMDLINE_ERROR_TOO_LONG) {
-        warning("  Kernel command line is too long");
+        warn("  Kernel command line is too long");
     }
 
     if(cmdline_errors & CMDLINE_ERROR_IS_NULL) {
-        warning("  No kernel command line/command line is NULL");
+        warn("  No kernel command line/command line is NULL");
     }
 
     if(cmdline_errors & CMDLINE_ERROR_INVALID_ON_PANIC) {
-         warning("  Invalid value for argument 'on_panic'");
+         warn("  Invalid value for argument 'on_panic'");
     }
 
     machine_cmdline_report_errors();
 
     if(cmdline_errors & CMDLINE_ERROR_JUNK_AFTER_ENDQUOTE) {
-        warning("  Invalid character after closing quote, separator (e.g. space) expected");
+        warn("  Invalid character after closing quote, separator (e.g. space) expected");
     }
 
     if(cmdline_errors & CMDLINE_ERROR_UNCLOSED_QUOTES) {
-        warning("  Unclosed quotes at end of input. Is closing quote missing?");
+        warn("  Unclosed quotes at end of input. Is closing quote missing?");
     }
 
     panic("Invalid kernel command line");

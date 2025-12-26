@@ -180,26 +180,26 @@ void machine_cmdline_process_option(
 
 void machine_cmdline_report_errors(void) {
     if(cmdline_errors & CMDLINE_ERROR_INVALID_PAE) {
-        warning("  Invalid value for argument 'pae'");
+        warn("  Invalid value for argument 'pae'");
     }
 
     if(cmdline_errors & CMDLINE_ERROR_INVALID_SERIAL_ENABLE) {
-        warning("  Invalid value for argument 'serial_enable'");
+        warn("  Invalid value for argument 'serial_enable'");
     }
 
     if(cmdline_errors & CMDLINE_ERROR_INVALID_SERIAL_BAUD_RATE) {
-        warning("  Invalid value for argument 'serial_baud_rate'");
+        warn("  Invalid value for argument 'serial_baud_rate'");
     }
 
     if(cmdline_errors & CMDLINE_ERROR_INVALID_SERIAL_IOPORT) {
-        warning("  Invalid value for argument 'serial_ioport'");
+        warn("  Invalid value for argument 'serial_ioport'");
     }
 
     if(cmdline_errors & CMDLINE_ERROR_INVALID_SERIAL_DEV) {
-        warning("  Invalid value for argument 'serial_dev'");
+        warn("  Invalid value for argument 'serial_dev'");
     }
 
     if(cmdline_errors & CMDLINE_ERROR_INVALID_VGA_ENABLE) {
-        warning("  Invalid value for argument 'vga_enable'");
+        warn("  Invalid value for argument 'vga_enable'");
     }
 }

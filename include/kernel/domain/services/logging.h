@@ -34,13 +34,17 @@
 
 #include <kernel/types.h>
 
+#define ERROR "error: "
+
+#define WARNING "warning: "
+
 void register_logger(logger_t *logger);
 
 void logging_add_message(int loglevel, const char *message, size_t n);
 
 void info(const char *restrict format, ...);
 
-void warning(const char *restrict format, ...);
+void warn(const char *restrict format, ...);
 
 void error(const char *restrict format, ...);
 

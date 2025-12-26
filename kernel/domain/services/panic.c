@@ -50,14 +50,14 @@ void panic(const char *message) {
     case 2:
         /* The first two times panic() is entered, a panic message is displayed
          * along with a full call stack dump. */
-        error("error: KERNEL PANIC%s: %s", (enter_count == 1) ? "" : " (recursive)", message);
+        error(ERROR "KERNEL PANIC%s: %s", (enter_count == 1) ? "" : " (recursive)", message);
         machine_dump_call_stack();
         break;
     case 3:
         /* The third time, a "recursive count exceeded" message is displayed. We
          * try to limit the number of actions we take to limit the chances of a
          * further panic. */
-        error("error: KERNEL PANIC (recursive count exceeded)");
+        error(ERROR "KERNEL PANIC (recursive count exceeded)");
         break;
     default:
         /* The fourth time, we do nothing but halt the CPU. */

@@ -288,14 +288,14 @@ void *slab_cache_alloc_locked(slab_cache_t *cache) {
         for(idx = 0; idx < cache->obj_size / sizeof(uint32_t); ++idx) {
             if(buffer[idx] != SLAB_POISON_DEAD_VALUE) {
                 if(dump_lines == 0) {
-                    warning("warning: detected write to freed object, cache: %s buffer: %#p:",
+                    warn(WARNING "detected write to freed object, cache: %s buffer: %#p:",
                         cache->name,
                         buffer
                     );
                 }
                 
                 if(dump_lines < 4) {
-                    warning("  value %#x at byte offset %u", buffer[idx], idx * sizeof(uint32_t));
+                    warn("  value %#x at byte offset %u", buffer[idx], idx * sizeof(uint32_t));
                 }
                 
                 ++dump_lines;
@@ -308,7 +308,7 @@ void *slab_cache_alloc_locked(slab_cache_t *cache) {
          * redzone checking even on freed objects. */
         if(cache->flags & SLAB_RED_ZONE) {
             if(buffer[idx] != SLAB_RED_ZONE_VALUE) {
-                warning("warning: detected write past the end of freed object, cache: %s buffer: %#p value: %#" PRIx32,
+                warn(WARNING "detected write past the end of freed object, cache: %s buffer: %#p value: %#" PRIx32,
                     cache->name,
                     buffer,
                     buffer[idx]
@@ -396,7 +396,7 @@ void slab_cache_free(void *buffer) {
         uint32_t *rz_word = (uint32_t *)((char *)buffer + cache->obj_size);
         
         if(*rz_word != SLAB_RED_ZONE_VALUE) {
-            warning("warning: detected write past the end of object, cache: %s buffer: %#p value: %#" PRIx32,
+            warn(WARNING "detected write past the end of object, cache: %s buffer: %#p value: %#" PRIx32,
                 cache->name,
                 buffer,
                 *rz_word
