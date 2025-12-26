@@ -53,8 +53,6 @@
 
 #define CPUID_FEATURE_FPU               (1<<0)
 
-#define CPUID_FEATURE_PSE               (1<<3)
-
 #define CPUID_FEATURE_PAE               (1<<6)
 
 #define CPUID_FEATURE_APIC              (1<<9)

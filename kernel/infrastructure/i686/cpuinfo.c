@@ -529,11 +529,6 @@ static void enumerate_features(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs)
         return;
     }
 
-    /* large 4MB pages in 32-bit (non-PAE) paging mode */
-    if(flags & CPUID_FEATURE_PSE) {
-        cpuinfo->features |= CPUINFO_FEATURE_PSE;
-    }
-
     /* Enabling Physical Address Extension (PAE) and No-Execute (NX) bit */
     if((flags & CPUID_FEATURE_PAE) && (ext_flags & CPUID_FEATURE_NXE)) {
         cpuinfo->features |= CPUINFO_FEATURE_PAE;
@@ -561,10 +556,9 @@ static void identify_maxphyaddr(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs
  */
 static void dump_features(const cpuinfo_t *cpuinfo) {
     info(
-        "  Features:%s%s%s%s%s",
+        "  Features:%s%s%s%s",
         (cpuinfo->features & CPUINFO_FEATURE_PAE) ? " pae" : "",
         (cpuinfo->features & CPUINFO_FEATURE_PGE) ? " pge" : "",
-        (cpuinfo->features & CPUINFO_FEATURE_PSE) ? " pse" : "",
         (cpuinfo->features & CPUINFO_FEATURE_SYSCALL) ? " syscall" : "",
         (cpuinfo->features & CPUINFO_FEATURE_SYSENTER) ? " sysenter" : ""
     );
