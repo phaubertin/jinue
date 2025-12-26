@@ -829,7 +829,7 @@ void cmdline_report_errors(void) {
         return;
     }
 
-    warn("warning: there are issues with the kernel command line:");
+    warn(WARNING "there are issues with the kernel command line:");
 
     if(cmdline_errors & CMDLINE_ERROR_TOO_LONG) {
         warn("  Kernel command line is too long");

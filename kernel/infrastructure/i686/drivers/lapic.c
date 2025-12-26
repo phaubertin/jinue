@@ -144,7 +144,7 @@ static void set_divider(int divider) {
             value = 0xb;
             break;
         default:
-            error("error: attempting to set local APIC timer divider to: %d", divider);
+            error(ERROR "attempting to set local APIC timer divider to: %d", divider);
             panic("Invalid value for local APIC timer divider");
     }
 
