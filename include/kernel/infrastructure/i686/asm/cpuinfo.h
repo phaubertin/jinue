@@ -42,8 +42,6 @@
 
 #define CPUINFO_FEATURE_PGE         (1<<3)
 
-#define CPUINFO_FEATURE_PSE         (1<<4)
-
 /* vendors */
 
 #define CPUINFO_VENDOR_GENERIC      0
