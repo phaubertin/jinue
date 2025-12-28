@@ -581,29 +581,6 @@ static const char *get_vendor_string(const cpuinfo_t *cpuinfo) {
     }
 }
 
-/**
- * Log the contents of the CPU information structure
- * 
- * @param cpuinfo CPU information structure
- */
-static void dump_cpu_features(const cpuinfo_t *cpuinfo) {
-    info("CPU information:");
-
-    info(
-        "  Vendor: %s family: %u model: %u stepping: %u",
-        get_vendor_string(cpuinfo),
-        cpuinfo->family,
-        cpuinfo->model,
-        cpuinfo->stepping
-    );
-    
-    dump_features(cpuinfo);
-
-    info("  Brand string: %s", cpuinfo->brand_string);
-    info("  Data cache alignment: %u bytes", cpuinfo->dcache_alignment);
-    info("  Physical address size: %u bits", cpuinfo->maxphyaddr);
-}
-
 static const char *get_hypervisor_string(const cpuinfo_t *cpuinfo) {
     switch(cpuinfo->hypervisor) {
         case HYPERVISOR_ID_ACRN:
@@ -625,7 +602,28 @@ static const char *get_hypervisor_string(const cpuinfo_t *cpuinfo) {
     }
 }
 
-static void dump_hypervisor(const cpuinfo_t *cpuinfo) {
+/**
+ * Log the contents of the CPU information structure
+ * 
+ * @param cpuinfo CPU information structure
+ */
+static void dump_cpu_info(const cpuinfo_t *cpuinfo) {
+    info("CPU information:");
+
+    info(
+        "  Vendor: %s family: %u model: %u stepping: %u",
+        get_vendor_string(cpuinfo),
+        cpuinfo->family,
+        cpuinfo->model,
+        cpuinfo->stepping
+    );
+    
+    dump_features(cpuinfo);
+
+    info("  Brand string: %s", cpuinfo->brand_string);
+    info("  Data cache alignment: %u bytes", cpuinfo->dcache_alignment);
+    info("  Physical address size: %u bits", cpuinfo->maxphyaddr);
+
     if(cpuinfo->hypervisor == HYPERVISOR_ID_NONE) {
         info("No virtualization");
     } else {
@@ -655,15 +653,8 @@ void detect_cpu_features(void) {
     enumerate_features(&bsp_cpuinfo, &cpuid_leafs);
 
     identify_maxphyaddr(&bsp_cpuinfo, &cpuid_leafs);
-}
 
-/**
- * Report the detected features of the bootstrap processor (BSP)
- */
-void report_cpu_features(void) {
-    dump_cpu_features(&bsp_cpuinfo);
-
-    dump_hypervisor(&bsp_cpuinfo);
+    dump_cpu_info(&bsp_cpuinfo);
 }
 
 /**

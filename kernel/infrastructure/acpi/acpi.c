@@ -267,6 +267,23 @@ static void process_rsdt(const acpi_rsdt_t *rsdt, bool is_xsdt, const acpi_table
 }
 
 /**
+ * Log information regarding ACPI tables that were found
+ * 
+ * @param table_defs table definitions array terminated by a NULL signature
+ */
+static void report_tables(const acpi_table_def_t *table_defs) {
+    info("ACPI:");
+
+    for(int idx = 0; table_defs[idx].signature != NULL; ++idx) {
+        const acpi_table_def_t *def = &table_defs[idx];
+
+        if(*def->ptr != NULL) {
+            info("  Found %s table", def->name);
+        }
+    }
+}
+
+/**
  * Map the ACPI tables in the kernel's mapping area
  * 
  * @param rsdp_paddr physical memory address of the RSDP
@@ -294,23 +311,8 @@ void map_acpi_tables(paddr_t rsdp_paddr, const acpi_table_def_t *table_defs) {
     }
 
     process_rsdt(rsdt, is_xsdt, table_defs);
-}
 
-/**
- * Log information regarding ACPI tables that were found
- * 
- * @param table_defs table definitions array terminated by a NULL signature
- */
-void report_acpi_tables(const acpi_table_def_t *table_defs) {
-    info("ACPI:");
-
-    for(int idx = 0; table_defs[idx].signature != NULL; ++idx) {
-        const acpi_table_def_t *def = &table_defs[idx];
-
-        if(*def->ptr != NULL) {
-            info("  Found %s table", def->name);
-        }
-    }
+    report_tables(table_defs);
 }
 
 /**

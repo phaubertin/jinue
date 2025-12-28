@@ -295,10 +295,6 @@ void machine_init(const config_t *config) {
 
     check_pae(bootinfo, config);
 
-    report_cpu_features();
-
-    report_acpi();
-
     init_mp();
 
     check_system_address_map(bootinfo);

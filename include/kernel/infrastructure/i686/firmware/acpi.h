@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2024-2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -40,8 +40,6 @@
 void find_acpi_rsdp(const addr_t first1mb);
 
 void init_acpi(void);
-
-void report_acpi(void);
 
 uint32_t acpi_get_rsdp_paddr(void);
 

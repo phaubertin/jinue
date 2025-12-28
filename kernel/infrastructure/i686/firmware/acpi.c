@@ -154,13 +154,6 @@ void init_acpi(void) {
 }
 
 /**
- * Log information regarding ACPI
- */
-void report_acpi(void) {
-    report_acpi_tables(table_defs);
-}
-
-/**
  * Get the physical address of the ACPI RSDP
  *
  * @return physical address of RSDP if found, zero otherwise
