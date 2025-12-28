@@ -81,8 +81,8 @@ static void initialize_string(char *str, int thread_index) {
         str[2 * idx + 1]    = ' ';
     }
 
-    str[2 * thread_index]   = 'A' + thread_index;
-    str[2 * THREADS_NUM]    = '\0';
+    str[2 * thread_index]       = 'A' + thread_index;
+    str[2 * THREADS_NUM - 1]    = '\0';
 }
 
 void run_abcd_test(void) {

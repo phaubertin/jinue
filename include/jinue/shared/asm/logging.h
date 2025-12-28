@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2019-2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -32,6 +32,7 @@
 #ifndef _JINUE_SHARED_ASM_LOGGING_H
 #define _JINUE_SHARED_ASM_LOGGING_H
 
+/* TODO re name this */
 /** maximum string length for the PUTS system call */
 #define JINUE_PUTS_MAX_LENGTH           120
 

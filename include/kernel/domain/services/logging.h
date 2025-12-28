@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Philippe Aubertin.
+ * Copyright (C) 2022-2025 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -32,15 +32,12 @@
 #ifndef JINUE_KERNEL_SERVICES_LOGGING_H
 #define JINUE_KERNEL_SERVICES_LOGGING_H
 
+#include <kernel/domain/services/asm/logging.h>
 #include <kernel/types.h>
-
-#define ERROR "error: "
-
-#define WARNING "warning: "
 
 void register_logger(logger_t *logger);
 
-void logging_add_message(int loglevel, const char *message, size_t n);
+void log(int loglevel, int source, const char *restrict format, ...);
 
 void info(const char *restrict format, ...);
 
