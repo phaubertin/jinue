@@ -42,11 +42,9 @@
 
 typedef unsigned int vga_pos_t;
 
-static void vga_printn(int loglevel, const char *message, size_t n);
+static void do_log(const log_event_t *event);
 
-static logger_t logger = {
-    .log = vga_printn
-}; 
+static logger_t logger = INITIALIZE_LOGGER(do_log); 
 
 /** base address of the VGA text video buffer */
 static unsigned char *video_base_addr;
@@ -185,13 +183,13 @@ static vga_pos_t vga_raw_putc(char c, vga_pos_t pos, int colour) {
     return pos;
 }
 
-static void vga_printn(int loglevel, const char *message, size_t n) {
-    int colour = get_colour(loglevel);
+static void do_log(const log_event_t *event) {
+    int colour = get_colour(event->loglevel);
 
     unsigned short int pos  = vga_get_cursor_pos();
 
-    for(int idx = 0; idx < n && message[idx] != '\0'; ++idx) {
-        pos = vga_raw_putc(message[idx], pos, colour);
+    for(int idx = 0; idx < event->length && event->message[idx] != '\0'; ++idx) {
+        pos = vga_raw_putc(event->message[idx], pos, colour);
     }
     
     pos = vga_raw_putc('\n', pos, colour);

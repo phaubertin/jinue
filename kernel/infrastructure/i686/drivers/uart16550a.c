@@ -34,11 +34,9 @@
 #include <kernel/infrastructure/i686/drivers/uart16550a.h>
 #include <kernel/infrastructure/i686/isa/io.h>
 
-static void printn(int loglevel, const char *message, size_t n);
+static void do_log(const log_event_t *event);
 
-static logger_t logger = {
-    .log = printn
-}; 
+static logger_t logger = INITIALIZE_LOGGER(do_log); 
 
 static int base_ioport;
 
@@ -83,9 +81,9 @@ static void putc(char c) {
     outb(base_ioport + UART165550A_REG_DATA_BUFFER, c);
 }
 
-static void printn(int loglevel, const char *message, size_t n) {
-    for(int idx = 0; idx < n && message[idx] != '\0'; ++idx) {
-        putc(message[idx]);
+static void do_log(const log_event_t *event) {
+    for(int idx = 0; idx < event->length && event->message[idx] != '\0'; ++idx) {
+        putc(event->message[idx]);
     }
 
     putc('\n');
