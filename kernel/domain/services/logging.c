@@ -388,3 +388,19 @@ void error(const char *restrict format, ...) {
 
     va_end(args);
 }
+
+/**
+ * Log an emergency message from the kernel
+ * 
+ * @param format printf-style format string for the message
+ * @param ... format string arguments
+ */
+void emergency(const char *restrict format, ...) {
+    va_list args;
+
+    va_start(args, format);
+
+    log_message(JINUE_LOG_LEVEL_EMERGENCY, JINUE_LOG_SOURCE_KERNEL, format, args);
+
+    va_end(args);
+}

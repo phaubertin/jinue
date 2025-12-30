@@ -8,11 +8,20 @@ Add a character string to the kernel logs.
 
 Function number (`arg0`) is 3.
 
-The value in `arg1` identifies the log level:
+The value in `arg1` identifies the log level (aligned with
+[RFC5424](https://datatracker.ietf.org/doc/html/rfc5424#section-6.2.1),
+include [<jinue/jinue.h>](../../include/jinue/jinue.h) for constants):
 
-* The ASCII character `I` for level "information".
-* The ASCII character `W` for level "warning".
-* The ASCII character `E` for level "error".
+| Value | Constant                  | Description                              |
+|-------|---------------------------|------------------------------------------|
+| 0     | JINUE_LOG_LEVEL_EMERGENCY | Emergency: system is unusable            |
+| 1     | JINUE_LOG_LEVEL_ALERT     | Alert: action must be taken immediately  |
+| 2     | JINUE_LOG_LEVEL_CRITICAL  | Critical: critical conditions            |
+| 3     | JINUE_LOG_LEVEL_ERROR     | Error: error conditions                  |
+| 4     | JINUE_LOG_LEVEL_WARNING   | Warning: warning conditions              |
+| 5     | JINUE_LOG_LEVEL_NOTICE    | Notice: normal but significant condition |
+| 6     | JINUE_LOG_LEVEL_INFO      | Informational: informational messages    |
+| 7     | JINUE_LOG_LEVEL_DEBUG     | Debug: debug-level messages              |
 
 The pointer to the string is set in `arg2`. The length of the string, which must
 be at most 120 characters, is set in `arg3`.

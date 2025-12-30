@@ -77,14 +77,19 @@ static void vga_set_cursor_pos(vga_pos_t pos) {
     outb(VGA_CRTC_DATA, l);    
 }
 
-static int get_colour(int loglevel) {
+static int get_color(int loglevel) {
     switch(loglevel) {
-    case JINUE_LOG_LEVEL_INFO:
-        return VGA_COLOR_BRIGHTGREEN;
+    case JINUE_LOG_LEVEL_EMERGENCY:
+    case JINUE_LOG_LEVEL_ALERT:
+    case JINUE_LOG_LEVEL_CRITICAL:
+        return VGA_COLOR_RED;
+    case JINUE_LOG_LEVEL_ERROR:
+        return VGA_COLOR_BRIGHTRED;
     case JINUE_LOG_LEVEL_WARNING:
         return VGA_COLOR_YELLOW;
-    case JINUE_LOG_LEVEL_ERROR:
-        return VGA_COLOR_RED;
+    case JINUE_LOG_LEVEL_NOTICE:
+    case JINUE_LOG_LEVEL_INFO:
+        return VGA_COLOR_BRIGHTGREEN;
     default:
         return VGA_COLOR_GRAY;
     }
@@ -149,7 +154,7 @@ static vga_pos_t vga_raw_putc(char c, vga_pos_t pos, int colour) {
 }
 
 static void do_log(const log_event_t *event) {
-    int colour = get_colour(event->loglevel);
+    int colour = get_color(event->loglevel);
 
     unsigned short int pos  = vga_get_cursor_pos();
 

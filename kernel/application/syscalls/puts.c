@@ -39,12 +39,7 @@ int puts(int loglevel, const char *str, size_t length) {
         return -JINUE_EINVAL;
     }
 
-    switch(loglevel) {
-    case JINUE_LOG_LEVEL_INFO:
-    case JINUE_LOG_LEVEL_WARNING:
-    case JINUE_LOG_LEVEL_ERROR:
-        break;
-    default:
+    if(loglevel > JINUE_LOG_LEVEL_DEBUG) {
         return -JINUE_EINVAL;
     }
 

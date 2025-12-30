@@ -47,4 +47,6 @@ void warn(const char *restrict format, ...);
 
 void error(const char *restrict format, ...);
 
+void emergency(const char *restrict format, ...);
+
 #endif
