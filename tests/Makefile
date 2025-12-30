@@ -44,6 +44,7 @@ tests = \
 	test_boot_pentium \
 	test_detect_qemu \
 	test_ipc \
+	test_loader_exit \
 	test_mp
 
 logs := $(foreach t,$(tests),$(t).log)

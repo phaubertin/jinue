@@ -241,8 +241,11 @@ void machine_get_ramdisk(kern_mem_block_t *ramdisk) {
 /**
  * Machine-specific initialization for logging
  * 
- * Initializes the UART and VGA for logging. Only the minimal initialization
- * to support logging should be done here.
+ * Initializes the UART and VGA for logging.
+ * 
+ * Only the minimal initialization to support logging should be done here.
+ * Furthermore, functions called here should refrain from panicking when
+ * avoidable and defer the panic where possible.
  * 
  * @param config kernel configuration
  */
