@@ -58,7 +58,7 @@ int mint(int owner, const jinue_mint_args_t *args);
 
 int mmap(int process_fd, const jinue_mmap_args_t *args);
 
-int puts(int loglevel, const char *str, size_t length);
+int puts(uint8_t loglevel, uint8_t facility, const char *str, size_t length);
 
 void reboot(void);
 

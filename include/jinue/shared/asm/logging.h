@@ -63,9 +63,6 @@
 #define JINUE_LOG_LEVEL_DEBUG       7
 
 /** log source is the kernel */
-#define JINUE_LOG_SOURCE_KERNEL     'K'
-
-/** log source is userspace */
-#define JINUE_LOG_SOURCE_USER       'U'
+#define JINUE_LOG_FACILITY_KERNEL   0
 
 #endif

@@ -277,11 +277,16 @@ static void sync_all_readers(void) {
  * This is the common code for error(), warning() and info().
  * 
  * @param loglevel log message level/priority
- * @param source log source: JINUE_LOG_SOURCE_KERNEL or JINUE_LOG_SOURCE_USER
+ * @param facility facility: JINUE_LOG_FACILITY_KERNEL or userspace value
  * @param format printf-style format string for the message
  * @param args format string arguments
  */
-static void log_message(int loglevel, int source, const char *restrict format, va_list args) {
+static void log_message(
+    uint8_t                 loglevel,
+    uint8_t                 facility,
+    const char *restrict    format,
+    va_list                 args
+) {
     spin_lock(&logging_spinlock);
 
     if(pointer_is_in_redzone(RING_BUFFER_END)) {
@@ -313,7 +318,7 @@ static void log_message(int loglevel, int source, const char *restrict format, v
 
     log_event_t *event  = (log_event_t *)state.write_ptr;
     event->loglevel     = loglevel;
-    event->source       = source;
+    event->facility     = facility;
     event->length       = vsnprintf(event->message, JINUE_LOG_MAX_LENGTH + 1, format, args);
 
     write_go_next();
@@ -327,16 +332,16 @@ static void log_message(int loglevel, int source, const char *restrict format, v
  * Log a message
  * 
  * @param loglevel log message level/priority
- * @param source source of log: JINUE_LOG_SOURCE_KERNEL or JINUE_LOG_SOURCE_USER
+ * @param facility facility: JINUE_LOG_FACILITY_KERNEL or userspace value
  * @param format printf-style format string for the message
  * @param ... format string arguments
  */
-void log(int loglevel, int source, const char *restrict format, ...) {
+void log(uint8_t loglevel, uint8_t facility, const char *restrict format, ...) {
     va_list args;
 
     va_start(args, format);
 
-    log_message(loglevel, source, format, args);
+    log_message(loglevel, facility, format, args);
 
     va_end(args);
 }
@@ -352,7 +357,7 @@ void info(const char *restrict format, ...) {
 
     va_start(args, format);
 
-    log_message(JINUE_LOG_LEVEL_INFO, JINUE_LOG_SOURCE_KERNEL, format, args);
+    log_message(JINUE_LOG_LEVEL_INFO, JINUE_LOG_FACILITY_KERNEL, format, args);
 
     va_end(args);
 }
@@ -368,7 +373,7 @@ void warn(const char *restrict format, ...) {
 
     va_start(args, format);
 
-    log_message(JINUE_LOG_LEVEL_WARNING, JINUE_LOG_SOURCE_KERNEL, format, args);
+    log_message(JINUE_LOG_LEVEL_WARNING, JINUE_LOG_FACILITY_KERNEL, format, args);
 
     va_end(args);
 }
@@ -384,7 +389,7 @@ void error(const char *restrict format, ...) {
 
     va_start(args, format);
 
-    log_message(JINUE_LOG_LEVEL_ERROR, JINUE_LOG_SOURCE_KERNEL, format, args);
+    log_message(JINUE_LOG_LEVEL_ERROR, JINUE_LOG_FACILITY_KERNEL, format, args);
 
     va_end(args);
 }
@@ -400,7 +405,7 @@ void emergency(const char *restrict format, ...) {
 
     va_start(args, format);
 
-    log_message(JINUE_LOG_LEVEL_EMERGENCY, JINUE_LOG_SOURCE_KERNEL, format, args);
+    log_message(JINUE_LOG_LEVEL_EMERGENCY, JINUE_LOG_FACILITY_KERNEL, format, args);
 
     va_end(args);
 }

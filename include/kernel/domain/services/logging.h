@@ -39,7 +39,7 @@ void initialize_log_reader(log_reader_t *reader, log_reader_func_t log);
 
 void register_log_reader(log_reader_t *reader);
 
-void log(int loglevel, int source, const char *restrict format, ...);
+void log(uint8_t loglevel, uint8_t facility, const char *restrict format, ...);
 
 void info(const char *restrict format, ...);
 

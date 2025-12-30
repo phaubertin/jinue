@@ -63,7 +63,13 @@ void jinue_exit_thread(void);
 
 void jinue_putc(char c);
 
-int jinue_puts(int loglevel, const char *str, size_t n, int *perrno);
+int jinue_puts(
+    uint8_t      loglevel,
+    uint8_t      facility,
+    const char  *str,
+    size_t       n,
+    int         *perrno
+);
 
 int jinue_get_address_map(const jinue_buffer_t *buffer, int *perrno);
 

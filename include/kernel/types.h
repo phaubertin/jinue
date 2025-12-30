@@ -140,8 +140,8 @@ typedef struct {
 
 typedef struct {
     uint16_t    length;
-    char        loglevel;
-    char        source;
+    uint8_t     loglevel;
+    uint8_t     facility;
     char        message[];
 } log_event_t;
 
