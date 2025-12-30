@@ -241,8 +241,11 @@ void machine_get_ramdisk(kern_mem_block_t *ramdisk) {
 /**
  * Machine-specific initialization for logging
  * 
- * Initializes the UART and VGA for logging. Only the minimal initialization
- * to support logging should be done here.
+ * Initializes the UART and VGA for logging.
+ * 
+ * Only the minimal initialization to support logging should be done here.
+ * Furthermore, functions called here should refrain from panicking when
+ * avoidable and defer the panic where possible.
  * 
  * @param config kernel configuration
  */
@@ -294,10 +297,6 @@ void machine_init(const config_t *config) {
     const bootinfo_t *bootinfo = get_bootinfo();
 
     check_pae(bootinfo, config);
-
-    report_cpu_features();
-
-    report_acpi();
 
     init_mp();
 

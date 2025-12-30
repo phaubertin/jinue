@@ -45,29 +45,31 @@
 
 
 void kmain(const char *cmdline) {
-    config_t *config = get_config();
-    apply_config_defaults(config);
-
-    /* The first thing we want to do is parse the command line options, before
-     * we log anything, because some options affect logging, such as whether we
-     * need to log to VGA and/or serial port, the baud rate, etc. */
-    cmdline_parse_options(config, cmdline);
-
-    /* Now that we parsed the command line options, we can initialize logging
-     * properly and say hello. */
-    machine_init_logging(config);
-
+    /* Be polite and say hello. Logging is not initialized yet, so this
+     * get stored in the ring buffer until it is. */
     info("Jinue microkernel started.");
     info("Kernel revision " GIT_REVISION " built " BUILD_TIME " on " BUILD_HOST);
 
     cmdline_report_options(cmdline);
+
+    config_t *config = get_config();
+    apply_config_defaults(config);
+
+    /* We want to parse the command line options before we enable logging
+     * because some options affect logging, such as whether we need to log to
+     * VGA and/or serial port, the baud rate, etc. */
+    cmdline_parse_options(config, cmdline);
+
+    /* Now that we parsed the command line options, we can initialize logging
+     * properly. */
+    machine_init_logging(config);
 
     /* If there were issues parsing the command line, these will be reported
      * here (i.e. panic), now that logging has been initialized and we can log
      * things to the right places. */
     cmdline_report_errors();
 
-    /* initialize machine-dependent code */
+    /* Initialize machine-dependent code. */
     machine_init(config);
 
     kern_mem_block_t ramdisk;
@@ -79,11 +81,11 @@ void kmain(const char *cmdline) {
         ramdisk.start
     );
 
-    /* initialize caches */
+    /* Initialize object caches. */
     initialize_endpoint_cache();
     initialize_process_cache();
 
-    /* create process for user space loader */
+    /* Create process for user space loader. */
     process_t *process = process_new();
 
     if(process == NULL) {
@@ -92,14 +94,14 @@ void kmain(const char *cmdline) {
 
     process_switch_to(process);
 
-    /* create user space loader main thread */
+    /* Create user space loader main thread. */
     thread_t *thread = thread_new(process);
 
     if(thread == NULL) {
         panic("Could not create initial thread.");
     }
 
-    /* load user space loader binary */
+    /* Load user space loader binary. */
     exec_file_t loader;
     machine_get_loader(&loader);
 
@@ -118,6 +120,6 @@ void kmain(const char *cmdline) {
     /* Start first thread. */
     thread_run_first(thread);
 
-    /* should never happen */
+    /* This should never happen. */
     panic("thread_run_first() returned in kmain()");
 }

@@ -139,9 +139,20 @@ typedef struct {
 } kern_mem_block_t;
 
 typedef struct {
-    list_node_t loggers;
-    void (*log)(int loglevel, const char *message, size_t n);
-} logger_t;
+    uint16_t    length;
+    char        loglevel;
+    char        source;
+    char        message[];
+} log_event_t;
+
+typedef void (*log_reader_func_t)(const log_event_t *event);
+
+typedef struct {
+    list_node_t          readers;
+    const char          *read_ptr;
+    uint64_t             read_id;
+    log_reader_func_t    log;
+} log_reader_t;
 
 typedef enum {
     CONFIG_ON_PANIC_HALT,

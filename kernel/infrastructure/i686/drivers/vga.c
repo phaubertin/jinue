@@ -42,11 +42,7 @@
 
 typedef unsigned int vga_pos_t;
 
-static void vga_printn(int loglevel, const char *message, size_t n);
-
-static logger_t logger = {
-    .log = vga_printn
-}; 
+static log_reader_t log_reader;
 
 /** base address of the VGA text video buffer */
 static unsigned char *video_base_addr;
@@ -58,39 +54,6 @@ static void vga_clear(void) {
         video_base_addr[idx++] = 0x20;
         video_base_addr[idx++] = VGA_COLOR_ERASE;
     }
-}
-
-void vga_init(const config_t *config) {
-    if(! config->machine.vga_enable) {
-        return;
-    }
-
-    if(!platform_is_vga_present()) {
-        return;
-    }
-    
-    /* Set address select bit in a known state: CRTC regs at 0x3dx */
-    unsigned char data;
-    data = inb(VGA_MISC_OUT_RD);
-    data |= 1;
-    outb(VGA_MISC_OUT_WR, data);
-
-    /* Move cursor to line 0 col 0 */
-    outb(VGA_CRTC_ADDR, 0x0e);
-    outb(VGA_CRTC_DATA, 0x0);    
-    outb(VGA_CRTC_ADDR, 0x0f);
-    outb(VGA_CRTC_DATA, 0x0);
-
-    video_base_addr = map_in_kernel(
-        VGA_TEXT_VID_BASE,
-        VGA_TEXT_VID_TOP - VGA_TEXT_VID_BASE,
-        JINUE_PROT_READ | JINUE_PROT_WRITE
-    );
-    
-    /* Clear the screen */
-    vga_clear();
-
-    register_logger(&logger);
 }
 
 static vga_pos_t vga_get_cursor_pos(void) {
@@ -116,11 +79,11 @@ static void vga_set_cursor_pos(vga_pos_t pos) {
 
 static int get_colour(int loglevel) {
     switch(loglevel) {
-    case JINUE_PUTS_LOGLEVEL_INFO:
+    case JINUE_LOG_LEVEL_INFO:
         return VGA_COLOR_BRIGHTGREEN;
-    case JINUE_PUTS_LOGLEVEL_WARNING:
+    case JINUE_LOG_LEVEL_WARNING:
         return VGA_COLOR_YELLOW;
-    case JINUE_PUTS_LOGLEVEL_ERROR:
+    case JINUE_LOG_LEVEL_ERROR:
         return VGA_COLOR_RED;
     default:
         return VGA_COLOR_GRAY;
@@ -185,16 +148,51 @@ static vga_pos_t vga_raw_putc(char c, vga_pos_t pos, int colour) {
     return pos;
 }
 
-static void vga_printn(int loglevel, const char *message, size_t n) {
-    int colour = get_colour(loglevel);
+static void do_log(const log_event_t *event) {
+    int colour = get_colour(event->loglevel);
 
     unsigned short int pos  = vga_get_cursor_pos();
 
-    for(int idx = 0; idx < n && message[idx] != '\0'; ++idx) {
-        pos = vga_raw_putc(message[idx], pos, colour);
+    for(int idx = 0; idx < event->length && event->message[idx] != '\0'; ++idx) {
+        pos = vga_raw_putc(event->message[idx], pos, colour);
     }
     
     pos = vga_raw_putc('\n', pos, colour);
 
     vga_set_cursor_pos(pos);
+}
+
+void vga_init(const config_t *config) {
+    if(! config->machine.vga_enable) {
+        return;
+    }
+
+    if(!platform_is_vga_present()) {
+        return;
+    }
+    
+    /* Set address select bit in a known state: CRTC regs at 0x3dx */
+    unsigned char data;
+    data = inb(VGA_MISC_OUT_RD);
+    data |= 1;
+    outb(VGA_MISC_OUT_WR, data);
+
+    /* Move cursor to line 0 col 0 */
+    outb(VGA_CRTC_ADDR, 0x0e);
+    outb(VGA_CRTC_DATA, 0x0);    
+    outb(VGA_CRTC_ADDR, 0x0f);
+    outb(VGA_CRTC_DATA, 0x0);
+
+    video_base_addr = map_in_kernel(
+        VGA_TEXT_VID_BASE,
+        VGA_TEXT_VID_TOP - VGA_TEXT_VID_BASE,
+        JINUE_PROT_READ | JINUE_PROT_WRITE
+    );
+    
+    /* Clear the screen */
+    vga_clear();
+
+    initialize_log_reader(&log_reader, do_log);
+
+    register_log_reader(&log_reader);
 }
