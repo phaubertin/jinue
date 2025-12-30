@@ -53,13 +53,15 @@ int main(int argc, char *argv[]) {
     dump_loader_memory_info();
     dump_loader_ramdisk();
 
-    jinue_info("Blocking until loader exits.");
+    jinue_info("Blocking until loader exits...");
 
     int status = jinue_exit_loader();
 
     if(status < 0) {
         return EXIT_FAILURE;
     }
+
+    jinue_info("Loader has exited.");
 
     run_abcd_test();
     run_ipc_test();

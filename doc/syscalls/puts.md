@@ -48,5 +48,5 @@ returns -1 and an error number is set (in `arg1`).
 
 ## Errors
 
-* JINUE_EINVAL if the specified string length is more than 120.
+* JINUE_EINVAL if the specified string length is more than 480.
 * JINUE_EINVAL if the specified log level is not recognized.

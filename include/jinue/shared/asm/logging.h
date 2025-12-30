@@ -32,17 +32,22 @@
 #ifndef _JINUE_SHARED_ASM_LOGGING_H
 #define _JINUE_SHARED_ASM_LOGGING_H
 
-/* TODO re name this */
 /** maximum string length for the PUTS system call */
-#define JINUE_PUTS_MAX_LENGTH           120
+#define JINUE_LOG_MAX_LENGTH       480
 
-/** log level "info" for the PUTS system call */
-#define JINUE_PUTS_LOGLEVEL_INFO        'I'
+/** log level "info" */
+#define JINUE_LOG_LEVEL_INFO        'I'
 
-/** log level "warning" for the PUTS system call */
-#define JINUE_PUTS_LOGLEVEL_WARNING     'W'
+/** log level "warning" */
+#define JINUE_LOG_LEVEL_WARNING     'W'
 
-/** log level "error" for the PUTS system call */
-#define JINUE_PUTS_LOGLEVEL_ERROR       'E'
+/** log level "error" */
+#define JINUE_LOG_LEVEL_ERROR       'E'
+
+/** log source is the kernel */
+#define JINUE_LOG_SOURCE_KERNEL     'K'
+
+/** log source is userspace */
+#define JINUE_LOG_SOURCE_USER       'U'
 
 #endif

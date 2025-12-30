@@ -35,7 +35,9 @@
 #include <kernel/domain/services/asm/logging.h>
 #include <kernel/types.h>
 
-void register_logger(logger_t *logger);
+void initialize_log_reader(log_reader_t *reader, log_reader_func_t log);
+
+void register_log_reader(log_reader_t *reader);
 
 void log(int loglevel, int source, const char *restrict format, ...);
 

@@ -35,20 +35,20 @@
 #include <kernel/domain/services/logging.h>
 
 int puts(int loglevel, const char *str, size_t length) {
-    if(length > JINUE_PUTS_MAX_LENGTH) {
+    if(length > JINUE_LOG_MAX_LENGTH) {
         return -JINUE_EINVAL;
     }
 
     switch(loglevel) {
-    case JINUE_PUTS_LOGLEVEL_INFO:
-    case JINUE_PUTS_LOGLEVEL_WARNING:
-    case JINUE_PUTS_LOGLEVEL_ERROR:
+    case JINUE_LOG_LEVEL_INFO:
+    case JINUE_LOG_LEVEL_WARNING:
+    case JINUE_LOG_LEVEL_ERROR:
         break;
     default:
         return -JINUE_EINVAL;
     }
 
-    log(loglevel, LOG_SOURCE_USERSPACE, "%.*s", length, str);
+    log(loglevel, JINUE_LOG_SOURCE_USER, "%.*s", length, str);
 
     return 0;
 }

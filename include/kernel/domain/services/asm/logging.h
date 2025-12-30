@@ -36,8 +36,4 @@
 
 #define WARNING "warning: "
 
-#define LOG_SOURCE_KERNEL       'K'
-
-#define LOG_SOURCE_USERSPACE    'U'
-
 #endif

@@ -145,14 +145,14 @@ typedef struct {
     char        message[];
 } log_event_t;
 
-typedef struct {
-    list_node_t  loggers;
-    const char  *read_ptr;
-    uint64_t     read_id;
-    void (*log)(const log_event_t *event);
-} logger_t;
+typedef void (*log_reader_func_t)(const log_event_t *event);
 
-#define INITIALIZE_LOGGER(cb) { .log = cb }
+typedef struct {
+    list_node_t          readers;
+    const char          *read_ptr;
+    uint64_t             read_id;
+    log_reader_func_t    log;
+} log_reader_t;
 
 typedef enum {
     CONFIG_ON_PANIC_HALT,

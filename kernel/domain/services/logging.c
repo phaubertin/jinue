@@ -38,163 +38,234 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+/** size of the log ring buffer */
 #define RING_BUFFER_SIZE    65536
 
+/** alignment of log events in the ring buffer */
 #define EVENT_ALIGNMENT     4
 
+/** static storage for the ring buffer */
 static char ring_buffer[RING_BUFFER_SIZE];
 
+/** end of the ring buffer */
 #define RING_BUFFER_END (ring_buffer + RING_BUFFER_SIZE)
 
-/** log consumers */
-static list_t loggers = LIST_INITIALIZER;
+/** log readers */
+static list_t readers = LIST_INITIALIZER;
 
+/** lock to protect access to the ring buffer and its state */
 static spinlock_t logging_spinlock = SPINLOCK_INITIALIZER;
 
+/** state for the producer side of the log ring buffer */
 static struct {
-    const char  *start_ptr;
-    uint64_t     start_id;
     char        *write_ptr;
+    const char  *tail_ptr;
     uint64_t     write_id;
-    
+    uint64_t     tail_id;
 } state = {
-    .start_ptr  = ring_buffer,
-    .start_id   = 0,
     .write_ptr  = ring_buffer,
-    .write_id   = 0
+    .tail_ptr   = ring_buffer,
+    .write_id   = 0,
+    .tail_id    = 0
 };
 
 /**
- * Set up log consumer to read from the start of the ring buffer
+ * Set up a log reader to read from the start of the ring buffer
  * 
  * This is done:
- *  1) When a new consumer is registered.
- *  2) When a consumer is so far behind that it's next log event is no longer
+ *  1) When a log reader is registered.
+ *  2) When a reader is so far behind that it's next log event is no longer
  *     in the ring buffer.
  * 
- * @param logger log consumer
+ * @param reader log reader
  */
-static void initialize_at_start(logger_t *logger) {
-    logger->read_ptr    = state.start_ptr;
-    logger->read_id     = state.start_id;
+static void initialize_at_start(log_reader_t *reader) {
+    reader->read_ptr    = state.tail_ptr;
+    reader->read_id     = state.tail_id;
 }
 
 /**
- * Register a log consumer
+ * Initialize a log reader
  * 
- * @param logger log consumer
+ * @param reader log reader
+ * @param log logging function for the reader
  */
-void register_logger(logger_t *logger) {
+void initialize_log_reader(log_reader_t *reader, log_reader_func_t log) {
+    reader->log = log;
+    initialize_at_start(reader);
+}
+
+/**
+ * Register a log reader
+ * 
+ * @param reader log reader
+ */
+void register_log_reader(log_reader_t *reader) {
     spin_lock(&logging_spinlock);
 
-    initialize_at_start(logger);
-    list_enqueue(&loggers, &logger->loggers);
+    list_enqueue(&readers, &reader->readers);
 
     spin_unlock(&logging_spinlock);
 }
 
-/** offset to the next log event */
+/**
+ * Update the ring buffer state write pointer and ID to the next event
+ */
+static void write_go_next(void) {
 #define NEXT(event) (sizeof(log_event_t) + ALIGN_END(event->length, EVENT_ALIGNMENT))
 
-static void start_go_next(void) {
-    const log_event_t *start = (const log_event_t *)state.start_ptr;
-    state.start_ptr += NEXT(start);
-
-    ++state.start_id;
-}
-
-static void write_go_next(void) {
     const log_event_t *event = (const log_event_t *)state.write_ptr;
     state.write_ptr += NEXT(event);
 
     ++state.write_id;
 }
 
-static void read_go_next(logger_t *logger) {
-    const log_event_t *event = (log_event_t *)logger->read_ptr;
-    logger->read_ptr += NEXT(event);
+/**
+ * Update the ring buffer state tail pointer and ID to the next event
+ */
+static void tail_go_next(void) {
+    const log_event_t *event = (const log_event_t *)state.tail_ptr;
+    state.tail_ptr += NEXT(event);
 
-    ++logger->read_id;
+    ++state.tail_id;
 }
 
-static void reset_start(void) {
-    state.start_ptr = ring_buffer;
+/**
+ * Update the read pointer and ID of a log reader to the next event
+ * 
+ * @param reader log reader
+ */
+static void read_go_next(log_reader_t *reader) {
+    const log_event_t *event = (log_event_t *)reader->read_ptr;
+    reader->read_ptr += NEXT(event);
+
+    ++reader->read_id;
 }
 
-static void reset_write(void) {
+/**
+ * Update the ring buffer state write pointer to the start of the buffer
+ */
+static void write_go_to_buffer_start(void) {
     state.write_ptr = ring_buffer;
 }
 
-static void reset_read(logger_t *logger) {
-    logger->read_ptr = ring_buffer;
+/**
+ * Update the ring buffer state tail pointer to the start of the buffer
+ */
+static void tail_go_to_buffer_start(void) {
+    state.tail_ptr = ring_buffer;
 }
 
+/**
+ * Update the read pointer of a log reader to the start of the buffer
+ * 
+ * @param reader log reader
+ */
+static void read_go_to_buffer_start(log_reader_t *reader) {
+    reader->read_ptr = ring_buffer;
+}
+
+/**
+ * Write a terminator at the current position of the write pointer
+ */
 static void write_terminator(void) {
     log_event_t *event = (log_event_t *)state.write_ptr;
     event->length = 0;
 }
 
-static bool start_is_at_terminator(void) {
-    const log_event_t *event = (const log_event_t *)state.start_ptr;
+/**
+ * Check whether the ring buffer state tail pointer is at a terminator
+ * 
+ * @return true if at terminator, false otherwise
+ */
+static bool tail_is_at_terminator(void) {
+    const log_event_t *event = (const log_event_t *)state.tail_ptr;
     return event->length == 0;
 }
 
-static bool read_is_at_terminator(logger_t *logger) {
-    const log_event_t *event = (log_event_t *)logger->read_ptr;
+/**
+ * Check whether the read pointer of a log reader is at a terminator
+ * 
+ * @param reader log reader
+ * @return true if at terminator, false otherwise
+ */
+static bool read_is_at_terminator(log_reader_t *reader) {
+    const log_event_t *event = (log_event_t *)reader->read_ptr;
     return event->length == 0;
 }
 
-static bool start_is_in_redzone(void) {
-    /* Space reserved for the next log event. We don't yet know the length of
-     * the log message, so we assume worst case (JINUE_PUTS_MAX_LENGTH). We
-     * want to be able to write the log event, with its message and header, and
-     * still have enough space to be able to add a terminating header if needed. */
-#define REDZONE_SIZE (JINUE_PUTS_MAX_LENGTH + 2 * sizeof(log_event_t))
+/**
+ * Check whether the specified pointer is in the redzone
+ * 
+ * The redzone is the space right after the write pointer where data will
+ * possibly be overwritten when the next log event is written.
+ * 
+ * @param ptr pointer to check
+ * @return true if tail ponter is in the redzone, false otherwise
+ */
+static bool pointer_is_in_redzone(const char *ptr) {
+    /* Space reserved for the next log event. We only know the length of a log
+     * message once it has been written, so we have to assume the worst case
+     * (JINUE_LOG_MAX_LENGTH). We want to be able to write the log event, with
+     * its message and header, and still have enough space to be able to add a
+     * terminator (i.e. zero-length header) if needed. */
+#define REDZONE_SIZE (JINUE_LOG_MAX_LENGTH + 2 * sizeof(log_event_t))
 
     const char *redzone_end = state.write_ptr + REDZONE_SIZE;
 
-    return state.start_ptr >= state.write_ptr && state.start_ptr < redzone_end;
+    return ptr >= state.write_ptr && ptr < redzone_end;
 }
 
 /**
- * Catch up a log consumer to all events in the ring buffer
- * 
- * @param logger log consumer
+ * Push the ring buffer state tail pointer out of the redzone
  */
-static void sync(logger_t *logger) {
-    if(logger->read_id < state.start_id) {
-        initialize_at_start(logger);
+static void push_tail(void) {
+    while(pointer_is_in_redzone(state.tail_ptr)) {
+        tail_go_next();
+
+        if(tail_is_at_terminator()) {
+            tail_go_to_buffer_start();
+        }
+    }
+}
+
+/**
+ * Catch up a log reader to all events in the ring buffer
+ * 
+ * @param reader log reader
+ */
+static void sync_reader(log_reader_t *reader) {
+    if(reader->read_id < state.tail_id) {
+        initialize_at_start(reader);
     }
 
-    while(logger->read_id < state.write_id) {
-        if(read_is_at_terminator(logger)) {
-            /* We reached the end of the buffer. Let's continue reading from
-             * the start. */
-            reset_read(logger);
+    while(reader->read_id < state.write_id) {
+        if(read_is_at_terminator(reader)) {
+            read_go_to_buffer_start(reader);
         }
 
-        const log_event_t *event = (log_event_t *)logger->read_ptr;
+        const log_event_t *event = (log_event_t *)reader->read_ptr;
 
-        read_go_next(logger);
-        
-        logger->log(event);
+        reader->log(event);
+
+        read_go_next(reader);
     }
 }
 
 /**
- * Catch up all log consumers to all events in the ring buffer
+ * Catch up all log readers to all events in the ring buffer
  */
-static void sync_all(void) {
-    list_cursor_t cur = list_head(&loggers);
+static void sync_all_readers(void) {
+    list_cursor_t cur = list_head(&readers);
 
     while(true) {
-        logger_t *logger = list_cursor_entry(cur, logger_t, loggers);
+        log_reader_t *reader = list_cursor_entry(cur, log_reader_t, readers);
 
-        if(logger == NULL) {
+        if(reader == NULL) {
             break;
         }
 
-        sync(logger);        
+        sync_reader(reader);        
 
         cur = list_cursor_next(cur);
     }
@@ -206,63 +277,48 @@ static void sync_all(void) {
  * This is the common code for error(), warning() and info().
  * 
  * @param loglevel log message level/priority
- * @param source source of log: LOG_SOURCE_KERNEL or LOG_SOURCE_USERSPACE
+ * @param source log source: JINUE_LOG_SOURCE_KERNEL or JINUE_LOG_SOURCE_USER
  * @param format printf-style format string for the message
  * @param args format string arguments
  */
 static void log_message(int loglevel, int source, const char *restrict format, va_list args) {
     spin_lock(&logging_spinlock);
 
-
-
-    if(state.write_ptr + REDZONE_SIZE > RING_BUFFER_END) {
+    if(pointer_is_in_redzone(RING_BUFFER_END)) {
         /* Not enough space is left at the end of the buffer, so we add a
          * terminator and continue writing from the start of the ring buffer.
          *
-         * Before we do this, we need to get the start pointer out of the
-         * way by scanning for the existing terminator, updating start_id as
-         * we do it. */
-        while(start_is_in_redzone()) {
-            start_go_next();
+         * Before we do this, we need to get the tail pointer out of the
+         * way. */
+        push_tail();
 
-            if(start_is_at_terminator()) {
-                reset_start();
-            }
-        }
-
-        /* With the start pointer out of the way, we add the terminator and
+        /* With the tail pointer out of the way, we add the terminator and
          * set the write pointer to the start of the ring buffer. */
         write_terminator();
-        reset_write();
-        
-        state.write_ptr = ring_buffer;
+
+        write_go_to_buffer_start();
     }
 
     /* Here, the write pointer is where we want it to be. Before we can write
-     * the new event, we need to push the start pointer if it is in the red
+     * the new event, we need to push the tail pointer if it is in the red
      * zone.
      * 
-     * Edge case to consider: when writing the very first event, the start
-     * pointer is at the beginning of the ring buffer and we want it to stay
-     * there. */
+     * Edge case: when writing the very first event, the tail pointer is at the
+     * beginning of the ring buffer and we want it to stay there to let the
+     * write pointer overtake it. We will only start moving the tail pointer
+     * once the write pointer has done a full round around the ring buffer. */
     if(state.write_id != 0) {
-        while(start_is_in_redzone()) {
-            start_go_next();
-
-            if(start_is_at_terminator()) {
-                reset_start();
-            }
-        }
+        push_tail();
     }
 
     log_event_t *event  = (log_event_t *)state.write_ptr;
     event->loglevel     = loglevel;
     event->source       = source;
-    event->length       = vsnprintf(event->message, JINUE_PUTS_MAX_LENGTH + 1, format, args);
+    event->length       = vsnprintf(event->message, JINUE_LOG_MAX_LENGTH + 1, format, args);
 
     write_go_next();
 
-    sync_all();
+    sync_all_readers();
 
     spin_unlock(&logging_spinlock);
 }
@@ -271,7 +327,7 @@ static void log_message(int loglevel, int source, const char *restrict format, v
  * Log a message
  * 
  * @param loglevel log message level/priority
- * @param source source of log: LOG_SOURCE_KERNEL or LOG_SOURCE_USERSPACE
+ * @param source source of log: JINUE_LOG_SOURCE_KERNEL or JINUE_LOG_SOURCE_USER
  * @param format printf-style format string for the message
  * @param ... format string arguments
  */
@@ -296,7 +352,7 @@ void info(const char *restrict format, ...) {
 
     va_start(args, format);
 
-    log_message(JINUE_PUTS_LOGLEVEL_INFO, LOG_SOURCE_KERNEL, format, args);
+    log_message(JINUE_LOG_LEVEL_INFO, JINUE_LOG_SOURCE_KERNEL, format, args);
 
     va_end(args);
 }
@@ -312,7 +368,7 @@ void warn(const char *restrict format, ...) {
 
     va_start(args, format);
 
-    log_message(JINUE_PUTS_LOGLEVEL_WARNING, LOG_SOURCE_KERNEL, format, args);
+    log_message(JINUE_LOG_LEVEL_WARNING, JINUE_LOG_SOURCE_KERNEL, format, args);
 
     va_end(args);
 }
@@ -328,7 +384,7 @@ void error(const char *restrict format, ...) {
 
     va_start(args, format);
 
-    log_message(JINUE_PUTS_LOGLEVEL_ERROR, LOG_SOURCE_KERNEL, format, args);
+    log_message(JINUE_LOG_LEVEL_ERROR, JINUE_LOG_SOURCE_KERNEL, format, args);
 
     va_end(args);
 }

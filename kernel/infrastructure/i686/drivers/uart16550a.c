@@ -34,11 +34,24 @@
 #include <kernel/infrastructure/i686/drivers/uart16550a.h>
 #include <kernel/infrastructure/i686/isa/io.h>
 
-static void do_log(const log_event_t *event);
-
-static logger_t logger = INITIALIZE_LOGGER(do_log); 
+static log_reader_t log_reader; 
 
 static int base_ioport;
+
+static void putc(char c) {
+    /* wait for the UART to be ready to accept a new character */
+    while( (inb(base_ioport + UART165550A_REG_LINE_STATUS) & 0x20) == 0) {}
+
+    outb(base_ioport + UART165550A_REG_DATA_BUFFER, c);
+}
+
+static void do_log(const log_event_t *event) {
+    for(int idx = 0; idx < event->length && event->message[idx] != '\0'; ++idx) {
+        putc(event->message[idx]);
+    }
+
+    putc('\n');
+}
 
 void init_uart16550a(const config_t *config) {
     if(! config->machine.serial_enable) {
@@ -71,20 +84,7 @@ void init_uart16550a(const config_t *config) {
     /* assert DTR and RTS */
     outb(base_ioport + UART165550A_REG_MODEM_CTRL, 0x03);
 
-    register_logger(&logger);
-}
+    initialize_log_reader(&log_reader, do_log);
 
-static void putc(char c) {
-    /* wait for the UART to be ready to accept a new character */
-    while( (inb(base_ioport + UART165550A_REG_LINE_STATUS) & 0x20) == 0) {}
-
-    outb(base_ioport + UART165550A_REG_DATA_BUFFER, c);
-}
-
-static void do_log(const log_event_t *event) {
-    for(int idx = 0; idx < event->length && event->message[idx] != '\0'; ++idx) {
-        putc(event->message[idx]);
-    }
-
-    putc('\n');
+    register_log_reader(&log_reader);
 }
