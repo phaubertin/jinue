@@ -35,19 +35,34 @@
 /** maximum string length for the PUTS system call */
 #define JINUE_LOG_MAX_LENGTH       480
 
-/** log level "info" */
-#define JINUE_LOG_LEVEL_INFO        'I'
+/* The log levels/severities below are aligned with are aligned with RFC5424
+ * section 6.2.1. */
 
-/** log level "warning" */
-#define JINUE_LOG_LEVEL_WARNING     'W'
+/** Emergency: system is unusable */
+#define JINUE_LOG_LEVEL_EMERGENCY   0
 
-/** log level "error" */
-#define JINUE_LOG_LEVEL_ERROR       'E'
+/** Alert: action must be taken immediately */
+#define JINUE_LOG_LEVEL_ALERT       1
+
+/** Critical: critical conditions */
+#define JINUE_LOG_LEVEL_CRITICAL    2
+
+/** Error: error conditions */
+#define JINUE_LOG_LEVEL_ERROR       3
+
+/** Warning: warning conditions */
+#define JINUE_LOG_LEVEL_WARNING     4
+
+/** Notice: normal but significant condition */
+#define JINUE_LOG_LEVEL_NOTICE      5
+
+/** Informational: informational messages */
+#define JINUE_LOG_LEVEL_INFO        6
+
+/** Debug: debug-level messages */
+#define JINUE_LOG_LEVEL_DEBUG       7
 
 /** log source is the kernel */
-#define JINUE_LOG_SOURCE_KERNEL     'K'
-
-/** log source is userspace */
-#define JINUE_LOG_SOURCE_USER       'U'
+#define JINUE_LOG_FACILITY_KERNEL   0
 
 #endif

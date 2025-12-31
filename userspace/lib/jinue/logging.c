@@ -34,10 +34,11 @@
 #include <stdio.h>
 #include <string.h>
 
+#define FACILITY_USER_LEVEL 1
+
 static void log_message(int loglevel, const char *restrict format, va_list args) {
     char buffer[JINUE_LOG_MAX_LENGTH + 1];
 
-    /* TODO (maybe?) append (...) when the string is cropped */
     vsnprintf(buffer, sizeof(buffer), format, args);
 
     /* There are two situations where the PUTS system call can fail:
@@ -50,7 +51,7 @@ static void log_message(int loglevel, const char *restrict format, va_list args)
      *
      * For these reasons, this function won't fail, so we can pass NULL as
      * the error number pointer and not return anything. */
-    jinue_puts(loglevel, buffer, strlen(buffer), NULL);
+    jinue_puts(loglevel, FACILITY_USER_LEVEL, buffer, strlen(buffer), NULL);
 }
 
 void jinue_vinfo(const char *restrict format, va_list args) {

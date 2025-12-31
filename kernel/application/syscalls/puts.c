@@ -34,21 +34,20 @@
 #include <kernel/application/syscalls.h>
 #include <kernel/domain/services/logging.h>
 
-int puts(int loglevel, const char *str, size_t length) {
+int puts(uint8_t loglevel, uint8_t facility, const char *str, size_t length) {
     if(length > JINUE_LOG_MAX_LENGTH) {
         return -JINUE_EINVAL;
     }
 
-    switch(loglevel) {
-    case JINUE_LOG_LEVEL_INFO:
-    case JINUE_LOG_LEVEL_WARNING:
-    case JINUE_LOG_LEVEL_ERROR:
-        break;
-    default:
+    if(loglevel > JINUE_LOG_LEVEL_DEBUG) {
         return -JINUE_EINVAL;
     }
 
-    log(loglevel, JINUE_LOG_SOURCE_USER, "%.*s", length, str);
+    if(facility == JINUE_LOG_FACILITY_KERNEL) {
+        return -JINUE_EINVAL;
+    }
+
+    log(loglevel, facility, "%.*s", length, str);
 
     return 0;
 }

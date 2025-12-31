@@ -93,11 +93,12 @@ static void sys_reboot(jinue_syscall_args_t *args) {
 }
 
 static void sys_puts(jinue_syscall_args_t *args) {
-    int loglevel    = args->arg1;
-    const char *str = (const char *)args->arg2;
-    size_t length   = args->arg3;
+    uint8_t loglevel    = args->arg1 & 0xff;
+    uint8_t facility    = (args->arg1 >> 8) & 0xff;
+    const char *str     = (const char *)args->arg2;
+    size_t length       = args->arg3;
 
-    int retval = puts(loglevel, str, length);
+    int retval = puts(loglevel, facility, str, length);
     set_return_value_or_error(args, retval);
 }
 

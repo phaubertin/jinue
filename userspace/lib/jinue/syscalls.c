@@ -31,6 +31,7 @@
 
 #include <jinue/jinue.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 static inline void set_errno(int *perrno, int errval) {
     if(perrno != NULL) {
@@ -103,11 +104,17 @@ void jinue_exit_thread(void) {
     jinue_syscall(&args);
 }
 
-int jinue_puts(int loglevel, const char *str, size_t n, int *perrno) {
+int jinue_puts(
+    uint8_t      loglevel,
+    uint8_t      facility,
+    const char  *str,
+    size_t       n,
+    int         *perrno
+) {
     jinue_syscall_args_t args;
 
     args.arg0 = JINUE_SYS_PUTS;
-    args.arg1 = loglevel;
+    args.arg1 = (facility << 8) | loglevel;
     args.arg2 = (uintptr_t)str;
     args.arg3 = n;
 
