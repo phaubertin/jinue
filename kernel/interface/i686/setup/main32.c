@@ -36,6 +36,7 @@
 #include <kernel/interface/i686/setup/linux.h>
 #include <kernel/interface/i686/setup/pmap.h>
 #include <kernel/interface/i686/setup/setup32.h>
+#include <kernel/interface/i686/boot.h>
 #include <kernel/interface/i686/types.h>
 
 /**
@@ -109,7 +110,7 @@ bootinfo_t *main32(const linux_boot_params_t linux_boot_params) {
 
     prepare_for_paging(bootinfo);
 
-    enable_paging(bootinfo->use_pae, bootinfo->cr3);
+    enable_paging(bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_PAE), bootinfo->cr3);
 
     adjust_bootinfo_pointers(&bootinfo);
 
@@ -119,7 +120,7 @@ bootinfo_t *main32(const linux_boot_params_t linux_boot_params) {
 
     /* Reload CR3 to invalidate TLBs so the changes by cleanup_after_paging()
      * take effect. */
-    enable_paging(bootinfo->use_pae, bootinfo->cr3);
+    enable_paging(bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_PAE), bootinfo->cr3);
 
     return bootinfo;
 }

@@ -32,59 +32,13 @@
 #ifndef JINUE_KERNEL_I686_ASM_BOOTINFO_H
 #define JINUE_KERNEL_I686_ASM_BOOTINFO_H
 
+#define BOOTINFO_FEATURE_PAE    (1<<0)
+
 /* The following definitions must match the offsets of the members of the
  * bootinfo_t struct defined in interface/i686/types.h. They are used by
- * the setup code, which is written in assembly language. */
-
-/** Offset of the kernel_start bootinfo_t member */
-#define BOOTINFO_KERNEL_START        0
-
-/** Offset of the kernel_size bootinfo_t member */
-#define BOOTINFO_KERNEL_SIZE         4
-
-/** Offset of the loader_start bootinfo_t member */
-#define BOOTINFO_LOADER_START        8
-
-/** Offset of the loader_size bootinfo_t member */
-#define BOOTINFO_LOADER_SIZE        12
-
-/** Offset of the image_start bootinfo_t member */
-#define BOOTINFO_IMAGE_START        16
-
-/** Offset of the image_top bootinfo_t member */
-#define BOOTINFO_IMAGE_TOP          20
-
-/** Offset of the ramdisk_start bootinfo_t member */
-#define BOOTINFO_RAMDISK_START      24
-
-/** Offset of the ramdisk_size bootinfo_t member */
-#define BOOTINFO_RAMDISK_SIZE       28
-
-/** Offset of the acpi_addr_map bootinfo_t member */
-#define BOOTINFO_ACPI_ADDR_MAP      32
-
-/** Offset of the addr_map_entries bootinfo_t member */
-#define BOOTINFO_ADDR_MAP_ENTRIES   36
+ * assembly language code. */
 
 /** Offset of the cmdline bootinfo_t member */
-#define BOOTINFO_CMDLINE            40
-
-/** Offset of the boot_heap bootinfo_t member */
-#define BOOTINFO_BOOT_HEAP          44
-
-/** Offset of the boot_end bootinfo_t member */
-#define BOOTINFO_BOOT_END           48
-
-/** Offset of the page_tables bootinfo_t member */
-#define BOOTINFO_PAGE_TABLES        52
-
-/** Offset of the page_directory bootinfo_t member */
-#define BOOTINFO_PAGE_DIRECTORY     56
-
-/** Offset of the setup_signature bootinfo_t member */
-#define BOOTINFO_SETUP_SIGNATURE    60
-
-/** Size of bootinfo_t */
-#define BOOTINFO_SIZE               64
+#define BOOTINFO_CMDLINE        0
 
 #endif

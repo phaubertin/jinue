@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -34,10 +34,32 @@
 
 #include <kernel/infrastructure/i686/types.h>
 #include <kernel/interface/i686/asm/boot.h>
+#include <kernel/interface/i686/asm/bootinfo.h>
 #include <kernel/interface/i686/types.h>
+#include <stdbool.h>
 
 bool check_bootinfo(bool panic_on_failure);
 
 const bootinfo_t *get_bootinfo(void);
+
+/**
+ * Determine if specified feature was detected by the setup code
+ * 
+ * Use the BOOTINFO_FEATURE_... constants for the mask arguments. A bitwise or
+ * of multiple of these constants is allowed, in which case this function will
+ * return true only if all the specified features are supported.
+ * 
+ * The boot information (aka. bootinfo) structure is used to coommunicate
+ * information between the setup code and the kernel proper. In general, in
+ * order to determine if a CPU feature is supported, you should use the
+ * cpu_has_feature() function instead.
+ *
+ * @param bootinfo the boot information structure
+ * @param mask feature(s) for which to check support
+ * @return true if feature is supported, false otherwise
+ */
+static inline bool bootinfo_has_feature(const bootinfo_t *bootinfo, uint32_t mask) {
+    return (bootinfo->features & mask) == mask;
+}
 
 #endif
