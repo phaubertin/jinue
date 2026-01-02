@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2025 Philippe Aubertin.
+ * Copyright (C) 2019-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -40,7 +40,7 @@
 #include <stdio.h>
 #include <string.h>
 
-cpuinfo_t bsp_cpuinfo;
+static cpuinfo_t bsp_cpuinfo;
 
 typedef struct {
     x86_cpuid_regs_t    basic0;
@@ -458,8 +458,8 @@ static bool is_amd_or_intel(const cpuinfo_t *cpuinfo) {
 /**
  * Detect whether the CPU supports the SYSENTER fast system call instruction
  * 
- * Sets the CPUINFO_FEATURE_SYSENTER feature flag if the SYSENTER instruction
- * is supported.
+ * Sets the CPU_FEATURE_SYSENTER feature flag if the SYSENTER instruction is
+ * supported.
  * 
  * @param cpuinfo structure in which to set the feature flag (OUT)
  * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
@@ -473,14 +473,14 @@ static void detect_sysenter_instruction(cpuinfo_t *cpuinfo, const cpuid_leafs_se
         return;
     }
 
-    cpuinfo->features |= CPUINFO_FEATURE_SYSENTER;
+    cpuinfo->features |= CPU_FEATURE_SYSENTER;
 }
 
 /**
  * Detect whether the CPU supports the SYSCALL fast system call instruction
  * 
- * Sets the CPUINFO_FEATURE_SYSCALL feature flag if the SYSCALL instruction
- * is supported.
+ * Sets the CPU_FEATURE_SYSCALL feature flag if the SYSCALL instruction is
+ * supported.
  * 
  * @param cpuinfo structure in which to set the feature flag (OUT)
  * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
@@ -491,7 +491,7 @@ static void detect_syscall_instruction(cpuinfo_t *cpuinfo, const cpuid_leafs_set
     }
 
     if(leafs->ext1.edx & CPUID_EXT_FEATURE_SYSCALL) {
-        cpuinfo->features |= CPUINFO_FEATURE_SYSCALL;
+        cpuinfo->features |= CPU_FEATURE_SYSCALL;
     }
 }
 
@@ -518,7 +518,7 @@ static void enumerate_features(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs)
 
     /* global pages */
     if(flags & CPUID_FEATURE_PGE) {
-        cpuinfo->features |= CPUINFO_FEATURE_PGE;
+        cpuinfo->features |= CPU_FEATURE_PGE;
     }
 
     detect_sysenter_instruction(cpuinfo, leafs);
@@ -531,7 +531,7 @@ static void enumerate_features(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs)
 
     /* Enabling Physical Address Extension (PAE) and No-Execute (NX) bit */
     if((flags & CPUID_FEATURE_PAE) && (ext_flags & CPUID_FEATURE_NXE)) {
-        cpuinfo->features |= CPUINFO_FEATURE_PAE;
+        cpuinfo->features |= CPU_FEATURE_PAE;
     }
 }
 
@@ -542,7 +542,7 @@ static void enumerate_features(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs)
  * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
  */
 static void identify_maxphyaddr(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs) {
-    if((cpuinfo->features & CPUINFO_FEATURE_PAE) && leafs->ext8_valid) {
+    if((cpuinfo->features & CPU_FEATURE_PAE) && leafs->ext8_valid) {
         cpuinfo->maxphyaddr = leafs->ext8.eax & 0xff;
     } else {
         cpuinfo->maxphyaddr = 32;
@@ -557,10 +557,10 @@ static void identify_maxphyaddr(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs
 static void dump_features(const cpuinfo_t *cpuinfo) {
     info(
         "  Features:%s%s%s%s",
-        (cpuinfo->features & CPUINFO_FEATURE_PAE) ? " pae" : "",
-        (cpuinfo->features & CPUINFO_FEATURE_PGE) ? " pge" : "",
-        (cpuinfo->features & CPUINFO_FEATURE_SYSCALL) ? " syscall" : "",
-        (cpuinfo->features & CPUINFO_FEATURE_SYSENTER) ? " sysenter" : ""
+        (cpuinfo->features & CPU_FEATURE_PAE) ? " pae" : "",
+        (cpuinfo->features & CPU_FEATURE_PGE) ? " pge" : "",
+        (cpuinfo->features & CPU_FEATURE_SYSCALL) ? " syscall" : "",
+        (cpuinfo->features & CPU_FEATURE_SYSENTER) ? " sysenter" : ""
     );
 }
 
@@ -664,4 +664,33 @@ void detect_cpu_features(void) {
  */
 unsigned int machine_get_cpu_dcache_alignment(void) {
     return bsp_cpuinfo.dcache_alignment;
+}
+
+/**
+ * Determine whether the CPU supports the specified feature
+ * 
+ * Use the CPU_FEATURE_... constants for the mask arguments. A bitwise or of
+ * multiple of these constants is allowed, in which case this function will
+ * return true only if all the specified features are supported.
+ * 
+ * This function returns whether the boot CPU supports the specified feature.
+ * However, all CPUs should support the same feature set.
+ * 
+ * @param mask feature(s) for which to check support
+ * @return true if feature is supported, false otherwise
+ */
+bool cpu_has_feature(uint32_t mask) {
+    return (bsp_cpuinfo.features & mask) == mask;
+}
+
+/**
+ * Determine the width of physical addresses in bits
+ * 
+ * This function returns the information for the boot CPU. However, all CPUs
+ * should support the same feature set.
+ * 
+ * @return the width of physical addresses in bits
+ */
+unsigned int cpu_phys_addr_width(void) {
+    return bsp_cpuinfo.maxphyaddr;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2025 Philippe Aubertin.
+ * Copyright (C) 2019-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -258,7 +258,7 @@ static paddr_t get_pte_paddr(const pte_t *pte) {
 void pmap_init(const bootinfo_t *bootinfo) {
     kernel_page_tables              = bootinfo->page_tables;
     initial_addr_space.cr3          = bootinfo->cr3;
-    pgtable_format_pae              = bootinfo->use_pae;
+    pgtable_format_pae              = cpu_has_feature(CPU_FEATURE_PAE);
 
     if(pgtable_format_pae) {
         initial_addr_space.top_level.pdpt = (pdpt_t *)PHYS_TO_VIRT_AT_16MB(bootinfo->cr3);
@@ -267,10 +267,10 @@ void pmap_init(const bootinfo_t *bootinfo) {
     }
 
     entries_per_page_table  = pgtable_format_pae ? PAE_PAGE_TABLE_PTES :  NOPAE_PAGE_TABLE_PTES;
-    page_frame_number_mask  = ((UINT64_C(1) << bsp_cpuinfo.maxphyaddr) - 1) & (~PAGE_MASK);
+    page_frame_number_mask  = ((UINT64_C(1) << cpu_phys_addr_width()) - 1) & (~PAGE_MASK);
 
     /* Enable global pages */
-    if(cpu_has_feature(CPUINFO_FEATURE_PGE)) {
+    if(cpu_has_feature(CPU_FEATURE_PGE)) {
         set_cr4(get_cr4() | X86_CR4_PGE);
     }
 }

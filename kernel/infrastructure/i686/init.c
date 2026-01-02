@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2025 Philippe Aubertin.
+ * Copyright (C) 2019-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -73,8 +73,8 @@
 /** Specifies the entry point to use for system calls */
 int syscall_implementation;
 
-static void check_pae(const bootinfo_t *bootinfo, const config_t *config) {
-    if(bootinfo->use_pae) {
+static void check_pae(const config_t *config) {
+    if(cpu_has_feature(CPU_FEATURE_PAE)) {
         info("Physical Address Extension (PAE) and No eXecute (NX) protection are enabled.");
     } else if(config->machine.pae != CONFIG_PAE_REQUIRE) {
         warn(WARNING "Physical Address Extension (PAE) unsupported. NX protection disabled.");
@@ -158,7 +158,7 @@ static void initialize_page_allocator(boot_alloc_t *boot_alloc) {
 }
 
 static void select_syscall_implementation(void) {
-    if(cpu_has_feature(CPUINFO_FEATURE_SYSCALL)) {
+    if(cpu_has_feature(CPU_FEATURE_SYSCALL)) {
         uint64_t msrval;
 
         syscall_implementation = JINUE_I686_HOWSYSCALL_FAST_AMD;
@@ -173,7 +173,7 @@ static void select_syscall_implementation(void) {
 
         wrmsr(MSR_STAR, msrval);
     }
-    else if(cpu_has_feature(CPUINFO_FEATURE_SYSENTER)) {
+    else if(cpu_has_feature(CPU_FEATURE_SYSENTER)) {
         syscall_implementation = JINUE_I686_HOWSYSCALL_FAST_INTEL;
 
         wrmsr(MSR_IA32_SYSENTER_CS,  SEG_SELECTOR(GDT_KERNEL_CODE, RPL_KERNEL));
@@ -294,12 +294,11 @@ void machine_init_logging(const config_t *config) {
  * @param config kernel configuration
  */
 void machine_init(const config_t *config) {
-    const bootinfo_t *bootinfo = get_bootinfo();
-
-    check_pae(bootinfo, config);
+    check_pae(config);
 
     init_mp();
 
+    const bootinfo_t *bootinfo = get_bootinfo();
     check_system_address_map(bootinfo);
 
     boot_alloc_t boot_alloc;
@@ -340,7 +339,7 @@ void machine_init(const config_t *config) {
      *
      * This must be done before the first time pmap_create_addr_space() is
      * called, which happens when the first process is created. */
-    if(bootinfo->use_pae) {
+    if(cpu_has_feature(CPU_FEATURE_PAE)) {
         pae_create_pdpt_cache();
     }
 

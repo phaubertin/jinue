@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2019-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -146,7 +146,7 @@ static void set_kernel_stack(thread_t *thread) {
     tss->esp2 = kernel_stack_base;
 
     /* update kernel stack address for SYSENTER instruction */
-    if(cpu_has_feature(CPUINFO_FEATURE_SYSENTER)) {
+    if(cpu_has_feature(CPU_FEATURE_SYSENTER)) {
         wrmsr(MSR_IA32_SYSENTER_ESP, (uint64_t)(uintptr_t)kernel_stack_base);
     }
 }
