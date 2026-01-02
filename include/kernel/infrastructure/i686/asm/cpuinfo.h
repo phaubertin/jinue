@@ -34,13 +34,13 @@
 
 /* features */
 
-#define CPUINFO_FEATURE_SYSENTER    (1<<0)
+#define CPU_FEATURE_SYSENTER    (1<<0)
 
-#define CPUINFO_FEATURE_SYSCALL     (1<<1)
+#define CPU_FEATURE_SYSCALL     (1<<1)
 
-#define CPUINFO_FEATURE_PAE         (1<<2)
+#define CPU_FEATURE_PAE         (1<<2)
 
-#define CPUINFO_FEATURE_PGE         (1<<3)
+#define CPU_FEATURE_PGE         (1<<3)
 
 /* vendors */
 

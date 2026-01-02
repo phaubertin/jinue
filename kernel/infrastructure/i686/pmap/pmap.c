@@ -270,7 +270,7 @@ void pmap_init(const bootinfo_t *bootinfo) {
     page_frame_number_mask  = ((UINT64_C(1) << cpu_phys_addr_width()) - 1) & (~PAGE_MASK);
 
     /* Enable global pages */
-    if(cpu_has_feature(CPUINFO_FEATURE_PGE)) {
+    if(cpu_has_feature(CPU_FEATURE_PGE)) {
         set_cr4(get_cr4() | X86_CR4_PGE);
     }
 }

@@ -158,7 +158,7 @@ static void initialize_page_allocator(boot_alloc_t *boot_alloc) {
 }
 
 static void select_syscall_implementation(void) {
-    if(cpu_has_feature(CPUINFO_FEATURE_SYSCALL)) {
+    if(cpu_has_feature(CPU_FEATURE_SYSCALL)) {
         uint64_t msrval;
 
         syscall_implementation = JINUE_I686_HOWSYSCALL_FAST_AMD;
@@ -173,7 +173,7 @@ static void select_syscall_implementation(void) {
 
         wrmsr(MSR_STAR, msrval);
     }
-    else if(cpu_has_feature(CPUINFO_FEATURE_SYSENTER)) {
+    else if(cpu_has_feature(CPU_FEATURE_SYSENTER)) {
         syscall_implementation = JINUE_I686_HOWSYSCALL_FAST_INTEL;
 
         wrmsr(MSR_IA32_SYSENTER_CS,  SEG_SELECTOR(GDT_KERNEL_CODE, RPL_KERNEL));
