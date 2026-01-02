@@ -267,7 +267,7 @@ void pmap_init(const bootinfo_t *bootinfo) {
     }
 
     entries_per_page_table  = pgtable_format_pae ? PAE_PAGE_TABLE_PTES :  NOPAE_PAGE_TABLE_PTES;
-    page_frame_number_mask  = ((UINT64_C(1) << bsp_cpuinfo.maxphyaddr) - 1) & (~PAGE_MASK);
+    page_frame_number_mask  = ((UINT64_C(1) << cpu_phys_addr_width()) - 1) & (~PAGE_MASK);
 
     /* Enable global pages */
     if(cpu_has_feature(CPUINFO_FEATURE_PGE)) {

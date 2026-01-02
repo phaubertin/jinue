@@ -40,7 +40,7 @@
 #include <stdio.h>
 #include <string.h>
 
-cpuinfo_t bsp_cpuinfo;
+static cpuinfo_t bsp_cpuinfo;
 
 typedef struct {
     x86_cpuid_regs_t    basic0;
@@ -664,4 +664,33 @@ void detect_cpu_features(void) {
  */
 unsigned int machine_get_cpu_dcache_alignment(void) {
     return bsp_cpuinfo.dcache_alignment;
+}
+
+/**
+ * Determine whether the CPU supports the specified feature
+ * 
+ * Use the CPUINFO_FEATURE_* constants for the mask arguments. A bitwise or
+ * of multiple of these constants is allowed, in which case this function
+ * will return true only if all the specified features are supported.
+ * 
+ * This function returns whether the boot CPU supports the specified feature.
+ * However, all CPUs should support the same feature set.
+ * 
+ * @param mask feature(s) for which to check support
+ * @return true if feature is supported, false otherwise
+ */
+bool cpu_has_feature(uint32_t mask) {
+    return (bsp_cpuinfo.features & mask) == mask;
+}
+
+/**
+ * Determine the width of physical addresses in bits
+ * 
+ * This function returns the information for the boot CPU. However, all CPUs
+ * should support the same feature set.
+ * 
+ * @return the width of physical addresses in bits
+ */
+unsigned int cpu_phys_addr_width(void) {
+    return bsp_cpuinfo.maxphyaddr;
 }

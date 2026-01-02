@@ -48,12 +48,10 @@ typedef struct {
     char            brand_string[49];
 } cpuinfo_t;
 
-extern cpuinfo_t bsp_cpuinfo;
-
 void detect_cpu_features(void);
 
-static inline bool cpu_has_feature(uint32_t mask) {
-    return (bsp_cpuinfo.features & mask) == mask;
-}
+bool cpu_has_feature(uint32_t mask);
+
+unsigned int cpu_phys_addr_width(void);
 
 #endif
