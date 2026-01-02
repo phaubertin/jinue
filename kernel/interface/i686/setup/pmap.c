@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Philippe Aubertin.
+ * Copyright (C) 2025-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -37,7 +37,7 @@
 #include <kernel/interface/i686/setup/elf.h>
 #include <kernel/interface/i686/setup/pmap.h>
 #include <kernel/interface/i686/setup/setup32.h>
-#include <kernel/interface/i686/boot.h>
+#include <kernel/interface/i686/bootinfo.h>
 #include <kernel/interface/i686/types.h>
 #include <kernel/machine/asm/machine.h>
 #include <kernel/utils/pmap.h>

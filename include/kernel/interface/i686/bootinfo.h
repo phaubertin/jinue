@@ -29,11 +29,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INTERFACE_I686_BOOT_H
-#define JINUE_KERNEL_INTERFACE_I686_BOOT_H
+#ifndef JINUE_KERNEL_INTERFACE_I686_BOOTINFO_H
+#define JINUE_KERNEL_INTERFACE_I686_BOOTINFO_H
 
 #include <kernel/infrastructure/i686/types.h>
-#include <kernel/interface/i686/asm/boot.h>
 #include <kernel/interface/i686/asm/bootinfo.h>
 #include <kernel/interface/i686/types.h>
 #include <stdbool.h>

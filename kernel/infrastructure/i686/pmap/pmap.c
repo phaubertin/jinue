@@ -46,7 +46,7 @@
 #include <kernel/infrastructure/i686/cpuinfo.h>
 #include <kernel/infrastructure/i686/percpu.h>
 #include <kernel/infrastructure/elf.h>
-#include <kernel/interface/i686/boot.h>
+#include <kernel/interface/i686/bootinfo.h>
 #include <kernel/machine/pmap.h>
 #include <kernel/utils/utils.h>
 #include <sys/elf.h>

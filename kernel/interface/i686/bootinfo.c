@@ -31,7 +31,7 @@
 
 #include <kernel/domain/services/panic.h>
 #include <kernel/infrastructure/i686/pmap/pmap.h>
-#include <kernel/interface/i686/boot.h>
+#include <kernel/interface/i686/bootinfo.h>
 #include <stddef.h>
 
 /* There is no extern declaration of this global variable in any header file but
