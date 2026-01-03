@@ -28,7 +28,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-CPU=core2duo
+CPU=pentium2
 CMDLINE="DEBUG_DUMP_SYSCALL_IMPLEMENTATION=1"
 
 run
@@ -41,13 +41,15 @@ check_no_panic
 
 check_no_error
 
-echo "* Check CPU vendor, family and model for Core 2 Duo"
-grep -F "Vendor: Intel family: 6 model: 15 stepping:" $LOG || fail
+echo "* Check CPU vendor, family and model for Pentium II"
+grep -F "Vendor: Intel family: 6 model: 5 stepping:" $LOG || fail
 
 echo "* Check PAE was enabled"
-grep -F "Physical Address Extension (PAE) and No eXecute (NX) protection are enabled" $LOG || fail
+grep -F "Physical Address Extension (PAE) is enabled." $LOG || fail
 
-check_no_warning
+echo "* Check NX was not enabled"
+grep -F "No eXecute (NX) protection is enabled." $LOG && fail
+grep -F "warning: No eXecute (NX) protection is disabled because it is not supported by the processor." $LOG || fail
 
 check_loader_start
 

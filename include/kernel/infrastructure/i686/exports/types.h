@@ -76,16 +76,16 @@ typedef struct {
 } addr_space_t;
 
 typedef enum {
-    CONFIG_PAE_AUTO,
-    CONFIG_PAE_REQUIRE
-} config_i686_pae_t;
+    CONFIG_NX_AUTO,
+    CONFIG_NX_REQUIRE
+} config_i686_nx_t;
 
 typedef struct {
-    config_i686_pae_t    pae;
-    bool                 serial_enable;
-    int                  serial_baud_rate;
-    int                  serial_ioport;
-    bool                 vga_enable;
+    config_i686_nx_t    nx;
+    bool                serial_enable;
+    int                 serial_baud_rate;
+    int                 serial_ioport;
+    bool                vga_enable;
 } machine_config_t;
 
 typedef struct { uint32_t lock; } spinlock_t;

@@ -108,39 +108,6 @@ ltr:
 .end:
 
 ; ------------------------------------------------------------------------------
-; FUNCTION: cpuid
-; C PROTOTYPE: uint32_t cpuid(x86_cpuid_regs_t *regs)
-; ------------------------------------------------------------------------------
-    global cpuid:function (cpuid.end - cpuid)
-cpuid:
-    ; save registers
-    push ebx
-    push edi
-    
-    mov edi, [esp+12]   ; First param: regs
-    
-    mov eax, [edi+ 0]   ; regs->eax
-    mov ebx, [edi+ 4]   ; regs->ebx
-    mov ecx, [edi+ 8]   ; regs->ecx
-    mov edx, [edi+12]   ; regs->edx
-    
-    cpuid
-    
-    mov edi, [esp+12]   ; First param: regs
-    
-    mov [edi+ 0], eax
-    mov [edi+ 4], ebx
-    mov [edi+ 8], ecx
-    mov [edi+12], edx
-    
-    ; restore registers
-    pop edi
-    pop ebx
-        
-    ret
-.end:
-
-; ------------------------------------------------------------------------------
 ; FUNCTION: rdmsr
 ; C PROTOTYPE: uint64_t rdmsr(uint32_t addr)
 ; ------------------------------------------------------------------------------

@@ -521,7 +521,7 @@ static uint64_t map_page_access_flags(int prot) {
     }
 
     if(! (prot & JINUE_PROT_EXEC)) {
-        mapped_flags |= X86_PTE_NX;
+        mapped_flags |= cpu_has_feature(CPU_FEATURE_NX) ? X86_PTE_NX : 0;
     }
 
     return mapped_flags;

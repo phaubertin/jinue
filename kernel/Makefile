@@ -137,6 +137,7 @@ sources.kernel.nasm = \
 	infrastructure/i686/atomic/spinlock.asm \
 	infrastructure/i686/drivers/iodelay.asm \
 	infrastructure/i686/isa/abi.asm \
+	infrastructure/i686/isa/cpuid.asm \
 	infrastructure/i686/isa/instrs.asm \
 	infrastructure/i686/isa/io.asm \
 	infrastructure/i686/isa/regs.asm \
@@ -145,10 +146,16 @@ sources.kernel.nasm = \
 	interface/i686/trap.asm
 
 sources.setup16.nasm = interface/i686/setup/setup16.asm
-sources.setup32.nasm = interface/i686/setup/setup32.asm
+
+# setup32.asm must be first.
+sources.setup32.nasm = \
+	interface/i686/setup/setup32.asm \
+	interface/i686/setup/cpuid.asm \
+	infrastructure/i686/isa/cpuid.asm
 
 sources.setup32.c = \
 	interface/i686/setup/alloc.c \
+	interface/i686/setup/cpuid.c \
 	interface/i686/setup/elf.c \
 	interface/i686/setup/linux.c \
 	interface/i686/setup/main32.c \

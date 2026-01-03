@@ -45,8 +45,12 @@ echo "* Check CPU vendor, family and model for Pentium"
 grep -F "Vendor: Intel family: 5 model: 4 stepping:" $LOG || fail
 
 echo "* Check PAE was not enabled"
-grep -F "Physical Address Extension (PAE) and No eXecute (NX) protection are enabled" $LOG && fail
-grep -F "warning: Physical Address Extension (PAE) unsupported" $LOG || fail
+grep -F "Physical Address Extension (PAE) is enabled." $LOG && fail
+grep -F "Physical Address Extension (PAE) is disabled." $LOG || fail
+
+echo "* Check NX was not enabled"
+grep -F "No eXecute (NX) protection is enabled." $LOG && fail
+grep -F "warning: No eXecute (NX) protection is disabled because it is not supported by the processor." $LOG || fail
 
 check_loader_start
 

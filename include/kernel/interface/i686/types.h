@@ -57,7 +57,8 @@ typedef struct {
     pte_t                   *page_tables;
     pte_t                   *page_directory;
     uint32_t                 cr3;
-    uint32_t                 features;
+    uint8_t                  features;
+    uint8_t                  cpu_vendor;
     uint32_t                 setup_signature;
 } bootinfo_t;
 

@@ -74,12 +74,21 @@
 int syscall_implementation;
 
 static void check_pae(const config_t *config) {
-    if(cpu_has_feature(CPU_FEATURE_PAE)) {
-        info("Physical Address Extension (PAE) and No eXecute (NX) protection are enabled.");
-    } else if(config->machine.pae != CONFIG_PAE_REQUIRE) {
-        warn(WARNING "Physical Address Extension (PAE) unsupported. NX protection disabled.");
+    info(
+        "Physical Address Extension (PAE) is %s.",
+        cpu_has_feature(CPU_FEATURE_PAE) ? "enabled" : "disabled"
+    );
+
+    if(cpu_has_feature(CPU_FEATURE_NX)) {
+        info("No eXecute (NX) protection is enabled.");
+    } else if(config->machine.nx != CONFIG_NX_REQUIRE) {
+        warn(
+            WARNING "No eXecute (NX) protection is disabled because it is not supported by the processor."
+        );
     } else {
-        panic("Option pae=require passed on kernel command line but PAE is not supported.");
+        panic(
+            "Option nx=require on kernel command line but No eXecute (NX) protection is not supported by processor."
+        );
     }
 }
 
@@ -256,13 +265,13 @@ void machine_init_logging(const config_t *config) {
      * do... */
     init_uart16550a(config);
 
-    /* pmap_init() needs the size of physical addresses (maxphyaddr). */
-    detect_cpu_features();
-
     /* Validate the boot information structure before using it. */
     (void)check_bootinfo(true);
 
     const bootinfo_t *bootinfo = get_bootinfo();
+
+    /* pmap_init() needs the size of physical addresses (maxphyaddr). */
+    detect_cpu_features(bootinfo);
 
     /* This needs to be called before calling vga_init() and find_acpi_rsdp()
      * because these functions need to map memory in the mapping area. */

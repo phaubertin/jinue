@@ -42,8 +42,8 @@ For user space environment variables, the behaviour is undefined.
 | Name                | Type    | Description                                                  |
 |---------------------|---------|--------------------------------------------------------------|
 | `init`              | string  | Path to initial program in initial RAM disk                  |
+| `nx`                | string  | Whether No eXecute (NX) protection is required               |
 | `on_panic`          | string  | Action to take after a kernel panic                          |
-| `pae`               | string  | Whether Physical Address Extension (PAE) is required         |
 | `serial_enable`     | boolean | Enable/disable logging on the serial port                    |
 | `serial_baud_rate`  | integer | Baud rate for serial port logging                            |
 | `serial_ioport`     | integer | I/O port address for serial port logging                     |
@@ -71,6 +71,22 @@ must be an ELF binary.
 
 The default for this option is `/sbin/init`.
 
+### No eXecute (NX) Protection - `nx`
+
+Controls whether No eXecute (NX) protection is enabled or not.
+
+Type: string
+
+The following values are recognized:
+
+* `auto` (default) NX protection is enabled if supported by the CPU, disabled
+  otherwise.
+* `require` NX protection is enabled if supported by the CPU. If not supported,
+  the kernel refuses to boot.
+
+No eXecute (NX) protection is an extension to Physical Address Extension (PAE)
+that makes it possible to prevent code execution from individual memory pages.
+
 ### Kernel Panic Action - `on_panic`
 
 Action to take after a kernel panic.
@@ -86,24 +102,6 @@ Rebooting after a kernel panic can be helpful when testing the kernel in a virtu
 machine, as some virtual machine hosts can be set to exit when a reboot is triggered.
 If the test hangs instead of exiting, it can cause issues, particularly in automated
 testing environments.
-
-### Physical Address Extension - `pae`
-
-Controls whether Physical Address Extension (PAE) is enabled or not.
-
-Type: string
-
-The following values are recognized:
-
-* `auto` (default) PAE is enabled if supported by the CPU, disabled otherwise.
-* `require` PAE is enabled if supported by the CPU. If not supported, the kernel
-  refuses to boot.
-
-This option has security implications: the No eXecute (NX) flag that allows or
-prevents code execution from individual memory pages is only supported when PAE
-is enabled. For this reason, the kernel logs a warning during boot if PAE is
-disabled. If per-page code execution prevention is a security requirement for
-you, set this option to `require`.
 
 ### Enable Serial Logging - `serial_enable`
 

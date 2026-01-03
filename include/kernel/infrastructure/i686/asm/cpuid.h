@@ -98,6 +98,6 @@
 
 #define CPUID_EXT_FEATURE_SYSCALL       (1<<11)
 
-#define CPUID_FEATURE_NXE               (1<<20)
+#define CPUID_EXT_FEATURE_NX            (1<<20)
 
 #endif

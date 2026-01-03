@@ -32,6 +32,7 @@
 #include <kernel/interface/i686/asm/boot.h>
 #include <kernel/interface/i686/setup/elf.h>
 #include <kernel/interface/i686/setup/alloc.h>
+#include <kernel/interface/i686/setup/cpuid.h>
 #include <kernel/interface/i686/setup/linkdefs.h>
 #include <kernel/interface/i686/setup/linux.h>
 #include <kernel/interface/i686/setup/pmap.h>
@@ -99,6 +100,8 @@ static void adjust_bootinfo_pointers(bootinfo_t **bootinfo) {
  */
 bootinfo_t *main32(const linux_boot_params_t linux_boot_params) {
     bootinfo_t *bootinfo = create_bootinfo(linux_boot_params);
+
+    detect_cpu_features(bootinfo);
 
     data_segment_t data_segment;
 

@@ -55,9 +55,7 @@ struct pte_t {
  * @param bootinfo boot information structure
  */
 void allocate_page_tables(bootinfo_t *bootinfo) {
-    /* Detect PAE support */
-    bool use_pae = detect_pae();
-    bootinfo->features |= use_pae ? BOOTINFO_FEATURE_PAE : 0;
+    bool use_pae = bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_PAE);
     
     size_t per_table_bits = use_pae ? 9 : 10;
 
@@ -150,7 +148,8 @@ static inline uint64_t *get_pdpt(const bootinfo_t *bootinfo) {
  * @param bootinfo boot information structure
  */
 void initialize_page_tables(bootinfo_t *bootinfo, const data_segment_t *data_segment) {
-    bool use_pae = bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_PAE);
+    bool use_pae    = bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_PAE);
+    uint64_t nx     = bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_NX) ? X86_PTE_NX : 0;
 
     /* map the kernel image */
     clear_ptes(
@@ -165,7 +164,7 @@ void initialize_page_tables(bootinfo_t *bootinfo, const data_segment_t *data_seg
         bootinfo->page_tables,
         (KERNEL_BASE - JINUE_KLIMIT) >> PAGE_BITS,
         ((char *)bootinfo->image_top - (char *)bootinfo->image_start) >> PAGE_BITS,
-        (uint32_t)bootinfo->image_start | X86_PTE_GLOBAL | X86_PTE_NX
+        (uint32_t)bootinfo->image_start | X86_PTE_GLOBAL | nx
     );
 
     /* make sure this setup code is executable */
@@ -203,7 +202,7 @@ void initialize_page_tables(bootinfo_t *bootinfo, const data_segment_t *data_seg
             bootinfo->page_tables,
             data_offset >> PAGE_BITS,
             NUM_PAGES(data_segment->size),
-            data_segment->physaddr | X86_PTE_READ_WRITE | X86_PTE_GLOBAL | X86_PTE_NX
+            data_segment->physaddr | X86_PTE_READ_WRITE | X86_PTE_GLOBAL | nx
         );
     }
 
@@ -213,7 +212,7 @@ void initialize_page_tables(bootinfo_t *bootinfo, const data_segment_t *data_seg
         bootinfo->page_tables,
         (ALLOC_BASE - JINUE_KLIMIT) >> PAGE_BITS,
         NUM_PAGES(BOOT_SIZE_AT_16MB),
-        MEMORY_ADDR_16MB | X86_PTE_READ_WRITE | X86_PTE_GLOBAL | X86_PTE_NX
+        MEMORY_ADDR_16MB | X86_PTE_READ_WRITE | X86_PTE_GLOBAL | nx
     );
 
     /* link page tables in page directory */
@@ -260,7 +259,8 @@ void initialize_page_tables(bootinfo_t *bootinfo, const data_segment_t *data_seg
  * @param bootinfo boot information structure
  */
 void prepare_for_paging(bootinfo_t *bootinfo) {
-    bool use_pae = bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_PAE);
+    bool use_pae    = bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_PAE);
+    uint64_t nx     = bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_NX) ? X86_PTE_NX : 0;
 
     /* mappings for the kernel image at 0x100000 (1MB) */
     pte_t *page_tables_1mb = alloc_pages(bootinfo, PAGE_SIZE);
@@ -274,7 +274,7 @@ void prepare_for_paging(bootinfo_t *bootinfo) {
         page_tables_1mb,
         MEMORY_ADDR_1MB >> PAGE_BITS,
         ((char *)bootinfo->image_top - (char *)bootinfo->image_start) >> PAGE_BITS,
-        (uint32_t)bootinfo->image_start | X86_PTE_NX
+        (uint32_t)bootinfo->image_start | nx
     );
 
     /* Make sure this setup code is executable.
@@ -302,7 +302,7 @@ void prepare_for_paging(bootinfo_t *bootinfo) {
         page_tables_16mb,
         0,
         NUM_PAGES(BOOT_SIZE_AT_16MB),
-        MEMORY_ADDR_16MB | X86_PTE_READ_WRITE | X86_PTE_NX
+        MEMORY_ADDR_16MB | X86_PTE_READ_WRITE | nx
     );
 
     /* Link the temporary page tables into the page directory. */
