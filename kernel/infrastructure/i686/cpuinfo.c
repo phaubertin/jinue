@@ -519,11 +519,12 @@ static void enumerate_features(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs)
  * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
  */
 static void identify_maxphyaddr(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs) {
-    /* TODO isn't the minimum 36 when PAE is supported? */
-    if((cpuinfo->features & CPU_FEATURE_PAE) && leafs->ext8_valid) {
-        cpuinfo->maxphyaddr = leafs->ext8.eax & 0xff;
-    } else {
+    if(!(cpuinfo->features & CPU_FEATURE_PAE)) {
         cpuinfo->maxphyaddr = 32;
+    } else if(!leafs->ext8_valid) {
+        cpuinfo->maxphyaddr = 36;
+    } else {
+        cpuinfo->maxphyaddr = leafs->ext8.eax & 0xff;
     }
 }
 
