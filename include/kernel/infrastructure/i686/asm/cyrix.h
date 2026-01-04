@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,15 +29,67 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INTERFACE_I686_BOOT_H
-#define JINUE_KERNEL_INTERFACE_I686_BOOT_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_CYRIX_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_CYRIX_H
 
-#include <kernel/infrastructure/i686/types.h>
-#include <kernel/interface/i686/asm/boot.h>
-#include <kernel/interface/i686/types.h>
+/* See Cyrix 6x86 processor databoook section 2.4.4 and table 2-10 "6x86 CPU
+ * Configuration Registers" */
 
-bool check_bootinfo(bool panic_on_failure);
+#define CYRIX_CONF_INDEX_IOPORT 0x22
 
-const bootinfo_t *get_bootinfo(void);
+#define CYRIX_CONF_DATA_IOPORT  0x23
+
+
+#define CYRIX_CONFREG_CCR0  0xc0
+
+#define CYRIX_CONFREG_CCR1  0xc1
+
+#define CYRIX_CONFREG_CCR2  0xc2
+
+#define CYRIX_CONFREG_CCR3  0xc3
+
+#define CYRIX_CONFREG_CCR4  0xe8
+
+#define CYRIX_CONFREG_CCR5  0xe9
+
+
+#define CYRIX_CONFREG_ARR0  0xc4
+
+#define CYRIX_CONFREG_ARR1  0xc7
+
+#define CYRIX_CONFREG_ARR2  0xca
+
+#define CYRIX_CONFREG_ARR3  0xcd
+
+#define CYRIX_CONFREG_ARR4  0xd0
+
+#define CYRIX_CONFREG_ARR5  0xd3
+
+#define CYRIX_CONFREG_ARR6  0xd6
+
+#define CYRIX_CONFREG_ARR7  0xd9
+
+
+#define CYRIX_CONFREG_RCR0  0xdc
+
+#define CYRIX_CONFREG_RCR1  0xdd
+
+#define CYRIX_CONFREG_RCR2  0xde
+
+#define CYRIX_CONFREG_RCR3  0xdf
+
+#define CYRIX_CONFREG_RCR4  0xe0
+
+#define CYRIX_CONFREG_RCR5  0xe1
+
+#define CYRIX_CONFREG_RCR6  0xe2
+
+#define CYRIX_CONFREG_RCR7  0xe3
+
+
+#define CYRIX_CONFREG_DIR0  0xfe
+
+#define CYRIX_CONFREG_DIR1  0xff
+
 
 #endif

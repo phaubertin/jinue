@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Philippe Aubertin.
+ * Copyright (C) 2022-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -34,7 +34,7 @@
 #include <kernel/infrastructure/i686/asm/serial.h>
 #include <kernel/machine/cmdline.h>
 
-#define CMDLINE_ERROR_INVALID_PAE               (1<<0)
+#define CMDLINE_ERROR_INVALID_NX               (1<<0)
 
 #define CMDLINE_ERROR_INVALID_SERIAL_ENABLE     (1<<1)
 
@@ -49,7 +49,7 @@
 static int cmdline_errors;
 
 typedef enum {
-    CMDLINE_OPT_NAME_PAE,
+    CMDLINE_OPT_NAME_NX,
     CMDLINE_OPT_NAME_SERIAL_ENABLE,
     CMDLINE_OPT_NAME_SERIAL_BAUD_RATE,
     CMDLINE_OPT_NAME_SERIAL_IOPORT,
@@ -58,7 +58,7 @@ typedef enum {
 } cmdline_opt_names_t;
 
 static const cmdline_enum_def_t kernel_option_names[] = {
-    {"pae",                 CMDLINE_OPT_NAME_PAE},
+    {"nx",                  CMDLINE_OPT_NAME_NX},
     {"serial_enable",       CMDLINE_OPT_NAME_SERIAL_ENABLE},
     {"serial_baud_rate",    CMDLINE_OPT_NAME_SERIAL_BAUD_RATE},
     {"serial_ioport",       CMDLINE_OPT_NAME_SERIAL_IOPORT},
@@ -67,9 +67,9 @@ static const cmdline_enum_def_t kernel_option_names[] = {
     {NULL, 0}
 };
 
-static const cmdline_enum_def_t opt_pae_names[] = {
-    {"auto",        CONFIG_PAE_AUTO},
-    {"require",     CONFIG_PAE_REQUIRE},
+static const cmdline_enum_def_t opt_nx_names[] = {
+    {"auto",        CONFIG_NX_AUTO},
+    {"require",     CONFIG_NX_REQUIRE},
     {NULL, 0}
 };
 
@@ -137,9 +137,9 @@ void machine_cmdline_process_option(
     }
 
     switch(opt_name) {
-    case CMDLINE_OPT_NAME_PAE:
-        if(!cmdline_match_enum((int *)&(config->pae), opt_pae_names, value)) {
-            cmdline_errors |= CMDLINE_ERROR_INVALID_PAE;
+    case CMDLINE_OPT_NAME_NX:
+        if(!cmdline_match_enum((int *)&(config->nx), opt_nx_names, value)) {
+            cmdline_errors |= CMDLINE_ERROR_INVALID_NX;
         }
         break;
     case CMDLINE_OPT_NAME_SERIAL_ENABLE:
@@ -179,8 +179,8 @@ void machine_cmdline_process_option(
 }
 
 void machine_cmdline_report_errors(void) {
-    if(cmdline_errors & CMDLINE_ERROR_INVALID_PAE) {
-        warn("  Invalid value for argument 'pae'");
+    if(cmdline_errors & CMDLINE_ERROR_INVALID_NX) {
+        warn("  Invalid value for argument 'nx'");
     }
 
     if(cmdline_errors & CMDLINE_ERROR_INVALID_SERIAL_ENABLE) {

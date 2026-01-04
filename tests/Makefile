@@ -1,4 +1,4 @@
-# Copyright (C) 2024 Philippe Aubertin.
+# Copyright (C) 2024-2026 Philippe Aubertin.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -39,8 +39,8 @@ deps                = $(kernel_img) $(testapp_initrd)
 tests = \
 	test_486_too_old \
 	test_acpi \
-	test_boot_nopae \
-	test_boot_pae \
+	test_boot_no_nx \
+	test_boot_nx \
 	test_boot_pentium \
 	test_detect_qemu \
 	test_ipc \

@@ -29,20 +29,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_I686_ASM_BOOTINFO_H
-#define JINUE_KERNEL_I686_ASM_BOOTINFO_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_CPUID_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_CPUID_H
 
-#define BOOTINFO_FEATURE_CPUID  (1<<0)
+#include <stdint.h>
 
-#define BOOTINFO_FEATURE_PAE    (1<<1)
+typedef struct {
+    uint32_t eax;
+    uint32_t ebx;
+    uint32_t ecx;
+    uint32_t edx;
+} x86_cpuid_regs_t;
 
-#define BOOTINFO_FEATURE_NX     (1<<2)
-
-/* The following definitions must match the offsets of the members of the
- * bootinfo_t struct defined in interface/i686/types.h. They are used by
- * assembly language code. */
-
-/** Offset of the cmdline bootinfo_t member */
-#define BOOTINFO_CMDLINE        0
+uint32_t cpuid(x86_cpuid_regs_t *regs);
 
 #endif

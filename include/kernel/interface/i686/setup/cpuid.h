@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2026 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,20 +29,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_I686_ASM_BOOTINFO_H
-#define JINUE_KERNEL_I686_ASM_BOOTINFO_H
+#ifndef JINUE_KERNEL_INTERFACE_I686_SETUP_CPUID_H
+#define JINUE_KERNEL_INTERFACE_I686_SETUP_CPUID_H
 
-#define BOOTINFO_FEATURE_CPUID  (1<<0)
+#include <kernel/interface/i686/types.h>
 
-#define BOOTINFO_FEATURE_PAE    (1<<1)
+bool detect_cpuid(void);
 
-#define BOOTINFO_FEATURE_NX     (1<<2)
-
-/* The following definitions must match the offsets of the members of the
- * bootinfo_t struct defined in interface/i686/types.h. They are used by
- * assembly language code. */
-
-/** Offset of the cmdline bootinfo_t member */
-#define BOOTINFO_CMDLINE        0
+void detect_cpu_features(bootinfo_t *bootinfo);
 
 #endif

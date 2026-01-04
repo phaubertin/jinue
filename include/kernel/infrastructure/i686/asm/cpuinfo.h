@@ -34,21 +34,33 @@
 
 /* features */
 
-#define CPU_FEATURE_SYSENTER    (1<<0)
+#define CPU_FEATURE_CPUID       (1<<0)
 
-#define CPU_FEATURE_SYSCALL     (1<<1)
+#define CPU_FEATURE_NX          (1<<1)
 
 #define CPU_FEATURE_PAE         (1<<2)
 
 #define CPU_FEATURE_PGE         (1<<3)
 
+#define CPU_FEATURE_SYSCALL     (1<<4)
+
+#define CPU_FEATURE_SYSENTER    (1<<5)
+
 /* vendors */
 
-#define CPUINFO_VENDOR_GENERIC      0
+#define CPU_VENDOR_GENERIC          0
 
-#define CPUINFO_VENDOR_AMD          1
+#define CPU_VENDOR_AMD              1
 
-#define CPUINFO_VENDOR_INTEL        2
+#define CPU_VENDOR_CENTAUR_VIA      2
+
+#define CPU_VENDOR_CYRIX            3
+
+#define CPU_VENDOR_HYGON            4
+
+#define CPU_VENDOR_INTEL            5
+
+#define CPU_VENDOR_ZHAOXIN          6
 
 /* hypervisors */
 

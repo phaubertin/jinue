@@ -34,7 +34,7 @@
 #include <kernel/infrastructure/acpi/asm/addrmap.h>
 #include <kernel/infrastructure/i686/memory/addrmap.h>
 #include <kernel/infrastructure/i686/pmap/pmap.h>
-#include <kernel/interface/i686/boot.h>
+#include <kernel/interface/i686/bootinfo.h>
 #include <kernel/machine/memory.h>
 #include <stdbool.h>
 #include <stddef.h>

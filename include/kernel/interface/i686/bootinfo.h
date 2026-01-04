@@ -29,20 +29,36 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_I686_ASM_BOOTINFO_H
-#define JINUE_KERNEL_I686_ASM_BOOTINFO_H
+#ifndef JINUE_KERNEL_INTERFACE_I686_BOOTINFO_H
+#define JINUE_KERNEL_INTERFACE_I686_BOOTINFO_H
 
-#define BOOTINFO_FEATURE_CPUID  (1<<0)
+#include <kernel/infrastructure/i686/types.h>
+#include <kernel/interface/i686/asm/bootinfo.h>
+#include <kernel/interface/i686/types.h>
+#include <stdbool.h>
 
-#define BOOTINFO_FEATURE_PAE    (1<<1)
+bool check_bootinfo(bool panic_on_failure);
 
-#define BOOTINFO_FEATURE_NX     (1<<2)
+const bootinfo_t *get_bootinfo(void);
 
-/* The following definitions must match the offsets of the members of the
- * bootinfo_t struct defined in interface/i686/types.h. They are used by
- * assembly language code. */
-
-/** Offset of the cmdline bootinfo_t member */
-#define BOOTINFO_CMDLINE        0
+/**
+ * Determine if specified feature was detected by the setup code
+ * 
+ * Use the BOOTINFO_FEATURE_... constants for the mask arguments. A bitwise or
+ * of multiple of these constants is allowed, in which case this function will
+ * return true only if all the specified features are supported.
+ * 
+ * The boot information (aka. bootinfo) structure is used to coommunicate
+ * information between the setup code and the kernel proper. In general, in
+ * order to determine if a CPU feature is supported, you should use the
+ * cpu_has_feature() function instead.
+ *
+ * @param bootinfo the boot information structure
+ * @param mask feature(s) for which to check support
+ * @return true if feature is supported, false otherwise
+ */
+static inline bool bootinfo_has_feature(const bootinfo_t *bootinfo, uint32_t mask) {
+    return (bootinfo->features & mask) == mask;
+}
 
 #endif

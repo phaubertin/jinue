@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (C) 2024 Philippe Aubertin.
+# Copyright (C) 2024-2026 Philippe Aubertin.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -45,7 +45,10 @@ echo "* Check CPU vendor, family and model for Core 2 Duo"
 grep -F "Vendor: Intel family: 6 model: 15 stepping:" $LOG || fail
 
 echo "* Check PAE was enabled"
-grep -F "Physical Address Extension (PAE) and No eXecute (NX) protection are enabled" $LOG || fail
+grep -F "Physical Address Extension (PAE) is enabled." $LOG || fail
+
+echo "* Check NX was enabled"
+grep -F "No eXecute (NX) protection is enabled." $LOG || fail
 
 check_no_warning
 

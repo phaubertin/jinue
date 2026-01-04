@@ -40,7 +40,7 @@
 #include <kernel/infrastructure/i686/pmap/private.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
 #include <kernel/infrastructure/i686/cpuinfo.h>
-#include <kernel/interface/i686/boot.h>
+#include <kernel/interface/i686/bootinfo.h>
 #include <kernel/utils/pmap.h>
 #include <kernel/utils/utils.h>
 #include <assert.h>

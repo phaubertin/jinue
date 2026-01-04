@@ -33,6 +33,7 @@
 #define JINUE_KERNEL_INFRASTRUCTURE_I686_CPUINFO_H
 
 #include <kernel/infrastructure/i686/asm/cpuinfo.h>
+#include <kernel/interface/i686/types.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -48,7 +49,7 @@ typedef struct {
     char            brand_string[49];
 } cpuinfo_t;
 
-void detect_cpu_features(void);
+void detect_cpu_features(const bootinfo_t *bootinfo);
 
 bool cpu_has_feature(uint32_t mask);
 

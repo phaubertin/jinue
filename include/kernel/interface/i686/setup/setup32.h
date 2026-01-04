@@ -39,6 +39,4 @@ void enable_paging(bool use_pae, uint32_t cr3);
 
 void adjust_stack(void);
 
-bool detect_pae(void);
-
 #endif

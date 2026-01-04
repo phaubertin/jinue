@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Philippe Aubertin.
+ * Copyright (C) 2025-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -32,10 +32,12 @@
 #include <kernel/interface/i686/asm/boot.h>
 #include <kernel/interface/i686/setup/elf.h>
 #include <kernel/interface/i686/setup/alloc.h>
+#include <kernel/interface/i686/setup/cpuid.h>
 #include <kernel/interface/i686/setup/linkdefs.h>
 #include <kernel/interface/i686/setup/linux.h>
 #include <kernel/interface/i686/setup/pmap.h>
 #include <kernel/interface/i686/setup/setup32.h>
+#include <kernel/interface/i686/bootinfo.h>
 #include <kernel/interface/i686/types.h>
 
 /**
@@ -99,6 +101,8 @@ static void adjust_bootinfo_pointers(bootinfo_t **bootinfo) {
 bootinfo_t *main32(const linux_boot_params_t linux_boot_params) {
     bootinfo_t *bootinfo = create_bootinfo(linux_boot_params);
 
+    detect_cpu_features(bootinfo);
+
     data_segment_t data_segment;
 
     prepare_data_segment(&data_segment, bootinfo);
@@ -109,7 +113,9 @@ bootinfo_t *main32(const linux_boot_params_t linux_boot_params) {
 
     prepare_for_paging(bootinfo);
 
-    enable_paging(bootinfo->use_pae, bootinfo->cr3);
+    bool use_pae = bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_PAE);
+
+    enable_paging(use_pae, bootinfo->cr3);
 
     adjust_bootinfo_pointers(&bootinfo);
 
@@ -119,7 +125,7 @@ bootinfo_t *main32(const linux_boot_params_t linux_boot_params) {
 
     /* Reload CR3 to invalidate TLBs so the changes by cleanup_after_paging()
      * take effect. */
-    enable_paging(bootinfo->use_pae, bootinfo->cr3);
+    enable_paging(use_pae, bootinfo->cr3);
 
     return bootinfo;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2025 Philippe Aubertin.
+ * Copyright (C) 2019-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -31,7 +31,7 @@
 
 #include <kernel/domain/services/panic.h>
 #include <kernel/infrastructure/i686/pmap/pmap.h>
-#include <kernel/interface/i686/boot.h>
+#include <kernel/interface/i686/bootinfo.h>
 #include <stddef.h>
 
 /* There is no extern declaration of this global variable in any header file but

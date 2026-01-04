@@ -32,9 +32,11 @@
 #include <kernel/domain/services/panic.h>
 #include <kernel/infrastructure/i686/asm/cpuid.h>
 #include <kernel/infrastructure/i686/asm/eflags.h>
+#include <kernel/infrastructure/i686/isa/cpuid.h>
 #include <kernel/infrastructure/i686/isa/instrs.h>
 #include <kernel/infrastructure/i686/isa/regs.h>
 #include <kernel/infrastructure/i686/cpuinfo.h>
+#include <kernel/interface/i686/bootinfo.h>
 #include <kernel/machine/cpuinfo.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -67,18 +69,28 @@ static void too_old(void) {
 }
 
 /**
- * Check whether the CPUID instruction is supported, panic otherwise
+ * Update CPU information with features enumerated by setup code
+ * 
+ * @param cpuinfo structure in which to set the feature flags (OUT)
+ * @param bootinfo boot information structure
  */
-static void check_cpuid_is_supported(void) {
-    /* The CPUID instruction is available if we can change the value of eflags
-     * bit 21 (ID) */
-    uint32_t temp_eflags = get_eflags();
-    temp_eflags ^= EFLAGS_ID;
-    set_eflags(temp_eflags);
-    
-    if((temp_eflags & EFLAGS_ID) != (get_eflags() & EFLAGS_ID)) {
+static void enumerate_bootinfo_features(cpuinfo_t *cpuinfo, const bootinfo_t *bootinfo) {
+    cpuinfo->vendor     = bootinfo->cpu_vendor;
+    cpuinfo->features   = 0;
+
+    if(!bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_CPUID)) {
         error("CPUID instruction is not supported");
         too_old();
+    }
+
+    cpuinfo->features |= CPU_FEATURE_CPUID;
+
+    if(bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_PAE)) {
+        cpuinfo->features |= CPU_FEATURE_PAE;
+    }
+
+    if(bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_NX)) {
+        cpuinfo->features |= CPU_FEATURE_NX;
     }
 }
 
@@ -113,6 +125,10 @@ static void get_cpuid_leafs(cpuid_leafs_set *leafs) {
     /* leaf 0x80000000 */
 
     uint32_t ext_max = cpuid(&leafs->ext0);
+
+    if((ext_max & 0xffff0000) != 0x80000000) {
+        ext_max = 0;
+    }
 
     /* leaf 0x80000001 */
 
@@ -205,37 +221,6 @@ static int map_signature(const x86_cpuid_regs_t *regs, const cpuid_signature_t m
 
         return mapping[idx].id;
     }
-}
-
-/**
- * Identify the CPU vendor based on CPUID results
- * 
- * @param cpuinfo structure in which to set the vendor (OUT)
- * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
- */
-static void identify_vendor(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs) {
-    static const cpuid_signature_t mapping[] = {
-        {
-            .id             = CPUINFO_VENDOR_AMD,
-            .signature_ebx  = CPUID_VENDOR_AMD_EBX,
-            .signature_ecx  = CPUID_VENDOR_AMD_ECX,
-            .signature_edx  = CPUID_VENDOR_AMD_EDX
-        },
-        {
-            .id             = CPUINFO_VENDOR_INTEL,
-            .signature_ebx  = CPUID_VENDOR_INTEL_EBX,
-            .signature_ecx  = CPUID_VENDOR_INTEL_ECX,
-            .signature_edx  = CPUID_VENDOR_INTEL_EDX
-        },
-        {
-            .id             = CPUINFO_VENDOR_GENERIC,
-            .signature_ebx  = SIGNATURE_ANY,
-            .signature_ecx  = SIGNATURE_ANY,
-            .signature_edx  = SIGNATURE_ANY
-        }
-    };
-
-    cpuinfo->vendor = map_signature(&leafs->basic0, mapping);
 }
 
 /**
@@ -432,7 +417,7 @@ static void identify_dcache_alignment(cpuinfo_t *cpuinfo, const cpuid_leafs_set 
  * @return true if CPU vendor is AMD, false otherwise
  */
 static bool is_amd(const cpuinfo_t *cpuinfo) {
-    return cpuinfo->vendor == CPUINFO_VENDOR_AMD;
+    return cpuinfo->vendor == CPU_VENDOR_AMD;
 }
 
 /**
@@ -442,7 +427,7 @@ static bool is_amd(const cpuinfo_t *cpuinfo) {
  * @return true if CPU vendor is Intel, false otherwise
  */
 static bool is_intel(const cpuinfo_t *cpuinfo) {
-    return cpuinfo->vendor == CPUINFO_VENDOR_INTEL;
+    return cpuinfo->vendor == CPU_VENDOR_INTEL;
 }
 
 /**
@@ -452,7 +437,7 @@ static bool is_intel(const cpuinfo_t *cpuinfo) {
  * @return true if CPU vendor is AMD or Intel, false otherwise
  */
 static bool is_amd_or_intel(const cpuinfo_t *cpuinfo) {
-    return cpuinfo->vendor == CPUINFO_VENDOR_AMD || cpuinfo->vendor == CPUINFO_VENDOR_INTEL;
+    return cpuinfo->vendor == CPU_VENDOR_AMD || cpuinfo->vendor == CPU_VENDOR_INTEL;
 }
 
 /**
@@ -506,15 +491,12 @@ static void detect_syscall_instruction(cpuinfo_t *cpuinfo, const cpuid_leafs_set
  */
 static void enumerate_features(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs) {
     uint32_t flags = leafs->basic1.edx;
-    uint32_t ext_flags = leafs->ext1.edx;
 
     /* support for local APIC */
     if(!(flags & CPUID_FEATURE_APIC)) {
         error("no integrated local APIC");
         too_old();
     }
-    
-    cpuinfo->features = 0;
 
     /* global pages */
     if(flags & CPUID_FEATURE_PGE) {
@@ -528,11 +510,6 @@ static void enumerate_features(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs)
     if(!is_amd_or_intel(cpuinfo)) {
         return;
     }
-
-    /* Enabling Physical Address Extension (PAE) and No-Execute (NX) bit */
-    if((flags & CPUID_FEATURE_PAE) && (ext_flags & CPUID_FEATURE_NXE)) {
-        cpuinfo->features |= CPU_FEATURE_PAE;
-    }
 }
 
 /**
@@ -542,6 +519,7 @@ static void enumerate_features(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs)
  * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
  */
 static void identify_maxphyaddr(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs) {
+    /* TODO isn't the minimum 36 when PAE is supported? */
     if((cpuinfo->features & CPU_FEATURE_PAE) && leafs->ext8_valid) {
         cpuinfo->maxphyaddr = leafs->ext8.eax & 0xff;
     } else {
@@ -556,7 +534,10 @@ static void identify_maxphyaddr(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs
  */
 static void dump_features(const cpuinfo_t *cpuinfo) {
     info(
-        "  Features:%s%s%s%s",
+        "  Features:%s%s%s%s%s%s%s",
+        (cpuinfo->features == 0) ? " (none)" : "",
+        (cpuinfo->features & CPU_FEATURE_CPUID) ? " cpuid" : "",
+        (cpuinfo->features & CPU_FEATURE_NX) ? " nx" : "",
         (cpuinfo->features & CPU_FEATURE_PAE) ? " pae" : "",
         (cpuinfo->features & CPU_FEATURE_PGE) ? " pge" : "",
         (cpuinfo->features & CPU_FEATURE_SYSCALL) ? " syscall" : "",
@@ -572,12 +553,20 @@ static void dump_features(const cpuinfo_t *cpuinfo) {
  */
 static const char *get_vendor_string(const cpuinfo_t *cpuinfo) {
     switch(cpuinfo->vendor) {
-        case CPUINFO_VENDOR_AMD:
+        case CPU_VENDOR_AMD:
             return "AMD";
-        case CPUINFO_VENDOR_INTEL:
+        case CPU_VENDOR_CENTAUR_VIA:
+            return "Centaur/Via";
+        case CPU_VENDOR_CYRIX:
+            return "Cyrix";
+        case CPU_VENDOR_HYGON:
+            return "Hygon";
+        case CPU_VENDOR_INTEL:
             return "Intel";
-        default:
+        case CPU_VENDOR_GENERIC:
             return "Generic";
+        default:
+            return "???";
     }
 }
 
@@ -634,14 +623,12 @@ static void dump_cpu_info(const cpuinfo_t *cpuinfo) {
 /**
  * Detect the features of the bootstrap processor (BSP)
  */
-void detect_cpu_features(void) {
-    check_cpuid_is_supported();
+void detect_cpu_features(const bootinfo_t *bootinfo) {
+    enumerate_bootinfo_features(&bsp_cpuinfo, bootinfo);
 
     cpuid_leafs_set cpuid_leafs;
     get_cpuid_leafs(&cpuid_leafs);
     
-    identify_vendor(&bsp_cpuinfo, &cpuid_leafs);
-
     identify_hypervisor(&bsp_cpuinfo, &cpuid_leafs);
 
     identify_model(&bsp_cpuinfo, &cpuid_leafs);

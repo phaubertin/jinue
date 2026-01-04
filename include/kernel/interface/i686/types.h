@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2025 Philippe Aubertin.
+ * Copyright (C) 2019-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -38,12 +38,10 @@
 #include <sys/elf.h>
 
 /* This structure is used by the assembly language setup code to pass
- * information to the kernel. Whenever changes are made to this structure
- * declaration, the constants in the kernel/interface/i686/asm/boot.h must be updated
- * (member offsets and structure size).
- *
- * See also the setup code, i.e. kernel/i686/setup/setup32.asm. */
+ * information to the kernel. When changes are made to this structure,
+ * constants in kernel/interface/i686/asm/bootinfo.h may need to be updated. */
 typedef struct {
+    void                    *cmdline;
     Elf32_Ehdr              *kernel_start;
     size_t                   kernel_size;
     Elf32_Ehdr              *loader_start;
@@ -54,13 +52,13 @@ typedef struct {
     size_t                   ramdisk_size;
     const acpi_addr_range_t *acpi_addr_map;
     uint32_t                 addr_map_entries;
-    void                    *cmdline;
     void                    *boot_heap;
     void                    *boot_end;
     pte_t                   *page_tables;
     pte_t                   *page_directory;
     uint32_t                 cr3;
-    bool                     use_pae;
+    uint8_t                  features;
+    uint8_t                  cpu_vendor;
     uint32_t                 setup_signature;
 } bootinfo_t;
 

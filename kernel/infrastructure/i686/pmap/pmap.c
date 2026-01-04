@@ -46,7 +46,7 @@
 #include <kernel/infrastructure/i686/cpuinfo.h>
 #include <kernel/infrastructure/i686/percpu.h>
 #include <kernel/infrastructure/elf.h>
-#include <kernel/interface/i686/boot.h>
+#include <kernel/interface/i686/bootinfo.h>
 #include <kernel/machine/pmap.h>
 #include <kernel/utils/utils.h>
 #include <sys/elf.h>
@@ -521,7 +521,7 @@ static uint64_t map_page_access_flags(int prot) {
     }
 
     if(! (prot & JINUE_PROT_EXEC)) {
-        mapped_flags |= X86_PTE_NX;
+        mapped_flags |= cpu_has_feature(CPU_FEATURE_NX) ? X86_PTE_NX : 0;
     }
 
     return mapped_flags;

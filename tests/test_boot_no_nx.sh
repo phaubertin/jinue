@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (C) 2024 Philippe Aubertin.
+# Copyright (C) 2024-2026 Philippe Aubertin.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -44,9 +44,12 @@ check_no_error
 echo "* Check CPU vendor, family and model for Pentium II"
 grep -F "Vendor: Intel family: 6 model: 5 stepping:" $LOG || fail
 
-echo "* Check PAE was not enabled"
-grep -F "Physical Address Extension (PAE) and No eXecute (NX) protection are enabled" $LOG && fail
-grep -F "warning: Physical Address Extension (PAE) unsupported" $LOG || fail
+echo "* Check PAE was enabled"
+grep -F "Physical Address Extension (PAE) is enabled." $LOG || fail
+
+echo "* Check NX was not enabled"
+grep -F "No eXecute (NX) protection is enabled." $LOG && fail
+grep -F "warning: No eXecute (NX) protection is disabled because it is not supported by the processor." $LOG || fail
 
 check_loader_start
 

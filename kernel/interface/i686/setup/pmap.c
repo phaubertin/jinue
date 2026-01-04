@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Philippe Aubertin.
+ * Copyright (C) 2025-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -32,10 +32,12 @@
 #include <kernel/infrastructure/i686/pmap/asm/pmap.h>
 #include <kernel/infrastructure/i686/pmap/pmap.h>
 #include <kernel/interface/i686/asm/boot.h>
+#include <kernel/interface/i686/asm/bootinfo.h>
 #include <kernel/interface/i686/setup/alloc.h>
 #include <kernel/interface/i686/setup/elf.h>
 #include <kernel/interface/i686/setup/pmap.h>
 #include <kernel/interface/i686/setup/setup32.h>
+#include <kernel/interface/i686/bootinfo.h>
 #include <kernel/interface/i686/types.h>
 #include <kernel/machine/asm/machine.h>
 #include <kernel/utils/pmap.h>
@@ -53,9 +55,9 @@ struct pte_t {
  * @param bootinfo boot information structure
  */
 void allocate_page_tables(bootinfo_t *bootinfo) {
-    /* Detect PAE support */
-    bootinfo->use_pae       = detect_pae();
-    size_t per_table_bits   = bootinfo->use_pae ? 9 : 10;
+    bool use_pae = bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_PAE);
+    
+    size_t per_table_bits = use_pae ? 9 : 10;
 
     /* kernel page tables */
     bootinfo->page_tables = alloc_pages(
@@ -66,7 +68,7 @@ void allocate_page_tables(bootinfo_t *bootinfo) {
     /* page directory */
     bootinfo->page_directory = alloc_pages(bootinfo, PAGE_SIZE);
 
-    if(!bootinfo->use_pae) {
+    if(!use_pae) {
         bootinfo->cr3 = (uint32_t)bootinfo->page_directory;
     }
     else {
@@ -146,25 +148,28 @@ static inline uint64_t *get_pdpt(const bootinfo_t *bootinfo) {
  * @param bootinfo boot information structure
  */
 void initialize_page_tables(bootinfo_t *bootinfo, const data_segment_t *data_segment) {
+    bool use_pae    = bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_PAE);
+    uint64_t nx     = bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_NX) ? X86_PTE_NX : 0;
+
     /* map the kernel image */
     clear_ptes(
-        bootinfo->use_pae,
+        use_pae,
         bootinfo->page_tables,
         0,
         NUM_PAGES(ADDR_4GB - JINUE_KLIMIT)
     );
 
     map_linear(
-        bootinfo->use_pae,
+        use_pae,
         bootinfo->page_tables,
         (KERNEL_BASE - JINUE_KLIMIT) >> PAGE_BITS,
         ((char *)bootinfo->image_top - (char *)bootinfo->image_start) >> PAGE_BITS,
-        (uint32_t)bootinfo->image_start | X86_PTE_GLOBAL | X86_PTE_NX
+        (uint32_t)bootinfo->image_start | X86_PTE_GLOBAL | nx
     );
 
     /* make sure this setup code is executable */
     map_linear(
-        bootinfo->use_pae,
+        use_pae,
         bootinfo->page_tables,
         (KERNEL_BASE - JINUE_KLIMIT) >> PAGE_BITS,
         1,
@@ -180,7 +185,7 @@ void initialize_page_tables(bootinfo_t *bootinfo, const data_segment_t *data_seg
         size_t code_offset      = page_number_of(code_vaddr - JINUE_KLIMIT);
 
         map_linear(
-            bootinfo->use_pae,
+            use_pae,
             bootinfo->page_tables,
             code_offset,
             NUM_PAGES(code_size),
@@ -193,37 +198,37 @@ void initialize_page_tables(bootinfo_t *bootinfo, const data_segment_t *data_seg
         size_t data_offset = (uintptr_t)data_segment->start - JINUE_KLIMIT;
 
         map_linear(
-            bootinfo->use_pae,
+            use_pae,
             bootinfo->page_tables,
             data_offset >> PAGE_BITS,
             NUM_PAGES(data_segment->size),
-            data_segment->physaddr | X86_PTE_READ_WRITE | X86_PTE_GLOBAL | X86_PTE_NX
+            data_segment->physaddr | X86_PTE_READ_WRITE | X86_PTE_GLOBAL | nx
         );
     }
 
     /* map memory allocations */
     map_linear(
-        bootinfo->use_pae,
+        use_pae,
         bootinfo->page_tables,
         (ALLOC_BASE - JINUE_KLIMIT) >> PAGE_BITS,
         NUM_PAGES(BOOT_SIZE_AT_16MB),
-        MEMORY_ADDR_16MB | X86_PTE_READ_WRITE | X86_PTE_GLOBAL | X86_PTE_NX
+        MEMORY_ADDR_16MB | X86_PTE_READ_WRITE | X86_PTE_GLOBAL | nx
     );
 
     /* link page tables in page directory */
-    size_t per_table_bits = bootinfo->use_pae ? 9 : 10;
+    size_t per_table_bits = use_pae ? 9 : 10;
 
-    clear_ptes(bootinfo->use_pae, bootinfo->page_directory, 0, (1 << per_table_bits));
+    clear_ptes(use_pae, bootinfo->page_directory, 0, (1 << per_table_bits));
 
     map_linear(
-        bootinfo->use_pae,
+        use_pae,
         bootinfo->page_directory,
-        (bootinfo->use_pae ? 0 : JINUE_KLIMIT) >> (PAGE_BITS + per_table_bits),
+        (use_pae ? 0 : JINUE_KLIMIT) >> (PAGE_BITS + per_table_bits),
         NUM_PAGES(ADDR_4GB - JINUE_KLIMIT) / (1 << per_table_bits),
         (uint32_t)bootinfo->page_tables | X86_PTE_READ_WRITE
     );
 
-    if(!bootinfo->use_pae) {
+    if(!use_pae) {
         return;
     }
 
@@ -254,19 +259,22 @@ void initialize_page_tables(bootinfo_t *bootinfo, const data_segment_t *data_seg
  * @param bootinfo boot information structure
  */
 void prepare_for_paging(bootinfo_t *bootinfo) {
+    bool use_pae    = bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_PAE);
+    uint64_t nx     = bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_NX) ? X86_PTE_NX : 0;
+
     /* mappings for the kernel image at 0x100000 (1MB) */
     pte_t *page_tables_1mb = alloc_pages(bootinfo, PAGE_SIZE);
 
-    size_t per_table_bits = bootinfo->use_pae ? 9 : 10;
+    size_t per_table_bits = use_pae ? 9 : 10;
 
-    clear_ptes(bootinfo->use_pae, page_tables_1mb, 0, 1 << per_table_bits);
+    clear_ptes(use_pae, page_tables_1mb, 0, 1 << per_table_bits);
 
     map_linear(
-        bootinfo->use_pae,
+        use_pae,
         page_tables_1mb,
         MEMORY_ADDR_1MB >> PAGE_BITS,
         ((char *)bootinfo->image_top - (char *)bootinfo->image_start) >> PAGE_BITS,
-        (uint32_t)bootinfo->image_start | X86_PTE_NX
+        (uint32_t)bootinfo->image_start | nx
     );
 
     /* Make sure this setup code is executable.
@@ -274,7 +282,7 @@ void prepare_for_paging(bootinfo_t *bootinfo) {
      * We don't need to do the same for the kernel code segment here because
      * these temporary mappings won't be used for long enough. */
     map_linear(
-        bootinfo->use_pae,
+        use_pae,
         page_tables_1mb,
         MEMORY_ADDR_1MB >> PAGE_BITS,
         1,
@@ -287,28 +295,28 @@ void prepare_for_paging(bootinfo_t *bootinfo) {
         NUM_PAGES(BOOT_SIZE_AT_16MB) / (1 << per_table_bits) * PAGE_SIZE
     );
 
-    clear_ptes(bootinfo->use_pae, page_tables_16mb, 0, NUM_PAGES(BOOT_SIZE_AT_16MB));
+    clear_ptes(use_pae, page_tables_16mb, 0, NUM_PAGES(BOOT_SIZE_AT_16MB));
 
     map_linear(
-        bootinfo->use_pae,
+        use_pae,
         page_tables_16mb,
         0,
         NUM_PAGES(BOOT_SIZE_AT_16MB),
-        MEMORY_ADDR_16MB | X86_PTE_READ_WRITE | X86_PTE_NX
+        MEMORY_ADDR_16MB | X86_PTE_READ_WRITE | nx
     );
 
     /* Link the temporary page tables into the page directory. */
     pte_t *page_directory;
 
-    if(!bootinfo->use_pae) {
+    if(!use_pae) {
         page_directory = bootinfo->page_directory;
     } else {
         page_directory = alloc_pages(bootinfo, PAGE_SIZE);
-        clear_ptes(bootinfo->use_pae, page_directory, 0, (1 << per_table_bits));
+        clear_ptes(use_pae, page_directory, 0, (1 << per_table_bits));
     }
 
     map_linear(
-        bootinfo->use_pae,
+        use_pae,
         page_directory,
         MEMORY_ADDR_1MB >> (PAGE_BITS + per_table_bits),
         1,
@@ -316,14 +324,14 @@ void prepare_for_paging(bootinfo_t *bootinfo) {
     );
 
     map_linear(
-        bootinfo->use_pae,
+        use_pae,
         page_directory,
         MEMORY_ADDR_16MB >> (PAGE_BITS + per_table_bits),
         NUM_PAGES(BOOT_SIZE_AT_16MB) / (1 << per_table_bits),
         (uint32_t)page_tables_16mb | X86_PTE_READ_WRITE
     );
 
-    if(bootinfo->use_pae) {
+    if(use_pae) {
         uint64_t *pdpt = get_pdpt(bootinfo);
         pdpt[0] = (uint32_t)page_directory | X86_PTE_PRESENT;
     }
@@ -341,7 +349,9 @@ void prepare_for_paging(bootinfo_t *bootinfo) {
  * @param bootinfo boot information structure
  */
 void cleanup_after_paging(const bootinfo_t *bootinfo) {
-    if(bootinfo->use_pae) {
+    bool use_pae = bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_PAE);
+
+    if(use_pae) {
         uint64_t *pdpt = get_pdpt(bootinfo);
         pdpt[0] = 0;
         return;
@@ -350,14 +360,14 @@ void cleanup_after_paging(const bootinfo_t *bootinfo) {
     size_t per_table_bits = 10;
 
     clear_ptes(
-        bootinfo->use_pae,
+        use_pae,
         bootinfo->page_directory,
         (KERNEL_BASE - BOOT_OFFSET_FROM_1MB) >> (PAGE_BITS + per_table_bits),
         1
     );
 
     clear_ptes(
-        bootinfo->use_pae,
+        use_pae,
         bootinfo->page_directory,
         MEMORY_ADDR_16MB >> (PAGE_BITS + per_table_bits),
         NUM_PAGES(BOOT_SIZE_AT_16MB) / (1 << per_table_bits)

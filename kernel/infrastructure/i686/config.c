@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2024-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -33,9 +33,9 @@
 #include <kernel/machine/config.h>
 
 void machine_apply_config_defaults(machine_config_t *config) {
-    config->pae               = CONFIG_PAE_AUTO;
-    config->serial_enable     = false;
-    config->serial_baud_rate  = SERIAL_DEFAULT_BAUD_RATE;
-    config->serial_ioport     = SERIAL_DEFAULT_IOPORT;
-    config->vga_enable        = true;
+    config->nx                  = CONFIG_NX_AUTO;
+    config->serial_enable       = false;
+    config->serial_baud_rate    = SERIAL_DEFAULT_BAUD_RATE;
+    config->serial_ioport       = SERIAL_DEFAULT_IOPORT;
+    config->vga_enable          = true;
 }
