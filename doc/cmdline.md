@@ -85,7 +85,7 @@ The following values are recognized:
   the kernel refuses to boot.
 
 No eXecute (NX) protection is an extension to Physical Address Extension (PAE)
-that makes it possible to prevent code execution from individual memory pages.
+that prevents code execution from individual memory pages.
 
 ### Kernel Panic Action - `on_panic`
 
