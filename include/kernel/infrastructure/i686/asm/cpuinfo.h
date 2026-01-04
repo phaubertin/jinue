@@ -52,7 +52,15 @@
 
 #define CPU_VENDOR_AMD              1
 
-#define CPU_VENDOR_INTEL            2
+#define CPU_VENDOR_CENTAUR_VIA      2
+
+#define CPU_VENDOR_CYRIX            3
+
+#define CPU_VENDOR_HYGON            4
+
+#define CPU_VENDOR_INTEL            5
+
+#define CPU_VENDOR_ZHAOXIN          6
 
 /* hypervisors */
 

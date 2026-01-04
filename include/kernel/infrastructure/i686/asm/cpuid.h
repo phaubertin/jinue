@@ -41,9 +41,29 @@
 #define CPUID_VENDOR_AMD_EDX            0x69746e65  /* enti */
 #define CPUID_VENDOR_AMD_ECX            0x444d4163  /* cAMD */
 
+#define CPUID_VENDOR_CENTAUR_EBX        0x746e6543  /* Cent */
+#define CPUID_VENDOR_CENTAUR_EDX        0x48727561  /* aurH */
+#define CPUID_VENDOR_CENTAUR_ECX        0x736c7561  /* auls */
+
+#define CPUID_VENDOR_CYRIX_EBX          0x69727943  /* Cyri */
+#define CPUID_VENDOR_CYRIX_EDX          0x736e4978  /* xIns */
+#define CPUID_VENDOR_CYRIX_ECX          0x64616574  /* tead */
+
+#define CPUID_VENDOR_GEODE_BY_NSC_EBX   0x646f6547  /* Geod */
+#define CPUID_VENDOR_GEODE_BY_NSC_EDX   0x79622065  /* e by */
+#define CPUID_VENDOR_GEODE_BY_NSC_ECX   0x43534e20  /* NSC */
+
+#define CPUID_VENDOR_HYGON_EBX          0x6f677948  /* Hygo */
+#define CPUID_VENDOR_HYGON_EDX          0x6e65476e  /* nGen */
+#define CPUID_VENDOR_HYGON_ECX          0x656e6975  /* uine */
+
 #define CPUID_VENDOR_INTEL_EBX          0x756e6547  /* Genu */
 #define CPUID_VENDOR_INTEL_EDX          0x49656e69  /* ineI */
 #define CPUID_VENDOR_INTEL_ECX          0x6c65746e  /* ntel */
+
+#define CPUID_VENDOR_ZHAOXIN_EBX        0x68532020  /*   Sh */
+#define CPUID_VENDOR_ZHAOXIN_EDX        0x68676e61  /* angh */
+#define CPUID_VENDOR_ZHAOXIN_ECX        0x20206961  /* ai   */
 
 /* Basic leaf 1 (0x00000001) ecx */
 

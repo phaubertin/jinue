@@ -92,7 +92,4 @@
 #define CYRIX_CONFREG_DIR1  0xff
 
 
-
-
-
 #endif

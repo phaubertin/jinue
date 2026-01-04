@@ -90,10 +90,40 @@ static int identify_vendor(const x86_cpuid_regs_t *basic0) {
             .signature_edx  = CPUID_VENDOR_AMD_EDX
         },
         {
+            .id             = CPU_VENDOR_CENTAUR_VIA,
+            .signature_ebx  = CPUID_VENDOR_CENTAUR_EBX,
+            .signature_ecx  = CPUID_VENDOR_CENTAUR_ECX,
+            .signature_edx  = CPUID_VENDOR_CENTAUR_EDX
+        },
+        {
+            .id             = CPU_VENDOR_CYRIX,
+            .signature_ebx  = CPUID_VENDOR_CYRIX_EBX,
+            .signature_ecx  = CPUID_VENDOR_CYRIX_ECX,
+            .signature_edx  = CPUID_VENDOR_CYRIX_EDX
+        },
+        {
+            .id             = CPU_VENDOR_CYRIX,
+            .signature_ebx  = CPUID_VENDOR_GEODE_BY_NSC_EBX,
+            .signature_ecx  = CPUID_VENDOR_GEODE_BY_NSC_ECX,
+            .signature_edx  = CPUID_VENDOR_GEODE_BY_NSC_EDX
+        },
+        {
+            .id             = CPU_VENDOR_HYGON,
+            .signature_ebx  = CPUID_VENDOR_HYGON_EBX,
+            .signature_ecx  = CPUID_VENDOR_HYGON_ECX,
+            .signature_edx  = CPUID_VENDOR_HYGON_EDX
+        },
+        {
             .id             = CPU_VENDOR_INTEL,
             .signature_ebx  = CPUID_VENDOR_INTEL_EBX,
             .signature_ecx  = CPUID_VENDOR_INTEL_ECX,
             .signature_edx  = CPUID_VENDOR_INTEL_EDX
+        },
+        {
+            .id             = CPU_VENDOR_ZHAOXIN,
+            .signature_ebx  = CPUID_VENDOR_ZHAOXIN_EBX,
+            .signature_ecx  = CPUID_VENDOR_ZHAOXIN_ECX,
+            .signature_edx  = CPUID_VENDOR_ZHAOXIN_EDX
         },
         {
             .id             = CPU_VENDOR_GENERIC,
@@ -149,7 +179,30 @@ void detect_cpu_features(bootinfo_t *bootinfo) {
 
     switch(bootinfo->cpu_vendor) {
         case CPU_VENDOR_AMD:
+        /* See "VIA C7 in nanoBGA2 Datasheet" section 2.3.3:
+         *
+         * " Processor Signature and Feature Flags (EAX==0x80000001)
+         *   Returns processor version information in EAX and Extended CPUID
+         *   feature flags in EDX. EDX bit 20 indicates NoExecute support.
+         *   NoExecute is used in Windows XP SP2 for virus protection. "
+         * 
+         * The "VIA C3 Nehemiah Processor Datasheet" section 2.3.2 (and
+         * specifically table 3-3) shows the meaning of bit 6 of the
+         * standard feature flags as "Physical Address Extension" but
+         * indicates its value to be zero. This means we don't reach this
+         * point in the execution for that earlier model. */
+        case CPU_VENDOR_CENTAUR_VIA:
+        /* Since the Hygon Dhyana is derived from the AMD Epyc, I think it is
+         * safe to assume the NX bit is supported and that this is reflected
+         * in the extended feature flags. I haven't tested this and don't have
+         * documentation. */
+        case CPU_VENDOR_HYGON:
         case CPU_VENDOR_INTEL:
+        /* Since Zhaoxin processors are designs derived from Centaur/Via
+         * designs, I think it is safe to assume the NX bit is supported and
+         * that this is reflected in the extended feature flags. I haven't
+         * tested this and don't have documentation. */
+        case CPU_VENDOR_ZHAOXIN:
             break;
         default:
             return;
@@ -159,8 +212,8 @@ void detect_cpu_features(bootinfo_t *bootinfo) {
     extended0.eax = 0x80000000;
     cpuid(&extended0);
 
-    /* Check extended leaf 0x80000001 is supported. */
-    if(extended0.eax < 0x80000001) {
+    /* Check extended leaf 1 is supported. */
+    if((extended0.eax & 0xffff0000) != 0x80000000 || extended0.eax < 0x80000001) {
         return;
     }
 

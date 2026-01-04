@@ -126,6 +126,10 @@ static void get_cpuid_leafs(cpuid_leafs_set *leafs) {
 
     uint32_t ext_max = cpuid(&leafs->ext0);
 
+    if((ext_max & 0xffff0000) != 0x80000000) {
+        ext_max = 0;
+    }
+
     /* leaf 0x80000001 */
 
     if(ext_max >= ext_base + 1) {
@@ -515,6 +519,7 @@ static void enumerate_features(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs)
  * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
  */
 static void identify_maxphyaddr(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs) {
+    /* TODO isn't the minimum 36 when PAE is supported? */
     if((cpuinfo->features & CPU_FEATURE_PAE) && leafs->ext8_valid) {
         cpuinfo->maxphyaddr = leafs->ext8.eax & 0xff;
     } else {
@@ -550,10 +555,18 @@ static const char *get_vendor_string(const cpuinfo_t *cpuinfo) {
     switch(cpuinfo->vendor) {
         case CPU_VENDOR_AMD:
             return "AMD";
+        case CPU_VENDOR_CENTAUR_VIA:
+            return "Centaur/Via";
+        case CPU_VENDOR_CYRIX:
+            return "Cyrix";
+        case CPU_VENDOR_HYGON:
+            return "Hygon";
         case CPU_VENDOR_INTEL:
             return "Intel";
-        default:
+        case CPU_VENDOR_GENERIC:
             return "Generic";
+        default:
+            return "???";
     }
 }
 
