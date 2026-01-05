@@ -34,17 +34,19 @@
 
 /* features */
 
-#define CPU_FEATURE_CPUID       (1<<0)
+#define CPU_FEATURE_APIC        (1<<0)
 
-#define CPU_FEATURE_NX          (1<<1)
+#define CPU_FEATURE_CPUID       (1<<1)
 
-#define CPU_FEATURE_PAE         (1<<2)
+#define CPU_FEATURE_NX          (1<<2)
 
-#define CPU_FEATURE_PGE         (1<<3)
+#define CPU_FEATURE_PAE         (1<<3)
 
-#define CPU_FEATURE_SYSCALL     (1<<4)
+#define CPU_FEATURE_PGE         (1<<4)
 
-#define CPU_FEATURE_SYSENTER    (1<<5)
+#define CPU_FEATURE_SYSCALL     (1<<5)
+
+#define CPU_FEATURE_SYSENTER    (1<<6)
 
 /* vendors */
 

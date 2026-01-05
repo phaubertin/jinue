@@ -38,18 +38,20 @@
 #include <stdint.h>
 
 typedef struct {
-    unsigned int    maxphyaddr;
-    unsigned int    dcache_alignment;
     uint32_t        features;
-    int             vendor;
-    int             hypervisor;
-    unsigned int    family;
-    unsigned int    model;
-    unsigned int    stepping;
+    uint32_t        dcache_alignment;
+    uint8_t         maxphyaddr;
+    uint8_t         vendor;
+    uint8_t         family;
+    uint8_t         model;
+    uint8_t         stepping;
+    uint8_t         hypervisor;
     char            brand_string[49];
 } cpuinfo_t;
 
 void detect_cpu_features(const bootinfo_t *bootinfo);
+
+void check_cpu_minimum_requirements(void);
 
 bool cpu_has_feature(uint32_t mask);
 

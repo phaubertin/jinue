@@ -303,6 +303,8 @@ void machine_init_logging(const config_t *config) {
  * @param config kernel configuration
  */
 void machine_init(const config_t *config) {
+    check_cpu_minimum_requirements();
+
     check_pae(config);
 
     init_mp();
