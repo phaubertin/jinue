@@ -60,15 +60,6 @@ typedef struct {
 } cpuid_leafs_set;
 
 /**
- * Report CPU is too old to be supported and panic
- * 
- * This function never returns.
- */
-static void too_old(void) {
-    panic("A Pentium CPU or later with an integrated local APIC is required");
-}
-
-/**
  * Update CPU information with features enumerated by setup code
  * 
  * @param cpuinfo structure in which to set the feature flags (OUT)
@@ -78,12 +69,9 @@ static void enumerate_bootinfo_features(cpuinfo_t *cpuinfo, const bootinfo_t *bo
     cpuinfo->vendor     = bootinfo->cpu_vendor;
     cpuinfo->features   = 0;
 
-    if(!bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_CPUID)) {
-        error("CPUID instruction is not supported");
-        too_old();
+    if(bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_CPUID)) {
+        cpuinfo->features |= CPU_FEATURE_CPUID;
     }
-
-    cpuinfo->features |= CPU_FEATURE_CPUID;
 
     if(bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_PAE)) {
         cpuinfo->features |= CPU_FEATURE_PAE;
@@ -102,6 +90,10 @@ static void enumerate_bootinfo_features(cpuinfo_t *cpuinfo, const bootinfo_t *bo
 static void get_cpuid_leafs(cpuid_leafs_set *leafs) {
     memset(leafs, 0, sizeof(cpuid_leafs_set));
 
+    if(!cpu_has_feature(CPU_FEATURE_CPUID)) {
+        return;
+    }
+
     const uint32_t ext_base = 0x80000000;
     const uint32_t soft_base = 0x40000000;
     
@@ -114,8 +106,10 @@ static void get_cpuid_leafs(cpuid_leafs_set *leafs) {
     uint32_t basic_max = cpuid(&leafs->basic0);
 
     if(basic_max < 1) {
-        error("CPUID function 1 is not supported");
-        too_old();
+        /* This will lead to a kernel panic in check_cpu_minimum_requirements()
+         * because CPU family will be zero. */
+        error("CPUID function 1 is not supported.");
+        return;
     }
 
     /* leaf 0x000000001 */
@@ -182,6 +176,116 @@ static void get_cpuid_leafs(cpuid_leafs_set *leafs) {
 
     uint32_t soft0_eax = leafs->soft0.eax;
     leafs->soft0_valid = soft0_eax >= soft_base && soft0_eax < soft_base + 0x10000000;
+}
+
+/**
+ * Identify the CPU family, model and stepping
+ * 
+ * @param cpuinfo structure in which to set the information (OUT)
+ * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
+ */
+static void identify_model(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs) {
+    uint32_t signature   = leafs->basic1.eax;
+    cpuinfo->family      = (signature>>8)  & 0xf;
+    cpuinfo->model       = (signature>>4)  & 0xf;
+    cpuinfo->stepping    = signature       & 0xf;
+
+    if(cpuinfo->family == 0xf || cpuinfo->family == 6) {
+        uint8_t extended_model = (signature >> 16) & 0xf;
+        cpuinfo->model += (extended_model << 4);
+    }
+
+    if(cpuinfo->family == 0xf) {
+        uint8_t extended_family = (signature >> 20) & 0xff;
+        cpuinfo->family += extended_family;
+    }
+}
+
+/**
+ * Utility function that determines whether CPU vendor is AMD
+ * 
+ * @param cpuinfo CPU information structure
+ * @return true if CPU vendor is AMD, false otherwise
+ */
+static bool is_amd(const cpuinfo_t *cpuinfo) {
+    return cpuinfo->vendor == CPU_VENDOR_AMD;
+}
+
+/**
+ * Utility function that determines whether CPU vendor is Intel
+ * 
+ * @param cpuinfo CPU information structure
+ * @return true if CPU vendor is Intel, false otherwise
+ */
+static bool is_intel(const cpuinfo_t *cpuinfo) {
+    return cpuinfo->vendor == CPU_VENDOR_INTEL;
+}
+
+/**
+ * Detect whether the CPU supports the SYSENTER fast system call instruction
+ * 
+ * Sets the CPU_FEATURE_SYSENTER feature flag if the SYSENTER instruction is
+ * supported.
+ * 
+ * @param cpuinfo structure in which to set the feature flag (OUT)
+ * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
+ */
+static void detect_sysenter_instruction(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs) {
+    if(!(leafs->basic1.edx & CPUID_FEATURE_SEP)) {
+        return;
+    }
+
+    if(is_intel(cpuinfo) && cpuinfo->family == 6 && cpuinfo->model < 3 && cpuinfo->stepping < 3) {
+        return;
+    }
+
+    cpuinfo->features |= CPU_FEATURE_SYSENTER;
+}
+
+/**
+ * Detect whether the CPU supports the SYSCALL fast system call instruction
+ * 
+ * Sets the CPU_FEATURE_SYSCALL feature flag if the SYSCALL instruction is
+ * supported.
+ * 
+ * @param cpuinfo structure in which to set the feature flag (OUT)
+ * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
+ */
+static void detect_syscall_instruction(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs) {
+    if(!is_amd(cpuinfo)) {
+        return;
+    }
+
+    if(leafs->ext1.edx & CPUID_EXT_FEATURE_SYSCALL) {
+        cpuinfo->features |= CPU_FEATURE_SYSCALL;
+    }
+}
+
+/**
+ * Enumerate CPU features
+ * 
+ * This function detects various features that may be supported by the CPU and
+ * sets feature flag in the CPU information structure accordingly.
+ * 
+ * @param cpuinfo structure in which to set the feature flags (OUT)
+ * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
+ */
+static void enumerate_features(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs) {
+    uint32_t flags = leafs->basic1.edx;
+
+    /* support for local APIC */
+    if(flags & CPUID_FEATURE_APIC) {
+       cpuinfo->features |= CPU_FEATURE_APIC;
+    }
+
+    /* global pages */
+    if(flags & CPUID_FEATURE_PGE) {
+        cpuinfo->features |= CPU_FEATURE_PGE;
+    }
+
+    detect_sysenter_instruction(cpuinfo, leafs);
+
+    detect_syscall_instruction(cpuinfo, leafs);
 }
 
 typedef struct {
@@ -279,27 +383,6 @@ static void identify_hypervisor(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs
         cpuinfo->hypervisor = HYPERVISOR_ID_NONE;
     } else {
         cpuinfo->hypervisor = map_signature(&leafs->soft0, mapping);
-    }
-}
-
-/**
- * Identify the CPU family, model and stepping
- * 
- * @param cpuinfo structure in which to set the information (OUT)
- * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
- */
-static void identify_model(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs) {
-    uint32_t signature   = leafs->basic1.eax;
-    cpuinfo->family      = (signature>>8)  & 0xf;
-    cpuinfo->model       = (signature>>4)  & 0xf;
-    cpuinfo->stepping    = signature       & 0xf;
-
-    /* The signature format is different for 386 processors. However 1) the
-     * family field is the same in both format and 2) this check ensures the
-     * format is the one we want. */
-    if(cpuinfo->family < 5) {
-        error("CPU family: %u", cpuinfo->family);
-        too_old();
     }
 }
 
@@ -411,108 +494,6 @@ static void identify_dcache_alignment(cpuinfo_t *cpuinfo, const cpuid_leafs_set 
 }
 
 /**
- * Utility function that determines whether CPU vendor is AMD
- * 
- * @param cpuinfo CPU information structure
- * @return true if CPU vendor is AMD, false otherwise
- */
-static bool is_amd(const cpuinfo_t *cpuinfo) {
-    return cpuinfo->vendor == CPU_VENDOR_AMD;
-}
-
-/**
- * Utility function that determines whether CPU vendor is Intel
- * 
- * @param cpuinfo CPU information structure
- * @return true if CPU vendor is Intel, false otherwise
- */
-static bool is_intel(const cpuinfo_t *cpuinfo) {
-    return cpuinfo->vendor == CPU_VENDOR_INTEL;
-}
-
-/**
- * Utility function that determines whether CPU vendor is AMD or Intel
- * 
- * @param cpuinfo CPU information structure
- * @return true if CPU vendor is AMD or Intel, false otherwise
- */
-static bool is_amd_or_intel(const cpuinfo_t *cpuinfo) {
-    return cpuinfo->vendor == CPU_VENDOR_AMD || cpuinfo->vendor == CPU_VENDOR_INTEL;
-}
-
-/**
- * Detect whether the CPU supports the SYSENTER fast system call instruction
- * 
- * Sets the CPU_FEATURE_SYSENTER feature flag if the SYSENTER instruction is
- * supported.
- * 
- * @param cpuinfo structure in which to set the feature flag (OUT)
- * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
- */
-static void detect_sysenter_instruction(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs) {
-    if(!(leafs->basic1.edx & CPUID_FEATURE_SEP)) {
-        return;
-    }
-
-    if(is_intel(cpuinfo) && cpuinfo->family == 6 && cpuinfo->model < 3 && cpuinfo->stepping < 3) {
-        return;
-    }
-
-    cpuinfo->features |= CPU_FEATURE_SYSENTER;
-}
-
-/**
- * Detect whether the CPU supports the SYSCALL fast system call instruction
- * 
- * Sets the CPU_FEATURE_SYSCALL feature flag if the SYSCALL instruction is
- * supported.
- * 
- * @param cpuinfo structure in which to set the feature flag (OUT)
- * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
- */
-static void detect_syscall_instruction(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs) {
-    if(!is_amd(cpuinfo)) {
-        return;
-    }
-
-    if(leafs->ext1.edx & CPUID_EXT_FEATURE_SYSCALL) {
-        cpuinfo->features |= CPU_FEATURE_SYSCALL;
-    }
-}
-
-/**
- * Enumerate CPU features
- * 
- * This function detects various features that may be supported by the CPU and
- * sets feature flag in the CPU information structure accordingly.
- * 
- * @param cpuinfo structure in which to set the feature flags (OUT)
- * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
- */
-static void enumerate_features(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs) {
-    uint32_t flags = leafs->basic1.edx;
-
-    /* support for local APIC */
-    if(!(flags & CPUID_FEATURE_APIC)) {
-        error("no integrated local APIC");
-        too_old();
-    }
-
-    /* global pages */
-    if(flags & CPUID_FEATURE_PGE) {
-        cpuinfo->features |= CPU_FEATURE_PGE;
-    }
-
-    detect_sysenter_instruction(cpuinfo, leafs);
-
-    detect_syscall_instruction(cpuinfo, leafs);
-
-    if(!is_amd_or_intel(cpuinfo)) {
-        return;
-    }
-}
-
-/**
  * Identify the number of bits of physical addresses
  * 
  * @param cpuinfo structure in which to set the number of address bits (OUT)
@@ -535,8 +516,9 @@ static void identify_maxphyaddr(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs
  */
 static void dump_features(const cpuinfo_t *cpuinfo) {
     info(
-        "  Features:%s%s%s%s%s%s%s",
+        "  Features:%s%s%s%s%s%s%s%s",
         (cpuinfo->features == 0) ? " (none)" : "",
+        (cpuinfo->features & CPU_FEATURE_APIC) ? " apic" : "",
         (cpuinfo->features & CPU_FEATURE_CPUID) ? " cpuid" : "",
         (cpuinfo->features & CPU_FEATURE_NX) ? " nx" : "",
         (cpuinfo->features & CPU_FEATURE_PAE) ? " pae" : "",
@@ -629,20 +611,48 @@ void detect_cpu_features(const bootinfo_t *bootinfo) {
 
     cpuid_leafs_set cpuid_leafs;
     get_cpuid_leafs(&cpuid_leafs);
-    
-    identify_hypervisor(&bsp_cpuinfo, &cpuid_leafs);
 
     identify_model(&bsp_cpuinfo, &cpuid_leafs);
+
+    enumerate_features(&bsp_cpuinfo, &cpuid_leafs);
+    
+    identify_hypervisor(&bsp_cpuinfo, &cpuid_leafs);
 
     get_brand_string(&bsp_cpuinfo, &cpuid_leafs);
 
     identify_dcache_alignment(&bsp_cpuinfo, &cpuid_leafs);
 
-    enumerate_features(&bsp_cpuinfo, &cpuid_leafs);
-
     identify_maxphyaddr(&bsp_cpuinfo, &cpuid_leafs);
 
     dump_cpu_info(&bsp_cpuinfo);
+}
+
+/**
+ * Check the CPU satisfies the minimum requirements for this kernel
+ * 
+ * This function panics if the minimum requirements aren't met. It is a
+ * separate function because we want to defer this check and possible kernel
+ * panic to after logging has been enabled.
+ */
+void check_cpu_minimum_requirements(void) {
+    bool too_old = false;
+
+    if(!cpu_has_feature(CPU_FEATURE_CPUID)) {
+        error("CPUID instruction is not supported");
+        too_old = true;
+    } else if(bsp_cpuinfo.family < 5) {
+        error("CPU family: %u", bsp_cpuinfo.family);
+        too_old = true;
+    }
+
+    if(!cpu_has_feature(CPU_FEATURE_APIC)) {
+        error("no integrated local APIC");
+        too_old = true;
+    }
+
+    if(too_old) {
+        panic("A Pentium CPU or later with an integrated local APIC is required");
+    }
 }
 
 /**
