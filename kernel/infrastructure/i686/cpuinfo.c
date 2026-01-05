@@ -42,8 +42,10 @@
 #include <stdio.h>
 #include <string.h>
 
+/** information regarding the boot CPU */
 static cpuinfo_t bsp_cpuinfo;
 
+/** structure that represents all CPUID leafs supported by this kernel */
 typedef struct {
     x86_cpuid_regs_t    basic0;
     x86_cpuid_regs_t    basic1;
@@ -202,26 +204,6 @@ static void identify_model(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs) {
 }
 
 /**
- * Utility function that determines whether CPU vendor is AMD
- * 
- * @param cpuinfo CPU information structure
- * @return true if CPU vendor is AMD, false otherwise
- */
-static bool is_amd(const cpuinfo_t *cpuinfo) {
-    return cpuinfo->vendor == CPU_VENDOR_AMD;
-}
-
-/**
- * Utility function that determines whether CPU vendor is Intel
- * 
- * @param cpuinfo CPU information structure
- * @return true if CPU vendor is Intel, false otherwise
- */
-static bool is_intel(const cpuinfo_t *cpuinfo) {
-    return cpuinfo->vendor == CPU_VENDOR_INTEL;
-}
-
-/**
  * Detect whether the CPU supports the SYSENTER fast system call instruction
  * 
  * Sets the CPU_FEATURE_SYSENTER feature flag if the SYSENTER instruction is
@@ -235,7 +217,27 @@ static void detect_sysenter_instruction(cpuinfo_t *cpuinfo, const cpuid_leafs_se
         return;
     }
 
-    if(is_intel(cpuinfo) && cpuinfo->family == 6 && cpuinfo->model < 3 && cpuinfo->stepping < 3) {
+    /* See the description of the SYSENTER instruction in the Intel® 64 and
+     * IA-32 Architectures Software Developer’s Manual Volume 2:
+     * 
+     * " An operating system that qualifies the SEP flag must also qualify the
+     *   processor family and model to ensure that the SYSENTER/SYSEXIT
+     *   instructions are actually present. For example:
+     *      IF CPUID SEP bit is set
+     *          THEN IF (Family = 6) and (Model < 3) and (Stepping < 3)
+     *              THEN
+     *                  SYSENTER/SYSEXIT_Not_Supported; FI;
+     *              ELSE
+     *                  SYSENTER/SYSEXIT_Supported; FI;
+     *      FI;
+     * 
+     *   When the CPUID instruction is executed on the Pentium Pro processor
+     *   (model 1), the processor returns a the SEP flag as set, but does not
+     *   support the SYSENTER/SYSEXIT instructions. "
+     */
+    bool is_intel = cpuinfo->vendor == CPU_VENDOR_INTEL;
+    
+    if(is_intel && cpuinfo->family == 6 && cpuinfo->model < 3 && cpuinfo->stepping < 3) {
         return;
     }
 
@@ -252,7 +254,18 @@ static void detect_sysenter_instruction(cpuinfo_t *cpuinfo, const cpuid_leafs_se
  * @param leafs CPUID leafs structure filled by a call to get_cpuid_leafs()
  */
 static void detect_syscall_instruction(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs) {
-    if(!is_amd(cpuinfo)) {
+    /* The SYSCALL/SYSRET instructions were defined as part of AMD64 and are
+     * supported in (64-bit) long mode by all processors that support long
+     * mode.
+     * 
+     * AMD processors that support these instructions support them in (32-bit)
+     * protected mode as well whereas Intel processors only support them in
+     * long mode.
+     * 
+     * I think it is safe to assume Hygon processors behave the same as AMD
+     * since they are derived from AMD designs but I haven't tested this and
+     * haven't seen relevant documentation. */
+    if(cpuinfo->vendor != CPU_VENDOR_AMD && cpuinfo->vendor != CPU_VENDOR_HYGON) {
         return;
     }
 
