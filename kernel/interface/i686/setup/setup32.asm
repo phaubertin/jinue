@@ -204,7 +204,7 @@ start:
 
     ; -------------------------------------------------------------------------
     ; Function: enable_paging
-    ; C prototype: void enable_paging(bool use_pae, uint32_t cr3)
+    ; C prototype: void enable_paging(bool use_pae, bool use_nx, uint32_t cr3)
     ; -------------------------------------------------------------------------
     ; Enable paging and protect read-only pages from being written to by the
     ; kernel.
@@ -212,18 +212,23 @@ start:
     global enable_paging:function (enable_paging.end - enable_paging)
 enable_paging:
     ; set page directory or PDPT address in CR3
-    mov eax, dword [esp + 8]    ; second argument: cr3
+    mov eax, dword [esp + 12]   ; third argument: cr3
     mov cr3, eax                ; set cr3
 
     ; check if PAE needs to be enabled
     mov eax, dword [esp + 4]    ; first argument: use_pae
     or al, al
-    jz .nopae                   ; skip if use_pae is not set
+    jz .skip                    ; skip if use_pae is not set
 
     ; enable PAE
     mov eax, cr4
     or eax, X86_CR4_PAE
     mov cr4, eax
+
+    ; check if No eXec (NX) protection needs to be enabled
+    mov eax, dword [esp + 8]    ; second argument: use_nx
+    or al, al
+    jz .skip                    ; skip if use_nx is not set
 
     ; enable support for NX/XD bit
     mov ecx, MSR_EFER
@@ -231,7 +236,7 @@ enable_paging:
     or eax, MSR_FLAG_EFER_NXE
     wrmsr
 
-.nopae:
+.skip:
     ; enable paging (PG), prevent kernel from writing to read-only pages (WP)
     mov eax, cr0
     or eax, X86_CR0_PG | X86_CR0_WP
