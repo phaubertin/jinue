@@ -30,8 +30,8 @@
 jinue_root = ..
 include $(jinue_root)/header.mk
 
-kernel_ldscript  = interface/i686/ld/kernel.ld
-image_ldscript   = interface/i686/ld/image.ld
+kernel_ldscript  = interface/$(CONFIG_ARCH)/ld/kernel.ld
+image_ldscript   = interface/$(CONFIG_ARCH)/ld/image.ld
 build_info_h     = build-info.gen.h
 
 LDFLAGS         += -m32 $(CFLAGS.arch)
@@ -42,12 +42,12 @@ IMAGE_LDFLAGS    = -T $(image_ldscript)
 c.lib            = $(libc)/libc-kernel.a
 loader.bin       = $(loader)/loader
 
-kernel_elf       = interface/i686/kernel
+kernel_elf       = interface/$(CONFIG_ARCH)/kernel
 stripped         = $(kernel_elf)-stripped
-image            = interface/i686/$(notdir $(kernel_img))
+image            = interface/$(CONFIG_ARCH)/$(notdir $(kernel_img))
 kmain			 = application/kmain.o
-setup16          = interface/i686/setup/setup16-nasm.o
-setup32          = interface/i686/setup/setup32.o
+setup16          = interface/$(CONFIG_ARCH)/setup/setup16-nasm.o
+setup32          = interface/$(CONFIG_ARCH)/setup/setup32.o
 target           = $(image)
 
 unclean.extra    = \

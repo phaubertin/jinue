@@ -65,7 +65,7 @@ include $(config)
 devel                = $(jinue_root)/devel
 includes             = $(jinue_root)/include
 kernel               = $(jinue_root)/kernel
-kernel_img           = $(kernel)/interface/i686/jinue
+kernel_img           = $(kernel)/interface/$(CONFIG_ARCH)/jinue-$(CONFIG_ARCH)
 scripts              = $(jinue_root)/scripts
 userspace            = $(jinue_root)/userspace
 qemu                 = $(devel)/qemu
@@ -78,7 +78,7 @@ zlib                 = $(lib)/zlib
 bzip2                = $(lib)/bzip2
 loader               = $(userspace)/loader
 testapp              = $(userspace)/testapp
-testapp_initrd       = $(testapp)/jinue-testapp-initrd.tar.gz
+testapp_initrd       = $(testapp)/jinue-testapp-initrd-$(CONFIG_ARCH).tar.gz
 libjinue_syscalls    = $(libjinue)/libjinue.a
 libjinue_utils       = $(libjinue)/libjinue-utils.a
 
