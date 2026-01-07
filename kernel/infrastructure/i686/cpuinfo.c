@@ -28,6 +28,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 #include <kernel/domain/services/logging.h>
 #include <kernel/domain/services/panic.h>
 #include <kernel/infrastructure/i686/asm/cpuid.h>
@@ -35,6 +36,7 @@
 #include <kernel/infrastructure/i686/isa/cpuid.h>
 #include <kernel/infrastructure/i686/isa/instrs.h>
 #include <kernel/infrastructure/i686/isa/regs.h>
+#include <kernel/infrastructure/i686/cpuidsig.h>
 #include <kernel/infrastructure/i686/cpuinfo.h>
 #include <kernel/interface/i686/bootinfo.h>
 #include <kernel/machine/cpuinfo.h>
@@ -301,45 +303,6 @@ static void enumerate_features(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs)
     detect_syscall_instruction(cpuinfo, leafs);
 }
 
-typedef struct {
-    int         id;
-    uint32_t    signature_ebx;
-    uint32_t    signature_ecx;
-    uint32_t    signature_edx;
-} cpuid_signature_t;
-
-#define SIGNATURE_ANY (-1)
-
-/**
- * Map a CPUID signature to an ID for the kernel's internal use
- * 
- * For use with:
- *  - Vendor signature in CPUID leaf 0x00000000
- *  - Hypervisor signature in CPUID leaf 0x40000000
- * 
- * @param regs relevant CPUID leaf
- * @param mapping mapping entries
- */
-static int map_signature(const x86_cpuid_regs_t *regs, const cpuid_signature_t mapping[]) {
-    for(int idx = 0;; ++idx) {
-        const cpuid_signature_t *entry = &mapping[idx];
-
-        if(regs->ebx != entry->signature_ebx && entry->signature_ebx != SIGNATURE_ANY) {
-            continue;
-        }
-
-        if(regs->ecx != entry->signature_ecx && entry->signature_ecx != SIGNATURE_ANY) {
-            continue;
-        }
-
-        if(regs->edx != entry->signature_edx && entry->signature_edx != SIGNATURE_ANY) {
-            continue;
-        }
-
-        return mapping[idx].id;
-    }
-}
-
 /**
  * Identify the hypervisor
  * 
@@ -386,16 +349,16 @@ static void identify_hypervisor(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs
         },
         {
             .id             = HYPERVISOR_ID_UNKNOWN,
-            .signature_ebx  = SIGNATURE_ANY,
-            .signature_ecx  = SIGNATURE_ANY,
-            .signature_edx  = SIGNATURE_ANY
+            .signature_ebx  = CPUID_SIGNATURE_ANY,
+            .signature_ecx  = CPUID_SIGNATURE_ANY,
+            .signature_edx  = CPUID_SIGNATURE_ANY
         }
     };
 
     if(! leafs->soft0_valid) {
         cpuinfo->hypervisor = HYPERVISOR_ID_NONE;
     } else {
-        cpuinfo->hypervisor = map_signature(&leafs->soft0, mapping);
+        cpuinfo->hypervisor = map_cpuid_signature(&leafs->soft0, mapping);
     }
 }
 
