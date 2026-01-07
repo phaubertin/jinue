@@ -117,6 +117,7 @@ sources.kernel.c = \
 	infrastructure/i686/boot_alloc.c \
 	infrastructure/i686/cmdline.c \
 	infrastructure/i686/config.c \
+	infrastructure/i686/cpuidsig.c \
 	infrastructure/i686/cpuinfo.c \
 	infrastructure/i686/debug.c \
 	infrastructure/i686/halt.c \
@@ -159,7 +160,8 @@ sources.setup32.c = \
 	interface/i686/setup/elf.c \
 	interface/i686/setup/linux.c \
 	interface/i686/setup/main32.c \
-	interface/i686/setup/pmap.c
+	interface/i686/setup/pmap.c \
+	infrastructure/i686/cpuidsig.c
 
 sources.c = $(sources.kernel.c) $(sources.setup32.c)
 sources.nasm = $(sources.kernel.nasm) $(sources.setup16.nasm) $(sources.setup32.nasm)
@@ -167,12 +169,18 @@ sources.nasm = $(sources.kernel.nasm) $(sources.setup16.nasm) $(sources.setup32.
 objects.kernel = $(sources.kernel.nasm:%.asm=%-nasm.o) $(sources.kernel.c:%.c=%.o)
 
 # Assembly files must come first and setup32.asm must be first
-objects.setup32 = $(sources.setup32.nasm:%.asm=%-nasm.o) $(sources.setup32.c:%.c=%.o)
-
-# We optimize the setup code for size
-$(sources.setup32.c:%.c=%.o): CFLAGS.optimization := -Os
+objects.setup32 = $(sources.setup32.nasm:%.asm=%-nasm.o) $(sources.setup32.c:%.c=%-s.o)
 
 include $(common)
+
+# This is the same as the built-in make rule for compiling C code. The -s
+# suffix is added to setup code object files so the same source files can
+# be compiled with different CFLAGS for the kernel and the setup code.
+%-s.o: %.c
+	$(COMPILE.c) $(OUTPUT_OPTION) $<
+
+# We optimize the setup code for size
+$(sources.setup32.c:%.c=%-s.o): CFLAGS.optimization := -Os
 
 .PHONY: image
 image: $(image)

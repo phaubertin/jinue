@@ -32,48 +32,10 @@
 #include <kernel/infrastructure/i686/asm/cpuid.h>
 #include <kernel/infrastructure/i686/asm/cpuinfo.h>
 #include <kernel/infrastructure/i686/isa/cpuid.h>
+#include <kernel/infrastructure/i686/cpuidsig.h>
 #include <kernel/interface/i686/asm/bootinfo.h>
 #include <kernel/interface/i686/setup/cpuid.h>
 #include <stdbool.h>
-
-typedef struct {
-    int         id;
-    uint32_t    signature_ebx;
-    uint32_t    signature_ecx;
-    uint32_t    signature_edx;
-} cpuid_signature_t;
-
-#define SIGNATURE_ANY (-1)
-
-/**
- * Map a CPUID signature to an ID for the kernel's internal use
- * 
- * For use with:
- *  - Vendor signature in CPUID leaf 0x00000000
- *  - Hypervisor signature in CPUID leaf 0x40000000
- * 
- * @param regs relevant CPUID leaf
- * @param mapping mapping entries
- */
-static int map_signature(const x86_cpuid_regs_t *regs, const cpuid_signature_t mapping[]) {
-    for(int idx = 0;; ++idx) {
-        const cpuid_signature_t *entry = &mapping[idx];
-
-        if(regs->ebx != entry->signature_ebx && entry->signature_ebx != SIGNATURE_ANY) {
-            continue;
-        }
-
-        if(regs->ecx != entry->signature_ecx && entry->signature_ecx != SIGNATURE_ANY) {
-            continue;
-        }
-
-        if(regs->edx != entry->signature_edx && entry->signature_edx != SIGNATURE_ANY) {
-            continue;
-        }
-
-        return mapping[idx].id;
-    }
-}
 
 /**
  * Identify the CPU vendor based on CPUID results
@@ -127,13 +89,13 @@ static int identify_vendor(const x86_cpuid_regs_t *basic0) {
         },
         {
             .id             = CPU_VENDOR_GENERIC,
-            .signature_ebx  = SIGNATURE_ANY,
-            .signature_ecx  = SIGNATURE_ANY,
-            .signature_edx  = SIGNATURE_ANY
+            .signature_ebx  = CPUID_SIGNATURE_ANY,
+            .signature_ecx  = CPUID_SIGNATURE_ANY,
+            .signature_edx  = CPUID_SIGNATURE_ANY
         }
     };
 
-    return map_signature(basic0, mapping);
+    return map_cpuid_signature(basic0, mapping);
 }
 
 /**
