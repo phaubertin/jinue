@@ -163,13 +163,18 @@ sources.setup32.c = \
 	interface/i686/setup/pmap.c \
 	infrastructure/i686/cpuidsig.c
 
-sources.c = $(sources.kernel.c) $(sources.setup32.c)
-sources.nasm = $(sources.kernel.nasm) $(sources.setup16.nasm) $(sources.setup32.nasm)
-
 objects.kernel = $(sources.kernel.nasm:%.asm=%-nasm.o) $(sources.kernel.c:%.c=%.o)
 
 # Assembly files must come first and setup32.asm must be first
 objects.setup32 = $(sources.setup32.nasm:%.asm=%-nasm.o) $(sources.setup32.c:%.c=%-s.o)
+
+# For cleaning purposes: the suffix we add to object files (see below) means
+# these won't be found by specifying the source files.
+objects.extra = $(sources.setup32.c:%.c=%-s.o)
+depfiles.extra = $(sources.setup32.c:%.c=%-s.d)
+
+sources.c = $(sources.kernel.c)
+sources.nasm = $(sources.kernel.nasm) $(sources.setup16.nasm) $(sources.setup32.nasm)
 
 include $(common)
 
