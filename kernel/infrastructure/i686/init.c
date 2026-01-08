@@ -332,7 +332,7 @@ void machine_init(const config_t *config) {
     load_selectors(cpu_data);
 
     /* This must be done before initializing and switching to the page
-     * allocator bcause only the boot allocator can allocate multiple
+     * allocator because only the boot allocator can allocate multiple
      * consecutive pages. */
     initialize_page_frames_array(&boot_alloc, bootinfo);
 

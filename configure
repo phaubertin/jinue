@@ -94,14 +94,14 @@ done
 case "$arch" in
     amd64|x86_64)
         ARCH=amd64
-        ARCH_CFLAGS="-m64 -march=x86-64"
+        ARCH_CFLAGS="-m64 -march=x86-64 -DJINUE_CONFIG_ARCH=\$(JINUE_ARCH_AMD64)"
         ARCH_LDFLAGS="-Wl,-m,elf_x86_64"
-        SETUP_ARCH_CFLAGS="-m32 -march=pentium -mtune=generic"
+        SETUP_ARCH_CFLAGS="-m32 -march=pentium -mtune=generic -DJINUE_CONFIG_ARCH=\$(JINUE_ARCH_AMD64)"
         [[ -z $qemu ]] && qemu=qemu-system-x86_64
         ;;
     i386|i686)
         ARCH=i686
-        ARCH_CFLAGS="-m32 -march=pentium -mtune=generic"
+        ARCH_CFLAGS="-m32 -march=pentium -mtune=generic -DJINUE_CONFIG_ARCH=\$(JINUE_ARCH_I686)"
         ARCH_LDFLAGS="-Wl,-m,elf_i386"
         SETUP_ARCH_CFLAGS=$ARCH_CFLAGS
         [[ -z $qemu ]] && qemu=qemu-system-i386

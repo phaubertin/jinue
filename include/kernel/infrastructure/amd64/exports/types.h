@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,42 +29,52 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_TYPEDEPS_H
-#define JINUE_KERNEL_TYPEDEPS_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_AMD64_EXPORTS_TYPES_H
+#define JINUE_KERNEL_INFRASTRUCTURE_AMD64_EXPORTS_TYPES_H
 
-/** This header file exists to resolve circular dependencies. <kernel/types.h>
- * includes a machine-dependent type definitions header file through
- * <kernel/machine/types.h>. This header file contain definitions needed by
- * both and isn't intended to be included elsewhere.
- * 
- *      <kernel/typedeps.h>
- *          ^       ^
- *          |       |
- *          |   e.g. <kernel/infrastructure/amd64/exports/types.h> for amd64
- *          |       ^
- *          |       |
- *          |   <kernel/machine/types.h>
- *          |       ^
- *          |       |
- *      <kernel/types.h>
- * */
+#include <kernel/typedeps.h>
 
-#include <inttypes.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdbool.h>
+/* This file contains the machine-specific definitions that need to be visible
+ * outside the machine-specific parts of the code. */
 
-/** Virtual memory address (pointer) with pointer arithmetic allowed */
-typedef unsigned char *addr_t;
+/** Physical memory address */
+typedef uint64_t paddr_t;
 
-typedef struct {
-    const char *start;
-    size_t      length;
-} cmdline_token_t;
+#define PRIxPADDR PRIx64
+
+/** incomplete structure declaration for a page table entry
+ *
+ * There are actually two different definitions of this structure: one that
+ * represents 32-bit entries for standard 32-bit paging, and one that represents
+ * 64-bit entries for Physical Address Extension (PAE) paging. The right
+ * definition to use is chosen at run time (i.e. during boot).
+ *
+ * Outside of the specific functions that are used to access information in
+ * page table entries, functions are allowed to hold and pass around pointers to
+ * page table entries, but are not allowed to dereference them. */
+struct pte_t;
+
+/** type of a page table entry */
+typedef struct pte_t pte_t;
 
 typedef struct {
-    const char  *name;
-    int          enum_value;
-} cmdline_enum_def_t;
+    /* The assembly language thread switching code makes the assumption that
+     * saved_stack_pointer is the first member of this structure. */
+    addr_t saved_stack_pointer;
+} machine_thread_t;
+
+typedef struct {
+    uint32_t     cr3;
+    pte_t       *pml4;
+} addr_space_t;
+
+typedef struct {
+    bool                serial_enable;
+    int                 serial_baud_rate;
+    int                 serial_ioport;
+    bool                vga_enable;
+} machine_config_t;
+
+typedef struct { uint32_t lock; } spinlock_t;
 
 #endif

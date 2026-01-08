@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2026 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,17 +29,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_MACHINE_TYPES_H
-#define JINUE_KERNEL_MACHINE_TYPES_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_AMD64_EXPORTS_ASM_MACHINE_H
+#define JINUE_KERNEL_INFRASTRUCTURE_AMD64_EXPORTS_ASM_MACHINE_H
 
-#include <jinue/shared/asm/machine.h>
+#include <kernel/utils/asm/utils.h>
 
-#ifdef JINUE_ARCH_IS_AMD64
-#include <kernel/infrastructure/amd64/exports/types.h>
-#endif
+/* TODO define a constant for the start of the high "half" */
+#define MAPPING_AREA_ADDR   (0xffff800000000000 + 0xff000000)
 
-#ifdef JINUE_ARCH_IS_I686
-#include <kernel/infrastructure/i686/exports/types.h>
-#endif
+#define MAPPING_AREA_SIZE   (16 * MB)
 
 #endif

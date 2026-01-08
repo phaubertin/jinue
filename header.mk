@@ -116,6 +116,10 @@ else
 	NASMFLAGS.debug		 =
 endif
 
+# Must match values in <jinue/shared/asm/machine.h>
+JINUE_ARCH_AMD64     = 1
+JINUE_ARCH_I686      = 2
+
 # C preprocessor flags
 #
 # These flags are used when preprocessing C and assembly language files.
