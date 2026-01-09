@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2023 Philippe Aubertin.
+# Copyright (C) 2023-2026 Philippe Aubertin.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -37,7 +37,8 @@ CFLAGS="-std=c99 -ffreestanding -I../../../include"
 # -----------------------------------------------------------------------------
 #  Process command line arguments
 # -----------------------------------------------------------------------------
-arch=i386
+arch=amd64
+qemu=""
 CC=gcc
 DEBUG=0
 WERROR=""
@@ -69,6 +70,16 @@ do
             DEBUG=1
             shift
             ;;
+        --qemu)
+            shift
+            if [ ! $# -ge 1 ]
+            then
+                echo "*** ERROR: no value specified for --qemu"
+                exit 1
+            fi
+            qemu=$1
+            shift
+            ;;
         --werror)
             WERROR="-Werror"
             shift
@@ -81,9 +92,19 @@ do
 done
 
 case "$arch" in
+    amd64|x86_64)
+        ARCH=amd64
+        ARCH_CFLAGS="-m64 -march=x86-64 -DJINUE_CONFIG_ARCH=\$(JINUE_ARCH_AMD64)"
+        ARCH_LDFLAGS="-Wl,-m,elf_x86_64"
+        SETUP_ARCH_CFLAGS="-m32 -march=pentium -mtune=generic -DJINUE_CONFIG_ARCH=\$(JINUE_ARCH_AMD64)"
+        [[ -z $qemu ]] && qemu=qemu-system-x86_64
+        ;;
     i386|i686)
-        ARCH_CFLAGS="-m32 -march=pentium -mtune=generic"
+        ARCH=i686
+        ARCH_CFLAGS="-m32 -march=pentium -mtune=generic -DJINUE_CONFIG_ARCH=\$(JINUE_ARCH_I686)"
         ARCH_LDFLAGS="-Wl,-m,elf_i386"
+        SETUP_ARCH_CFLAGS=$ARCH_CFLAGS
+        [[ -z $qemu ]] && qemu=qemu-system-i386
         ;;
     *)
         echo "*** ERROR: unknown architecture name: $arch"
@@ -96,11 +117,14 @@ esac
 # -----------------------------------------------------------------------------
 echo "Generating config.gen.mk"
 
-cat <<EOF > config.gen.mk
+cat <<EOF | tee config.gen.mk
+CONFIG_ARCH=$ARCH
 CONFIG_CC=$CC
 CONFIG_CFLAGS_ARCH=$ARCH_CFLAGS
 CONFIG_DEBUG=$DEBUG
 CONFIG_LDFLAGS_ARCH=$ARCH_LDFLAGS
+CONFIG_QEMU=$qemu
+CONFIG_SETUP_CFLAGS_ARCH=$SETUP_ARCH_CFLAGS
 CONFIG_WERROR=$WERROR
 EOF
 

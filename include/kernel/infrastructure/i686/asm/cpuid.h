@@ -120,4 +120,6 @@
 
 #define CPUID_EXT_FEATURE_NX            (1<<20)
 
+#define CPUID_EXT_FEATURE_LM            (1<<29)
+
 #endif

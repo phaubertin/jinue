@@ -38,9 +38,11 @@
 
 #define BOOTINFO_FEATURE_NX     (1<<2)
 
+#define BOOTINFO_FEATURE_LM     (1<<3)
+
 /* The following definitions must match the offsets of the members of the
- * bootinfo_t struct defined in interface/i686/types.h. They are used by
- * assembly language code. */
+ * bootinfo_t structures defined in interface/amd64/types.h and in
+ * interface/i686/types.h. They are used by assembly language code. */
 
 /** Offset of the cmdline bootinfo_t member */
 #define BOOTINFO_CMDLINE        0

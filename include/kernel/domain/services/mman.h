@@ -32,7 +32,7 @@
 #ifndef JINUE_KERNEL_SERVICES_MMAN_H
 #define JINUE_KERNEL_SERVICES_MMAN_H
 
-#include <kernel/machine/types.h>
+#include <kernel/types.h>
 #include <stddef.h>
 
 void *map_in_kernel(paddr_t paddr, size_t size, int prot);

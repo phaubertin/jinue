@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -53,8 +53,11 @@
 /** File version  */
 #define EI_VERSION       6
 
-/** Start of padding bytes */
-#define EI_PAD           7
+/** OS/ABI identification (ELF64) - start of padding for ELF32 */
+#define EI_OSABI         7
+
+/** ABI version (ELF64) */
+#define EI_ABIVERSION    8
 
 /** size of e_ident[] */
 #define EI_NIDENT       16
@@ -242,42 +245,5 @@
 #define PF_W            (1 << 1)
 
 #define PF_X            (1 << 0)
-
-
-/** Offset of e_entry field in Elf32_Ehdr */
-#define ELF_E_ENTRY     24
-
-/** Offset of e_phoff field in Elf32_Ehdr */
-#define ELF_E_PHOFF     28
-
-/* Offset of e_phnum in Elf32_Ehdr */
-#define ELF_E_PHNUM     44
-
-/* Offset of p_type in Elf32_Phdr */
-#define ELF_P_TYPE      0
-
-/* Offset of p_offset in Elf32_Phdr */
-#define ELF_P_OFFSET    4
-
-/* Offset of p_vaddr in Elf32_Phdr */
-#define ELF_P_VADDR     8
-
-/* Offset of p_paddr in Elf32_Phdr */
-#define ELF_P_PADDR     12
-
-/* Offset of p_filesz in Elf32_Phdr */
-#define ELF_P_FILESZ    16
-
-/* Offset of p_memsz in Elf32_Phdr */
-#define ELF_P_MEMSZ     20
-
-/* Offset of p_flags in Elf32_Phdr */
-#define ELF_P_FLAGS     24
-
-/* Offset of p_align in Elf32_Phdr */
-#define ELF_P_ALIGN     28
-
-/* Size of Elf32_Phdr */
-#define ELF_PHDR_SIZE   32
 
 #endif

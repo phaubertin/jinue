@@ -53,7 +53,7 @@ all-deps: $(deps)
 
 .PHONY: run
 run: $(deps)
-	qemu-system-i386            \
+	$(CONFIG_QEMU)            	\
 	-cpu $(QEMU_CPU)            \
 	-m $(QEMU_MEM)              \
 	-no-reboot                  \
@@ -67,7 +67,7 @@ run: $(deps)
 
 .PHONY: run-no-display
 run-no-display: $(deps)
-	qemu-system-i386                       \
+	$(CONFIG_QEMU)                         \
 	-cpu $(QEMU_CPU)                       \
 	-m $(QEMU_MEM)                         \
 	-no-reboot                             \
@@ -82,7 +82,7 @@ run-no-display: $(deps)
 
 .PHONY: debug
 debug: $(deps)
-	qemu-system-i386            \
+	$(CONFIG_QEMU)            	\
 	-cpu $(QEMU_CPU)            \
 	-m $(QEMU_MEM)              \
 	-no-reboot                  \
@@ -97,7 +97,7 @@ debug: $(deps)
 
 .PHONY: debug-no-display
 debug-no-display: $(deps)
-	qemu-system-i386                       \
+	$(CONFIG_QEMU)            	           \
 	-cpu $(QEMU_CPU)                       \
 	-m $(QEMU_MEM)                         \
 	-no-reboot                             \
