@@ -35,11 +35,14 @@
 #include <kernel/infrastructure/i686/types.h>
 #include <kernel/interface/i686/asm/bootinfo.h>
 #include <kernel/interface/i686/types.h>
+#include <kernel/types.h>
 #include <stdbool.h>
 
-bool check_bootinfo(bool panic_on_failure);
-
 const bootinfo_t *get_bootinfo(void);
+
+bool is_bootinfo_valid(void);
+
+void validate_bootinfo(void);
 
 /**
  * Determine if specified feature was detected by the setup code
@@ -60,5 +63,7 @@ const bootinfo_t *get_bootinfo(void);
 static inline bool bootinfo_has_feature(const bootinfo_t *bootinfo, uint32_t mask) {
     return (bootinfo->features & mask) == mask;
 }
+
+void bootinfo_get_kernel_exec_file(exec_file_t *kernel);
 
 #endif

@@ -36,7 +36,7 @@
  * outside the machine-specific parts of the code, both in user space and
  * the kernel.
  * 
- * It is OK to include this file from amd64-specific code in the kernel.
+ * It is OK to include this file from AMD64-specific code in the kernel.
  * Otherwise, it should be included through either <jinue/jinue.h> or
  * or <kernel/types.h> (which includes <kernel/machine/types.h>). */
 

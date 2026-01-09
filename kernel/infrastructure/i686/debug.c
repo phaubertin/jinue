@@ -35,6 +35,7 @@
 #include <kernel/infrastructure/elf.h>
 #include <kernel/interface/i686/bootinfo.h>
 #include <kernel/machine/debug.h>
+#include <kernel/types.h>
 #include <inttypes.h>
 #include <stddef.h>
 
@@ -42,12 +43,13 @@ void machine_dump_call_stack(void) {
     /* This function is called by the panic handler and one potential reason
      * for a kernel panic is an early boot check that the boot information
      * structure is valid. We can't assume that it is valid here. */
-    if(!check_bootinfo(false)) {
+    if(!is_bootinfo_valid()) {
         warn(WARNING "cannot dump call stack because boot information structure is invalid.");
         return;
     }
 
-    const bootinfo_t *bootinfo = get_bootinfo();
+    exec_file_t kernel;
+    bootinfo_get_kernel_exec_file(&kernel);
 
     info("Call stack dump:");
 
@@ -62,7 +64,7 @@ void machine_dump_call_stack(void) {
          * TODO can we do better than this? */
         return_addr -= 5;
         
-        const Elf32_Ehdr *ehdr = bootinfo->kernel_start;
+        const Elf32_Ehdr *ehdr = kernel.start;
         const Elf32_Sym *symbol = elf_find_function_symbol_by_address(
                 ehdr,
                 (Elf32_Addr)return_addr);

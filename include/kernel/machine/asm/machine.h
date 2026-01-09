@@ -51,9 +51,6 @@
 /** bit mask for offset in a page */
 #define PAGE_MASK   JINUE_PAGE_MASK
 
-/** start of kernel image in virtual memory */
-#define KERNEL_BASE JINUE_KLIMIT
-
 /** size of region reserved for kernel image */
 #define KERNEL_SIZE (1 * MB)
 

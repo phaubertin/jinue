@@ -32,7 +32,6 @@
 #ifndef JINUE_KERNEL_INFRASTRUCTURE_ACPI_ACPI_H
 #define JINUE_KERNEL_INFRASTRUCTURE_ACPI_ACPI_H
 
-#include <kernel/machine/types.h>
 #include <kernel/infrastructure/acpi/tables.h>
 #include <kernel/infrastructure/acpi/types.h>
 #include <kernel/machine/types.h>

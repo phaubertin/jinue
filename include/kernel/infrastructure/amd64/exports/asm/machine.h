@@ -34,9 +34,11 @@
 
 #include <kernel/utils/asm/utils.h>
 
-/* TODO define a constant for the start of the high "half" */
-#define MAPPING_AREA_ADDR   (0xffff800000000000 + 0xff000000)
+/** start of kernel image in virtual memory */
+#define KERNEL_BASE         0xffff800000000000
 
 #define MAPPING_AREA_SIZE   (16 * MB)
+
+#define MAPPING_AREA_ADDR   (KERNEL_BASE + 1 * GB - MAPPING_AREA_SIZE)
 
 #endif

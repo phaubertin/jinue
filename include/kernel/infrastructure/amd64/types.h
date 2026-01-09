@@ -32,8 +32,7 @@
 #ifndef JINUE_KERNEL_INFRASTRUCTURE_AMD64_TYPES_H
 #define JINUE_KERNEL_INFRASTRUCTURE_AMD64_TYPES_H
 
-#include <kernel/infrastructure/amd64/exports/types.h>
-#include <kernel/machine/types.h>
+#include <kernel/infrastructure/i686/asm/descriptors.h>
 #include <kernel/types.h>
 #include <sys/elf.h>
 

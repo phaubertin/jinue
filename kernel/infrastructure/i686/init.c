@@ -54,7 +54,6 @@
 #include <kernel/infrastructure/i686/cpuinfo.h>
 #include <kernel/infrastructure/i686/descriptors.h>
 #include <kernel/infrastructure/i686/percpu.h>
-#include <kernel/infrastructure/elf.h>
 #include <kernel/interface/i686/asm/idt.h>
 #include <kernel/interface/i686/asm/irq.h>
 #include <kernel/interface/i686/bootinfo.h>
@@ -196,57 +195,6 @@ static void select_syscall_implementation(void) {
     }
 }
 
-static void get_kernel_exec_file(exec_file_t *kernel, const bootinfo_t *bootinfo) {
-    kernel->start   = bootinfo->kernel_start;
-    kernel->size    = bootinfo->kernel_size;
-
-    if(kernel->start == NULL) {
-        panic("malformed boot image: no kernel ELF binary");
-    }
-
-    if(kernel->size < sizeof(Elf32_Ehdr)) {
-        panic("kernel too small to be an ELF binary");
-    }
-
-    if(! elf_check(bootinfo->kernel_start)) {
-        panic("kernel ELF binary is invalid");
-    }
-}
-
-static void get_loader_elf(exec_file_t *loader, const bootinfo_t *bootinfo) {
-    loader->start   = bootinfo->loader_start;
-    loader->size    = bootinfo->loader_size;
-
-    if(loader->start == NULL) {
-        panic("malformed boot image: no user space loader ELF binary");
-    }
-
-    if(loader->size < sizeof(Elf32_Ehdr)) {
-        panic("user space loader too small to be an ELF binary");
-    }
-
-    info("Found user space loader with size %" PRIu32 " bytes.", loader->size);
-}
-
-static void get_ramdisk(kern_mem_block_t *ramdisk, const bootinfo_t *bootinfo) {
-    ramdisk->start  = bootinfo->ramdisk_start;
-    ramdisk->size   = bootinfo->ramdisk_size;
-
-    if(ramdisk->start == 0 || ramdisk->size == 0) {
-        panic("No initial RAM disk loaded.");
-    }
-}
-
-void machine_get_loader(exec_file_t *elf) {
-    const bootinfo_t *bootinfo = get_bootinfo();
-    get_loader_elf(elf, bootinfo);
-}
-
-void machine_get_ramdisk(kern_mem_block_t *ramdisk) {
-    const bootinfo_t *bootinfo = get_bootinfo();
-    get_ramdisk(ramdisk, bootinfo);
-}
-
 /**
  * Machine-specific initialization for logging
  * 
@@ -265,12 +213,23 @@ void machine_init_logging(const config_t *config) {
      * do... */
     init_uart16550a(config);
 
-    /* Validate the boot information structure before using it. */
-    (void)check_bootinfo(true);
+    /* Validate the boot information structure before using it.
+     *
+     * In general, we try to delay checks that can lead to kernel panics
+     * to after logging is fully enabled. In this case, however, it cannot be
+     * helped, we cannot proceed further if the boot information structure
+     * isn't found or is invalid.
+     * 
+     * If this validation fails, the cause is a bug, probably one where the
+     * pointer to the boot information structure is not passed properly between
+     * the setup code and the kernel startup code.
+     */
+    validate_bootinfo();
 
     const bootinfo_t *bootinfo = get_bootinfo();
 
-    /* pmap_init() needs the size of physical addresses (maxphyaddr). */
+    /* pmap_init() needs the size of physical addresses (maxphyaddr) as well as
+     * some CPU feature flags. */
     detect_cpu_features(bootinfo);
 
     /* This needs to be called before calling vga_init() and find_acpi_rsdp()
@@ -337,7 +296,7 @@ void machine_init(const config_t *config) {
     initialize_page_frames_array(&boot_alloc, bootinfo);
 
     exec_file_t kernel;
-    get_kernel_exec_file(&kernel, bootinfo);
+    bootinfo_get_kernel_exec_file(&kernel);
 
     /* Transfer the remaining pages to the run-time page allocator. */
     initialize_page_allocator(&boot_alloc);
