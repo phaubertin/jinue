@@ -35,10 +35,20 @@
 #define VGA_TEXT_VID_BASE           0xb8000
 #define VGA_TEXT_VID_TOP            0xc0000
 #define VGA_TEXT_VID_SIZE           (VGA_TEXT_VID_TOP - VGA_TEXT_VID_BASE)
+#define VGA_ATTR_WR_AND_ADDR        0x3c0
+#define VGA_ATTR_RD                 0x3c1
 #define VGA_MISC_OUT_WR             0x3c2
+#define VGA_SEQ_ADDR                0x3c4
+#define VGA_SEQ_DATA                0x3c5
 #define VGA_MISC_OUT_RD             0x3cc
+#define VGA_GRAPHICS_ADDR           0x3ce
+#define VGA_GRAPHICS_DATA	        0x3cf
 #define VGA_CRTC_ADDR               0x3d4
 #define VGA_CRTC_DATA               0x3d5
+#define VGA_IN_STATUS1              0x3da
+
+#define VGA_CRTC_CURSOR_HIGH        0x0e
+#define VGA_CRTC_CURSOR_LOW         0x0f
 
 #define VGA_FB_FLAG_ACTIVE    1
 
