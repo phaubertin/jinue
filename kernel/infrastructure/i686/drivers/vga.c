@@ -48,6 +48,8 @@ static log_reader_t log_reader;
 /** base address of the VGA text video buffer */
 static unsigned char *video_base_addr;
 
+static vga_pos_t cursor_pos;
+
 static void vga_clear(void) {
     unsigned int idx = 0;
     
@@ -117,15 +119,12 @@ static void done_with_attr_regs(void) {
 }
 
 static vga_pos_t vga_get_cursor_pos(void) {
-    unsigned char h, l;
-    
-    h = read_crtc_reg(VGA_CRTC_CURSOR_HIGH);
-    l = read_crtc_reg(VGA_CRTC_CURSOR_LOW);
-    
-    return (h << 8) | l;
+    return cursor_pos;
 }
 
 static void vga_set_cursor_pos(vga_pos_t pos) {
+    cursor_pos = pos;
+
     unsigned char h = pos >> 8;
     unsigned char l = pos;
 
