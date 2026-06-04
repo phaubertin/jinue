@@ -43,4 +43,6 @@
 
 #define ALIGN_END_PTR(x, s)     ( (void *)ALIGN_END((uintptr_t)(x), (s)) )
 
+#define ARRAY_COUNT(ar)         (sizeof(ar) / sizeof(ar[0]))
+
 #endif
