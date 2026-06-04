@@ -75,14 +75,12 @@ static void write_misc_out_reg(uint8_t value) {
     outb(VGA_MISC_OUT_WR, value);
 }
 
-/** Write a value to one of the sequencer registers
+/** Read a value from the misc. output register.
  * 
- * @param index index of register to write to
- * @param value value to write in register
+ * @return register value
  */
-static void write_seq_reg(unsigned int index, uint8_t value) {
-    outb(VGA_SEQ_ADDR, index);
-    outb(VGA_SEQ_DATA, value);
+static uint8_t read_misc_out_reg(void) {
+    return inb(VGA_MISC_OUT_RD);
 }
 
 /** Write a value to one of the CRT Controller (CRTC) registers.
@@ -97,72 +95,8 @@ static void write_seq_reg(unsigned int index, uint8_t value) {
  * @param value value to write in register
  */
 static void write_crtc_reg(unsigned int index, uint8_t value) {
-    if(index == 0x03) {
-        value |= 0x80;
-    }
-
-    if(index == 0x11) {
-        value &= ~0x80;
-    }
-
     outb(VGA_CRTC_ADDR, index);
     outb(VGA_CRTC_DATA, value);
-}
-
-/** Read the value from one of the CRT Controller (CRTC) registers.
- * 
- * @param index index of register to write to
- */
-static uint8_t read_crtc_reg(unsigned int index) {
-    outb(VGA_CRTC_ADDR, index);
-    return inb(VGA_CRTC_DATA);
-}
-
-/** Unprotect CRT Controller (CRTC) registers with indexes 0-7. */
-static void unprotect_crtc_regs(void) {
-    /* write_crtc_reg() tweaks the values for the right CRTC registers to
-     * unprotect. We only need to read and re-write the relevant registers. */
-    write_crtc_reg(0x03, read_crtc_reg(0x03));
-    write_crtc_reg(0x11, read_crtc_reg(0x11));
-}
-
-/** Write a value to one of the graphics controller registers.
- * 
- * @param index index of register to write to
- * @param value value to write in register
- */
-static void write_graphics_reg(unsigned int index, uint8_t value) {
-    outb(VGA_GRAPHICS_ADDR, index);
-    outb(VGA_GRAPHICS_DATA, value);
-}
-
-/** Write a value to one of the attribute controller registers.
- * 
- * @param index index of register to write to
- * @param value value to write in register
- */
-static void write_attr_reg(unsigned int index, uint8_t value) {
-    /* The same register is used to set the address and value. We need to read
-     * the input status 1 register first, which will cause the attribute
-     * controller register to expect the index. */
-    (void)inb(VGA_IN_STATUS1);
-    outb(VGA_ATTR_WR_AND_ADDR, index);
-    outb(VGA_ATTR_WR_AND_ADDR, value);
-}
-
-/** Indicate we are done writing to the attribute controller registers.
- * 
- * This is required because either the host or the VGTA hardware has exclusive
- * access to these registers.
-*/
-static void done_with_attr_regs(void) {
-    /* Bit 5 in the attributes controller index register controls who can
-     * access the palette registers: 0 for host and 1 for video memory. It
-     * must be cleared to set the palette registers and then set again to
-     * allow them to be used by the VGA hardware. It is set by this
-     * function. */
-    (void)inb(VGA_IN_STATUS1);
-    outb(VGA_ATTR_WR_AND_ADDR, 0x20);
 }
 
 /** Get the current position of the text cursor.
@@ -215,62 +149,10 @@ static int map_color(int loglevel) {
     }
 }
 
-/** Initialize VGA to 80x25 text mode */
-static void initialize_text_mode(void) {
-    /* Source for register values: https://files.osdev.org/mirrors/geezer/osd/graphics/modes.c
-     * (See g_80x25_text and write_regs(), public domain, thanks to Chris Giese.)
-     * 
-     * The misc. output register must be written first because its LSB sets
-     * the address of the CRTC registers (0x3dx in our case). */
-    write_misc_out_reg(0x67);
-
-    /* sequencer registers values */
-    
-    const uint8_t seq_regvals[] = {0x03, 0x00, 0x03, 0x00, 0x02};
-
-    for(int idx = 0; idx < ARRAY_COUNT(seq_regvals); ++idx) {
-        write_seq_reg(idx, seq_regvals[idx]);
-    }
-
-    /* CRTC registers */
-    
-    const uint8_t crtc_regvals[] = {
-        0x5f, 0x4f, 0x50, 0x82, 0x55, 0x81, 0xbf, 0x1f,
-        0x00, 0x4f, 0x0d, 0x0e, 0x00, 0x00, 0x00, 0x50,
-        0x9c, 0x0e, 0x8f, 0x28, 0x1f, 0x96, 0xb9, 0xa3,
-        0xff
-    };
-
-    unprotect_crtc_regs();
-
-    for(int idx = 0; idx < ARRAY_COUNT(crtc_regvals); ++idx) {
-        write_crtc_reg(idx, crtc_regvals[idx]);
-    }
-
-    /* Graphics controller registers */
-    
-    const uint8_t graphics_regvals[] = {
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x0e, 0x00,
-	    0xff,
-    };
-
-    for(int idx = 0; idx < ARRAY_COUNT(graphics_regvals); ++idx) {
-        write_graphics_reg(idx, graphics_regvals[idx]);
-    }
-
-    /* Attribute controller registers */
-    
-    const uint8_t attr_regvals[] = {
-        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x14, 0x07,
-        0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f,
-        0x0c, 0x00, 0x0f, 0x08, 0x00
-    };
-
-    for(int idx = 0; idx < ARRAY_COUNT(attr_regvals); ++idx) {
-        write_attr_reg(idx, attr_regvals[idx]);
-    }
-
-    done_with_attr_regs();
+/** Initialize registers */
+static void initialize_registers(void) {
+    /* Set address select bit in a known state: CRTC regs at 0x3dx */
+    write_misc_out_reg(read_misc_out_reg() | 1);
 }
 
 /** Scroll the text buffer by one line. */
@@ -372,7 +254,7 @@ void vga_init(const config_t *config) {
         return;
     }
 
-    initialize_text_mode();
+    initialize_registers();
 
     /* Move cursor to line 0 col 0 */
     set_cursor_position(0);
