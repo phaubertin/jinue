@@ -30,12 +30,21 @@
 jinue_root = ..
 include $(jinue_root)/header.mk
 
-test_script         = run-all-tests.gen.sh
+# GRUB location (for creation of bootable ISO for ISO tests)
+#
+# TODO this should probably be configurable through some sort of configure script
+grub_modules         = /usr/lib/grub/i386-pc
+
+grub_image_rel      = boot/grub/i386-pc/jinue.img
 run_script          = run-test.sh
 run_log             = run-test.log
+test_script         = run-all-tests.gen.sh
 
 deps                = $(kernel_img) $(testapp_initrd)
 
+# These tests are run through run-test.sh, which uses QEMU's -kernel and
+# -initrd arguments to load the kernel and test app. Only a .sh file is
+# needed for these tests.
 tests = \
 	test_486_too_old \
 	test_acpi \
@@ -47,40 +56,60 @@ tests = \
 	test_loader_exit \
 	test_mp
 
-logs := $(foreach t,$(tests),$(t).log)
+# These tests are run through run-iso-test.sh, which invokes QEMU with an ISO
+# file. This Makefile builds an ISO file for each of these tests that loads
+# the kernel and test app using GRUB. This should be done only for the tests
+# that need GRUB, for example to set a specific video mode. Each test needs a
+# .sh test script and a .cfg GRUB configuration file.
+iso_tests = \
+	test_iso_boot_linux16 \
+	test_iso_boot_linux32
 
-target          = $(test_script)
-unclean.extra   = $(logs)
+logs    := $(foreach t,$(tests),$(t).log) $(foreach t,$(iso_tests),$(t).log)
+isos    := $(foreach t,$(iso_tests),$(t).iso)
+isodirs := $(foreach t,$(iso_tests),$(t).d)
+
+target          	= $(test_script)
+unclean.extra       = $(logs) $(isos)
+unclean_recursive   = $(foreach t,$(iso_tests),$(t).d)
 
 include $(common)
 
 $(test_script): Makefile
 	echo "#!/bin/bash -e" > $@
 	echo "# Generated file - see Makefile" >> $@
-	echo "" >> $@; \
-	echo "source utils.sh" >> $@; \
-	echo "" >> $@; \
-	echo "fail_count=0" >> $@; \
+	echo "" >> $@
+	echo "source utils.sh" >> $@
+	echo "" >> $@
+	echo "fail_count=0" >> $@
 	for t in $(tests); do \
 		echo "" >> $@; \
 		echo "echo =============================================================" >> $@; \
 		echo "echo ==== TEST $$t" >> $@; \
 		echo "echo =============================================================" >> $@; \
-		echo "./$(run_script) $(kernel_img) $(testapp_initrd) ./$$t.sh $$t.log || fail_count=\$$((fail_count + 1))" >> $@; \
+		echo "./$(run_script) -kernel $(kernel_img) $(testapp_initrd) $$t.sh $$t.log || fail_count=\$$((fail_count + 1))" >> $@; \
 	done
-	echo "" >> $@; \
-	echo "echo =============================================================" >> $@; \
-	echo "echo ==== SUMMARY" >> $@; \
-	echo "echo =============================================================" >> $@; \
-	echo "echo Total:    $(words $(tests))" >> $@; \
-	echo "echo Success:  \$$(($(words $(tests)) - fail_count))" >> $@; \
-	echo "echo Failures: \$$((fail_count))" >> $@; \
-	echo '[ "$$fail_count" -gt "0" ] && report_fail' >> $@; \
-	echo "report_success" >> $@; \
+	for t in $(iso_tests); do \
+		echo "" >> $@; \
+		echo "echo =============================================================" >> $@; \
+		echo "echo ==== TEST $$t" >> $@; \
+		echo "echo =============================================================" >> $@; \
+		echo "./$(run_script) -iso $$t.iso $$t.sh $$t.log || fail_count=\$$((fail_count + 1))" >> $@; \
+	done
+	echo "" >> $@
+	echo "echo =============================================================" >> $@
+	echo "echo ==== SUMMARY" >> $@
+	echo "echo =============================================================" >> $@
+	echo "total=$(words $(tests) $(iso_tests))" >> $@
+	echo "echo Total:    \$$total" >> $@
+	echo "echo Success:  \$$((total - fail_count))" >> $@
+	echo "echo Failures: \$$((fail_count))" >> $@
+	echo '[ "$$fail_count" -gt "0" ] && report_fail' >> $@
+	echo "report_success" >> $@
 	chmod 755 $@
 
 .PHONY: check
-check: $(test_script) $(deps)
+check: $(test_script) $(isos) $(deps)
 	./$(test_script)
 
 .PHONY: kernel-image
@@ -94,3 +123,43 @@ testapp-initrd:
 $(kernel_img): kernel-image
 
 $(testapp_initrd): testapp-initrd
+
+.PRECIOUS: $(isodirs)
+
+%.d: %.cfg $(kernel_img) $(testapp_initrd)
+	# Create directory hierarchy
+	mkdir -p $@/boot/grub/i386-pc
+	
+	# Copy GRUB configuration
+	cp $< $@/boot/grub/grub.cfg
+	
+	# Copy kernel image and test app initial RAM disk
+	cp $(kernel_img) $@/boot/
+	cp $(testapp_initrd) $@/boot/
+
+	# Set up GRUB
+	`grub2-mkimage --version > /dev/null 2>&1 && echo grub2-mkimage || echo grub-mkimage` \
+		--prefix '/boot/grub' \
+		--output $@/$(grub_image_rel) \
+		--format i386-pc-eltorito \
+		--compression auto \
+		biosdisk iso9660 linux linux16
+
+	# Mark directory as up to date
+	touch $@
+
+%.iso: %.d
+	xorriso \
+		-as mkisofs \
+		-graft-points \
+		-b $(grub_image_rel) \
+		-no-emul-boot \
+		-boot-load-size 4 \
+		-boot-info-table \
+		--grub2-boot-info \
+		--grub2-mbr $(grub_modules)/boot_hybrid.img \
+		--protective-msdos-label \
+		-o $@ \
+		-r $< \
+		--sort-weight 0 / \
+		--sort-weight 1 /boot

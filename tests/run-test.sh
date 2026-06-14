@@ -1,5 +1,5 @@
 #!/bin/bash -e
-# Copyright (C) 2024 Philippe Aubertin.
+# Copyright (C) 2024-2026 Philippe Aubertin.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -35,33 +35,69 @@ CMDLINE=""
 OPTIONS=""
 
 usage () {
-    echo "USAGE: $(basename $0) kernel_image initrd test_script log_file" >&2
+    echo "USAGE: $(basename $0) -kernel kernel_image initrd test_script log_file" >&2
+    echo "       $(basename $0) -iso iso_image test_script log_file" >&2
     exit 1
 }
 
-[[ $# -ne 4 ]] && usage
+[[ $# -lt 1 ]] && usage
 
-KERNEL_IMAGE=$1
-INITRD=$2
-TEST_SCRIPT=$3
-LOG=$4
+RUNTYPE=$1
+
+shift
+
+case "$RUNTYPE" in
+    -kernel)
+        [[ $# -ne 4 ]] && usage
+        KERNEL_IMAGE=$1
+        INITRD=$2
+        TEST_SCRIPT=$3
+        LOG=$4
+        ;;
+    -iso)
+        [[ $# -ne 3 ]] && usage
+        ISO=$1
+        TEST_SCRIPT=$2
+        LOG=$3
+        ;;
+    *)
+        usage
+        ;;
+esac
 
 run () {
     BASE_CMDLINE="on_panic=reboot serial_enable=yes serial_dev=/dev/ttyS0 DEBUG_DO_REBOOT=1"
 
-    qemu-system-i386 \
-        -cpu ${CPU} \
-        -m ${MEM} \
-        -no-reboot \
-        $OPTIONS \
-        -kernel "${KERNEL_IMAGE}" \
-        -initrd "${INITRD}" \
-        -append "${BASE_CMDLINE} ${CMDLINE}" \
-        -serial stdio \
-        -display none \
-        -smp 1 \
-        -usb \
-        -vga std | tee $LOG
+    case "$RUNTYPE" in
+        -kernel)
+            qemu-system-i386 \
+                -cpu ${CPU} \
+                -m ${MEM} \
+                -no-reboot \
+                $OPTIONS \
+                -kernel "${KERNEL_IMAGE}" \
+                -initrd "${INITRD}" \
+                -append "${BASE_CMDLINE} ${CMDLINE}" \
+                -serial stdio \
+                -display none \
+                -smp 1 \
+                -usb \
+                -vga std | tee $LOG
+                ;;
+        -iso)
+            qemu-system-i386 \
+                -cpu ${CPU} \
+                -m ${MEM} \
+                -no-reboot \
+                $OPTIONS \
+                -drive format=raw,media=cdrom,file="${ISO}" \
+                -serial stdio \
+                -display none \
+                -smp 1 \
+                -usb \
+                -vga std | tee $LOG
+                ;;
+    esac
     
     echo =============================================================
 }
