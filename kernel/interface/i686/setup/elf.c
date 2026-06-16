@@ -144,7 +144,7 @@ void prepare_data_segment(data_segment_t *segment, bootinfo_t *bootinfo) {
  * @param elf ELF header
  * @return program header if found, NULL otherwise
  */
-const Elf32_Phdr *executable_program_header(const Elf32_Ehdr *ehdr) {
+static const Elf32_Phdr *executable_program_header(const Elf32_Ehdr *ehdr) {
     const Elf32_Phdr *phdr = program_header_table(ehdr);
 
     for(int idx = 0; idx < ehdr->e_phnum; ++idx) {

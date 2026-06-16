@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Philippe Aubertin.
+ * Copyright (C) 2025-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -32,7 +32,11 @@
 #ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_EXPORTS_ASM_MACHINE_H
 #define JINUE_KERNEL_INFRASTRUCTURE_I686_EXPORTS_ASM_MACHINE_H
 
+#include <jinue/shared/asm/machine.h>
 #include <kernel/utils/asm/utils.h>
+
+/** start of kernel image in virtual memory */
+#define KERNEL_BASE         JINUE_KLIMIT
 
 #define MAPPING_AREA_ADDR   0xff000000
 

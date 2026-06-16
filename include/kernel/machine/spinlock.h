@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2024-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -32,10 +32,16 @@
 #ifndef JINUE_KERNEL_MACHINE_SPINLOCK_H
 #define JINUE_KERNEL_MACHINE_SPINLOCK_H
 
+#include <jinue/shared/asm/machine.h>
 #include <kernel/machine/types.h>
 
+#ifdef JINUE_ARCH_IS_AMD64
 /* Must define SPINLOCK_INITIALIZER. */
-#ifdef __i386__
+#include <kernel/infrastructure/amd64/exports/spinlock.h>
+#endif
+
+#ifdef JINUE_ARCH_IS_I686
+/* Must define SPINLOCK_INITIALIZER. */
 #include <kernel/infrastructure/i686/exports/spinlock.h>
 #endif
 

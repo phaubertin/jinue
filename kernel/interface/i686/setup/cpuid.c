@@ -184,10 +184,8 @@ void detect_cpu_features(bootinfo_t *bootinfo) {
     cpuid(&extended1);
 
     bool has_nx = !!(extended1.edx & CPUID_EXT_FEATURE_NX);
+    bool has_lm = !!(extended1.edx & CPUID_EXT_FEATURE_LM);
 
-    if(!has_nx) {
-        return;
-    }
-
-    bootinfo->features |= BOOTINFO_FEATURE_NX;
+    bootinfo->features |= has_nx ? BOOTINFO_FEATURE_NX : 0;
+    bootinfo->features |= has_lm ? BOOTINFO_FEATURE_LM : 0;
 }

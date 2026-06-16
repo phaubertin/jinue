@@ -29,26 +29,26 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INTERFACE_I686_TYPES_H
-#define JINUE_KERNEL_INTERFACE_I686_TYPES_H
+#ifndef JINUE_KERNEL_INTERFACE_AMD64_TYPES_H
+#define JINUE_KERNEL_INTERFACE_AMD64_TYPES_H
 
 #include <kernel/infrastructure/acpi/types.h>
-#include <kernel/infrastructure/i686/types.h>
+#include <kernel/infrastructure/amd64/types.h>
 #include <kernel/types.h>
 #include <sys/elf.h>
 
 /* This structure is used by the assembly language setup code to pass
  * information to the kernel. When changes are made to this structure,
- * constants in kernel/interface/i686/asm/bootinfo.h may need to be updated. */
+ * constants in kernel/interface/amd64/asm/bootinfo.h may need to be updated. */
 typedef struct {
     void                    *cmdline;
-    Elf32_Ehdr              *kernel_start;
+    Elf64_Ehdr              *kernel_start;
     size_t                   kernel_size;
-    Elf32_Ehdr              *loader_start;
+    Elf64_Ehdr              *loader_start;
     size_t                   loader_size;
     void                    *image_start;
     void                    *image_top;
-    uint32_t                 ramdisk_start;
+    uint64_t                 ramdisk_start;
     size_t                   ramdisk_size;
     const acpi_addr_range_t *acpi_addr_map;
     uint32_t                 addr_map_entries;
@@ -56,7 +56,7 @@ typedef struct {
     void                    *boot_end;
     pte_t                   *page_tables;
     pte_t                   *page_directory;
-    uint32_t                 cr3;
+    uint64_t                 cr3;
     uint8_t                  features;
     uint8_t                  cpu_vendor;
     uint32_t                 setup_signature;
@@ -68,30 +68,31 @@ typedef struct {
     void                    *page_limit;
 } boot_alloc_t;
 
+/* TODO review this (order, additional registers) */
 typedef struct {
     /* The following four registers are the system call arguments. */
-#define msg_arg0 eax
-    uint32_t    eax;
-#define msg_arg1 ebx
-    uint32_t    ebx;
-#define msg_arg2 esi
-    uint32_t    esi;
-#define msg_arg3 edi
-    uint32_t    edi;
-    uint32_t    edx;
-    uint32_t    ecx;
-    uint32_t    ds;
-    uint32_t    es;
-    uint32_t    fs;
-    uint32_t    gs;
-    uint32_t    errcode;
-    uint32_t    ivt;
-    uint32_t    ebp;
-    uint32_t    eip;
-    uint32_t    cs;
-    uint32_t    eflags;
-    uint32_t    esp;
-    uint32_t    ss;
+#define msg_arg0 rax
+    uint64_t    rax;
+#define msg_arg1 rbx
+    uint64_t    rbx;
+#define msg_arg2 rsi
+    uint64_t    rsi;
+#define msg_arg3 rdi
+    uint64_t    rdi;
+    uint64_t    rdx;
+    uint64_t    rcx;
+    uint64_t    ds;
+    uint64_t    es;
+    uint64_t    fs;
+    uint64_t    gs;
+    uint64_t    errcode;
+    uint64_t    ivt;
+    uint64_t    rbp;
+    uint64_t    rip;
+    uint64_t    cs;
+    uint64_t    eflags;
+    uint64_t    rsp;
+    uint64_t    ss;
 } trapframe_t;
 
 #endif

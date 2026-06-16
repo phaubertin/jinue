@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2024-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -32,7 +32,36 @@
 #ifndef _JINUE_SHARED_ASM_MACHINE_H
 #define _JINUE_SHARED_ASM_MACHINE_H
 
-#ifdef __i386__
+/* Do not assign zero here because this is what an undefined macro compares
+ * equal to. Must match values in header.mk. */
+
+/** AMD64 architecture - set in JINUE_CONFIG_ARCH */
+#define JINUE_ARCH_AMD64    1
+
+/** i686 architecture - set in JINUE_CONFIG_ARCH */
+#define JINUE_ARCH_I686     2
+
+/* If an architecture is specified through JINUE_CONFIG_ARCH, we configure the
+ * header files for that architecture. Otherwise, we use the macros predefined
+ * by the compiler.
+ * 
+ * The main use case for this is when compiling the setup code for the AMD64
+ * kernel where, even though we are compiling 32-bit code, we need the AMD64
+ * definitions. */
+
+#if JINUE_CONFIG_ARCH == JINUE_ARCH_AMD64 || (!defined(JINUE_BUILD_ARCH) && defined(__x86_64__))
+#define JINUE_ARCH_IS_AMD64
+#endif
+
+#if JINUE_CONFIG_ARCH == JINUE_ARCH_I686 || (!defined(JINUE_BUILD_ARCH) && defined(__i386__))
+#define JINUE_ARCH_IS_I686
+#endif
+
+#ifdef JINUE_ARCH_IS_AMD64
+#include <jinue/shared/asm/amd64.h>
+#endif
+
+#ifdef JINUE_ARCH_IS_I686
 #include <jinue/shared/asm/i686.h>
 #endif
 

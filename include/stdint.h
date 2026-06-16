@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -32,51 +32,51 @@
 #ifndef _JINUE_LIBC_STDINT_H
 #define _JINUE_LIBC_STDINT_H
 
-typedef signed char             int8_t;
+typedef signed char         int8_t;
 
-typedef short int               int16_t;
+typedef short               int16_t;
 
-typedef int                     int32_t;
+typedef int                 int32_t;
 
-typedef long long int           int64_t;
-
-
-typedef unsigned char           uint8_t;
-
-typedef unsigned short int      uint16_t;
-
-typedef unsigned int            uint32_t;
-
-typedef unsigned long long int  uint64_t;
+typedef long long           int64_t;
 
 
-typedef int                     intptr_t;
+typedef unsigned char       uint8_t;
 
-typedef unsigned int            uintptr_t;
+typedef unsigned short      uint16_t;
+
+typedef unsigned int        uint32_t;
+
+typedef unsigned long long  uint64_t;
 
 
-typedef long long int           intmax_t;
+typedef long                intptr_t;
 
-typedef unsigned long long int  uintmax_t;
+typedef unsigned long       uintptr_t;
 
-#define INT8_C(x)               x
 
-#define UINT8_C(x)              x
+typedef long long           intmax_t;
 
-#define INT16_C(x)              x
+typedef unsigned long long  uintmax_t;
 
-#define UINT16_C(x)             x
+#define INT8_C(x)           x
 
-#define INT32_C(x)              x
+#define UINT8_C(x)          x
 
-#define UINT32_C(x)             x
+#define INT16_C(x)          x
 
-#define INT64_C(x)              x ## LL
+#define UINT16_C(x)         x
 
-#define UINT64_C(x)             x ## ULL
+#define INT32_C(x)          x
 
-#define INTMAX_C(x)             x ## LL
+#define UINT32_C(x)         x
 
-#define UINTMAX_C(x)            x ## ULL
+#define INT64_C(x)          x ## LL
+
+#define UINT64_C(x)         x ## ULL
+
+#define INTMAX_C(x)         x ## LL
+
+#define UINTMAX_C(x)        x ## ULL
 
 #endif

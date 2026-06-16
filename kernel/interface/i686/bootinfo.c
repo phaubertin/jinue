@@ -29,8 +29,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <kernel/domain/services/logging.h>
 #include <kernel/domain/services/panic.h>
 #include <kernel/infrastructure/i686/pmap/pmap.h>
+#include <kernel/infrastructure/elf.h>
 #include <kernel/interface/i686/bootinfo.h>
 #include <stddef.h>
 
@@ -48,16 +50,12 @@ const bootinfo_t *get_bootinfo(void) {
 }
 
 /**
- * Check the presence and signature of the boot information structure
+ * Get description string for validation error, if any
  * 
  * @param bootinfo boot information structure
- * @return NULL on success, error string otherwise
+ * @return NULL if structure is valid, error string otherwise
  */
-static const char *check_structure(const bootinfo_t *bootinfo) {
-    /* This data structure is accessed early during the boot process, when the
-     * first two megabytes of memory are still identity mapped. This means, if
-     * bootinfo is NULL and we dereference it, it does *not* cause a page fault
-     * or any other CPU exception. */
+static const char *get_validation_error(const bootinfo_t *bootinfo) {
     if(bootinfo == NULL) {
         return "Boot information structure pointer is NULL.";
     }
@@ -65,17 +63,7 @@ static const char *check_structure(const bootinfo_t *bootinfo) {
     if(bootinfo->setup_signature != BOOT_SETUP_MAGIC) {
         return "Bad setup header signature.";
     }
-    
-    return NULL;
-}
 
-/**
- * Check the alignment of the kernel image and ELF file
- * 
- * @param bootinfo boot information structure
- * @return NULL on success, error string otherwise
- */
-static const char *check_kernel_alignment(const bootinfo_t *bootinfo) {
     if(page_offset_of(bootinfo->image_start) != 0) {
         return "Kernel image start is not aligned on a page boundary";
     }
@@ -92,25 +80,82 @@ static const char *check_kernel_alignment(const bootinfo_t *bootinfo) {
 }
 
 /**
- * Validate the boot information structure
+ * Check whether the boot information structure is valid
  * 
- * @param panic_on_failure whether to panic if the structure is invalid
  * @return true if valid, false otherwise
  */
-bool check_bootinfo(bool panic_on_failure) {
-    const char *error_description = check_structure(bootinfo);
+bool is_bootinfo_valid(void) {
+    return get_validation_error(bootinfo) == NULL;
+}
+
+/**
+ * Ensure the boot information structure is valid, panic otherwise
+ */
+void validate_bootinfo(void) {
+    const char *error_description = get_validation_error(bootinfo);
 
     if(error_description == NULL) {
-        error_description = check_kernel_alignment(bootinfo);
+        return;
     }
 
-    if(error_description == NULL) {
-        return true;
+    error(ERROR "validation error: %s", error_description);
+    panic("Boot information structure is invalid");
+}
+
+/**
+ * Get the address and size of the kernel ELF file
+ * 
+ * @param kernel (OUT) pointer to result structure
+ */
+void bootinfo_get_kernel_exec_file(exec_file_t *kernel) {
+    kernel->start   = bootinfo->kernel_start;
+    kernel->size    = bootinfo->kernel_size;
+
+    if(kernel->start == NULL) {
+        panic("malformed boot image: no kernel ELF binary");
     }
 
-    if(panic_on_failure) {
-        panic(error_description);
+    if(kernel->size < sizeof(Elf32_Ehdr)) {
+        panic("kernel too small to be an ELF binary");
     }
 
-    return false;
+    if(!elf_check(bootinfo->kernel_start)) {
+        panic("kernel ELF binary is invalid");
+    }
+}
+
+/**
+ * Get the address and size of the user space loader ELF file
+ * 
+ * @param loader (OUT) pointer to result structure
+ */
+void machine_get_loader(exec_file_t *loader) {
+    loader->start   = bootinfo->loader_start;
+    loader->size    = bootinfo->loader_size;
+
+    if(loader->start == NULL) {
+        panic("malformed boot image: no user space loader ELF binary");
+    }
+
+    if(loader->size < sizeof(Elf32_Ehdr)) {
+        panic("user space loader too small to be an ELF binary");
+    }
+
+    if(!elf_check(bootinfo->kernel_start)) {
+        panic("user space loader ELF binary is invalid");
+    }
+}
+
+/**
+ * Get the address and size of the RAM disk
+ * 
+ * @param loader (OUT) pointer to result structure
+ */
+void machine_get_ramdisk(kern_mem_block_t *ramdisk) {
+    ramdisk->start  = bootinfo->ramdisk_start;
+    ramdisk->size   = bootinfo->ramdisk_size;
+
+    if(ramdisk->start == 0 || ramdisk->size == 0) {
+        panic("No initial RAM disk loaded.");
+    }
 }

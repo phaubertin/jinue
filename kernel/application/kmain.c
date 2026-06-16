@@ -105,6 +105,8 @@ void kmain(const char *cmdline) {
     exec_file_t loader;
     machine_get_loader(&loader);
 
+    info("Found user space loader with size %" PRIu32 " bytes.", loader.size);
+
     exec(
         process,
         thread,

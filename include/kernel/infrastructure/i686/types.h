@@ -33,15 +33,12 @@
 #define JINUE_KERNEL_INFRASTRUCTURE_I686_TYPES_H
 
 #include <kernel/infrastructure/i686/asm/descriptors.h>
-#include <kernel/infrastructure/i686/exports/types.h>
-#include <kernel/machine/types.h>
 #include <kernel/types.h>
 #include <sys/elf.h>
 
 typedef uint64_t seg_descriptor_t;
 
 typedef uint32_t seg_selector_t;
-
 
 /* There are alignment constraints that apply to this structure if it is used
  * with the sgdt/sidt instructions but, currently, the kernel only uses lgdt

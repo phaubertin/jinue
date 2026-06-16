@@ -34,19 +34,21 @@
 
 /** This header file exists to resolve circular dependencies. <kernel/types.h>
  * includes a machine-dependent type definitions header file through
- * <kernel/machine/types.h>. This header file contain definitions needed by
- * both and isn't intended to be included elsewhere.
+ * <kernel/machine/types.h>. This header file contain definitions needed by it
+ * and isn't intended to be included elsewhere.
  * 
  *      <kernel/typedeps.h>
- *          ^       ^
- *          |       |
- *          |   e.g. <kernel/infrastructure/i686/exports/types.h> for i686
- *          |       ^
- *          |       |
- *          |   <kernel/machine/types.h>
- *          |       ^
- *          |       |
- *      <kernel/types.h>
+ *              ^
+ *              |
+ *      <kernel/infrastructure/amd64/exports/types.h> for amd64
+ *              or
+ *      <kernel/infrastructure/i686/exports/types.h> for i686
+ *              ^
+ *              |
+ *      <kernel/machine/types.h>
+ *              ^
+ *              |
+ *       <kernel/types.h>
  * */
 
 #include <inttypes.h>
@@ -56,15 +58,5 @@
 
 /** Virtual memory address (pointer) with pointer arithmetic allowed */
 typedef unsigned char *addr_t;
-
-typedef struct {
-    const char *start;
-    size_t      length;
-} cmdline_token_t;
-
-typedef struct {
-    const char  *name;
-    int          enum_value;
-} cmdline_enum_def_t;
 
 #endif

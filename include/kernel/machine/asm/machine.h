@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2024-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -34,7 +34,11 @@
 
 #include <jinue/shared/asm/machine.h>
 
-#ifdef __i386__
+#ifdef JINUE_ARCH_IS_AMD64
+#include <kernel/infrastructure/amd64/exports/asm/machine.h>
+#endif
+
+#ifdef JINUE_ARCH_IS_I686
 #include <kernel/infrastructure/i686/exports/asm/machine.h>
 #endif
 
@@ -46,9 +50,6 @@
 
 /** bit mask for offset in a page */
 #define PAGE_MASK   JINUE_PAGE_MASK
-
-/** start of kernel image in virtual memory */
-#define KERNEL_BASE JINUE_KLIMIT
 
 /** size of region reserved for kernel image */
 #define KERNEL_SIZE (1 * MB)

@@ -30,8 +30,8 @@
 jinue_root = ..
 include $(jinue_root)/header.mk
 
-kernel_ldscript  = interface/i686/ld/kernel.ld
-image_ldscript   = interface/i686/ld/image.ld
+kernel_ldscript  = interface/$(CONFIG_ARCH)/ld/kernel.ld
+image_ldscript   = interface/$(CONFIG_ARCH)/ld/image.ld
 build_info_h     = build-info.gen.h
 
 LDFLAGS         += -m32 $(CFLAGS.arch)
@@ -42,12 +42,12 @@ IMAGE_LDFLAGS    = -T $(image_ldscript)
 c.lib            = $(libc)/libc-kernel.a
 loader.bin       = $(loader)/loader
 
-kernel_elf       = interface/i686/kernel
+kernel_elf       = interface/$(CONFIG_ARCH)/kernel
 stripped         = $(kernel_elf)-stripped
-image            = interface/i686/$(notdir $(kernel_img))
+image            = interface/$(CONFIG_ARCH)/$(notdir $(kernel_img))
 kmain			 = application/kmain.o
 setup16          = interface/i686/setup/setup16-nasm.o
-setup32          = interface/i686/setup/setup32.o
+setup32          = interface/$(CONFIG_ARCH)/setup/setup32.o
 target           = $(image)
 
 unclean.extra    = \
@@ -99,69 +99,114 @@ sources.kernel.c = \
 	domain/services/mman.c \
 	domain/services/panic.c \
 	domain/services/scheduler.c \
-	domain/config.c \
-	infrastructure/acpi/acpi.c \
-	infrastructure/i686/drivers/lapic.c \
-	infrastructure/i686/drivers/pic8259.c \
-	infrastructure/i686/drivers/pit8253.c \
-	infrastructure/i686/drivers/uart16550a.c \
-	infrastructure/i686/drivers/vga.c \
-	infrastructure/i686/firmware/acpi.c \
-	infrastructure/i686/firmware/bios.c \
-	infrastructure/i686/firmware/mp.c \
-	infrastructure/i686/memory/addrmap.c \
-	infrastructure/i686/memory/pages.c \
-	infrastructure/i686/pmap/nopae.c \
-	infrastructure/i686/pmap/pmap.c \
-	infrastructure/i686/pmap/pae.c \
-	infrastructure/i686/boot_alloc.c \
-	infrastructure/i686/cmdline.c \
-	infrastructure/i686/config.c \
-	infrastructure/i686/cpuidsig.c \
-	infrastructure/i686/cpuinfo.c \
-	infrastructure/i686/debug.c \
-	infrastructure/i686/halt.c \
-	infrastructure/i686/init.c \
-	infrastructure/i686/percpu.c \
-	infrastructure/i686/platform.c \
-	infrastructure/i686/process.c \
-	infrastructure/i686/thread.c \
-	infrastructure/elf.c \
-	interface/i686/auxv.c \
-	interface/i686/bootinfo.c \
-	interface/i686/interrupts.c \
-	interface/i686/trap.c \
-	interface/syscalls.c
+	domain/config.c
 
-sources.kernel.nasm = \
-	infrastructure/i686/atomic/atomic.asm \
-	infrastructure/i686/atomic/spinlock.asm \
-	infrastructure/i686/drivers/iodelay.asm \
-	infrastructure/i686/isa/abi.asm \
-	infrastructure/i686/isa/cpuid.asm \
-	infrastructure/i686/isa/instrs.asm \
-	infrastructure/i686/isa/io.asm \
-	infrastructure/i686/isa/regs.asm \
-	infrastructure/i686/thread.asm \
-	interface/i686/crt.asm \
-	interface/i686/trap.asm
+ifeq ($(CONFIG_ARCH),amd64)
+	sources.kernel.c += \
+		infrastructure/acpi/acpi.c \
+		infrastructure/i686/drivers/lapic.c \
+		infrastructure/i686/drivers/pic8259.c \
+		infrastructure/i686/drivers/pit8253.c \
+		infrastructure/i686/drivers/uart16550a.c \
+		infrastructure/i686/drivers/vga.c \
+		infrastructure/i686/firmware/acpi.c \
+		infrastructure/i686/firmware/bios.c \
+		infrastructure/i686/firmware/mp.c \
+		interface/i686/trap.c
+
+	sources.kernel.nasm = \
+		infrastructure/i686/atomic/atomic.asm \
+		infrastructure/i686/atomic/spinlock.asm \
+		infrastructure/i686/drivers/iodelay.asm \
+		infrastructure/i686/isa/cpuid.asm \
+		interface/amd64/crt.asm \
+		interface/amd64/trap.asm
+endif
+
+ifeq ($(CONFIG_ARCH),i686)
+	sources.kernel.c += \
+		infrastructure/acpi/acpi.c \
+		infrastructure/i686/drivers/lapic.c \
+		infrastructure/i686/drivers/pic8259.c \
+		infrastructure/i686/drivers/pit8253.c \
+		infrastructure/i686/drivers/uart16550a.c \
+		infrastructure/i686/drivers/vga.c \
+		infrastructure/i686/firmware/acpi.c \
+		infrastructure/i686/firmware/bios.c \
+		infrastructure/i686/firmware/mp.c \
+		infrastructure/i686/memory/addrmap.c \
+		infrastructure/i686/memory/pages.c \
+		infrastructure/i686/pmap/nopae.c \
+		infrastructure/i686/pmap/pmap.c \
+		infrastructure/i686/pmap/pae.c \
+		infrastructure/i686/boot_alloc.c \
+		infrastructure/i686/cmdline.c \
+		infrastructure/i686/config.c \
+		infrastructure/i686/cpuidsig.c \
+		infrastructure/i686/cpuinfo.c \
+		infrastructure/i686/debug.c \
+		infrastructure/i686/halt.c \
+		infrastructure/i686/init.c \
+		infrastructure/i686/percpu.c \
+		infrastructure/i686/platform.c \
+		infrastructure/i686/process.c \
+		infrastructure/i686/thread.c \
+		infrastructure/elf.c \
+		interface/i686/auxv.c \
+		interface/i686/bootinfo.c \
+		interface/i686/interrupts.c \
+		interface/i686/trap.c \
+		interface/syscalls.c
+
+	sources.kernel.nasm = \
+		infrastructure/i686/atomic/atomic.asm \
+		infrastructure/i686/atomic/spinlock.asm \
+		infrastructure/i686/drivers/iodelay.asm \
+		infrastructure/i686/isa/abi.asm \
+		infrastructure/i686/isa/cpuid.asm \
+		infrastructure/i686/isa/instrs.asm \
+		infrastructure/i686/isa/io.asm \
+		infrastructure/i686/isa/regs.asm \
+		infrastructure/i686/thread.asm \
+		interface/i686/crt.asm \
+		interface/i686/trap.asm
+endif
 
 sources.setup16.nasm = interface/i686/setup/setup16.asm
 
-# setup32.asm must be first.
-sources.setup32.nasm = \
-	interface/i686/setup/setup32.asm \
-	interface/i686/setup/cpuid.asm \
-	infrastructure/i686/isa/cpuid.asm
+ifeq ($(CONFIG_ARCH),amd64)
+	# setup32.asm must be first.
+	sources.setup32.nasm = \
+		interface/amd64/setup/setup32.asm \
+		interface/i686/setup/cpuid.asm \
+		infrastructure/i686/isa/cpuid.asm
 
-sources.setup32.c = \
-	interface/i686/setup/alloc.c \
-	interface/i686/setup/cpuid.c \
-	interface/i686/setup/elf.c \
-	interface/i686/setup/linux.c \
-	interface/i686/setup/main32.c \
-	interface/i686/setup/pmap.c \
-	infrastructure/i686/cpuidsig.c
+	sources.setup32.c = \
+		infrastructure/i686/cpuidsig.c \
+		interface/amd64/setup/elf.c \
+		interface/amd64/setup/main32.c \
+		interface/amd64/setup/pmap.c \
+		interface/i686/setup/alloc.c \
+		interface/i686/setup/cpuid.c \
+		interface/i686/setup/linux.c
+endif
+
+ifeq ($(CONFIG_ARCH),i686)
+	# setup32.asm must be first.
+	sources.setup32.nasm = \
+		interface/i686/setup/setup32.asm \
+		interface/i686/setup/cpuid.asm \
+		infrastructure/i686/isa/cpuid.asm
+
+	sources.setup32.c = \
+		infrastructure/i686/cpuidsig.c \
+		interface/i686/setup/alloc.c \
+		interface/i686/setup/cpuid.c \
+		interface/i686/setup/elf.c \
+		interface/i686/setup/linux.c \
+		interface/i686/setup/main32.c \
+		interface/i686/setup/pmap.c
+endif
 
 objects.kernel = $(sources.kernel.nasm:%.asm=%-nasm.o) $(sources.kernel.c:%.c=%.o)
 
@@ -186,6 +231,7 @@ include $(common)
 
 # We optimize the setup code for size
 $(sources.setup32.c:%.c=%-s.o): CFLAGS.optimization := -Os
+$(sources.setup32.c:%.c=%-s.o): CFLAGS.arch := $(CONFIG_SETUP_CFLAGS_ARCH)
 
 .PHONY: image
 image: $(image)

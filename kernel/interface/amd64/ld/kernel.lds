@@ -29,41 +29,51 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INTERFACE_I686_BOOTINFO_H
-#define JINUE_KERNEL_INTERFACE_I686_BOOTINFO_H
+#include <kernel/interface/i686/asm/boot.h>
 
-#include <kernel/infrastructure/i686/types.h>
-#include <kernel/interface/i686/asm/bootinfo.h>
-#include <kernel/interface/i686/types.h>
-#include <kernel/types.h>
-#include <stdbool.h>
+OUTPUT_FORMAT("elf64-x86_64", "elf64-x86_64", "elf64-x86_64")
+OUTPUT_ARCH("x86_64")
+ENTRY(_start)
 
-const bootinfo_t *get_bootinfo(void);
-
-bool is_bootinfo_valid(void);
-
-void validate_bootinfo(void);
-
-/**
- * Determine if specified feature was detected by the setup code
- * 
- * Use the BOOTINFO_FEATURE_... constants for the mask arguments. A bitwise or
- * of multiple of these constants is allowed, in which case this function will
- * return true only if all the specified features are supported.
- * 
- * The boot information (aka. bootinfo) structure is used to coommunicate
- * information between the setup code and the kernel proper. In general, in
- * order to determine if a CPU feature is supported, you should use the
- * cpu_has_feature() function instead.
- *
- * @param bootinfo the boot information structure
- * @param mask feature(s) for which to check support
- * @return true if feature is supported, false otherwise
- */
-static inline bool bootinfo_has_feature(const bootinfo_t *bootinfo, uint32_t mask) {
-    return (bootinfo->features & mask) == mask;
+SECTIONS {
+    . = KERNEL_BASE + BOOT_SETUP32_SIZE + SIZEOF_HEADERS;
+    .text : {
+        *(.text)
+        *(.text.*)
+    }
+    
+    .rodata : {
+        *(.rodata)
+        *(.rodata.*)
+        
+        /* The kernel ELF binary file is loaded in memory (i.e. the whole file
+         * is copied as-is) and then executed with the assumption that memory
+         * offsets and file offsets are the same. The build process must ensure
+         * that this assumption holds.
+         * 
+         * For this to work, we must ensure that the end of the text section and
+         * the start of the data section are on different pages. */
+        . = ALIGN(PAGE_SIZE);
+    }
+    
+    .data : {
+        *(.data)
+        *(.data.*)
+        
+        /* Put uninitialized data in the .data section to ensure space is
+         * actually reserved for them in the file. */
+        *(.bss)
+        *(.bss.*)
+        
+        . = ALIGN(16);
+    }
+    
+    /* We must specifically not throw out the symbol table as the kernel uses
+     * it to display a useful call stack dump if it panics. */
+    .eh_frame           : { *(.eh_frame) }
+    .shstrtab           : { *(.shstrtab) }
+    .symtab             : { *(.symtab) }
+    .strtab             : { *(.strtab) }
+    .comment            : { *(.comment) }
+    .note.gnu.build-id  : { *(.note.gnu.build-id)}
 }
-
-void bootinfo_get_kernel_exec_file(exec_file_t *kernel);
-
-#endif

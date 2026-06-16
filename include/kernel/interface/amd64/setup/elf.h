@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2026 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,17 +29,22 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_MACHINE_TYPES_H
-#define JINUE_KERNEL_MACHINE_TYPES_H
+#ifndef JINUE_KERNEL_INTERFACE_AMD64_SETUP_ELF_H
+#define JINUE_KERNEL_INTERFACE_AMD64_SETUP_ELF_H
 
-#include <jinue/shared/asm/machine.h>
+#include <kernel/interface/amd64/types.h>
+#include <sys/elf.h>
 
-#ifdef JINUE_ARCH_IS_AMD64
-#include <kernel/infrastructure/amd64/exports/types.h>
-#endif
+typedef struct {
+    void    *start;
+    size_t   size;
+    size_t   physaddr;
+} data_segment_t;
 
-#ifdef JINUE_ARCH_IS_I686
-#include <kernel/infrastructure/i686/exports/types.h>
-#endif
+void prepare_data_segment(data_segment_t *segment, bootinfo_t *bootinfo);
+
+const Elf64_Phdr *kernel_code_program_header(const bootinfo_t *bootinfo);
+
+Elf64_Addr get_kernel_entry_point(const bootinfo_t *bootinfo);
 
 #endif

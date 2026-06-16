@@ -37,7 +37,6 @@
 #include <jinue/shared/types.h>
 #include <kernel/machine/types.h>
 #include <kernel/utils/list.h>
-#include <kernel/typedeps.h>
 
 typedef struct slab_cache_t slab_cache_t;
 
@@ -163,5 +162,15 @@ typedef struct {
     machine_config_t    machine;
     config_on_panic_t   on_panic;
 } config_t;
+
+typedef struct {
+    const char *start;
+    size_t      length;
+} cmdline_token_t;
+
+typedef struct {
+    const char  *name;
+    int          enum_value;
+} cmdline_enum_def_t;
 
 #endif

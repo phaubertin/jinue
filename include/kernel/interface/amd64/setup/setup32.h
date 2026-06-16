@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2026 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,17 +29,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_MACHINE_TYPES_H
-#define JINUE_KERNEL_MACHINE_TYPES_H
+#ifndef JINUE_KERNEL_INTERFACE_AMD64_SETUP_SETUP32_H
+#define JINUE_KERNEL_INTERFACE_AMD64_SETUP_SETUP32_H
 
-#include <jinue/shared/asm/machine.h>
+#include <kernel/interface/amd64/types.h>
+#include <stdbool.h>
 
-#ifdef JINUE_ARCH_IS_AMD64
-#include <kernel/infrastructure/amd64/exports/types.h>
-#endif
+void enable_paging(uint64_t cr3);
 
-#ifdef JINUE_ARCH_IS_I686
-#include <kernel/infrastructure/i686/exports/types.h>
-#endif
+void adjust_stack(void);
 
 #endif

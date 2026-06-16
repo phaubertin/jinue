@@ -33,9 +33,8 @@
 #define JINUE_KERNEL_INFRASTRUCTURE_I686_PLATFORM_H
 
 #include <kernel/infrastructure/i686/asm/platform.h>
-#include <kernel/machine/types.h>
+#include <kernel/types.h>
 #include <stdbool.h>
-#include <stdint.h>
 
 bool platform_is_vga_present(void);
 

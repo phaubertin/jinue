@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2026 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,17 +29,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_MACHINE_TYPES_H
-#define JINUE_KERNEL_MACHINE_TYPES_H
+#ifndef JINUE_KERNEL_INTERFACE_AMD64_SETUP_PMAP_H
+#define JINUE_KERNEL_INTERFACE_AMD64_SETUP_PMAP_H
 
-#include <jinue/shared/asm/machine.h>
+#include <kernel/interface/amd64/setup/elf.h>
+#include <kernel/interface/amd64/types.h>
 
-#ifdef JINUE_ARCH_IS_AMD64
-#include <kernel/infrastructure/amd64/exports/types.h>
-#endif
+void allocate_page_tables(bootinfo_t *bootinfo);
 
-#ifdef JINUE_ARCH_IS_I686
-#include <kernel/infrastructure/i686/exports/types.h>
-#endif
+void initialize_page_tables(bootinfo_t *bootinfo, const data_segment_t *data_segment);
+
+void prepare_for_paging(bootinfo_t *bootinfo);
+
+void cleanup_after_paging(const bootinfo_t *bootinfo);
 
 #endif
