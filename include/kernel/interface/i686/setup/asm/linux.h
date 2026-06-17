@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,18 +29,19 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_PLATFORM_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_PLATFORM_H
-
-#include <kernel/infrastructure/i686/asm/platform.h>
-#include <kernel/machine/types.h>
-#include <stdbool.h>
-#include <stdint.h>
-
-bool platform_is_vga_present(void);
-
-paddr_t platform_get_local_apic_address(void);
-
-int platform_get_video_type(void);
+#ifndef JINUE_KERNEL_INTERFACE_I686_SETUP_ASM_LINUX_H
+#define JINUE_KERNEL_INTERFACE_I686_SETUP_ASM_LINUX_H
 
 #endif
+
+/** VGA text mode (??) */
+#define LINUX_VIDEO_TYPE_VGA    1
+
+/** VESA VGA in graphic mode */
+#define LINUX_VIDEO_TYPE_VLFB   0x23	
+
+/** EFI graphic mode */
+#define LINUX_VIDEO_TYPE_EFI    0x70	
+
+/* Frame buffer base is 64-bit */
+#define LINUX_VIDEO_CAPABILITY_64BIT_BASE   (1 << 1)

@@ -34,6 +34,7 @@
 
 #include <kernel/infrastructure/acpi/types.h>
 #include <kernel/infrastructure/i686/types.h>
+#include <kernel/infrastructure/compiler.h>
 #include <kernel/types.h>
 #include <sys/elf.h>
 
@@ -60,6 +61,14 @@ typedef struct {
     uint8_t                  features;
     uint8_t                  cpu_vendor;
     uint32_t                 setup_signature;
+    uint8_t                  video_type;
+    uint8_t                  video_depth;
+    uint8_t                  video_pixel_format;
+    uint16_t                 video_width;
+    uint16_t                 video_height;
+    uint16_t                 video_pitch;
+    uint64_t                 video_fb_addr;
+    uint32_t                 video_fb_size;
 } bootinfo_t;
 
 struct boot_heap_pushed_state {

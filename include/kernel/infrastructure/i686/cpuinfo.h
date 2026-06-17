@@ -57,4 +57,6 @@ bool cpu_has_feature(uint32_t mask);
 
 unsigned int cpu_phys_addr_width(void);
 
+int get_hypervisor_id(void);
+
 #endif

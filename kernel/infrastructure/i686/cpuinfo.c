@@ -668,3 +668,12 @@ bool cpu_has_feature(uint32_t mask) {
 unsigned int cpu_phys_addr_width(void) {
     return bsp_cpuinfo.maxphyaddr;
 }
+
+/**
+ * Determine the ID of the hypervisor, if any
+ * 
+ * @return hypervisor ID
+ */
+int get_hypervisor_id(void) {
+    return bsp_cpuinfo.hypervisor;
+}

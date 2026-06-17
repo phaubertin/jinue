@@ -126,6 +126,7 @@ sources.kernel.c = \
 	infrastructure/i686/platform.c \
 	infrastructure/i686/process.c \
 	infrastructure/i686/thread.c \
+	infrastructure/i686/video.c \
 	infrastructure/elf.c \
 	interface/i686/auxv.c \
 	interface/i686/bootinfo.c \

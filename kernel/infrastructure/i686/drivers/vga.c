@@ -33,6 +33,7 @@
 #include <jinue/shared/asm/mman.h>
 #include <kernel/domain/services/logging.h>
 #include <kernel/domain/services/mman.h>
+#include <kernel/infrastructure/i686/asm/video.h>
 #include <kernel/infrastructure/i686/drivers/vga.h>
 #include <kernel/infrastructure/i686/isa/io.h>
 #include <kernel/infrastructure/i686/pmap/pmap.h>
@@ -40,6 +41,7 @@
 #include <kernel/utils/asm/ascii.h>
 #include <kernel/utils/pmap.h>
 #include <kernel/utils/utils.h>
+#include <inttypes.h>
 
 /** type for the current linear position in the text buffer */
 typedef unsigned int vga_pos_t;
@@ -245,7 +247,7 @@ static void do_log(const log_event_t *event) {
  * 
  * @param config kernel configuration
  */
-void vga_init(const config_t *config) {
+void vga_init(const config_t *config, const bootinfo_t *bootinfo) {
     if(! config->machine.vga_enable) {
         return;
     }
@@ -253,6 +255,12 @@ void vga_init(const config_t *config) {
     if(!platform_is_vga_present()) {
         return;
     }
+
+    if(platform_get_video_type() != VIDEO_TYPE_TEXT) {
+        return;
+    }
+
+    info("Initializing VGA text mode 80x25.");
 
     initialize_registers();
 

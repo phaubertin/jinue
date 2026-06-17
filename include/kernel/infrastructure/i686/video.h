@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,18 +29,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_PLATFORM_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_PLATFORM_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_VIDEO_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_VIDEO_H
 
-#include <kernel/infrastructure/i686/asm/platform.h>
-#include <kernel/machine/types.h>
-#include <stdbool.h>
-#include <stdint.h>
+#include <kernel/interface/i686/types.h>
 
-bool platform_is_vga_present(void);
-
-paddr_t platform_get_local_apic_address(void);
-
-int platform_get_video_type(void);
+void dump_video_information(const bootinfo_t *bootinfo);
 
 #endif

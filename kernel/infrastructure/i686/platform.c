@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Philippe Aubertin.
+ * Copyright (C) 2025-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,10 +29,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <kernel/infrastructure/i686/asm/video.h>
 #include <kernel/infrastructure/i686/drivers/lapic.h>
 #include <kernel/infrastructure/i686/firmware/acpi.h>
 #include <kernel/infrastructure/i686/firmware/mp.h>
+#include <kernel/infrastructure/i686/cpuinfo.h>
 #include <kernel/infrastructure/i686/platform.h>
+#include <kernel/interface/i686/bootinfo.h>
 
 /**
  * Detect presence of VGA
@@ -62,4 +65,29 @@ paddr_t platform_get_local_apic_address(void) {
     }
 
     return APIC_INIT_ADDR;
+}
+
+/**
+ * Determine the current video type (text, framebuffer)
+ * 
+ * @return VIDEO_TYPE constant that represents video type
+ */
+int platform_get_video_type(void) {
+    const bootinfo_t *bootinfo = get_bootinfo();
+
+    if(bootinfo->video_type != VIDEO_TYPE_NONE) {
+        return bootinfo->video_type;
+    }
+
+    const int hypervisor = get_hypervisor_id();
+
+    if(hypervisor == HYPERVISOR_ID_QEMU) {
+        /* When the kernel is loaded in QEMU using the -kernel command line
+         * argument, no information regarding the video mode is set in the
+         * Linux boot protocol boot parameters screen info structure. In that
+         * case, it is safe to assume 80x25 VGA text mode. */
+        return VIDEO_TYPE_TEXT;
+    }
+
+    return VIDEO_TYPE_NONE;
 }

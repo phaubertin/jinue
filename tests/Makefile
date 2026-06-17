@@ -54,7 +54,8 @@ tests = \
 	test_detect_qemu \
 	test_ipc \
 	test_loader_exit \
-	test_mp
+	test_mp \
+	test_vga_text_80x25
 
 # These tests are run through run-iso-test.sh, which invokes QEMU with an ISO
 # file. This Makefile builds an ISO file for each of these tests that loads
@@ -63,7 +64,10 @@ tests = \
 # .sh test script and a .cfg GRUB configuration file.
 iso_tests = \
 	test_iso_boot_linux16 \
-	test_iso_boot_linux32
+	test_iso_boot_linux32 \
+	test_iso_vesa_640x480x32 \
+	test_iso_vesa_800x600x32 \
+	test_iso_vga_text_80x25
 
 logs    := $(foreach t,$(tests),$(t).log) $(foreach t,$(iso_tests),$(t).log)
 isos    := $(foreach t,$(iso_tests),$(t).iso)

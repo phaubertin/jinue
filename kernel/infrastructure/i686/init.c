@@ -48,12 +48,14 @@
 #include <kernel/infrastructure/i686/isa/regs.h>
 #include <kernel/infrastructure/i686/memory/addrmap.h>
 #include <kernel/infrastructure/i686/memory/pages.h>
+#include <kernel/infrastructure/i686/platform.h>
 #include <kernel/infrastructure/i686/pmap/pae.h>
 #include <kernel/infrastructure/i686/pmap/pmap.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
 #include <kernel/infrastructure/i686/cpuinfo.h>
 #include <kernel/infrastructure/i686/descriptors.h>
 #include <kernel/infrastructure/i686/percpu.h>
+#include <kernel/infrastructure/i686/video.h>
 #include <kernel/infrastructure/elf.h>
 #include <kernel/interface/i686/asm/idt.h>
 #include <kernel/interface/i686/asm/irq.h>
@@ -294,7 +296,9 @@ void machine_init_logging(const config_t *config) {
      * now before initializing VGA. */
     init_acpi();
 
-    vga_init(config);
+    dump_video_information(bootinfo);
+
+    vga_init(config, bootinfo);
 }
 
 /**
