@@ -42,6 +42,7 @@
 #include <kernel/infrastructure/i686/drivers/pit8253.h>
 #include <kernel/infrastructure/i686/drivers/uart16550a.h>
 #include <kernel/infrastructure/i686/drivers/vga.h>
+#include <kernel/infrastructure/i686/drivers/videofb.h>
 #include <kernel/infrastructure/i686/firmware/acpi.h>
 #include <kernel/infrastructure/i686/firmware/mp.h>
 #include <kernel/infrastructure/i686/isa/instrs.h>
@@ -299,6 +300,8 @@ void machine_init_logging(const config_t *config) {
     dump_video_information(bootinfo);
 
     vga_init(config, bootinfo);
+
+    init_video_framebuffer(config, bootinfo);
 }
 
 /**

@@ -101,11 +101,14 @@ sources.kernel.c = \
 	domain/services/scheduler.c \
 	domain/config.c \
 	infrastructure/acpi/acpi.c \
+	infrastructure/i686/drivers/console.c \
 	infrastructure/i686/drivers/lapic.c \
 	infrastructure/i686/drivers/pic8259.c \
 	infrastructure/i686/drivers/pit8253.c \
 	infrastructure/i686/drivers/uart16550a.c \
 	infrastructure/i686/drivers/vga.c \
+	infrastructure/i686/drivers/videofb.c \
+	infrastructure/i686/drivers/videofbfont.c \
 	infrastructure/i686/firmware/acpi.c \
 	infrastructure/i686/firmware/bios.c \
 	infrastructure/i686/firmware/mp.c \
