@@ -1,4 +1,5 @@
-# Copyright (C) 2026 Philippe Aubertin.
+#!/bin/bash
+# Copyright (C) 2024-2026 Philippe Aubertin.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,15 +28,34 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-gfxpayload=800x600x32
+CPU=core2duo
+CMDLINE="DEBUG_DUMP_SYSCALL_IMPLEMENTATION=1"
 
-linux /boot/jinue \
-    on_panic=reboot \
-    serial_enable=yes \
-    serial_dev=/dev/ttyS0 \
-    DEBUG_DO_REBOOT=1
-    DEBUG_DUMP_SYSCALL_IMPLEMENTATION=1 \
+run
 
-initrd /boot/jinue-testapp-initrd.tar.gz
+check_kernel_start
 
-boot
+check_no_error
+
+check_no_warning
+
+echo "* Check a framebuffer video format was detected"
+grep -F "Video information:" $LOG || fail
+
+VIDEO_INFO=`grep -F -A 5 "Video information:" $LOG`
+
+echo "$VIDEO_INFO" | grep -E 'type: framebuffer' || fail
+
+echo "* Check video resolution is 1024x768"
+echo "$VIDEO_INFO" | grep -E 'resolution: 1024x768' || fail
+
+echo "* Check video depth is 32 bits per pixel"
+echo "$VIDEO_INFO" | grep -E 'depth: 32' || fail
+
+echo "* Check framebuffer is initialized with resolution 1024x768"
+grep -F "Initializing video framebuffer for resolution 1024x768." $LOG || fail
+
+echo "* Check console is initialized with size 128x48"
+grep -F "Initializing console with size 128x48." $LOG || fail
+
+check_reboot

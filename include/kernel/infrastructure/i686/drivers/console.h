@@ -33,6 +33,7 @@
 #define JINUE_KERNEL_INFRASTRUCTURE_I686_DRIVERS_CONSOLE_H_
 
 #include <kernel/infrastructure/i686/drivers/asm/console.h>
+#include <kernel/interface/i686/types.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -52,6 +53,16 @@ void initialize_console(
     unsigned int     height,
     uint8_t          erase_colour
 );
+
+void allocate_console(
+    console_t       *console,
+    boot_alloc_t    *boot_alloc,
+    unsigned int     width,
+    unsigned int     height,
+    uint8_t          erase_colour
+);
+
+size_t console_text_buffer_size(unsigned int width, unsigned int height);
 
 void erase_console(console_t *console);
 

@@ -49,4 +49,7 @@ echo "$VIDEO_INFO" | grep -E 'type: text' || fail
 echo "* Check 80x25 VGA text was initialized"
 grep -F "Initializing VGA text mode 80x25." $LOG || fail
 
+echo "* Check console is initialized with size 80x25"
+grep -F "Initializing console with size 80x25." $LOG || fail
+
 check_reboot

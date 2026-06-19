@@ -250,6 +250,8 @@ void machine_get_ramdisk(kern_mem_block_t *ramdisk) {
     get_ramdisk(ramdisk, bootinfo);
 }
 
+boot_alloc_t boot_alloc;
+
 /**
  * Machine-specific initialization for logging
  * 
@@ -301,7 +303,9 @@ void machine_init_logging(const config_t *config) {
 
     vga_init(config, bootinfo);
 
-    init_video_framebuffer(config, bootinfo);
+    boot_alloc_init(&boot_alloc, bootinfo);
+
+    init_video_framebuffer(config, bootinfo, &boot_alloc);
 }
 
 /**
@@ -318,9 +322,6 @@ void machine_init(const config_t *config) {
 
     const bootinfo_t *bootinfo = get_bootinfo();
     check_system_address_map(bootinfo);
-
-    boot_alloc_t boot_alloc;
-    boot_alloc_init(&boot_alloc, bootinfo);
 
     /* allocate per-CPU data
      *

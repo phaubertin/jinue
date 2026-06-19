@@ -52,4 +52,10 @@ echo "$VIDEO_INFO" | grep -E 'resolution: 640x480' || fail
 echo "* Check video depth is 32 bits per pixel"
 echo "$VIDEO_INFO" | grep -E 'depth: 32' || fail
 
+echo "* Check framebuffer is initialized with resolution 640x480"
+grep -F "Initializing video framebuffer for resolution 640x480." $LOG || fail
+
+echo "* Check console is initialized with size 80x30"
+grep -F "Initializing console with size 80x30." $LOG || fail
+
 check_reboot

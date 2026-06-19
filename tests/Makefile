@@ -67,6 +67,7 @@ iso_tests = \
 	test_iso_boot_linux32 \
 	test_iso_vesa_640x480x32 \
 	test_iso_vesa_800x600x32 \
+	test_iso_vesa_1024x768x32 \
 	test_iso_vga_text_80x25
 
 logs    := $(foreach t,$(tests),$(t).log) $(foreach t,$(iso_tests),$(t).log)

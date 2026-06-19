@@ -69,11 +69,6 @@
 #define VGA_COLOUR_YELLOW           0x0e
 #define VGA_COLOUR_BRIGHTWHITE      0x0f
 
-/* This mostly affects the colour of the cursor, which is typically located in
- * an erased area. Setting this to black will make the cursor disappear even if
- * otherwise enabled in registers. */
-#define VGA_COLOUR_ERASE            VGA_COLOUR_GREEN
-
 #define VGA_LINES                   25
 #define VGA_WIDTH                   80
 #define VGA_TAB_WIDTH               8

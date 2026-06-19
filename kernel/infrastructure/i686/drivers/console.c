@@ -38,8 +38,12 @@
  * The format is imposed by VGA, i.e. two bytes per character where the first
  * byte is the character code and the second byte is the colour. */
 
+#include <kernel/domain/services/logging.h>
 #include <kernel/infrastructure/i686/drivers/console.h>
+#include <kernel/infrastructure/i686/boot_alloc.h>
+#include <kernel/machine/asm/machine.h>
 #include <kernel/utils/asm/ascii.h>
+#include <kernel/utils/utils.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -58,12 +62,38 @@ void initialize_console(
     unsigned int     height,
     uint8_t          erase_colour
 ) {
+    info("Initializing console with size %ux%u.", width, height);
+
     console->width = width;
     console->height = height;
     console->buffer = buffer;
     console->erase_colour = erase_colour;
     console->row = 0;
     console->col = 0;
+}
+
+/** Allocate text buffer and initialize the console configuration and state
+ * 
+ * The text buffer is allocated using the boot-time page allocator, so this
+ * function must only be called during boot-time initialization.
+ * 
+ * @param console the console state structure
+ * @param width screen width in characters
+ * @param height screen height in characters
+ * @param erase_colour colour to erase with when erasing and scrolling
+ */
+void allocate_console(
+    console_t       *console,
+    boot_alloc_t    *boot_alloc,
+    unsigned int     width,
+    unsigned int     height,
+    uint8_t          erase_colour
+) {
+    size_t size = ALIGN_END(2 * width * height, PAGE_SIZE);
+
+    unsigned char *buffer = boot_page_alloc_n(boot_alloc, size / PAGE_SIZE);
+
+    initialize_console(console, buffer, width, height, erase_colour);
 }
 
 /** Erase the console and set position to home

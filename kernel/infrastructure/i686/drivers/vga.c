@@ -165,7 +165,16 @@ void vga_init(const config_t *config, const bootinfo_t *bootinfo) {
         JINUE_PROT_READ | JINUE_PROT_WRITE
     );
 
-    initialize_console(&console, video_base_addr, VGA_WIDTH, VGA_LINES, VGA_COLOUR_ERASE);
+    initialize_console(
+        &console,
+        video_base_addr,
+        VGA_WIDTH,
+        VGA_LINES,
+        /* This mostly affects the colour of the cursor, which is typically
+         * located in an erased area. Setting this to black will make the
+         * cursor disappear even if otherwise enabled in registers. */
+        map_colour(JINUE_LOG_LEVEL_INFO)
+    );
 
     erase_console(&console);
 

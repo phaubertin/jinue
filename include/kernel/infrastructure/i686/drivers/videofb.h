@@ -35,6 +35,10 @@
 #include <kernel/interface/i686/types.h>
 #include <kernel/types.h>
 
-void init_video_framebuffer(const config_t *config, const bootinfo_t *bootinfo);
+void init_video_framebuffer(
+    const config_t *config,
+    const bootinfo_t *bootinfo,
+    boot_alloc_t *boot_alloc
+);
 
 #endif
