@@ -47,6 +47,12 @@
 /** console abstraction */
 static console_t console;
 
+/** base address of mapped video text buffer */
+unsigned char *video_base_addr;
+
+/** colour with which the text buffer is erased */
+uint8_t erase_colour;
+
 /** log ring buffer reader */
 static log_reader_t log_reader;
 
@@ -93,6 +99,21 @@ static void update_cursor_position(void) {
     write_crtc_reg(VGA_CRTC_CURSOR_LOW, l);
 }
 
+/** Erase the text buffer
+ * 
+ * @param console the console state structure
+ */
+void erase_text_buffer(void) {
+    size_t size = 2 * console.width * console.height;
+
+    unsigned int idx = 0;
+    
+    while(idx < size) {
+        video_base_addr[idx++] = ' ';
+        video_base_addr[idx++] = erase_colour;
+    }
+}
+
 /** Map a log level to the appropriate VGA colour number.
  * 
  * @param loglevel the log level
@@ -122,6 +143,27 @@ static void initialize_registers(void) {
     write_misc_out_reg(read_misc_out_reg() | 1);
 }
 
+static void do_write(unsigned char c, uint8_t loglevel) {
+    size_t offset = console.width * console.row + console.col;
+    video_base_addr[2 * offset] = c;
+    video_base_addr[2 * offset + 1] = map_colour(loglevel);
+}
+
+static void do_scroll(void) {
+    unsigned char *di = video_base_addr;
+    unsigned char *si = &video_base_addr[2 * console.width];
+    unsigned int idx;
+    
+    for(idx = 0; idx < 2 * console.width * (console.height - 1); ++idx) {
+        *(di++) = *(si++);
+    }
+    
+    for(idx = 0; idx < console.width; ++idx) {
+        *(di++) = ' ';
+        *(di++) = erase_colour;
+    }
+}
+
 /** Logging callback function.
  * 
  * This function is registered as the logging callback function and is called
@@ -130,9 +172,7 @@ static void initialize_registers(void) {
  * @param event logging event
 */
 static void do_log(const log_event_t *event) {
-    uint8_t colour = map_colour(event->loglevel);
-
-    console_write(&console, event->message, event->length, colour);
+    console_write(&console, event->message, event->length, event->loglevel);
 
     update_cursor_position();
 }
@@ -159,24 +199,20 @@ void vga_init(const config_t *config, const bootinfo_t *bootinfo) {
 
     initialize_registers();
 
-    unsigned char *video_base_addr = map_in_kernel(
+    video_base_addr = map_in_kernel(
         VGA_TEXT_VID_BASE,
         VGA_TEXT_VID_TOP - VGA_TEXT_VID_BASE,
         JINUE_PROT_READ | JINUE_PROT_WRITE
     );
 
-    initialize_console(
-        &console,
-        video_base_addr,
-        VGA_WIDTH,
-        VGA_LINES,
-        /* This mostly affects the colour of the cursor, which is typically
-         * located in an erased area. Setting this to black will make the
-         * cursor disappear even if otherwise enabled in registers. */
-        map_colour(JINUE_LOG_LEVEL_INFO)
-    );
+    initialize_console(&console, VGA_WIDTH, VGA_LINES, do_write, do_scroll);
 
-    erase_console(&console);
+    /* This mostly affects the colour of the cursor, which is typically
+     * located in an erased area. Setting this to black will make the
+     * cursor disappear even if otherwise enabled in registers. */
+    erase_colour = map_colour(JINUE_LOG_LEVEL_INFO);
+
+    erase_text_buffer();
 
     update_cursor_position();
 

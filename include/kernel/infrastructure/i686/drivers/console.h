@@ -37,35 +37,29 @@
 #include <stddef.h>
 #include <stdint.h>
 
+typedef void (*console_write_func_t)(unsigned char c, uint8_t loglevel);
+
+typedef void (*console_scroll_func_t)(void);
+
 typedef struct {
-    unsigned char   *buffer;
-    unsigned int     width;
-    unsigned int     height;
-    unsigned int     row;
-    unsigned int     col;
-    uint8_t          erase_colour;
+    unsigned int            width;
+    unsigned int            height;
+    unsigned int            row;
+    unsigned int            col;
+    console_write_func_t    write_func;
+    console_scroll_func_t   scroll_func;
 } console_t;
 
 void initialize_console(
-    console_t       *console,
-    unsigned char   *buffer,
-    unsigned int     width,
-    unsigned int     height,
-    uint8_t          erase_colour
-);
-
-void allocate_console(
-    console_t       *console,
-    boot_alloc_t    *boot_alloc,
-    unsigned int     width,
-    unsigned int     height,
-    uint8_t          erase_colour
+    console_t               *console,
+    unsigned int             width,
+    unsigned int             height,
+    console_write_func_t     write_func,
+    console_scroll_func_t    scroll_func
 );
 
 size_t console_text_buffer_size(unsigned int width, unsigned int height);
 
-void erase_console(console_t *console);
-
-void console_write(console_t *console, const char *str, size_t length, uint8_t colour);
+void console_write(console_t *console, const char *str, size_t length, uint8_t loglevel);
 
 #endif

@@ -74,7 +74,8 @@
 #define BOOT_SIZE_AT_1MB        (1 * MB)
 
 /* must be a multiple of 4MB (full page tables) */
-#define BOOT_SIZE_AT_16MB       (8 * MB)
+/* TODO scale adaptatively for video back buffer */
+#define BOOT_SIZE_AT_16MB       (32 * MB)
 
 #define BOOT_RAMDISK_LIMIT      0xc0000000
 
