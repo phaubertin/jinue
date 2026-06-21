@@ -37,8 +37,6 @@ check_kernel_start
 
 check_no_error
 
-check_no_warning
-
 echo "* Check a framebuffer video format was detected"
 grep -F "Video information:" $LOG || fail
 
@@ -52,10 +50,7 @@ echo "$VIDEO_INFO" | grep -E 'resolution: 1920x1080' || fail
 echo "* Check video depth is 32 bits per pixel"
 echo "$VIDEO_INFO" | grep -E 'depth: 32' || fail
 
-echo "* Check framebuffer is initialized with resolution 1920x1080"
-grep -F "Initializing video framebuffer for resolution 1920x1080." $LOG || fail
-
-echo "* Check console is initialized with size 240x67"
-grep -F "Initializing console with size 240x67." $LOG || fail
+echo "* Check framebuffer is not initialized because resolution is not supported"
+grep -F "warning: disabling video framebuffer because resolution is above 1024x768 supported maximum." $LOG || fail
 
 check_reboot

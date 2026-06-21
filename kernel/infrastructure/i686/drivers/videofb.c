@@ -240,6 +240,13 @@ void init_video_framebuffer(
         return;
     }
 
+    if(bootinfo->video_width > 1024 || bootinfo->video_height > 768) {
+        /* Temporary limitation caused by memory management and performance
+         * issues. Will be improved. */
+        warn(WARNING "disabling video framebuffer because resolution is above 1024x768 supported maximum.");
+        return;
+    }
+
     info(
         "Initializing video framebuffer for resolution %" PRIu16 "x%" PRIu16 ".",
         bootinfo->video_width,
