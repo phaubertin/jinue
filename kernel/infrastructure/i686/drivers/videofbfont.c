@@ -26,17 +26,18 @@
  * SUCH DAMAGE.
  */
 
-/* This is the font for the framebuffer implementation. It was extracted from
- * the FreeBSD source code and simplified by removing the mapping arrays and
- * keeping only the glyphs needed for ASCII characters in the font bytes
- * array. Each character is 16x8 pixels and each byte represents one line of
- * that character (so 16 bytes for a full character). The characters in the
+/* This is the font used by the Jinue microkernel for its framebuffer
+ * implementation of its logging console. This font was extracted from the
+ * FreeBSD source code and modified by removing the mapping arrays and
+ * keeping only the glyphs needed for printable ASCII characters in the font
+ * bytes array. Each character is 16x8 pixels and each byte represents one line
+ * of that character (so 16 bytes for a full character). The characters in the
  * range 0x20-0x7e inclusive are represented.
  * 
  * The original source is file sys/dev/vt/font/vt_font_default.c within the
  * FreeBSD source code, git revision 526bd072b33e3e255748e547fdc21ab15e77b709.
  * 
- * Original header comment:
+ * Original header comment (for the non-modified version):
  * 
  * 	 This is the "Terminus BSD Console" font.  It is identical to the standard
  * 	 variant of Terminus Font 8x16, but provided under the 2-clause BSD License

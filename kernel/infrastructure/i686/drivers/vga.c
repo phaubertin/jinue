@@ -143,12 +143,21 @@ static void initialize_registers(void) {
     write_misc_out_reg(read_misc_out_reg() | 1);
 }
 
+/** Character write console callback function
+ * 
+ * @param c ASCII code of character to write
+ * @param loglevel log level
+ */
 static void do_write(unsigned char c, uint8_t loglevel) {
     size_t offset = console.width * console.row + console.col;
     video_base_addr[2 * offset] = c;
     video_base_addr[2 * offset + 1] = map_colour(loglevel);
 }
 
+/** Console scrolling callback function
+ * 
+ * Scrolls up by one text line and erases the bottom line.
+ */
 static void do_scroll(void) {
     unsigned char *di = video_base_addr;
     unsigned char *si = &video_base_addr[2 * console.width];

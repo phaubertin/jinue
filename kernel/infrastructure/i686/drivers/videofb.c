@@ -36,18 +36,21 @@
 #include <kernel/infrastructure/i686/asm/video.h>
 #include <kernel/infrastructure/i686/drivers/console.h>
 #include <kernel/infrastructure/i686/drivers/videofb.h>
+#include <kernel/infrastructure/i686/drivers/videofbfont.h>
+#include <kernel/infrastructure/i686/pmap/pmap.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
 #include <kernel/infrastructure/i686/platform.h>
+#include <kernel/interface/i686/bootinfo.h>
 #include <kernel/machine/asm/machine.h>
 #include <inttypes.h>
 #include <stdint.h>
 #include <string.h>
 
+/** width of a single character in pixels */
 #define FONT_WIDTH  8
 
+/** height of a single character in pixels */
 #define FONT_HEIGHT 16
-
-extern const uint8_t videofbfont[];
 
 /** console abstraction */
 static console_t console;
@@ -55,8 +58,8 @@ static console_t console;
 /** log ring buffer reader */
 static log_reader_t log_reader;
 
+/** colour configuration in RGB order, 8 bits per pixel */
 const uint8_t reference_colours[][3] = {
-    /* RGB order, 8 bits per pixel */
     [JINUE_LOG_LEVEL_EMERGENCY] = {168, 0, 0},
     [JINUE_LOG_LEVEL_ALERT]     = {168, 0, 0},
     [JINUE_LOG_LEVEL_CRITICAL]  = {168, 0, 0},
@@ -67,27 +70,54 @@ const uint8_t reference_colours[][3] = {
     [JINUE_LOG_LEVEL_DEBUG]     = {87, 87, 87},
 };
 
+/** number of colours */
 #define NUM_COLOURS (sizeof(reference_colours) / sizeof(reference_colours[0]))
 
+/** colours transformed for the current pixel format */
 uint8_t colours[NUM_COLOURS][3];
 
+/** framebuffer/backbuffer configuration and state */
 static struct {
+    /* buffers */
+    
+    /** frame buffer */
     uint8_t     *framebuffer;
+    /** back buffer */
     uint8_t     *backbuffer;
+
+    /* configuration */
+
+    /** buffer total size */
     size_t       size;
-    uint16_t     origin;
+    /* total width in pixels */
     uint16_t     width;
+    /** total height in pixels */
     uint16_t     height;
+    /** total size of a line in bytes */
     uint16_t     pitch;
-    uint16_t     viewport_width;
-    uint16_t     viewport_height;
+    /** start of viewport from the left in pixels */
     uint16_t     left;
+    /** start of viewport from the top in pixels */
     uint16_t     top;
+    /** pixel format - one of the VIDEO_PIXEL_FORMAT_xx constants */
     uint8_t      pixel_format;
+    /** colour bytes per pixels */
     uint8_t      bpp;
+    /** non-colour bytes per pixels */
     uint8_t      skip;
+
+    /* state */
+
+    /** Text line index of first text line in the back buffer
+     * 
+     * Used for zero copy scrolling. */
+    uint16_t     origin;
 } fb;
 
+/** Initialize the configuration structure
+ * 
+ * @param bootinfo boot information structure
+ */
 static void initialize_config(const bootinfo_t *bootinfo) {
     fb.width        = bootinfo->video_width;
     fb.height       = bootinfo->video_height;
@@ -102,8 +132,6 @@ static void initialize_config(const bootinfo_t *bootinfo) {
     /* Center viewport/text area */
     fb.left             = (fb.width - viewport_width) / 2;
     fb.top              = (fb.height - viewport_height) / 2;
-    fb.viewport_width   = viewport_width;
-    fb.viewport_height  = viewport_height;
 
     /* Varies according to pixel format but currently the same for all four
      * supported pixel formats. */
@@ -111,6 +139,10 @@ static void initialize_config(const bootinfo_t *bootinfo) {
     fb.skip = bootinfo->video_depth / 8 - fb.bpp;
 }
 
+/** Initialize the colours array according to pixel format
+ * 
+ * Must be called after initialize_config().
+ */
 static void initalize_colours(void) {
     for(int idx = 0; idx < NUM_COLOURS; ++idx) {
         switch(fb.pixel_format) {
@@ -130,6 +162,11 @@ static void initalize_colours(void) {
     }
 }
 
+/** Erase the back buffer
+ * 
+ * To erase the frame buffer, erase the back buffer and then call
+ * refresh_framebuffer().
+ */
 static void erase_backbuffer(void) {
     unsigned char *line_addr = fb.backbuffer;
 
@@ -137,24 +174,33 @@ static void erase_backbuffer(void) {
         memset(line_addr, 0, fb.width * (fb.bpp + fb.skip));
         line_addr += fb.pitch;
     }
+
+    fb.origin = 0;
 }
 
+/** Compute absolute row index from row index relative to origin */
 static inline unsigned int from_origin(unsigned int row) {
     unsigned int sum = row + fb.origin;
     return sum < console.height ? sum : sum - console.height;
 }
 
+/** Compute byte offset of start of text row from row index */
 static inline unsigned int row(unsigned int row) {
     return (row * FONT_HEIGHT + fb.top) * fb.pitch;
 }
 
+/** Compute byte offset from row start from column index */
 static inline unsigned int column(unsigned int col) {
     return (col * FONT_WIDTH + fb.left) * (fb.bpp + fb.skip);
 }
 
+/** Copy pixels from the back buffer to the frane buffer */
 static void refresh_framebuffer(void) {   
-    /* When we refresh after erasing the back buffer, we want to copy all the
-     * lines, not only the viewport lines. */
+    /* When the origin is on line zero, we copy the whole back buffer content
+     * instead of only the viewport lines.
+     *
+     * Edge case to consider: when we refresh after erasing the back buffer, we
+     * want to copy all the lines so the whole frame buffer is also erased. */
     if(fb.origin == 0) {
         memcpy(fb.framebuffer, fb.backbuffer, fb.size);
         return;
@@ -175,6 +221,11 @@ static void refresh_framebuffer(void) {
     );
 }
 
+/** Character write console callback function
+ * 
+ * @param c ASCII code of character to write
+ * @param loglevel log level
+ */
 static void do_write(unsigned char c, uint8_t loglevel) {
     const uint8_t *const colour = colours[
         loglevel < JINUE_LOG_LEVEL_DEBUG ? loglevel : JINUE_LOG_LEVEL_DEBUG
@@ -198,6 +249,10 @@ static void do_write(unsigned char c, uint8_t loglevel) {
     }
 }
 
+/** Console scrolling callback function
+ * 
+ * Scrolls up by one text line and erases the bottom line.
+ */
 static void do_scroll(void) {
     fb.origin = from_origin(1);
 
@@ -222,6 +277,7 @@ static void do_log(const log_event_t *event) {
  * 
  * @param config kernel configuration
  * @param bootinfo boot information structure
+ * @param boot_alloc boot-time memory allocator
  */
 void init_video_framebuffer(
     const config_t *config,
@@ -240,10 +296,34 @@ void init_video_framebuffer(
         return;
     }
 
+    if(bootinfo->video_pitch < bootinfo->video_width * (bootinfo->video_depth / 8)) {
+        warn(WARNING "disabling video framebuffer because information passed by bootloader is inconsistent (pitch).");
+        return;
+    }
+
+    if(bootinfo->video_fb_size < bootinfo->video_height * bootinfo->video_pitch) {
+        warn(WARNING "disabling video framebuffer because information passed by bootloader is inconsistent (size).");
+        return;
+    }
+
+    bool has_pae = bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_PAE);
+
+    if(bootinfo->video_fb_addr > ADDR_4GB && !has_pae) {
+        warn(WARNING "disabling video framebuffer because it cannot be mapped without PAE.");
+        return;
+    }
+
     if(bootinfo->video_width > 1024 || bootinfo->video_height > 768) {
         /* Temporary limitation caused by memory management and performance
          * issues. Will be improved. */
         warn(WARNING "disabling video framebuffer because resolution is above 1024x768 supported maximum.");
+        return;
+    }
+
+    if(bootinfo->video_fb_size > 10 * MB) {
+        /* Temporary limitation caused by memory management and performance
+         * issues. Will be improved. */
+        warn(WARNING "disabling video framebuffer because it is larger than the supported 10MB.");
         return;
     }
 
@@ -252,9 +332,6 @@ void init_video_framebuffer(
         bootinfo->video_width,
         bootinfo->video_height
     );
-
-    /* TODO we should do some validation before blindly trusting these values */
-    /* TODO deal with the 4GB limit if PAE is disabled */
 
     fb.backbuffer = boot_page_alloc_n(
         boot_alloc,

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,13 +29,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_EXPORTS_ASM_MACHINE_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_EXPORTS_ASM_MACHINE_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_DRIVERS_VIDEOFBFONT_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_DRIVERS_VIDEOFBFONT_H
 
-#include <kernel/utils/asm/utils.h>
+#include <stdint.h>
 
-#define MAPPING_AREA_ADDR   0xfc000000
-
-#define MAPPING_AREA_SIZE   (64 * MB)
+extern const uint8_t videofbfont[];
 
 #endif
