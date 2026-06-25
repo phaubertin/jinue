@@ -191,7 +191,7 @@ static void do_log(const log_event_t *event) {
  * @param config kernel configuration
  * @param bootinfo boot information structure
  */
-void vga_init(const config_t *config, const bootinfo_t *bootinfo) {
+void vga_init(const config_t *config) {
     if(! config->machine.vga_enable) {
         return;
     }

@@ -37,8 +37,6 @@
 #include <kernel/interface/i686/setup/linux.h>
 #include <kernel/interface/i686/types.h>
 
-#define HEADER_FIELD_PTR(h, t, o) (t)&(h)[o]
-
 #define HEADER_FIELD(h, t, o) *(t*)&(h)[o]
 
 /**

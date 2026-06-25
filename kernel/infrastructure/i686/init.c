@@ -301,7 +301,7 @@ void machine_init_logging(const config_t *config) {
 
     dump_video_information(bootinfo);
 
-    vga_init(config, bootinfo);
+    vga_init(config);
 
     boot_alloc_init(&boot_alloc, bootinfo);
 

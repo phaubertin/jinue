@@ -33,9 +33,8 @@
 #define JINUE_KERNEL_INFRASTRUCTURE_I686_DRIVERS_VGA_H
 
 #include <kernel/infrastructure/i686/drivers/asm/vga.h>
-#include <kernel/interface/i686/types.h>
 #include <kernel/types.h>
 
-void vga_init(const config_t *config, const bootinfo_t *bootinfo);
+void vga_init(const config_t *config);
 
 #endif

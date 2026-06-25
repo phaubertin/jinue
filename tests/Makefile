@@ -42,9 +42,9 @@ test_script         = run-all-tests.gen.sh
 
 deps                = $(kernel_img) $(testapp_initrd)
 
-# These tests are run through run-test.sh, which uses QEMU's -kernel and
-# -initrd arguments to load the kernel and test app. Only a .sh file is
-# needed for these tests.
+# These tests are run through run-test.sh called with the -kernel "run type"
+# argument, which uses QEMU's -kernel and -initrd arguments to load the kernel
+# and test app. Only a .sh file is needed for these tests.
 tests = \
 	test_486_too_old \
 	test_acpi \
@@ -57,16 +57,16 @@ tests = \
 	test_mp \
 	test_vga_text_80x25
 
-# These tests are run through run-iso-test.sh, which invokes QEMU with an ISO
-# file. This Makefile builds an ISO file for each of these tests that loads
-# the kernel and test app using GRUB. This should be done only for the tests
-# that need GRUB, for example to set a specific video mode. Each test needs a
-# .sh test script and a .cfg GRUB configuration file.
+# These tests are run through run-test.sh called with the -iso "run type"
+# argument, which invokes QEMU with an ISO image file. This Makefile builds an
+# ISO image for each of these tests that loads the kernel and test app using
+# GRUB. This should be done only for the tests that need GRUB, for example to
+# set a specific video mode. Each test needs a .sh test script and a .cfg GRUB
+# configuration file.
 iso_tests = \
 	test_iso_boot_linux16 \
 	test_iso_boot_linux32 \
 	test_iso_vesa_640x480x32 \
-	test_iso_vesa_800x600x32 \
 	test_iso_vesa_1024x768x32 \
 	test_iso_vesa_1920x1080x32 \
 	test_iso_vga_text_80x25

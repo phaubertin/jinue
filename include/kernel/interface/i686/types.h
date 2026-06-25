@@ -34,7 +34,6 @@
 
 #include <kernel/infrastructure/acpi/types.h>
 #include <kernel/infrastructure/i686/types.h>
-#include <kernel/infrastructure/compiler.h>
 #include <kernel/types.h>
 #include <sys/elf.h>
 
