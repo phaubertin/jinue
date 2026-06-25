@@ -33,7 +33,14 @@ jobs:
         fetch-depth: 0
 
     - name: Install dependencies
-      run: sudo apt update && sudo apt-get install -y gcc-multilib nasm qemu-system-x86
+      run: |
+        sudo apt update && sudo apt-get install -y \
+          gcc-multilib \
+          grub-common \
+          grub-pc-bin \
+          nasm \
+          qemu-system-x86 \
+          xorriso
 
     - name: configure
       run: |

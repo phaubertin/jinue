@@ -46,7 +46,7 @@
 
 void kmain(const char *cmdline) {
     /* Be polite and say hello. Logging is not initialized yet, so this
-     * get stored in the ring buffer until it is. */
+     * gets stored in the ring buffer until it is. */
     info("Jinue microkernel started.");
     info("Kernel revision " GIT_REVISION " built " BUILD_TIME " on " BUILD_HOST);
 

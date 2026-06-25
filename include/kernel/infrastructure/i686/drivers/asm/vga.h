@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Philippe Aubertin.
+ * Copyright (C) 2019-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -52,23 +52,22 @@
 
 #define VGA_FB_FLAG_ACTIVE    1
 
-#define VGA_COLOR_BLACK             0x00
-#define VGA_COLOR_BLUE              0x01
-#define VGA_COLOR_GREEN             0x02
-#define VGA_COLOR_CYAN              0x03
-#define VGA_COLOR_RED               0x04
-#define VGA_COLOR_MAGENTA           0x05
-#define VGA_COLOR_BROWN             0x06
-#define VGA_COLOR_WHITE             0x07
-#define VGA_COLOR_GRAY              0x08
-#define VGA_COLOR_BRIGHTBLUE        0x09
-#define VGA_COLOR_BRIGHTGREEN       0x0a
-#define VGA_COLOR_BRIGHTCYAN        0x0b
-#define VGA_COLOR_BRIGHTRED         0x0c
-#define VGA_COLOR_BRIGHTMAGENTA     0x0d
-#define VGA_COLOR_YELLOW            0x0e
-#define VGA_COLOR_BRIGHTWHITE       0x0f
-#define VGA_COLOR_ERASE             VGA_COLOR_RED
+#define VGA_COLOUR_BLACK            0x00
+#define VGA_COLOUR_BLUE             0x01
+#define VGA_COLOUR_GREEN            0x02
+#define VGA_COLOUR_CYAN             0x03
+#define VGA_COLOUR_RED              0x04
+#define VGA_COLOUR_MAGENTA          0x05
+#define VGA_COLOUR_BROWN            0x06
+#define VGA_COLOUR_WHITE            0x07
+#define VGA_COLOUR_GRAY             0x08
+#define VGA_COLOUR_BRIGHTBLUE       0x09
+#define VGA_COLOUR_BRIGHTGREEN      0x0a
+#define VGA_COLOUR_BRIGHTCYAN       0x0b
+#define VGA_COLOUR_BRIGHTRED        0x0c
+#define VGA_COLOUR_BRIGHTMAGENTA    0x0d
+#define VGA_COLOUR_YELLOW           0x0e
+#define VGA_COLOUR_BRIGHTWHITE      0x0f
 
 #define VGA_LINES                   25
 #define VGA_WIDTH                   80

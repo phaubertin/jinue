@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Philippe Aubertin.
+ * Copyright (C) 2025-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -40,5 +40,7 @@
 bool platform_is_vga_present(void);
 
 paddr_t platform_get_local_apic_address(void);
+
+int platform_get_video_type(void);
 
 #endif

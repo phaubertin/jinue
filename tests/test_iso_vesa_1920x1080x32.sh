@@ -1,4 +1,5 @@
-# Copyright (C) 2019-2026 Philippe Aubertin.
+#!/bin/bash
+# Copyright (C) 2024-2026 Philippe Aubertin.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -26,44 +27,30 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-# ------------------------------------------------------------------------------
-# object files
-*.o
 
-# Build dependency information + temporary directories
-*.d
+CPU=core2duo
+CMDLINE="DEBUG_DUMP_SYSCALL_IMPLEMENTATION=1"
 
-# static libraries
-*.a
+run
 
-# pre-processed NASM assembly language files
-*.nasm
+check_kernel_start
 
-# pre-processed linker scripts
-*.ld
+check_no_error
 
-# auto-generated files
-*.gen.h
-*.gen.mk
-*.gen.sh
+echo "* Check a framebuffer video format was detected"
+grep -F "Video information:" $LOG || fail
 
-# stripped executables
-*-stripped
+VIDEO_INFO=`grep -F -A 5 "Video information:" $LOG`
 
-# Eclipse IDE workspace metadata
-.metadata/
-RemoteSystemsTempFiles/
+echo "$VIDEO_INFO" | grep -E 'type: framebuffer' || fail
 
-# log files
-*.log
+echo "* Check video resolution is 1920x1080"
+echo "$VIDEO_INFO" | grep -E 'resolution: 1920x1080' || fail
 
-# ISO image files
-*.iso
+echo "* Check video depth is 32 bits per pixel"
+echo "$VIDEO_INFO" | grep -E 'depth: 32' || fail
 
-# directory for storing local temporary/debugging files
-wrk/
+echo "* Check framebuffer is not initialized because resolution is not supported"
+grep -F "warning: disabling video framebuffer because resolution is above 1024x768 supported maximum." $LOG || fail
 
-# Userspace executables
-userspace/loader/loader
-userspace/testapp/testapp
+check_reboot

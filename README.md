@@ -141,7 +141,7 @@ menuentry 'Jinue (32-bit boot protocol, test app)' {
 
     # Replace with the partition where you installed Jinue.
     set root='hd0,msdos7'
-    set gfxpayload='text'
+    set gfxpayload='auto'
     echo 'Loading Jinue microkernel...'
 
     # See command line documentation for details on the command line options.
