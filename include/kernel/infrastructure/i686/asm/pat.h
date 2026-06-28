@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2025-2026 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- *
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- *
+ * 
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- *
+ * 
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,16 +29,50 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_SERVICES_MMAN_H
-#define JINUE_KERNEL_SERVICES_MMAN_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_PAT_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_PAT_H
 
-#include <kernel/machine/types.h>
-#include <stddef.h>
+/** Uncacheable */
+#define PAT_UC          0
 
-void *map_in_kernel(paddr_t paddr, size_t size, int prot, int flags);
+/** Write-Combining */
+#define PAT_WC          1
 
-void resize_map_in_kernel(size_t size);
+/** Write-Through */
+#define PAT_WT          4
 
-void undo_map_in_kernel(void);
+/** Write-Protected */
+#define PAT_WP          5
+
+/** Write-Back */
+#define PAT_WB          6
+
+/** Uncached minus (can be overridden by MTRR WC) */
+#define PAT_UC_MINUS    7
+
+
+/** PAT entry 0 */
+#define PAT0    0
+
+/** PAT entry 1 */
+#define PAT1    8
+
+/** PAT entry 2 */
+#define PAT2    16
+
+/** PAT entry 3 */
+#define PAT3    24
+
+/** PAT entry 4 */
+#define PAT4    32
+
+/** PAT entry 5 */
+#define PAT5    40
+
+/** PAT entry 6 */
+#define PAT6    48
+
+/** PAT entry 7 */
+#define PAT7    56
 
 #endif

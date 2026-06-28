@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Philippe Aubertin.
+ * Copyright (C) 2023-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -62,7 +62,12 @@ void *__mmap_perrno(
         return MAP_FAILED;
     }
 
-    const int flags_mask = MAP_FIXED | MAP_SHARED | MAP_ANONYMOUS;
+    const int flags_mask =
+          MAP_FIXED
+        | MAP_SHARED
+        | MAP_ANONYMOUS
+        | MAP_UNCACHEABLE
+        | MAP_WRITE_COMBINE;
 
     if((flags & ~flags_mask) != 0) {
         *perrno = EINVAL;
@@ -79,6 +84,13 @@ void *__mmap_perrno(
     const int write_exec = PROT_WRITE | PROT_EXEC;
 
     if((prot & write_exec) == write_exec) {
+        *perrno = ENOTSUP;
+        return MAP_FAILED;
+    }
+
+    const int uc_wc = MAP_UNCACHEABLE | MAP_WRITE_COMBINE;
+
+    if((flags & uc_wc) == uc_wc) {
         *perrno = ENOTSUP;
         return MAP_FAILED;
     }
@@ -129,7 +141,17 @@ void *__mmap_perrno(
         paddr = off;
     }
 
-    int ret = jinue_mmap(JINUE_DESC_SELF_PROCESS, addr, aligned_length, prot, paddr, perrno);
+    const int syscall_flags_mask = MAP_UNCACHEABLE | MAP_WRITE_COMBINE;
+
+    int ret = jinue_mmap(
+        JINUE_DESC_SELF_PROCESS,
+        addr,
+        aligned_length,
+        prot,
+        flags & syscall_flags_mask,
+        paddr,
+        perrno
+    );
 
     if(ret < 0) {
         return MAP_FAILED;

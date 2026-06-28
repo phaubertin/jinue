@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Philippe Aubertin.
+ * Copyright (C) 2023-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -185,7 +185,7 @@ static void *get_at_phdr(const Elf32_Ehdr *ehdr) {
  * @return start of stack in loader address space
  *
  * */
-static int map_flags(Elf32_Word p_flags) {
+static int map_protection_flags(Elf32_Word p_flags) {
     /* set flags */
     int flags = 0;
 
@@ -246,14 +246,14 @@ static int load_segments(elf_info_t *elf_info, const file_t *exec_file) {
                 memsize,
                 exec_file->segment_index,
                 phdr->p_offset - diff,
-                map_flags(phdr->p_flags)
+                map_protection_flags(phdr->p_flags)
             );
 
             if(status < 0) {
                 return EXIT_FAILURE;
             }
         } else {
-            char *segment = map_anonymous((void *)vaddr, memsize, map_flags(phdr->p_flags));
+            char *segment = map_anonymous((void *)vaddr, memsize, map_protection_flags(phdr->p_flags));
 
             if(segment == NULL) {
                 return EXIT_FAILURE;

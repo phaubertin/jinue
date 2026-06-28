@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2024-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -45,7 +45,15 @@ int map_file(void *vaddr, size_t size, int segment_index, size_t offset, int per
     uint64_t file_start = get_meminfo_segment_start(segment_index);
     uint64_t paddr      = file_start + offset;
 
-    int status = jinue_mmap(INIT_PROCESS_DESCRIPTOR, vaddr, size, perms, paddr, &errno);
+    int status = jinue_mmap(
+        INIT_PROCESS_DESCRIPTOR,
+        vaddr,
+        size,
+        perms,
+        JINUE_MAP_NONE,
+        paddr,
+        &errno
+    );
 
     if(status < 0) {
         jinue_error("error: jinue_mmap() failed: %s", strerror(errno));
@@ -69,7 +77,15 @@ void *map_anonymous(void *vaddr, size_t size, int perms) {
     }
 
     /* Map into the target process. */
-    int status = jinue_mmap(INIT_PROCESS_DESCRIPTOR, vaddr, size, perms, paddr, &errno);
+    int status = jinue_mmap(
+        INIT_PROCESS_DESCRIPTOR,
+        vaddr,
+        size,
+        perms,
+        JINUE_MAP_NONE,
+        paddr,
+        &errno
+    );
 
     if(status < 0) {
         jinue_error("error: jinue_mmap() failed: %s", strerror(errno));

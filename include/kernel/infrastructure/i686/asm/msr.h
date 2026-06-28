@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2019-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -32,11 +32,17 @@
 #ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_MSR_H
 #define JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_MSR_H
 
+#define MSR_IA32_MTRRCAP            0xfe
+
 #define MSR_IA32_SYSENTER_CS        0x174
 
 #define MSR_IA32_SYSENTER_ESP       0x175
 
 #define MSR_IA32_SYSENTER_EIP       0x176
+
+#define MSR_IA32_PAT                0x277
+
+#define MSR_IA32_MTRR_DEF_TYPE      0x2ff
 
 #define MSR_EFER                    0xC0000080
 
