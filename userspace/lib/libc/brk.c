@@ -126,6 +126,7 @@ int __brk_perrno(void *addr, int *perrno) {
                 allocated_break,
                 size,
                 JINUE_PROT_READ | JINUE_PROT_WRITE,
+                JINUE_MAP_NONE,
                 physaddr,
                 perrno);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2019-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -49,6 +49,9 @@
 
 #define WRITE_EXEC      (JINUE_PROT_WRITE | JINUE_PROT_EXEC)
 
+#define ALL_MAP_FLAGS   (JINUE_MAP_UNCACHEABLE | JINUE_MAP_WRITE_COMBINE)
+
+#define UC_WC           (JINUE_MAP_UNCACHEABLE | JINUE_MAP_WRITE_COMBINE)
 
 static void set_return_value(jinue_syscall_args_t *args, int retval) {
     args->arg0  = (uintptr_t)retval;
@@ -356,6 +359,16 @@ static void sys_mmap(jinue_syscall_args_t *args) {
     }
 
     if((mmap_args.prot & WRITE_EXEC) == WRITE_EXEC) {
+        set_error(args, JINUE_ENOTSUP);
+        return;
+    }
+
+    if((mmap_args.flags & ~ALL_MAP_FLAGS) != 0) {
+        set_error(args, JINUE_EINVAL);
+        return;
+    }
+
+    if((mmap_args.flags & UC_WC) == UC_WC) {
         set_error(args, JINUE_ENOTSUP);
         return;
     }

@@ -96,6 +96,7 @@ typedef struct {
     void        *addr;
     size_t       length;
     int          prot;
+    int          flags;
     uint64_t     paddr;
 } jinue_mmap_args_t;
 

@@ -78,6 +78,7 @@ int jinue_mmap(
         void        *addr,
         size_t       length,
         int          prot,
+        int          flags,
         uint64_t     paddr,
         int         *perrno);
 

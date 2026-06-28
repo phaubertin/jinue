@@ -45,17 +45,25 @@
 #define PROT_EXEC   JINUE_PROT_EXEC
 
 
-#define MAP_SHARED      (1<<0)
+#define MAP_UNCACHEABLE     JINUE_MAP_UNCACHEABLE
 
-#define MAP_PRIVATE     (1<<1)
+#define MAP_WRITE_COMBINE   JINUE_MAP_WRITE_COMBINE
 
-#define MAP_FIXED       (1<<2)
+/* Keep the flags below allocated downward starting from bit 31 since the
+ * JINUE_MAP_xx flags are allocated starting from bit 0. */
 
-#define MAP_ANONYMOUS   (1<<3)
+#define MAP_SHARED          (1<<28)
 
-#define MAP_ANON        MAP_ANONYMOUS
+#define MAP_PRIVATE         (1<<29)
 
-#define MAP_FAILED      ((void *)-1)
+#define MAP_FIXED           (1<<30)
+
+#define MAP_ANONYMOUS       (1<<31)
+
+#define MAP_ANON            MAP_ANONYMOUS
+
+
+#define MAP_FAILED          ((void *)-1)
 
 
 void *mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off);

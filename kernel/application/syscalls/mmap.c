@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2024-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -53,7 +53,7 @@ int with_process(descriptor_t *process_desc, const jinue_mmap_args_t *args) {
         args->length,
         args->paddr,
         args->prot,
-        JINUE_MAP_NONE
+        args->flags
     );
 
     return success ? 0 : -JINUE_ENOMEM;
