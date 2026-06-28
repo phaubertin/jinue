@@ -298,10 +298,6 @@ static void enumerate_features(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs)
         cpuinfo->features |= CPU_FEATURE_PGE;
     }
 
-    if(flags & CPUID_FEATURE_MTRR) {
-        cpuinfo->features |= CPU_FEATURE_MTRR;
-    }
-
     if(flags & CPUID_FEATURE_PAT) {
         cpuinfo->features |= CPU_FEATURE_PAT;
     }
@@ -500,11 +496,10 @@ static void identify_maxphyaddr(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs
  */
 static void dump_features(const cpuinfo_t *cpuinfo) {
     info(
-        "  Features:%s%s%s%s%s%s%s%s%s%s",
+        "  Features:%s%s%s%s%s%s%s%s%s",
         (cpuinfo->features == 0) ? " (none)" : "",
         (cpuinfo->features & CPU_FEATURE_APIC) ? " apic" : "",
         (cpuinfo->features & CPU_FEATURE_CPUID) ? " cpuid" : "",
-        (cpuinfo->features & CPU_FEATURE_MTRR) ? " mtrr" : "",
         (cpuinfo->features & CPU_FEATURE_NX) ? " nx" : "",
         (cpuinfo->features & CPU_FEATURE_PAE) ? " pae" : "",
         (cpuinfo->features & CPU_FEATURE_PAT) ? " pat" : "",

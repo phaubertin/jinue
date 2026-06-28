@@ -219,6 +219,8 @@ static void refresh_framebuffer(void) {
         &fb.backbuffer[row(0)],
         (console.height - top_rows) * FONT_HEIGHT * fb.pitch
     );
+
+    /* TODO add fence */
 }
 
 /** Character write console callback function
