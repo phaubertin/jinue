@@ -38,17 +38,17 @@
 
 #define CPU_FEATURE_CPUID       (1<<1)
 
-#define CPU_FEATURE_NX          (1<<4)
+#define CPU_FEATURE_NX          (1<<2)
 
-#define CPU_FEATURE_PAE         (1<<5)
+#define CPU_FEATURE_PAE         (1<<3)
 
-#define CPU_FEATURE_PAT         (1<<6)
+#define CPU_FEATURE_PAT         (1<<4)
 
-#define CPU_FEATURE_PGE         (1<<7)
+#define CPU_FEATURE_PGE         (1<<5)
 
-#define CPU_FEATURE_SYSCALL     (1<<8)
+#define CPU_FEATURE_SYSCALL     (1<<6)
 
-#define CPU_FEATURE_SYSENTER    (1<<9)
+#define CPU_FEATURE_SYSENTER    (1<<7)
 
 /* vendors */
 
