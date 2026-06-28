@@ -30,6 +30,7 @@
  */
 
 #include <jinue/shared/asm/errno.h>
+#include <jinue/shared/asm/mman.h>
 #include <kernel/application/syscalls.h>
 #include <kernel/domain/entities/descriptor.h>
 #include <kernel/domain/entities/process.h>
@@ -46,11 +47,16 @@ int with_process(descriptor_t *process_desc, const jinue_mmap_args_t *args) {
         return -JINUE_EPERM;
     }
 
-    if(! machine_map_userspace(process, args->addr, args->length, args->paddr, args->prot)) {
-        return -JINUE_ENOMEM;
-    }
+    bool success = machine_map_userspace(
+        process,
+        args->addr,
+        args->length,
+        args->paddr,
+        args->prot,
+        JINUE_MAP_NONE
+    );
 
-    return 0;
+    return success ? 0 : -JINUE_ENOMEM;
 }
 
 

@@ -341,7 +341,8 @@ void init_video_framebuffer(
     fb.framebuffer = map_in_kernel(
         bootinfo->video_fb_addr,
         bootinfo->video_fb_size,
-        JINUE_PROT_READ | JINUE_PROT_WRITE
+        JINUE_PROT_READ | JINUE_PROT_WRITE,
+        JINUE_MAP_WRITE_COMBINE
     ); 
 
     initialize_console(

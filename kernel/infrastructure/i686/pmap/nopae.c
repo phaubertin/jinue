@@ -109,7 +109,7 @@ pte_t *nopae_get_pte_with_offset(pte_t *pte, unsigned int offset) {
  * (specifically, the No-eXecute/NX bit).
  *
  * The appropriate flags for this function are the architecture-dependent flags,
- * i.e. those defined by the X86_PTE_... constants. See map_page_access_flags()
+ * i.e. those defined by the X86_PTE_... constants. See map_arch_page_flags()
  * for additional context.
  *
  * @param pte page table or page directory entry
@@ -126,7 +126,7 @@ static uint32_t filter_pte_flags(uint64_t flags) {
  * Set page frame address and flags of the specified page table/directory entry
  *
  * The appropriate flags for this function are the architecture-dependent flags,
- * i.e. those defined by the X86_PTE_... constants. See map_page_access_flags()
+ * i.e. those defined by the X86_PTE_... constants. See map_arch_page_flags()
  * for additional context.
  *
  * @param pte page table or page directory entry

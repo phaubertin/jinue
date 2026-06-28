@@ -34,7 +34,7 @@
 
 #include <kernel/types.h>
 
-void machine_map_kernel(addr_t addr, size_t size, paddr_t paddr, int prot);
+void machine_map_kernel(addr_t addr, size_t size, paddr_t paddr, int prot, int flags);
 
 void machine_unmap_kernel(addr_t addr, size_t size);
 
@@ -43,7 +43,8 @@ bool machine_map_userspace(
         addr_t           addr,
         size_t           length,
         paddr_t          paddr,
-        int              prot);
+        int              prot,
+        int              flags);
 
 paddr_t machine_lookup_kernel_paddr(const void *addr);
 

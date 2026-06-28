@@ -79,7 +79,11 @@
 
 #define CPUID_FEATURE_SEP               (1<<11)
 
+#define CPUID_FEATURE_MTRR              (1<<12)
+
 #define CPUID_FEATURE_PGE               (1<<13)
+
+#define CPUID_FEATURE_PAT               (1<<16)
 
 #define CPUID_FEATURE_CLFLUSH           (1<<19)
 

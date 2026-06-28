@@ -144,20 +144,20 @@ bool elf_check(Elf32_Ehdr *ehdr) {
  * @param process address space for the mapping
  * @param vadds virtual address of page
  * @param padds physical address of page frame
- * @param flags mapping flags
+ * @param prot protection flags
  *
  */
 static void checked_map_userspace_page(
         process_t       *process,
         void            *vaddr,
         paddr_t          paddr,
-        int              flags) {
+        int              prot) {
 
     /* TODO check user space pointers
      *
      * This should not be necessary because we control the user loader binary,
      * but let's check anyway in case the build process breaks somehow. */
-    if(! machine_map_userspace(process, vaddr, PAGE_SIZE, paddr, flags)) {
+    if(! machine_map_userspace(process, vaddr, PAGE_SIZE, paddr, prot, JINUE_MAP_NONE)) {
         panic("Page table allocation error when loading ELF file");
     }
 }
@@ -247,7 +247,7 @@ static addr_t get_at_phdr(const Elf32_Ehdr *ehdr) {
  * @return start of stack in loader address space
  *
  */
-static int map_flags(Elf32_Word p_flags) {
+static int map_protection_flags(Elf32_Word p_flags) {
     /* set flags */
     int flags = 0;
 
@@ -319,7 +319,7 @@ static void load_segments(
                         process,
                         vptr,
                         machine_lookup_kernel_paddr(file_ptr),
-                        map_flags(phdr->p_flags));
+                        map_protection_flags(phdr->p_flags));
 
                 vptr     += PAGE_SIZE;
                 file_ptr += PAGE_SIZE;
@@ -339,7 +339,7 @@ static void load_segments(
                         process,
                         vptr,
                         machine_lookup_kernel_paddr(page),
-                        map_flags(phdr->p_flags));
+                        map_protection_flags(phdr->p_flags));
 
                 /* TODO transfer page ownership to userspace */
 

@@ -193,7 +193,8 @@ static const mp_ptr_struct_t *map_pointer_structure(uint32_t paddr) {
     return map_in_kernel(
         paddr,
         sizeof(mp_ptr_struct_t),
-        JINUE_PROT_READ
+        JINUE_PROT_READ,
+        JINUE_MAP_NONE
     );
 }
 
@@ -210,7 +211,8 @@ static const mp_conf_table_t *map_configuration_table(const mp_ptr_struct_t *ptr
     const mp_conf_table_t *table = map_in_kernel(
         ptrst->addr,
         sizeof(mp_conf_table_t),
-        JINUE_PROT_READ
+        JINUE_PROT_READ,
+        JINUE_MAP_NONE
     );
 
     if(! validate_configuration_table_header(table)) {

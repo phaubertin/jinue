@@ -81,7 +81,12 @@ static void write_register(int offset, uint32_t value) {
 static void map_registers(void) {
     paddr_t paddr = platform_get_local_apic_address();
 
-    mmio_addr = map_in_kernel(paddr, APIC_REGS_SIZE, JINUE_PROT_READ | JINUE_PROT_WRITE);
+    mmio_addr = map_in_kernel(
+        paddr,
+        APIC_REGS_SIZE,
+        JINUE_PROT_READ | JINUE_PROT_WRITE,
+        JINUE_MAP_UNCACHEABLE
+    );
 
     machine_add_reserved_to_address_map(paddr, APIC_REGS_SIZE);
 

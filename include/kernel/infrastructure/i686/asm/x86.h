@@ -65,10 +65,10 @@
 #define X86_PTE_USER                (1<< 2)
 
 /** write-through cache policy for page */
-#define X86_PTE_WRITE_THROUGH       (1<< 3)
+#define X86_PTE_PWT                 (1<< 3)
 
 /** uncached page */
-#define X86_PTE_CACHE_DISABLE       (1<< 4)
+#define X86_PTE_PCD                 (1<< 4)
 
 /** page was accessed (read) */
 #define X86_PTE_ACCESSED            (1<< 5)

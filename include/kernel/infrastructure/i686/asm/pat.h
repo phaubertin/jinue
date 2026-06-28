@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,28 +29,50 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _JINUE_SHARED_ASM_MMAN_H
-#define _JINUE_SHARED_ASM_MMAN_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_PAT_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_PAT_H
 
-/** map page with no access permission */
-#define JINUE_PROT_NONE         0
+/** Uncacheable */
+#define PAT_UC          0
 
-/** map page with read permission */
-#define JINUE_PROT_READ         (1<<0)
+/** Write-Combining */
+#define PAT_WC          1
 
-/** map page with write permission */
-#define JINUE_PROT_WRITE        (1<<1)
+/** Write-Through */
+#define PAT_WT          4
 
-/** map page with execution permission */
-#define JINUE_PROT_EXEC         (1<<2)
+/** Write-Protected */
+#define PAT_WP          5
 
-/** no mapping flags */
-#define JINUE_MAP_NONE          0
+/** Write-Back */
+#define PAT_WB          6
 
-/** map as uncacheable memory */
-#define JINUE_MAP_UNCACHEABLE   (1<<0)
+/** Uncached minus (can be overridden by MTRR WC) */
+#define PAT_UC_MINUS    7
 
-/** map as write-combining memory */
-#define JINUE_MAP_WRITE_COMBINE (1<<1)
+
+/** PAT entry 0 */
+#define PAT0    0
+
+/** PAT entry 1 */
+#define PAT1    8
+
+/** PAT entry 2 */
+#define PAT2    16
+
+/** PAT entry 3 */
+#define PAT3    24
+
+/** PAT entry 4 */
+#define PAT4    32
+
+/** PAT entry 5 */
+#define PAT5    40
+
+/** PAT entry 6 */
+#define PAT6    48
+
+/** PAT entry 7 */
+#define PAT7    56
 
 #endif

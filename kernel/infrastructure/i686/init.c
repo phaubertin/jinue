@@ -254,13 +254,13 @@ boot_alloc_t boot_alloc;
 
 /**
  * Machine-specific initialization for logging
- * 
+ *
  * Initializes the UART and VGA for logging.
- * 
+ *
  * Only the minimal initialization to support logging should be done here.
  * Furthermore, functions called here should refrain from panicking when
  * avoidable and defer the panic where possible.
- * 
+ *
  * @param config kernel configuration
  */
 void machine_init_logging(const config_t *config) {
@@ -279,12 +279,16 @@ void machine_init_logging(const config_t *config) {
     detect_cpu_features(bootinfo);
 
     /* This needs to be called before calling vga_init() and find_acpi_rsdp()
-     * because these functions need to map memory in the mapping area. */
+     * because these functions need to map memory in the mapping area.
+     *
+     * We also need it to be called before init_video_framebuffer() because we
+     * want the Page Attribute Table (PAT) to be set up so the framebuffer can
+     * be mapped with write combining (WC) memory type. */
     pmap_init(bootinfo);
 
     /* Map the first megabyte of memory temporarily so we can scan it for ACPI
      * and MultiProcessor Specification data structures. */
-    void *first1mb = map_in_kernel(0, 1 * MB, JINUE_PROT_READ);
+    void *first1mb = map_in_kernel(0, 1 * MB, JINUE_PROT_READ, JINUE_MAP_NONE);
 
     find_acpi_rsdp(first1mb);
 
@@ -310,7 +314,7 @@ void machine_init_logging(const config_t *config) {
 
 /**
  * Machine-specific initialization
- * 
+ *
  * @param config kernel configuration
  */
 void machine_init(const config_t *config) {
