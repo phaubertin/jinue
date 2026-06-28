@@ -1,4 +1,4 @@
-; Copyright (C) 2019-2024 Philippe Aubertin.
+; Copyright (C) 2019-2026 Philippe Aubertin.
 ; All rights reserved.
 ;
 ; Redistribution and use in source and binary forms, with or without
@@ -130,5 +130,15 @@ wrmsr:
     mov edx, [esp+12]   ; Second param: val (high dword)
     
     wrmsr
+    ret
+.end:
+
+; ------------------------------------------------------------------------------
+; FUNCTION: sfence
+; C PROTOTYPE: void sfence(void)
+; ------------------------------------------------------------------------------
+    global sfence:function (sfence.end - sfence)
+sfence:
+    sfence
     ret
 .end:

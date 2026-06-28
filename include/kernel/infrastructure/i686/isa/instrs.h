@@ -52,4 +52,6 @@ uint64_t rdmsr(uint32_t addr);
 
 void wrmsr(uint32_t addr, uint64_t val);
 
+void sfence(void);
+
 #endif
