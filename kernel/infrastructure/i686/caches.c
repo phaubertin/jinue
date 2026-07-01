@@ -33,6 +33,7 @@
 #include <kernel/infrastructure/i686/isa/instrs.h>
 #include <kernel/infrastructure/i686/isa/regs.h>
 #include <kernel/infrastructure/i686/caches.h>
+#include <stdint.h>
 
 /** Enable caches */
 void enable_caches(void) {
@@ -53,7 +54,7 @@ void invalidate_caches(void) {
 
 /** Invalidate all TLB entries including global ones */
 void invalidate_all_tlb(void) {
-    int orig_value = get_cr4();
+    uint32_t orig_value = get_cr4();
 
     /* Disable global pages if enabled. */
     set_cr4(orig_value & ~X86_CR4_PGE);

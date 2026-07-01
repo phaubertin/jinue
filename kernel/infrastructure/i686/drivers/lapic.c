@@ -89,8 +89,6 @@ static void map_registers(void) {
     );
 
     machine_add_reserved_to_address_map(paddr, APIC_REGS_SIZE);
-
-    /* TODO ensure cacheability attributes are appropriate (MTRRs?) */
 }
 
 /**
