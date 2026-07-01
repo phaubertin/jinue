@@ -211,7 +211,8 @@ void vga_init(const config_t *config) {
     video_base_addr = map_in_kernel(
         VGA_TEXT_VID_BASE,
         VGA_TEXT_VID_TOP - VGA_TEXT_VID_BASE,
-        JINUE_PROT_READ | JINUE_PROT_WRITE
+        JINUE_PROT_READ | JINUE_PROT_WRITE,
+        JINUE_MAP_UNCACHEABLE
     );
 
     initialize_console(&console, VGA_WIDTH, VGA_LINES, do_write, do_scroll);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2019-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -43,5 +43,14 @@
 
 /** map page with execution permission */
 #define JINUE_PROT_EXEC         (1<<2)
+
+/** no mapping flags */
+#define JINUE_MAP_NONE          0
+
+/** map as uncacheable memory */
+#define JINUE_MAP_UNCACHEABLE   (1<<0)
+
+/** map as write-combining memory */
+#define JINUE_MAP_WRITE_COMBINE (1<<1)
 
 #endif

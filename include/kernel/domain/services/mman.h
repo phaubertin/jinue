@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Philippe Aubertin.
+ * Copyright (C) 2025-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -35,7 +35,7 @@
 #include <kernel/machine/types.h>
 #include <stddef.h>
 
-void *map_in_kernel(paddr_t paddr, size_t size, int prot);
+void *map_in_kernel(paddr_t paddr, size_t size, int prot, int flags);
 
 void resize_map_in_kernel(size_t size);
 

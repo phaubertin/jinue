@@ -81,7 +81,11 @@
 
 #define CPUID_FEATURE_PGE               (1<<13)
 
+#define CPUID_FEATURE_PAT               (1<<16)
+
 #define CPUID_FEATURE_CLFLUSH           (1<<19)
+
+#define CPUID_FEATURE_SSE               (1<<25)
 
 #define CPUID_FEATURE_HTT               (1<<28)
 

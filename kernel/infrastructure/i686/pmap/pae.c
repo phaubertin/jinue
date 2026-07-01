@@ -174,13 +174,13 @@ pte_t *pae_lookup_page_directory(
         addr_space_t    *addr_space,
         const void      *addr,
         bool             create_as_needed,
-        bool            *reload_cr3) {
+        bool            *must_reload_cr3) {
 
     /** ASSERTION: addr_space must not be NULL */
     assert(addr_space != NULL);
 
-    /** ASSERTION: reload_cr3 can only be NULL if create_as_needed is false */
-    assert(reload_cr3 != NULL || !create_as_needed);
+    /** ASSERTION: must_reload_cr3 can only be NULL if create_as_needed is false */
+    assert(must_reload_cr3 != NULL || !create_as_needed);
 
     pdpt_t *pdpt    = addr_space->top_level.pdpt;
     pte_t  *pdpte   = &pdpt->pd[pdpt_offset_of(addr)];
@@ -206,7 +206,7 @@ pte_t *pae_lookup_page_directory(
         /* In 32-bit PAE mode, the CPU stores the four entries of the PDPT
          * in registers. Whenever we modify an entry in the PDPT, we must
          * reload CR3. */
-        *reload_cr3 = true;
+        *must_reload_cr3 = true;
     }
 
     return page_directory;
@@ -247,7 +247,7 @@ pte_t *pae_get_pte_with_offset(pte_t *pte, unsigned int offset) {
  * Set page frame address and flags of the specified page table/directory entry
  *
  * The appropriate flags for this function are the architecture-dependent flags,
- * i.e. those defined by the X86_PTE_... constants. See map_page_access_flags()
+ * i.e. those defined by the X86_PTE_... constants. See map_arch_page_flags()
  * for additional context.
  *
  * @param pte page table or page directory entry

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2026 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,63 +29,50 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_CPUINFO_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_CPUINFO_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_PAT_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_PAT_H
 
-/* features */
+/** Uncacheable */
+#define PAT_UC          0
 
-#define CPU_FEATURE_APIC        (1<<0)
+/** Write-Combining */
+#define PAT_WC          1
 
-#define CPU_FEATURE_CPUID       (1<<1)
+/** Write-Through */
+#define PAT_WT          4
 
-#define CPU_FEATURE_NX          (1<<2)
+/** Write-Protected */
+#define PAT_WP          5
 
-#define CPU_FEATURE_PAE         (1<<3)
+/** Write-Back */
+#define PAT_WB          6
 
-#define CPU_FEATURE_PAT         (1<<4)
+/** Uncached minus (can be overridden by MTRR WC) */
+#define PAT_UC_MINUS    7
 
-#define CPU_FEATURE_PGE         (1<<5)
 
-#define CPU_FEATURE_SSE         (1<<6)
+/** PAT entry 0 */
+#define PAT0    0
 
-#define CPU_FEATURE_SYSCALL     (1<<7)
+/** PAT entry 1 */
+#define PAT1    8
 
-#define CPU_FEATURE_SYSENTER    (1<<8)
+/** PAT entry 2 */
+#define PAT2    16
 
-/* vendors */
+/** PAT entry 3 */
+#define PAT3    24
 
-#define CPU_VENDOR_GENERIC          0
+/** PAT entry 4 */
+#define PAT4    32
 
-#define CPU_VENDOR_AMD              1
+/** PAT entry 5 */
+#define PAT5    40
 
-#define CPU_VENDOR_CENTAUR_VIA      2
+/** PAT entry 6 */
+#define PAT6    48
 
-#define CPU_VENDOR_CYRIX            3
-
-#define CPU_VENDOR_HYGON            4
-
-#define CPU_VENDOR_INTEL            5
-
-#define CPU_VENDOR_ZHAOXIN          6
-
-/* hypervisors */
-
-#define HYPERVISOR_ID_NONE          0
-
-#define HYPERVISOR_ID_UNKNOWN       1
-
-#define HYPERVISOR_ID_ACRN          2
-
-#define HYPERVISOR_ID_BHYVE         3
-
-#define HYPERVISOR_ID_HYPER_V       4
-
-#define HYPERVISOR_ID_KVM           5
-
-#define HYPERVISOR_ID_QEMU          6
-
-#define HYPERVISOR_ID_VMWARE        7
-
-#define HYPERVISOR_ID_XEN           8
+/** PAT entry 7 */
+#define PAT7    56
 
 #endif

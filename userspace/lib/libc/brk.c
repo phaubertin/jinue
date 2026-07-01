@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Philippe Aubertin.
+ * Copyright (C) 2023-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -126,6 +126,7 @@ int __brk_perrno(void *addr, int *perrno) {
                 allocated_break,
                 size,
                 JINUE_PROT_READ | JINUE_PROT_WRITE,
+                JINUE_MAP_NONE,
                 physaddr,
                 perrno);
 

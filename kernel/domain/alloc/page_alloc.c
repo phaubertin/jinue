@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -125,7 +125,7 @@ bool add_page_frame(paddr_t paddr) {
         return false;
     }
 
-    machine_map_kernel(page, PAGE_SIZE, paddr, JINUE_PROT_READ | JINUE_PROT_WRITE);
+    machine_map_kernel(page, PAGE_SIZE, paddr, JINUE_PROT_READ | JINUE_PROT_WRITE, JINUE_MAP_NONE);
 
     /* Since this page is coming from userspace, is is important to clear it:
      * 1) The page may contain sensitive information, which we don't want to

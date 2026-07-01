@@ -38,6 +38,7 @@
 #include <kernel/infrastructure/i686/drivers/videofb.h>
 #include <kernel/infrastructure/i686/drivers/videofbfont.h>
 #include <kernel/infrastructure/i686/pmap/pmap.h>
+#include <kernel/infrastructure/i686/barriers.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
 #include <kernel/infrastructure/i686/platform.h>
 #include <kernel/interface/i686/bootinfo.h>
@@ -219,6 +220,8 @@ static void refresh_framebuffer(void) {
         &fb.backbuffer[row(0)],
         (console.height - top_rows) * FONT_HEIGHT * fb.pitch
     );
+
+    store_barrier();
 }
 
 /** Character write console callback function
@@ -341,7 +344,8 @@ void init_video_framebuffer(
     fb.framebuffer = map_in_kernel(
         bootinfo->video_fb_addr,
         bootinfo->video_fb_size,
-        JINUE_PROT_READ | JINUE_PROT_WRITE
+        JINUE_PROT_READ | JINUE_PROT_WRITE,
+        JINUE_MAP_WRITE_COMBINE
     ); 
 
     initialize_console(

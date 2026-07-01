@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -39,6 +39,12 @@
 /** CR0 register: Write Protect */
 #define X86_CR0_WP                  (1<<16)
 
+/** CR0 register: Not Write-through */
+#define X86_CR0_NW                  (1<<29)
+
+/** CR0 register: Cache Disable */
+#define X86_CR0_CD                  (1<<30)
+
 /** CR0 register: Paging */
 #define X86_CR0_PG                  (1<<31)
 
@@ -65,10 +71,10 @@
 #define X86_PTE_USER                (1<< 2)
 
 /** write-through cache policy for page */
-#define X86_PTE_WRITE_THROUGH       (1<< 3)
+#define X86_PTE_PWT                 (1<< 3)
 
 /** uncached page */
-#define X86_PTE_CACHE_DISABLE       (1<< 4)
+#define X86_PTE_PCD                 (1<< 4)
 
 /** page was accessed (read) */
 #define X86_PTE_ACCESSED            (1<< 5)

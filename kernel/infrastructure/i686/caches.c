@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2019-2026 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,63 +29,37 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_CPUINFO_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_CPUINFO_H
+#include <kernel/infrastructure/i686/asm/x86.h>
+#include <kernel/infrastructure/i686/isa/instrs.h>
+#include <kernel/infrastructure/i686/isa/regs.h>
+#include <kernel/infrastructure/i686/caches.h>
 
-/* features */
+/** Enable caches */
+void enable_caches(void) {
+    set_cr0(get_cr0() & ~(X86_CR0_CD | X86_CR0_NW));
+}
 
-#define CPU_FEATURE_APIC        (1<<0)
+/** Disable caches */
+void disable_caches(void) {
+    set_cr0((get_cr0() | X86_CR0_CD) & ~X86_CR0_NW);
 
-#define CPU_FEATURE_CPUID       (1<<1)
+    invalidate_caches();
+}
 
-#define CPU_FEATURE_NX          (1<<2)
+/** Invalidate caches */
+void invalidate_caches(void) {
+    wbinvd();
+}
 
-#define CPU_FEATURE_PAE         (1<<3)
+/** Invalidate all TLB entries including global ones */
+void invalidate_all_tlb(void) {
+    int orig_value = get_cr4();
 
-#define CPU_FEATURE_PAT         (1<<4)
+    /* Disable global pages if enabled. */
+    set_cr4(orig_value & ~X86_CR4_PGE);
 
-#define CPU_FEATURE_PGE         (1<<5)
+    /* Reload CR3 to invalidate the TLBs. */
+    set_cr3(get_cr3());
 
-#define CPU_FEATURE_SSE         (1<<6)
-
-#define CPU_FEATURE_SYSCALL     (1<<7)
-
-#define CPU_FEATURE_SYSENTER    (1<<8)
-
-/* vendors */
-
-#define CPU_VENDOR_GENERIC          0
-
-#define CPU_VENDOR_AMD              1
-
-#define CPU_VENDOR_CENTAUR_VIA      2
-
-#define CPU_VENDOR_CYRIX            3
-
-#define CPU_VENDOR_HYGON            4
-
-#define CPU_VENDOR_INTEL            5
-
-#define CPU_VENDOR_ZHAOXIN          6
-
-/* hypervisors */
-
-#define HYPERVISOR_ID_NONE          0
-
-#define HYPERVISOR_ID_UNKNOWN       1
-
-#define HYPERVISOR_ID_ACRN          2
-
-#define HYPERVISOR_ID_BHYVE         3
-
-#define HYPERVISOR_ID_HYPER_V       4
-
-#define HYPERVISOR_ID_KVM           5
-
-#define HYPERVISOR_ID_QEMU          6
-
-#define HYPERVISOR_ID_VMWARE        7
-
-#define HYPERVISOR_ID_XEN           8
-
-#endif
+    set_cr4(orig_value);
+}

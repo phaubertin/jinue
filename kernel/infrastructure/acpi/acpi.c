@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Philippe Aubertin.
+ * Copyright (C) 2025-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -110,7 +110,7 @@ static bool verify_table_signature(const acpi_table_header_t *header, const char
 static const acpi_rsdp_t *map_rsdp(paddr_t paddr) {
     machine_add_shared_to_address_map(paddr, sizeof(acpi_rsdp_t));
 
-    return map_in_kernel(paddr, sizeof(acpi_rsdp_t), JINUE_PROT_READ);
+    return map_in_kernel(paddr, sizeof(acpi_rsdp_t), JINUE_PROT_READ, JINUE_MAP_NONE);
 }
 
 /**
@@ -146,7 +146,7 @@ static const void *map_table(const acpi_table_header_t *header) {
  *
  * */
 static const acpi_table_header_t *map_header(paddr_t paddr) {
-    return map_in_kernel(paddr, sizeof(acpi_table_header_t), JINUE_PROT_READ);
+    return map_in_kernel(paddr, sizeof(acpi_table_header_t), JINUE_PROT_READ, JINUE_MAP_NONE);
 }
 
 /** Size of the fixed part of the RSDT, excluding the entries. */

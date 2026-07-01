@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2019-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -96,6 +96,7 @@ typedef struct {
     void        *addr;
     size_t       length;
     int          prot;
+    int          flags;
     uint64_t     paddr;
 } jinue_mmap_args_t;
 

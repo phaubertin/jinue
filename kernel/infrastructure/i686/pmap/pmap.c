@@ -37,12 +37,15 @@
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/services/panic.h>
+#include <kernel/infrastructure/i686/asm/msr.h>
+#include <kernel/infrastructure/i686/asm/pat.h>
 #include <kernel/infrastructure/i686/isa/instrs.h>
 #include <kernel/infrastructure/i686/isa/regs.h>
 #include <kernel/infrastructure/i686/memory/pages.h>
 #include <kernel/infrastructure/i686/pmap/pmap.h>
 #include <kernel/infrastructure/i686/pmap/private.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
+#include <kernel/infrastructure/i686/caches.h>
 #include <kernel/infrastructure/i686/cpuinfo.h>
 #include <kernel/infrastructure/i686/percpu.h>
 #include <kernel/infrastructure/elf.h>
@@ -187,7 +190,7 @@ void copy_ptes(pte_t *dest, const pte_t *src, int n) {
  * Set page frame address and flags of the specified page table/directory entry
  *
  * The appropriate flags for this function are the architecture-dependent flags,
- * i.e. those defined by the X86_PTE_... constants. See map_page_access_flags()
+ * i.e. those defined by the X86_PTE_... constants. See map_arch_page_flags()
  * for additional context.
  *
  * @param pte page table or page directory entry
@@ -250,6 +253,68 @@ static paddr_t get_pte_paddr(const pte_t *pte) {
     }
 }
 
+/** Reload the CR3 control register with its existing value
+ * 
+ * The register value remains unchanged but reloading CR3 it has the side
+ * effect of invalidating all non-global TLB entries.
+ */
+static void reload_cr3(void) {
+    set_cr3(get_cr3());
+}
+
+/** Initialize Page Attribute Table (PAT) */
+static void initialize_pat(void) {
+    if(!cpu_has_feature(CPU_FEATURE_PAT)) {
+        return;
+    }
+
+    /* See procedure in Intel64 and IA-32 Architectures Software Developer’s
+     * Manual Volume 3 section 13.11.8 "MTRR Considerations in MP Systems".
+     *
+     * This is the procedure described for the MTRRs but section 13.12.4
+     * "Programming the PAT" refers to it. */
+
+    disable_caches();
+
+    invalidate_all_tlb();
+
+    /* Intel has two different erratas for PAT on specific CPU models where
+     * the CPU might be confused about whether it should look at the upper
+     * or lower four entries of the PAT.
+     * 
+     * See:
+     *  - Intel Pentium III Processor Specification Update (Document number
+     *    244453-058, August 2007) Section "E27. Upper Four PAT Entries
+     *    Not Usable With Mode B or Mode C Paging" page 53.
+     *  - Intel Pentium 4 Processor Specification Update (Document number
+     *    249199-057, December 2004) Section "N46. PAT Index MSB May Be
+     *    Calculated Incorrectly" page 44.
+     * 
+     * For this reason, let's only use the lower four entries and repeat
+     * them in the upper four. For the lower four entries, we use the reset
+     * values except we replace slot 1 from WT we don't need to WC we do
+     * need. */
+    uint64_t patval =
+        /* lower four */
+        ((uint64_t)PAT_WB << PAT0)  |
+        ((uint64_t)PAT_WC << PAT1)  |
+        ((uint64_t)PAT_UC_MINUS << PAT2) |
+        ((uint64_t)PAT_UC << PAT3) |
+        /* upper four */
+        ((uint64_t)PAT_WB << PAT4)  |
+        ((uint64_t)PAT_WC << PAT5)  |
+        ((uint64_t)PAT_UC_MINUS << PAT6) |
+        ((uint64_t)PAT_UC << PAT7);
+
+    wrmsr(MSR_IA32_PAT, patval);
+
+    invalidate_caches();
+
+    invalidate_all_tlb();
+
+    enable_caches();
+}
+
 /**
  * Initialize virtual memory management
  *
@@ -268,6 +333,11 @@ void pmap_init(const bootinfo_t *bootinfo) {
 
     entries_per_page_table  = pgtable_format_pae ? PAE_PAGE_TABLE_PTES :  NOPAE_PAGE_TABLE_PTES;
     page_frame_number_mask  = ((UINT64_C(1) << cpu_phys_addr_width()) - 1) & (~PAGE_MASK);
+
+    /* Must be done before enabling global pages to make sure no stale entries
+     * for global pages with wrong cacheability information remain in the TLBs.
+     */
+    initialize_pat();
 
     /* Enable global pages */
     if(cpu_has_feature(CPU_FEATURE_PGE)) {
@@ -418,24 +488,24 @@ static pte_t *lookup_kernel_page_table_entry(const void *addr) {
  * currently no page table entry for the specified address and address space.
  *
  * If a new page table is allocated (when create_as_needed is true), CR3 may
- * need to be reloaded. If it's the case, the boolean pointed to by reload_cr3
- * is set to true. Initially setting this boolean to false is the caller's
- * responsibility.
+ * need to be reloaded. If it's the case, the boolean pointed to by
+ * must_reload_cr3 is set to true. Initially setting this boolean to false is
+ * the caller's responsibility.
  *
- * reload_cr3 must not be NULL if create_as_needed is true but is ignored and
- * can be set to NULL if create_as_needed is false.
+ * must_reload_cr3 must not be NULL if create_as_needed is true but is ignored
+ * and can be set to NULL if create_as_needed is false.
  *
  * @param addr_space address space in which the address is looked up.
  * @param addr userspace address to look up
  * @param create_as_needed whether a page table is allocated if it does not exist
- * @param reload_cr3 (out) set to true if CR3 needs to be reloaded
+ * @param must_reload_cr3 (out) set to true if CR3 needs to be reloaded
  * @return pointer to page table on success, NULL otherwise
  */
 static pte_t *lookup_userspace_page_table(
         addr_space_t    *addr_space,
         const void      *addr,
         bool             create_as_needed,
-        bool            *reload_cr3) {
+        bool            *must_reload_cr3) {
 
     pte_t *page_directory;
 
@@ -453,7 +523,7 @@ static pte_t *lookup_userspace_page_table(
             addr_space,
             addr,
             create_as_needed,
-            reload_cr3
+            must_reload_cr3
         );
     }
     else {
@@ -496,18 +566,22 @@ static pte_t *lookup_userspace_page_table(
 }
 
 /**
- * Translate architecture-independent protection flags to architecture-dependent flags
+ * Translate architecture-independent flags to architecture-dependent flags
  *
- * Argument should be either JINUE_PROT_NONE (no access) or any combination of
- * JINUE_PROT_READ, JINUE_PROT_WRITE and/or JINUE_PROT_EXEC.
+ * Argument prot should be either JINUE_PROT_NONE (no access) or any
+ * combination of JINUE_PROT_READ, JINUE_PROT_WRITE and/or JINUE_PROT_EXEC.
+ * 
+ * Argument flags should be JINUE_MAP_NONE or a combination of the JINUE_MAP_xx
+ * flags.
  *
  * Return value is a combination of architecture-dependent flags appropriate to
  * be set directly in a page table entry (i.e. the X86_PTE_... constants).
  *
  * @param prot architecture-independent protection flags
+ * @param prot architecture-independent mapping flags
  * @return architecture-dependent flags
  */
-static uint64_t map_page_access_flags(int prot) {
+static uint64_t map_arch_page_flags(int prot, int flags) {
     const int rwe_mask = JINUE_PROT_READ | JINUE_PROT_WRITE | JINUE_PROT_EXEC;
 
     if(! (prot & rwe_mask)) {
@@ -524,6 +598,15 @@ static uint64_t map_page_access_flags(int prot) {
         mapped_flags |= cpu_has_feature(CPU_FEATURE_NX) ? X86_PTE_NX : 0;
     }
 
+    if(flags & JINUE_MAP_UNCACHEABLE) {
+        mapped_flags |= X86_PTE_PCD | X86_PTE_PWT;
+    }
+
+    if(flags & JINUE_MAP_WRITE_COMBINE) {
+        /* Write combining (1) if PAT supported, uncacheable (3) otherwise */
+        mapped_flags |= (cpu_has_feature(CPU_FEATURE_PAT) ? 0 : X86_PTE_PCD) | X86_PTE_PWT;
+    }
+
     return mapped_flags;
 }
 
@@ -537,8 +620,9 @@ static uint64_t map_page_access_flags(int prot) {
  * @param vaddr virtual address of mapping
  * @param paddr address of page frame
  * @param prot protections flags
+ * @param flags mapping flags
  */
-void machine_map_kernel(addr_t addr, size_t size, paddr_t paddr, int prot) {
+void machine_map_kernel(addr_t addr, size_t size, paddr_t paddr, int prot, int flags) {
     /** ASSERTION: we assume vaddr is aligned on a page boundary */
     assert( page_offset_of(addr) == 0 );
 
@@ -550,7 +634,7 @@ void machine_map_kernel(addr_t addr, size_t size, paddr_t paddr, int prot) {
         set_pte(
             get_pte_with_offset(pte, PAGE_NUMBER(offset)),
             paddr + offset,
-            map_page_access_flags(prot) | X86_PTE_GLOBAL
+            map_arch_page_flags(prot, flags) | X86_PTE_GLOBAL
         );
 
         invlpg(addr + offset);
@@ -568,6 +652,7 @@ void machine_map_kernel(addr_t addr, size_t size, paddr_t paddr, int prot) {
  * @param paddr start address in physical memory
  * @param length length of mapping
  * @param prot protection flags
+ * @param flags mapping flags
  * @return true on success, false on page table allocation error
  */
 bool machine_map_userspace(
@@ -575,7 +660,8 @@ bool machine_map_userspace(
         addr_t           addr,
         size_t           size,
         paddr_t          paddr,
-        int              prot) {
+        int              prot,
+        int              flags) {
 
     /** ASSERTION: we assume vaddr is aligned on a page boundary */
     assert( page_offset_of(addr) == 0 );
@@ -585,8 +671,8 @@ bool machine_map_userspace(
 
     int pte_index   = page_table_offset_of(addr);
 
-    bool reload_cr3 = false;
-    pte_t *pte      = lookup_userspace_page_table(addr_space, addr, true, &reload_cr3);
+    bool must_reload_cr3 = false;
+    pte_t *pte      = lookup_userspace_page_table(addr_space, addr, true, &must_reload_cr3);
 
     if(pte == NULL) {
         return false;
@@ -598,7 +684,7 @@ bool machine_map_userspace(
                 addr_space,
                 addr + offset,
                 true,
-                &reload_cr3
+                &must_reload_cr3
             );
 
             if(pte == NULL) {
@@ -611,18 +697,18 @@ bool machine_map_userspace(
         set_pte(
             get_pte_with_offset(pte, pte_index),
             paddr + offset,
-            map_page_access_flags(prot) | X86_PTE_USER
+            map_arch_page_flags(prot, flags) | X86_PTE_USER
         );
 
-        if(needs_invalidation && !reload_cr3) {
+        if(needs_invalidation && !must_reload_cr3) {
             invlpg(addr + offset);
         }
 
         ++pte_index;
     }
 
-    if(needs_invalidation && reload_cr3) {
-        set_cr3(get_cr3());
+    if(needs_invalidation && must_reload_cr3) {
+        reload_cr3();
     }
 
     return true;

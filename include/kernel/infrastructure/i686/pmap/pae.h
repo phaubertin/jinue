@@ -47,7 +47,7 @@ pte_t *pae_lookup_page_directory(
         addr_space_t    *addr_space,
         const void      *addr,
         bool             create_as_needed,
-        bool            *reload_cr3);
+        bool            *must_reload_cr3);
 
 unsigned int pae_page_table_offset_of(const void *addr);
 

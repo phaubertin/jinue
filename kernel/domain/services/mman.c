@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Philippe Aubertin.
+ * Copyright (C) 2025-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -42,11 +42,13 @@ static struct {
     addr_t       addr;
     const void  *latest_addr;
     int          latest_prot;
+    int          latest_flags;
     size_t       size_remaining;
 } alloc_state = {
     .addr           = (addr_t)MAPPING_AREA_ADDR,
     .latest_addr    = NULL,
     .latest_prot    = JINUE_PROT_NONE,
+    .latest_flags   = JINUE_MAP_NONE,
     .size_remaining = MAPPING_AREA_SIZE,
 };
 
@@ -55,9 +57,10 @@ static struct {
  * 
  * @param paddr physical address of start, must be page-aligned
  * @param new_end new end of the expanded mapping, must be page aligned
- * @param prot mapping protection flags
+ * @param prot protection flags
+ * @param flags mapping flags
  */
-static void expand_mapping(paddr_t paddr, addr_t new_end, int prot) {
+static void expand_mapping(paddr_t paddr, addr_t new_end, int prot, int flags) {
     addr_t old_end  = alloc_state.addr;
     size_t size     = new_end - old_end;
 
@@ -65,7 +68,7 @@ static void expand_mapping(paddr_t paddr, addr_t new_end, int prot) {
         panic("No more space to map memory in kernel");
     }
 
-    machine_map_kernel(old_end, size, paddr, prot);
+    machine_map_kernel(old_end, size, paddr, prot, flags);
 
     alloc_state.addr            = new_end;
     alloc_state.size_remaining  -= size;
@@ -101,9 +104,10 @@ static void shrink_mapping(addr_t new_end) {
  * 
  * @param paddr address to memory map
  * @param size size of memory to map, cannot be zero
- * @param prot mapping protection flags
+ * @param prot protection flags
+ * @param flags mapping flags
  */
-void *map_in_kernel(paddr_t paddr, size_t size, int prot) {
+void *map_in_kernel(paddr_t paddr, size_t size, int prot, int flags) {
     size_t offset   = paddr % PAGE_SIZE;
 
     addr_t start    = alloc_state.addr;
@@ -111,8 +115,9 @@ void *map_in_kernel(paddr_t paddr, size_t size, int prot) {
     
     alloc_state.latest_addr = start + offset;
     alloc_state.latest_prot = prot;
+    alloc_state.latest_flags = flags;
 
-    expand_mapping(paddr - offset, end, prot);
+    expand_mapping(paddr - offset, end, prot, flags);
 
     return start + offset;
 }
@@ -134,11 +139,12 @@ void resize_map_in_kernel(size_t size) {
         shrink_mapping(new_end);
     } else {
         int prot        = alloc_state.latest_prot;
+        int flags       = alloc_state.latest_flags;
 
         addr_t start    = ALIGN_START_PTR(addr, PAGE_SIZE);
         paddr_t paddr   = machine_lookup_kernel_paddr(start) + (old_end - start);
 
-        expand_mapping(paddr, new_end, prot);
+        expand_mapping(paddr, new_end, prot, flags);
     }
 }
 
@@ -156,4 +162,5 @@ void undo_map_in_kernel(void) {
     
     alloc_state.latest_addr = NULL;
     alloc_state.latest_prot = JINUE_PROT_NONE;
+    alloc_state.latest_flags = JINUE_MAP_NONE;
 }
