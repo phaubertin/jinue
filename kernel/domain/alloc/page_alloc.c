@@ -165,13 +165,7 @@ paddr_t remove_page_frame(void) {
 
     machine_unmap_kernel(page, PAGE_SIZE);
 
-    /* The page may be in the image region instead of the allocations region if
-     * it was allocated during kernel initialization.
-     * 
-     * TODO is this still true? */
-    if(vmalloc_is_in_range(page)) {
-        vmfree(page);
-    }
+    vmfree(page);
 
     return paddr;
 }
