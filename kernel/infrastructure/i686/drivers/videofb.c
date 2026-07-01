@@ -37,8 +37,8 @@
 #include <kernel/infrastructure/i686/drivers/console.h>
 #include <kernel/infrastructure/i686/drivers/videofb.h>
 #include <kernel/infrastructure/i686/drivers/videofbfont.h>
-#include <kernel/infrastructure/i686/isa/instrs.h>
 #include <kernel/infrastructure/i686/pmap/pmap.h>
+#include <kernel/infrastructure/i686/barriers.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
 #include <kernel/infrastructure/i686/platform.h>
 #include <kernel/interface/i686/bootinfo.h>
@@ -221,8 +221,7 @@ static void refresh_framebuffer(void) {
         (console.height - top_rows) * FONT_HEIGHT * fb.pitch
     );
 
-    /* TODO need to check support. May also need to enable SSE stuff? */
-    sfence();
+    store_barrier();
 }
 
 /** Character write console callback function

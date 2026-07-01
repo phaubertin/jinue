@@ -144,6 +144,16 @@ sfence:
 .end:
 
 ; ------------------------------------------------------------------------------
+; FUNCTION: sfence_fallback
+; C PROTOTYPE: void sfence_fallback(void)
+; ------------------------------------------------------------------------------
+    global sfence_fallback:function (sfence_fallback.end - sfence_fallback)
+sfence_fallback:
+    lock add dword [esp], 0
+    ret
+.end:
+
+; ------------------------------------------------------------------------------
 ; FUNCTION: wbinvd
 ; C PROTOTYPE: void wbinvd(void)
 ; ------------------------------------------------------------------------------

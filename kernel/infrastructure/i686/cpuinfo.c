@@ -302,6 +302,10 @@ static void enumerate_features(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs)
         cpuinfo->features |= CPU_FEATURE_PAT;
     }
 
+    if(flags & CPUID_FEATURE_SSE) {
+        cpuinfo->features |= CPU_FEATURE_SSE;
+    }
+
     detect_sysenter_instruction(cpuinfo, leafs);
 
     detect_syscall_instruction(cpuinfo, leafs);
@@ -496,7 +500,7 @@ static void identify_maxphyaddr(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs
  */
 static void dump_features(const cpuinfo_t *cpuinfo) {
     info(
-        "  Features:%s%s%s%s%s%s%s%s%s",
+        "  Features:%s%s%s%s%s%s%s%s%s%s",
         (cpuinfo->features == 0) ? " (none)" : "",
         (cpuinfo->features & CPU_FEATURE_APIC) ? " apic" : "",
         (cpuinfo->features & CPU_FEATURE_CPUID) ? " cpuid" : "",
@@ -504,6 +508,7 @@ static void dump_features(const cpuinfo_t *cpuinfo) {
         (cpuinfo->features & CPU_FEATURE_PAE) ? " pae" : "",
         (cpuinfo->features & CPU_FEATURE_PAT) ? " pat" : "",
         (cpuinfo->features & CPU_FEATURE_PGE) ? " pge" : "",
+        (cpuinfo->features & CPU_FEATURE_SSE) ? " sse" : "",
         (cpuinfo->features & CPU_FEATURE_SYSCALL) ? " syscall" : "",
         (cpuinfo->features & CPU_FEATURE_SYSENTER) ? " sysenter" : ""
     );

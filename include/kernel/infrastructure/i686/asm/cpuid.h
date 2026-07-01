@@ -85,6 +85,8 @@
 
 #define CPUID_FEATURE_CLFLUSH           (1<<19)
 
+#define CPUID_FEATURE_SSE               (1<<25)
+
 #define CPUID_FEATURE_HTT               (1<<28)
 
 /* Software/hypervisor leaf 0 (0x40000000) ebx, ecx, edx */
