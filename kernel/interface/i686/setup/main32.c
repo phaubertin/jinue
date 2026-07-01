@@ -113,10 +113,7 @@ bootinfo_t *main32(const linux_boot_params_t linux_boot_params) {
 
     prepare_for_paging(bootinfo);
 
-    bool use_pae    = bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_PAE);
-    bool use_nx     = bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_NX);
-
-    enable_paging(use_pae, use_nx, bootinfo->cr3);
+    enable_paging(bootinfo->cr3, bootinfo->features);
 
     adjust_bootinfo_pointers(&bootinfo);
 
@@ -126,7 +123,7 @@ bootinfo_t *main32(const linux_boot_params_t linux_boot_params) {
 
     /* Reload CR3 to invalidate TLBs so the changes by cleanup_after_paging()
      * take effect. */
-    enable_paging(use_pae, use_nx, bootinfo->cr3);
+    enable_paging(bootinfo->cr3, bootinfo->features);
 
     return bootinfo;
 }

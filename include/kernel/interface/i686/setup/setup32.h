@@ -35,7 +35,7 @@
 #include <kernel/interface/i686/types.h>
 #include <stdbool.h>
 
-void enable_paging(bool use_pae, bool use_nx, uint32_t cr3);
+void enable_paging(uint32_t cr3, int bootinfo_features);
 
 void adjust_stack(void);
 
