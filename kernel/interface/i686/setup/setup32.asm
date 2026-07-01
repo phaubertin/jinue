@@ -204,21 +204,23 @@ start:
 
     ; -------------------------------------------------------------------------
     ; Function: enable_paging
-    ; C prototype: void enable_paging(bool use_pae, bool use_nx, uint32_t cr3)
+    ; C prototype: void enable_paging(uint32_t cr3, int bootinfo_features)
     ; -------------------------------------------------------------------------
     ; Enable paging and protect read-only pages from being written to by the
     ; kernel.
     ; -------------------------------------------------------------------------
     global enable_paging:function (enable_paging.end - enable_paging)
 enable_paging:
+    mov edx, dword [esp + 8]    ; second argument: bootinfo_features, allocated
+                                ; for the whole function
+    
     ; set page directory or PDPT address in CR3
-    mov eax, dword [esp + 12]   ; third argument: cr3
+    mov eax, dword [esp + 4]    ; first argument: cr3
     mov cr3, eax                ; set cr3
 
     ; check if PAE needs to be enabled
-    mov eax, dword [esp + 4]    ; first argument: use_pae
-    or al, al
-    jz .skip                    ; skip if use_pae is not set
+    test edx, BOOTINFO_FEATURE_PAE
+    jz .skip                    ; skip if feature "PAE" is not set
 
     ; enable PAE
     mov eax, cr4
@@ -226,9 +228,8 @@ enable_paging:
     mov cr4, eax
 
     ; check if No eXec (NX) protection needs to be enabled
-    mov eax, dword [esp + 8]    ; second argument: use_nx
-    or al, al
-    jz .skip                    ; skip if use_nx is not set
+    test edx, BOOTINFO_FEATURE_NX
+    jz .skip                    ; skip if feature "NX" is not set
 
     ; enable support for NX/XD bit
     mov ecx, MSR_EFER
@@ -237,6 +238,17 @@ enable_paging:
     wrmsr
 
 .skip:
+    ; check if Page Size Extension (PSE) can be enabled
+    ; meaningful when PAE is enabled, implied and ignored when PAE is enabled
+    test edx, BOOTINFO_FEATURE_PSE
+    jz .skip_pse                ; skip if feature "PSE" is not set
+
+    ; enable PSE
+    mov eax, cr4
+    or eax, X86_CR4_PSE
+    mov cr4, eax
+
+.skip_pse:
     ; enable paging (PG), prevent kernel from writing to read-only pages (WP)
     mov eax, cr0
     or eax, X86_CR0_PG | X86_CR0_WP

@@ -131,6 +131,8 @@ void detect_cpu_features(bootinfo_t *bootinfo) {
     basic1.eax = 1;
     cpuid(&basic1);
 
+    bootinfo->features |= (basic1.edx & CPUID_FEATURE_PSE) ? BOOTINFO_FEATURE_PSE : 0;
+
     bool has_pae = !!(basic1.edx & CPUID_FEATURE_PAE);
 
     if(!has_pae) {

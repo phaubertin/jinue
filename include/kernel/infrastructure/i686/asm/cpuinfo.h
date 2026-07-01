@@ -46,11 +46,13 @@
 
 #define CPU_FEATURE_PGE         (1<<5)
 
-#define CPU_FEATURE_SSE         (1<<6)
+#define CPU_FEATURE_PSE         (1<<6)
 
-#define CPU_FEATURE_SYSCALL     (1<<7)
+#define CPU_FEATURE_SSE         (1<<7)
 
-#define CPU_FEATURE_SYSENTER    (1<<8)
+#define CPU_FEATURE_SYSCALL     (1<<8)
+
+#define CPU_FEATURE_SYSENTER    (1<<9)
 
 /* vendors */
 
