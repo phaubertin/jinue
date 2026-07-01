@@ -39,6 +39,12 @@
 /** CR0 register: Write Protect */
 #define X86_CR0_WP                  (1<<16)
 
+/** CR0 register: Not Write-through */
+#define X86_CR0_NW                  (1<<29)
+
+/** CR0 register: Cache Disable */
+#define X86_CR0_CD                  (1<<30)
+
 /** CR0 register: Paging */
 #define X86_CR0_PG                  (1<<31)
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2026 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,31 +29,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_INSTRS_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_INSTRS_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_CACHES_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_CACHES_H
 
-#include <kernel/infrastructure/i686/types.h>
+void enable_caches(void);
 
-void cli(void);
+void disable_caches(void);
 
-void sti(void);
+void invalidate_caches(void);
 
-void hlt(void);
-
-void invlpg(void *vaddr);
-
-void lgdt(pseudo_descriptor_t *gdt_info);
-
-void lidt(pseudo_descriptor_t *idt_info);
-
-void ltr(seg_selector_t sel);
-
-uint64_t rdmsr(uint32_t addr);
-
-void wrmsr(uint32_t addr, uint64_t val);
-
-void sfence(void);
-
-void wbinvd(void);
+void invalidate_all_tlb(void);
 
 #endif

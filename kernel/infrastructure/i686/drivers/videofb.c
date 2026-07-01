@@ -221,6 +221,7 @@ static void refresh_framebuffer(void) {
         (console.height - top_rows) * FONT_HEIGHT * fb.pitch
     );
 
+    /* TODO need to check support. May also need to enable SSE stuff? */
     sfence();
 }
 

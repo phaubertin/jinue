@@ -45,6 +45,7 @@
 #include <kernel/infrastructure/i686/pmap/pmap.h>
 #include <kernel/infrastructure/i686/pmap/private.h>
 #include <kernel/infrastructure/i686/boot_alloc.h>
+#include <kernel/infrastructure/i686/caches.h>
 #include <kernel/infrastructure/i686/cpuinfo.h>
 #include <kernel/infrastructure/i686/percpu.h>
 #include <kernel/infrastructure/elf.h>
@@ -252,6 +253,68 @@ static paddr_t get_pte_paddr(const pte_t *pte) {
     }
 }
 
+/** Reload the CR3 control register with its existing value
+ * 
+ * The register value remains unchanged but reloading CR3 it has the side
+ * effect of invalidating all non-global TLB entries.
+ */
+static void reload_cr3(void) {
+    set_cr3(get_cr3());
+}
+
+/** Initialize Page Attribute Table (PAT) */
+static void initialize_pat(void) {
+    if(!cpu_has_feature(CPU_FEATURE_PAT)) {
+        return;
+    }
+
+    /* See procedure in Intel64 and IA-32 Architectures Software Developer’s
+     * Manual Volume 3 section 13.11.8 "MTRR Considerations in MP Systems".
+     *
+     * This is the procedure described for the MTRRs but section 13.12.4
+     * "Programming the PAT" refers to it. */
+
+    disable_caches();
+
+    invalidate_all_tlb();
+
+    /* Intel has two different erratas for PAT on specific CPU models where
+     * the CPU might be confused about whether it should look at the upper
+     * or lower four entries of the PAT.
+     * 
+     * See:
+     *  - Intel Pentium III Processor Specification Update (Document number
+     *    244453-058, August 2007) Section "E27. Upper Four PAT Entries
+     *    Not Usable With Mode B or Mode C Paging" page 53.
+     *  - Intel Pentium 4 Processor Specification Update (Document number
+     *    249199-057, December 2004) Section "N46. PAT Index MSB May Be
+     *    Calculated Incorrectly" page 44.
+     * 
+     * For this reason, let's only use the lower four entries and repeat
+     * them in the upper four. For the lower four entries, we use the reset
+     * values except we replace slot 1 from WT we don't need to WC we do
+     * need. */
+    uint64_t patval =
+        /* lower four */
+        ((uint64_t)PAT_WB << PAT0)  |
+        ((uint64_t)PAT_WC << PAT1)  |
+        ((uint64_t)PAT_UC_MINUS << PAT2) |
+        ((uint64_t)PAT_UC << PAT3) |
+        /* upper four */
+        ((uint64_t)PAT_WB << PAT4)  |
+        ((uint64_t)PAT_WC << PAT5)  |
+        ((uint64_t)PAT_UC_MINUS << PAT6) |
+        ((uint64_t)PAT_UC << PAT7);
+
+    wrmsr(MSR_IA32_PAT, patval);
+
+    invalidate_caches();
+
+    invalidate_all_tlb();
+
+    enable_caches();
+}
+
 /**
  * Initialize virtual memory management
  *
@@ -271,40 +334,14 @@ void pmap_init(const bootinfo_t *bootinfo) {
     entries_per_page_table  = pgtable_format_pae ? PAE_PAGE_TABLE_PTES :  NOPAE_PAGE_TABLE_PTES;
     page_frame_number_mask  = ((UINT64_C(1) << cpu_phys_addr_width()) - 1) & (~PAGE_MASK);
 
+    /* Must be done before enabling global pages to make sure no stale entries
+     * for global pages with wrong cacheability information remain in the TLBs.
+     */
+    initialize_pat();
+
     /* Enable global pages */
     if(cpu_has_feature(CPU_FEATURE_PGE)) {
         set_cr4(get_cr4() | X86_CR4_PGE);
-    }
-
-    if(cpu_has_feature(CPU_FEATURE_PAT)) {
-        /* Intel has two different erratas for PAT on specific CPU models where
-         * the CPU might be confused about whether it should look at the upper
-         * or lower four entries of the PAT.
-         * 
-         * See:
-         *  - Intel Pentium III Processor Specification Update (Document number
-         *    244453-058, August 2007) Section "E27. Upper Four PAT Entries
-         *    Not Usable With Mode B or Mode C Paging" page 53.
-         *  - Intel Pentium 4 Processor Specification Update (Document number
-         *    249199-057, December 2004) Section "N46. PAT Index MSB May Be
-         *    Calculated Incorrectly" page 44.
-         * 
-         * For this reason, let's only use the lower four entries and repeat
-         * them in the upper four. For the lower four entries, we use the reset
-         * values except we replace slot 1 from WT we don't need to WC we do
-         * need. */
-        uint64_t patval =
-            /* lower four */
-            ((uint64_t)PAT_WB << PAT0)  |
-            ((uint64_t)PAT_WC << PAT1)  |
-            ((uint64_t)PAT_UC_MINUS << PAT2) |
-            ((uint64_t)PAT_UC << PAT3) |
-            /* upper four */
-            ((uint64_t)PAT_WB << PAT4)  |
-            ((uint64_t)PAT_WC << PAT5)  |
-            ((uint64_t)PAT_UC_MINUS << PAT6) |
-            ((uint64_t)PAT_UC << PAT7);
-        wrmsr(MSR_IA32_PAT, patval);
     }
 }
 
@@ -451,24 +488,24 @@ static pte_t *lookup_kernel_page_table_entry(const void *addr) {
  * currently no page table entry for the specified address and address space.
  *
  * If a new page table is allocated (when create_as_needed is true), CR3 may
- * need to be reloaded. If it's the case, the boolean pointed to by reload_cr3
- * is set to true. Initially setting this boolean to false is the caller's
- * responsibility.
+ * need to be reloaded. If it's the case, the boolean pointed to by
+ * must_reload_cr3 is set to true. Initially setting this boolean to false is
+ * the caller's responsibility.
  *
- * reload_cr3 must not be NULL if create_as_needed is true but is ignored and
- * can be set to NULL if create_as_needed is false.
+ * must_reload_cr3 must not be NULL if create_as_needed is true but is ignored
+ * and can be set to NULL if create_as_needed is false.
  *
  * @param addr_space address space in which the address is looked up.
  * @param addr userspace address to look up
  * @param create_as_needed whether a page table is allocated if it does not exist
- * @param reload_cr3 (out) set to true if CR3 needs to be reloaded
+ * @param must_reload_cr3 (out) set to true if CR3 needs to be reloaded
  * @return pointer to page table on success, NULL otherwise
  */
 static pte_t *lookup_userspace_page_table(
         addr_space_t    *addr_space,
         const void      *addr,
         bool             create_as_needed,
-        bool            *reload_cr3) {
+        bool            *must_reload_cr3) {
 
     pte_t *page_directory;
 
@@ -486,7 +523,7 @@ static pte_t *lookup_userspace_page_table(
             addr_space,
             addr,
             create_as_needed,
-            reload_cr3
+            must_reload_cr3
         );
     }
     else {
@@ -634,8 +671,8 @@ bool machine_map_userspace(
 
     int pte_index   = page_table_offset_of(addr);
 
-    bool reload_cr3 = false;
-    pte_t *pte      = lookup_userspace_page_table(addr_space, addr, true, &reload_cr3);
+    bool must_reload_cr3 = false;
+    pte_t *pte      = lookup_userspace_page_table(addr_space, addr, true, &must_reload_cr3);
 
     if(pte == NULL) {
         return false;
@@ -647,7 +684,7 @@ bool machine_map_userspace(
                 addr_space,
                 addr + offset,
                 true,
-                &reload_cr3
+                &must_reload_cr3
             );
 
             if(pte == NULL) {
@@ -663,15 +700,15 @@ bool machine_map_userspace(
             map_arch_page_flags(prot, flags) | X86_PTE_USER
         );
 
-        if(needs_invalidation && !reload_cr3) {
+        if(needs_invalidation && !must_reload_cr3) {
             invlpg(addr + offset);
         }
 
         ++pte_index;
     }
 
-    if(needs_invalidation && reload_cr3) {
-        set_cr3(get_cr3());
+    if(needs_invalidation && must_reload_cr3) {
+        reload_cr3();
     }
 
     return true;

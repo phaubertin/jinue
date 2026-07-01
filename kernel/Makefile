@@ -119,6 +119,7 @@ sources.kernel.c = \
 	infrastructure/i686/pmap/pae.c \
 	infrastructure/i686/boot_alloc.c \
 	infrastructure/i686/cmdline.c \
+	infrastructure/i686/caches.c \
 	infrastructure/i686/config.c \
 	infrastructure/i686/cpuidsig.c \
 	infrastructure/i686/cpuinfo.c \

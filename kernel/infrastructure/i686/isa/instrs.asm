@@ -142,3 +142,13 @@ sfence:
     sfence
     ret
 .end:
+
+; ------------------------------------------------------------------------------
+; FUNCTION: wbinvd
+; C PROTOTYPE: void wbinvd(void)
+; ------------------------------------------------------------------------------
+    global wbinvd:function (wbinvd.end - wbinvd)
+wbinvd:
+    wbinvd
+    ret
+.end:

@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2019-2026 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,31 +29,37 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_INSTRS_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_INSTRS_H
+#include <kernel/infrastructure/i686/asm/x86.h>
+#include <kernel/infrastructure/i686/isa/instrs.h>
+#include <kernel/infrastructure/i686/isa/regs.h>
+#include <kernel/infrastructure/i686/caches.h>
 
-#include <kernel/infrastructure/i686/types.h>
+/** Enable caches */
+void enable_caches(void) {
+    set_cr0(get_cr0() & ~(X86_CR0_CD | X86_CR0_NW));
+}
 
-void cli(void);
+/** Disable caches */
+void disable_caches(void) {
+    set_cr0((get_cr0() | X86_CR0_CD) & ~X86_CR0_NW);
 
-void sti(void);
+    invalidate_caches();
+}
 
-void hlt(void);
+/** Invalidate caches */
+void invalidate_caches(void) {
+    wbinvd();
+}
 
-void invlpg(void *vaddr);
+/** Invalidate all TLB entries including global ones */
+void invalidate_all_tlb(void) {
+    int orig_value = get_cr4();
 
-void lgdt(pseudo_descriptor_t *gdt_info);
+    /* Disable global pages if enabled. */
+    set_cr4(orig_value & ~X86_CR4_PGE);
 
-void lidt(pseudo_descriptor_t *idt_info);
+    /* Reload CR3 to invalidate the TLBs. */
+    set_cr3(get_cr3());
 
-void ltr(seg_selector_t sel);
-
-uint64_t rdmsr(uint32_t addr);
-
-void wrmsr(uint32_t addr, uint64_t val);
-
-void sfence(void);
-
-void wbinvd(void);
-
-#endif
+    set_cr4(orig_value);
+}
