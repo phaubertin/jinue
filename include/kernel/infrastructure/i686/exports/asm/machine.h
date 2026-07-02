@@ -34,8 +34,12 @@
 
 #include <kernel/utils/asm/utils.h>
 
-#define MAPPING_AREA_ADDR   0xfc000000
+#define MAPPING_AREA_ADDR       0xec000000
 
-#define MAPPING_AREA_SIZE   (64 * MB)
+#define MAPPING_AREA_SIZE       (64 * MB)
+
+#define HUGE_PAGES_AREA_ADDR    0xf0000000
+
+#define HUGE_PAGES_AREA_SIZE    (256 * MB)
 
 #endif

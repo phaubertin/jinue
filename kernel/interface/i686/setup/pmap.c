@@ -62,7 +62,7 @@ void allocate_page_tables(bootinfo_t *bootinfo) {
     /* kernel page tables */
     bootinfo->page_tables = alloc_pages(
         bootinfo,
-        NUM_PAGES(ADDR_4GB - JINUE_KLIMIT) / (1 << per_table_bits) * PAGE_SIZE
+        NUM_PAGES(HUGE_PAGES_AREA_ADDR - JINUE_KLIMIT) / (1 << per_table_bits) * PAGE_SIZE
     );
     
     /* page directory */
@@ -151,14 +151,14 @@ void initialize_page_tables(bootinfo_t *bootinfo, const data_segment_t *data_seg
     bool use_pae    = bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_PAE);
     uint64_t nx     = bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_NX) ? X86_PTE_NX : 0;
 
-    /* map the kernel image */
     clear_ptes(
         use_pae,
         bootinfo->page_tables,
         0,
-        NUM_PAGES(ADDR_4GB - JINUE_KLIMIT)
+        NUM_PAGES(HUGE_PAGES_AREA_ADDR - JINUE_KLIMIT)
     );
 
+    /* map the kernel image */
     map_linear(
         use_pae,
         bootinfo->page_tables,
@@ -224,7 +224,7 @@ void initialize_page_tables(bootinfo_t *bootinfo, const data_segment_t *data_seg
         use_pae,
         bootinfo->page_directory,
         (use_pae ? 0 : JINUE_KLIMIT) >> (PAGE_BITS + per_table_bits),
-        NUM_PAGES(ADDR_4GB - JINUE_KLIMIT) / (1 << per_table_bits),
+        NUM_PAGES(HUGE_PAGES_AREA_ADDR - JINUE_KLIMIT) / (1 << per_table_bits),
         (uint32_t)bootinfo->page_tables | X86_PTE_READ_WRITE
     );
 
