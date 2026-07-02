@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Philippe Aubertin.
+ * Copyright (C) 2025-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -38,8 +38,8 @@
 
 #define MAPPING_AREA_SIZE       (64 * MB)
 
-#define HUGE_PAGES_AREA_ADDR    0xf0000000
+#define LARGE_PAGES_AREA_ADDR   0xf0000000
 
-#define HUGE_PAGES_AREA_SIZE    (256 * MB)
+#define LARGE_PAGES_AREA_SIZE   (256 * MB)
 
 #endif
