@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2026 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,53 +29,41 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/jinue.h>
-#include <jinue/loader.h>
 #include <jinue/utils.h>
-#include <errno.h>
+#include <inttypes.h>
+#include <stdbool.h>
 #include <stdint.h>
-#include <stdlib.h>
 #include <string.h>
-#include "tests/abcd.h"
-#include "tests/ipc.h"
-#include "tests/scroll.h"
-#include "debug.h"
-#include "utils.h"
+#include "../utils.h"
+#include "scroll.h"
 
-int main(int argc, char *argv[]) {
-    /* Say hello. */
-    jinue_info("Jinue test app (%s) started.", argv[0]);
+static char sequence[16][20];
 
-    dump_cmdline_arguments(argc, argv);
-    dump_environ();
-    dump_auxvec();
-    dump_syscall_implementation();
-    dump_address_map();
-    dump_loader_memory_info();
-    dump_loader_ramdisk();
-
-    jinue_info("Blocking until loader exits...");
-
-    int status = jinue_exit_loader();
-
-    if(status < 0) {
-        return EXIT_FAILURE;
+void run_scroll_test(void) {
+    if(! bool_getenv("RUN_TEST_SCROLL")) {
+        return;
     }
 
-    jinue_info("Loader has exited.");
-
-    run_abcd_test();
-    run_ipc_test();
-    run_scroll_test();
-
-    if(bool_getenv("DEBUG_DO_REBOOT")) {
-        jinue_info("Rebooting.");
-        jinue_reboot();
+    for(int idx = 0; idx < 16; ++idx) {
+        memset(sequence[idx], ' ', 16);
+        sequence[idx][idx] = 'O';
+        sequence[idx][16] = '\0';
     }
 
-    while (1) {
-        jinue_yield_thread();
+    uint64_t lineno = 0;
+
+    while(true) {
+        int index = lineno % 32;
+
+        if(index >= 16) {
+            index = 32 - index - 1;
+        }
+
+        jinue_info(
+            "qwertyuiopasdfghjklzxcvbnm0123456789[%s]%020" PRIu64,
+            sequence[index],
+            lineno
+        );
+        ++lineno;
     }
-    
-    return EXIT_SUCCESS;
 }
