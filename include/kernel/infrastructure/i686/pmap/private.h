@@ -55,11 +55,7 @@
 /** page directory entry offset of virtual (linear address) */
 #define PAGE_DIRECTORY_OFFSET_OF(x) ( ((uintptr_t)(x) / (PAGE_SIZE * PAGE_TABLE_ENTRIES)) & PAGE_TABLE_MASK )
 
-extern pte_t *kernel_page_tables;
-
 extern size_t entries_per_page_table;
-
-extern bool pgtable_format_pae;
 
 extern uint64_t page_frame_number_mask;
 

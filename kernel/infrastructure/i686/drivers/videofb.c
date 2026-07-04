@@ -345,7 +345,7 @@ void init_video_framebuffer(
         bootinfo->video_fb_addr,
         bootinfo->video_fb_size,
         JINUE_PROT_READ | JINUE_PROT_WRITE,
-        JINUE_MAP_WRITE_COMBINE
+        JINUE_MAP_WRITE_COMBINE | JINUE_MAP_LARGE_PAGES
     ); 
 
     initialize_console(
