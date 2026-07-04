@@ -59,11 +59,9 @@ alloc_region_t large_pages_region = {
 
 static struct {
     alloc_region_t  *region;
-    addr_t           addr;
     const void      *latest_addr;
     int              latest_prot;
     int              latest_flags;
-    size_t           size_remaining;
 } alloc_state = {
     .region         = NULL,
     .latest_addr    = NULL,
@@ -142,7 +140,6 @@ void *map_in_kernel(paddr_t paddr, size_t size, int prot, int flags) {
     }
 
     size_t offset   = paddr & (region->page_size - 1);
-
     addr_t start    = region->addr;
     addr_t end      = ALIGN_END_PTR(start + offset + size, region->page_size);
     

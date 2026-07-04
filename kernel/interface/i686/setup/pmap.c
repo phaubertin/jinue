@@ -59,14 +59,14 @@ void allocate_page_tables(bootinfo_t *bootinfo) {
     bool use_pse = bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_PSE);
 
     /* If large pages are supported, we reserve the region above
-     * LARGE_PAGES_AREA_ADDR for 2MB (PAE) or 4MB (32-bit legacy) large page
+     * LARGE_PAGES_AREA_ADDR for 2MB (PAE) or 4MB (32-bit legacy) large pages
      * mappings set directly in page directory entries. In that case, we
      * don't allocate page tables for that region. If large pages are not
      * supported, this region becomes a normal mapping region (i.e. we fall
      * back to normal 4kB pages) so we allocate page tables for the whole
      * kernel address space.
      * 
-     * The PSE feature flag indicates support 4MB for large pages in legacy
+     * The PSE feature flag indicates support for 4MB large pages in legacy
      * 32-bit paging mode. If PAE is supported, then 2MB large pages are
      * supported (in PAE paging mode, which we always enable if supported). */
     size_t num_4kb_pages = NUM_PAGES(
