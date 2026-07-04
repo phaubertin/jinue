@@ -786,19 +786,31 @@ bool machine_map_userspace(
  * @param addr address of page to unmap
  */
 void machine_unmap_kernel(addr_t addr, size_t size) {
-    /** ASSERTION: addr is aligned on a page boundary */
-    assert( page_offset_of(addr) == 0 );
+    bool has_large_pages = cpu_has_feature(CPU_FEATURE_PAE) || cpu_has_feature(CPU_FEATURE_PSE);
 
-    /* TODO implement support for large pages */
+    if(has_large_pages && (uintptr_t)addr >= LARGE_PAGES_AREA_ADDR) {
+        /** ASSERTION: we assume vaddr is aligned on a large page boundary */
+        assert(((uintptr_t)addr & (large_page_size - 1)) == 0);
 
-    pte_t *pte = lookup_kernel_page_table_entry(addr);
+        pte_t *pte = lookup_kernel_page_directory_entry(addr);
+        
+        for(size_t offset = 0, index = 0; offset < size; offset += large_page_size, ++index) {
+            clear_pte( get_pte_with_offset(pte, index) );
 
-    assert(pte != NULL);
+            invlpg(addr + offset);
+        }
+    }
+    else {
+        /** ASSERTION: addr is aligned on a page boundary */
+        assert( page_offset_of(addr) == 0 );
 
-    for(size_t offset = 0; offset < size; offset += PAGE_SIZE) {
-        clear_pte( get_pte_with_offset(pte, PAGE_NUMBER(offset)) );
+        pte_t *pte = lookup_kernel_page_table_entry(addr);
 
-        invlpg(addr + offset);
+        for(size_t offset = 0; offset < size; offset += PAGE_SIZE) {
+            clear_pte( get_pte_with_offset(pte, PAGE_NUMBER(offset)) );
+
+            invlpg(addr + offset);
+        }
     }
 }
 
