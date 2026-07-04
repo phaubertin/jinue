@@ -675,10 +675,9 @@ void machine_map_kernel(addr_t addr, size_t size, paddr_t paddr, int prot, int f
 
         pte_t *pte = lookup_kernel_page_directory_entry(addr);
         
-        for(size_t offset = 0; offset < size; offset += large_page_size) {
+        for(size_t offset = 0, index = 0; offset < size; offset += large_page_size, ++index) {
             set_pte(
-                /* TODO let's not do this division each iteration */
-                get_pte_with_offset(pte, PAGE_NUMBER(offset) / entries_per_page_table),
+                get_pte_with_offset(pte, index),
                 paddr + offset,
                 pte_flags
             );
