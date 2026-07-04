@@ -655,7 +655,7 @@ static uint64_t map_arch_page_flags(int prot, int flags) {
  * machine_large_page_size() function to determine the size (and alignment
  * requirements) of pages in this region, whether large pages are supported or
  * not. This function ignores the JINUE_MAP_LARGE_PAGES flag and takes its
- * its decision to use large pages based solely on the address (addr argument).
+ * decision to use large pages based solely on the address (addr argument).
  *
  * @param vaddr virtual address of mapping
  * @param paddr address of page frame
@@ -788,6 +788,8 @@ bool machine_map_userspace(
 void machine_unmap_kernel(addr_t addr, size_t size) {
     /** ASSERTION: addr is aligned on a page boundary */
     assert( page_offset_of(addr) == 0 );
+
+    /* TODO implement support for large pages */
 
     pte_t *pte = lookup_kernel_page_table_entry(addr);
 
