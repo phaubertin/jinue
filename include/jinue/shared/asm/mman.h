@@ -53,4 +53,7 @@
 /** map as write-combining memory */
 #define JINUE_MAP_WRITE_COMBINE (1<<1)
 
+/** map with large pages */
+#define JINUE_MAP_LARGE_PAGES   (1<<2)
+
 #endif

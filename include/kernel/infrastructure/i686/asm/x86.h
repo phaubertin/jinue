@@ -82,7 +82,7 @@
 /** page was written to */
 #define X86_PTE_DIRTY               (1<< 6)
 
-/** page directory entry describes a 4M page */
+/** page directory entry describes a 2MB or 4MB page */
 #define X86_PDE_PAGE_SIZE           (1<< 7)
 
 /** page is global (mapped in every address space) */

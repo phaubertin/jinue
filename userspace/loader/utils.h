@@ -32,6 +32,7 @@
 #ifndef LOADER_UTILS_H_
 #define LOADER_UTILS_H_
 
+#include <jinue/jinue.h>
 #include <stdbool.h>
 
 bool bool_getenv(const char *name);

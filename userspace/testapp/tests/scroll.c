@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,14 +29,41 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INTERFACE_I686_SETUP_SETUP32_H
-#define JINUE_KERNEL_INTERFACE_I686_SETUP_SETUP32_H
-
-#include <kernel/interface/i686/types.h>
+#include <jinue/utils.h>
+#include <inttypes.h>
 #include <stdbool.h>
+#include <stdint.h>
+#include <string.h>
+#include "../utils.h"
+#include "scroll.h"
 
-void enable_paging(uint32_t cr3, int bootinfo_features);
+static char sequence[16][20];
 
-void adjust_stack(void);
+void run_scroll_test(void) {
+    if(! bool_getenv("RUN_TEST_SCROLL")) {
+        return;
+    }
 
-#endif
+    for(int idx = 0; idx < 16; ++idx) {
+        memset(sequence[idx], ' ', 16);
+        sequence[idx][idx] = 'O';
+        sequence[idx][16] = '\0';
+    }
+
+    uint64_t lineno = 0;
+
+    while(true) {
+        int index = lineno % 32;
+
+        if(index >= 16) {
+            index = 32 - index - 1;
+        }
+
+        jinue_info(
+            "qwertyuiopasdfghjklzxcvbnm0123456789[%s]%020" PRIu64,
+            sequence[index],
+            lineno
+        );
+        ++lineno;
+    }
+}

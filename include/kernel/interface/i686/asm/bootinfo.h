@@ -34,9 +34,11 @@
 
 #define BOOTINFO_FEATURE_CPUID  (1<<0)
 
-#define BOOTINFO_FEATURE_PAE    (1<<1)
+#define BOOTINFO_FEATURE_NX     (1<<1)
 
-#define BOOTINFO_FEATURE_NX     (1<<2)
+#define BOOTINFO_FEATURE_PAE    (1<<2)
+
+#define BOOTINFO_FEATURE_PSE    (1<<3)
 
 /* The following definitions must match the offsets of the members of the
  * bootinfo_t struct defined in interface/i686/types.h. They are used by

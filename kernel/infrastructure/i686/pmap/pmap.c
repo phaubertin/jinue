@@ -73,7 +73,16 @@
  * During kernel initialization, kernel page tables are pre-allocated
  * sequentially so, in essence, this pointer points to one big page table that
  * covers the whole part of the address space that belongs to the kernel. */
-pte_t *kernel_page_tables;
+static pte_t *kernel_page_tables;
+
+/** Start of kernel page directory entries
+ * 
+ * This page directory is the one allocated by the setup code and the one for
+ * the initial address space. It might get copied when creating other address
+ * spaces. For this reason, and because we expect kernel mappings to be global,
+ * any modifications to it (including e.g. large page mappings) must be done
+ * before new address spaces are created (i.e. before the first process). */
+static pte_t *kernel_page_directory;
 
 /** Number of entries per page tables
  *
@@ -81,8 +90,15 @@ pte_t *kernel_page_tables;
  *  512 (4kB / 8 bytes per entry) if PAE is enabled. */
 size_t entries_per_page_table;
 
+/** Large page size
+ * 
+ * 2MB if PAE is enabled
+ * 4MB if PAE is disabled but PSE is supported
+ * 4kB (fallback to normal page size) otherwise */
+static size_t large_page_size;
+
 /** true if PAE is enabled, false otherwise */
-bool pgtable_format_pae;
+static bool pgtable_format_pae;
 
 /** mask of valid page frame number bits */
 uint64_t page_frame_number_mask;
@@ -322,13 +338,16 @@ static void initialize_pat(void) {
  */
 void pmap_init(const bootinfo_t *bootinfo) {
     kernel_page_tables              = bootinfo->page_tables;
+    kernel_page_directory           = bootinfo->page_directory;
     initial_addr_space.cr3          = bootinfo->cr3;
     pgtable_format_pae              = cpu_has_feature(CPU_FEATURE_PAE);
 
     if(pgtable_format_pae) {
         initial_addr_space.top_level.pdpt = (pdpt_t *)PHYS_TO_VIRT_AT_16MB(bootinfo->cr3);
+        large_page_size = 2 * MB;
     } else {
         initial_addr_space.top_level.pd = bootinfo->page_directory;
+        large_page_size = cpu_has_feature(CPU_FEATURE_PSE) ? 4 * MB : 4 * KB;
     }
 
     entries_per_page_table  = pgtable_format_pae ? PAE_PAGE_TABLE_PTES :  NOPAE_PAGE_TABLE_PTES;
@@ -460,9 +479,6 @@ void pmap_switch_addr_space(addr_space_t *addr_space) {
  * @return pointer to page table entry
  */
 static pte_t *lookup_kernel_page_table_entry(const void *addr) {
-    /** ASSERTION: addr is aligned on a page boundary */
-    assert( page_offset_of(addr) == 0 );
-
     /** ASSERTION: addr is a kernel pointer */
     assert( is_kernel_pointer(addr) );
 
@@ -476,7 +492,24 @@ static pte_t *lookup_kernel_page_table_entry(const void *addr) {
      *    specify an address space. */
     return get_pte_with_offset(
         kernel_page_tables,
-        page_number_of((uintptr_t)addr - JINUE_KLIMIT));
+        page_number_of((uintptr_t)addr - JINUE_KLIMIT)
+    );
+}
+
+/**
+ * Lookup page directory entry for specified kernel address
+ *
+ * @param addr kernel address to look up
+ * @return pointer to page directory entry
+ */
+static pte_t *lookup_kernel_page_directory_entry(const void *addr) {
+    /** ASSERTION: addr is a kernel pointer */
+    assert( is_kernel_pointer(addr) );
+
+    return get_pte_with_offset(
+        kernel_page_directory,
+        page_number_of((uintptr_t)addr - JINUE_KLIMIT) / entries_per_page_table
+    );
 }
 
 /**
@@ -616,6 +649,13 @@ static uint64_t map_arch_page_flags(int prot, int flags) {
  * Kernel page tables are pre-allocated during kernel initialization so this is
  * guaranteed to succeed. There is also no need to specify an address space
  * since kernel mappings are global.
+ * 
+ * If the address is above LARGE_PAGES_AREA_ADDR (i.e. in the large pages
+ * mapping region), the mapping will use large pages if supported. Use the
+ * machine_large_page_size() function to determine the size (and alignment
+ * requirements) of pages in this region, whether large pages are supported or
+ * not. This function ignores the JINUE_MAP_LARGE_PAGES flag and takes its
+ * decision to use large pages based solely on the address (addr argument).
  *
  * @param vaddr virtual address of mapping
  * @param paddr address of page frame
@@ -623,21 +663,43 @@ static uint64_t map_arch_page_flags(int prot, int flags) {
  * @param flags mapping flags
  */
 void machine_map_kernel(addr_t addr, size_t size, paddr_t paddr, int prot, int flags) {
-    /** ASSERTION: we assume vaddr is aligned on a page boundary */
-    assert( page_offset_of(addr) == 0 );
+    uint64_t pte_flags = map_arch_page_flags(prot, flags) | X86_PTE_GLOBAL;
 
-    pte_t *pte = lookup_kernel_page_table_entry(addr);
+    bool has_large_pages = cpu_has_feature(CPU_FEATURE_PAE) || cpu_has_feature(CPU_FEATURE_PSE);
 
-    assert(pte != NULL);
+    if(has_large_pages && (uintptr_t)addr >= LARGE_PAGES_AREA_ADDR) {
+        /** ASSERTION: we assume vaddr is aligned on a large page boundary */
+        assert(((uintptr_t)addr & (large_page_size - 1)) == 0);
+        
+        pte_flags |= X86_PDE_PAGE_SIZE;
 
-    for(size_t offset = 0; offset < size; offset += PAGE_SIZE) {
-        set_pte(
-            get_pte_with_offset(pte, PAGE_NUMBER(offset)),
-            paddr + offset,
-            map_arch_page_flags(prot, flags) | X86_PTE_GLOBAL
-        );
+        pte_t *pte = lookup_kernel_page_directory_entry(addr);
+        
+        for(size_t offset = 0, index = 0; offset < size; offset += large_page_size, ++index) {
+            set_pte(
+                get_pte_with_offset(pte, index),
+                paddr + offset,
+                pte_flags
+            );
 
-        invlpg(addr + offset);
+            invlpg(addr + offset);
+        }
+    }
+    else {
+        /** ASSERTION: we assume vaddr is aligned on a page boundary */
+        assert( page_offset_of(addr) == 0 );
+
+        pte_t *pte = lookup_kernel_page_table_entry(addr);
+        
+        for(size_t offset = 0; offset < size; offset += PAGE_SIZE) {
+            set_pte(
+                get_pte_with_offset(pte, PAGE_NUMBER(offset)),
+                paddr + offset,
+                pte_flags
+            );
+
+            invlpg(addr + offset);
+        }
     }
 }
 
@@ -724,17 +786,31 @@ bool machine_map_userspace(
  * @param addr address of page to unmap
  */
 void machine_unmap_kernel(addr_t addr, size_t size) {
-    /** ASSERTION: addr is aligned on a page boundary */
-    assert( page_offset_of(addr) == 0 );
+    bool has_large_pages = cpu_has_feature(CPU_FEATURE_PAE) || cpu_has_feature(CPU_FEATURE_PSE);
 
-    pte_t *pte = lookup_kernel_page_table_entry(addr);
+    if(has_large_pages && (uintptr_t)addr >= LARGE_PAGES_AREA_ADDR) {
+        /** ASSERTION: we assume vaddr is aligned on a large page boundary */
+        assert(((uintptr_t)addr & (large_page_size - 1)) == 0);
 
-    assert(pte != NULL);
+        pte_t *pte = lookup_kernel_page_directory_entry(addr);
+        
+        for(size_t offset = 0, index = 0; offset < size; offset += large_page_size, ++index) {
+            clear_pte( get_pte_with_offset(pte, index) );
 
-    for(size_t offset = 0; offset < size; offset += PAGE_SIZE) {
-        clear_pte( get_pte_with_offset(pte, PAGE_NUMBER(offset)) );
+            invlpg(addr + offset);
+        }
+    }
+    else {
+        /** ASSERTION: addr is aligned on a page boundary */
+        assert( page_offset_of(addr) == 0 );
 
-        invlpg(addr + offset);
+        pte_t *pte = lookup_kernel_page_table_entry(addr);
+
+        for(size_t offset = 0; offset < size; offset += PAGE_SIZE) {
+            clear_pte( get_pte_with_offset(pte, PAGE_NUMBER(offset)) );
+
+            invlpg(addr + offset);
+        }
     }
 }
 
@@ -745,9 +821,20 @@ void machine_unmap_kernel(addr_t addr, size_t size) {
  * @return physical address of page frame
  */
 paddr_t machine_lookup_kernel_paddr(const void *addr) {
+    /** ASSERTION: addr is aligned on a page boundary */
+    assert( page_offset_of(addr) == 0 );
+
     pte_t *pte = lookup_kernel_page_table_entry(addr);
 
     assert(pte != NULL && pte_is_present(pte));
 
     return get_pte_paddr(pte);
+}
+
+/** Get large page size in bytes
+ * 
+ * @return large page size in bytes
+ */
+size_t machine_large_page_size(void) {
+    return large_page_size;
 }

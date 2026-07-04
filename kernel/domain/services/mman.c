@@ -38,18 +38,35 @@
 #include <kernel/utils/utils.h>
 #include <stdbool.h>
 
-static struct {
+typedef struct {
     addr_t       addr;
-    const void  *latest_addr;
-    int          latest_prot;
-    int          latest_flags;
     size_t       size_remaining;
-} alloc_state = {
+    size_t       page_size;
+} alloc_region_t;
+
+alloc_region_t normal_region = {
     .addr           = (addr_t)MAPPING_AREA_ADDR,
+    .size_remaining = MAPPING_AREA_SIZE,
+    .page_size      = PAGE_SIZE,
+};
+
+alloc_region_t large_pages_region = {
+    .addr           = (addr_t)LARGE_PAGES_AREA_ADDR,
+    .size_remaining = LARGE_PAGES_AREA_SIZE,
+    /* set by map_in_kernel() */
+    .page_size      = 0,
+};
+
+static struct {
+    alloc_region_t  *region;
+    const void      *latest_addr;
+    int              latest_prot;
+    int              latest_flags;
+} alloc_state = {
+    .region         = NULL,
     .latest_addr    = NULL,
     .latest_prot    = JINUE_PROT_NONE,
     .latest_flags   = JINUE_MAP_NONE,
-    .size_remaining = MAPPING_AREA_SIZE,
 };
 
 /**
@@ -61,17 +78,19 @@ static struct {
  * @param flags mapping flags
  */
 static void expand_mapping(paddr_t paddr, addr_t new_end, int prot, int flags) {
-    addr_t old_end  = alloc_state.addr;
+    alloc_region_t *region = alloc_state.region;
+
+    addr_t old_end  = region->addr;
     size_t size     = new_end - old_end;
 
-    if(size > alloc_state.size_remaining) {
+    if(size > region->size_remaining) {
         panic("No more space to map memory in kernel");
     }
 
     machine_map_kernel(old_end, size, paddr, prot, flags);
 
-    alloc_state.addr            = new_end;
-    alloc_state.size_remaining  -= size;
+    region->addr            = new_end;
+    region->size_remaining  -= size;
 }
 
 /**
@@ -80,13 +99,15 @@ static void expand_mapping(paddr_t paddr, addr_t new_end, int prot, int flags) {
  * @param new_end new end of the shrunk mapping, must be page aligned
  */
 static void shrink_mapping(addr_t new_end) {
-    addr_t old_end  = alloc_state.addr;
+    alloc_region_t *region = alloc_state.region;
+
+    addr_t old_end  = region->addr;
     size_t size     = old_end - new_end;
 
     machine_unmap_kernel(new_end, size);
 
-    alloc_state.addr            = new_end;
-    alloc_state.size_remaining  += size;
+    region->addr            = new_end;
+    region->size_remaining  += size;
 }
 
 /**
@@ -108,14 +129,24 @@ static void shrink_mapping(addr_t new_end) {
  * @param flags mapping flags
  */
 void *map_in_kernel(paddr_t paddr, size_t size, int prot, int flags) {
-    size_t offset   = paddr % PAGE_SIZE;
+    alloc_region_t *region;
 
-    addr_t start    = alloc_state.addr;
-    addr_t end      = ALIGN_END_PTR(start + offset + size, PAGE_SIZE);
+    if(flags & JINUE_MAP_LARGE_PAGES) {
+        large_pages_region.page_size = machine_large_page_size();
+        region = &large_pages_region;
+    }
+    else {
+        region = &normal_region;
+    }
+
+    size_t offset   = paddr & (region->page_size - 1);
+    addr_t start    = region->addr;
+    addr_t end      = ALIGN_END_PTR(start + offset + size, region->page_size);
     
-    alloc_state.latest_addr = start + offset;
-    alloc_state.latest_prot = prot;
-    alloc_state.latest_flags = flags;
+    alloc_state.region          = region;
+    alloc_state.latest_addr     = start + offset;
+    alloc_state.latest_prot     = prot;
+    alloc_state.latest_flags    = flags;
 
     expand_mapping(paddr - offset, end, prot, flags);
 
@@ -128,12 +159,14 @@ void *map_in_kernel(paddr_t paddr, size_t size, int prot, int flags) {
  * @param size size of memory to map, cannot be zero
  */
 void resize_map_in_kernel(size_t size) {
+    alloc_region_t *region = alloc_state.region;
+
     const void *addr    = alloc_state.latest_addr;
 
-    addr_t old_end      = alloc_state.addr;
-    addr_t new_end      = ALIGN_END_PTR((addr_t)addr + size, PAGE_SIZE);
+    addr_t old_end      = alloc_state.region->addr;
+    addr_t new_end      = ALIGN_END_PTR((addr_t)addr + size, region->page_size);
 
-    alloc_state.addr    = new_end;
+    alloc_state.region->addr    = new_end;
 
     if(new_end <= old_end) {
         shrink_mapping(new_end);
@@ -141,7 +174,7 @@ void resize_map_in_kernel(size_t size) {
         int prot        = alloc_state.latest_prot;
         int flags       = alloc_state.latest_flags;
 
-        addr_t start    = ALIGN_START_PTR(addr, PAGE_SIZE);
+        addr_t start    = ALIGN_START_PTR(addr, region->page_size);
         paddr_t paddr   = machine_lookup_kernel_paddr(start) + (old_end - start);
 
         expand_mapping(paddr, new_end, prot, flags);
@@ -154,9 +187,11 @@ void resize_map_in_kernel(size_t size) {
  * @param addr address returned by map_in_kernel() for the mapping being undone
  */
 void undo_map_in_kernel(void) {
+    alloc_region_t *region = alloc_state.region;
+
     const void *addr = alloc_state.latest_addr;
 
-    void *start = ALIGN_START_PTR(addr, PAGE_SIZE);
+    void *start = ALIGN_START_PTR(addr, region->page_size);
 
     shrink_mapping(start);
     

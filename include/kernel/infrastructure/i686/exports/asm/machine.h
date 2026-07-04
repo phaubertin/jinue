@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Philippe Aubertin.
+ * Copyright (C) 2025-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -34,8 +34,16 @@
 
 #include <kernel/utils/asm/utils.h>
 
-#define MAPPING_AREA_ADDR   0xfc000000
+/* This region is currently only used to map the video framebuffer and its
+ * back buffer. We reserve 128MB each to support 8K resolutions, plus a bit
+ * more to have some margin in case they aren't aligned on a large page
+ * boundary. */
+#define LARGE_PAGES_AREA_SIZE   (272 * MB)
 
-#define MAPPING_AREA_SIZE   (64 * MB)
+#define LARGE_PAGES_AREA_ADDR   0xef000000
+
+#define MAPPING_AREA_SIZE       (64 * MB)
+
+#define MAPPING_AREA_ADDR       (LARGE_PAGES_AREA_ADDR - MAPPING_AREA_SIZE)
 
 #endif

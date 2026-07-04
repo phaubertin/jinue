@@ -124,7 +124,6 @@ static void initialize_config(const bootinfo_t *bootinfo) {
     fb.height       = bootinfo->video_height;
     fb.pitch        = bootinfo->video_pitch;
     fb.pixel_format = bootinfo->video_pixel_format;
-    fb.size         = bootinfo->video_fb_size;
     fb.origin       = 0;
 
     const unsigned int viewport_width = console.width * FONT_WIDTH;
@@ -304,7 +303,9 @@ void init_video_framebuffer(
         return;
     }
 
-    if(bootinfo->video_fb_size < bootinfo->video_height * bootinfo->video_pitch) {
+    size_t mapping_size = bootinfo->video_height * bootinfo->video_pitch;
+
+    if(bootinfo->video_fb_size < mapping_size) {
         warn(WARNING "disabling video framebuffer because information passed by bootloader is inconsistent (size).");
         return;
     }
@@ -323,7 +324,7 @@ void init_video_framebuffer(
         return;
     }
 
-    if(bootinfo->video_fb_size > 10 * MB) {
+    if(mapping_size > 10 * MB) {
         /* Temporary limitation caused by memory management and performance
          * issues. Will be improved. */
         warn(WARNING "disabling video framebuffer because it is larger than the supported 10MB.");
@@ -338,15 +339,17 @@ void init_video_framebuffer(
 
     fb.backbuffer = boot_page_alloc_n(
         boot_alloc,
-        (bootinfo->video_fb_size + PAGE_SIZE - 1) / PAGE_SIZE
+        (mapping_size + PAGE_SIZE - 1) / PAGE_SIZE
     );
 
     fb.framebuffer = map_in_kernel(
         bootinfo->video_fb_addr,
-        bootinfo->video_fb_size,
+        mapping_size,
         JINUE_PROT_READ | JINUE_PROT_WRITE,
-        JINUE_MAP_WRITE_COMBINE
-    ); 
+        JINUE_MAP_WRITE_COMBINE | JINUE_MAP_LARGE_PAGES
+    );
+
+    fb.size = mapping_size;
 
     initialize_console(
         &console,

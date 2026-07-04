@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2019-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -38,6 +38,7 @@
 #include <string.h>
 #include "tests/abcd.h"
 #include "tests/ipc.h"
+#include "tests/scroll.h"
 #include "debug.h"
 #include "utils.h"
 
@@ -65,6 +66,7 @@ int main(int argc, char *argv[]) {
 
     run_abcd_test();
     run_ipc_test();
+    run_scroll_test();
 
     if(bool_getenv("DEBUG_DO_REBOOT")) {
         jinue_info("Rebooting.");

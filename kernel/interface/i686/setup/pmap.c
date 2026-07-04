@@ -56,13 +56,28 @@ struct pte_t {
  */
 void allocate_page_tables(bootinfo_t *bootinfo) {
     bool use_pae = bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_PAE);
-    
+    bool use_pse = bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_PSE);
+
+    /* If large pages are supported, we reserve the region above
+     * LARGE_PAGES_AREA_ADDR for 2MB (PAE) or 4MB (32-bit legacy) large pages
+     * mappings set directly in page directory entries. In that case, we
+     * don't allocate page tables for that region. If large pages are not
+     * supported, this region becomes a normal mapping region (i.e. we fall
+     * back to normal 4kB pages) so we allocate page tables for the whole
+     * kernel address space.
+     * 
+     * The PSE feature flag indicates support for 4MB large pages in legacy
+     * 32-bit paging mode. If PAE is supported, then 2MB large pages are
+     * supported (in PAE paging mode, which we always enable if supported). */
+    size_t num_4kb_pages = NUM_PAGES(
+        (use_pse || use_pae ? LARGE_PAGES_AREA_ADDR : ADDR_4GB) - JINUE_KLIMIT
+    );
     size_t per_table_bits = use_pae ? 9 : 10;
 
     /* kernel page tables */
     bootinfo->page_tables = alloc_pages(
         bootinfo,
-        NUM_PAGES(ADDR_4GB - JINUE_KLIMIT) / (1 << per_table_bits) * PAGE_SIZE
+        num_4kb_pages / (1 << per_table_bits) * PAGE_SIZE
     );
     
     /* page directory */
@@ -149,16 +164,21 @@ static inline uint64_t *get_pdpt(const bootinfo_t *bootinfo) {
  */
 void initialize_page_tables(bootinfo_t *bootinfo, const data_segment_t *data_segment) {
     bool use_pae    = bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_PAE);
+    bool use_pse    = bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_PSE);
     uint64_t nx     = bootinfo_has_feature(bootinfo, BOOTINFO_FEATURE_NX) ? X86_PTE_NX : 0;
 
-    /* map the kernel image */
+    size_t num_4kb_pages = NUM_PAGES(
+        (use_pse || use_pae ? LARGE_PAGES_AREA_ADDR : ADDR_4GB) - JINUE_KLIMIT
+    );
+
     clear_ptes(
         use_pae,
         bootinfo->page_tables,
         0,
-        NUM_PAGES(ADDR_4GB - JINUE_KLIMIT)
+        num_4kb_pages
     );
 
+    /* map the kernel image */
     map_linear(
         use_pae,
         bootinfo->page_tables,
@@ -224,7 +244,7 @@ void initialize_page_tables(bootinfo_t *bootinfo, const data_segment_t *data_seg
         use_pae,
         bootinfo->page_directory,
         (use_pae ? 0 : JINUE_KLIMIT) >> (PAGE_BITS + per_table_bits),
-        NUM_PAGES(ADDR_4GB - JINUE_KLIMIT) / (1 << per_table_bits),
+        num_4kb_pages / (1 << per_table_bits),
         (uint32_t)bootinfo->page_tables | X86_PTE_READ_WRITE
     );
 

@@ -33,6 +33,7 @@
 #define JINUE_KERNEL_MACHINE_PMAP_H
 
 #include <kernel/types.h>
+#include <stddef.h>
 
 void machine_map_kernel(addr_t addr, size_t size, paddr_t paddr, int prot, int flags);
 
@@ -47,5 +48,7 @@ bool machine_map_userspace(
         int              flags);
 
 paddr_t machine_lookup_kernel_paddr(const void *addr);
+
+size_t machine_large_page_size(void);
 
 #endif
