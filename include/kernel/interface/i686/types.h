@@ -61,7 +61,6 @@ typedef struct {
     uint8_t                  cpu_vendor;
     uint32_t                 setup_signature;
     uint8_t                  video_type;
-    uint8_t                  video_depth;
     uint8_t                  video_pixel_format;
     uint16_t                 video_width;
     uint16_t                 video_height;

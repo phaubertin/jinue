@@ -86,7 +86,6 @@ void dump_video_information(const bootinfo_t *bootinfo) {
 
     if(video_type == VIDEO_TYPE_FRAMEBUFFER) {
         info("  resolution: %" PRIu16 "x%" PRIu16,  bootinfo->video_width, bootinfo->video_height);
-        info("  depth: %" PRIu8, bootinfo->video_depth);
         info("  pixel format: %s", pixel_format_string(bootinfo->video_pixel_format));
         info("  pitch: %" PRIu16, bootinfo->video_pitch);
         info("  framebuffer: addr 0x%" PRIx64 " size 0x%" PRIx32, bootinfo->video_fb_addr, bootinfo->video_fb_size);

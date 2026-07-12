@@ -34,13 +34,12 @@
 
 #include <kernel/utils/asm/utils.h>
 
-/* This region is currently only used to map the video framebuffer and its
- * back buffer. We reserve 128MB each to support 8K resolutions, plus a bit
- * more to have some margin in case they aren't aligned on a large page
- * boundary. */
-#define LARGE_PAGES_AREA_SIZE   (272 * MB)
+/* This region is currently only used to map the video framebuffer. At 8K
+ * resolutions and 4 bytes per pixel, this requires about 128MB. We want to
+ * have some margin in case the framebuffer is not properly aligned. */
+#define LARGE_PAGES_AREA_SIZE   (192 * MB)
 
-#define LARGE_PAGES_AREA_ADDR   0xef000000
+#define LARGE_PAGES_AREA_ADDR   0xf4000000
 
 #define MAPPING_AREA_SIZE       (64 * MB)
 
