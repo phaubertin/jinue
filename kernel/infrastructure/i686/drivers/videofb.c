@@ -162,9 +162,8 @@ static void clear_framebuffer(void) {
     store_barrier();
 }
 
-// TODO make this function static again
 /** Refresh the framebuffer with the content of the console text buffer */
-void refresh_framebuffer(void) {
+static void refresh_framebuffer(void) {
     const unsigned int viewport_height = console.height * FONT_HEIGHT;
     
     /* Let's center the viewport vertically. Let's not center horizontally to
