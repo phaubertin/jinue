@@ -39,10 +39,8 @@
 #include <kernel/infrastructure/i686/drivers/videofbfont.h>
 #include <kernel/infrastructure/i686/pmap/pmap.h>
 #include <kernel/infrastructure/i686/barriers.h>
-#include <kernel/infrastructure/i686/boot_alloc.h>
 #include <kernel/infrastructure/i686/platform.h>
 #include <kernel/interface/i686/bootinfo.h>
-#include <kernel/machine/asm/machine.h>
 #include <inttypes.h>
 #include <stdint.h>
 #include <string.h>
@@ -75,44 +73,20 @@ const uint8_t reference_colours[][3] = {
 #define NUM_COLOURS (sizeof(reference_colours) / sizeof(reference_colours[0]))
 
 /** colours transformed for the current pixel format */
-uint8_t colours[NUM_COLOURS][3];
+uint8_t colours[NUM_COLOURS][4];
 
-/** framebuffer/backbuffer configuration and state */
+/** framebuffer configuration */
 static struct {
-    /* buffers */
-    
-    /** frame buffer */
-    uint8_t     *framebuffer;
-    /** back buffer */
-    uint8_t     *backbuffer;
-
-    /* configuration */
-
-    /** buffer total size */
-    size_t       size;
-    /* total width in pixels */
-    uint16_t     width;
+    /** total width in pixels */
+    unsigned int     width;
     /** total height in pixels */
-    uint16_t     height;
+    unsigned int     height;
     /** total size of a line in bytes */
-    uint16_t     pitch;
-    /** start of viewport from the left in pixels */
-    uint16_t     left;
-    /** start of viewport from the top in pixels */
-    uint16_t     top;
+    unsigned int     pitch;
     /** pixel format - one of the VIDEO_PIXEL_FORMAT_xx constants */
-    uint8_t      pixel_format;
-    /** colour bytes per pixels */
-    uint8_t      bpp;
-    /** non-colour bytes per pixels */
-    uint8_t      skip;
-
-    /* state */
-
-    /** Text line index of first text line in the back buffer
-     * 
-     * Used for zero copy scrolling. */
-    uint16_t     origin;
+    unsigned int     pixel_format;
+    /** frame buffer base address */
+    uint8_t         *base_addr;
 } fb;
 
 /** Initialize the configuration structure
@@ -124,26 +98,13 @@ static void initialize_config(const bootinfo_t *bootinfo) {
     fb.height       = bootinfo->video_height;
     fb.pitch        = bootinfo->video_pitch;
     fb.pixel_format = bootinfo->video_pixel_format;
-    fb.origin       = 0;
-
-    const unsigned int viewport_width = console.width * FONT_WIDTH;
-    const unsigned int viewport_height = console.height * FONT_HEIGHT;
-
-    /* Center viewport/text area */
-    fb.left             = (fb.width - viewport_width) / 2;
-    fb.top              = (fb.height - viewport_height) / 2;
-
-    /* Varies according to pixel format but currently the same for all four
-     * supported pixel formats. */
-    fb.bpp = 3;
-    fb.skip = bootinfo->video_depth / 8 - fb.bpp;
 }
 
 /** Initialize the colours array according to pixel format
  * 
  * Must be called after initialize_config().
  */
-static void initalize_colours(void) {
+static void initialize_colours(void) {
     for(int idx = 0; idx < NUM_COLOURS; ++idx) {
         switch(fb.pixel_format) {
         case VIDEO_PIXEL_FORMAT_RGB888:
@@ -151,115 +112,105 @@ static void initalize_colours(void) {
             colours[idx][0] = reference_colours[idx][0];
             colours[idx][1] = reference_colours[idx][1];
             colours[idx][2] = reference_colours[idx][2];
+            /* Only relevant for RGBA 8888 but won't hurt otherwise since it
+             * just won't be read. */
+            colours[idx][3] = 0;
             break;
         case VIDEO_PIXEL_FORMAT_BGR888:
         case VIDEO_PIXEL_FORMAT_BGRA8888:
             colours[idx][0] = reference_colours[idx][2];
             colours[idx][1] = reference_colours[idx][1];
             colours[idx][2] = reference_colours[idx][0];
+            colours[idx][3] = 0;
             break;
         }
     }
 }
 
-/** Erase the back buffer
+/** map pixel format to bytes per pixel
  * 
- * To erase the frame buffer, erase the back buffer and then call
- * refresh_framebuffer().
+ * This function returns -1 if the pixel format is unsupported. This is checked
+ * during initialization and does not need to be handled elsewhere.
+ * 
+ * @param pixel_format pixel format (VIDEO_PIXEL_FORMAT_xx value)
+ * @return bytes per pixel, -1 for unsupported format
  */
-static void erase_backbuffer(void) {
-    unsigned char *line_addr = fb.backbuffer;
+static int map_bpp(unsigned int pixel_format) {
+    switch(fb.pixel_format) {
+    case VIDEO_PIXEL_FORMAT_RGB888:
+    case VIDEO_PIXEL_FORMAT_BGR888:
+        return 3;
+    case VIDEO_PIXEL_FORMAT_RGBA8888:
+    case VIDEO_PIXEL_FORMAT_BGRA8888:
+        return 4;
+    default:
+        return -1;
+    }
+}
+
+/** Erase the framebuffer */
+static void clear_framebuffer(void) {
+    unsigned char *line_addr = fb.base_addr;
+
+    const unsigned int bpp = map_bpp(fb.pixel_format);
 
     for(int y = 0; y < fb.height; ++y) {
-        memset(line_addr, 0, fb.width * (fb.bpp + fb.skip));
+        memset(line_addr, 0, fb.width * bpp);
         line_addr += fb.pitch;
     }
-
-    fb.origin = 0;
-}
-
-/** Compute absolute row index from row index relative to origin */
-static inline unsigned int from_origin(unsigned int row) {
-    unsigned int sum = row + fb.origin;
-    return sum < console.height ? sum : sum - console.height;
-}
-
-/** Compute byte offset of start of text row from row index */
-static inline unsigned int row(unsigned int row) {
-    return (row * FONT_HEIGHT + fb.top) * fb.pitch;
-}
-
-/** Compute byte offset from row start from column index */
-static inline unsigned int column(unsigned int col) {
-    return (col * FONT_WIDTH + fb.left) * (fb.bpp + fb.skip);
-}
-
-/** Copy pixels from the back buffer to the frane buffer */
-static void refresh_framebuffer(void) {   
-    /* When the origin is on line zero, we copy the whole back buffer content
-     * instead of only the viewport lines.
-     *
-     * Edge case to consider: when we refresh after erasing the back buffer, we
-     * want to copy all the lines so the whole frame buffer is also erased. */
-    if(fb.origin == 0) {
-        memcpy(fb.framebuffer, fb.backbuffer, fb.size);
-        return;
-    }
-
-    unsigned int top_rows = console.height - from_origin(0);
-
-    memcpy(
-        &fb.framebuffer[row(0)],
-        &fb.backbuffer[row(from_origin(0))],
-        top_rows * FONT_HEIGHT * fb.pitch
-    );
-
-    memcpy(
-        &fb.framebuffer[row(top_rows)],
-        &fb.backbuffer[row(0)],
-        (console.height - top_rows) * FONT_HEIGHT * fb.pitch
-    );
 
     store_barrier();
 }
 
-/** Character write console callback function
- * 
- * @param c ASCII code of character to write
- * @param loglevel log level
- */
-static void do_write(unsigned char c, uint8_t loglevel) {
-    const uint8_t *const colour = colours[
-        loglevel < JINUE_LOG_LEVEL_DEBUG ? loglevel : JINUE_LOG_LEVEL_DEBUG
-    ];
+/** Refresh the framebuffer with the content of the console text buffer */
+static void refresh_framebuffer(void) {
+    const unsigned int viewport_height = console.height * FONT_HEIGHT;
+    
+    /* Let's center the viewport vertically. Let's not center horizontally to
+     * preserve alignment. */
+    const unsigned int top = (fb.height - viewport_height) / 2;
+    const unsigned int bpp = map_bpp(fb.pixel_format);
 
-    uint8_t *start = &fb.backbuffer[row(from_origin(console.row)) + column(console.col)];
+    for(unsigned int y = 0; y < viewport_height; ++y) {
+        uint8_t *wrptr = &fb.base_addr[(y + top) * fb.pitch];
 
-    for(unsigned int y = 0; y < FONT_HEIGHT; ++y) {
-        const uint8_t font_byte = videofbfont[(c - 0x20) * FONT_HEIGHT + y];
-        
-        uint8_t *wrptr = start;
+        unsigned char *text_line = &console.buffer[2 * (y / FONT_HEIGHT) * console.width];
 
-        for(uint8_t mask = 0x80; mask != 0; mask >>= 1) {
-            for(unsigned int byte_index = 0; byte_index < fb. bpp; ++byte_index) {
-                *(wrptr++) = (font_byte & mask) ? colour[byte_index] : 0;
+        for(unsigned int col = 0; col < console.width; ++col) {
+            uint8_t c = text_line[2 * col] - 0x20;
+            uint8_t colour_index = text_line[2 * col + 1];
+            
+            const uint8_t *const colour = colours[colour_index];
+            const uint8_t font_byte = videofbfont[c * FONT_HEIGHT + y % FONT_HEIGHT];
+
+            for(uint8_t mask = 0x80; mask != 0; mask >>= 1) {
+                if(bpp == 4) {
+                    *(uint32_t *)wrptr =  (font_byte & mask) ? *(uint32_t *)colour : 0;
+                    wrptr += 4;
+                }
+                else {
+                    for(unsigned int byte_index = 0; byte_index < bpp; ++byte_index) {
+                        *(wrptr++) = (font_byte & mask) ? colour[byte_index] : 0;
+                    }
+                }
             }
-            wrptr += fb.skip;
         }
-
-        start += fb.pitch;
     }
+
+    store_barrier();
 }
 
-/** Console scrolling callback function
+/** Map a log level to the appropriate colour number.
  * 
- * Scrolls up by one text line and erases the bottom line.
+ * @param loglevel the log level
+ * @return colour number
  */
-static void do_scroll(void) {
-    fb.origin = from_origin(1);
+static uint8_t map_colour(int loglevel) {
+    if(loglevel > JINUE_LOG_LEVEL_DEBUG) {
+        return JINUE_LOG_LEVEL_DEBUG;
+    }
 
-    /* Erase the bottom line */
-    memset(&fb.backbuffer[row(from_origin(console.height - 1))], 0, FONT_HEIGHT * fb.pitch);
+    return loglevel;
 }
 
 /** Logging callback function.
@@ -270,8 +221,13 @@ static void do_scroll(void) {
  * @param event logging event
 */
 static void do_log(const log_event_t *event) {
-    console_write(&console, event->message, event->length, event->loglevel);
-    
+    console_write(
+        &console,
+        event->message,
+        event->length,
+        map_colour(event->loglevel)
+    );
+
     refresh_framebuffer();
 }
 
@@ -282,9 +238,9 @@ static void do_log(const log_event_t *event) {
  * @param boot_alloc boot-time memory allocator
  */
 void init_video_framebuffer(
-    const config_t *config,
-    const bootinfo_t *bootinfo,
-    boot_alloc_t *boot_alloc
+    const config_t      *config,
+    const bootinfo_t    *bootinfo,
+    boot_alloc_t        *boot_alloc
 ) {
     if(! config->machine.vga_enable) {
         return;
@@ -298,12 +254,19 @@ void init_video_framebuffer(
         return;
     }
 
-    if(bootinfo->video_pitch < bootinfo->video_width * (bootinfo->video_depth / 8)) {
+    const int bpp = map_bpp(bootinfo->video_pixel_format);
+
+    if(bpp < 0) {
+        warn(WARNING "disabling video framebuffer because pixel format is unsupported.");
+        return;
+    }
+
+    if(bootinfo->video_pitch < bootinfo->video_width * bpp) {
         warn(WARNING "disabling video framebuffer because information passed by bootloader is inconsistent (pitch).");
         return;
     }
 
-    size_t mapping_size = bootinfo->video_height * bootinfo->video_pitch;
+    const size_t mapping_size = bootinfo->video_height * bootinfo->video_pitch;
 
     if(bootinfo->video_fb_size < mapping_size) {
         warn(WARNING "disabling video framebuffer because information passed by bootloader is inconsistent (size).");
@@ -317,17 +280,8 @@ void init_video_framebuffer(
         return;
     }
 
-    if(bootinfo->video_width > 1024 || bootinfo->video_height > 768) {
-        /* Temporary limitation caused by memory management and performance
-         * issues. Will be improved. */
-        warn(WARNING "disabling video framebuffer because resolution is above 1024x768 supported maximum.");
-        return;
-    }
-
-    if(mapping_size > 10 * MB) {
-        /* Temporary limitation caused by memory management and performance
-         * issues. Will be improved. */
-        warn(WARNING "disabling video framebuffer because it is larger than the supported 10MB.");
+    if(mapping_size > 128 * MB) {
+        warn(WARNING "disabling video framebuffer because it is larger than the supported 128MB.");
         return;
     }
 
@@ -337,35 +291,28 @@ void init_video_framebuffer(
         bootinfo->video_height
     );
 
-    fb.backbuffer = boot_page_alloc_n(
-        boot_alloc,
-        (mapping_size + PAGE_SIZE - 1) / PAGE_SIZE
-    );
-
-    fb.framebuffer = map_in_kernel(
-        bootinfo->video_fb_addr,
-        mapping_size,
-        JINUE_PROT_READ | JINUE_PROT_WRITE,
-        JINUE_MAP_WRITE_COMBINE | JINUE_MAP_LARGE_PAGES
-    );
-
-    fb.size = mapping_size;
-
-    initialize_console(
-        &console,
-        bootinfo->video_width / FONT_WIDTH,
-        bootinfo->video_height / FONT_HEIGHT,
-        do_write,
-        do_scroll
-    );
-
     initialize_config(bootinfo);
 
-    initalize_colours();   
+    initialize_colours();
 
-    erase_backbuffer();
+    fb.base_addr = map_in_kernel(
+        bootinfo->video_fb_addr,
+        bootinfo->video_fb_size,
+        JINUE_PROT_READ | JINUE_PROT_WRITE,
+        JINUE_MAP_WRITE_COMBINE | JINUE_MAP_LARGE_PAGES
+    );    
 
-    refresh_framebuffer();
+    clear_framebuffer();
+
+    allocate_console(
+        &console,
+        boot_alloc,
+        bootinfo->video_width / FONT_WIDTH,
+        bootinfo->video_height / FONT_HEIGHT,
+        JINUE_LOG_LEVEL_INFO
+    );
+
+    erase_console(&console);
 
     initialize_log_reader(&log_reader, do_log);
 

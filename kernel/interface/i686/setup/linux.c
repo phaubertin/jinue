@@ -157,7 +157,6 @@ static void set_video_info(bootinfo_t *bootinfo, const linux_boot_params_t linux
     }
 
     bootinfo->video_type = VIDEO_TYPE_FRAMEBUFFER;
-    bootinfo->video_depth = screen_info->lfb_depth;
     bootinfo->video_pixel_format = pixel_format;
     bootinfo->video_width = screen_info->lfb_width;
     bootinfo->video_height = screen_info->lfb_height;
