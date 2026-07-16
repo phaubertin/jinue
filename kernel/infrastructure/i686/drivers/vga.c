@@ -130,9 +130,7 @@ static void initialize_registers(void) {
  * @param event logging event
 */
 static void do_log(const log_event_t *event) {
-    uint8_t colour = map_colour(event->loglevel);
-
-    console_write(&console, event->message, event->length, colour);
+    console_write(&console, event->message, event->length, map_colour(event->loglevel));
 
     update_cursor_position();
 }

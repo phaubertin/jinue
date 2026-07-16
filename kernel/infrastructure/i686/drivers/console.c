@@ -44,6 +44,7 @@
 #include <kernel/machine/asm/machine.h>
 #include <kernel/utils/asm/ascii.h>
 #include <kernel/utils/utils.h>
+#include <ctype.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -78,6 +79,7 @@ void initialize_console(
  * function must only be called during boot-time initialization.
  * 
  * @param console the console state structure
+ * @param boot_alloc boot-time memory allocator
  * @param width screen width in characters
  * @param height screen height in characters
  * @param erase_colour colour to erase with when erasing and scrolling
@@ -178,7 +180,7 @@ static void write_character(console_t *console, char c, uint8_t colour) {
         break;
     
     default:
-        if(c >= 0x20 && c < 0x7f) {
+        if(isprint(c)) {
             const unsigned int offset = console->width * console->row + console->col;
             console->buffer[2 * offset] = (unsigned char)c;
             console->buffer[2 * offset + 1] = colour;
