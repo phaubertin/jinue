@@ -297,15 +297,22 @@ static void enumerate_features(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs)
        cpuinfo->features |= CPU_FEATURE_APIC;
     }
 
+    /* Floating Point Unit (FPU) */
+    if(flags & CPUID_FEATURE_FPU) {
+        cpuinfo->features |= CPU_FEATURE_FPU;
+    }
+
+    /* Page Attribute Table (PAT) */
+    if(flags & CPUID_FEATURE_PAT) {
+        cpuinfo->features |= CPU_FEATURE_PAT;
+    }
+
     /* global pages */
     if(flags & CPUID_FEATURE_PGE) {
         cpuinfo->features |= CPU_FEATURE_PGE;
     }
 
-    if(flags & CPUID_FEATURE_PAT) {
-        cpuinfo->features |= CPU_FEATURE_PAT;
-    }
-
+    /* Streaming SIMD Extensions (SSE) */
     if(flags & CPUID_FEATURE_SSE) {
         cpuinfo->features |= CPU_FEATURE_SSE;
     }
@@ -504,10 +511,11 @@ static void identify_maxphyaddr(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs
  */
 static void dump_features(const cpuinfo_t *cpuinfo) {
     info(
-        "  Features:%s%s%s%s%s%s%s%s%s%s%s",
+        "  Features:%s%s%s%s%s%s%s%s%s%s%s%s",
         (cpuinfo->features == 0) ? " (none)" : "",
         (cpuinfo->features & CPU_FEATURE_APIC) ? " apic" : "",
         (cpuinfo->features & CPU_FEATURE_CPUID) ? " cpuid" : "",
+        (cpuinfo->features & CPU_FEATURE_FPU) ? " fpu" : "",
         (cpuinfo->features & CPU_FEATURE_NX) ? " nx" : "",
         (cpuinfo->features & CPU_FEATURE_PAE) ? " pae" : "",
         (cpuinfo->features & CPU_FEATURE_PAT) ? " pat" : "",
@@ -641,8 +649,13 @@ void check_cpu_minimum_requirements(void) {
         too_old = true;
     }
 
+    if(!cpu_has_feature(CPU_FEATURE_FPU)) {
+        error("no Floating Point Unit (FPU)");
+        too_old = true;
+    }
+
     if(too_old) {
-        panic("A Pentium CPU or later with an integrated local APIC is required");
+        panic("A Pentium CPU or later with an integrated local APIC and FPU is required");
     }
 }
 
