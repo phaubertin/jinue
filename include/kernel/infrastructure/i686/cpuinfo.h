@@ -51,8 +51,6 @@ typedef struct {
 
 void detect_cpu_features(const bootinfo_t *bootinfo);
 
-void check_cpu_minimum_requirements(void);
-
 bool cpu_has_feature(uint32_t mask);
 
 unsigned int cpu_phys_addr_width(void);

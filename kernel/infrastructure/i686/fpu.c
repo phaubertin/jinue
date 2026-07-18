@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2026 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,71 +29,43 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_CPUINFO_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_CPUINFO_H
+#include <kernel/infrastructure/i686/asm/x86.h>
+#include <kernel/infrastructure/i686/isa/regs.h>
+#include <kernel/infrastructure/i686/cpuinfo.h>
+#include <kernel/infrastructure/i686/fpu.h>
+#include <stdint.h>
 
-/* features */
+/** Initialize the FPU for x87 and SSE instructions */
+void initialize_fpu(void) {
+    /* No need to check for FPU since this is part of CPU requirements for this
+     * kernel. */
+    uint32_t cr0 = get_cr0();
 
-#define CPU_FEATURE_APIC        (1<<0)
+    /* no FPU emulation */
+    cr0 &= ~X86_CR0_EM;
 
-#define CPU_FEATURE_CPUID       (1<<1)
+    /* WAIT/FWAIT will trap when TS is set, just like other FPU instructions. */
+    cr0 |= X86_CR0_MP;
 
-#define CPU_FEATURE_FPU         (1<<2)
+    /* Task not switched. */
+    cr0 &= ~X86_CR0_TS;
 
-#define CPU_FEATURE_FXSR        (1<<3)
+    /* Use internally-generated exceptions for FPU errors, */
+    cr0 |= X86_CR0_NE;
 
-#define CPU_FEATURE_NX          (1<<4)
+    set_cr0(cr0);
 
-#define CPU_FEATURE_PAE         (1<<5)
+    if(!cpu_has_feature(CPU_FEATURE_SSE)) {
+        return;
+    }
 
-#define CPU_FEATURE_PAT         (1<<6)
+    uint32_t cr4 = get_cr4();
 
-#define CPU_FEATURE_PGE         (1<<7)
+    /* Enable SSE (we support saving and restoring the state). */
+    cr4 |= X86_CR4_OSFXSR;
 
-#define CPU_FEATURE_PSE         (1<<8)
+    /* We support SIMD floating point exceptions */
+    cr4 |= X86_CR4_OSXMMEXCPT;
 
-#define CPU_FEATURE_SSE         (1<<9)
-
-#define CPU_FEATURE_SSE2        (1<<10)
-
-#define CPU_FEATURE_SYSCALL     (1<<11)
-
-#define CPU_FEATURE_SYSENTER    (1<<12)
-
-/* vendors */
-
-#define CPU_VENDOR_GENERIC          0
-
-#define CPU_VENDOR_AMD              1
-
-#define CPU_VENDOR_CENTAUR_VIA      2
-
-#define CPU_VENDOR_CYRIX            3
-
-#define CPU_VENDOR_HYGON            4
-
-#define CPU_VENDOR_INTEL            5
-
-#define CPU_VENDOR_ZHAOXIN          6
-
-/* hypervisors */
-
-#define HYPERVISOR_ID_NONE          0
-
-#define HYPERVISOR_ID_UNKNOWN       1
-
-#define HYPERVISOR_ID_ACRN          2
-
-#define HYPERVISOR_ID_BHYVE         3
-
-#define HYPERVISOR_ID_HYPER_V       4
-
-#define HYPERVISOR_ID_KVM           5
-
-#define HYPERVISOR_ID_QEMU          6
-
-#define HYPERVISOR_ID_VMWARE        7
-
-#define HYPERVISOR_ID_XEN           8
-
-#endif
+    set_cr4(cr4);
+}

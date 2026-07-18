@@ -98,10 +98,6 @@ static void enumerate_bootinfo_features(cpuinfo_t *cpuinfo, const bootinfo_t *bo
 static void get_cpuid_leafs(cpuid_leafs_set *leafs) {
     memset(leafs, 0, sizeof(cpuid_leafs_set));
 
-    if(!cpu_has_feature(CPU_FEATURE_CPUID)) {
-        return;
-    }
-
     const uint32_t ext_base = 0x80000000;
     const uint32_t soft_base = 0x40000000;
     
@@ -312,9 +308,20 @@ static void enumerate_features(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs)
         cpuinfo->features |= CPU_FEATURE_PGE;
     }
 
+    /* FXSAVE/FXRSTOR instuctions */
+    const bool fxsr = !!(flags & CPUID_FEATURE_FXSR);
+
+    if(fxsr) {
+        cpuinfo->features |= CPU_FEATURE_FXSR;
+    }
+
     /* Streaming SIMD Extensions (SSE) */
-    if(flags & CPUID_FEATURE_SSE) {
+    if(fxsr && (flags & CPUID_FEATURE_SSE)) {
         cpuinfo->features |= CPU_FEATURE_SSE;
+    }
+
+    if(fxsr && (flags & CPUID_FEATURE_SSE2)) {
+        cpuinfo->features |= CPU_FEATURE_SSE2;
     }
 
     detect_sysenter_instruction(cpuinfo, leafs);
@@ -511,17 +518,19 @@ static void identify_maxphyaddr(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs
  */
 static void dump_features(const cpuinfo_t *cpuinfo) {
     info(
-        "  Features:%s%s%s%s%s%s%s%s%s%s%s%s",
+        "  Features:%s%s%s%s%s%s%s%s%s%s%s%s%s%s",
         (cpuinfo->features == 0) ? " (none)" : "",
         (cpuinfo->features & CPU_FEATURE_APIC) ? " apic" : "",
         (cpuinfo->features & CPU_FEATURE_CPUID) ? " cpuid" : "",
         (cpuinfo->features & CPU_FEATURE_FPU) ? " fpu" : "",
+        (cpuinfo->features & CPU_FEATURE_FXSR) ? " fxsr" : "",
         (cpuinfo->features & CPU_FEATURE_NX) ? " nx" : "",
         (cpuinfo->features & CPU_FEATURE_PAE) ? " pae" : "",
         (cpuinfo->features & CPU_FEATURE_PAT) ? " pat" : "",
         (cpuinfo->features & CPU_FEATURE_PGE) ? " pge" : "",
         (cpuinfo->features & CPU_FEATURE_PSE) ? " pse" : "",
         (cpuinfo->features & CPU_FEATURE_SSE) ? " sse" : "",
+        (cpuinfo->features & CPU_FEATURE_SSE2) ? " sse2" : "",
         (cpuinfo->features & CPU_FEATURE_SYSCALL) ? " syscall" : "",
         (cpuinfo->features & CPU_FEATURE_SYSENTER) ? " sysenter" : ""
     );
@@ -602,44 +611,14 @@ static void dump_cpu_info(const cpuinfo_t *cpuinfo) {
     }
 }
 
-/**
- * Detect the features of the bootstrap processor (BSP)
- */
-void detect_cpu_features(const bootinfo_t *bootinfo) {
-    enumerate_bootinfo_features(&bsp_cpuinfo, bootinfo);
+static const char *const pentium_or_later =
+    "A Pentium CPU or later with an integrated local APIC and FPU is required";
 
-    cpuid_leafs_set cpuid_leafs;
-    get_cpuid_leafs(&cpuid_leafs);
-
-    identify_model(&bsp_cpuinfo, &cpuid_leafs);
-
-    enumerate_features(&bsp_cpuinfo, &cpuid_leafs);
-    
-    identify_hypervisor(&bsp_cpuinfo, &cpuid_leafs);
-
-    get_brand_string(&bsp_cpuinfo, &cpuid_leafs);
-
-    identify_dcache_alignment(&bsp_cpuinfo, &cpuid_leafs);
-
-    identify_maxphyaddr(&bsp_cpuinfo, &cpuid_leafs);
-
-    dump_cpu_info(&bsp_cpuinfo);
-}
-
-/**
- * Check the CPU satisfies the minimum requirements for this kernel
- * 
- * This function panics if the minimum requirements aren't met. It is a
- * separate function because we want to defer this check and possible kernel
- * panic to after logging has been enabled.
- */
-void check_cpu_minimum_requirements(void) {
+/** Check the CPU satisfies the minimum requirements for this kernel */
+static void check_cpu_minimum_requirements(void) {
     bool too_old = false;
 
-    if(!cpu_has_feature(CPU_FEATURE_CPUID)) {
-        error("CPUID instruction is not supported");
-        too_old = true;
-    } else if(bsp_cpuinfo.family < 5) {
+    if(bsp_cpuinfo.family < 5) {
         error("CPU family: %u", bsp_cpuinfo.family);
         too_old = true;
     }
@@ -655,8 +634,39 @@ void check_cpu_minimum_requirements(void) {
     }
 
     if(too_old) {
-        panic("A Pentium CPU or later with an integrated local APIC and FPU is required");
+        panic(pentium_or_later);
     }
+}
+
+/**
+ * Detect the features of the bootstrap processor (BSP)
+ */
+void detect_cpu_features(const bootinfo_t *bootinfo) {
+    enumerate_bootinfo_features(&bsp_cpuinfo, bootinfo);
+
+    if(!cpu_has_feature(CPU_FEATURE_CPUID)) {
+        error("CPUID instruction is not supported.");
+        panic(pentium_or_later);
+    }
+
+    cpuid_leafs_set cpuid_leafs;
+    get_cpuid_leafs(&cpuid_leafs);
+
+    identify_model(&bsp_cpuinfo, &cpuid_leafs);
+
+    enumerate_features(&bsp_cpuinfo, &cpuid_leafs);
+
+    check_cpu_minimum_requirements();
+    
+    identify_hypervisor(&bsp_cpuinfo, &cpuid_leafs);
+
+    get_brand_string(&bsp_cpuinfo, &cpuid_leafs);
+
+    identify_dcache_alignment(&bsp_cpuinfo, &cpuid_leafs);
+
+    identify_maxphyaddr(&bsp_cpuinfo, &cpuid_leafs);
+
+    dump_cpu_info(&bsp_cpuinfo);
 }
 
 /**

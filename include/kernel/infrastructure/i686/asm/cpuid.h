@@ -69,6 +69,26 @@
 
 #define CPUID_FEATURE_HYPERVISOR        (1<<31)
 
+/* Basic leaf 1 (0x00000001) ecx */
+
+#define CPUID_FEATURE_ECX_SSE3          (1<<0)
+
+#define CPUID_FEATURE_ECX_SSSE3         (1<<9)
+
+#define CPUID_FEATURE_ECX_SSSE4_1       (1<<19)
+
+#define CPUID_FEATURE_ECX_SSSE4_2       (1<<20)
+
+#define CPUID_FEATURE_ECX_X2APIC        (1<<21)
+
+#define CPUID_FEATURE_ECX_TSC_DEADLINE  (1<<24)
+
+#define CPUID_FEATURE_ECX_AESNI         (1<<25)
+
+#define CPUID_FEATURE_ECX_AVX           (1<<28)
+
+#define CPUID_FEATURE_ECX_RDRAND        (1<<30)
+
 /* Basic leaf 1 (0x00000001) edx */
 
 #define CPUID_FEATURE_FPU               (1<<0)
@@ -87,7 +107,13 @@
 
 #define CPUID_FEATURE_CLFLUSH           (1<<19)
 
+#define CPUID_FEATURE_MMX               (1<<23)
+
+#define CPUID_FEATURE_FXSR              (1<<24)
+
 #define CPUID_FEATURE_SSE               (1<<25)
+
+#define CPUID_FEATURE_SSE2              (1<<26)
 
 #define CPUID_FEATURE_HTT               (1<<28)
 

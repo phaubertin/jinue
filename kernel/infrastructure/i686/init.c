@@ -55,6 +55,7 @@
 #include <kernel/infrastructure/i686/boot_alloc.h>
 #include <kernel/infrastructure/i686/cpuinfo.h>
 #include <kernel/infrastructure/i686/descriptors.h>
+#include <kernel/infrastructure/i686/fpu.h>
 #include <kernel/infrastructure/i686/percpu.h>
 #include <kernel/infrastructure/i686/video.h>
 #include <kernel/infrastructure/elf.h>
@@ -309,6 +310,10 @@ void machine_init_logging(const config_t *config) {
 
     boot_alloc_init(&boot_alloc, bootinfo);
 
+    /* This needs to be called before init_video_framebuffer() so it can use
+     * SSE instructions if supported. */
+    initialize_fpu();
+
     init_video_framebuffer(config, bootinfo, &boot_alloc);
 }
 
@@ -318,8 +323,6 @@ void machine_init_logging(const config_t *config) {
  * @param config kernel configuration
  */
 void machine_init(const config_t *config) {
-    check_cpu_minimum_requirements();
-
     check_pae(config);
 
     init_mp();

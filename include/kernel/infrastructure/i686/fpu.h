@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2026 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,71 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_CPUINFO_H
-#define JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_CPUINFO_H
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_FPU_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_FPU_H
 
-/* features */
-
-#define CPU_FEATURE_APIC        (1<<0)
-
-#define CPU_FEATURE_CPUID       (1<<1)
-
-#define CPU_FEATURE_FPU         (1<<2)
-
-#define CPU_FEATURE_FXSR        (1<<3)
-
-#define CPU_FEATURE_NX          (1<<4)
-
-#define CPU_FEATURE_PAE         (1<<5)
-
-#define CPU_FEATURE_PAT         (1<<6)
-
-#define CPU_FEATURE_PGE         (1<<7)
-
-#define CPU_FEATURE_PSE         (1<<8)
-
-#define CPU_FEATURE_SSE         (1<<9)
-
-#define CPU_FEATURE_SSE2        (1<<10)
-
-#define CPU_FEATURE_SYSCALL     (1<<11)
-
-#define CPU_FEATURE_SYSENTER    (1<<12)
-
-/* vendors */
-
-#define CPU_VENDOR_GENERIC          0
-
-#define CPU_VENDOR_AMD              1
-
-#define CPU_VENDOR_CENTAUR_VIA      2
-
-#define CPU_VENDOR_CYRIX            3
-
-#define CPU_VENDOR_HYGON            4
-
-#define CPU_VENDOR_INTEL            5
-
-#define CPU_VENDOR_ZHAOXIN          6
-
-/* hypervisors */
-
-#define HYPERVISOR_ID_NONE          0
-
-#define HYPERVISOR_ID_UNKNOWN       1
-
-#define HYPERVISOR_ID_ACRN          2
-
-#define HYPERVISOR_ID_BHYVE         3
-
-#define HYPERVISOR_ID_HYPER_V       4
-
-#define HYPERVISOR_ID_KVM           5
-
-#define HYPERVISOR_ID_QEMU          6
-
-#define HYPERVISOR_ID_VMWARE        7
-
-#define HYPERVISOR_ID_XEN           8
+void initialize_fpu(void);
 
 #endif
