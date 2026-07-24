@@ -32,6 +32,16 @@
 #ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_FPU_H
 #define JINUE_KERNEL_INFRASTRUCTURE_I686_FPU_H
 
+#include <kernel/types.h>
+
 void initialize_fpu(void);
+
+void prepare_fpu_area(thread_t *thread);
+
+void use_fpu(thread_t *thread);
+
+void save_fpu_state(thread_t *thread);
+
+void restore_fpu_state(void);
 
 #endif

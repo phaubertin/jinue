@@ -35,15 +35,24 @@
 #include <kernel/infrastructure/i686/drivers/lapic.h>
 #include <kernel/infrastructure/i686/drivers/pic8259.h>
 #include <kernel/infrastructure/i686/isa/regs.h>
+#include <kernel/infrastructure/i686/fpu.h>
 #include <kernel/interface/i686/asm/exceptions.h>
 #include <kernel/interface/i686/asm/idt.h>
 #include <kernel/interface/i686/asm/irq.h>
 #include <kernel/interface/i686/interrupts.h>
+#include <kernel/machine/thread.h>
 #include <inttypes.h>
 
 
 static void handle_exception(unsigned int ivt, uintptr_t eip, uint32_t errcode) {
-    info(   "EXCEPT: %u cr2=%#" PRIx32 " errcode=%#" PRIx32 " eip=%#" PRIxPTR,
+    if(ivt == EXCEPTION_NO_COPROC) {
+        /** Lazy FPU initialization: mark a thread as using the FPU on first
+         * use. */
+        use_fpu(get_current_thread());
+        return;
+    }
+
+    info("EXCEPT: %u cr2=%#" PRIx32 " errcode=%#" PRIx32 " eip=%#" PRIxPTR,
             ivt,
             get_cr2(),
             errcode,

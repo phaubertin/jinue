@@ -39,4 +39,14 @@
 
 #define THREAD_CONTEXT_MASK     (~(THREAD_CONTEXT_SIZE - 1))
 
+
+#define THREAD_FPU_AREA_SIZE        512
+
+
+#define THREAD_FLAG_NONE            0
+
+#define THREAD_FLAG_USES_FPU        (1<<0)
+
+#define THREAD_FLAG_FPU_STATE_SAVED (1<<1)
+
 #endif

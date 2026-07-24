@@ -162,3 +162,78 @@ wbinvd:
     wbinvd
     ret
 .end:
+
+; ------------------------------------------------------------------------------
+; FUNCTION: fninit
+; C PROTOTYPE: void fninit(void)
+; ------------------------------------------------------------------------------
+    global fninit:function (fninit.end - fninit)
+fninit:
+    fninit
+    ret
+.end:
+
+; ------------------------------------------------------------------------------
+; FUNCTION: fnsave
+; C PROTOTYPE: void fnsave(void *area)
+; ------------------------------------------------------------------------------
+    global fnsave:function (fnsave.end - fnsave)
+fnsave:
+    mov eax, [esp+4]    ; First param: area
+    fnsave [eax]
+    ret
+.end:
+
+; ------------------------------------------------------------------------------
+; FUNCTION: frstor
+; C PROTOTYPE: void frstor(void *area)
+; ------------------------------------------------------------------------------
+    global frstor:function (frstor.end - frstor)
+frstor:
+    mov eax, [esp+4]    ; First param: area
+    frstor [eax]
+    ret
+.end:
+
+; ------------------------------------------------------------------------------
+; FUNCTION: fxsave
+; C PROTOTYPE: void fxsave(void *area)
+; ------------------------------------------------------------------------------
+    global fxsave:function (fxsave.end - fxsave)
+fxsave:
+    mov eax, [esp+4]    ; First param: area
+    fxsave [eax]
+    ret
+.end:
+
+; ------------------------------------------------------------------------------
+; FUNCTION: fxrstor
+; C PROTOTYPE: void fxrstor(void *area)
+; ------------------------------------------------------------------------------
+    global fxrstor:function (fxrstor.end - fxrstor)
+fxrstor:
+    mov eax, [esp+4]    ; First param: area
+    fxrstor [eax]
+    ret
+.end:
+
+; ------------------------------------------------------------------------------
+; FUNCTION: clts
+; C PROTOTYPE: void clts(void)
+; ------------------------------------------------------------------------------
+    global clts:function (clts.end - clts)
+clts:
+    clts
+    ret
+.end:
+
+; ------------------------------------------------------------------------------
+; FUNCTION: ldmxcsr
+; C PROTOTYPE: void ldmxcsr(uint32_t value)
+; ------------------------------------------------------------------------------
+    global ldmxcsr:function (ldmxcsr.end - ldmxcsr)
+ldmxcsr:
+    ldmxcsr [esp+4]     ; First param: area
+                        ; requires a m32 operand, register not allowed
+    ret
+.end:

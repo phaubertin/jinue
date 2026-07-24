@@ -512,6 +512,50 @@ static void identify_maxphyaddr(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs
 }
 
 /**
+ * Detect whether CPU may be vulnerable to CVE-2018-3665
+ * 
+ * @param cpuinfo CPU information structure
+ */
+static void detect_cve2018_3665(cpuinfo_t *cpuinfo) {
+    /* Only Intel CPUs are known (and likely) to be affected. */
+    if(cpuinfo->vendor != CPU_VENDOR_INTEL) {
+        return;
+    }
+
+    /* The original Pentium and earlier CPUs cannot be affected because they do
+     * not execute speculatively. */
+    if(cpuinfo->family < 6) {
+        return;
+    }
+
+    /* This covers essentially only Penitium 4 (family 15). */
+    if(cpuinfo->family > 6) {
+        cpuinfo->workarounds |= CPU_WORKAROUND_CVE2018_3665;
+        return;
+    }
+
+    /* Early Atom CPUs (Bonnell and Saltwell microarchitectures) do not speculate past */
+    static const uint8_t clean[] = {0x1C, 0x26, 0x27, 0x35, 0x36};
+
+    for(int idx = 0; idx < sizeof(clean) / sizeof(clean[0]); ++idx) {
+        if(cpuinfo->model == clean[idx]) {
+            return;
+        }
+    }
+
+    cpuinfo->workarounds |= CPU_WORKAROUND_CVE2018_3665;
+}
+
+/**
+ * Identify which CPU workarounds need to be enabled
+ * 
+ * @param cpuinfo CPU information structure
+ */
+static void identify_workarounds(cpuinfo_t *cpuinfo) {
+    detect_cve2018_3665(cpuinfo);
+}
+
+/**
  * Log a string representation of the CPU feature flags
  * 
  * @param cpuinfo CPU information structure
@@ -533,6 +577,19 @@ static void dump_features(const cpuinfo_t *cpuinfo) {
         (cpuinfo->features & CPU_FEATURE_SSE2) ? " sse2" : "",
         (cpuinfo->features & CPU_FEATURE_SYSCALL) ? " syscall" : "",
         (cpuinfo->features & CPU_FEATURE_SYSENTER) ? " sysenter" : ""
+    );
+}
+
+/**
+ * Log a string representation of the enabled CPU workarounds
+ * 
+ * @param cpuinfo CPU information structure
+ */
+static void dump_workarounds(const cpuinfo_t *cpuinfo) {
+    info(
+        "  Workarounds:%s%s",
+        (cpuinfo->workarounds == 0) ? " (none)" : "",
+        (cpuinfo->workarounds & CPU_WORKAROUND_CVE2018_3665) ? " cve-2018-3665" : ""
     );
 }
 
@@ -561,6 +618,12 @@ static const char *get_vendor_string(const cpuinfo_t *cpuinfo) {
     }
 }
 
+/** 
+ * Return the name of the hypervisor
+ * 
+ * @param cpuinfo CPU information structure
+ * @return Name of hypervisor
+ */
 static const char *get_hypervisor_string(const cpuinfo_t *cpuinfo) {
     switch(cpuinfo->hypervisor) {
         case HYPERVISOR_ID_ACRN:
@@ -599,6 +662,8 @@ static void dump_cpu_info(const cpuinfo_t *cpuinfo) {
     );
     
     dump_features(cpuinfo);
+    
+    dump_workarounds(cpuinfo);
 
     info("  Brand string: %s", cpuinfo->brand_string);
     info("  Data cache alignment: %u bytes", cpuinfo->dcache_alignment);
@@ -666,6 +731,8 @@ void detect_cpu_features(const bootinfo_t *bootinfo) {
 
     identify_maxphyaddr(&bsp_cpuinfo, &cpuid_leafs);
 
+    identify_workarounds(&bsp_cpuinfo);
+
     dump_cpu_info(&bsp_cpuinfo);
 }
 
@@ -693,6 +760,23 @@ unsigned int machine_get_cpu_dcache_alignment(void) {
  */
 bool cpu_has_feature(uint32_t mask) {
     return (bsp_cpuinfo.features & mask) == mask;
+}
+
+/**
+ * Determine whether the CPU needs the workaround
+ * 
+ * Use the CPU_WORKAROUND_... constants for the mask arguments. A bitwise or of
+ * multiple of these constants is allowed, in which case this function will
+ * return true only if at least one of the specified workarounds is needed.
+ * 
+ * This function returns whether the boot CPU requires the specified
+ * workaround. However, all CPUs should need the same workarounds.
+ * 
+ * @param mask workaround(s) for which to check is required
+ * @return true if workaround is required, false otherwise
+ */
+bool cpu_needs_workaround(uint32_t mask) {
+    return (bsp_cpuinfo.workarounds & mask) != 0;
 }
 
 /**

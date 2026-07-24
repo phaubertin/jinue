@@ -60,6 +60,10 @@
 
 #define CPU_FEATURE_SYSENTER    (1<<12)
 
+/* workarounds */
+
+#define CPU_WORKAROUND_CVE2018_3665 (1<<0)
+
 /* vendors */
 
 #define CPU_VENDOR_GENERIC          0

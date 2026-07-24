@@ -38,6 +38,7 @@
     bits 32
 
     extern handle_trap
+    extern restore_fpu_state
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: interrupt_entry
@@ -143,6 +144,9 @@ interrupt_entry:
     ; new threads start here
     global return_from_interrupt:function (return_from_interrupt.end - return_from_interrupt)
 return_from_interrupt:
+
+    ; Restore FPU/SSE state
+    call restore_fpu_state
     
     pop eax                 ; 0
     pop ebx                 ; 4
@@ -222,6 +226,9 @@ fast_intel_entry:
     
     ; cleanup handle_trap() argument
     add esp, 4
+
+    ; Restore FPU/SSE state
+    call restore_fpu_state
     
     pop eax                 ; 0
     pop ebx                 ; 4
@@ -320,6 +327,9 @@ fast_amd_entry:
     
     ; cleanup handle_trap() argument
     add esp, 4
+
+    ; Restore FPU/SSE state
+    call restore_fpu_state
     
     pop eax                 ; 0
     pop ebx                 ; 4

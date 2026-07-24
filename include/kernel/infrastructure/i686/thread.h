@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2019-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -34,6 +34,8 @@
 
 #include <kernel/machine/types.h>
 #include <stdbool.h>
+
+void *get_thread_fpu_area(thread_t *thread);
 
 void switch_thread_stack(machine_thread_t *from, machine_thread_t *to);
 
