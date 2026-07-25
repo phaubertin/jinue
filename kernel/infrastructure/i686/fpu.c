@@ -173,10 +173,20 @@ void prepare_fpu_area(thread_t *thread) {
  * switch, but is isn't saved (we "restore" the initialization state) if a
  * thread isn't using the FPU.
  * 
+ * CPU errata ICL012, ICL013, ICL017: some Intel CPUs mistakenly trigger a #NM
+ * exception in situations where they should trigger a #UD exception instead.
+ * This function, which is called by the exception handler, detects the
+ * situation and lets the caller know.
+ * 
  * @param thread the thread
+ * @return true on success, false if thread was already marked as using the FPU
  */
-void use_fpu(thread_t *thread) {
+bool use_fpu(thread_t *thread) {
     machine_thread_t *machine_thread = &thread->machine_thread;
+
+    if(machine_thread->flags & THREAD_FLAG_USES_FPU) {
+        return false;
+    }
 
     /* Thread now uses the FPU. */
     machine_thread->flags |= THREAD_FLAG_USES_FPU;
@@ -184,6 +194,8 @@ void use_fpu(thread_t *thread) {
     /* Make sure the FPU is initialized with the initial state set by
      * prepare_fpu_area(). */
     machine_thread->flags |= THREAD_FLAG_FPU_STATE_SAVED;
+
+    return true;
 }
 
 /**

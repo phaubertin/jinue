@@ -33,12 +33,13 @@
 #define JINUE_KERNEL_INFRASTRUCTURE_I686_FPU_H
 
 #include <kernel/types.h>
+#include <stdbool.h>
 
 void initialize_fpu(void);
 
 void prepare_fpu_area(thread_t *thread);
 
-void use_fpu(thread_t *thread);
+bool use_fpu(thread_t *thread);
 
 void save_fpu_state(thread_t *thread);
 

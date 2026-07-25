@@ -46,10 +46,24 @@
 
 static void handle_exception(unsigned int ivt, uintptr_t eip, uint32_t errcode) {
     if(ivt == EXCEPTION_NO_COPROC) {
-        /** Lazy FPU initialization: mark a thread as using the FPU on first
+        /* Lazy FPU initialization: mark a thread as using the FPU on first
          * use. */
-        use_fpu(get_current_thread());
-        return;
+        bool result = use_fpu(get_current_thread());
+
+        /* CPU errata ICL012, ICL013, ICL017: some Intel CPUs mistakenly
+         * trigger a #NM exception in situations where they should trigger a
+         * #UD exception instead. use_fpu() returns false if the thread was
+         * already marked as using the FPU to allow this situation to be
+         * handled here.
+         * 
+         * We want to handle it to prevent an infinite loop where we ping pong
+         * forever between userspace and the kernel because of a single invalid
+         * instruction. */
+        if(result) {
+            return;
+        }
+        
+        ivt = EXCEPTION_INVALID_OP;
     }
 
     info("EXCEPT: %u cr2=%#" PRIx32 " errcode=%#" PRIx32 " eip=%#" PRIxPTR,
