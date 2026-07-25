@@ -48,6 +48,7 @@ deps                = $(kernel_img) $(testapp_initrd)
 tests = \
 	test_486_too_old \
 	test_acpi \
+	test_aes \
 	test_boot_no_nx \
 	test_boot_nx \
 	test_boot_pentium \
