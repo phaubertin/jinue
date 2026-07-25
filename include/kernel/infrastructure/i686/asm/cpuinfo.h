@@ -54,11 +54,9 @@
 
 #define CPU_FEATURE_SSE         (1<<9)
 
-#define CPU_FEATURE_SSE2        (1<<10)
+#define CPU_FEATURE_SYSCALL     (1<<10)
 
-#define CPU_FEATURE_SYSCALL     (1<<11)
-
-#define CPU_FEATURE_SYSENTER    (1<<12)
+#define CPU_FEATURE_SYSENTER    (1<<11)
 
 /* workarounds */
 
