@@ -39,6 +39,7 @@
 #include "tests/abcd.h"
 #include "tests/ipc.h"
 #include "tests/scroll.h"
+#include "tests/sse.h"
 #include "debug.h"
 #include "utils.h"
 
@@ -67,6 +68,7 @@ int main(int argc, char *argv[]) {
     run_abcd_test();
     run_ipc_test();
     run_scroll_test();
+    run_sse_test();
 
     if(bool_getenv("DEBUG_DO_REBOOT")) {
         jinue_info("Rebooting.");

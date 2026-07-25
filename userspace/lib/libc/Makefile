@@ -45,6 +45,7 @@ sources.c        = \
 	malloc.c \
 	mmap.c \
 	physmem.c \
+	rand.c \
 	snprintf.c \
 	string.c \
 	vsnprintf.c
@@ -66,7 +67,8 @@ objects.user     = \
 	getenv.o init.o \
 	malloc.o \
 	mmap.o \
-	physmem.o
+	physmem.o \
+	rand.o
 objects.pthread  = \
 	i686/pthread-nasm.o \
 	i686/stack.o \

@@ -1,4 +1,5 @@
-# Copyright (C) 2019-2023 Philippe Aubertin.
+#!/bin/bash
+# Copyright (C) 2026 Philippe Aubertin.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,54 +28,19 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-jinue_root = ../..
-include $(jinue_root)/header.mk
+CMDLINE="RUN_TEST_SSE=1"
 
-sources.c = \
-	tests/abcd.c \
-	tests/ipc.c \
-	tests/scroll.c \
-	tests/sse.c \
-	debug.c \
-	testapp.c \
-	utils.c
-sources.nasm = \
-	tests/sse.asm
-testapp         	 = testapp
-stripped             = $(testapp)-stripped
-temp_ramdisk_fs		 = ramdisk-tmp
-ramdisk 			 = $(notdir $(testapp_initrd))
+run
 
-target          	 = $(ramdisk)
-unclean_recursive	 = $(temp_ramdisk_fs)
+check_kernel_start
 
-# The linker might not link crt.o from libjinue.a, which is required to
-# provide the _start entry point but otherwise contains no symbol that
-# other object files are interested in. I have seen different behaviour
-# in this regard on different machines with different versions of the
-# linker. By explicitly forcing _start as an undefined symbol, we
-# ensure the linker links the startup code.
-LDFLAGS         += -Wl,-u,_start $(CFLAGS.arch)
-LDLIBS           = -lgcc
+# If check_no_panic, check_no_error would also fail, but check_no_panic provides
+# more relevant context in the log.
+check_no_panic
 
-unclean.extra    = $(testapp) $(stripped)
+check_no_error
 
-include $(common)
+echo "* Check SSE test ran and passed"
+grep -F "SSE test result: PASS" $LOG || fail
 
-$(libjinue_syscalls) $(libjinue_utils): FORCE
-	$(MAKE) -C $(libjinue)
-	
-$(libc)/libc.a $(libc)/libpthread.a: FORCE
-	$(MAKE) -C $(libc)
-
-$(testapp): $(objects) $(libjinue_utils) $(libc)/libpthread.a $(libc)/libc.a $(libjinue_syscalls)
-
-$(stripped): $(testapp)
-
-$(temp_ramdisk_fs): $(stripped)
-	mkdir -p $(temp_ramdisk_fs)/sbin
-	cp $(stripped) $(temp_ramdisk_fs)/sbin/init
-	touch $(temp_ramdisk_fs)
-
-$(ramdisk): $(temp_ramdisk_fs)
-	tar -czvf $(ramdisk) -C $(temp_ramdisk_fs) sbin
+check_reboot

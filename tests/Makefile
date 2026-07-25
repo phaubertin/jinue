@@ -55,6 +55,7 @@ tests = \
 	test_ipc \
 	test_loader_exit \
 	test_mp \
+	test_sse \
 	test_vga_text_80x25
 
 # These tests are run through run-test.sh called with the -iso "run type"
