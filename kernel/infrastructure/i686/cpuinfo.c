@@ -530,7 +530,10 @@ static void detect_cve2018_3665(cpuinfo_t *cpuinfo) {
         return;
     }
 
-    /* Early Atom CPUs (Bonnell and Saltwell microarchitectures) do not speculate past */
+    /* Early Atom CPUs (Bonnell and Saltwell microarchitectures) are not
+     * affected because they have a simple execution pipeline that does not
+     * allow the kind of speculative execution needed to exploit this CPU
+     * vulnerability.*/
     static const uint8_t clean[] = {0x1C, 0x26, 0x27, 0x35, 0x36};
 
     for(int idx = 0; idx < sizeof(clean) / sizeof(clean[0]); ++idx) {
