@@ -32,11 +32,16 @@ include $(jinue_root)/header.mk
 
 sources.c = \
 	tests/abcd.c \
+	tests/aes.c \
 	tests/ipc.c \
 	tests/scroll.c \
+	tests/sse.c \
 	debug.c \
 	testapp.c \
 	utils.c
+sources.nasm = \
+	tests/aes.asm \
+	tests/sse.asm
 testapp         	 = testapp
 stripped             = $(testapp)-stripped
 temp_ramdisk_fs		 = ramdisk-tmp

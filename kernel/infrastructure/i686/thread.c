@@ -37,6 +37,7 @@
 #include <kernel/infrastructure/i686/isa/instrs.h>
 #include <kernel/infrastructure/i686/isa/regs.h>
 #include <kernel/infrastructure/i686/cpuinfo.h>
+#include <kernel/infrastructure/i686/fpu.h>
 #include <kernel/infrastructure/i686/descriptors.h>
 #include <kernel/infrastructure/i686/percpu.h>
 #include <kernel/infrastructure/i686/thread.h>
@@ -99,6 +100,10 @@ static addr_t get_kernel_stack_base(thread_t *thread) {
     return (addr_t)thread + THREAD_CONTEXT_SIZE;
 }
 
+void *get_thread_fpu_area(thread_t *thread) {
+    return ALIGN_END_PTR(&thread[1], 16);
+}
+
 void machine_prepare_thread(thread_t *thread, const thread_params_t *params) {
     /* setup stack for initial return to user space */
     void *kernel_stack_base = get_kernel_stack_base(thread);
@@ -124,8 +129,12 @@ void machine_prepare_thread(thread_t *thread, const thread_params_t *params) {
     /* This is the address to which switch_thread_stack() will return. */
     kernel_context->eip = (uint32_t)return_from_interrupt;
 
-    /* set thread stack pointer */
-    thread->machine_thread.saved_stack_pointer = (addr_t)kernel_context;
+    /* set thread stack pointer and flags */
+    machine_thread_t *machine_thread = &thread->machine_thread;
+    machine_thread->saved_stack_pointer = (addr_t)kernel_context;
+    machine_thread->flags               = THREAD_FLAG_NONE;
+
+    prepare_fpu_area(thread);
 }
 
 thread_t *machine_alloc_thread(void) {
@@ -153,6 +162,10 @@ static void set_kernel_stack(thread_t *thread) {
 
 void machine_switch_thread(thread_t *from, thread_t *to) {
     assert(to != NULL);
+
+    if(from != NULL) {
+        save_fpu_state(from);
+    }
 
     set_kernel_stack(to);
 

@@ -37,8 +37,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include "tests/abcd.h"
+#include "tests/aes.h"
 #include "tests/ipc.h"
 #include "tests/scroll.h"
+#include "tests/sse.h"
 #include "debug.h"
 #include "utils.h"
 
@@ -65,8 +67,10 @@ int main(int argc, char *argv[]) {
     jinue_info("Loader has exited.");
 
     run_abcd_test();
+    run_aes_test();
     run_ipc_test();
     run_scroll_test();
+    run_sse_test();
 
     if(bool_getenv("DEBUG_DO_REBOOT")) {
         jinue_info("Rebooting.");

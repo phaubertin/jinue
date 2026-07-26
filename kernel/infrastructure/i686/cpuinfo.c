@@ -98,10 +98,6 @@ static void enumerate_bootinfo_features(cpuinfo_t *cpuinfo, const bootinfo_t *bo
 static void get_cpuid_leafs(cpuid_leafs_set *leafs) {
     memset(leafs, 0, sizeof(cpuid_leafs_set));
 
-    if(!cpu_has_feature(CPU_FEATURE_CPUID)) {
-        return;
-    }
-
     const uint32_t ext_base = 0x80000000;
     const uint32_t soft_base = 0x40000000;
     
@@ -297,16 +293,30 @@ static void enumerate_features(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs)
        cpuinfo->features |= CPU_FEATURE_APIC;
     }
 
+    /* Floating Point Unit (FPU) */
+    if(flags & CPUID_FEATURE_FPU) {
+        cpuinfo->features |= CPU_FEATURE_FPU;
+    }
+
+    /* Page Attribute Table (PAT) */
+    if(flags & CPUID_FEATURE_PAT) {
+        cpuinfo->features |= CPU_FEATURE_PAT;
+    }
+
     /* global pages */
     if(flags & CPUID_FEATURE_PGE) {
         cpuinfo->features |= CPU_FEATURE_PGE;
     }
 
-    if(flags & CPUID_FEATURE_PAT) {
-        cpuinfo->features |= CPU_FEATURE_PAT;
+    /* FXSAVE/FXRSTOR instuctions */
+    const bool fxsr = !!(flags & CPUID_FEATURE_FXSR);
+
+    if(fxsr) {
+        cpuinfo->features |= CPU_FEATURE_FXSR;
     }
 
-    if(flags & CPUID_FEATURE_SSE) {
+    /* Streaming SIMD Extensions (SSE) */
+    if(fxsr && (flags & CPUID_FEATURE_SSE)) {
         cpuinfo->features |= CPU_FEATURE_SSE;
     }
 
@@ -498,16 +508,65 @@ static void identify_maxphyaddr(cpuinfo_t *cpuinfo, const cpuid_leafs_set *leafs
 }
 
 /**
+ * Detect whether CPU may be vulnerable to CVE-2018-3665
+ * 
+ * @param cpuinfo CPU information structure
+ */
+static void detect_cve2018_3665(cpuinfo_t *cpuinfo) {
+    /* Only Intel CPUs are known (and likely) to be affected. */
+    if(cpuinfo->vendor != CPU_VENDOR_INTEL) {
+        return;
+    }
+
+    /* The original Pentium and earlier CPUs cannot be affected because they do
+     * not execute speculatively. */
+    if(cpuinfo->family < 6) {
+        return;
+    }
+
+    /* This covers essentially only Penitium 4 (family 15). */
+    if(cpuinfo->family > 6) {
+        cpuinfo->workarounds |= CPU_WORKAROUND_CVE2018_3665;
+        return;
+    }
+
+    /* Early Atom CPUs (Bonnell and Saltwell microarchitectures) are not
+     * affected because they have a simple execution pipeline that does not
+     * allow the kind of speculative execution needed to exploit this CPU
+     * vulnerability.*/
+    static const uint8_t clean[] = {0x1C, 0x26, 0x27, 0x35, 0x36};
+
+    for(int idx = 0; idx < sizeof(clean) / sizeof(clean[0]); ++idx) {
+        if(cpuinfo->model == clean[idx]) {
+            return;
+        }
+    }
+
+    cpuinfo->workarounds |= CPU_WORKAROUND_CVE2018_3665;
+}
+
+/**
+ * Identify which CPU workarounds need to be enabled
+ * 
+ * @param cpuinfo CPU information structure
+ */
+static void identify_workarounds(cpuinfo_t *cpuinfo) {
+    detect_cve2018_3665(cpuinfo);
+}
+
+/**
  * Log a string representation of the CPU feature flags
  * 
  * @param cpuinfo CPU information structure
  */
 static void dump_features(const cpuinfo_t *cpuinfo) {
     info(
-        "  Features:%s%s%s%s%s%s%s%s%s%s%s",
+        "  Features:%s%s%s%s%s%s%s%s%s%s%s%s%s",
         (cpuinfo->features == 0) ? " (none)" : "",
         (cpuinfo->features & CPU_FEATURE_APIC) ? " apic" : "",
         (cpuinfo->features & CPU_FEATURE_CPUID) ? " cpuid" : "",
+        (cpuinfo->features & CPU_FEATURE_FPU) ? " fpu" : "",
+        (cpuinfo->features & CPU_FEATURE_FXSR) ? " fxsr" : "",
         (cpuinfo->features & CPU_FEATURE_NX) ? " nx" : "",
         (cpuinfo->features & CPU_FEATURE_PAE) ? " pae" : "",
         (cpuinfo->features & CPU_FEATURE_PAT) ? " pat" : "",
@@ -516,6 +575,19 @@ static void dump_features(const cpuinfo_t *cpuinfo) {
         (cpuinfo->features & CPU_FEATURE_SSE) ? " sse" : "",
         (cpuinfo->features & CPU_FEATURE_SYSCALL) ? " syscall" : "",
         (cpuinfo->features & CPU_FEATURE_SYSENTER) ? " sysenter" : ""
+    );
+}
+
+/**
+ * Log a string representation of the enabled CPU workarounds
+ * 
+ * @param cpuinfo CPU information structure
+ */
+static void dump_workarounds(const cpuinfo_t *cpuinfo) {
+    info(
+        "  Workarounds:%s%s",
+        (cpuinfo->workarounds == 0) ? " (none)" : "",
+        (cpuinfo->workarounds & CPU_WORKAROUND_CVE2018_3665) ? " cve-2018-3665" : ""
     );
 }
 
@@ -544,6 +616,12 @@ static const char *get_vendor_string(const cpuinfo_t *cpuinfo) {
     }
 }
 
+/** 
+ * Return the name of the hypervisor
+ * 
+ * @param cpuinfo CPU information structure
+ * @return Name of hypervisor
+ */
 static const char *get_hypervisor_string(const cpuinfo_t *cpuinfo) {
     switch(cpuinfo->hypervisor) {
         case HYPERVISOR_ID_ACRN:
@@ -582,6 +660,8 @@ static void dump_cpu_info(const cpuinfo_t *cpuinfo) {
     );
     
     dump_features(cpuinfo);
+    
+    dump_workarounds(cpuinfo);
 
     info("  Brand string: %s", cpuinfo->brand_string);
     info("  Data cache alignment: %u bytes", cpuinfo->dcache_alignment);
@@ -594,44 +674,14 @@ static void dump_cpu_info(const cpuinfo_t *cpuinfo) {
     }
 }
 
-/**
- * Detect the features of the bootstrap processor (BSP)
- */
-void detect_cpu_features(const bootinfo_t *bootinfo) {
-    enumerate_bootinfo_features(&bsp_cpuinfo, bootinfo);
+static const char *const pentium_or_later =
+    "A Pentium CPU or later with an integrated local APIC and FPU is required";
 
-    cpuid_leafs_set cpuid_leafs;
-    get_cpuid_leafs(&cpuid_leafs);
-
-    identify_model(&bsp_cpuinfo, &cpuid_leafs);
-
-    enumerate_features(&bsp_cpuinfo, &cpuid_leafs);
-    
-    identify_hypervisor(&bsp_cpuinfo, &cpuid_leafs);
-
-    get_brand_string(&bsp_cpuinfo, &cpuid_leafs);
-
-    identify_dcache_alignment(&bsp_cpuinfo, &cpuid_leafs);
-
-    identify_maxphyaddr(&bsp_cpuinfo, &cpuid_leafs);
-
-    dump_cpu_info(&bsp_cpuinfo);
-}
-
-/**
- * Check the CPU satisfies the minimum requirements for this kernel
- * 
- * This function panics if the minimum requirements aren't met. It is a
- * separate function because we want to defer this check and possible kernel
- * panic to after logging has been enabled.
- */
-void check_cpu_minimum_requirements(void) {
+/** Check the CPU satisfies the minimum requirements for this kernel */
+static void check_cpu_minimum_requirements(void) {
     bool too_old = false;
 
-    if(!cpu_has_feature(CPU_FEATURE_CPUID)) {
-        error("CPUID instruction is not supported");
-        too_old = true;
-    } else if(bsp_cpuinfo.family < 5) {
+    if(bsp_cpuinfo.family < 5) {
         error("CPU family: %u", bsp_cpuinfo.family);
         too_old = true;
     }
@@ -641,9 +691,47 @@ void check_cpu_minimum_requirements(void) {
         too_old = true;
     }
 
-    if(too_old) {
-        panic("A Pentium CPU or later with an integrated local APIC is required");
+    if(!cpu_has_feature(CPU_FEATURE_FPU)) {
+        error("no Floating Point Unit (FPU)");
+        too_old = true;
     }
+
+    if(too_old) {
+        panic(pentium_or_later);
+    }
+}
+
+/**
+ * Detect the features of the bootstrap processor (BSP)
+ */
+void detect_cpu_features(const bootinfo_t *bootinfo) {
+    enumerate_bootinfo_features(&bsp_cpuinfo, bootinfo);
+
+    if(!cpu_has_feature(CPU_FEATURE_CPUID)) {
+        error("CPUID instruction is not supported.");
+        panic(pentium_or_later);
+    }
+
+    cpuid_leafs_set cpuid_leafs;
+    get_cpuid_leafs(&cpuid_leafs);
+
+    identify_model(&bsp_cpuinfo, &cpuid_leafs);
+
+    enumerate_features(&bsp_cpuinfo, &cpuid_leafs);
+
+    check_cpu_minimum_requirements();
+    
+    identify_hypervisor(&bsp_cpuinfo, &cpuid_leafs);
+
+    get_brand_string(&bsp_cpuinfo, &cpuid_leafs);
+
+    identify_dcache_alignment(&bsp_cpuinfo, &cpuid_leafs);
+
+    identify_maxphyaddr(&bsp_cpuinfo, &cpuid_leafs);
+
+    identify_workarounds(&bsp_cpuinfo);
+
+    dump_cpu_info(&bsp_cpuinfo);
 }
 
 /**
@@ -670,6 +758,23 @@ unsigned int machine_get_cpu_dcache_alignment(void) {
  */
 bool cpu_has_feature(uint32_t mask) {
     return (bsp_cpuinfo.features & mask) == mask;
+}
+
+/**
+ * Determine whether the CPU needs the workaround
+ * 
+ * Use the CPU_WORKAROUND_... constants for the mask arguments. A bitwise or of
+ * multiple of these constants is allowed, in which case this function will
+ * return true only if at least one of the specified workarounds is needed.
+ * 
+ * This function returns whether the boot CPU requires the specified
+ * workaround. However, all CPUs should need the same workarounds.
+ * 
+ * @param mask workaround(s) for which to check is required
+ * @return true if workaround is required, false otherwise
+ */
+bool cpu_needs_workaround(uint32_t mask) {
+    return (bsp_cpuinfo.workarounds & mask) != 0;
 }
 
 /**

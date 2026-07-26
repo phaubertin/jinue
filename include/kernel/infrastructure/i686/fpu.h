@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,53 +29,20 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/utils.h>
-#include <limits.h>
-#include <pthread.h>
+#ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_FPU_H
+#define JINUE_KERNEL_INFRASTRUCTURE_I686_FPU_H
+
+#include <kernel/types.h>
 #include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include "../utils.h"
-#include "abcd.h"
 
-#define THREADS_NUM 8
+void initialize_fpu(void);
 
-static void *thread_func(void *arg) {
-    while(true) {
-        jinue_info("%s", (const char *)arg);
-    }
+void prepare_fpu_area(thread_t *thread);
 
-    return NULL;
-}
+bool use_fpu(thread_t *thread);
 
-static void initialize_string(char *str, int thread_index) {
-    for(int idx = 0; idx < THREADS_NUM; ++idx) {
-        str[2 * idx]        = '.';
-        str[2 * idx + 1]    = ' ';
-    }
+void save_fpu_state(thread_t *thread);
 
-    str[2 * thread_index]       = 'A' + thread_index;
-    str[2 * THREADS_NUM - 1]    = '\0';
-}
+void restore_fpu_state(void);
 
-void run_abcd_test(void) {
-    pthread_t threads[THREADS_NUM];
-    char strings[THREADS_NUM][2 * THREADS_NUM + 1];
-
-    if(! bool_getenv("RUN_TEST_ABCD")) {
-        return;
-    }
-
-    for(int idx = 0; idx < THREADS_NUM; ++idx) {
-        initialize_string(strings[idx], idx);
-        int status = start_thread(&threads[idx], thread_func, strings[idx]);
-
-        if(status != EXIT_SUCCESS) {
-            return;
-        }
-    }
-
-    for(int idx = 0; idx < THREADS_NUM; ++idx) {
-        pthread_join(threads[idx], NULL);
-    }
-}
+#endif

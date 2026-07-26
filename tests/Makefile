@@ -48,6 +48,7 @@ deps                = $(kernel_img) $(testapp_initrd)
 tests = \
 	test_486_too_old \
 	test_acpi \
+	test_aes \
 	test_boot_no_nx \
 	test_boot_nx \
 	test_boot_pentium \
@@ -55,6 +56,7 @@ tests = \
 	test_ipc \
 	test_loader_exit \
 	test_mp \
+	test_sse \
 	test_vga_text_80x25
 
 # These tests are run through run-test.sh called with the -iso "run type"

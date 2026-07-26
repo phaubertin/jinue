@@ -32,8 +32,11 @@
 #ifndef TESTAPP_UTILS_H_
 #define TESTAPP_UTILS_H_
 
+#include <pthread.h>
 #include <stdbool.h>
 
 bool bool_getenv(const char *name);
+
+int start_thread(pthread_t *thread, void *(*start_routine)(void*), void *arg);
 
 #endif

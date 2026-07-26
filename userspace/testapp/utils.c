@@ -29,7 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
+#include <jinue/utils.h>
+#include <limits.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -47,4 +48,31 @@ bool bool_getenv(const char *name) {
             strcmp(value, "true") == 0 ||
             strcmp(value, "yes") == 0 ||
             strcmp(value, "1") == 0;
+}
+
+int start_thread(pthread_t *thread, void *(*start_routine)(void*), void *arg) {
+    pthread_attr_t attr;
+    
+    int status = pthread_attr_init(&attr);
+
+    if(status != 0) {
+        jinue_error("error: pthread_attr_init() failed: %s", strerror(status));
+        return EXIT_FAILURE;
+    }
+
+    status = pthread_attr_setstacksize(&attr, PTHREAD_STACK_MIN);
+
+    if(status != 0) {
+        jinue_error("error: pthread_attr_setstacksize() failed: %s", strerror(status));
+        return EXIT_FAILURE;
+    }
+
+    status = pthread_create(thread, &attr, start_routine, arg);
+
+    if(status != 0) {
+        jinue_error("error: could not create thread: %s", strerror(status));
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
 }

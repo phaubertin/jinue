@@ -58,4 +58,18 @@ void sfence_fallback(void);
 
 void wbinvd(void);
 
+void fninit(void);
+
+void fnsave(void *area);
+
+void frstor(void *area);
+
+void fxsave(void *area);
+
+void fxrstor(void *area);
+
+void clts(void);
+
+void ldmxcsr(uint32_t value);
+
 #endif

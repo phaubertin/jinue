@@ -125,6 +125,7 @@ sources.kernel.c = \
 	infrastructure/i686/cpuidsig.c \
 	infrastructure/i686/cpuinfo.c \
 	infrastructure/i686/debug.c \
+	infrastructure/i686/fpu.c \
 	infrastructure/i686/halt.c \
 	infrastructure/i686/init.c \
 	infrastructure/i686/percpu.c \

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -38,5 +38,15 @@
 #define THREAD_CONTEXT_SIZE     PAGE_SIZE
 
 #define THREAD_CONTEXT_MASK     (~(THREAD_CONTEXT_SIZE - 1))
+
+
+#define THREAD_FPU_AREA_SIZE        512
+
+
+#define THREAD_FLAG_NONE            0
+
+#define THREAD_FLAG_USES_FPU        (1<<0)
+
+#define THREAD_FLAG_FPU_STATE_SAVED (1<<1)
 
 #endif

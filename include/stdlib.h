@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -34,14 +34,20 @@
 
 #include <stddef.h>
 
-#define EXIT_SUCCESS 0
+#define EXIT_SUCCESS    0
 
-#define EXIT_FAILURE 1
+#define EXIT_FAILURE    1
+
+#define RAND_MAX        32767
 
 void free(void *ptr);
 
 char *getenv(const char *name);
 
 void *malloc(size_t size);
+
+void srand(unsigned int seed);
+
+int rand(void);
 
 #endif

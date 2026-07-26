@@ -39,6 +39,7 @@
 
 typedef struct {
     uint32_t        features;
+    uint32_t        workarounds;
     uint32_t        dcache_alignment;
     uint8_t         maxphyaddr;
     uint8_t         vendor;
@@ -51,9 +52,9 @@ typedef struct {
 
 void detect_cpu_features(const bootinfo_t *bootinfo);
 
-void check_cpu_minimum_requirements(void);
-
 bool cpu_has_feature(uint32_t mask);
+
+bool cpu_needs_workaround(uint32_t mask);
 
 unsigned int cpu_phys_addr_width(void);
 

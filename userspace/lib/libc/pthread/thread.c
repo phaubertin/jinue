@@ -182,7 +182,10 @@ int pthread_join(pthread_t thread, void **exit_status) {
         return errno_retval;
     }
 
-    *exit_status = thread->exit_status;
+    if(exit_status != NULL) {
+        *exit_status = thread->exit_status;
+    }
+
     return 0;
 }
 

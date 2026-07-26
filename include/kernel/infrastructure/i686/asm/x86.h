@@ -36,6 +36,18 @@
 #include <stdint.h>
 #endif
 
+/** CR0 register: monitor coprocessor */
+#define X86_CR0_MP                  (1<<1)
+
+/** CR0 register: FPU emulation */
+#define X86_CR0_EM                  (1<<2)
+
+/** CR0 register: task switched */
+#define X86_CR0_TS                  (1<<3)
+
+/** CR0 register: Numeric Error (native FPU errors) */
+#define X86_CR0_NE                  (1<<5)
+
 /** CR0 register: Write Protect */
 #define X86_CR0_WP                  (1<<16)
 
@@ -57,6 +69,15 @@
 
 /** CR4 register: global pages */
 #define X86_CR4_PGE                 (1<<7)
+
+/** CR4 register: OS Support for FXSAVE and FXRSTOR instructions */
+#define X86_CR4_OSFXSR              (1<<9)
+
+/** CR4 register: OS Support for Unmasked SIMD Floating-Point Exceptions */
+#define X86_CR4_OSXMMEXCPT          (1<<10)
+
+/** CR4 register: XSAVE and Processor Extended States-Enable Bit */
+#define X86_CR4_OSXSAVE             (1<<18)
 
 
 /** page is present in memory and readable

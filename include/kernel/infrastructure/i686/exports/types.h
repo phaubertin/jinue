@@ -64,7 +64,8 @@ typedef struct pdpt_t pdpt_t;
 typedef struct {
     /* The assembly language thread switching code makes the assumption that
      * saved_stack_pointer is the first member of this structure. */
-    addr_t saved_stack_pointer;
+    addr_t  saved_stack_pointer;
+    int     flags;
 } machine_thread_t;
 
 typedef struct {
