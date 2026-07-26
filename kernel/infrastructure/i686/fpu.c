@@ -75,6 +75,33 @@ typedef struct {
 /** value of MXCSR_MASK set by FXSAVE instruction */
 uint32_t mxcsr_mask;
 
+/**
+ * Read the value of MXCSR_MASK
+ * 
+ * The Intel SDM requires us to actually call the FXSAVE instruction to
+ * determine the value of MXCSR_MASK. See volume 1 section 11.6.6
+ * "Guidelines for Writing to the MXCSR Register".
+ *
+ */
+static void read_mxcsr_mask(void) {
+    fninit();
+    ldmxcsr(DEFAULT_MXCSR);
+
+    /* 512 bytes plus padding to allow to re-align on a 16 bytes boundary. */
+    unsigned char buffer[512 + 15];
+    fxsave_t* area = ALIGN_END_PTR(buffer, 16);
+
+    area->mxcsr_mask = 0;
+
+    fxsave(area);
+
+    mxcsr_mask = area->mxcsr_mask;
+
+    if (mxcsr_mask == 0) {
+        mxcsr_mask = 0x0000ffbf;
+    }
+}
+
 /** Initialize the FPU for x87 and SSE instructions */
 void initialize_fpu(void) {
     /* No need to check for FPU since this is part of CPU requirements for this
@@ -90,7 +117,8 @@ void initialize_fpu(void) {
     /* Task not switched. */
     cr0 &= ~X86_CR0_TS;
 
-    /* Use internally-generated exceptions for FPU errors, */
+    /* Use internally-generated exceptions for FPU errors, not the legacy
+     * external interrupt mechanism. */
     cr0 |= X86_CR0_NE;
 
     set_cr0(cr0);
@@ -112,24 +140,7 @@ void initialize_fpu(void) {
 
     set_cr4(cr4);
 
-    /* 512 bytes plus padding to allow to re-align on 16 bytes boundary. */
-    unsigned char buffer[512 + 15];
-    fxsave_t* area = ALIGN_START_PTR(buffer, 16);
-    
-    /* The Intel SDM requires us to actually call the FXSAVE instruction to
-     * determine the value of MXCSR_MASK. See volume 1 section 11.6.6
-     * "Guidelines for Writing to the MXCSR Register". */
-    memset(area, 0, 512);
-    fninit();
-    ldmxcsr(DEFAULT_MXCSR);
-
-    fxsave(area);
-
-    mxcsr_mask = area->mxcsr_mask;
-
-    if (mxcsr_mask == 0) {
-        mxcsr_mask = 0x0000ffbf;
-    }
+    read_mxcsr_mask();
 }
 
 /**
@@ -164,14 +175,14 @@ void prepare_fpu_area(thread_t *thread) {
  * Set a thread as using the FPU
  * 
  * We use a lazy initialization scheme where the very first time a thread uses
- * the FPU, it is marked as using the FPU, which makes is subject to FPU state
+ * the FPU, it is marked as using the FPU, which makes it subject to FPU state
  * save/restore on context switches. If a thread never uses the FPU, it's FPU
  * state never has to be saved or restored.
  * 
  * CVE-2018-3665: recent Intel CPUs leak FPU state through speculative
- * execution. On these CPU, the FPU state is always restored after a context
- * switch, but is isn't saved (we "restore" the initialization state) if a
- * thread isn't using the FPU.
+ * execution. On these CPUs, if a thread isn't using the FPU, we always restore
+ * the FPU state after a context switch but never save it (we "restore" the
+ * initialization state).
  * 
  * CPU errata ICL012, ICL013, ICL017: some Intel CPUs mistakenly trigger a #NM
  * exception in situations where they should trigger a #UD exception instead.

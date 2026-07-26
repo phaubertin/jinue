@@ -34,21 +34,6 @@
 #include "../utils.h"
 #include "aes.h"
 
-/*
-RFC 3686:
-
-   Test Vector #1: Encrypting 16 octets using AES-CTR with 128-bit key
-   AES Key          : AE 68 52 F8 12 10 67 CC 4B F7 A5 76 55 77 F3 9E
-   AES-CTR IV       : 00 00 00 00 00 00 00 00
-   Nonce            : 00 00 00 30
-   Plaintext String : 'Single block msg'
-   Plaintext        : 53 69 6E 67 6C 65 20 62 6C 6F 63 6B 20 6D 73 67
-   Counter Block (1): 00 00 00 30 00 00 00 00 00 00 00 00 00 00 00 01
-   Key Stream    (1): B7 60 33 28 DB C2 93 1B 41 0E 16 C8 06 7E 62 DF
-   Ciphertext       : E4 09 5D 4F B7 A7 B3 79 2D 61 75 A3 26 13 11 B8
-
-*/
-
 void run_aes_test(void) {
     if(! bool_getenv("RUN_TEST_AES")) {
         return;
