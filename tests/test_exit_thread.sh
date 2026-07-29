@@ -28,7 +28,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-CMDLINE="RUN_TEST_CANCEL_THREAD=1"
+CMDLINE="RUN_TEST_EXIT_THREAD=1"
 
 run
 
@@ -43,11 +43,7 @@ check_no_error
 check_no_warning
 
 echo "* Check test has started"
-grep -F "Running thread cancellation test..." $LOG || fail
-
-echo "* Check thread ran at least two loop iterations"
-grep -E "Thread loop iteration: 1$" $LOG || fail
-grep -E "Thread loop iteration: 2$" $LOG || fail
+grep -F "Running thread exit test..." $LOG || fail
 
 echo "* Check the inner cancellation handler ran"
 grep -F "Running cancellation handler: inner" $LOG || fail
@@ -57,7 +53,7 @@ AFTER=`grep -F -A 5 "Running cancellation handler: inner" $LOG`
 echo "* Check the outer cancellation handler ran after the inner one"
 echo "$AFTER" | grep -F 'Running cancellation handler: outer' || fail
 
-echo "* Check the thread exit value was PTHREAD_CANCELED"
-grep -F "Thread exit value is PTHREAD_CANCELED" $LOG || fail
+echo "* Check thread exit value retrieved by main thread is correct"
+grep -F "Thread exit value is 0xdeadbeef" $LOG || fail
 
 check_reboot
