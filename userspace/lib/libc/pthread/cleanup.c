@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,36 +29,37 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LIBC_PTHREAD_THREAD_H
-#define LIBC_PTHREAD_THREAD_H
-
+#include <jinue/jinue.h>
 #include <pthread.h>
+#include <stdbool.h>
 #include <stddef.h>
+#include "cleanup.h"
 
-#define THREAD_FLAG_DETACHED    (1<<0)
+static __pthread_cancellation_handler_t *handlers = NULL;
 
-#define THREAD_FLAG_CANCELLED   (1<<1)
+void __pthread_cleanup_push(__pthread_cancellation_handler_t *handler) {
+    handler->next   = handlers;
+    handlers        = handler;
+}
 
+static bool do_pop(bool execute) {
+    if(handlers == NULL) {
+        return false;
+    }
 
-#define THREAD_OWN_FLAG_CANCELLATION_DISABLED   (1<<0)
+    if(execute) {
+        handlers->routine(handlers->arg);
+    }
 
-struct __pthread {
-    struct __pthread    *self;
-    struct __pthread    *next;
-    int                  fd;
-    /* We don't yet have synchonization primitives implemented, which makes
-     * this not thread safe. As a temporary measure to address the most
-     * egregious issues, we segregate the flags expected to be updated by the
-     * thread itself (self_flags) from the ones set by other threads
-     * (flags). */
-    int                  flags;
-    int                  own_flags;
-    int                  local_errno;
-    void                *stackaddr;
-    size_t               stacksize;
-    void                *alloc_stackaddr;
-    size_t               alloc_stacksize;
-    void                *exit_status;
-};
+    handlers = handlers->next;
 
-#endif
+    return true;
+}
+
+void __pthread_cleanup_pop(int execute) {
+    (void)do_pop(!!execute);
+}
+
+void __pthread_cleanup_execute_all(void) {
+    while(do_pop(true)) {}
+}

@@ -31,6 +31,7 @@
 
 #include <jinue/jinue.h>
 #include <sys/mman.h>
+#include <errno.h>
 #include <internals.h>
 #include <limits.h>
 #include <pthread.h>
@@ -39,6 +40,7 @@
 #include "../malloc.h"
 #include "../mmap.h"
 #include "attr.h"
+#include "cleanup.h"
 #include "machine.h"
 #include "thread.h"
 
@@ -151,8 +153,9 @@ int pthread_create(
         return errno_retval;
     }
 
-    candidate->flags        = THREAD_FLAG_RUNNING;
     candidate->local_errno  = 0;
+    candidate->flags        = 0;
+    candidate->own_flags    = 0;
 
     if(attr->detachstate == PTHREAD_CREATE_DETACHED) {
         candidate->flags |= THREAD_FLAG_DETACHED;
@@ -192,11 +195,57 @@ int pthread_join(pthread_t thread, void **exit_status) {
 void pthread_exit(void *exit_status) {
     pthread_t thread    = pthread_self();
     thread->exit_status = exit_status;
-    thread->flags       &= ~THREAD_FLAG_RUNNING;
 
+    __pthread_cleanup_execute_all();
+
+    /* TODO we need notifications from the kernel to prevent race conditions
+     * and leaked threads. */
     if(thread->flags & THREAD_FLAG_DETACHED) {
         free_thread_to_pool(thread);
     }
     
     jinue_exit_thread();
+}
+
+int pthread_cancel(pthread_t thread) {
+    thread->flags |= THREAD_FLAG_CANCELLED;
+    return 0;
+}
+
+void pthread_testcancel(void) {
+    pthread_t thread = pthread_self();
+
+    if(thread->own_flags & THREAD_OWN_FLAG_CANCELLATION_DISABLED) {
+        return;
+    }
+
+    if(!(thread->flags & THREAD_FLAG_CANCELLED)) {
+        return;
+    }
+
+    pthread_exit(PTHREAD_CANCELED);
+}
+
+int pthread_setcancelstate(int state, int *oldstate) {
+    pthread_t thread = pthread_self();
+
+    if(state != PTHREAD_CANCEL_DISABLE && state != PTHREAD_CANCEL_ENABLE) {
+        thread->local_errno = EINVAL;
+        return -1;
+    }
+
+    if(oldstate) {
+        *oldstate = !!(thread->own_flags & THREAD_OWN_FLAG_CANCELLATION_DISABLED)
+            ? PTHREAD_CANCEL_DISABLE
+            : PTHREAD_CANCEL_ENABLE;
+    }
+
+    if(state == PTHREAD_CANCEL_DISABLE) {
+        thread->own_flags |= THREAD_OWN_FLAG_CANCELLATION_DISABLED;
+    }
+    else {
+        thread->own_flags &= ~THREAD_OWN_FLAG_CANCELLATION_DISABLED;
+    }
+
+    return 0;
 }

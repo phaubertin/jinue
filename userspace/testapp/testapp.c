@@ -38,6 +38,7 @@
 #include <string.h>
 #include "tests/abcd.h"
 #include "tests/aes.h"
+#include "tests/cancel_thread.h"
 #include "tests/ipc.h"
 #include "tests/scroll.h"
 #include "tests/sse.h"
@@ -68,6 +69,7 @@ int main(int argc, char *argv[]) {
 
     run_abcd_test();
     run_aes_test();
+    run_cancel_thread_test();
     run_ipc_test();
     run_scroll_test();
     run_sse_test();

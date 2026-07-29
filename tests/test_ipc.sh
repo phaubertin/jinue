@@ -91,6 +91,9 @@ echo "$RESULT" | grep -F 'I/O error' || fail
 echo "* Check client thread exited cleanly"
 grep -F "Client thread is exiting." $LOG || fail
 
+echo "* Check the cleanup handler ran"
+grep -F "Running cancellation handler" $LOG || fail
+
 echo "* Check main thread joined the client thread and retrieved its exit value"
 grep -F "Client thread exit value is 0xdeadbeef." $LOG || fail
 
