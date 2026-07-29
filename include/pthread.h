@@ -114,15 +114,15 @@ void __pthread_cleanup_push(__pthread_cancellation_handler_t *handler);
 
 void __pthread_cleanup_pop(int execute);
 
-#define pthread_cleanup_push(r, a) \
+#define pthread_cleanup_push(__routine, __arg) \
         do {\
             __pthread_cancellation_handler_t __pthread_cancellation_handler = {\
-                .routine = r,\
-                .arg = a,\
+                .routine = __routine,\
+                .arg = __arg,\
             };\
             __pthread_cleanup_push(&__pthread_cancellation_handler);
-#define pthread_cleanup_pop(e) \
-            __pthread_cleanup_pop(e);\
+#define pthread_cleanup_pop(execute) \
+            __pthread_cleanup_pop(execute);\
         } while(0)
 
 #endif

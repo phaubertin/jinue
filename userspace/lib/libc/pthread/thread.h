@@ -43,22 +43,22 @@
 #define THREAD_OWN_FLAG_CANCELLATION_DISABLED   (1<<0)
 
 struct __pthread {
-    struct __pthread    *self;
-    struct __pthread    *next;
-    int                  fd;
+    struct __pthread                    *self;
+    struct __pthread                    *next;
+    int                                  fd;
     /* We don't yet have synchonization primitives implemented, which makes
      * this not thread safe. As a temporary measure to address the most
      * egregious issues, we segregate the flags expected to be updated by the
      * thread itself (self_flags) from the ones set by other threads
      * (flags). */
-    int                  flags;
-    int                  own_flags;
-    int                  local_errno;
-    void                *stackaddr;
-    size_t               stacksize;
-    void                *alloc_stackaddr;
-    size_t               alloc_stacksize;
-    void                *exit_status;
+    int                                  flags;
+    int                                  own_flags;
+    int                                  local_errno;
+    void                                *stackaddr;
+    size_t                               stacksize;
+    void                                *alloc_stackaddr;
+    size_t                               alloc_stacksize;
+    void                                *exit_status;
     __pthread_cancellation_handler_t    *cancel_handlers;
 };
 
