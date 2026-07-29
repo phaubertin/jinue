@@ -59,6 +59,7 @@ struct __pthread {
     void                *alloc_stackaddr;
     size_t               alloc_stacksize;
     void                *exit_status;
+    __pthread_cancellation_handler_t    *cancel_handlers;
 };
 
 #endif

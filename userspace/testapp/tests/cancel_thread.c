@@ -146,7 +146,7 @@ void run_cancel_thread_test(void) {
     }
 
     jinue_message_t reply;
-    message.send_buffers = 0;
+    reply.send_buffers_length= 0;
 
     ret = jinue_reply(&reply, &errno);
 

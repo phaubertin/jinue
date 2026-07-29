@@ -44,11 +44,6 @@
 
 int client_endpoint;
 
-static void cleanup_routine(void *p) {
-    jinue_info("Running cancellation handler");
-}
-
-
 static void ipc_test_run_client(void) {
     /* The order of these buffers is shuffled on purpose because they will be
      * concatenated later and we don't want things to look OK by coincidence. */
@@ -117,8 +112,6 @@ static void ipc_test_run_client(void) {
 }
 
 static void *ipc_test_client_thread(void *arg) {
-    pthread_cleanup_push(cleanup_routine, NULL);
-
     jinue_info("Client thread is starting with argument: %#p", arg);
     
     ipc_test_run_client();
@@ -126,8 +119,6 @@ static void *ipc_test_client_thread(void *arg) {
     jinue_info("Client thread is exiting.");
 
     return (void *)(uintptr_t)0xdeadbeef;
-
-    pthread_cleanup_pop(1);
 }
 
 void run_ipc_test(void) {

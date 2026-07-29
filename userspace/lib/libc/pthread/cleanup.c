@@ -34,24 +34,26 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include "cleanup.h"
-
-static __pthread_cancellation_handler_t *handlers = NULL;
+#include "thread.h"
 
 void __pthread_cleanup_push(__pthread_cancellation_handler_t *handler) {
-    handler->next   = handlers;
-    handlers        = handler;
+    pthread_t thread = pthread_self();
+    handler->next           = thread->cancel_handlers;
+    thread->cancel_handlers = handler;
 }
 
 static bool do_pop(bool execute) {
-    if(handlers == NULL) {
+    pthread_t thread = pthread_self();
+
+    if(thread->cancel_handlers == NULL) {
         return false;
     }
 
     if(execute) {
-        handlers->routine(handlers->arg);
+        thread->cancel_handlers->routine(thread->cancel_handlers->arg);
     }
 
-    handlers = handlers->next;
+    thread->cancel_handlers = thread->cancel_handlers->next;
 
     return true;
 }

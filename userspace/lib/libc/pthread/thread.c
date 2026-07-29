@@ -153,9 +153,10 @@ int pthread_create(
         return errno_retval;
     }
 
-    candidate->local_errno  = 0;
-    candidate->flags        = 0;
-    candidate->own_flags    = 0;
+    candidate->local_errno      = 0;
+    candidate->cancel_handlers  = NULL;
+    candidate->flags            = 0;
+    candidate->own_flags        = 0;
 
     if(attr->detachstate == PTHREAD_CREATE_DETACHED) {
         candidate->flags |= THREAD_FLAG_DETACHED;

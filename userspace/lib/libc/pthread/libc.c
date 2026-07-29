@@ -50,7 +50,8 @@ static struct __pthread main_thread = {
     .stacksize          = JINUE_STACK_SIZE,
     .alloc_stackaddr    = (void *)JINUE_STACK_START,
     .alloc_stacksize    = JINUE_STACK_SIZE,
-    .exit_status        = NULL
+    .exit_status        = NULL,
+    .cancel_handlers    = NULL
 };
 
 pthread_t __pthread_main_thread = &main_thread;
