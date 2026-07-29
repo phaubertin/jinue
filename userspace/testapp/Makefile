@@ -33,6 +33,8 @@ include $(jinue_root)/header.mk
 sources.c = \
 	tests/abcd.c \
 	tests/aes.c \
+	tests/cancel_thread.c \
+	tests/exit_thread.c \
 	tests/ipc.c \
 	tests/scroll.c \
 	tests/sse.c \

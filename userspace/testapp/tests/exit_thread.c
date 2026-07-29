@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2026 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -30,60 +30,75 @@
  */
 
 #include <jinue/jinue.h>
-#include <jinue/loader.h>
 #include <jinue/utils.h>
 #include <errno.h>
+#include <internals.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include "tests/abcd.h"
-#include "tests/aes.h"
-#include "tests/cancel_thread.h"
-#include "tests/exit_thread.h"
-#include "tests/ipc.h"
-#include "tests/scroll.h"
-#include "tests/sse.h"
-#include "debug.h"
-#include "utils.h"
+#include "../utils.h"
+#include "exit_thread.h"
 
-int main(int argc, char *argv[]) {
-    /* Say hello. */
-    jinue_info("Jinue test app (%s) started.", argv[0]);
+#define THREAD_EXIT_VALUE ((void *)0xdeadbeef)
 
-    dump_cmdline_arguments(argc, argv);
-    dump_environ();
-    dump_auxvec();
-    dump_syscall_implementation();
-    dump_address_map();
-    dump_loader_memory_info();
-    dump_loader_ramdisk();
+static void cleanup_routine(void *str) {
+    jinue_info("Running cancellation handler: %s", str);
+}
 
-    jinue_info("Blocking until loader exits...");
+static void inner_func(void) {
+    pthread_cleanup_push(cleanup_routine, "inner handler");
 
-    int status = jinue_exit_loader();
+    pthread_exit(THREAD_EXIT_VALUE);
 
-    if(status < 0) {
-        return EXIT_FAILURE;
-    }
-
-    jinue_info("Loader has exited.");
-
-    run_abcd_test();
-    run_aes_test();
-    run_cancel_thread_test();
-    run_exit_thread_test();
-    run_ipc_test();
-    run_scroll_test();
-    run_sse_test();
-
-    if(bool_getenv("DEBUG_DO_REBOOT")) {
-        jinue_info("Rebooting.");
-        jinue_reboot();
-    }
-
-    while (1) {
-        jinue_yield_thread();
-    }
+    pthread_cleanup_pop(0);
     
-    return EXIT_SUCCESS;
+}
+
+static void *thread_func(void *arg) {
+    jinue_info("Thread started");
+
+    pthread_cleanup_push(cleanup_routine, "outer handler");
+
+    inner_func();
+
+    pthread_cleanup_pop(0);
+
+    return NULL;
+}
+
+void run_exit_thread_test(void) {
+    if(! bool_getenv("RUN_TEST_EXIT_THREAD")) {
+        return;
+    }
+
+    jinue_info("Running thread exit test...");
+
+    pthread_t thread;
+    int status = start_thread(&thread, thread_func, NULL);
+
+    if(status != EXIT_SUCCESS) {
+        /* start_thread() does the error logging. */
+        return;
+    }
+
+    jinue_info("Joining the thread...");
+
+    void *thread_exit_value;
+    status = pthread_join(thread, &thread_exit_value);
+    
+    if(status != 0) {
+        jinue_error("error: failed to join the thread: %s", strerror(status));
+        return;
+    }
+
+    if(thread_exit_value == THREAD_EXIT_VALUE) {
+        jinue_info("Thread exit value is %#p", thread_exit_value);
+    }
+    else {
+        jinue_error("error: unexpected thread exit value is %#p", thread_exit_value);
+        return;
+    }
+
+    jinue_info("Main thread is running.");
 }

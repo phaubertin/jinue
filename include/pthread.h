@@ -43,7 +43,9 @@ typedef struct {
     void    *stackaddr;
 } pthread_attr_t;
 
-/* threads */
+/* -------------------------------------------------------------------------
+ * Threads
+ * ------------------------------------------------------------------------- */
 
 pthread_t pthread_self(void);
 
@@ -57,7 +59,21 @@ int pthread_join(pthread_t thread, void **exit_status);
 
 void pthread_exit(void *exit_status);
 
-/* thread attributes */
+int pthread_cancel(pthread_t thread);
+
+#define PTHREAD_CANCELED ((void *)-1)
+
+void pthread_testcancel(void);
+
+#define PTHREAD_CANCEL_DISABLE  0
+
+#define PTHREAD_CANCEL_ENABLE   1
+
+int pthread_setcancelstate(int state, int *oldstate);
+
+/* -------------------------------------------------------------------------
+ * Threads Attributes
+ * ------------------------------------------------------------------------- */
 
 int pthread_attr_destroy(pthread_attr_t *attr);
 
@@ -81,5 +97,32 @@ int pthread_attr_getstack(
         size_t                   *restrict stacksize);
 
 int pthread_attr_setstack(pthread_attr_t *attr, void *stackaddr, size_t stacksize);
+
+/* -------------------------------------------------------------------------
+ * Cancellation Handlers
+ * ------------------------------------------------------------------------- */
+
+struct __pthread_cancellation_handler {
+    struct __pthread_cancellation_handler *next;
+    void (*routine)(void*);
+    void *arg;
+};
+
+typedef struct __pthread_cancellation_handler __pthread_cancellation_handler_t;
+
+void __pthread_cleanup_push(__pthread_cancellation_handler_t *handler);
+
+void __pthread_cleanup_pop(int execute);
+
+#define pthread_cleanup_push(__routine, __arg) \
+        do {\
+            __pthread_cancellation_handler_t __pthread_cancellation_handler = {\
+                .routine = __routine,\
+                .arg = __arg,\
+            };\
+            __pthread_cleanup_push(&__pthread_cancellation_handler);
+#define pthread_cleanup_pop(execute) \
+            __pthread_cleanup_pop(execute);\
+        } while(0)
 
 #endif

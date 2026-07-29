@@ -43,12 +43,15 @@ static struct __pthread main_thread = {
     .self               = &main_thread,
     .next               = NULL,
     .fd                 = JINUE_DESC_MAIN_THREAD,
-    .flags              = THREAD_FLAG_RUNNING,
+    .flags              = 0,
+    .own_flags          = 0,
+    .local_errno        = 0,
     .stackaddr          = (void *)JINUE_STACK_START,
     .stacksize          = JINUE_STACK_SIZE,
     .alloc_stackaddr    = (void *)JINUE_STACK_START,
     .alloc_stacksize    = JINUE_STACK_SIZE,
-    .exit_status        = NULL
+    .exit_status        = NULL,
+    .cancel_handlers    = NULL
 };
 
 pthread_t __pthread_main_thread = &main_thread;

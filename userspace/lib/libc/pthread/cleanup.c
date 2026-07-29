@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2019-2026 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -30,60 +30,38 @@
  */
 
 #include <jinue/jinue.h>
-#include <jinue/loader.h>
-#include <jinue/utils.h>
-#include <errno.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include "tests/abcd.h"
-#include "tests/aes.h"
-#include "tests/cancel_thread.h"
-#include "tests/exit_thread.h"
-#include "tests/ipc.h"
-#include "tests/scroll.h"
-#include "tests/sse.h"
-#include "debug.h"
-#include "utils.h"
+#include <pthread.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include "cleanup.h"
+#include "thread.h"
 
-int main(int argc, char *argv[]) {
-    /* Say hello. */
-    jinue_info("Jinue test app (%s) started.", argv[0]);
+void __pthread_cleanup_push(__pthread_cancellation_handler_t *handler) {
+    pthread_t thread = pthread_self();
+    handler->next           = thread->cancel_handlers;
+    thread->cancel_handlers = handler;
+}
 
-    dump_cmdline_arguments(argc, argv);
-    dump_environ();
-    dump_auxvec();
-    dump_syscall_implementation();
-    dump_address_map();
-    dump_loader_memory_info();
-    dump_loader_ramdisk();
+static bool do_pop(bool execute) {
+    pthread_t thread = pthread_self();
 
-    jinue_info("Blocking until loader exits...");
-
-    int status = jinue_exit_loader();
-
-    if(status < 0) {
-        return EXIT_FAILURE;
+    if(thread->cancel_handlers == NULL) {
+        return false;
     }
 
-    jinue_info("Loader has exited.");
-
-    run_abcd_test();
-    run_aes_test();
-    run_cancel_thread_test();
-    run_exit_thread_test();
-    run_ipc_test();
-    run_scroll_test();
-    run_sse_test();
-
-    if(bool_getenv("DEBUG_DO_REBOOT")) {
-        jinue_info("Rebooting.");
-        jinue_reboot();
+    if(execute) {
+        thread->cancel_handlers->routine(thread->cancel_handlers->arg);
     }
 
-    while (1) {
-        jinue_yield_thread();
-    }
-    
-    return EXIT_SUCCESS;
+    thread->cancel_handlers = thread->cancel_handlers->next;
+
+    return true;
+}
+
+void __pthread_cleanup_pop(int execute) {
+    (void)do_pop(!!execute);
+}
+
+void __pthread_cleanup_execute_all(void) {
+    while(do_pop(true)) {}
 }
