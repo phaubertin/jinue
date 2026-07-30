@@ -42,7 +42,7 @@ check_no_panic
 check_no_error
 
 echo "* Check CPU vendor, family and model for Pentium"
-grep -F "Vendor: Intel family: 5 model: 4 stepping:" $LOG || fail
+grep -F "Vendor: AMD family: 5 model: 4 stepping:" $LOG || fail
 
 echo "* Check PAE was not enabled"
 grep -F "Physical Address Extension (PAE) is enabled." $LOG && fail

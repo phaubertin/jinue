@@ -73,6 +73,7 @@ run () {
             qemu-system-i386 \
                 -cpu ${CPU} \
                 -m ${MEM} \
+                -accel kvm \
                 -no-reboot \
                 $OPTIONS \
                 -kernel "${KERNEL_IMAGE}" \
@@ -88,6 +89,7 @@ run () {
             qemu-system-i386 \
                 -cpu ${CPU} \
                 -m ${MEM} \
+                -accel kvm \
                 -no-reboot \
                 $OPTIONS \
                 -drive format=raw,media=cdrom,file="${ISO}" \

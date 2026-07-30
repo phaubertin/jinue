@@ -37,6 +37,6 @@ check_no_error
 check_no_warning
 
 echo "* Check the kernel detects QEMU"
-grep -F "Virtualization environment: QEMU TCG" $LOG || fail
+grep -F "Virtualization environment: Linux KVM" $LOG || fail
 
 check_reboot
