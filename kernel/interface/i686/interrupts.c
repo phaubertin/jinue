@@ -44,8 +44,8 @@
 #include <inttypes.h>
 
 
-static void handle_exception(unsigned int ivt, uintptr_t eip, uint32_t errcode) {
-    if(ivt == EXCEPTION_NO_COPROC) {
+static void handle_exception(unsigned int trapno, uintptr_t eip, uint32_t errcode) {
+    if(trapno == EXCEPTION_NO_COPROC) {
         /* Lazy FPU initialization: mark a thread as using the FPU on first
          * use. */
         bool result = use_fpu(get_current_thread());
@@ -63,11 +63,11 @@ static void handle_exception(unsigned int ivt, uintptr_t eip, uint32_t errcode) 
             return;
         }
         
-        ivt = EXCEPTION_INVALID_OP;
+        trapno = EXCEPTION_INVALID_OP;
     }
 
     info("EXCEPT: %u cr2=%#" PRIx32 " errcode=%#" PRIx32 " eip=%#" PRIxPTR,
-            ivt,
+            trapno,
             get_cr2(),
             errcode,
             eip);
@@ -92,23 +92,23 @@ static void handle_pic8259_interrupt(unsigned int irq) {
     pic8259_eoi(irq);
 }
 
-static void handle_unexpected_interrupt(unsigned int ivt) {
-    info("INTR: vector %u", ivt);
+static void handle_unexpected_interrupt(unsigned int trapno) {
+    info("INTR: vector %u", trapno);
 }
 
 void handle_interrupt(trapframe_t *trapframe) {
-    unsigned int ivt = trapframe->ivt;
+    unsigned int trapno = trapframe->trapno;
 
-    if(ivt <= IDT_LAST_EXCEPTION) {
-        handle_exception(ivt, trapframe->eip, trapframe->errcode);
-    } else if(ivt == IDT_APIC_TIMER) {
+    if(trapno <= IDT_LAST_EXCEPTION) {
+        handle_exception(trapno, trapframe->eip, trapframe->errcode);
+    } else if(trapno == IDT_APIC_TIMER) {
         tick_interrupt();
         local_apic_eoi();
-    } else if(ivt == IDT_APIC_SPURIOUS) {
+    } else if(trapno == IDT_APIC_SPURIOUS) {
         spurious_interrupt();
-    } else if(ivt >= IDT_PIC8259_BASE && ivt < IDT_PIC8259_BASE + PIC8259_IRQ_COUNT) {
-        handle_pic8259_interrupt(ivt - IDT_PIC8259_BASE);
+    } else if(trapno >= IDT_PIC8259_BASE && trapno < IDT_PIC8259_BASE + PIC8259_IRQ_COUNT) {
+        handle_pic8259_interrupt(trapno - IDT_PIC8259_BASE);
     } else {
-        handle_unexpected_interrupt(ivt);
+        handle_unexpected_interrupt(trapno);
     }
 }

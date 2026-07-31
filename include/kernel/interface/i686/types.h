@@ -97,11 +97,14 @@ typedef struct {
     uint32_t    fs;
     uint32_t    gs;
     uint32_t    errcode;
-    uint32_t    ivt;
+    uint32_t    trapno;
     uint32_t    ebp;
     uint32_t    eip;
     uint32_t    cs;
     uint32_t    eflags;
+    /* Caution: the two fields below are only populated (by the CPU itself)
+     * when we trap from user space. Do not try to access when the trap comes
+     * from kernel space. */
     uint32_t    esp;
     uint32_t    ss;
 } trapframe_t;

@@ -1,4 +1,4 @@
-; Copyright (C) 2019 Philippe Aubertin.
+; Copyright (C) 2019-2026 Philippe Aubertin.
 ; All rights reserved.
 ;
 ; Redistribution and use in source and binary forms, with or without
@@ -44,6 +44,10 @@
 ; FUNCTION: interrupt_entry
 ; DESCRIPTION : Save current thread state, call interrupt dispatching function,
 ;               then restore state and return from interrupt.
+; IMPORTANT NOTE:
+;   machine_dump_call_stack() makes assumptions about the name of this function
+;   so it can continue the call stack dump accross the interrupt if it comes
+;   from the kernel.
 ; ------------------------------------------------------------------------------
     global interrupt_entry:function (return_from_interrupt.end - interrupt_entry)
 interrupt_entry:
@@ -109,20 +113,9 @@ interrupt_entry:
     mov [esp+40], edx   ; save it where we actually want it
     mov [esp+48], ebp   ; save ebp (frame pointer) right after the return address
     
-    ; Clear frame pointer until we know for sure we were in the kernel when
-    ; the interrupt occurred. If the CPU was executing user code at the time,
-    ; ebp is neither trustworthy nor useful.
+    ; Clear frame pointer.
     mov ebp, 0
     
-    ; Check to see if we were in the kernel before the interrupt by looking at
-    ; the return address
-    cmp dword [esp+52], JINUE_KLIMIT
-    jb .skip_fp
-    
-    ; set frame pointer
-    lea ebp, [esp+48]
-    
-.skip_fp:
     ; set data segment
     mov ecx, SEG_SELECTOR(GDT_KERNEL_DATA, RPL_KERNEL)
     mov ds, cx
