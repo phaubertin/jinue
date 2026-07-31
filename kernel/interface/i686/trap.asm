@@ -61,38 +61,33 @@ interrupt_entry:
     ; esp+60  user EFLAGS
     ; esp+56  user code segment
     ; esp+52  user return address
-    ;
-    ; esp+48  ebp (but the error code is here on entry, see below)
-    ; esp+44  interrupt vector
-    ;
-    ; esp+40 error code
-    ; esp+36 gs
-    ; esp+32 fs
-    ; esp+28 es
-    ; esp+24 ds
-    ; esp+20 ecx
-    ; esp+16 edx
-    ; esp+12  edi (message/system call argument 3)
-    ; esp+ 8  esi (message/system call argument 2)
-    ; esp+ 4  ebx (message/system call argument 1)
-    ; esp+ 0  eax (message/system call argument 0)
-    
-    sub esp, 4  ; 40 reserve space for the error code
+    ; esp+48  error code
+    ; esp+44  trap number (interrupt vector)
+    ; esp+40 eax (message/system call argument 0)
+    ; esp+36 ecx
+    ; esp+32 edx
+    ; esp+28 ebx (message/system call argument 1)
+    ; esp+24 ebp
+    ; esp+20 esi (message/system call argument 2)
+    ; esp+16 edi (message/system call argument 3)
+    ; esp+12 ds
+    ; esp+ 8 es
+    ; esp+ 4 fs
+    ; esp+ 0 gs
 
-    push gs     ; 36
-    push fs     ; 32
-    push es     ; 28
-    push ds     ; 24
-    push ecx    ; 20
-    push edx    ; 16
-    
-    ; system call arguments (pushed in reverse order)
-    ;
-    ; The kernel modifies these to set return values.
-    push edi    ; 12 arg3
-    push esi    ; 8  arg2
-    push ebx    ; 4  arg1
-    push eax    ; 0  arg0
+    ; arg0 to arg3 are the system call arguments. The kernel modifies these
+    ; when handling system calls to set return values.
+    push eax    ; 40 arg0
+    push ecx    ; 36
+    push edx    ; 32
+    push ebx    ; 28 arg1
+    push ebp    ; 24
+    push esi    ; 20 arg2
+    push edi    ; 16 arg3
+    push ds     ; 12
+    push es     ; 8
+    push fs     ; 4
+    push gs     ; 0
     
     ; We use the version of the push instruction with a byte operand in the
     ; interrupt vector stubs because it is the shortest form of this instruction
@@ -100,18 +95,6 @@ interrupt_entry:
     ; which is obviously not what we want. Here, we mask the most significant
     ; bits of the interrupt vector to make it zero-extended instead.
     and dword [esp+44], 0xff
-    
-    ; If we are handling a CPU exception with an error code, the CPU pushed
-    ; that error code right after the return address. Otherwise, the interrupt
-    ; vector stub pushed a dummy value there to keep the same stack layout.
-    ;
-    ; However, we want to put ebp there because, if we are handling an interrupt
-    ; that happened in the kernel, ebp contains the frame pointer. This makes
-    ; debugging easier because it allows us to include what the kernel was 
-    ; doing when the interrupt was triggered in the backtrace.
-    mov edx, [esp+48]   ; read error code
-    mov [esp+40], edx   ; save it where we actually want it
-    mov [esp+48], ebp   ; save ebp (frame pointer) right after the return address
     
     ; Clear frame pointer.
     mov ebp, 0
@@ -141,23 +124,22 @@ return_from_interrupt:
     ; Restore FPU/SSE state
     call restore_fpu_state
     
-    pop eax                 ; 0
-    pop ebx                 ; 4
-    pop esi                 ; 8
-    pop edi                 ; 12
-    pop edx                 ; 16
-    pop ecx                 ; 20
-    pop ds                  ; 24
-    pop es                  ; 28
-    pop fs                  ; 32
-    pop gs                  ; 36
-    add esp, 8              ; 40 skip error code
-                            ; 44 skip interrupt vector
-    pop ebp                 ; 48
+    pop gs                  ; 0
+    pop fs                  ; 4
+    pop es                  ; 8
+    pop ds                  ; 12
+    pop edi                 ; 16
+    pop esi                 ; 20
+    pop ebp                 ; 24
+    pop ebx                 ; 28
+    pop edx                 ; 32
+    pop ecx                 ; 36
+    pop eax                 ; 40
+    add esp, 8              ; 44 skip trap number
+                            ; 48 skip error code
     
     ; return from interrupt
     iret
-
 .end:
 
 ; ------------------------------------------------------------------------------
@@ -181,27 +163,23 @@ fast_intel_entry:
     
     mov ebp, 0              ; setup dummy frame pointer
     
-    push byte 0             ; 48 ebp (caller-saved by kernel calling convention)
+    push byte 0             ; 48 error code (unused)
     
-    ; 44 interrupt vector
+    ; 44 trap number
     ; 
-    ; This interrupt vector value tells handle_trap() this is a system call.
+    ; This trap number tells handle_trap() this is a system call.
     push dword JINUE_I686_SYSCALL_INTERRUPT  
-    push byte 0             ; 40 error code (unused)
-    push gs                 ; 36
-    push fs                 ; 32
-    push es                 ; 28
-    push ds                 ; 24
-    push byte 0             ; 20 ecx (caller-saved by System V ABI)
-    push byte 0             ; 16 edx (caller-saved by System V ABI)
-    
-    ; system call arguments (pushed in reverse order)
-    ;
-    ; The kernel modifies these to set return values.
-    push edi                ; 12 arg3
-    push esi                ; 8  arg2
-    push ebx                ; 4  arg1
-    push eax                ; 0  arg0
+    push eax                ; 40 arg0
+    push byte 0             ; 36 ecx (caller-saved by System V ABI)
+    push byte 0             ; 32 edx (caller-saved by System V ABI)
+    push ebx                ; 28 arg1
+    push byte 0             ; 24 ebp (caller-saved by kernel calling convention)
+    push esi                ; 20 arg2
+    push edi                ; 16 arg3
+    push ds                 ; 12
+    push es                 ; 8
+    push fs                 ; 4
+    push gs                 ; 0
     
     ; set data segment
     mov ecx, SEG_SELECTOR(GDT_KERNEL_DATA, RPL_KERNEL)
@@ -223,19 +201,19 @@ fast_intel_entry:
     ; Restore FPU/SSE state
     call restore_fpu_state
     
-    pop eax                 ; 0
-    pop ebx                 ; 4
-    pop esi                 ; 8
-    pop edi                 ; 12
-    add esp, 8              ; 16 skip edx (used for stack pointer by SYSEXIT)
-                            ; 20 skip ecx (used for return address by SYSEXIT)
-    pop ds                  ; 24
-    pop es                  ; 28
-    pop fs                  ; 32
-    pop gs                  ; 36
-    add esp, 8              ; 40 skip error code
-                            ; 44 skip interrupt vector
-    pop ebp                 ; 48
+    pop gs                  ; 0
+    pop fs                  ; 4
+    pop es                  ; 8
+    pop ds                  ; 12
+    pop edi                 ; 16
+    pop esi                 ; 20
+    pop ebp                 ; 24
+    pop ebx                 ; 28
+    add esp, 8              ; 32 skip edx (used for stack pointer by SYSEXIT)
+                            ; 36 skip ecx (used for return address by SYSEXIT)
+    pop eax                 ; 40
+    add esp, 8              ; 44 skip trap number
+                            ; 48 skip error code
     pop edx                 ; 52 return address
     add esp, 4              ; 56 skip user code segment
     popf                    ; 60
@@ -250,7 +228,6 @@ fast_intel_entry:
     ; instruction before sysexit.
     sti
     sysexit
-
 .end:
 
 ; ------------------------------------------------------------------------------
@@ -286,27 +263,23 @@ fast_amd_entry:
     
     mov ebp, 0              ; setup dummy frame pointer
     
-    push byte 0             ; 48 ebp (caller-saved by kernel calling convention)
+    push byte 0             ; 48 error code (unused)
     
-    ; 44 interrupt vector
+    ; 44 trap number
     ; 
-    ; This interrupt vector value tells handle_trap() this is a system call.
+    ; This trap number tells handle_trap() this is a system call.
     push dword JINUE_I686_SYSCALL_INTERRUPT  
-    push byte 0             ; 40 error code (unused)
-    push byte 0             ; 36 gs (caller-saved by kernel calling convention)
-    push fs                 ; 32
-    push es                 ; 28
-    push ds                 ; 24
-    push byte 0             ; 20 ecx (caller-saved by System V ABI)
-    push byte 0             ; 16 edx (caller-saved by System V ABI)
-    
-    ; system call arguments (pushed in reverse order)
-    ;
-    ; The kernel modifies these to set return values.
-    push edi                ; 12 arg3
-    push esi                ; 8  arg2
-    push ebx                ; 4  arg1
-    push eax                ; 0  arg0
+    push eax                ; 40 arg0
+    push byte 0             ; 36 ecx (caller-saved by System V ABI)
+    push byte 0             ; 32 edx (caller-saved by System V ABI)
+    push ebx                ; 28 arg1
+    push byte 0             ; 24 ebp (caller-saved by kernel calling convention)
+    push esi                ; 20 arg2
+    push edi                ; 16 arg3
+    push ds                 ; 12
+    push es                 ; 8
+    push fs                 ; 4
+    push byte 0             ; 0 gs (caller-saved by kernel calling convention)
     
     ; set data segment
     mov ecx, SEG_SELECTOR(GDT_KERNEL_DATA, RPL_KERNEL)
@@ -324,19 +297,19 @@ fast_amd_entry:
     ; Restore FPU/SSE state
     call restore_fpu_state
     
-    pop eax                 ; 0
-    pop ebx                 ; 4
-    pop esi                 ; 8
-    pop edi                 ; 12
-    pop edx                 ; 16
-    add esp, 4              ; 20 skip ecx (used for return address by SYSRET)
-    pop ds                  ; 24
-    pop es                  ; 28
-    pop fs                  ; 32
-    pop gs                  ; 36
-    add esp, 8              ; 40 skip error code
-                            ; 44 skip interrupt vector
-    pop ebp                 ; 48
+    pop gs                  ; 0
+    pop fs                  ; 4
+    pop es                  ; 8
+    pop ds                  ; 12
+    pop edi                 ; 16
+    pop esi                 ; 20
+    pop ebp                 ; 24
+    pop ebx                 ; 28
+    pop edx                 ; 32
+    add esp, 4              ; 36 skip ecx (used for return address by SYSRET)
+    pop eax                 ; 40
+    add esp, 8              ; 44 skip trap number
+                            ; 48 skip error code
     pop ecx                 ; 52 return address
     add esp, 4              ; 56 skip user code segment
     popf                    ; 60
@@ -351,7 +324,6 @@ fast_amd_entry:
     ; instruction before sysret.
     sti
     sysret
-
 .end:
 
 ; ------------------------------------------------------------------------------
