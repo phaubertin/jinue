@@ -33,6 +33,7 @@
 #define JINUE_KERNEL_INTERFACE_I686_TRAP_H
 
 #include <jinue/shared/types.h>
+#include <kernel/interface/i686/exports/types.h>
 #include <kernel/interface/i686/types.h>
 #include <stdbool.h>
 
@@ -50,9 +51,6 @@ void fast_amd_entry(void);
  * first time. See machine_prepare_thread(). */
 void return_from_interrupt(void);
 
-static inline jinue_syscall_args_t *trapframe_syscall_args(trapframe_t *trapframe) {
-    return (jinue_syscall_args_t *)&trapframe->msg_arg0;
-}
 static inline bool is_trap_from_kernel(const trapframe_t *trapframe) {
     return (trapframe->cs & 3) == 0;
 }

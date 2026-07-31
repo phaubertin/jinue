@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,12 +29,34 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INTERFACE_SYSCALL_H
-#define JINUE_KERNEL_INTERFACE_SYSCALL_H
+#ifndef JINUE_KERNEL_INTERFACE_I686_EXPORTS_TRAP_H
+#define JINUE_KERNEL_INTERFACE_I686_EXPORTS_TRAP_H
 
-#include <jinue/shared/types.h>
-#include <kernel/interface/machine/trap.h>
+#include <kernel/interface/i686/exports/types.h>
+#include <stdint.h>
 
-void handle_syscall(trapframe_t *trapframe);
+static inline uint32_t *msg_arg0_ptr(trapframe_t *trapframe) {
+    return &trapframe->eax;
+}
+
+static inline uint32_t *msg_arg1_ptr(trapframe_t *trapframe) {
+    return &trapframe->ebx;
+}
+
+static inline uint32_t *msg_arg2_ptr(trapframe_t *trapframe) {
+    return &trapframe->esi;
+}
+
+static inline uint32_t *msg_arg3_ptr(trapframe_t *trapframe) {
+    return &trapframe->edi;
+}
+
+#define msg_arg0(tf) (*msg_arg0_ptr(tf))
+
+#define msg_arg1(tf) (*msg_arg1_ptr(tf))
+
+#define msg_arg2(tf) (*msg_arg2_ptr(tf))
+
+#define msg_arg3(tf) (*msg_arg3_ptr(tf))
 
 #endif

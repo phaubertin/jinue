@@ -34,6 +34,7 @@
 
 #include <kernel/infrastructure/acpi/types.h>
 #include <kernel/infrastructure/i686/types.h>
+#include <kernel/interface/i686/exports/types.h>
 #include <kernel/types.h>
 #include <sys/elf.h>
 
@@ -79,34 +80,5 @@ typedef struct {
     void                            *current_page;
     void                            *page_limit;
 } boot_alloc_t;
-
-typedef struct {
-    /* The following four registers are the system call arguments. */
-#define msg_arg0 eax
-    uint32_t    eax;
-#define msg_arg1 ebx
-    uint32_t    ebx;
-#define msg_arg2 esi
-    uint32_t    esi;
-#define msg_arg3 edi
-    uint32_t    edi;
-    uint32_t    edx;
-    uint32_t    ecx;
-    uint32_t    ds;
-    uint32_t    es;
-    uint32_t    fs;
-    uint32_t    gs;
-    uint32_t    errcode;
-    uint32_t    trapno;
-    uint32_t    ebp;
-    uint32_t    eip;
-    uint32_t    cs;
-    uint32_t    eflags;
-    /* Caution: the two fields below are only populated (by the CPU itself)
-     * when we trap from user space. Do not try to access when the trap comes
-     * from kernel space. */
-    uint32_t    esp;
-    uint32_t    ss;
-} trapframe_t;
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,12 +29,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INTERFACE_SYSCALL_H
-#define JINUE_KERNEL_INTERFACE_SYSCALL_H
+#ifndef JINUE_KERNEL_INTERFACE_MACHINE_TRAP_H
+#define JINUE_KERNEL_INTERFACE_MACHINE_TRAP_H
 
-#include <jinue/shared/types.h>
-#include <kernel/interface/machine/trap.h>
-
-void handle_syscall(trapframe_t *trapframe);
+#ifdef __i386__
+#include <kernel/interface/i686/exports/trap.h>
+#endif
 
 #endif

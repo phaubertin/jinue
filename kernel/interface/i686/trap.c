@@ -46,7 +46,7 @@
  */
 void handle_trap(trapframe_t *trapframe) {
     if(trapframe->trapno == JINUE_I686_SYSCALL_INTERRUPT) {
-        handle_syscall(trapframe_syscall_args(trapframe));
+        handle_syscall(trapframe);
     } else {
         handle_interrupt(trapframe);
     }
