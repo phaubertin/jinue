@@ -39,8 +39,9 @@
  * 
  * Important note: machine_dump_call_stack() makes assumptions about the
  * signature of this function. Specifically, when handling an interrupt that
- * occurs in the kernel, it assumes the first argument is trapframe and uses
- * this assumption to continue the call stack dump accross the interrupt.
+ * occurs in the kernel, it assumes the first argument is a pointer to the trap
+ * frame and uses this assumption to continue the call stack dump accross the
+ * interrupt.
  * 
  * @param trapframe the trap frame with saved state
  */

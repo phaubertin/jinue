@@ -40,7 +40,7 @@
 #include <stddef.h>
 #include <string.h>
 
-/** Print information about and address in code
+/** Print information about a code address
  * 
  * Prints the address, the name of the function and the offset from the start
  * of the function, e.g.
