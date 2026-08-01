@@ -53,16 +53,17 @@
 interrupt_entry:
     cld
     
-    ; Once everything is saved and after some reshuffling, the stack layout
-    ; matches the trapframe_t structure definition. It looks like this:
+    ; Once everything is saved the stack layout matches the trapframe_t
+    ; structure definition. It looks like this:
     ;
-    ; esp+68  user stack segment
-    ; esp+64  user stack pointer
-    ; esp+60  user EFLAGS
-    ; esp+56  user code segment
-    ; esp+52  user return address
-    ; esp+48  error code
-    ; esp+44  trap number (interrupt vector)
+    ; esp+68 user stack segment
+    ; esp+64 user stack pointer
+    ; esp+60 user EFLAGS
+    ; esp+56 user code segment
+    ; esp+52 user return address
+    ; esp+48 error code
+    ; esp+44 trap number (interrupt vector)
+    ; --- We enter this function here
     ; esp+40 eax (message/system call argument 0)
     ; esp+36 ecx
     ; esp+32 edx
@@ -117,26 +118,26 @@ interrupt_entry:
     ; remove argument(s) from stack
     add esp, 4
 
-    ; new threads start here
+    ; new userspace threads start here
     global return_from_interrupt:function (return_from_interrupt.end - return_from_interrupt)
 return_from_interrupt:
 
     ; Restore FPU/SSE state
     call restore_fpu_state
     
-    pop gs                  ; 0
-    pop fs                  ; 4
-    pop es                  ; 8
-    pop ds                  ; 12
-    pop edi                 ; 16
-    pop esi                 ; 20
-    pop ebp                 ; 24
-    pop ebx                 ; 28
-    pop edx                 ; 32
-    pop ecx                 ; 36
-    pop eax                 ; 40
-    add esp, 8              ; 44 skip trap number
-                            ; 48 skip error code
+    pop gs      ; 0
+    pop fs      ; 4
+    pop es      ; 8
+    pop ds      ; 12
+    pop edi     ; 16
+    pop esi     ; 20
+    pop ebp     ; 24
+    pop ebx     ; 28
+    pop edx     ; 32
+    pop ecx     ; 36
+    pop eax     ; 40
+    add esp, 8  ; 44 skip trap number
+                ; 48 skip error code
     
     ; return from interrupt
     iret
