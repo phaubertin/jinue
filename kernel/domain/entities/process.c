@@ -85,6 +85,7 @@ static void cache_ctor_op(void *buffer, size_t ignore) {
     process_t *process = buffer;
     object_init_header(&process->header, object_type_process);
     init_spinlock(&process->descriptors_lock);
+    init_spinlock(&process->signal_lock);
 }
 
 /**
@@ -123,7 +124,11 @@ process_t *process_new(void) {
     process_t *process = slab_cache_alloc(&process_cache);
 
     if(process != NULL) {
-        process->running_threads_count = 0;
+        process->running_threads_count  = 0;
+        process->signal_handler         = NULL;
+        process->pending_signals        = 0;
+        process->ignored_signals        = 0;
+
         initialize_descriptors(process);
 
         if(!machine_init_process(process)) {

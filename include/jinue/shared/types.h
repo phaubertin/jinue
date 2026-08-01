@@ -32,6 +32,10 @@
 #ifndef _JINUE_SHARED_TYPES_H
 #define _JINUE_SHARED_TYPES_H
 
+#ifdef __i386__
+#include <jinue/shared/i686/types.h>
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -106,5 +110,23 @@ typedef struct {
     int         perms;
     uintptr_t   cookie;
 } jinue_mint_args_t;
+
+typedef union {
+    int      sival_int;
+    void    *sival_ptr;
+} jinue_sigval_t;
+
+typedef struct {
+    int              si_signo;
+    int              si_code;
+    int              si_errno;
+    int              si_pid;
+    unsigned int     si_uid;
+    void            *si_addr;
+    int              si_status;
+    jinue_sigval_t   si_value;
+} jinue_siginfo_t;
+
+typedef void (*jinue_sighandler_t)(int signo, jinue_siginfo_t *info, jinue_ucontext_t *context);
 
 #endif

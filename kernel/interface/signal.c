@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,33 +29,54 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/i686.h>
-#include <kernel/domain/services/scheduler.h>
-#include <kernel/interface/i686/interrupts.h>
-#include <kernel/interface/i686/trap.h>
+#include <kernel/interface/machine/signal.h>
+#include <kernel/interface/machine/trap.h>
 #include <kernel/interface/signal.h>
-#include <kernel/interface/syscalls.h>
+#include <kernel/machine/spinlock.h>
+#include <kernel/machine/thread.h>
+#include <kernel/types.h>
 
-/** Dispatch a trap into the kernel
- * 
- * Important note: machine_dump_call_stack() makes assumptions about the
- * signature of this function. Specifically, when handling an interrupt that
- * occurs in the kernel, it assumes the first argument is a pointer to the trap
- * frame and uses this assumption to continue the call stack dump accross the
- * interrupt.
- * 
- * @param trapframe the trap frame with saved state
- */
-void handle_trap(trapframe_t *trapframe) {
-    if(trapframe->trapno == JINUE_I686_SYSCALL_INTERRUPT) {
-        handle_syscall(trapframe);
-    } else {
-        handle_interrupt(trapframe);
+void check_for_signal(trapframe_t *trapframe) {
+    thread_t *thread = get_current_thread();
+    process_t *process = thread->process;
+
+    spin_lock(&process->signal_lock);
+
+    uint32_t pending = process->pending_signals | thread->pending_signals;
+    uint32_t signals = pending & ~thread->blocked_signals;
+
+    if(signals == 0) {
+        spin_unlock(&process->signal_lock);
+        return;
     }
 
-    reschedule();
-
-    if(!is_trap_from_kernel(trapframe)) {
-        check_for_signal(trapframe);
+    /* We cannot deliver a signal if a signal handler has not been set. */
+    if(process->signal_handler == NULL) {
+        spin_unlock(&process->signal_lock);
+        return;
     }
+
+    int signo = 1;
+    uint32_t onemask = 1;
+
+    /* This loop condition is potentially dangerous but we checked signals is
+     * not zero above, so the loop is guaranteed to terminte. */
+    while((signals & onemask) == 0) {
+        signo += 1;
+        onemask <<= 1;
+    }
+
+    int sigmask = thread->blocked_signals;
+    thread->blocked_signals |= onemask;
+
+    if(thread->pending_signals & onemask) {
+        thread->pending_signals &= ~onemask;
+    }
+    else {
+        process->pending_signals &= ~onemask;
+    }
+
+    spin_unlock(&process->signal_lock);
+
+    deliver_signal(trapframe, signo, sigmask);
 }

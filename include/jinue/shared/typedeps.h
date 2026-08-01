@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,33 +29,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/i686.h>
-#include <kernel/domain/services/scheduler.h>
-#include <kernel/interface/i686/interrupts.h>
-#include <kernel/interface/i686/trap.h>
-#include <kernel/interface/signal.h>
-#include <kernel/interface/syscalls.h>
+#ifndef _JINUE_SHARED_TYPEDEPS_H
+#define _JINUE_SHARED_TYPEDEPS_H
 
-/** Dispatch a trap into the kernel
- * 
- * Important note: machine_dump_call_stack() makes assumptions about the
- * signature of this function. Specifically, when handling an interrupt that
- * occurs in the kernel, it assumes the first argument is a pointer to the trap
- * frame and uses this assumption to continue the call stack dump accross the
- * interrupt.
- * 
- * @param trapframe the trap frame with saved state
- */
-void handle_trap(trapframe_t *trapframe) {
-    if(trapframe->trapno == JINUE_I686_SYSCALL_INTERRUPT) {
-        handle_syscall(trapframe);
-    } else {
-        handle_interrupt(trapframe);
-    }
+#include <stddef.h>
 
-    reschedule();
+/* This matches the POSIX definition of stack_t (<signal.h>). */
+typedef struct {
+    void    *ss_sp;
+    size_t   ss_size;
+    int      ss_flags;
+} jinue_stack_t;
 
-    if(!is_trap_from_kernel(trapframe)) {
-        check_for_signal(trapframe);
-    }
-}
+#endif

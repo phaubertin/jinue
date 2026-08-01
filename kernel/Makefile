@@ -137,7 +137,9 @@ sources.kernel.c = \
 	interface/i686/auxv.c \
 	interface/i686/bootinfo.c \
 	interface/i686/interrupts.c \
+	interface/i686/signal.c \
 	interface/i686/trap.c \
+	interface/signal.c \
 	interface/syscalls.c
 
 sources.kernel.nasm = \

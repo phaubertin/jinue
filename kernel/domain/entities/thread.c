@@ -127,9 +127,12 @@ void thread_prepare(thread_t *thread, const thread_params_t *params) {
     
     spin_lock(&thread->await_lock);
     
-    thread->awaiter     = NULL;
-    thread->state       = THREAD_STATE_STARTING;
-    thread->cpu_credits = 0;
+    thread->awaiter         = NULL;
+    thread->state           = THREAD_STATE_STARTING;
+    thread->cpu_credits     = 0;
+    thread->pending_signals = 0;
+    /* TODO deal with inheritance from "parent" thread. */
+    thread->blocked_signals = -1;
 
     spin_unlock(&thread->await_lock);    
     
