@@ -46,6 +46,7 @@ deps                = $(kernel_img) $(testapp_initrd)
 # argument, which uses QEMU's -kernel and -initrd arguments to load the kernel
 # and test app. Only a .sh file is needed for these tests.
 tests = \
+	test_486_too_old \
 	test_acpi \
 	test_aes \
 	test_boot_no_nx \
@@ -57,7 +58,8 @@ tests = \
 	test_ipc \
 	test_loader_exit \
 	test_mp \
-	test_sse
+	test_sse \
+	test_vga_text_80x25
 
 # These tests are run through run-test.sh called with the -iso "run type"
 # argument, which invokes QEMU with an ISO image file. This Makefile builds an
