@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,12 +29,42 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INTERFACE_SYSCALL_H
-#define JINUE_KERNEL_INTERFACE_SYSCALL_H
+#ifndef JINUE_KERNEL_INTERFACE_I686_EXPORTS_TYPES_H
+#define JINUE_KERNEL_INTERFACE_I686_EXPORTS_TYPES_H
 
-#include <jinue/shared/types.h>
-#include <kernel/interface/machine/trap.h>
+#include <stdint.h>
 
-void handle_syscall(trapframe_t *trapframe);
+typedef struct {
+    /* This structure follows the same layout as gregset_t (part of mcontext_t)
+     * as defined in the Intel386 Architecture Processor Supplement to the
+     * System V Application Binary Interface specification, except for one
+     * exception noted below. */
+    uint32_t    gs;
+    uint32_t    fs;
+    uint32_t    es;
+    uint32_t    ds;
+    uint32_t    edi;
+    uint32_t    esi;
+    uint32_t    ebp;
+    /* The Processor Supplement reserves a slot here for the kernel stack
+     * pointer so the pushad instruction can be used to save the registers. We
+     * do not use the pushad/popad instructions and so we skip this entry
+     * here. */
+    uint32_t    ebx;
+    uint32_t    edx;
+    uint32_t    ecx;
+    uint32_t    eax;
+    uint32_t    trapno;
+    uint32_t    errcode;
+    uint32_t    eip;
+    uint32_t    cs;
+    uint32_t    eflags;
+    /* Caution: the two fields below are only populated (by the CPU itself)
+     * when we trap from user space. Do not try to access when the trap comes
+     * from kernel space. Use the is_trap_from_kernel() function to make this
+     * determination. */
+    uint32_t    esp;
+    uint32_t    ss;
+} trapframe_t;
 
 #endif

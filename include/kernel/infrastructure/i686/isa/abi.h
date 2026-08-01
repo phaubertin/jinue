@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -34,12 +34,12 @@
 
 #include <kernel/infrastructure/i686/types.h>
 
-addr_t get_fpointer(void);
+void *get_frameptr(void);
 
-addr_t get_caller_fpointer(addr_t fptr);
+void *get_caller_frameptr(void *fptr);
 
-addr_t get_ret_addr(addr_t fptr);
+void *get_return_addr(void *fptr);
 
-addr_t get_program_counter(void);
+void *get_first_pointer_arg(void *fptr);
 
 #endif

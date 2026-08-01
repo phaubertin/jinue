@@ -37,6 +37,7 @@
 #include <kernel/domain/entities/endpoint.h>
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
+#include <kernel/interface/machine/trap.h>
 #include <kernel/interface/syscalls.h>
 #include <kernel/machine/asm/machine.h>
 #include <kernel/utils/utils.h>
@@ -53,26 +54,26 @@
 
 #define UC_WC           (JINUE_MAP_UNCACHEABLE | JINUE_MAP_WRITE_COMBINE)
 
-static void set_return_value(jinue_syscall_args_t *args, int retval) {
-    args->arg0  = (uintptr_t)retval;
-    args->arg1  = 0;
-    args->arg2  = 0;
-    args->arg3  = 0;
+static void set_return_value(trapframe_t *trapframe, int retval) {
+    msg_arg0(trapframe) = (uintptr_t)retval;
+    msg_arg1(trapframe) = 0;
+    msg_arg2(trapframe) = 0;
+    msg_arg3(trapframe) = 0;
 }
 
-static void set_error(jinue_syscall_args_t *args, int error) {
-    args->arg0  = (uintptr_t)-1;
-    args->arg1  = (uintptr_t)error;
-    args->arg2  = 0;
-    args->arg3  = 0;
+static void set_error(trapframe_t *trapframe, int error) {
+    msg_arg0(trapframe) = (uintptr_t)-1;
+    msg_arg1(trapframe) = (uintptr_t)error;
+    msg_arg2(trapframe) = 0;
+    msg_arg3(trapframe) = 0;
 }
 
-static void set_return_value_or_error(jinue_syscall_args_t *args, int retval) {
+static void set_return_value_or_error(trapframe_t *trapframe, int retval) {
     if(retval < 0) {
-        set_error(args, -retval);
+        set_error(trapframe, -retval);
     }
     else {
-        set_return_value(args, retval);
+        set_return_value(trapframe, retval);
     }
 }
 
@@ -87,90 +88,90 @@ static int get_descriptor(uintptr_t value) {
     return (int)value;
 }
 
-static void sys_nosys(jinue_syscall_args_t *args) {
-    set_error(args, JINUE_ENOSYS);
+static void sys_nosys(trapframe_t *trapframe) {
+    set_error(trapframe, JINUE_ENOSYS);
 }
 
-static void sys_reboot(jinue_syscall_args_t *args) {
+static void sys_reboot(trapframe_t *trapframe) {
     reboot();
 }
 
-static void sys_puts(jinue_syscall_args_t *args) {
-    uint8_t loglevel    = args->arg1 & 0xff;
-    uint8_t facility    = (args->arg1 >> 8) & 0xff;
-    const char *str     = (const char *)args->arg2;
-    size_t length       = args->arg3;
+static void sys_puts(trapframe_t *trapframe) {
+    uint8_t loglevel    = msg_arg1(trapframe) & 0xff;
+    uint8_t facility    = (msg_arg1(trapframe) >> 8) & 0xff;
+    const char *str     = (const char *)msg_arg2(trapframe);
+    size_t length       = msg_arg3(trapframe);
 
     int retval = puts(loglevel, facility, str, length);
-    set_return_value_or_error(args, retval);
+    set_return_value_or_error(trapframe, retval);
 }
 
-static void sys_create_thread(jinue_syscall_args_t *args) {
-    int fd          = get_descriptor(args->arg1);
-    int process_fd  = get_descriptor(args->arg2);
+static void sys_create_thread(trapframe_t *trapframe) {
+    int fd          = get_descriptor(msg_arg1(trapframe));
+    int process_fd  = get_descriptor(msg_arg2(trapframe));
 
     if(fd < 0) {
-        set_return_value_or_error(args, fd);
+        set_return_value_or_error(trapframe, fd);
         return;
     }
 
     if(process_fd < 0) {
-        set_return_value_or_error(args, process_fd);
+        set_return_value_or_error(trapframe, process_fd);
         return;
     }
 
     int retval = create_thread(fd, process_fd);
-    set_return_value_or_error(args, retval);
+    set_return_value_or_error(trapframe, retval);
 }
 
-static void sys_yield_thread(jinue_syscall_args_t *args) {
+static void sys_yield_thread(trapframe_t *trapframe) {
     yield_thread();
-    set_return_value(args, 0);
+    set_return_value(trapframe, 0);
 }
 
-static void sys_exit_thread(jinue_syscall_args_t *args) {
+static void sys_exit_thread(trapframe_t *trapframe) {
     exit_thread();
     /* No need to set a return value since exit_thread() does not return. */
 }
 
-static void sys_set_thread_local(jinue_syscall_args_t *args) {
-    addr_t addr = (addr_t)args->arg1;
-    size_t size = (size_t)args->arg2;
+static void sys_set_thread_local(trapframe_t *trapframe) {
+    addr_t addr = (addr_t)msg_arg1(trapframe);
+    size_t size = (size_t)msg_arg2(trapframe);
 
     if(! check_userspace_buffer(addr, size)) {
-        set_error(args, JINUE_EINVAL);
+        set_error(trapframe, JINUE_EINVAL);
         return;
     }
 
     set_thread_local(addr, size);
-    set_return_value(args, 0);
+    set_return_value(trapframe, 0);
 }
 
-static void sys_get_address_map(jinue_syscall_args_t *args) {
+static void sys_get_address_map(trapframe_t *trapframe) {
     jinue_buffer_t buffer;
 
-    buffer.addr     = (void *)args->arg1;
-    buffer.size     = args->arg2;
+    buffer.addr     = (void *)msg_arg1(trapframe);
+    buffer.size     = msg_arg2(trapframe);
 
     if(! check_userspace_buffer(buffer.addr, buffer.size)) {
-        set_error(args, JINUE_EINVAL);
+        set_error(trapframe, JINUE_EINVAL);
         return;
     }
 
     int retval = get_address_map(&buffer);
-    set_return_value_or_error(args, retval);
+    set_return_value_or_error(trapframe, retval);
 }
 
-static void sys_create_endpoint(jinue_syscall_args_t *args) {
-    int fd = get_descriptor(args->arg1);
+static void sys_create_endpoint(trapframe_t *trapframe) {
+    int fd = get_descriptor(msg_arg1(trapframe));
 
     if(fd < 0) {
-        set_return_value_or_error(args, fd);
+        set_return_value_or_error(trapframe, fd);
         return;  
     }
 
     int retval = create_endpoint(fd);
-    set_return_value_or_error(args, retval);
+    set_return_value_or_error(trapframe, retval);
 }
 
 static int copy_message_struct_from_userspace(
@@ -209,13 +210,13 @@ static int check_recv_buffers(const jinue_message_t *message) {
     return 0;
 }
 
-static void sys_send(jinue_syscall_args_t *args) {
-    int function            = args->arg0;
-    int fd                  = get_descriptor(args->arg1);
-    void *userspace_message = (void *)args->arg2;
+static void sys_send(trapframe_t *trapframe) {
+    int function            = msg_arg0(trapframe);
+    int fd                  = get_descriptor(msg_arg1(trapframe));
+    void *userspace_message = (void *)msg_arg2(trapframe);
 
     if(fd < 0) {
-        set_return_value_or_error(args, fd);
+        set_return_value_or_error(trapframe, fd);
         return;
     }
 
@@ -226,44 +227,44 @@ static void sys_send(jinue_syscall_args_t *args) {
     int copy_retval = copy_message_struct_from_userspace(&message, userspace_message);
 
     if(copy_retval < 0) {
-        set_return_value_or_error(args, copy_retval);
+        set_return_value_or_error(trapframe, copy_retval);
         return;
     }
 
     int send_checkval = check_send_buffers(&message);
 
     if(send_checkval < 0) {
-        set_return_value_or_error(args, send_checkval);
+        set_return_value_or_error(trapframe, send_checkval);
         return;
     }
 
     int recv_checkval = check_recv_buffers(&message);
 
     if(recv_checkval < 0) {
-        set_return_value_or_error(args, recv_checkval);
+        set_return_value_or_error(trapframe, recv_checkval);
         return;
     }
 
-    uintptr_t *errcode = &args->arg2;
+    uintptr_t *errcode = &msg_arg2(trapframe);
     int retval = send(errcode, fd, function, &message);
 
     if(retval == -JINUE_EPROTO) {
-        args->arg0 = -1;
-        args->arg1 = JINUE_EPROTO;
+        msg_arg0(trapframe) = -1;
+        msg_arg1(trapframe) = JINUE_EPROTO;
         /* The error code has already been set in arg2. */
-        args->arg3 = 0;
+        msg_arg3(trapframe) = 0;
         return;
     }
 
-    set_return_value_or_error(args, retval);
+    set_return_value_or_error(trapframe, retval);
 }
 
-static void sys_receive(jinue_syscall_args_t *args) {
-    int fd                              = get_descriptor(args->arg1);
-    jinue_message_t *userspace_message  = (jinue_message_t *)args->arg2;
+static void sys_receive(trapframe_t *trapframe) {
+    int fd                              = get_descriptor(msg_arg1(trapframe));
+    jinue_message_t *userspace_message  = (jinue_message_t *)msg_arg2(trapframe);
 
     if(fd < 0) {
-        set_return_value_or_error(args, fd);
+        set_return_value_or_error(trapframe, fd);
         return;
     }
 
@@ -274,19 +275,19 @@ static void sys_receive(jinue_syscall_args_t *args) {
     int copy_retval = copy_message_struct_from_userspace(&message, userspace_message);
 
     if(copy_retval < 0) {
-        set_return_value_or_error(args, copy_retval);
+        set_return_value_or_error(trapframe, copy_retval);
         return;
     }
 
     int recv_checkval = check_recv_buffers(&message);
 
     if(recv_checkval < 0) {
-        set_return_value_or_error(args, recv_checkval);
+        set_return_value_or_error(trapframe, recv_checkval);
         return;
     }
 
     int retval = receive(fd, &message);
-    set_return_value_or_error(args, retval);
+    set_return_value_or_error(trapframe, retval);
 
     if(retval >= 0) {
         userspace_message->recv_function    = message.recv_function;
@@ -295,8 +296,8 @@ static void sys_receive(jinue_syscall_args_t *args) {
     }
 }
 
-static void sys_reply(jinue_syscall_args_t *args) {
-    void *userspace_message = (void *)args->arg2;
+static void sys_reply(trapframe_t *trapframe) {
+    void *userspace_message = (void *)msg_arg2(trapframe);
 
     /* Let's be careful here: we need to first copy the message structure and
      * then check it to protect against the user application modifying the
@@ -305,150 +306,150 @@ static void sys_reply(jinue_syscall_args_t *args) {
     int copy_retval = copy_message_struct_from_userspace(&message, userspace_message);
 
     if(copy_retval < 0) {
-        set_return_value_or_error(args, copy_retval);
+        set_return_value_or_error(trapframe, copy_retval);
         return;
     }
 
     int send_checkval = check_send_buffers(&message);
 
     if(send_checkval < 0) {
-        set_return_value_or_error(args, send_checkval);
+        set_return_value_or_error(trapframe, send_checkval);
         return;
     }
 
     int retval = reply(&message);
-    set_return_value_or_error(args, retval);
+    set_return_value_or_error(trapframe, retval);
 }
 
-static void sys_mmap(jinue_syscall_args_t *args) {
+static void sys_mmap(trapframe_t *trapframe) {
     const jinue_mmap_args_t *userspace_mmap_args;
 
-    int process_fd      = get_descriptor(args->arg1);
-    userspace_mmap_args = (void *)args->arg2;
+    int process_fd      = get_descriptor(msg_arg1(trapframe));
+    userspace_mmap_args = (void *)msg_arg2(trapframe);
 
     if(process_fd < 0) {
-        set_return_value_or_error(args, process_fd);
+        set_return_value_or_error(trapframe, process_fd);
         return;
     }
 
     if(! check_userspace_buffer(userspace_mmap_args, sizeof(jinue_mmap_args_t))) {
-        set_error(args, JINUE_EINVAL);
+        set_error(trapframe, JINUE_EINVAL);
         return;
     }
 
     jinue_mmap_args_t mmap_args = *userspace_mmap_args;
 
     if(OFFSET_OF_PTR(mmap_args.addr, PAGE_SIZE) != 0) {
-        set_error(args, JINUE_EINVAL);
+        set_error(trapframe, JINUE_EINVAL);
         return;
     }
 
     if((mmap_args.length & (PAGE_SIZE -1)) != 0) {
-        set_error(args, JINUE_EINVAL);
+        set_error(trapframe, JINUE_EINVAL);
         return;
     }
 
     if((mmap_args.paddr & (PAGE_SIZE -1)) != 0) {
-        set_error(args, JINUE_EINVAL);
+        set_error(trapframe, JINUE_EINVAL);
         return;
     }
 
     if((mmap_args.prot & ~ALL_PROT_FLAGS) != 0) {
-        set_error(args, JINUE_EINVAL);
+        set_error(trapframe, JINUE_EINVAL);
         return;
     }
 
     if((mmap_args.prot & WRITE_EXEC) == WRITE_EXEC) {
-        set_error(args, JINUE_ENOTSUP);
+        set_error(trapframe, JINUE_ENOTSUP);
         return;
     }
 
     if((mmap_args.flags & ~ALL_MAP_FLAGS) != 0) {
-        set_error(args, JINUE_EINVAL);
+        set_error(trapframe, JINUE_EINVAL);
         return;
     }
 
     if((mmap_args.flags & UC_WC) == UC_WC) {
-        set_error(args, JINUE_ENOTSUP);
+        set_error(trapframe, JINUE_ENOTSUP);
         return;
     }
 
     int retval = mmap(process_fd, &mmap_args);
-    set_return_value_or_error(args, retval);
+    set_return_value_or_error(trapframe, retval);
 }
 
-static void sys_create_process(jinue_syscall_args_t *args) {
-    int fd = get_descriptor(args->arg1);
+static void sys_create_process(trapframe_t *trapframe) {
+    int fd = get_descriptor(msg_arg1(trapframe));
 
     if(fd < 0) {
-        set_return_value_or_error(args, fd);
+        set_return_value_or_error(trapframe, fd);
         return;
     }
 
     int retval = create_process(fd);
-    set_return_value_or_error(args, retval);
+    set_return_value_or_error(trapframe, retval);
 }
 
-static void sys_dup(jinue_syscall_args_t *args) {
-    int process_fd  = get_descriptor(args->arg1);
-    int src         = get_descriptor(args->arg2);
-    int dest        = get_descriptor(args->arg3);
+static void sys_dup(trapframe_t *trapframe) {
+    int process_fd  = get_descriptor(msg_arg1(trapframe));
+    int src         = get_descriptor(msg_arg2(trapframe));
+    int dest        = get_descriptor(msg_arg3(trapframe));
 
     if(process_fd < 0) {
-        set_return_value_or_error(args, process_fd);
+        set_return_value_or_error(trapframe, process_fd);
         return;
     }
 
     if(src < 0) {
-        set_return_value_or_error(args, src);
+        set_return_value_or_error(trapframe, src);
         return;
     }
 
     if(dest < 0) {
-        set_return_value_or_error(args, dest);
+        set_return_value_or_error(trapframe, dest);
         return;
     }
 
     int retval = dup(process_fd, src, dest);
-    set_return_value_or_error(args, retval);
+    set_return_value_or_error(trapframe, retval);
 }
 
-static void sys_close(jinue_syscall_args_t *args) {
-    int fd = get_descriptor(args->arg1);
+static void sys_close(trapframe_t *trapframe) {
+    int fd = get_descriptor(msg_arg1(trapframe));
 
     if(fd < 0) {
-        set_return_value_or_error(args, fd);
+        set_return_value_or_error(trapframe, fd);
         return;
     }
 
     int retval = close(fd);
-    set_return_value_or_error(args, retval);
+    set_return_value_or_error(trapframe, retval);
 }
 
-static void sys_destroy(jinue_syscall_args_t *args) {
-    int fd = get_descriptor(args->arg1);
+static void sys_destroy(trapframe_t *trapframe) {
+    int fd = get_descriptor(msg_arg1(trapframe));
 
     if(fd < 0) {
-        set_return_value_or_error(args, fd);
+        set_return_value_or_error(trapframe, fd);
         return;
     }
 
     int retval = destroy(fd);
-    set_return_value_or_error(args, retval);
+    set_return_value_or_error(trapframe, retval);
 }
 
-static void sys_mint(jinue_syscall_args_t *args) {
+static void sys_mint(trapframe_t *trapframe) {
     const jinue_mint_args_t *userspace_mint_args;
-    int owner           = get_descriptor(args->arg1);
-    userspace_mint_args = (void *)args->arg2;
+    int owner           = get_descriptor(msg_arg1(trapframe));
+    userspace_mint_args = (void *)msg_arg2(trapframe);
 
     if(owner < 0) {
-        set_return_value_or_error(args, owner);
+        set_return_value_or_error(trapframe, owner);
         return;
     }
 
     if(! check_userspace_buffer(userspace_mint_args, sizeof(jinue_mint_args_t))) {
-        set_error(args, JINUE_EINVAL);
+        set_error(trapframe, JINUE_EINVAL);
         return;
     }
 
@@ -459,60 +460,60 @@ static void sys_mint(jinue_syscall_args_t *args) {
     mint_args.cookie    = userspace_mint_args->cookie;
     
     if(mint_args.process < 0) {
-        set_return_value_or_error(args, mint_args.process);
+        set_return_value_or_error(trapframe, mint_args.process);
         return;
     }
 
     if(mint_args.fd < 0) {
-        set_return_value_or_error(args, mint_args.fd);
+        set_return_value_or_error(trapframe, mint_args.fd);
         return;
     }
 
     int retval = mint(owner, &mint_args);
-    set_return_value_or_error(args, retval);
+    set_return_value_or_error(trapframe, retval);
 }
 
-static void sys_start_thread(jinue_syscall_args_t *args) {
+static void sys_start_thread(trapframe_t *trapframe) {
     thread_params_t thread_params;
-    int fd                      = get_descriptor(args->arg1);
-    thread_params.entry         = (void *)args->arg2;
-    thread_params.stack_addr    = (void *)args->arg3;
+    int fd                      = get_descriptor(msg_arg1(trapframe));
+    thread_params.entry         = (void *)msg_arg2(trapframe);
+    thread_params.stack_addr    = (void *)msg_arg3(trapframe);
 
     if(fd < 0) {
-        set_return_value_or_error(args, fd);
+        set_return_value_or_error(trapframe, fd);
         return;
     }
 
     if(!is_userspace_pointer(thread_params.entry)) {
-        set_error(args, JINUE_EINVAL);
+        set_error(trapframe, JINUE_EINVAL);
         return;
     }
 
     if(!is_userspace_pointer(thread_params.stack_addr)) {
-        set_error(args, JINUE_EINVAL);
+        set_error(trapframe, JINUE_EINVAL);
         return;
     }
 
     int retval = start_thread(fd, &thread_params);
-    set_return_value_or_error(args, retval);
+    set_return_value_or_error(trapframe, retval);
 }
 
-static void sys_await_thread(jinue_syscall_args_t *args) {
-    int fd                      = get_descriptor(args->arg1);
+static void sys_await_thread(trapframe_t *trapframe) {
+    int fd                      = get_descriptor(msg_arg1(trapframe));
 
     if(fd < 0) {
-        set_return_value_or_error(args, fd);
+        set_return_value_or_error(trapframe, fd);
         return;
     }
 
     int retval = await_thread(fd);
-    set_return_value_or_error(args, retval);
+    set_return_value_or_error(trapframe, retval);
 }
 
-static void sys_reply_error(jinue_syscall_args_t *args) {
-    uintptr_t errcode   = args->arg1;
+static void sys_reply_error(trapframe_t *trapframe) {
+    uintptr_t errcode   = msg_arg1(trapframe);
     int retval          = reply_error(errcode);
-    set_return_value_or_error(args, retval);
+    set_return_value_or_error(trapframe, retval);
 }
 
 /**
@@ -523,78 +524,78 @@ static void sys_reply_error(jinue_syscall_args_t *args) {
  *
  * @param trapframe trap frame for current system call
  */
-void handle_syscall(jinue_syscall_args_t *args) {
-    intptr_t function = args->arg0;
+void handle_syscall(trapframe_t *trapframe) {
+    intptr_t function = msg_arg0(trapframe);
     
     if(function < 0) {
-        set_error(args, JINUE_EINVAL);
+        set_error(trapframe, JINUE_EINVAL);
     }
     else if(function < JINUE_SYS_USER_BASE) {
         /* microkernel system calls */
         switch(function) {
         case JINUE_SYS_REBOOT:
-            sys_reboot(args);
+            sys_reboot(trapframe);
             break;
         case JINUE_SYS_PUTS:
-            sys_puts(args);
+            sys_puts(trapframe);
             break;
         case JINUE_SYS_CREATE_THREAD:
-            sys_create_thread(args);
+            sys_create_thread(trapframe);
             break;
         case JINUE_SYS_YIELD_THREAD:
-            sys_yield_thread(args);
+            sys_yield_thread(trapframe);
             break;
         case JINUE_SYS_SET_THREAD_LOCAL:
-            sys_set_thread_local(args);
+            sys_set_thread_local(trapframe);
             break;
         case JINUE_SYS_GET_ADDRESS_MAP:
-            sys_get_address_map(args);
+            sys_get_address_map(trapframe);
             break;
         case JINUE_SYS_CREATE_ENDPOINT:
-            sys_create_endpoint(args);
+            sys_create_endpoint(trapframe);
             break;
         case JINUE_SYS_RECEIVE:
-            sys_receive(args);
+            sys_receive(trapframe);
             break;
         case JINUE_SYS_REPLY:
-            sys_reply(args);
+            sys_reply(trapframe);
             break;
         case JINUE_SYS_EXIT_THREAD:
-            sys_exit_thread(args);
+            sys_exit_thread(trapframe);
             break;
         case JINUE_SYS_MMAP:
-            sys_mmap(args);
+            sys_mmap(trapframe);
             break;
         case JINUE_SYS_CREATE_PROCESS:
-            sys_create_process(args);
+            sys_create_process(trapframe);
             break;
         case JINUE_SYS_DUP:
-            sys_dup(args);
+            sys_dup(trapframe);
             break;
         case JINUE_SYS_CLOSE:
-            sys_close(args);
+            sys_close(trapframe);
             break;
         case JINUE_SYS_DESTROY:
-            sys_destroy(args);
+            sys_destroy(trapframe);
             break;
         case JINUE_SYS_MINT:
-            sys_mint(args);
+            sys_mint(trapframe);
             break;
         case JINUE_SYS_START_THREAD:
-            sys_start_thread(args);
+            sys_start_thread(trapframe);
             break;
         case JINUE_SYS_AWAIT_THREAD:
-            sys_await_thread(args);
+            sys_await_thread(trapframe);
             break;
         case JINUE_SYS_REPLY_ERROR:
-            sys_reply_error(args);
+            sys_reply_error(trapframe);
             break;
         default:
-            sys_nosys(args);
+            sys_nosys(trapframe);
         }
     }
     else {
         /* inter-process message */
-        sys_send(args);
+        sys_send(trapframe);
     }
 }

@@ -35,9 +35,19 @@
 #include <kernel/interface/i686/trap.h>
 #include <kernel/interface/syscalls.h>
 
+/** Dispatch a trap into the kernel
+ * 
+ * Important note: machine_dump_call_stack() makes assumptions about the
+ * signature of this function. Specifically, when handling an interrupt that
+ * occurs in the kernel, it assumes the first argument is a pointer to the trap
+ * frame and uses this assumption to continue the call stack dump accross the
+ * interrupt.
+ * 
+ * @param trapframe the trap frame with saved state
+ */
 void handle_trap(trapframe_t *trapframe) {
-    if(trapframe->ivt == JINUE_I686_SYSCALL_INTERRUPT) {
-        handle_syscall(trapframe_syscall_args(trapframe));
+    if(trapframe->trapno == JINUE_I686_SYSCALL_INTERRUPT) {
+        handle_syscall(trapframe);
     } else {
         handle_interrupt(trapframe);
     }

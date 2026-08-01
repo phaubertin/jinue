@@ -1,4 +1,4 @@
-; Copyright (C) 2019 Philippe Aubertin.
+; Copyright (C) 2019-2026 Philippe Aubertin.
 ; All rights reserved.
 ;
 ; Redistribution and use in source and binary forms, with or without
@@ -30,53 +30,48 @@
     bits 32
 
 ; ------------------------------------------------------------------------------
-; FUNCTION: get_fpointer
-; C PROTOTYPE: addr_t get_fpointer(void)
+; FUNCTION: get_frameptr
+; C PROTOTYPE: void *get_frameptr(void)
 ; ------------------------------------------------------------------------------
-    global get_fpointer:function (get_fpointer.end - get_fpointer)
-get_fpointer:
+    global get_frameptr:function (get_frameptr.end - get_frameptr)
+get_frameptr:
     mov eax, ebp
     
     ret
 .end:
 
 ; ------------------------------------------------------------------------------
-; FUNCTION: get_caller_fpointer
-; C PROTOTYPE: get_caller_fpointer(addr_t fptr)
+; FUNCTION: get_caller_frameptr
+; C PROTOTYPE: void *get_caller_frameptr(void *fptr)
 ; ------------------------------------------------------------------------------
-    global get_caller_fpointer:function (get_caller_fpointer.end - get_caller_fpointer)
-get_caller_fpointer:
-    push ebp                ; Save ebp
-    
-    mov ebp, [esp+8]        ; First argument: fptr
-    mov eax, [ebp]          ; Frame pointer to return
-    
-    pop ebp                 ; Restore ebp
-    ret
-.end:
-
-; ------------------------------------------------------------------------------
-; FUNCTION: get_ret_addr
-; C PROTOTYPE: addr_t get_ret_addr(addr_t fptr)
-; ------------------------------------------------------------------------------
-    global get_ret_addr:function (get_ret_addr.end - get_ret_addr)
-get_ret_addr:
-    push ebp                ; Save ebp
-    
-    mov ebp, [esp+8]        ; First argument: fptr
-    mov eax, [ebp+4]        ; Return address to return
-    pop ebp                 ; Restore ebp
+    global get_caller_frameptr:function (get_caller_frameptr.end - get_caller_frameptr)
+get_caller_frameptr:
+    mov eax, [esp+4]        ; First argument: fptr
+    mov eax, [eax]          ; Frame pointer to return
     
     ret
 .end:
 
 ; ------------------------------------------------------------------------------
-; FUNCTION: get_program_counter
-; C PROTOTYPE: addr_t get_program_counter(void)
+; FUNCTION: get_return_addr
+; C PROTOTYPE: void *get_return_addr(void *fptr)
 ; ------------------------------------------------------------------------------
-    global get_program_counter:function (get_program_counter.end - get_program_counter)
-get_program_counter:
-    mov eax, [esp]
-    
+    global get_return_addr:function (get_return_addr.end - get_return_addr)
+get_return_addr:
+    mov eax, [esp+4]        ; First argument: fptr
+    mov eax, [eax+4]        ; Return address to return
+
+    ret
+.end:
+
+; ------------------------------------------------------------------------------
+; FUNCTION: get_first_pointer_arg
+; C PROTOTYPE: void *get_first_pointer_arg(void *fptr)
+; ------------------------------------------------------------------------------
+    global get_first_pointer_arg:function (get_first_pointer_arg.end - get_first_pointer_arg)
+get_first_pointer_arg:
+    mov eax, [esp+4]        ; First argument: fptr
+    mov eax, [eax+8]        ; First argument on fptr frame
+
     ret
 .end:
