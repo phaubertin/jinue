@@ -32,11 +32,13 @@
 #include <jinue/shared/asm/errno.h>
 #include <jinue/shared/asm/syscalls.h>
 #include <jinue/shared/asm/mman.h>
+#include <jinue/shared/types.h>
 #include <kernel/application/syscalls.h>
 #include <kernel/domain/entities/descriptor.h>
 #include <kernel/domain/entities/endpoint.h>
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
+#include <kernel/interface/machine/signal.h>
 #include <kernel/interface/machine/trap.h>
 #include <kernel/interface/syscalls.h>
 #include <kernel/machine/asm/machine.h>
@@ -530,6 +532,18 @@ static void sys_signal_thread(trapframe_t *trapframe) {
     set_return_value_or_error(trapframe, retval);
 }
 
+static void sys_return_from_signal(trapframe_t *trapframe) {
+    const jinue_ucontext_t *ucontext = (const jinue_ucontext_t *)msg_arg1(trapframe);
+
+    if(!check_userspace_buffer(ucontext, sizeof(jinue_ucontext_t))) {
+        set_error(trapframe, JINUE_EINVAL);
+        return;
+    }
+
+    int retval  = return_from_signal(trapframe, ucontext);
+    set_return_value_or_error(trapframe, retval);
+}
+
 /**
  * System call dispatching function
  *
@@ -609,6 +623,9 @@ void handle_syscall(trapframe_t *trapframe) {
             break;
         case JINUE_SYS_SIGNAL_THREAD:
             sys_signal_thread(trapframe);
+            break;
+        case JINUE_SYS_RETURN_FROM_SIGNAL:
+            sys_return_from_signal(trapframe);
             break;
         default:
             sys_nosys(trapframe);

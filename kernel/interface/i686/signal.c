@@ -32,6 +32,7 @@
 #include <jinue/shared/types.h>
 #include <kernel/interface/machine/signal.h>
 #include <kernel/machine/thread.h>
+#include <kernel/machine/spinlock.h>
 #include <kernel/types.h>
 #include <stdint.h>
 
@@ -117,4 +118,39 @@ void deliver_signal(trapframe_t *trapframe, int signo, uint32_t sigmask) {
     siginfo->si_addr = NULL;
     siginfo->si_status = 0;
     siginfo->si_value.sival_ptr = NULL;
+}
+
+int return_from_signal(trapframe_t *trapframe, const jinue_ucontext_t *ucontext) {
+    thread_t *thread = get_current_thread();
+    process_t *process = thread->process;
+
+    spin_lock(&process->signal_lock);
+
+    thread->blocked_signals = ucontext->uc_sigmask.sa_sigbits[0];
+    
+    spin_unlock(&process->signal_lock);
+
+    const jinue_mcontext_t *mcontext = &ucontext->uc_mcontext;
+
+    /* TODO check what isn't safe here (e.g. eflags) */
+    trapframe->gs = mcontext->gregs[JINUE_GREG_GS];
+    trapframe->fs = mcontext->gregs[JINUE_GREG_FS];
+    trapframe->es = mcontext->gregs[JINUE_GREG_ES];
+    trapframe->ds = mcontext->gregs[JINUE_GREG_DS];
+    trapframe->edi = mcontext->gregs[JINUE_GREG_EDI];
+    trapframe->esi = mcontext->gregs[JINUE_GREG_ESI];
+    trapframe->ebp = mcontext->gregs[JINUE_GREG_EBP];
+    trapframe->esp = mcontext->gregs[JINUE_GREG_ESP];
+    trapframe->ebx = mcontext->gregs[JINUE_GREG_EBX];
+    trapframe->edx = mcontext->gregs[JINUE_GREG_EDX];
+    trapframe->ecx = mcontext->gregs[JINUE_GREG_ECX];
+    trapframe->eax = mcontext->gregs[JINUE_GREG_EAX];
+    /* No need to restore trap number or error code. */
+    trapframe->eip = mcontext->gregs[JINUE_GREG_EIP];
+    trapframe->cs = mcontext->gregs[JINUE_GREG_CS];
+    trapframe->eflags = mcontext->gregs[JINUE_GREG_EFL];
+    trapframe->esp = mcontext->gregs[JINUE_GREG_UESP];
+    trapframe->ss = mcontext->gregs[JINUE_GREG_SS];
+
+    return 0;
 }

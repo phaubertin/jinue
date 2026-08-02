@@ -343,3 +343,14 @@ int jinue_signal_thread(int fd, int signo, int *perrno) {
 
     return call_with_usual_convention(&args, perrno);
 }
+
+int jinue_return_from_signal(const jinue_ucontext_t *ucontext, int *perrno) {
+    jinue_syscall_args_t args;
+
+    args.arg0 = JINUE_SYS_RETURN_FROM_SIGNAL;
+    args.arg1 = (uintptr_t)ucontext;
+    args.arg2 = 0;
+    args.arg3 = 0;
+
+    return call_with_usual_convention(&args, perrno);
+}

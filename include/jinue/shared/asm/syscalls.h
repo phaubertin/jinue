@@ -95,6 +95,9 @@
 /** send a signal to a thread */
 #define JINUE_SYS_SIGNAL_THREAD         24
 
+/** return from a signal */
+#define JINUE_SYS_RETURN_FROM_SIGNAL    25
+
 /** start of function numbers for user space messages */
 #define JINUE_SYS_USER_BASE             4096
 
