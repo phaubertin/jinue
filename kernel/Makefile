@@ -81,6 +81,8 @@ sources.kernel.c = \
 	application/syscalls/reply_error.c \
 	application/syscalls/send.c \
 	application/syscalls/set_thread_local.c \
+	application/syscalls/signal_process.c \
+	application/syscalls/signal_thread.c \
 	application/syscalls/start_thread.c \
 	application/syscalls/yield_thread.c \
 	application/kmain.c \

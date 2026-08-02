@@ -516,6 +516,20 @@ static void sys_reply_error(trapframe_t *trapframe) {
     set_return_value_or_error(trapframe, retval);
 }
 
+static void sys_signal_process(trapframe_t *trapframe) {
+    int fd      = get_descriptor(msg_arg1(trapframe));
+    int signo   = msg_arg2(trapframe);
+    int retval  = signal_process(fd, signo);
+    set_return_value_or_error(trapframe, retval);
+}
+
+static void sys_signal_thread(trapframe_t *trapframe) {
+    int fd      = get_descriptor(msg_arg1(trapframe));
+    int signo   = msg_arg2(trapframe);
+    int retval  = signal_thread(fd, signo);
+    set_return_value_or_error(trapframe, retval);
+}
+
 /**
  * System call dispatching function
  *
@@ -589,6 +603,12 @@ void handle_syscall(trapframe_t *trapframe) {
             break;
         case JINUE_SYS_REPLY_ERROR:
             sys_reply_error(trapframe);
+            break;
+        case JINUE_SYS_SIGNAL_PROCESS:
+            sys_signal_process(trapframe);
+            break;
+        case JINUE_SYS_SIGNAL_THREAD:
+            sys_signal_thread(trapframe);
             break;
         default:
             sys_nosys(trapframe);

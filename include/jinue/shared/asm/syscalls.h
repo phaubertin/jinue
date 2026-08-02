@@ -89,6 +89,12 @@
 /** reply to current message with an error code */
 #define JINUE_SYS_REPLY_ERROR           22
 
+/** send a signal to a process */
+#define JINUE_SYS_SIGNAL_PROCESS        23
+
+/** send a signal to a thread */
+#define JINUE_SYS_SIGNAL_THREAD         24
+
 /** start of function numbers for user space messages */
 #define JINUE_SYS_USER_BASE             4096
 

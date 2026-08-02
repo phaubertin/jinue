@@ -52,7 +52,8 @@ static const object_type_t object_type = {
     .all_permissions    =
               JINUE_PERM_CREATE_THREAD
             | JINUE_PERM_MAP
-            | JINUE_PERM_OPEN,
+            | JINUE_PERM_OPEN
+            | JINUE_PERM_SIGNAL,
     .name               = "process",
     .size               = sizeof(process_t),
     .open               = NULL,

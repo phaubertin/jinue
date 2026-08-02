@@ -41,6 +41,7 @@
 #include <jinue/shared/asm/permissions.h>
 #include <jinue/shared/asm/stack.h>
 #include <jinue/shared/asm/syscalls.h>
+#include <jinue/shared/asm/signal.h>
 #include <jinue/shared/types.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -116,5 +117,9 @@ int jinue_start_thread(int fd, void (*entry)(void), void *stack, int *perrno);
 int jinue_await_thread(int fd, int *perrno);
 
 int jinue_reply_error(uintptr_t errcode, int *perrno);
+
+int jinue_signal_process(int fd, int signo, int *perrno);
+
+int jinue_signal_thread(int fd, int signo, int *perrno);
 
 #endif

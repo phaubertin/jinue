@@ -42,8 +42,8 @@ void check_for_signal(trapframe_t *trapframe) {
 
     spin_lock(&process->signal_lock);
 
-    uint32_t pending = process->pending_signals | thread->pending_signals;
-    uint32_t signals = pending & ~thread->blocked_signals;
+    sigset_t pending = process->pending_signals | thread->pending_signals;
+    sigset_t signals = pending & ~thread->blocked_signals;
 
     if(signals == 0) {
         spin_unlock(&process->signal_lock);
@@ -57,7 +57,7 @@ void check_for_signal(trapframe_t *trapframe) {
     }
 
     int signo = 1;
-    uint32_t onemask = 1;
+    sigset_t onemask = 1;
 
     /* This loop condition is potentially dangerous but we checked signals is
      * not zero above, so the loop is guaranteed to terminte. */

@@ -43,7 +43,7 @@
 static void free_op(object_header_t *object);
 
 static const object_type_t object_type = {
-    .all_permissions    = JINUE_PERM_START | JINUE_PERM_AWAIT,
+    .all_permissions    = JINUE_PERM_START | JINUE_PERM_AWAIT | JINUE_PERM_SIGNAL,
     .name               = "thread",
     .size               = sizeof(thread_t),
     .open               = NULL,

@@ -29,7 +29,9 @@
 | 20      | [START_THREAD](start-thread.md)         | Start a thread                       |
 | 21      | [AWAIT_THREAD](await-thread.md)         | Wait for a thread to exit            |
 | 22      | [REPLY_ERROR](reply-error.md)           | Reply to message with an error       |
-| 23-4095 | -                                       | Reserved                             |
+| 23      | [SIGNAL_PROCESS](signal-process.md)     | Send a signal to a process           |
+| 24      | [SIGNAL_THREAD](signal-thread.md)       | Send a signal to a thread            |
+| 25-4095 | -                                       | Reserved                             |
 | 4096+   | [SEND](send.md)                         | Send a message                       |
 
 #### Reserved Function Numbers
