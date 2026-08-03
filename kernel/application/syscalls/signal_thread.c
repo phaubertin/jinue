@@ -66,10 +66,7 @@ int signal_thread(int fd, int signo) {
     spin_lock(&process->signal_lock);
 
     sigset_t onemask = 1<<(signo - 1);
-
-    if((process->ignored_signals & onemask) == 0) {
-        thread->pending_signals |= onemask;
-    }
+    thread->pending_signals |= onemask;
 
     spin_unlock(&process->signal_lock);
     descriptor_unreference_object(&desc);

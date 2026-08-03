@@ -123,18 +123,25 @@ static void free_op(object_header_t *object) {
  *
  */
 void thread_prepare(thread_t *thread, const thread_params_t *params) {
-    thread->sender  = NULL;
+    thread->sender      = NULL;
+    thread->cpu_credits = 0;
     
     spin_lock(&thread->await_lock);
     
-    thread->awaiter         = NULL;
-    thread->state           = THREAD_STATE_STARTING;
-    thread->cpu_credits     = 0;
+    thread->awaiter     = NULL;
+    thread->state       = THREAD_STATE_STARTING;
+
+    spin_unlock(&thread->await_lock);
+
+    process_t *process = thread->process;
+
+    spin_lock(&process->signal_lock);
+
     thread->pending_signals = 0;
     /* TODO deal with inheritance from "parent" thread. */
     thread->blocked_signals = -1;
 
-    spin_unlock(&thread->await_lock);    
+    spin_unlock(&process->signal_lock);
     
     machine_prepare_thread(thread, params);
 }

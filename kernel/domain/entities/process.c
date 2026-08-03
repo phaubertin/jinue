@@ -128,7 +128,6 @@ process_t *process_new(void) {
         process->running_threads_count  = 0;
         process->signal_handler         = NULL;
         process->pending_signals        = 0;
-        process->ignored_signals        = 0;
 
         initialize_descriptors(process);
 

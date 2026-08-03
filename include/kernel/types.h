@@ -84,7 +84,6 @@ typedef struct {
     spinlock_t          descriptors_lock;
     spinlock_t          signal_lock;
     sigset_t            pending_signals;
-    sigset_t            ignored_signals;
     jinue_sighandler_t  signal_handler;
     descriptor_t        descriptors[JINUE_DESC_NUM];
 } process_t;
