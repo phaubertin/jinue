@@ -1,4 +1,4 @@
-# SEND - Send a Signal to a Process
+# SIGNAL_PROCESS - Send a Signal to a Process
 
 ## Description
 

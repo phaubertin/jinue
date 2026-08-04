@@ -32,7 +32,8 @@
 | 23      | [SIGNAL_PROCESS](signal-process.md)         | Send a signal to a process           |
 | 24      | [SIGNAL_THREAD](signal-thread.md)           | Send a signal to a thread            |
 | 25      | [RETURN_FROM_SIGNAL](return-from-signal.md) | Return from a signal                 |
-| 26-4095 | -                                           | Reserved                             |
+| 26      | [SWAP_SIGNAL_MASK](swap-signal-mask.md)     | Examine and change blocked signals   |
+| 27-4095 | -                                           | Reserved                             |
 | 4096+   | [SEND](send.md)                             | Send a message                       |
 
 #### Reserved Function Numbers

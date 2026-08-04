@@ -1,4 +1,4 @@
-# SEND - Send a Signal to a Thread
+# SIGNAL_THREAD - Send a Signal to a Thread
 
 ## Description
 

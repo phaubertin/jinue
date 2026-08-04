@@ -288,13 +288,24 @@ int jinue_mint(
     return call_with_usual_convention(&args, perrno);
 }
 
-int jinue_start_thread(int fd, void (*entry)(void), void *stack, int *perrno) {
+int jinue_start_thread(
+    int           fd,
+    void        (*entry)(void),
+    void         *stack_addr,
+    uint32_t      sigmask,
+    int          *perrno) {
+
     jinue_syscall_args_t args;
+    jinue_start_thread_args_t start_args;
+
+    start_args.entry = entry;
+    start_args.stack_addr = stack_addr;
+    start_args.sigmask = sigmask;
 
     args.arg0 = JINUE_SYS_START_THREAD;
     args.arg1 = fd;
-    args.arg2 = (uintptr_t)entry;
-    args.arg3 = (uintptr_t)stack;
+    args.arg2 = (uintptr_t)&start_args;
+    args.arg3 = 0;
 
     return call_with_usual_convention(&args, perrno);
 }
@@ -353,4 +364,24 @@ int jinue_return_from_signal(const jinue_ucontext_t *ucontext, int *perrno) {
     args.arg3 = 0;
 
     return call_with_usual_convention(&args, perrno);
+}
+
+int jinue_swap_signal_mask(int fd, int how, uint32_t set, uint32_t *oset, int *perrno) {
+    jinue_syscall_args_t args;
+
+    args.arg0 = JINUE_SYS_SWAP_SIGNAL_MASK;
+    args.arg1 = fd;
+    args.arg2 = how;
+    args.arg3 = set;
+
+    const intptr_t retval = (intptr_t)jinue_syscall(&args);
+
+    if(retval < 0) {
+        set_errno(perrno, args.arg1);
+    }
+    else if(oset != NULL) {
+        *oset = args.arg1;
+    }
+
+    return retval;
 }

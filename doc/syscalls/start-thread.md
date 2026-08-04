@@ -14,8 +14,10 @@ Function number (`arg0`) is 20.
 
 The descriptor number for the target thread is set in `arg1`.
 
-The address where code execution will start is set in `arg2` and the
-value of the initial stack pointer is set in `arg3`.
+A pointer to a
+[jinue_start_thread_args_t structure](../../include/jinue/shared/types.h) (i.e.
+the start thread arguments structure) that contains the rest of the arguments
+is set in `arg2`.
 
 ```
     +----------------------------------------------------------------+
@@ -29,15 +31,21 @@ value of the initial stack pointer is set in `arg3`.
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                    code entry point address                    |  arg2
+    |          pointer to start thread arguments structure           |  arg2
     +----------------------------------------------------------------+
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                      user stack address                        |  arg3
+    |                         reserved (0)                           |  arg3
     +----------------------------------------------------------------+
     31                                                               0
 ```
+
+The start thread arguments structure contains the following fields:
+
+* `entry` is the address where code execution will start.
+* `stack_addr` is the initial stack pointer.
+* `sigmask` is the initial signal mask of the thread.
 
 ## Return Value
 

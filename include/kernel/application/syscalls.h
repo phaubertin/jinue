@@ -76,8 +76,10 @@ int signal_process(int fd, int signo);
 
 int signal_thread(int fd, int signo);
 
-int start_thread(int fd, const thread_params_t *params);
+int start_thread(int fd, const jinue_start_thread_args_t *args);
 
 void yield_thread(void);
+
+int swap_signal_mask(int fd, int how, sigset_t set, sigset_t *oset);
 
 #endif

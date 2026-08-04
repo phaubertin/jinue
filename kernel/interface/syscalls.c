@@ -476,27 +476,36 @@ static void sys_mint(trapframe_t *trapframe) {
 }
 
 static void sys_start_thread(trapframe_t *trapframe) {
-    thread_params_t thread_params;
-    int fd                      = get_descriptor(msg_arg1(trapframe));
-    thread_params.entry         = (void *)msg_arg2(trapframe);
-    thread_params.stack_addr    = (void *)msg_arg3(trapframe);
+    const jinue_start_thread_args_t *userspace_start_args;
+    int fd                  = get_descriptor(msg_arg1(trapframe));
+    userspace_start_args    = (void *)msg_arg2(trapframe);
 
     if(fd < 0) {
         set_return_value_or_error(trapframe, fd);
         return;
     }
 
-    if(!is_userspace_pointer(thread_params.entry)) {
+    if(! check_userspace_buffer(userspace_start_args, sizeof(jinue_start_thread_args_t))) {
         set_error(trapframe, JINUE_EINVAL);
         return;
     }
 
-    if(!is_userspace_pointer(thread_params.stack_addr)) {
+    jinue_start_thread_args_t start_args;
+    start_args.entry = userspace_start_args->entry;
+    start_args.stack_addr = userspace_start_args->stack_addr;
+    start_args.sigmask = userspace_start_args->sigmask;
+
+    if(!is_userspace_pointer((void *)(uintptr_t)start_args.entry)) {
         set_error(trapframe, JINUE_EINVAL);
         return;
     }
 
-    int retval = start_thread(fd, &thread_params);
+    if(!is_userspace_pointer(start_args.stack_addr)) {
+        set_error(trapframe, JINUE_EINVAL);
+        return;
+    }
+
+    int retval = start_thread(fd, &start_args);
     set_return_value_or_error(trapframe, retval);
 }
 
@@ -521,6 +530,12 @@ static void sys_reply_error(trapframe_t *trapframe) {
 static void sys_signal_process(trapframe_t *trapframe) {
     int fd      = get_descriptor(msg_arg1(trapframe));
     int signo   = msg_arg2(trapframe);
+
+    if(fd < 0) {
+        set_return_value_or_error(trapframe, fd);
+        return;
+    }
+
     int retval  = signal_process(fd, signo);
     set_return_value_or_error(trapframe, retval);
 }
@@ -528,6 +543,12 @@ static void sys_signal_process(trapframe_t *trapframe) {
 static void sys_signal_thread(trapframe_t *trapframe) {
     int fd      = get_descriptor(msg_arg1(trapframe));
     int signo   = msg_arg2(trapframe);
+    
+    if(fd < 0) {
+        set_return_value_or_error(trapframe, fd);
+        return;
+    }
+    
     int retval  = signal_thread(fd, signo);
     set_return_value_or_error(trapframe, retval);
 }
@@ -542,6 +563,30 @@ static void sys_return_from_signal(trapframe_t *trapframe) {
 
     int retval  = return_from_signal(trapframe, ucontext);
     set_return_value_or_error(trapframe, retval);
+}
+
+static void sys_swap_signal_mask(trapframe_t *trapframe) {
+    int fd          = get_descriptor(msg_arg1(trapframe));
+    int how         = msg_arg2(trapframe);
+    sigset_t set    = msg_arg3(trapframe);
+
+    if((int)msg_arg1(trapframe) == -1) {
+        fd = -1;
+    } else if(fd < 0) {
+        set_return_value_or_error(trapframe, fd);
+        return;
+    }
+
+    sigset_t oset;
+    int retval = swap_signal_mask(fd, how, set, &oset);
+
+    if(retval < 0) {
+        set_error(trapframe, -retval);
+        return;
+    }
+    
+    set_return_value(trapframe, retval);
+    msg_arg1(trapframe) = oset;
 }
 
 /**
@@ -626,6 +671,9 @@ void handle_syscall(trapframe_t *trapframe) {
             break;
         case JINUE_SYS_RETURN_FROM_SIGNAL:
             sys_return_from_signal(trapframe);
+            break;
+        case JINUE_SYS_SWAP_SIGNAL_MASK:
+            sys_swap_signal_mask(trapframe);
             break;
         default:
             sys_nosys(trapframe);

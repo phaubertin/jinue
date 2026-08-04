@@ -1,4 +1,4 @@
-# SEND - Return from a Signal
+# RETURN_FROM_SIGNAL - Return from a Signal
 
 ## Description
 

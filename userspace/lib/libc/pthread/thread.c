@@ -162,10 +162,29 @@ int pthread_create(
         candidate->flags |= THREAD_FLAG_DETACHED;
     }
 
+    uint32_t sigmask;
+
+    status = jinue_swap_signal_mask(
+        /* current thread */
+        -1,
+        JINUE_SIG_NONE,
+        0,
+        &sigmask,
+        &errno_retval
+    );
+
+    if(status < 0) {
+        free_thread_to_pool(candidate);
+        return errno_retval;
+    }
+
     status = jinue_start_thread(
         candidate->fd,
         __pthread_entry,
         __pthread_initialize_stack(candidate, start_routine, arg),
+        /* From the POSIX specification of this function: "The signal mask
+         * shall be inherited from the creating thread." */
+        sigmask,
         &errno_retval
     );
 

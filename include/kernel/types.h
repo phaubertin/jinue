@@ -123,8 +123,9 @@ struct thread_t {
 typedef struct thread_t thread_t;
 
 typedef struct {
-    void *entry;
-    void *stack_addr;
+    void        (*entry)(void);
+    void        *stack_addr;
+    sigset_t     sigmask;
 } thread_params_t;
 
 typedef struct {

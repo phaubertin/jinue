@@ -47,12 +47,12 @@
 #include <string.h>
 
 typedef struct {
-    void            *entry;
-    void            *stack_addr;
-    addr_t           at_phdr;
-    int              at_phent;
-    int              at_phnum;
-    process_t       *process;
+    void            (*entry)(void);
+    void             *stack_addr;
+    addr_t            at_phdr;
+    int               at_phent;
+    int               at_phnum;
+    process_t        *process;
 } elf_info_t;
 
 /**
@@ -283,7 +283,7 @@ static void load_segments(
     elf_info->at_phnum      = ehdr->e_phnum;
     elf_info->at_phent      = ehdr->e_phentsize;
     elf_info->process       = process;
-    elf_info->entry         = (void *)ehdr->e_entry;
+    elf_info->entry         = (void (*)(void))ehdr->e_entry;
 
     for(unsigned int idx = 0; idx < ehdr->e_phnum; ++idx) {
         const Elf32_Phdr *phdr = &phdrs[idx];
@@ -514,6 +514,8 @@ void machine_load_exec(
 
     thread_params->entry        = elf_info.entry;
     thread_params->stack_addr   = elf_info.stack_addr;
+    /* All signals are unblocked initially. */
+    thread_params->sigmask      = 0;
 }
 
 /**

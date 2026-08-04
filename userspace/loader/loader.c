@@ -177,6 +177,8 @@ static int start_initial_thread(thread_params_t *thread_params) {
         INIT_THREAD_DESCRIPTOR,
         thread_params->entry,
         thread_params->stack_addr,
+        /* All signals are unblocked initially. */
+        0,
         &errno
     );
 

@@ -138,8 +138,7 @@ void thread_prepare(thread_t *thread, const thread_params_t *params) {
     spin_lock(&process->signal_lock);
 
     thread->pending_signals = 0;
-    /* TODO deal with inheritance from "parent" thread. */
-    thread->blocked_signals = -1;
+    thread->blocked_signals = params->sigmask;
 
     spin_unlock(&process->signal_lock);
     

@@ -112,7 +112,12 @@ int jinue_mint(
         uintptr_t    cookie,
         int         *perrno);
 
-int jinue_start_thread(int fd, void (*entry)(void), void *stack, int *perrno);
+int jinue_start_thread(
+    int           fd,
+    void        (*entry)(void),
+    void         *stack_addr,
+    uint32_t      sigmask,
+    int          *perrno);
 
 int jinue_await_thread(int fd, int *perrno);
 
@@ -123,5 +128,7 @@ int jinue_signal_process(int fd, int signo, int *perrno);
 int jinue_signal_thread(int fd, int signo, int *perrno);
 
 int jinue_return_from_signal(const jinue_ucontext_t *ucontext, int *perrno);
+
+int jinue_swap_signal_mask(int fd, int how, uint32_t set, uint32_t *oset, int *perrno);
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -30,46 +30,71 @@
  */
 
 #include <jinue/shared/asm/errno.h>
+#include <jinue/shared/asm/signal.h>
 #include <kernel/application/syscalls.h>
 #include <kernel/domain/entities/descriptor.h>
 #include <kernel/domain/entities/process.h>
-#include <kernel/domain/entities/thread.h>
+#include <kernel/machine/spinlock.h>
+#include <kernel/machine/thread.h>
 
-int start_thread(int fd, const jinue_start_thread_args_t *args) {
-    descriptor_t desc;
-    int status = descriptor_access_object(&desc, get_current_process(), fd);
+static int with_thread(thread_t *thread, int how, sigset_t set, sigset_t *oset) {
+    process_t *process = thread->process;
 
-    if(status < 0) {
-        return -JINUE_EBADF;
+    spin_lock(&process->signal_lock);
+
+    sigset_t original = thread->blocked_signals;
+
+    switch(how) {
+        case JINUE_SIG_NONE:
+            break;
+        case JINUE_SIG_BLOCK:
+            thread->blocked_signals |= set;
+            break;
+        case JINUE_SIG_SETMASK:
+            thread->blocked_signals = set;
+            break;
+        case JINUE_SIG_UNBLOCK:
+            thread->blocked_signals &= ~set;
+            break;
+        default:
+            spin_unlock(&process->signal_lock);
+            return -JINUE_EINVAL;
     }
 
-    thread_t *thread = descriptor_get_thread(&desc);
+    *oset = original;
 
-    if(thread == NULL) {
-        descriptor_unreference_object(&desc);
-        return -JINUE_EBADF;
-    }
-
-    if(!descriptor_has_permissions(&desc, JINUE_PERM_START)) {
-        descriptor_unreference_object(&desc);
-        return -JINUE_EPERM;
-    }
-
-    if(thread->state != THREAD_STATE_CREATED && thread->state != THREAD_STATE_ZOMBIE) {
-        descriptor_unreference_object(&desc);
-        return -JINUE_EBUSY;
-    }
-
-    thread_params_t thread_params;
-    thread_params.entry         = args->entry;
-    thread_params.stack_addr    = args->stack_addr;
-    thread_params.sigmask       = args->sigmask;
-
-    thread_prepare(thread, &thread_params);
-
-    thread_run(thread);
-
-    descriptor_unreference_object(&desc);
+    spin_unlock(&process->signal_lock);
 
     return 0;
+}
+
+int swap_signal_mask(int fd, int how, sigset_t set, sigset_t *oset) {
+    descriptor_t desc;
+    thread_t *thread;
+
+    if(fd == -1) {
+        thread = get_current_thread();
+    }
+    else {
+        int status = descriptor_access_object(&desc, get_current_process(), fd);
+
+        if(status < 0) {
+            return status == JINUE_EIO ? JINUE_ESRCH : status;
+        }
+
+        thread = descriptor_get_thread(&desc);
+
+        if(thread == NULL) {
+            descriptor_unreference_object(&desc);
+            return -JINUE_EBADF;
+        }
+    }
+
+    int retval = with_thread(thread, how, set, oset);
+
+    if(fd != -1) {
+        descriptor_unreference_object(&desc);
+    }
+
+    return retval;
 }

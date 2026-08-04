@@ -35,4 +35,13 @@
 /** maximum supported signal number */
 #define JINUE_SIGNAL_MAX    32
 
+
+#define JINUE_SIG_NONE      0
+
+#define JINUE_SIG_BLOCK     1
+
+#define JINUE_SIG_SETMASK   2
+
+#define JINUE_SIG_UNBLOCK   3
+
 #endif

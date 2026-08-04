@@ -111,6 +111,12 @@ typedef struct {
     uintptr_t   cookie;
 } jinue_mint_args_t;
 
+typedef struct {
+    void        (*entry)(void);
+    void         *stack_addr;
+    uint32_t      sigmask;
+} jinue_start_thread_args_t;
+
 typedef union {
     int      sival_int;
     void    *sival_ptr;
