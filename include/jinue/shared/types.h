@@ -112,10 +112,16 @@ typedef struct {
 } jinue_mint_args_t;
 
 typedef struct {
-    void        (*entry)(void);
-    void         *stack_addr;
-    uint32_t      sigmask;
+    void                    (*entry)(void);
+    void                     *stack_addr;
+    const jinue_sigset_t     *sigset;
 } jinue_start_thread_args_t;
+
+typedef struct {
+    int                      how;
+    const jinue_sigset_t    *restrict set;
+    jinue_sigset_t          *restrict oset;
+} jinue_swap_signal_mask_args_t;
 
 typedef union {
     int      sival_int;

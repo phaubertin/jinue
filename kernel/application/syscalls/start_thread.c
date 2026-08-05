@@ -35,7 +35,7 @@
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/entities/thread.h>
 
-int start_thread(int fd, const jinue_start_thread_args_t *args) {
+int start_thread(int fd, void (*entry)(void), void *stack_addr, sigmask_t sigmask) {
     descriptor_t desc;
     int status = descriptor_access_object(&desc, get_current_process(), fd);
 
@@ -61,9 +61,9 @@ int start_thread(int fd, const jinue_start_thread_args_t *args) {
     }
 
     thread_params_t thread_params;
-    thread_params.entry         = args->entry;
-    thread_params.stack_addr    = args->stack_addr;
-    thread_params.sigmask       = args->sigmask;
+    thread_params.entry         = entry;
+    thread_params.stack_addr    = stack_addr;
+    thread_params.sigmask       = sigmask;
 
     thread_prepare(thread, &thread_params);
 

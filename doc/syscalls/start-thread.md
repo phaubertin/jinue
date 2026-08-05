@@ -45,7 +45,7 @@ The start thread arguments structure contains the following fields:
 
 * `entry` is the address where code execution will start.
 * `stack_addr` is the initial stack pointer.
-* `sigmask` is the initial signal mask of the thread.
+* `sigset` is the initial set of blocked signals for the thread.
 
 ## Return Value
 
@@ -54,8 +54,11 @@ returns -1 and an error number is set (in `arg1`).
 
 ## Errors
 
+* JINUE_EINVAL if the pointer to the start thread arguments structure is set to
+a kernel address.
 * JINUE_EINVAL if the code entry point is set to a kernel address.
 * JINUE_EINVAL if the user stack address is set to a kernel address.
+* JINUE_EINVAL if the signal set pointer is set to a kernel address.
 * JINUE_EBADF if the thread descriptor is invalid, or does not refer to a
 thread, or is closed.
 * JINUE_EPERM if the thread descriptor does not have the permission to start

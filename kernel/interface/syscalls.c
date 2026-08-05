@@ -30,6 +30,7 @@
  */
 
 #include <jinue/shared/asm/errno.h>
+#include <jinue/shared/asm/signal.h>
 #include <jinue/shared/asm/syscalls.h>
 #include <jinue/shared/asm/mman.h>
 #include <jinue/shared/types.h>
@@ -485,27 +486,31 @@ static void sys_start_thread(trapframe_t *trapframe) {
         return;
     }
 
-    if(! check_userspace_buffer(userspace_start_args, sizeof(jinue_start_thread_args_t))) {
+    if(!check_userspace_buffer(userspace_start_args, sizeof(jinue_start_thread_args_t))) {
         set_error(trapframe, JINUE_EINVAL);
         return;
     }
 
-    jinue_start_thread_args_t start_args;
-    start_args.entry = userspace_start_args->entry;
-    start_args.stack_addr = userspace_start_args->stack_addr;
-    start_args.sigmask = userspace_start_args->sigmask;
+    void (*entry)(void) = userspace_start_args->entry;
+    void *stack_addr= userspace_start_args->stack_addr;
+    const jinue_sigset_t *sigset = userspace_start_args->sigset;
 
-    if(!is_userspace_pointer((void *)(uintptr_t)start_args.entry)) {
+    if(!is_userspace_pointer((void *)(uintptr_t)entry)) {
         set_error(trapframe, JINUE_EINVAL);
         return;
     }
 
-    if(!is_userspace_pointer(start_args.stack_addr)) {
+    if(!is_userspace_pointer(stack_addr)) {
         set_error(trapframe, JINUE_EINVAL);
         return;
     }
 
-    int retval = start_thread(fd, &start_args);
+    if(!check_userspace_buffer(sigset, sizeof(jinue_sigset_t))) {
+        set_error(trapframe, JINUE_EINVAL);
+        return;
+    }
+
+    int retval = start_thread(fd, entry, stack_addr, sigset->sa_sigbits[0]);
     set_return_value_or_error(trapframe, retval);
 }
 
@@ -566,9 +571,9 @@ static void sys_return_from_signal(trapframe_t *trapframe) {
 }
 
 static void sys_swap_signal_mask(trapframe_t *trapframe) {
-    int fd          = get_descriptor(msg_arg1(trapframe));
-    int how         = msg_arg2(trapframe);
-    sigset_t set    = msg_arg3(trapframe);
+    int fd = get_descriptor(msg_arg1(trapframe));
+    const jinue_swap_signal_mask_args_t *userspace_swap_args =
+        (const jinue_swap_signal_mask_args_t *)msg_arg2(trapframe);
 
     if((int)msg_arg1(trapframe) == -1) {
         fd = -1;
@@ -577,8 +582,30 @@ static void sys_swap_signal_mask(trapframe_t *trapframe) {
         return;
     }
 
-    sigset_t oset;
-    int retval = swap_signal_mask(fd, how, set, &oset);
+    if(!check_userspace_buffer(userspace_swap_args, sizeof(jinue_swap_signal_mask_args_t))) {
+        set_error(trapframe, JINUE_EINVAL);
+        return;
+    }
+
+    int how = userspace_swap_args->how;
+    const jinue_sigset_t *set = userspace_swap_args->set;
+    jinue_sigset_t *oset = userspace_swap_args->oset;
+
+    if(set == NULL) {
+        how = JINUE_SIG_NONE;
+    }
+
+    if(set != NULL && !check_userspace_buffer(set, sizeof(jinue_sigset_t))) {
+        set_error(trapframe, JINUE_EINVAL);
+        return;
+    }
+
+    if(oset != NULL && !check_userspace_buffer(oset, sizeof(jinue_sigset_t))) {
+        set_error(trapframe, JINUE_EINVAL);
+        return;
+    }
+
+    int retval = swap_signal_mask(fd, how, set != NULL ? set->sa_sigbits[0] : 0, oset);
 
     if(retval < 0) {
         set_error(trapframe, -retval);
@@ -586,7 +613,6 @@ static void sys_swap_signal_mask(trapframe_t *trapframe) {
     }
     
     set_return_value(trapframe, retval);
-    msg_arg1(trapframe) = oset;
 }
 
 /**

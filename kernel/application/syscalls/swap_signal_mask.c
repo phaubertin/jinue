@@ -37,12 +37,12 @@
 #include <kernel/machine/spinlock.h>
 #include <kernel/machine/thread.h>
 
-static int with_thread(thread_t *thread, int how, sigset_t set, sigset_t *oset) {
+static int with_thread(thread_t *thread, int how, sigmask_t set, jinue_sigset_t *oset) {
     process_t *process = thread->process;
 
     spin_lock(&process->signal_lock);
 
-    sigset_t original = thread->blocked_signals;
+    sigmask_t original = thread->blocked_signals;
 
     switch(how) {
         case JINUE_SIG_NONE:
@@ -61,14 +61,19 @@ static int with_thread(thread_t *thread, int how, sigset_t set, sigset_t *oset) 
             return -JINUE_EINVAL;
     }
 
-    *oset = original;
+    if(oset != NULL) {
+        oset->sa_sigbits[0] = original;
+        oset->sa_sigbits[1] = 0;
+        oset->sa_sigbits[2] = 0;
+        oset->sa_sigbits[3] = 0;
+    }
 
     spin_unlock(&process->signal_lock);
 
     return 0;
 }
 
-int swap_signal_mask(int fd, int how, sigset_t set, sigset_t *oset) {
+int swap_signal_mask(int fd, int how, sigmask_t set, jinue_sigset_t *oset) {
     descriptor_t desc;
     thread_t *thread;
 
@@ -87,6 +92,11 @@ int swap_signal_mask(int fd, int how, sigset_t set, sigset_t *oset) {
         if(thread == NULL) {
             descriptor_unreference_object(&desc);
             return -JINUE_EBADF;
+        }
+
+        if(thread->process != get_current_process()) {
+            descriptor_unreference_object(&desc);
+            return -JINUE_EPERM;
         }
     }
 

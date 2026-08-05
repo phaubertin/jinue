@@ -65,7 +65,7 @@ int signal_thread(int fd, int signo) {
 
     spin_lock(&process->signal_lock);
 
-    sigset_t onemask = 1<<(signo - 1);
+    sigmask_t onemask = 1<<(signo - 1);
     thread->pending_signals |= onemask;
 
     spin_unlock(&process->signal_lock);

@@ -173,12 +173,15 @@ static int load_init(
 }
 
 static int start_initial_thread(thread_params_t *thread_params) {
+    /* All signals are unblocked initially. */
+    jinue_sigset_t sigset;
+    jinue_sigemptyset(&sigset);
+
     int status = jinue_start_thread(
         INIT_THREAD_DESCRIPTOR,
         thread_params->entry,
         thread_params->stack_addr,
-        /* All signals are unblocked initially. */
-        0,
+        &sigset,
         &errno
     );
 

@@ -41,10 +41,6 @@
  * notable exception is how saved FPU state is represented, which has not aged
  * well in the spec. */
 
-typedef struct {
-    unsigned int sa_sigbits[4];
-} jinue_sigset_t;
-
 #define JINUE_NGREG 19
 
 typedef int jinue_greg_t;

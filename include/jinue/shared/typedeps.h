@@ -33,6 +33,7 @@
 #define _JINUE_SHARED_TYPEDEPS_H
 
 #include <stddef.h>
+#include <stdint.h>
 
 /* This matches the POSIX definition of stack_t (<signal.h>). */
 typedef struct {
@@ -40,5 +41,9 @@ typedef struct {
     size_t   ss_size;
     int      ss_flags;
 } jinue_stack_t;
+
+typedef struct {
+    uint32_t sa_sigbits[4];
+} jinue_sigset_t;
 
 #endif

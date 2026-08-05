@@ -75,7 +75,7 @@ struct descriptor_t {
     uintptr_t        cookie;
 };
 
-typedef uint32_t sigset_t;
+typedef uint32_t sigmask_t;
 
 typedef struct {
     object_header_t     header;
@@ -83,7 +83,7 @@ typedef struct {
     int                 running_threads_count;
     spinlock_t          descriptors_lock;
     spinlock_t          signal_lock;
-    sigset_t            pending_signals;
+    sigmask_t           pending_signals;
     jinue_sighandler_t  signal_handler;
     descriptor_t        descriptors[JINUE_DESC_NUM];
 } process_t;
@@ -107,8 +107,8 @@ struct thread_t {
     struct thread_t     *sender;
     struct thread_t     *awaiter;
     spinlock_t           await_lock;
-    sigset_t             pending_signals;
-    sigset_t             blocked_signals;
+    sigmask_t            pending_signals;
+    sigmask_t            blocked_signals;
     addr_t               local_storage_addr;
     size_t               local_storage_size;
     size_t               recv_buffer_size;
@@ -125,7 +125,7 @@ typedef struct thread_t thread_t;
 typedef struct {
     void        (*entry)(void);
     void        *stack_addr;
-    sigset_t     sigmask;
+    sigmask_t    sigmask;
 } thread_params_t;
 
 typedef struct {

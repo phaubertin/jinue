@@ -46,6 +46,20 @@
 #include <stddef.h>
 #include <stdint.h>
 
+/* sigset.c */
+
+int jinue_sigaddset(jinue_sigset_t *set, int signo, int *perrno);
+
+int jinue_sigdelset(jinue_sigset_t *set, int signo, int *perrno);
+
+int jinue_sigemptyset(jinue_sigset_t *set);
+
+int jinue_sigfillset(jinue_sigset_t *set);
+
+int jinue_sigismember(const jinue_sigset_t *set, int signo, int *perrno);
+
+/* syscalls.c */
+
 int jinue_init(int implementation, int *perrno);
 
 uintptr_t jinue_syscall(jinue_syscall_args_t *args);
@@ -113,11 +127,11 @@ int jinue_mint(
         int         *perrno);
 
 int jinue_start_thread(
-    int           fd,
-    void        (*entry)(void),
-    void         *stack_addr,
-    uint32_t      sigmask,
-    int          *perrno);
+    int                       fd,
+    void                    (*entry)(void),
+    void                     *stack_addr,
+    const jinue_sigset_t     *sigset,
+    int                      *perrno);
 
 int jinue_await_thread(int fd, int *perrno);
 
@@ -129,6 +143,11 @@ int jinue_signal_thread(int fd, int signo, int *perrno);
 
 int jinue_return_from_signal(const jinue_ucontext_t *ucontext, int *perrno);
 
-int jinue_swap_signal_mask(int fd, int how, uint32_t set, uint32_t *oset, int *perrno);
+int jinue_swap_signal_mask(
+        int                      fd,
+        int                      how,
+        const jinue_sigset_t    *set,
+        jinue_sigset_t          *oset,
+        int                     *perrno);
 
 #endif

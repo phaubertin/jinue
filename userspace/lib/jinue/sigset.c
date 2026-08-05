@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,57 +29,67 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_APPLICATION_SYSCALLS_H
-#define JINUE_KERNEL_APPLICATION_SYSCALLS_H
+#include <jinue/jinue.h>
+#include <stdbool.h>
+#include <stdint.h>
 
-#include <kernel/types.h>
+static inline bool signo_is_invalid(int signo) {
+    return signo < 1 || signo > 32;
+}
 
-int await_thread(int fd);
+static inline uint32_t signo_mask(int signo) {
+    return (1 << (signo - 1));
+}
 
-int close(int fd);
+static void set_perrno_invalid(int *perrno) {
+    if(perrno != NULL)  {
+        *perrno = JINUE_EINVAL;
+    }
+}
 
-int create_endpoint(int fd);
+int jinue_sigaddset(jinue_sigset_t *set, int signo, int *perrno) {
+    if(signo_is_invalid(signo)) {
+        set_perrno_invalid(perrno);
+        return -1;
+    }
+    
+    set->sa_sigbits[0] |= signo_mask(signo);
+    
+    return 0;
+}
 
-int create_process(int fd);
+int jinue_sigdelset(jinue_sigset_t *set, int signo, int *perrno) {
+    if(signo_is_invalid(signo)) {
+        set_perrno_invalid(perrno);
+        return -1;
+    }
+    
+    set->sa_sigbits[0] &= ~signo_mask(signo);
+    
+    return 0;
+}
 
-int create_thread(int fd, int process_fd);
+int jinue_sigemptyset(jinue_sigset_t *set) {
+    set->sa_sigbits[0] = 0;
+    set->sa_sigbits[1] = 0;
+    set->sa_sigbits[2] = 0;
+    set->sa_sigbits[3] = 0;
+    return 0;
+}
 
-int destroy(int fd);
+int jinue_sigfillset(jinue_sigset_t *set) {
+    set->sa_sigbits[0] = -1;
+    set->sa_sigbits[1] = -1;
+    set->sa_sigbits[2] = -1;
+    set->sa_sigbits[3] = -1;
+    return 0;
+}
 
-int dup(int process_fd, int src, int dest);
-
-void exit_thread(void);
-
-void *get_thread_local(void);
-
-int get_address_map(const jinue_buffer_t *buffer);
-
-int mint(int owner, const jinue_mint_args_t *args);
-
-int mmap(int process_fd, const jinue_mmap_args_t *args);
-
-int puts(uint8_t loglevel, uint8_t facility, const char *str, size_t length);
-
-void reboot(void);
-
-int receive(int fd, jinue_message_t *message);
-
-int reply(const jinue_message_t *message);
-
-int reply_error(uintptr_t errcode);
-
-int send(uintptr_t *errcode, int fd, int function, const jinue_message_t *message);
-
-void set_thread_local(void *addr, size_t size);
-
-int signal_process(int fd, int signo);
-
-int signal_thread(int fd, int signo);
-
-int start_thread(int fd, void (*entry)(void), void *stack_addr, sigmask_t sigmask);
-
-void yield_thread(void);
-
-int swap_signal_mask(int fd, int how, sigmask_t set, jinue_sigset_t *oset);
-
-#endif
+int jinue_sigismember(const jinue_sigset_t *set, int signo, int *perrno) {
+    if(signo_is_invalid(signo)) {
+        set_perrno_invalid(perrno);
+        return -1;
+    }
+    
+    return !!(set->sa_sigbits[0] & signo_mask(signo));
+}

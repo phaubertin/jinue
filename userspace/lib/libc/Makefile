@@ -48,6 +48,7 @@ sources.c        = \
 	physmem.c \
 	rand.c \
 	snprintf.c \
+	signal.c \
 	string.c \
 	vsnprintf.c
 sources.nasm     = i686/crt.asm i686/pthread.asm
@@ -69,7 +70,8 @@ objects.user     = \
 	malloc.o \
 	mmap.o \
 	physmem.o \
-	rand.o
+	rand.o \
+	signal.o
 objects.pthread  = \
 	i686/pthread-nasm.o \
 	i686/stack.o \
