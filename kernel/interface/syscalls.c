@@ -588,33 +588,10 @@ static void sys_return_from_signal(trapframe_t *trapframe) {
     set_return_value_or_error(trapframe, retval);
 }
 
-static void sys_swap_signal_mask(trapframe_t *trapframe) {
-    uintptr_t arg1 = msg_arg1(trapframe);
-    const jinue_swap_signal_mask_args_t *userspace_swap_args =
-        (const jinue_swap_signal_mask_args_t *)msg_arg2(trapframe);
-
-    int fd;
-
-    if((int)arg1 == -1) {
-        fd = -1;
-    }
-    else {
-        fd = get_descriptor(arg1);
-
-        if(fd < 0) {
-            set_return_value_or_error(trapframe, fd);
-            return;
-        }
-    }
-
-    if(!check_userspace_buffer(userspace_swap_args, sizeof(jinue_swap_signal_mask_args_t))) {
-        set_error(trapframe, JINUE_EINVAL);
-        return;
-    }
-
-    int how = userspace_swap_args->how;
-    const jinue_sigset_t *set = userspace_swap_args->set;
-    jinue_sigset_t *oset = userspace_swap_args->oset;
+static void sys_get_set_signal_mask(trapframe_t *trapframe) {
+    int how                     = (int)msg_arg1(trapframe);
+    const jinue_sigset_t *set   = (const jinue_sigset_t *)msg_arg2(trapframe);
+    jinue_sigset_t *oset        = (jinue_sigset_t *)msg_arg3(trapframe);
 
     if(set == NULL) {
         how = JINUE_SIG_NONE;
@@ -630,7 +607,7 @@ static void sys_swap_signal_mask(trapframe_t *trapframe) {
         return;
     }
 
-    int retval = swap_signal_mask(fd, how, set != NULL ? set->sa_sigbits[0] : 0, oset);
+    int retval = get_set_signal_mask(how, set != NULL ? set->sa_sigbits[0] : 0, oset);
 
     if(retval < 0) {
         set_error(trapframe, -retval);
@@ -723,8 +700,8 @@ void handle_syscall(trapframe_t *trapframe) {
         case JINUE_SYS_RETURN_FROM_SIGNAL:
             sys_return_from_signal(trapframe);
             break;
-        case JINUE_SYS_SWAP_SIGNAL_MASK:
-            sys_swap_signal_mask(trapframe);
+        case JINUE_SYS_GET_SET_SIGNAL_MASK:
+            sys_get_set_signal_mask(trapframe);
             break;
         default:
             sys_nosys(trapframe);

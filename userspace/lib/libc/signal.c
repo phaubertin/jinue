@@ -53,7 +53,7 @@ int sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict oset) 
         return EINVAL;
     }
 
-    return jinue_swap_signal_mask(-1, how,set, oset, &errno);
+    return jinue_get_set_signal_mask(how,set, oset, &errno);
 }
 
 static int update_sighandler_entry(struct sighandler_entry *entry, const struct sigaction *act) {

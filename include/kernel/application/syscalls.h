@@ -80,6 +80,6 @@ int start_thread(int fd, void (*entry)(void), void *stack_addr, sigmask_t sigmas
 
 void yield_thread(void);
 
-int swap_signal_mask(int fd, int how, sigmask_t set, jinue_sigset_t *oset);
+int get_set_signal_mask(int how, sigmask_t set, jinue_sigset_t *oset);
 
 #endif

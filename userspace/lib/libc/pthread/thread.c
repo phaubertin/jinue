@@ -162,11 +162,11 @@ int pthread_create(
         candidate->flags |= THREAD_FLAG_DETACHED;
     }
 
+    /* From the POSIX specification of this function: "The signal mask
+     * shall be inherited from the creating thread." */
     jinue_sigset_t sigset;
 
-    status = jinue_swap_signal_mask(
-        /* current thread */
-        -1,
+    status = jinue_get_set_signal_mask(
         JINUE_SIG_NONE,
         NULL,
         &sigset,
@@ -182,8 +182,6 @@ int pthread_create(
         candidate->fd,
         __pthread_entry,
         __pthread_initialize_stack(candidate, start_routine, arg),
-        /* From the POSIX specification of this function: "The signal mask
-         * shall be inherited from the creating thread." */
         &sigset,
         &errno_retval
     );

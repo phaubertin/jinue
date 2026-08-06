@@ -58,7 +58,7 @@ int pthread_sigmask(int how, const sigset_t *restrict set, sigset_t *restrict os
 
     int errno_retval;
 
-    int status = jinue_swap_signal_mask(-1, how,set, oset, &errno_retval);
+    int status = jinue_get_set_signal_mask(how, set, oset, &errno_retval);
 
     if(status < 0) {
         return errno_retval;

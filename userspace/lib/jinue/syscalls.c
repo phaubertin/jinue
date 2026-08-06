@@ -366,24 +366,18 @@ int jinue_return_from_signal(const jinue_ucontext_t *ucontext, int *perrno) {
     return call_with_usual_convention(&args, perrno);
 }
 
-int jinue_swap_signal_mask(
-        int                      fd,
+int jinue_get_set_signal_mask(
         int                      how,
         const jinue_sigset_t    *set,
         jinue_sigset_t          *oset,
         int                     *perrno) {
 
     jinue_syscall_args_t args;
-    jinue_swap_signal_mask_args_t swap_args;
 
-    swap_args.how = how;
-    swap_args.set = set;
-    swap_args.oset = oset;
-
-    args.arg0 = JINUE_SYS_SWAP_SIGNAL_MASK;
-    args.arg1 = fd;
-    args.arg2 = (uintptr_t)&swap_args;
-    args.arg3 = 0;
+    args.arg0 = JINUE_SYS_GET_SET_SIGNAL_MASK;
+    args.arg1 = (uintptr_t)how;
+    args.arg2 = (uintptr_t)set;
+    args.arg3 = (uintptr_t)oset;
 
     return call_with_usual_convention(&args, perrno);
 }

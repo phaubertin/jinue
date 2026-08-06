@@ -143,8 +143,7 @@ int jinue_signal_thread(int fd, int signo, int *perrno);
 
 int jinue_return_from_signal(const jinue_ucontext_t *ucontext, int *perrno);
 
-int jinue_swap_signal_mask(
-        int                      fd,
+int jinue_get_set_signal_mask(
         int                      how,
         const jinue_sigset_t    *set,
         jinue_sigset_t          *oset,

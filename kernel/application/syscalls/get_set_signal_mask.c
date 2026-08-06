@@ -37,8 +37,9 @@
 #include <kernel/machine/spinlock.h>
 #include <kernel/machine/thread.h>
 
-static int with_thread(thread_t *thread, int how, sigmask_t set, jinue_sigset_t *oset) {
-    process_t *process = thread->process;
+int get_set_signal_mask(int how, sigmask_t set, jinue_sigset_t *oset) {
+    thread_t *thread    = get_current_thread();
+    process_t *process  = thread->process;
 
     spin_lock(&process->signal_lock);
 
@@ -71,42 +72,4 @@ static int with_thread(thread_t *thread, int how, sigmask_t set, jinue_sigset_t 
     spin_unlock(&process->signal_lock);
 
     return 0;
-}
-
-int swap_signal_mask(int fd, int how, sigmask_t set, jinue_sigset_t *oset) {
-    descriptor_t desc;
-    thread_t *thread;
-
-    /* TODO we don't actually need to support changing or examining another
-     * thread's signal mask. */
-    if(fd == -1) {
-        thread = get_current_thread();
-    }
-    else {
-        int status = descriptor_access_object(&desc, get_current_process(), fd);
-
-        if(status < 0) {
-            return status == JINUE_EIO ? JINUE_ESRCH : status;
-        }
-
-        thread = descriptor_get_thread(&desc);
-
-        if(thread == NULL) {
-            descriptor_unreference_object(&desc);
-            return -JINUE_EBADF;
-        }
-
-        if(thread->process != get_current_process()) {
-            descriptor_unreference_object(&desc);
-            return -JINUE_EPERM;
-        }
-    }
-
-    int retval = with_thread(thread, how, set, oset);
-
-    if(fd != -1) {
-        descriptor_unreference_object(&desc);
-    }
-
-    return retval;
 }

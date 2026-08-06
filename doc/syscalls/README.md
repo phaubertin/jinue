@@ -4,37 +4,37 @@
 
 ### System Call Reference
 
-| Number  | Name                                        | Description                          |
-|---------|---------------------------------------------|--------------------------------------|
-| 0       | -                                           | Reserved                             |
-| 1       | -                                           | Reserved                             |
-| 2       | [REBOOT](reboot.md)                         | Reboot the System                    |
-| 3       | [PUTS](puts.md)                             | Write string to console              |
-| 4       | [CREATE_THREAD](create-thread.md)           | Create a thread                      |
-| 5       | [YIELD_THREAD](yield-thread.md)             | Yield the current thread             |
-| 6       | [SET_THREAD_LOCAL](set-thread-local.md)     | Set Thread-Local Storage (TLS)       |
-| 7       | -                                           | Reserved                             |
-| 8       | [GET_ADDRESS_MAP](get-address-map.md)       | Get memory address map               |
-| 9       | [CREATE_ENDPOINT](create-endpoint.md)       | Create IPC endpoint                  |
-| 10      | [RECEIVE](receive.md)                       | Receive message                      |
-| 11      | [REPLY](reply.md)                           | Reply to message                     |
-| 12      | [EXIT_THREAD](exit-thread.md)               | Terminate the current thread         |
-| 13      | [MMAP](mmap.md)                             | Map memory                           |
-| 14      | [CREATE_PROCESS](create-process.md)         | Create a process                     |
-| 15      | -                                           | Reserved                             |
-| 16      | [DUP](dup.md)                               | Duplicate a descriptor               |
-| 17      | [CLOSE](close.md)                           | Close a descriptor                   |
-| 18      | [DESTROY](destroy.md)                       | Destroy a kernel object              |
-| 19      | [MINT](mint.md)                             | Mint a descriptor                    |
-| 20      | [START_THREAD](start-thread.md)             | Start a thread                       |
-| 21      | [AWAIT_THREAD](await-thread.md)             | Wait for a thread to exit            |
-| 22      | [REPLY_ERROR](reply-error.md)               | Reply to message with an error       |
-| 23      | [SIGNAL_PROCESS](signal-process.md)         | Send a signal to a process           |
-| 24      | [SIGNAL_THREAD](signal-thread.md)           | Send a signal to a thread            |
-| 25      | [RETURN_FROM_SIGNAL](return-from-signal.md) | Return from a signal                 |
-| 26      | [SWAP_SIGNAL_MASK](swap-signal-mask.md)     | Examine and change blocked signals   |
-| 27-4095 | -                                           | Reserved                             |
-| 4096+   | [SEND](send.md)                             | Send a message                       |
+| Number  | Name                                            | Description                                           |
+|---------|-------------------------------------------------|-------------------------------------------------------|
+| 0       | -                                               | Reserved                                              |
+| 1       | -                                               | Reserved                                              |
+| 2       | [REBOOT](reboot.md)                             | Reboot the System                                     |
+| 3       | [PUTS](puts.md)                                 | Write string to console                               |
+| 4       | [CREATE_THREAD](create-thread.md)               | Create a thread                                       |
+| 5       | [YIELD_THREAD](yield-thread.md)                 | Yield the current thread                              |
+| 6       | [SET_THREAD_LOCAL](set-thread-local.md)         | Set Thread-Local Storage (TLS)                        |
+| 7       | -                                               | Reserved                                              |
+| 8       | [GET_ADDRESS_MAP](get-address-map.md)           | Get memory address map                                |
+| 9       | [CREATE_ENDPOINT](create-endpoint.md)           | Create IPC endpoint                                   |
+| 10      | [RECEIVE](receive.md)                           | Receive message                                       |
+| 11      | [REPLY](reply.md)                               | Reply to message                                      |
+| 12      | [EXIT_THREAD](exit-thread.md)                   | Terminate the current thread                          |
+| 13      | [MMAP](mmap.md)                                 | Map memory                                            |
+| 14      | [CREATE_PROCESS](create-process.md)             | Create a process                                      |
+| 15      | -                                               | Reserved                                              |
+| 16      | [DUP](dup.md)                                   | Duplicate a descriptor                                |
+| 17      | [CLOSE](close.md)                               | Close a descriptor                                    |
+| 18      | [DESTROY](destroy.md)                           | Destroy a kernel object                               |
+| 19      | [MINT](mint.md)                                 | Mint a descriptor                                     |
+| 20      | [START_THREAD](start-thread.md)                 | Start a thread                                        |
+| 21      | [AWAIT_THREAD](await-thread.md)                 | Wait for a thread to exit                             |
+| 22      | [REPLY_ERROR](reply-error.md)                   | Reply to message with an error                        |
+| 23      | [SIGNAL_PROCESS](signal-process.md)             | Send a signal to a process                            |
+| 24      | [SIGNAL_THREAD](signal-thread.md)               | Send a signal to a thread                             |
+| 25      | [RETURN_FROM_SIGNAL](return-from-signal.md)     | Return from a signal                                  |
+| 26      | [GET_SET_SIGNAL_MASK](get-set-signal-mask.md)   | Get and/or set current thread's blocked signals set   |
+| 27-4095 | -                                               | Reserved                                              |
+| 4096+   | [SEND](send.md)                                 | Send a message                                        |
 
 #### Reserved Function Numbers
 

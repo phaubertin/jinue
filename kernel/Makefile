@@ -84,7 +84,7 @@ sources.kernel.c = \
 	application/syscalls/signal_process.c \
 	application/syscalls/signal_thread.c \
 	application/syscalls/start_thread.c \
-	application/syscalls/swap_signal_mask.c \
+	application/syscalls/get_set_signal_mask.c \
 	application/syscalls/yield_thread.c \
 	application/kmain.c \
 	domain/alloc/page_alloc.c \

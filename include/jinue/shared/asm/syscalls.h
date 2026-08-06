@@ -99,7 +99,7 @@
 #define JINUE_SYS_RETURN_FROM_SIGNAL    25
 
 /** examine and change a thread's blocked signals */
-#define JINUE_SYS_SWAP_SIGNAL_MASK      26
+#define JINUE_SYS_GET_SET_SIGNAL_MASK   26
 
 /** start of function numbers for user space messages */
 #define JINUE_SYS_USER_BASE             4096
