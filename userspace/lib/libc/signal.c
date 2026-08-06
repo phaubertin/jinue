@@ -32,6 +32,91 @@
 #include <jinue/jinue.h>
 #include <errno.h>
 #include <signal.h>
+#include <stdbool.h>
+
+struct sighandler_entry {
+    bool is_sigaction;
+    union {
+        void (*sa_handler)(int);
+        void (*sa_sigaction)(int, siginfo_t *, void *);
+    } handler;
+};
+
+static struct sighandler_entry sighandlers[JINUE_SIGNAL_MAX] = {NULL};
+
+int sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict oset) {
+    /* In addition to the valid POSIX SIG_... values, the system call accepts a
+     * JINUE_SIG_NONE value that allows the caller to be more explicit about
+     * not wanting to make changes. We must reject this value since POSIX has
+     * no equivalent. */
+    if(how == JINUE_SIG_NONE) {
+        return EINVAL;
+    }
+
+    return jinue_swap_signal_mask(-1, how,set, oset, &errno);
+}
+
+static int update_sighandler_entry(struct sighandler_entry *entry, const struct sigaction *act) {
+    if((act->sa_flags & ~SA_SIGINFO) != 0) {
+        errno = ENOTSUP;
+        return -1;
+    }
+
+    if(act->sa_flags & SA_SIGINFO) {
+        entry->is_sigaction = true;
+        entry->handler.sa_sigaction = act->sa_sigaction;
+        return 0;
+    }
+    
+    if(act->sa_handler == SIG_DFL || act->sa_handler == SIG_ERR || act->sa_handler == SIG_IGN) {
+        errno = ENOTSUP;
+        return -1;
+    }
+
+    entry->is_sigaction = false;
+    entry->handler.sa_handler = act->sa_handler;
+
+    return 0;
+}
+
+int sigaction(int sig, const struct sigaction *restrict act, struct sigaction *restrict oact) {
+    /* The implementation of signals in the kernel is currently incomplete.
+     * This function is similarly incomplete and only allows setting a signal
+     * handler which is the only action the kernel supports. */
+
+    if(sig < 1 || sig > JINUE_SIGNAL_MAX) {
+        errno = EINVAL;
+        return -1;
+    }
+    
+    struct sighandler_entry *entry = &sighandlers[sig - 1];
+    struct sighandler_entry original = *entry;
+
+    if(act != NULL) {
+        int status = update_sighandler_entry(entry, act);
+
+        if(status != 0) {
+            return status;
+        }
+    }
+
+    if(oact != NULL) {
+        sigemptyset(&oact->sa_mask);
+
+        if(original.is_sigaction) {
+            oact->sa_flags = SA_SIGINFO;
+            oact->sa_handler = NULL;
+            oact->sa_sigaction = original.handler.sa_sigaction;
+        }
+        else {
+            oact->sa_flags = 0;
+            oact->sa_handler = original.handler.sa_handler;
+            oact->sa_sigaction = NULL;
+        }
+    }
+
+    return 0;
+}
 
 int sigaddset(sigset_t *set, int signo) {
     return jinue_sigaddset(set, signo, &errno);

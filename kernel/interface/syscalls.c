@@ -533,12 +533,21 @@ static void sys_reply_error(trapframe_t *trapframe) {
 }
 
 static void sys_signal_process(trapframe_t *trapframe) {
-    int fd      = get_descriptor(msg_arg1(trapframe));
-    int signo   = msg_arg2(trapframe);
+    uintptr_t arg1  = msg_arg1(trapframe);
+    int signo       = msg_arg2(trapframe);
 
-    if(fd < 0) {
-        set_return_value_or_error(trapframe, fd);
-        return;
+    int fd;
+
+    if((int)arg1 == -1) {
+        fd = -1;
+    }
+    else {
+        fd = get_descriptor(arg1);
+
+        if(fd < 0) {
+            set_return_value_or_error(trapframe, fd);
+            return;
+        }
     }
 
     int retval  = signal_process(fd, signo);
@@ -546,12 +555,21 @@ static void sys_signal_process(trapframe_t *trapframe) {
 }
 
 static void sys_signal_thread(trapframe_t *trapframe) {
-    int fd      = get_descriptor(msg_arg1(trapframe));
-    int signo   = msg_arg2(trapframe);
+    uintptr_t arg1  = msg_arg1(trapframe);
+    int signo       = msg_arg2(trapframe);
     
-    if(fd < 0) {
-        set_return_value_or_error(trapframe, fd);
-        return;
+    int fd;
+
+    if((int)arg1 == -1) {
+        fd = -1;
+    }
+    else {
+        fd = get_descriptor(arg1);
+
+        if(fd < 0) {
+            set_return_value_or_error(trapframe, fd);
+            return;
+        }
     }
     
     int retval  = signal_thread(fd, signo);
@@ -571,15 +589,22 @@ static void sys_return_from_signal(trapframe_t *trapframe) {
 }
 
 static void sys_swap_signal_mask(trapframe_t *trapframe) {
-    int fd = get_descriptor(msg_arg1(trapframe));
+    uintptr_t arg1 = msg_arg1(trapframe);
     const jinue_swap_signal_mask_args_t *userspace_swap_args =
         (const jinue_swap_signal_mask_args_t *)msg_arg2(trapframe);
 
-    if((int)msg_arg1(trapframe) == -1) {
+    int fd;
+
+    if((int)arg1 == -1) {
         fd = -1;
-    } else if(fd < 0) {
-        set_return_value_or_error(trapframe, fd);
-        return;
+    }
+    else {
+        fd = get_descriptor(arg1);
+
+        if(fd < 0) {
+            set_return_value_or_error(trapframe, fd);
+            return;
+        }
     }
 
     if(!check_userspace_buffer(userspace_swap_args, sizeof(jinue_swap_signal_mask_args_t))) {

@@ -36,8 +36,8 @@
 #include "thread.h"
 
 /* This file contains the subset of the POSIX threads implementation that is in
- * libc instead of libpthread because of dependencies in the libc initilization
- * code.*/
+ * libc instead of libpthread because of dependencies in the libc
+ initialization code.*/
 
 static struct __pthread main_thread = {
     .self               = &main_thread,

@@ -29,62 +29,39 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/errno.h>
-#include <jinue/shared/asm/signal.h>
-#include <jinue/shared/asm/permissions.h>
-#include <kernel/application/syscalls.h>
-#include <kernel/domain/entities/descriptor.h>
-#include <kernel/domain/entities/process.h>
-#include <kernel/machine/spinlock.h>
+#include <jinue/jinue.h>
+#include <errno.h>
+#include <pthread.h>
+#include <signal.h>
+#include "thread.h"
 
-static void with_process(process_t *process, int signo) {
-    if(signo == 0) {
-        return;
+int pthread_kill(pthread_t thread, int sig) {
+    int errno_retval;
+    
+    int status = jinue_signal_thread(thread->fd, sig, &errno_retval);
+
+    if(status < 0) {
+        return errno_retval;
     }
 
-    spin_lock(&process->signal_lock);
-
-    sigmask_t onemask = 1<<(signo - 1);
-    process->pending_signals |= onemask;
-
-    spin_unlock(&process->signal_lock);
+    return 0;
 }
 
-int signal_process(int fd, int signo) {
-    if(signo < 0 || signo > JINUE_SIGNAL_MAX) {
-        return -JINUE_EINVAL;
+int pthread_sigmask(int how, const sigset_t *restrict set, sigset_t *restrict oset) {
+    /* In addition to the valid POSIX SIG_... values, the system call accepts a
+     * JINUE_SIG_NONE value that allows the caller to be more explicit about
+     * not wanting to make changes. We must reject this value since POSIX has
+     * no equivalent. */
+    if(how == JINUE_SIG_NONE) {
+        return EINVAL;
     }
 
-    process_t *process;
-    descriptor_t desc;
+    int errno_retval;
 
-    if(fd == -1) {
-        process = get_current_process();
-    }
-    else {
-        int status = descriptor_access_object(&desc, get_current_process(), fd);
+    int status = jinue_swap_signal_mask(-1, how,set, oset, &errno_retval);
 
-        if(status < 0) {
-            return status == JINUE_EIO ? -JINUE_ESRCH : status;
-        }
-
-        process = descriptor_get_process(&desc);
-
-        if(process == NULL) {
-            descriptor_unreference_object(&desc);
-            return -JINUE_EBADF;
-        }
-
-        if(!descriptor_has_permissions(&desc, JINUE_PERM_SIGNAL)) {
-            descriptor_unreference_object(&desc);
-            return -JINUE_EPERM;
-        }
-    }
-
-    with_process(process, signo);
-
-    if(fd == -1) {
-        descriptor_unreference_object(&desc);
+    if(status < 0) {
+        return errno_retval;
     }
 
     return 0;

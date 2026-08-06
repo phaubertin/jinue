@@ -77,6 +77,8 @@ int swap_signal_mask(int fd, int how, sigmask_t set, jinue_sigset_t *oset) {
     descriptor_t desc;
     thread_t *thread;
 
+    /* TODO we don't actually need to support changing or examining another
+     * thread's signal mask. */
     if(fd == -1) {
         thread = get_current_thread();
     }

@@ -11,7 +11,8 @@ For this operation to succeed, the thread descriptor must have the
 
 The function number (`arg0`) is 24.
 
-The descriptor that references the thread is passed in `arg1`. 
+The descriptor that references the thread is passed in `arg1`. Alternatively,
+the value -1 may be passed in `arg1` to refer to the current thread.
 
 The signal number is passed in `arg2`. The signal number must be between 1 and
 32 inclusive.
@@ -23,7 +24,7 @@ The signal number is passed in `arg2`. The signal number must be between 1 and
     31                                                               0
     
     +----------------------------------------------------------------+
-    |                       thread descriptor                        |  arg1
+    |                   thread descriptor or -1                      |  arg1
     +----------------------------------------------------------------+
     31                                                               0
 

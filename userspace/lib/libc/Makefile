@@ -35,6 +35,7 @@ sources.c        = \
 	pthread/attr.c \
 	pthread/cleanup.c \
 	pthread/libc.c \
+	pthread/signal.c \
 	pthread/thread.c \
 	assert-kernel.c \
 	brk.c \
@@ -77,6 +78,7 @@ objects.pthread  = \
 	i686/stack.o \
 	pthread/attr.o \
 	pthread/cleanup.o \
+	pthread/signal.o \
 	pthread/thread.o
 objects.kernel   = assert-kernel.o
 

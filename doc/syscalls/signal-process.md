@@ -11,7 +11,8 @@ For this operation to succeed, the process descriptor must have the
 
 The function number (`arg0`) is 23.
 
-The descriptor that references the process is passed in `arg1`. 
+The descriptor that references the process is passed in `arg1`. Alternatively,
+the value -1 may be passed in `arg1` to refer to the current thread.
 
 The signal number is passed in `arg2`. The signal number must be between 1 and
 32 inclusive, or zero. If zero is specified (the null signal), error checking
@@ -24,7 +25,7 @@ is performed but no signal is actually sent.
     31                                                               0
     
     +----------------------------------------------------------------+
-    |                       process descriptor                       |  arg1
+    |                    process descriptor or -1                    |  arg1
     +----------------------------------------------------------------+
     31                                                               0
 

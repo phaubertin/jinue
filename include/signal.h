@@ -33,9 +33,56 @@
 #define _JINUE_LIBC_SIGNAL_H
 
 #include <jinue/shared/types.h>
+#include <pthread.h>
 #include <stdint.h>
 
+#define SIG_BLOCK   JINUE_SIG_BLOCK
+
+#define SIG_SETMASK JINUE_SIG_SETMASK
+
+#define SIG_UNBLOCK JINUE_SIG_UNBLOCK
+
+
+#define SA_NOCLDSTOP    (1<<0)
+
+#define SA_ONSTACK      (1<<1)
+
+#define SA_RESETHAND    (1<<2)
+
+#define SA_RESTART      (1<<3)
+
+#define SA_SIGINFO      (1<<4)
+
+#define SA_NOCLDWAIT    (1<<5)
+
+#define SA_NODEFER      (1<<6)
+
+#define SIG_DFL         (void (*)(int))-1
+
+#define SIG_ERR         (void (*)(int))-2
+
+#define SIG_IGN         (void (*)(int))-3
+
+
 typedef jinue_sigset_t sigset_t;
+
+typedef jinue_siginfo_t siginfo_t;
+
+struct sigaction {
+    void   (*sa_handler)(int);
+    sigset_t sa_mask;
+    int      sa_flags;
+    void   (*sa_sigaction)(int, siginfo_t *, void *);
+};
+
+
+int pthread_kill(pthread_t thread, int sig);
+
+int pthread_sigmask(int how, const sigset_t *restrict set, sigset_t *restrict oset);
+
+/* TODO raise() */
+
+int sigaction(int sig, const struct sigaction *restrict act, struct sigaction *restrict oact);
 
 int sigaddset(sigset_t *set, int signo);
 
@@ -46,5 +93,7 @@ int sigemptyset(sigset_t *set);
 int sigfillset(sigset_t *set);
 
 int sigismember(const sigset_t *set, int signo);
+
+int sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict oset);
 
 #endif

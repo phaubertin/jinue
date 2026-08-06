@@ -36,31 +36,10 @@
 #include <kernel/domain/entities/descriptor.h>
 #include <kernel/domain/entities/process.h>
 #include <kernel/machine/spinlock.h>
+#include <kernel/machine/thread.h>
 
-int signal_thread(int fd, int signo) {
-    if(signo < 1 || signo > JINUE_SIGNAL_MAX) {
-        return -JINUE_EINVAL;
-    }
 
-    descriptor_t desc;
-    int status = descriptor_access_object(&desc, get_current_process(), fd);
-
-    if(status < 0) {
-        return status == JINUE_EIO ? -JINUE_ESRCH : status;
-    }
-
-    thread_t *thread = descriptor_get_thread(&desc);
-
-    if(thread == NULL) {
-        descriptor_unreference_object(&desc);
-        return -JINUE_EBADF;
-    }
-
-    if(!descriptor_has_permissions(&desc, JINUE_PERM_SIGNAL)) {
-        descriptor_unreference_object(&desc);
-        return -JINUE_EPERM;
-    }
-
+static void with_thread(thread_t *thread, int signo) {
     process_t *process = thread->process;
 
     spin_lock(&process->signal_lock);
@@ -69,7 +48,44 @@ int signal_thread(int fd, int signo) {
     thread->pending_signals |= onemask;
 
     spin_unlock(&process->signal_lock);
-    descriptor_unreference_object(&desc);
+}
+
+int signal_thread(int fd, int signo) {
+    if(signo < 1 || signo > JINUE_SIGNAL_MAX) {
+        return -JINUE_EINVAL;
+    }
+
+    thread_t *thread;
+    descriptor_t desc;
+
+    if(fd == -1) {
+        thread = get_current_thread();
+    }
+    else {
+        int status = descriptor_access_object(&desc, get_current_process(), fd);
+
+        if(status < 0) {
+            return status == JINUE_EIO ? -JINUE_ESRCH : status;
+        }
+
+        thread = descriptor_get_thread(&desc);
+
+        if(thread == NULL) {
+            descriptor_unreference_object(&desc);
+            return -JINUE_EBADF;
+        }
+
+        if(!descriptor_has_permissions(&desc, JINUE_PERM_SIGNAL)) {
+            descriptor_unreference_object(&desc);
+            return -JINUE_EPERM;
+        }
+    }
+
+    with_thread(thread, signo);
+
+    if(fd == -1) {
+        descriptor_unreference_object(&desc);
+    }
 
     return 0;
 }
