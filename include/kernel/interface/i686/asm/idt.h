@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2019-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -43,7 +43,9 @@
 /**
  * spurious interrupt vector for local APIC
  * Bits 3..0 must be 1 for compatibility with Pentium and P6 processors.
-*/
+ */
 #define IDT_APIC_SPURIOUS       0xff
+
+#define IDT_MAX                 (IDT_VECTOR_COUNT - 1)
 
 #endif

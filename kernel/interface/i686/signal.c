@@ -145,7 +145,8 @@ int return_from_signal(trapframe_t *trapframe, const jinue_ucontext_t *ucontext)
     trapframe->edx = mcontext->gregs[JINUE_GREG_EDX];
     trapframe->ecx = mcontext->gregs[JINUE_GREG_ECX];
     trapframe->eax = mcontext->gregs[JINUE_GREG_EAX];
-    /* No need to restore trap number or error code. */
+    trapframe->trapno = mcontext->gregs[JINUE_GREG_TRAPNO];
+    /* No need to restore the error code. */
     trapframe->eip = mcontext->gregs[JINUE_GREG_EIP];
     trapframe->cs = mcontext->gregs[JINUE_GREG_CS];
     trapframe->eflags = mcontext->gregs[JINUE_GREG_EFL];

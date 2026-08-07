@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2026 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,38 +29,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INTERFACE_I686_TRAP_H
-#define JINUE_KERNEL_INTERFACE_I686_TRAP_H
+#ifndef JINUE_KERNEL_I686_ASM_TRAP_H
+#define JINUE_KERNEL_I686_ASM_TRAP_H
 
-#include <jinue/shared/types.h>
-#include <kernel/interface/i686/asm/trap.h>
-#include <kernel/interface/i686/exports/types.h>
-#include <kernel/interface/i686/types.h>
-#include <stdbool.h>
+#include <jinue/shared/asm/i686.h>
+#include <kernel/interface/i686/asm/idt.h>
 
-extern int syscall_implementation;
+#define TRAPNO_SYSCALL_INTERRUPT    JINUE_I686_SYSCALL_INTERRUPT
 
-void handle_trap(trapframe_t *trapframe);
+#define TRAPNO_SYSCALL_INSTRUCTION  (IDT_MAX + 1)
 
-/** entry point for Intel fast system call implementation (SYSENTER/SYSEXIT) */
-void fast_intel_entry(void);
-
-/** entry point for AMD fast system call implementation (SYSCALL/SYSRET) */
-void fast_amd_entry(void);
-
-/* do not call - used by new user threads to "return" to user space for the
- * first time. See machine_prepare_thread(). */
-void return_from_interrupt(void);
-
-static inline bool is_trap_from_kernel(const trapframe_t *trapframe) {
-    return (trapframe->cs & 3) == 0;
-}
-
-static inline bool is_system_call(const trapframe_t *trapframe) {
-    return
-           trapframe->trapno == TRAPNO_SYSCALL_INTERRUPT
-        || trapframe->trapno == TRAPNO_SYSCALL_INSTRUCTION
-        || trapframe->trapno == TRAPNO_SYSENTER_INSTRUCTION;
-}
+#define TRAPNO_SYSENTER_INSTRUCTION (IDT_MAX + 2)
 
 #endif
