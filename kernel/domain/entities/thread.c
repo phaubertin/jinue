@@ -139,6 +139,7 @@ void thread_prepare(thread_t *thread, const thread_params_t *params) {
 
     thread->pending_signals = 0;
     thread->blocked_signals = params->sigmask;
+    thread->sync_signo      = 0;
 
     spin_unlock(&process->signal_lock);
     

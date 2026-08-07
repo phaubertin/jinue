@@ -44,16 +44,14 @@ struct sighandler_entry {
 
 static struct sighandler_entry sighandlers[JINUE_SIGNAL_MAX] = {NULL};
 
-int sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict oset) {
-    /* In addition to the valid POSIX SIG_... values, the system call accepts a
-     * JINUE_SIG_NONE value that allows the caller to be more explicit about
-     * not wanting to make changes. We must reject this value since POSIX has
-     * no equivalent. */
-    if(how == JINUE_SIG_NONE) {
-        return EINVAL;
-    }
-
-    return jinue_get_set_signal_mask(how,set, oset, &errno);
+int raise(int sig) {
+    /* The JINUE_SIG_FLAG_SYNC flag is needed in order to meet this POSIX
+     * requirement:
+     *
+     *  " If a signal handler is called, the raise() function shall not return
+     *    until after the signal handler does."
+     */
+    return jinue_signal_thread(-1, sig, JINUE_SIG_FLAG_SYNC, &errno);
 }
 
 static int update_sighandler_entry(struct sighandler_entry *entry, const struct sigaction *act) {
@@ -136,4 +134,16 @@ int sigfillset(sigset_t *set) {
 
 int sigismember(const sigset_t *set, int signo) {
     return jinue_sigismember(set, signo, &errno);
+}
+
+int sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict oset) {
+    /* In addition to the valid POSIX SIG_... values, the system call accepts a
+     * JINUE_SIG_NONE value that allows the caller to be more explicit about
+     * not wanting to make changes. We must reject this value since POSIX has
+     * no equivalent. */
+    if(how == JINUE_SIG_NONE) {
+        return EINVAL;
+    }
+
+    return jinue_get_set_signal_mask(how, set, oset, &errno);
 }

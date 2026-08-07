@@ -44,4 +44,9 @@
 
 #define JINUE_SIG_UNBLOCK   3
 
+
+#define JINUE_SIG_FLAG_NONE 0
+
+#define JINUE_SIG_FLAG_SYNC (1<<0)
+
 #endif

@@ -42,10 +42,11 @@ void check_for_signal(trapframe_t *trapframe) {
 
     spin_lock(&process->signal_lock);
 
+    sigmask_t sigmask = thread->blocked_signals;
     sigmask_t pending = process->pending_signals | thread->pending_signals;
-    sigmask_t signals = pending & ~thread->blocked_signals;
+    sigmask_t signals = pending & ~sigmask;
 
-    if(signals == 0) {
+    if(signals == 0 && thread->sync_signo == 0) {
         spin_unlock(&process->signal_lock);
         return;
     }
@@ -56,25 +57,38 @@ void check_for_signal(trapframe_t *trapframe) {
         return;
     }
 
-    int signo = 1;
-    sigmask_t onemask = 1;
+    int signo;
+    sigmask_t onemask;
 
-    /* This loop condition is potentially dangerous but we checked signals is
-     * not zero above, so the loop is guaranteed to terminte. */
-    while((signals & onemask) == 0) {
-        signo += 1;
-        onemask <<= 1;
-    }
+    if(thread->sync_signo != 0) {
+        /* If a signal is generated synchronously, i.e. by a CPU exception or
+         * in support of the POSIX raise() function, this signal bypasses all
+         * others and is delivered immediately. */
+        signo = thread->sync_signo;        
+        onemask = 1 << (signo - 1);
 
-    int sigmask = thread->blocked_signals;
-    thread->blocked_signals |= onemask;
-
-    if(thread->pending_signals & onemask) {
-        thread->pending_signals &= ~onemask;
+        thread->sync_signo = 0;
     }
     else {
-        process->pending_signals &= ~onemask;
+        signo = 1;
+        onemask = 1;
+
+        /* This loop condition is potentially dangerous but we checked signals is
+        * not zero above, so the loop is guaranteed to terminte. */
+        while((signals & onemask) == 0) {
+            signo += 1;
+            onemask <<= 1;
+        }
+
+        if(thread->pending_signals & onemask) {
+            thread->pending_signals &= ~onemask;
+        }
+        else {
+            process->pending_signals &= ~onemask;
+        }
     }
+
+    thread->blocked_signals |= onemask;
 
     spin_unlock(&process->signal_lock);
 

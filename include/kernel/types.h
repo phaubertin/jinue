@@ -109,6 +109,7 @@ struct thread_t {
     spinlock_t           await_lock;
     sigmask_t            pending_signals;
     sigmask_t            blocked_signals;
+    int                  sync_signo;
     addr_t               local_storage_addr;
     size_t               local_storage_size;
     size_t               recv_buffer_size;

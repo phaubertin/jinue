@@ -36,7 +36,7 @@
 #include <kernel/types.h>
 #include <stdint.h>
 
-void deliver_signal(trapframe_t *trapframe, int signo, uint32_t sigmask) {
+void deliver_signal(trapframe_t *trapframe, int signo, sigmask_t sigmask) {
 
     /* TODO make sure we are not writing where the user would not be allowed
      * to. */

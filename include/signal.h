@@ -80,7 +80,7 @@ int pthread_kill(pthread_t thread, int sig);
 
 int pthread_sigmask(int how, const sigset_t *restrict set, sigset_t *restrict oset);
 
-/* TODO raise() */
+int raise(int sig);
 
 int sigaction(int sig, const struct sigaction *restrict act, struct sigaction *restrict oact);
 

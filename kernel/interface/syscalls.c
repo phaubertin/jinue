@@ -557,6 +557,7 @@ static void sys_signal_process(trapframe_t *trapframe) {
 static void sys_signal_thread(trapframe_t *trapframe) {
     uintptr_t arg1  = msg_arg1(trapframe);
     int signo       = msg_arg2(trapframe);
+    uintptr_t flags = msg_arg3(trapframe);
     
     int fd;
 
@@ -571,8 +572,15 @@ static void sys_signal_thread(trapframe_t *trapframe) {
             return;
         }
     }
+
+    const uintptr_t all_flags = JINUE_SIG_FLAG_SYNC;
+
+    if((flags & ~all_flags) != 0) {
+        set_error(trapframe, JINUE_EINVAL);
+        return;
+    }
     
-    int retval  = signal_thread(fd, signo);
+    int retval = signal_thread(fd, signo, flags);
     set_return_value_or_error(trapframe, retval);
 }
 

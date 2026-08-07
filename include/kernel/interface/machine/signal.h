@@ -34,8 +34,9 @@
 
 #include <jinue/shared/types.h>
 #include <kernel/interface/machine/trap.h>
+#include <kernel/types.h>
 
-void deliver_signal(trapframe_t *trapframe, int signo, uint32_t sigmask);
+void deliver_signal(trapframe_t *trapframe, int signo, sigmask_t sigmask);
 
 int return_from_signal(trapframe_t *trapframe, const jinue_ucontext_t *ucontext);
 

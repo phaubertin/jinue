@@ -37,20 +37,28 @@
 #include <kernel/domain/entities/process.h>
 #include <kernel/machine/spinlock.h>
 #include <kernel/machine/thread.h>
+#include <stdbool.h>
 
 
-static void with_thread(thread_t *thread, int signo) {
+static void with_thread(thread_t *thread, int signo, int flags) {
     process_t *process = thread->process;
 
     spin_lock(&process->signal_lock);
 
     sigmask_t onemask = 1<<(signo - 1);
-    thread->pending_signals |= onemask;
+    bool blocked = !!(thread->blocked_signals & onemask);
+
+    if((flags & JINUE_SIG_FLAG_SYNC) && !blocked) {
+        thread->sync_signo = signo;
+    }
+    else {
+        thread->pending_signals |= onemask;
+    }
 
     spin_unlock(&process->signal_lock);
 }
 
-int signal_thread(int fd, int signo) {
+int signal_thread(int fd, int signo, int flags) {
     if(signo < 1 || signo > JINUE_SIGNAL_MAX) {
         return -JINUE_EINVAL;
     }
@@ -81,7 +89,7 @@ int signal_thread(int fd, int signo) {
         }
     }
 
-    with_thread(thread, signo);
+    with_thread(thread, signo, flags);
 
     if(fd == -1) {
         descriptor_unreference_object(&desc);
