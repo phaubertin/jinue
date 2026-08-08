@@ -33,6 +33,7 @@
 #include <errno.h>
 #include <signal.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 struct sighandler_entry {
     bool is_sigaction;
@@ -43,6 +44,37 @@ struct sighandler_entry {
 };
 
 static struct sighandler_entry sighandlers[JINUE_SIGNAL_MAX] = {NULL};
+
+static void return_from_signal(void *context) {
+    (void)jinue_return_from_signal(context, NULL);
+
+    /* No need to look at the return value of jinue_return_from_signal(), we
+     * should not reach this point if it succeeded.
+     *
+     * TODO we should kill the process instead */
+    jinue_exit_thread();
+}
+
+static void handle_signal(int signo, jinue_siginfo_t *info, jinue_ucontext_t *context) {
+    if(signo < 1 || signo > JINUE_SIGNAL_MAX) {
+        return_from_signal(context);
+    }
+
+    struct sighandler_entry *entry = &sighandlers[signo - 1];
+
+    if(entry->is_sigaction && entry->handler.sa_sigaction != NULL) {
+        entry->handler.sa_sigaction(signo, info, context);
+    }
+    else if (!entry->is_sigaction && entry->handler.sa_handler != NULL){
+        entry->handler.sa_handler(signo);
+    }
+
+    return_from_signal(context);
+}
+
+int __signal_init(void) {
+    return jinue_set_signal_handler(handle_signal, NULL);
+}
 
 int raise(int sig) {
     /* The JINUE_SIG_FLAG_SYNC flag is needed in order to meet this POSIX

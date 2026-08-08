@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Philippe Aubertin.
+ * Copyright (C) 2023-2024 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,41 +29,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/jinue.h>
-#include <sys/auxv.h>
-#include <stdlib.h>
-#include "pthread/libc.h"
-#include "brk.h"
-#include "physmem.h"
-#include "signal.h"
+#ifndef LIBC_SIGNAL_H
+#define LIBC_SIGNAL_H
 
-/* This function is called by assembly language code. */
-int __libc_init(void) {
-    int ret = jinue_init(getauxval(JINUE_AT_HOWSYSCALL), NULL);
+#include <signal.h>
 
-    if(ret < 0) {
-        return EXIT_FAILURE;
-    }
+int __signal_init(void);
 
-    __pthread_set_current(__pthread_main_thread);
-
-    ret = __signal_init();
-
-    if(ret < 0) {
-        return EXIT_FAILURE;
-    }
-
-    ret = __physmem_init();
-
-    if(ret != EXIT_SUCCESS) {
-        return EXIT_FAILURE;
-    }
-
-    ret = __brk_init();
-
-    if(ret != EXIT_SUCCESS) {
-        return EXIT_FAILURE;
-    }
-
-    return EXIT_SUCCESS;
-}
+#endif
