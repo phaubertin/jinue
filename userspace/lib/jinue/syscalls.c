@@ -381,3 +381,14 @@ int jinue_get_set_signal_mask(
 
     return call_with_usual_convention(&args, perrno);
 }
+
+int jinue_set_signal_handler(jinue_sighandler_t handler, int *perrno) {
+    jinue_syscall_args_t args;
+
+    args.arg0 = JINUE_SYS_SET_SIGNAL_HANDLER;
+    args.arg1 = (uintptr_t)handler;
+    args.arg2 = 0;
+    args.arg3 = 0;
+
+    return call_with_usual_convention(&args, perrno);
+}

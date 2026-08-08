@@ -625,6 +625,17 @@ static void sys_get_set_signal_mask(trapframe_t *trapframe) {
     set_return_value(trapframe, retval);
 }
 
+static void sys_set_signal_handler(trapframe_t *trapframe) {
+    jinue_sighandler_t handler = (jinue_sighandler_t)msg_arg1(trapframe);
+
+    if(!is_userspace_pointer((void *)(uintptr_t)handler)) {
+        set_error(trapframe, JINUE_EINVAL);
+        return;
+    }
+
+    set_signal_handler(handler);
+}
+
 /**
  * System call dispatching function
  *
@@ -710,6 +721,9 @@ void handle_syscall(trapframe_t *trapframe) {
             break;
         case JINUE_SYS_GET_SET_SIGNAL_MASK:
             sys_get_set_signal_mask(trapframe);
+            break;
+        case JINUE_SYS_SET_SIGNAL_HANDLER:
+            sys_set_signal_handler(trapframe);
             break;
         default:
             sys_nosys(trapframe);

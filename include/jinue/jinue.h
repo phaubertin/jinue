@@ -149,4 +149,6 @@ int jinue_get_set_signal_mask(
         jinue_sigset_t          *oset,
         int                     *perrno);
 
+int jinue_set_signal_handler(jinue_sighandler_t handler, int *perrno);
+
 #endif

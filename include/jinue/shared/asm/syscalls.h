@@ -101,6 +101,9 @@
 /** examine and change a thread's blocked signals */
 #define JINUE_SYS_GET_SET_SIGNAL_MASK   26
 
+/** set the current process' signal handling function */
+#define JINUE_SYS_SET_SIGNAL_HANDLER    27
+
 /** start of function numbers for user space messages */
 #define JINUE_SYS_USER_BASE             4096
 

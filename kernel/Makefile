@@ -80,6 +80,7 @@ sources.kernel.c = \
 	application/syscalls/reply.c \
 	application/syscalls/reply_error.c \
 	application/syscalls/send.c \
+	application/syscalls/set_signal_handler.c \
 	application/syscalls/set_thread_local.c \
 	application/syscalls/signal_process.c \
 	application/syscalls/signal_thread.c \

@@ -33,7 +33,8 @@
 | 24      | [SIGNAL_THREAD](signal-thread.md)               | Send a signal to a thread                             |
 | 25      | [RETURN_FROM_SIGNAL](return-from-signal.md)     | Return from a signal                                  |
 | 26      | [GET_SET_SIGNAL_MASK](get-set-signal-mask.md)   | Get and/or set current thread's blocked signals set   |
-| 27-4095 | -                                               | Reserved                                              |
+| 27      | [SET_SIGNAL_HANDLER](set-signal-handler.md)     | Set the current process' signal handling function     |
+| 28-4095 | -                                               | Reserved                                              |
 | 4096+   | [SEND](send.md)                                 | Send a message                                        |
 
 #### Reserved Function Numbers
