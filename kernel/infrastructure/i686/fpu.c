@@ -209,6 +209,15 @@ bool use_fpu(thread_t *thread) {
     return true;
 }
 
+static void do_save_state(void *dest) {
+    if(cpu_has_feature(CPU_FEATURE_FXSR)) {
+        fxsave(dest);
+    }
+    else {
+        fnsave(dest);
+    }
+}
+
 /**
  * Save the FPU state of a thread
  * 
@@ -231,12 +240,7 @@ void save_fpu_state(thread_t *thread) {
         return;
     }
 
-    if(cpu_has_feature(CPU_FEATURE_FXSR)) {
-        fxsave(get_thread_fpu_area(thread));
-    }
-    else {
-        fnsave(get_thread_fpu_area(thread));
-    }
+    do_save_state(get_thread_fpu_area(thread));
 
     /* state saved */
     machine_thread->flags |= THREAD_FLAG_FPU_STATE_SAVED;
@@ -276,4 +280,36 @@ void restore_fpu_state(void) {
 
     /* saved state consumed */
     machine_thread->flags &= ~THREAD_FLAG_FPU_STATE_SAVED;
+}
+
+int get_fpu_fpregs_type(void) {
+    return cpu_has_feature(CPU_FEATURE_FXSR) ? JINUE_FPREGS_FXSAVE : JINUE_FPREGS_FSAVE;
+}
+
+size_t get_fpu_fpregs_size(void) {
+    return cpu_has_feature(CPU_FEATURE_FXSR) ? 512 : 108;
+}
+
+void save_fpu_fpregs_for_signal(void *dest) {
+    thread_t *thread = get_current_thread();
+    machine_thread_t *machine_thread = &thread->machine_thread;
+
+    const bool uses_fpu = !!(machine_thread->flags & THREAD_FLAG_USES_FPU);
+    const bool has_saved_state = !!(machine_thread->flags & THREAD_FLAG_FPU_STATE_SAVED);
+    const bool has_cve = cpu_needs_workaround(CPU_WORKAROUND_CVE2018_3665);
+
+    if(has_saved_state || (!uses_fpu && has_cve)) {
+        const void *src = get_thread_fpu_area(thread);
+        memcpy(dest, src, get_fpu_fpregs_size());
+        return;
+    }
+
+    do_save_state(dest);       
+}
+
+void restore_fpu_fpregs_for_signal(void) {
+    thread_t *thread = get_current_thread();
+    machine_thread_t *machine_thread = &thread->machine_thread;
+    
+    machine_thread->flags |= THREAD_FLAG_FPU_STATE_SAVED;
 }

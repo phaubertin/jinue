@@ -33,6 +33,7 @@
 #include <kernel/domain/services/scheduler.h>
 #include <kernel/interface/i686/interrupts.h>
 #include <kernel/interface/i686/trap.h>
+#include <kernel/interface/signal.h>
 #include <kernel/interface/syscalls.h>
 
 /** Dispatch a trap into the kernel
@@ -46,11 +47,15 @@
  * @param trapframe the trap frame with saved state
  */
 void handle_trap(trapframe_t *trapframe) {
-    if(trapframe->trapno == JINUE_I686_SYSCALL_INTERRUPT) {
+    if(is_system_call(trapframe)) {
         handle_syscall(trapframe);
     } else {
         handle_interrupt(trapframe);
     }
 
     reschedule();
+
+    if(!is_trap_from_kernel(trapframe)) {
+        check_for_signal(trapframe);
+    }
 }

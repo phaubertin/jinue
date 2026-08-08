@@ -35,6 +35,7 @@
 #include "pthread/libc.h"
 #include "brk.h"
 #include "physmem.h"
+#include "signal.h"
 
 /* This function is called by assembly language code. */
 int __libc_init(void) {
@@ -45,6 +46,12 @@ int __libc_init(void) {
     }
 
     __pthread_set_current(__pthread_main_thread);
+
+    ret = __signal_init();
+
+    if(ret < 0) {
+        return EXIT_FAILURE;
+    }
 
     ret = __physmem_init();
 

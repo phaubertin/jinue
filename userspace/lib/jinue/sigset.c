@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2026 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,38 +29,67 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INTERFACE_I686_TRAP_H
-#define JINUE_KERNEL_INTERFACE_I686_TRAP_H
-
-#include <jinue/shared/types.h>
-#include <kernel/interface/i686/asm/trap.h>
-#include <kernel/interface/i686/exports/types.h>
-#include <kernel/interface/i686/types.h>
+#include <jinue/jinue.h>
 #include <stdbool.h>
+#include <stdint.h>
 
-extern int syscall_implementation;
-
-void handle_trap(trapframe_t *trapframe);
-
-/** entry point for Intel fast system call implementation (SYSENTER/SYSEXIT) */
-void fast_intel_entry(void);
-
-/** entry point for AMD fast system call implementation (SYSCALL/SYSRET) */
-void fast_amd_entry(void);
-
-/* do not call - used by new user threads to "return" to user space for the
- * first time. See machine_prepare_thread(). */
-void return_from_interrupt(void);
-
-static inline bool is_trap_from_kernel(const trapframe_t *trapframe) {
-    return (trapframe->cs & 3) == 0;
+static inline bool signo_is_invalid(int signo) {
+    return signo < 1 || signo > 32;
 }
 
-static inline bool is_system_call(const trapframe_t *trapframe) {
-    return
-           trapframe->trapno == TRAPNO_SYSCALL_INTERRUPT
-        || trapframe->trapno == TRAPNO_SYSCALL_INSTRUCTION
-        || trapframe->trapno == TRAPNO_SYSENTER_INSTRUCTION;
+static inline uint32_t signo_mask(int signo) {
+    return (1 << (signo - 1));
 }
 
-#endif
+static void set_perrno_invalid(int *perrno) {
+    if(perrno != NULL)  {
+        *perrno = JINUE_EINVAL;
+    }
+}
+
+int jinue_sigaddset(jinue_sigset_t *set, int signo, int *perrno) {
+    if(signo_is_invalid(signo)) {
+        set_perrno_invalid(perrno);
+        return -1;
+    }
+    
+    set->sa_sigbits[0] |= signo_mask(signo);
+    
+    return 0;
+}
+
+int jinue_sigdelset(jinue_sigset_t *set, int signo, int *perrno) {
+    if(signo_is_invalid(signo)) {
+        set_perrno_invalid(perrno);
+        return -1;
+    }
+    
+    set->sa_sigbits[0] &= ~signo_mask(signo);
+    
+    return 0;
+}
+
+int jinue_sigemptyset(jinue_sigset_t *set) {
+    set->sa_sigbits[0] = 0;
+    set->sa_sigbits[1] = 0;
+    set->sa_sigbits[2] = 0;
+    set->sa_sigbits[3] = 0;
+    return 0;
+}
+
+int jinue_sigfillset(jinue_sigset_t *set) {
+    set->sa_sigbits[0] = -1;
+    set->sa_sigbits[1] = -1;
+    set->sa_sigbits[2] = -1;
+    set->sa_sigbits[3] = -1;
+    return 0;
+}
+
+int jinue_sigismember(const jinue_sigset_t *set, int signo, int *perrno) {
+    if(signo_is_invalid(signo)) {
+        set_perrno_invalid(perrno);
+        return -1;
+    }
+    
+    return !!(set->sa_sigbits[0] & signo_mask(signo));
+}

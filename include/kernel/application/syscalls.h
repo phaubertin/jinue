@@ -32,6 +32,7 @@
 #ifndef JINUE_KERNEL_APPLICATION_SYSCALLS_H
 #define JINUE_KERNEL_APPLICATION_SYSCALLS_H
 
+#include <jinue/shared/types.h>
 #include <kernel/types.h>
 
 int await_thread(int fd);
@@ -72,8 +73,16 @@ int send(uintptr_t *errcode, int fd, int function, const jinue_message_t *messag
 
 void set_thread_local(void *addr, size_t size);
 
-int start_thread(int fd, const thread_params_t *params);
+int signal_process(int fd, int signo);
+
+int signal_thread(int fd, int signo, int flags);
+
+int start_thread(int fd, void (*entry)(void), void *stack_addr, sigmask_t sigmask);
 
 void yield_thread(void);
+
+int get_set_signal_mask(int how, sigmask_t set, jinue_sigset_t *oset);
+
+void set_signal_handler(jinue_sighandler_t handler);
 
 #endif

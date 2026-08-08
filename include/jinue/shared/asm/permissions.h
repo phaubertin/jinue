@@ -53,4 +53,7 @@
 /** await a thread */
 #define JINUE_PERM_AWAIT            (1<<6)
 
+/** send a signal to the process or thread */
+#define JINUE_PERM_SIGNAL           (1<<7)
+
 #endif

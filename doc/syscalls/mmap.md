@@ -48,7 +48,7 @@ The mmap arguments structure contains the following fields:
 
 `addr`, `length` and `paddr` must all be aligned on a page boundary.
 
-`prot` must be set to either `JINUE_PROT_NONE` or to the bitwise or of
+`prot` must be set to either `JINUE_PROT_NONE` or to the bitwise OR of
 `JINUE_PROT_READ`, `JINUE_PROT_WRITE` and/or `JINUE_PROT_EXEC` as described in
 the following table:
 

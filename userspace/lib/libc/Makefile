@@ -35,6 +35,7 @@ sources.c        = \
 	pthread/attr.c \
 	pthread/cleanup.c \
 	pthread/libc.c \
+	pthread/signal.c \
 	pthread/thread.c \
 	assert-kernel.c \
 	brk.c \
@@ -48,6 +49,7 @@ sources.c        = \
 	physmem.c \
 	rand.c \
 	snprintf.c \
+	signal.c \
 	string.c \
 	vsnprintf.c
 sources.nasm     = i686/crt.asm i686/pthread.asm
@@ -69,12 +71,14 @@ objects.user     = \
 	malloc.o \
 	mmap.o \
 	physmem.o \
-	rand.o
+	rand.o \
+	signal.o
 objects.pthread  = \
 	i686/pthread-nasm.o \
 	i686/stack.o \
 	pthread/attr.o \
 	pthread/cleanup.o \
+	pthread/signal.o \
 	pthread/thread.o
 objects.kernel   = assert-kernel.o
 

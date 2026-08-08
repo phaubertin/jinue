@@ -33,6 +33,7 @@ be specified:
 | JINUE_PERM_CREATE_THREAD  | Create a thread                           |
 | JINUE_PERM_MAP            | Map memory into the virtual address space |
 | JINUE_PERM_OPEN           | Bind a descriptor                         |
+| JINUE_PERM_SIGNAL         | Send a signal to the process              |
 
 If the owner descriptor refers to a thread, the following permission flags can
 be specified:
@@ -40,7 +41,8 @@ be specified:
 | Name              | Description                       |
 |-------------------|-----------------------------------|
 | JINUE_PERM_START  | Start the thread                  |
-| JINUE_PERM_AWAIT   | Wait for the thread to terminate  |
+| JINUE_PERM_AWAIT  | Wait for the thread to terminate  |
+| JINUE_PERM_SIGNAL | Send a signal to the thread       |
 
 Other permission flags are reserved.
 

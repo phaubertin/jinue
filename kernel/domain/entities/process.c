@@ -52,7 +52,8 @@ static const object_type_t object_type = {
     .all_permissions    =
               JINUE_PERM_CREATE_THREAD
             | JINUE_PERM_MAP
-            | JINUE_PERM_OPEN,
+            | JINUE_PERM_OPEN
+            | JINUE_PERM_SIGNAL,
     .name               = "process",
     .size               = sizeof(process_t),
     .open               = NULL,
@@ -85,6 +86,7 @@ static void cache_ctor_op(void *buffer, size_t ignore) {
     process_t *process = buffer;
     object_init_header(&process->header, object_type_process);
     init_spinlock(&process->descriptors_lock);
+    init_spinlock(&process->signal_lock);
 }
 
 /**
@@ -123,7 +125,10 @@ process_t *process_new(void) {
     process_t *process = slab_cache_alloc(&process_cache);
 
     if(process != NULL) {
-        process->running_threads_count = 0;
+        process->running_threads_count  = 0;
+        process->signal_handler         = NULL;
+        process->pending_signals        = 0;
+
         initialize_descriptors(process);
 
         if(!machine_init_process(process)) {

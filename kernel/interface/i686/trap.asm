@@ -32,6 +32,7 @@
 #include <kernel/infrastructure/i686/asm/percpu.h>
 #include <kernel/infrastructure/i686/asm/tss.h>
 #include <kernel/interface/i686/asm/exceptions.h>
+#include <kernel/interface/i686/asm/trap.h>
 #include <kernel/interface/i686/asm/idt.h>
 #include <kernel/machine/asm/machine.h>
 
@@ -162,25 +163,21 @@ fast_intel_entry:
     push byte SEG_SELECTOR(GDT_USER_CODE, RPL_USER)     ; 56
     push ecx                                            ; 52 user return address
     
-    mov ebp, 0              ; setup dummy frame pointer
+    mov ebp, 0  ; setup dummy frame pointer
     
-    push byte 0             ; 48 error code (unused)
-    
-    ; 44 trap number
-    ; 
-    ; This trap number tells handle_trap() this is a system call.
-    push dword JINUE_I686_SYSCALL_INTERRUPT  
-    push eax                ; 40 arg0
-    push byte 0             ; 36 ecx (caller-saved by System V ABI)
-    push byte 0             ; 32 edx (caller-saved by System V ABI)
-    push ebx                ; 28 arg1
-    push byte 0             ; 24 ebp (caller-saved by kernel calling convention)
-    push esi                ; 20 arg2
-    push edi                ; 16 arg3
-    push ds                 ; 12
-    push es                 ; 8
-    push fs                 ; 4
-    push gs                 ; 0
+    push byte 0                             ; 48 error code (unused)
+    push dword TRAPNO_SYSENTER_INSTRUCTION  ; 44 trap number
+    push eax                                ; 40 arg0
+    push byte 0                             ; 36 ecx (caller-saved by System V ABI)
+    push byte 0                             ; 32 edx (caller-saved by System V ABI)
+    push ebx                                ; 28 arg1
+    push byte 0                             ; 24 ebp (caller-saved by kernel calling convention)
+    push esi                                ; 20 arg2
+    push edi                                ; 16 arg3
+    push ds                                 ; 12
+    push es                                 ; 8
+    push fs                                 ; 4
+    push gs                                 ; 0
     
     ; set data segment
     mov ecx, SEG_SELECTOR(GDT_KERNEL_DATA, RPL_KERNEL)
@@ -198,6 +195,14 @@ fast_intel_entry:
     
     ; cleanup handle_trap() argument
     add esp, 4
+
+    ; We might get here if we are returning from the "return from signal"
+    ; system call but the signal itself was originally delivered while handling
+    ; an interrupt. In that case, we want to use the full "return from
+    ; interrupt" path to makes sure all registers are restored.
+    cmp dword [esp+44], TRAPNO_SYSENTER_INSTRUCTION ; check trap number
+    jnz return_from_interrupt                       ; return from interrupt if
+                                                    ; it does not match
 
     ; Restore FPU/SSE state
     call restore_fpu_state
@@ -262,25 +267,21 @@ fast_amd_entry:
     push byte SEG_SELECTOR(GDT_USER_CODE, RPL_USER)     ; 56
     push ecx                                            ; 52 user return address
     
-    mov ebp, 0              ; setup dummy frame pointer
+    mov ebp, 0  ; setup dummy frame pointer
     
-    push byte 0             ; 48 error code (unused)
-    
-    ; 44 trap number
-    ; 
-    ; This trap number tells handle_trap() this is a system call.
-    push dword JINUE_I686_SYSCALL_INTERRUPT  
-    push eax                ; 40 arg0
-    push byte 0             ; 36 ecx (caller-saved by System V ABI)
-    push byte 0             ; 32 edx (caller-saved by System V ABI)
-    push ebx                ; 28 arg1
-    push byte 0             ; 24 ebp (caller-saved by kernel calling convention)
-    push esi                ; 20 arg2
-    push edi                ; 16 arg3
-    push ds                 ; 12
-    push es                 ; 8
-    push fs                 ; 4
-    push byte 0             ; 0 gs (caller-saved by kernel calling convention)
+    push byte 0                             ; 48 error code (unused)
+    push dword TRAPNO_SYSCALL_INSTRUCTION   ; 44 trap number
+    push eax                                ; 40 arg0
+    push byte 0                             ; 36 ecx (caller-saved by System V ABI)
+    push byte 0                             ; 32 edx (caller-saved by System V ABI)
+    push ebx                                ; 28 arg1
+    push byte 0                             ; 24 ebp (caller-saved by kernel calling convention)
+    push esi                                ; 20 arg2
+    push edi                                ; 16 arg3
+    push ds                                 ; 12
+    push es                                 ; 8
+    push fs                                 ; 4
+    push byte 0                             ; 0 gs (caller-saved by kernel calling convention)
     
     ; set data segment
     mov ecx, SEG_SELECTOR(GDT_KERNEL_DATA, RPL_KERNEL)
@@ -294,6 +295,14 @@ fast_amd_entry:
     
     ; cleanup handle_trap() argument
     add esp, 4
+
+    ; We might get here if we are returning from the "return from signal"
+    ; system call but the signal itself was originally delivered while handling
+    ; an interrupt. In that case, we want to use the full "return from
+    ; interrupt" path to makes sure all registers are restored.
+    cmp dword [esp+44], TRAPNO_SYSCALL_INSTRUCTION  ; check trap number
+    jnz return_from_interrupt                       ; return from interrupt if
+                                                    ; it does not match
 
     ; Restore FPU/SSE state
     call restore_fpu_state
