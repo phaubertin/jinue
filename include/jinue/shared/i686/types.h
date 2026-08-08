@@ -60,12 +60,12 @@ typedef jinue_greg_t jinue_gregset_t[JINUE_NGREG];
 #define JINUE_GREG_ECX      10
 #define JINUE_GREG_EAX      11
 #define JINUE_GREG_TRAPNO   12
-#define JINUE_GREG_ERR      12
-#define JINUE_GREG_EIP      13
-#define JINUE_GREG_CS       14
-#define JINUE_GREG_EFL      15
-#define JINUE_GREG_UESP     16
-#define JINUE_GREG_SS       17
+#define JINUE_GREG_ERR      13
+#define JINUE_GREG_EIP      14
+#define JINUE_GREG_CS       15
+#define JINUE_GREG_EFL      16
+#define JINUE_GREG_UESP     17
+#define JINUE_GREG_SS       18
 
 typedef struct {
     int      type;
@@ -73,6 +73,10 @@ typedef struct {
 } jinue_fpregs_t;
 
 #define JINUE_FPREGS_NONE   0
+
+#define JINUE_FPREGS_FSAVE  1
+
+#define JINUE_FPREGS_FXSAVE 2
 
 typedef struct {
     jinue_gregset_t gregs;

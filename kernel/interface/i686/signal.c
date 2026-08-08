@@ -30,25 +30,41 @@
  */
 
 #include <jinue/shared/types.h>
+#include <kernel/infrastructure/i686/fpu.h>
+#include <kernel/infrastructure/i686/thread.h>
 #include <kernel/interface/machine/signal.h>
 #include <kernel/machine/thread.h>
 #include <kernel/machine/spinlock.h>
+#include <kernel/utils/pmap.h>
 #include <kernel/types.h>
+#include <stddef.h>
 #include <stdint.h>
 
 void deliver_signal(trapframe_t *trapframe, int signo, sigmask_t sigmask) {
+    unsigned char *stack            = (unsigned char *)trapframe->esp;
+    unsigned char *stack_on_entry   = stack;
 
-    /* TODO make sure we are not writing where the user would not be allowed
-     * to. */
-
-    unsigned char *stack = (unsigned char *)trapframe->esp;
 #define push(t, a) stack = (a == 0) ? stack - sizeof(t) : ALIGN_START_PTR(stack - sizeof(t), 16)
-    
     push(jinue_ucontext_t, 16);
     jinue_ucontext_t *ucontext = (jinue_ucontext_t *)stack;
+
+    size_t fpu_area_size = get_fpu_fpregs_size();
+    push(fpu_area_size, 16);
+    unsigned char *fpu_area = stack;
     
     push(jinue_siginfo_t, 16);
     jinue_siginfo_t *siginfo = (jinue_siginfo_t *)stack;
+
+    /* The padding takes into account the handler arguments written below and
+     * ensures the handler function has some stack space to work with. */
+    const size_t padding = 64;
+    if(!check_userspace_buffer(stack - padding, stack_on_entry - stack + padding)) {
+        /* TODO instead of silently dropping the signal, improve handling by:
+         *  - Switching to alternate stack, if possible and it helps.
+         *  - Terminating the process, once the infrastructure is in place to
+         *    do this. */
+        return;
+    }
 
     /* handler arguments */
     push(jinue_ucontext_t *, 0);
@@ -105,10 +121,10 @@ void deliver_signal(trapframe_t *trapframe, int signo, sigmask_t sigmask) {
     mcontext->gregs[JINUE_GREG_UESP] = trapframe->esp;
     mcontext->gregs[JINUE_GREG_SS] = trapframe->ss;
 
-    /* TODO store FPU state */
+    mcontext->fpregs.type = get_fpu_fpregs_type();
+    mcontext->fpregs.regs = fpu_area;
 
-    mcontext->fpregs.type = JINUE_FPREGS_NONE;
-    mcontext->fpregs.regs = NULL;
+    save_fpu_fpregs_for_signal(fpu_area);
 
     siginfo->si_signo = signo;
     siginfo->si_code = 0;
@@ -152,6 +168,8 @@ int return_from_signal(trapframe_t *trapframe, const jinue_ucontext_t *ucontext)
     trapframe->eflags = mcontext->gregs[JINUE_GREG_EFL];
     trapframe->esp = mcontext->gregs[JINUE_GREG_UESP];
     trapframe->ss = mcontext->gregs[JINUE_GREG_SS];
+
+    restore_fpu_fpregs_for_signal();
 
     return 0;
 }
