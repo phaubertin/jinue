@@ -32,6 +32,7 @@
 #ifndef _JINUE_LIBC_SIGNAL_H
 #define _JINUE_LIBC_SIGNAL_H
 
+#include <jinue/shared/asm/signal.h>
 #include <jinue/shared/types.h>
 #include <pthread.h>
 #include <stdint.h>
@@ -63,6 +64,8 @@
 
 #define SIG_IGN         (void (*)(int))-3
 
+
+typedef int sig_atomic_t;
 
 typedef jinue_sigset_t sigset_t;
 

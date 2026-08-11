@@ -56,7 +56,7 @@ typedef jinue_greg_t jinue_gregset_t[JINUE_NGREG];
 #define JINUE_GREG_EBP      6
 #define JINUE_GREG_ESP      7
 #define JINUE_GREG_EBX      8
-#define JINUE_GREG_EDX      8
+#define JINUE_GREG_EDX      9
 #define JINUE_GREG_ECX      10
 #define JINUE_GREG_EAX      11
 #define JINUE_GREG_TRAPNO   12

@@ -44,15 +44,15 @@ void deliver_signal(trapframe_t *trapframe, int signo, sigmask_t sigmask) {
     unsigned char *stack            = (unsigned char *)trapframe->esp;
     unsigned char *stack_on_entry   = stack;
 
-#define push(t, a) stack = (a == 0) ? stack - sizeof(t) : ALIGN_START_PTR(stack - sizeof(t), 16)
-    push(jinue_ucontext_t, 16);
+#define push(s, a) stack = (a == 0) ? stack - s: ALIGN_START_PTR(stack - s, 16)
+    push(sizeof(jinue_ucontext_t), 16);
     jinue_ucontext_t *ucontext = (jinue_ucontext_t *)stack;
 
     size_t fpu_area_size = get_fpu_fpregs_size();
     push(fpu_area_size, 16);
     unsigned char *fpu_area = stack;
     
-    push(jinue_siginfo_t, 16);
+    push(sizeof(jinue_siginfo_t), 16);
     jinue_siginfo_t *siginfo = (jinue_siginfo_t *)stack;
 
     /* The padding takes into account the handler arguments written below and
@@ -67,23 +67,20 @@ void deliver_signal(trapframe_t *trapframe, int signo, sigmask_t sigmask) {
     }
 
     /* handler arguments */
-    push(jinue_ucontext_t *, 0);
+    push(sizeof(jinue_ucontext_t *), 0);
     *(jinue_ucontext_t **)stack = ucontext;
-    push(jinue_siginfo_t *, 0);
+    push(sizeof(jinue_siginfo_t *), 0);
     *(jinue_siginfo_t **)stack = siginfo;
-    push(int, 0);
+    push(sizeof(int), 0);
     *(int *)stack = signo;
 
     /* NULL return address: the handler has the responsibility to call the
      * appropriate system call when it is done and shouldn't just return. */
-    push(void *, 0);
+    push(sizeof(void *), 0);
     *(void **)stack = NULL;
 
     const thread_t *thread = get_current_thread();
     const process_t *process = thread->process;
-    
-    trapframe->esp = (uintptr_t)stack;
-    trapframe->eip = (uintptr_t)process->signal_handler;
 
     ucontext->uc_flags = 0;
     ucontext->uc_link = NULL;
@@ -134,6 +131,9 @@ void deliver_signal(trapframe_t *trapframe, int signo, sigmask_t sigmask) {
     siginfo->si_addr = NULL;
     siginfo->si_status = 0;
     siginfo->si_value.sival_ptr = NULL;
+
+    trapframe->esp = (uintptr_t)stack;
+    trapframe->eip = (uintptr_t)process->signal_handler;
 }
 
 int return_from_signal(trapframe_t *trapframe, const jinue_ucontext_t *ucontext) {
@@ -156,13 +156,12 @@ int return_from_signal(trapframe_t *trapframe, const jinue_ucontext_t *ucontext)
     trapframe->edi = mcontext->gregs[JINUE_GREG_EDI];
     trapframe->esi = mcontext->gregs[JINUE_GREG_ESI];
     trapframe->ebp = mcontext->gregs[JINUE_GREG_EBP];
-    trapframe->esp = mcontext->gregs[JINUE_GREG_ESP];
     trapframe->ebx = mcontext->gregs[JINUE_GREG_EBX];
     trapframe->edx = mcontext->gregs[JINUE_GREG_EDX];
     trapframe->ecx = mcontext->gregs[JINUE_GREG_ECX];
     trapframe->eax = mcontext->gregs[JINUE_GREG_EAX];
     trapframe->trapno = mcontext->gregs[JINUE_GREG_TRAPNO];
-    /* No need to restore the error code. */
+    trapframe->errcode = mcontext->gregs[JINUE_GREG_ERR];
     trapframe->eip = mcontext->gregs[JINUE_GREG_EIP];
     trapframe->cs = mcontext->gregs[JINUE_GREG_CS];
     trapframe->eflags = mcontext->gregs[JINUE_GREG_EFL];

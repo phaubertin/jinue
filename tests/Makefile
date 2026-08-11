@@ -58,6 +58,7 @@ tests = \
 	test_ipc \
 	test_loader_exit \
 	test_mp \
+	test_signal \
 	test_sse \
 	test_vga_text_80x25
 

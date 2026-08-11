@@ -29,63 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/shared/asm/errno.h>
-#include <jinue/shared/asm/signal.h>
-#include <jinue/shared/asm/permissions.h>
-#include <kernel/application/syscalls.h>
-#include <kernel/domain/entities/descriptor.h>
-#include <kernel/domain/entities/process.h>
-#include <kernel/machine/spinlock.h>
+#ifndef TESTAPP_TEST_SIGNAL_H_
+#define TESTAPP_TEST_SIGNAL_H_
 
-static void with_process(process_t *process, int signo) {
-    if(signo == 0) {
-        return;
-    }
+void run_signal_test(void);
 
-    spin_lock(&process->signal_lock);
-
-    sigmask_t onemask = 1<<(signo - 1);
-    process->pending_signals |= onemask;
-
-    spin_unlock(&process->signal_lock);
-}
-
-int signal_process(int fd, int signo) {
-    if(signo < 0 || signo > JINUE_SIGNAL_MAX) {
-        return -JINUE_EINVAL;
-    }
-
-    process_t *process;
-    descriptor_t desc;
-
-    if(fd == -1) {
-        process = get_current_process();
-    }
-    else {
-        int status = descriptor_access_object(&desc, get_current_process(), fd);
-
-        if(status < 0) {
-            return status == JINUE_EIO ? -JINUE_ESRCH : status;
-        }
-
-        process = descriptor_get_process(&desc);
-
-        if(process == NULL) {
-            descriptor_unreference_object(&desc);
-            return -JINUE_EBADF;
-        }
-
-        if(!descriptor_has_permissions(&desc, JINUE_PERM_SIGNAL)) {
-            descriptor_unreference_object(&desc);
-            return -JINUE_EPERM;
-        }
-    }
-
-    with_process(process, signo);
-
-    if(fd != -1) {
-        descriptor_unreference_object(&desc);
-    }
-
-    return 0;
-}
+#endif

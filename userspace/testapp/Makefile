@@ -37,6 +37,7 @@ sources.c = \
 	tests/exit_thread.c \
 	tests/ipc.c \
 	tests/scroll.c \
+	tests/signal.c \
 	tests/sse.c \
 	debug.c \
 	testapp.c \

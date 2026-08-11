@@ -91,7 +91,7 @@ int signal_thread(int fd, int signo, int flags) {
 
     with_thread(thread, signo, flags);
 
-    if(fd == -1) {
+    if(fd != -1) {
         descriptor_unreference_object(&desc);
     }
 

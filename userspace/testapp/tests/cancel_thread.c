@@ -42,7 +42,7 @@
 
 #define MSG_SYNCHRONIZE JINUE_SYS_USER_BASE
 
-int endpoint;
+static int endpoint;
 
 static void cleanup_routine(void *str) {
     jinue_info("Running cancellation handler: %s", str);
@@ -146,7 +146,7 @@ void run_cancel_thread_test(void) {
     }
 
     jinue_message_t reply;
-    reply.send_buffers_length= 0;
+    reply.send_buffers_length = 0;
 
     ret = jinue_reply(&reply, &errno);
 

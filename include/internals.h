@@ -32,7 +32,9 @@
 #ifndef _JINUE_LIBC_INTERNALS_H
 #define _JINUE_LIBC_INTERNALS_H
 
+#include <pthread.h>
 #include <stdint.h>
+#include <string.h>
 
 #define MMAP_BASE 0x40000000
 
@@ -48,6 +50,8 @@ void __free_descriptor(int fd);
 
 void *__mmap_anonymous(void *addr, size_t len);
 
+int __get_thread_descriptor(pthread_t thread);
+
 
 #define libc_init __libc_init
 
@@ -60,5 +64,7 @@ void *__mmap_anonymous(void *addr, size_t len);
 #define libc_free_descriptor __free_descriptor
 
 #define mmap_anonymous __mmap_anonymous
+
+#define get_thread_descriptor __get_thread_descriptor
 
 #endif

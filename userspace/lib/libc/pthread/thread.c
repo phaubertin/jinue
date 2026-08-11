@@ -267,3 +267,7 @@ int pthread_setcancelstate(int state, int *oldstate) {
 
     return 0;
 }
+
+int __get_thread_descriptor(pthread_t thread) {
+    return thread->fd;
+}

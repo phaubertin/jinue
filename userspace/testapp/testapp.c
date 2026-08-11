@@ -42,6 +42,7 @@
 #include "tests/exit_thread.h"
 #include "tests/ipc.h"
 #include "tests/scroll.h"
+#include "tests/signal.h"
 #include "tests/sse.h"
 #include "debug.h"
 #include "utils.h"
@@ -74,6 +75,7 @@ int main(int argc, char *argv[]) {
     run_exit_thread_test();
     run_ipc_test();
     run_scroll_test();
+    run_signal_test();
     run_sse_test();
 
     if(bool_getenv("DEBUG_DO_REBOOT")) {
