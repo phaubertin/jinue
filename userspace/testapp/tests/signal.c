@@ -41,6 +41,8 @@ sig_atomic_t signal_1_flag;
 
 sig_atomic_t signal_32_flag;
 
+sig_atomic_t nested_signal_1_flag;
+
 void signal_1_handler(int sig) {
     jinue_info("In signal 1 handler");
 
@@ -49,7 +51,7 @@ void signal_1_handler(int sig) {
         return;
     }
 
-    signal_1_flag = 1;
+    signal_1_flag += 1;
 }
 
 void signal_32_handler(int sig, siginfo_t *info, void *context) {
@@ -65,7 +67,30 @@ void signal_32_handler(int sig, siginfo_t *info, void *context) {
         return;
     }
 
-    signal_32_flag = 1;
+    signal_32_flag += 1;
+}
+
+void nested_signal_1_handler(int sig) {
+    jinue_info("In signal 1 handler");
+
+    if(sig != 1) {
+        jinue_error("Expected signal 1, got %d", sig);
+        return;
+    }
+
+    signal_1_flag += 1;
+
+    if(signal_1_flag == 1) {
+        raise(1);
+
+        /* Calling any system call will deliver any pending signal, including a
+         * nested signal 1 if it isn't blocked. */
+        jinue_yield_thread();
+
+        if(signal_1_flag > 1) {
+            nested_signal_1_flag = 1;
+        }
+    }
 }
 
 #define CHECK_TRUE(b) if(!(b)) {return false;}
@@ -75,8 +100,9 @@ void signal_32_handler(int sig, siginfo_t *info, void *context) {
 #define CHECK_ZERO(d) if((d) != 0) {return false;}
 
 static bool setup(void) {
-    signal_1_flag   = 0;
-    signal_32_flag  = 0;
+    signal_1_flag           = 0;
+    signal_32_flag          = 0;
+    nested_signal_1_flag    = 0;
 
     struct sigaction act;
     act.sa_flags = 0;
@@ -349,6 +375,29 @@ static bool test_signal_other_thread(void) {
     return true;
 }
 
+static bool test_nested_signal(void) {
+    struct sigaction act;
+    act.sa_flags = 0;
+    act.sa_handler = nested_signal_1_handler;
+    sigemptyset(&act.sa_mask);
+
+    CHECK_ZERO(sigaction(1, &act, NULL));
+
+    raise(1);
+
+    jinue_info("Checking signal 1 was blocked while within the signal handler");
+
+    CHECK_TRUE(nested_signal_1_flag == 0);
+
+    jinue_info("Checking signal 1 was unblocked while returning from the signal handler");
+
+    jinue_yield_thread();
+
+    CHECK_TRUE(signal_1_flag == 2);
+
+    return true;
+}
+
 typedef bool (*test_t)(void);
 
 bool run_test(test_t test, const char *name) {
@@ -386,6 +435,7 @@ void run_signal_test(void) {
     pass &= run_test(test_pthread_sigmask_block_signal, "pthread_sigmask() block signal");
     pass &= run_test(test_signal_process, "jinue_signal_process()");
     pass &= run_test(test_signal_other_thread, "signal other thread");
+    pass &= run_test(test_nested_signal, "nested signal");
 
     jinue_info("Signal test result: %s", pass ? "PASS" : "FAIL");
 }
