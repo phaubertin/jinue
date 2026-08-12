@@ -36,6 +36,17 @@
 #include <kernel/machine/thread.h>
 #include <kernel/types.h>
 
+/**
+ * Check for pending signals the current thread should handle
+ * 
+ * This is called just before returning to user space from a system call or
+ * interrupt. If there is an unblocked pending on the thread or process, this
+ * function updates the set of pending signals and the signal mask, and then
+ * calls the architecture-specific deliver_signal() function to actually
+ * deliver the signal.
+ * 
+ * @param trapframe trap frame
+ */
 void check_for_signal(trapframe_t *trapframe) {
     thread_t *thread = get_current_thread();
     process_t *process = thread->process;

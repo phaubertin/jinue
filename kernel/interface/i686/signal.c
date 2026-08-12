@@ -30,6 +30,7 @@
  */
 
 #include <jinue/shared/types.h>
+#include <kernel/infrastructure/i686/asm/eflags.h>
 #include <kernel/infrastructure/i686/fpu.h>
 #include <kernel/infrastructure/i686/thread.h>
 #include <kernel/interface/machine/signal.h>
@@ -40,6 +41,17 @@
 #include <stddef.h>
 #include <stdint.h>
 
+/**
+ * Deliver a signal to the current thread
+ * 
+ * This function is called when the thread is returning to userspace from a
+ * system call or an interrupt when it has been determined that a signal needs
+ * to be delivered.
+ * 
+ * @param trapframe trap frame
+ * @param signo signal number of signal to deliver
+ * @param sigmask original signal mask to save along with context
+ */
 void deliver_signal(trapframe_t *trapframe, int signo, sigmask_t sigmask) {
     unsigned char *stack            = (unsigned char *)trapframe->esp;
     unsigned char *stack_on_entry   = stack;
@@ -136,6 +148,15 @@ void deliver_signal(trapframe_t *trapframe, int signo, sigmask_t sigmask) {
     trapframe->eip = (uintptr_t)process->signal_handler;
 }
 
+/**
+ * Return from as signal
+ * 
+ * We need to take some care here since it's not safe to allow userspace
+ * direct control over some parts of the trap frame.
+ * 
+ * @param trapframe trap frame
+ * @param ucontext user space context
+ */
 int return_from_signal(trapframe_t *trapframe, const jinue_ucontext_t *ucontext) {
     thread_t *thread = get_current_thread();
     process_t *process = thread->process;
@@ -148,7 +169,22 @@ int return_from_signal(trapframe_t *trapframe, const jinue_ucontext_t *ucontext)
 
     const jinue_mcontext_t *mcontext = &ucontext->uc_mcontext;
 
-    /* TODO check what isn't safe here (e.g. eflags) */
+    /* These are the flags that user space can control directly, e.g. using the
+     * POPF instruction or some specialized instruction such as cld/std. */
+    /* TODO figure out the correct mask here */
+    const uint32_t eflags_mask =
+          EFLAGS_CF
+        | EFLAGS_PF
+        | EFLAGS_AF
+        | EFLAGS_ZF
+        | EFLAGS_SF
+        | EFLAGS_TF
+        | EFLAGS_DF
+        | EFLAGS_OF
+        | EFLAGS_NT
+        | EFLAGS_AC
+        | EFLAGS_ID;
+
     trapframe->gs = mcontext->gregs[JINUE_GREG_GS];
     trapframe->fs = mcontext->gregs[JINUE_GREG_FS];
     trapframe->es = mcontext->gregs[JINUE_GREG_ES];
@@ -161,10 +197,11 @@ int return_from_signal(trapframe_t *trapframe, const jinue_ucontext_t *ucontext)
     trapframe->ecx = mcontext->gregs[JINUE_GREG_ECX];
     trapframe->eax = mcontext->gregs[JINUE_GREG_EAX];
     trapframe->trapno = mcontext->gregs[JINUE_GREG_TRAPNO];
-    trapframe->errcode = mcontext->gregs[JINUE_GREG_ERR];
+    /* We don't care about restoring the error code. */
     trapframe->eip = mcontext->gregs[JINUE_GREG_EIP];
-    trapframe->cs = mcontext->gregs[JINUE_GREG_CS];
-    trapframe->eflags = mcontext->gregs[JINUE_GREG_EFL];
+    /* Do not let the code segment be controlled from userspace. */
+    trapframe->eflags &= ~eflags_mask;
+    trapframe->eflags |= (mcontext->gregs[JINUE_GREG_EFL] & eflags_mask);
     trapframe->esp = mcontext->gregs[JINUE_GREG_UESP];
     trapframe->ss = mcontext->gregs[JINUE_GREG_SS];
 
