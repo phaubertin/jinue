@@ -33,7 +33,7 @@
 #define _JINUE_SHARED_ASM_SIGNAL_H
 
 /** maximum supported signal number */
-#define JINUE_SIGNAL_MAX    32
+#define JINUE_SIGNAL_MAX    64
 
 
 #define JINUE_SIG_NONE      0

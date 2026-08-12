@@ -34,10 +34,18 @@
 #include <stdint.h>
 
 static inline bool signo_is_invalid(int signo) {
-    return signo < 1 || signo > 32;
+    return signo < 1 || signo > 64;
+}
+
+static inline unsigned int signo_index(int signo) {
+    return signo < 33 ? 0 : 1;
 }
 
 static inline uint32_t signo_mask(int signo) {
+    if(signo > 32) {
+        return (1 << (signo - 33));
+    }
+
     return (1 << (signo - 1));
 }
 
@@ -53,7 +61,7 @@ int jinue_sigaddset(jinue_sigset_t *set, int signo, int *perrno) {
         return -1;
     }
     
-    set->sa_sigbits[0] |= signo_mask(signo);
+    set->sa_sigbits[signo_index(signo)] |= signo_mask(signo);
     
     return 0;
 }
@@ -64,7 +72,7 @@ int jinue_sigdelset(jinue_sigset_t *set, int signo, int *perrno) {
         return -1;
     }
     
-    set->sa_sigbits[0] &= ~signo_mask(signo);
+    set->sa_sigbits[signo_index(signo)] &= ~signo_mask(signo);
     
     return 0;
 }
@@ -91,5 +99,5 @@ int jinue_sigismember(const jinue_sigset_t *set, int signo, int *perrno) {
         return -1;
     }
     
-    return !!(set->sa_sigbits[0] & signo_mask(signo));
+    return !!(set->sa_sigbits[signo_index(signo)] & signo_mask(signo));
 }

@@ -75,7 +75,7 @@ struct descriptor_t {
     uintptr_t        cookie;
 };
 
-typedef uint32_t sigmask_t;
+typedef uint64_t sigmask_t;
 
 typedef struct {
     object_header_t     header;

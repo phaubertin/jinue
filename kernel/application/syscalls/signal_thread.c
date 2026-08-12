@@ -45,7 +45,7 @@ static void with_thread(thread_t *thread, int signo, int flags) {
 
     spin_lock(&process->signal_lock);
 
-    sigmask_t onemask = 1<<(signo - 1);
+    sigmask_t onemask = (sigmask_t)1<<(signo - 1);
     bool blocked = !!(thread->blocked_signals & onemask);
 
     if((flags & JINUE_SIG_FLAG_SYNC) && !blocked) {

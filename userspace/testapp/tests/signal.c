@@ -41,6 +41,10 @@ sig_atomic_t signal_1_flag;
 
 sig_atomic_t signal_32_flag;
 
+sig_atomic_t signal_33_flag;
+
+sig_atomic_t signal_64_flag;
+
 sig_atomic_t nested_signal_1_flag;
 
 void signal_1_handler(int sig) {
@@ -54,7 +58,7 @@ void signal_1_handler(int sig) {
     signal_1_flag += 1;
 }
 
-void signal_32_handler(int sig, siginfo_t *info, void *context) {
+void signal_32_sa_handler(int sig, siginfo_t *info, void *context) {
     jinue_info("In signal 32 handler");
 
     if(sig != 32) {
@@ -68,6 +72,28 @@ void signal_32_handler(int sig, siginfo_t *info, void *context) {
     }
 
     signal_32_flag += 1;
+}
+
+void signal_33_handler(int sig) {
+    jinue_info("In signal 33 handler");
+
+    if(sig != 33) {
+        jinue_error("Expected signal 33, got %d", sig);
+        return;
+    }
+
+    signal_33_flag += 1;
+}
+
+void signal_64_handler(int sig) {
+    jinue_info("In signal 64 handler");
+
+    if(sig != 64) {
+        jinue_error("Expected signal 64, got %d", sig);
+        return;
+    }
+
+    signal_64_flag += 1;
 }
 
 void nested_signal_1_handler(int sig) {
@@ -102,7 +128,14 @@ void nested_signal_1_handler(int sig) {
 static bool setup(void) {
     signal_1_flag           = 0;
     signal_32_flag          = 0;
+    signal_33_flag          = 0;
+    signal_64_flag          = 0;
     nested_signal_1_flag    = 0;
+
+    sigset_t set;
+    sigemptyset(&set);
+
+    CHECK_ZERO(sigprocmask(SIG_SETMASK, &set, NULL));
 
     struct sigaction act;
     act.sa_flags = 0;
@@ -112,11 +145,19 @@ static bool setup(void) {
     CHECK_ZERO(sigaction(1, &act, NULL));
 
     act.sa_flags = SA_SIGINFO;
-    act.sa_sigaction = signal_32_handler;
+    act.sa_sigaction = signal_32_sa_handler;
 
     CHECK_ZERO(sigaction(32, &act, NULL));
 
-    CHECK_ZERO(sigprocmask(SIG_SETMASK, &act.sa_mask, NULL));
+    act.sa_flags = 0;
+    act.sa_handler = signal_33_handler;
+
+    CHECK_ZERO(sigaction(33, &act, NULL));
+
+    act.sa_flags = 0;
+    act.sa_handler = signal_64_handler;
+
+    CHECK_ZERO(sigaction(64, &act, NULL));
 
     return true;
 }
@@ -126,6 +167,8 @@ static bool test_raise_1(void) {
 
     CHECK_TRUE(signal_1_flag == 1);
     CHECK_TRUE(signal_32_flag == 0);
+    CHECK_TRUE(signal_33_flag == 0);
+    CHECK_TRUE(signal_64_flag == 0);
 
     return true;
 }
@@ -135,6 +178,44 @@ static bool test_raise_32(void) {
 
     CHECK_TRUE(signal_1_flag == 0);
     CHECK_TRUE(signal_32_flag == 1);
+    CHECK_TRUE(signal_33_flag == 0);
+    CHECK_TRUE(signal_64_flag == 0);
+
+    return true;
+}
+
+static bool test_raise_33(void) {
+    CHECK_ZERO(raise(33));
+
+    CHECK_TRUE(signal_1_flag == 0);
+    CHECK_TRUE(signal_32_flag == 0);
+    CHECK_TRUE(signal_33_flag == 1);
+    CHECK_TRUE(signal_64_flag == 0);
+
+    return true;
+}
+
+static bool test_raise_64(void) {
+    CHECK_ZERO(raise(64));
+
+    CHECK_TRUE(signal_1_flag == 0);
+    CHECK_TRUE(signal_32_flag == 0);
+    CHECK_TRUE(signal_33_flag == 0);
+    CHECK_TRUE(signal_64_flag == 1);
+
+    return true;
+}
+
+static bool test_raise_65(void) {
+    int status = raise(65);
+
+    CHECK_TRUE(status == -1);
+    CHECK_TRUE(errno == EINVAL);
+
+    CHECK_TRUE(signal_1_flag == 0);
+    CHECK_TRUE(signal_32_flag == 0);
+    CHECK_TRUE(signal_33_flag == 0);
+    CHECK_TRUE(signal_64_flag == 0);
 
     return true;
 }
@@ -147,12 +228,19 @@ static bool test_sigemptyset_sigaddset(void) {
     CHECK_FALSE(sigismember(&set, 1));
     CHECK_FALSE(sigismember(&set, 10));
     CHECK_FALSE(sigismember(&set, 32));
+    CHECK_FALSE(sigismember(&set, 33));
+    CHECK_FALSE(sigismember(&set, 42));
+    CHECK_FALSE(sigismember(&set, 64));
 
     CHECK_ZERO(sigaddset(&set, 10));
+    CHECK_ZERO(sigaddset(&set, 42));
 
     CHECK_FALSE(sigismember(&set, 1));
     CHECK_TRUE(sigismember(&set, 10));
     CHECK_FALSE(sigismember(&set, 32));
+    CHECK_FALSE(sigismember(&set, 33))
+    CHECK_TRUE(sigismember(&set, 42));
+    CHECK_FALSE(sigismember(&set, 64));
 
     return true;
 }
@@ -165,24 +253,29 @@ static bool test_sigfillset_sigdelset(void) {
     CHECK_TRUE(sigismember(&set, 1));
     CHECK_TRUE(sigismember(&set, 10));
     CHECK_TRUE(sigismember(&set, 32));
+    CHECK_TRUE(sigismember(&set, 33));
+    CHECK_TRUE(sigismember(&set, 42));
+    CHECK_TRUE(sigismember(&set, 64));
 
     CHECK_ZERO(sigdelset(&set, 10));
+    CHECK_ZERO(sigdelset(&set, 42));
 
     CHECK_TRUE(sigismember(&set, 1));
     CHECK_FALSE(sigismember(&set, 10));
     CHECK_TRUE(sigismember(&set, 32));
+    CHECK_TRUE(sigismember(&set, 33));
+    CHECK_FALSE(sigismember(&set, 42));
+    CHECK_TRUE(sigismember(&set, 64));
 
     return true;
 }
 
 static bool test_sigprocmask_block_signal(void) {
-    sigset_t empty;
     sigset_t set;
 
     jinue_info("Retrieving current signal mask");
 
-    CHECK_ZERO(sigemptyset(&empty));
-    CHECK_ZERO(sigprocmask(SIG_UNBLOCK, &empty, &set));
+    CHECK_ZERO(sigprocmask(SIG_UNBLOCK, NULL, &set));
 
     /* Cleared by setup() */
     CHECK_FALSE(sigismember(&set, 1));
@@ -219,44 +312,73 @@ static bool test_sigprocmask_block_signal(void) {
 }
 
 static bool test_pthread_sigmask_block_signal(void) {
-    sigset_t empty;
     sigset_t set;
 
     jinue_info("Retrieving current signal mask");
 
-    CHECK_ZERO(sigemptyset(&empty));
-    CHECK_ZERO(pthread_sigmask(SIG_UNBLOCK, &empty, &set));
+    CHECK_ZERO(pthread_sigmask(SIG_UNBLOCK, NULL, &set));
 
     /* Cleared by setup() */
-    CHECK_FALSE(sigismember(&set, 1));
+    CHECK_FALSE(sigismember(&set, 64));
 
-    jinue_info("Blocking signal 1");
+    jinue_info("Blocking signal 64");
 
-    CHECK_ZERO(sigaddset(&set, 1));
+    CHECK_ZERO(sigaddset(&set, 64));
     CHECK_ZERO(pthread_sigmask(SIG_BLOCK, &set, NULL));
 
-    jinue_info("raise(1)");
+    jinue_info("raise(64)");
 
     /* Should leave the signal pending since it is blocked. */
-    CHECK_ZERO(raise(1));
+    CHECK_ZERO(raise(64));
 
-    jinue_info("Signal 1 should remain pending");
+    jinue_info("Signal 64 should remain pending");
 
-    CHECK_TRUE(signal_1_flag == 0);
+    CHECK_TRUE(signal_64_flag == 0);
 
     jinue_yield_thread();
 
     /* still blocked */
-    CHECK_TRUE(signal_1_flag == 0);
+    CHECK_TRUE(signal_64_flag == 0);
 
-    jinue_info("Unblocking signal 1");
+    jinue_info("Unblocking signal 64");
 
     CHECK_ZERO(pthread_sigmask(SIG_UNBLOCK, &set, NULL));
 
-    jinue_info("Signal 1 should have been delivered");
+    jinue_info("Signal 64 should have been delivered");
 
     /* signal delivered once unblocked */
-    CHECK_TRUE(signal_1_flag == 1);
+    CHECK_TRUE(signal_64_flag == 1);
+
+    return true;
+}
+
+static bool test_jinue_get_set_signal_mask_how_none_invalid_set(void) {
+    jinue_sigset_t set;
+
+    jinue_sigemptyset(&set);
+    CHECK_ZERO(sigaddset(&set, 12));
+    CHECK_ZERO(sigaddset(&set, 44));
+
+    CHECK_ZERO(jinue_get_set_signal_mask(JINUE_SIG_SETMASK, &set, NULL, NULL));
+
+    jinue_sigemptyset(&set);
+
+    CHECK_FALSE(sigismember(&set, 1));
+    CHECK_FALSE(sigismember(&set, 12));
+    CHECK_FALSE(sigismember(&set, 44));
+    CHECK_FALSE(sigismember(&set, 64));
+
+    CHECK_ZERO(jinue_get_set_signal_mask(
+        JINUE_SIG_NONE,
+        (const jinue_sigset_t *)(NULL + 40),
+        &set,
+        NULL)
+    );
+
+    CHECK_FALSE(sigismember(&set, 1));
+    CHECK_TRUE(sigismember(&set, 12));
+    CHECK_TRUE(sigismember(&set, 44));
+    CHECK_FALSE(sigismember(&set, 64));
 
     return true;
 }
@@ -429,10 +551,14 @@ void run_signal_test(void) {
 
     pass &= run_test(test_raise_1, "raise(1)");
     pass &= run_test(test_raise_32, "raise(32)");
+    pass &= run_test(test_raise_33, "raise(33)");
+    pass &= run_test(test_raise_64, "raise(64)");
+    pass &= run_test(test_raise_65, "raise(65) EINVAL");
     pass &= run_test(test_sigemptyset_sigaddset, "sigemptyset() and sigaddset()");
     pass &= run_test(test_sigfillset_sigdelset, "sigfillset() and sigdelset()");
     pass &= run_test(test_sigprocmask_block_signal, "sigprocmask() block signal");
     pass &= run_test(test_pthread_sigmask_block_signal, "pthread_sigmask() block signal");
+    pass &= run_test(test_jinue_get_set_signal_mask_how_none_invalid_set, "jinue_get_set_signal_mask() how=JINUE_SIG_NONE invalid set");
     pass &= run_test(test_signal_process, "jinue_signal_process()");
     pass &= run_test(test_signal_other_thread, "signal other thread");
     pass &= run_test(test_nested_signal, "nested signal");

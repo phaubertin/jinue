@@ -37,9 +37,18 @@
 #include <kernel/machine/spinlock.h>
 #include <kernel/machine/thread.h>
 
-int get_set_signal_mask(int how, sigmask_t set, jinue_sigset_t *oset) {
+int get_set_signal_mask(int how, const jinue_sigset_t *set, jinue_sigset_t *oset) {
     thread_t *thread    = get_current_thread();
     process_t *process  = thread->process;
+
+    sigmask_t sigmask;
+
+    if(set == NULL) {
+        how = JINUE_SIG_NONE;
+    }
+    else if (how != JINUE_SIG_NONE) {
+        sigmask = (sigmask_t)set->sa_sigbits[1] << 32 | set->sa_sigbits[0];
+    }
 
     spin_lock(&process->signal_lock);
 
@@ -49,13 +58,13 @@ int get_set_signal_mask(int how, sigmask_t set, jinue_sigset_t *oset) {
         case JINUE_SIG_NONE:
             break;
         case JINUE_SIG_BLOCK:
-            thread->blocked_signals |= set;
+            thread->blocked_signals |= sigmask;
             break;
         case JINUE_SIG_SETMASK:
-            thread->blocked_signals = set;
+            thread->blocked_signals = sigmask;
             break;
         case JINUE_SIG_UNBLOCK:
-            thread->blocked_signals &= ~set;
+            thread->blocked_signals &= ~sigmask;
             break;
         default:
             spin_unlock(&process->signal_lock);
@@ -63,8 +72,8 @@ int get_set_signal_mask(int how, sigmask_t set, jinue_sigset_t *oset) {
     }
 
     if(oset != NULL) {
-        oset->sa_sigbits[0] = original;
-        oset->sa_sigbits[1] = 0;
+        oset->sa_sigbits[0] = original & 0xffffffff;
+        oset->sa_sigbits[1] = original >> 32;
         oset->sa_sigbits[2] = 0;
         oset->sa_sigbits[3] = 0;
     }

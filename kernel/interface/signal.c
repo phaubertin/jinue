@@ -76,7 +76,7 @@ void check_for_signal(trapframe_t *trapframe) {
          * in support of the POSIX raise() function, this signal bypasses all
          * others and is delivered immediately. */
         signo = thread->sync_signo;        
-        onemask = 1 << (signo - 1);
+        onemask = (sigmask_t)1<<(signo - 1);
 
         thread->sync_signo = 0;
     }

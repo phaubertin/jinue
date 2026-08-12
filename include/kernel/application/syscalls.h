@@ -81,7 +81,7 @@ int start_thread(int fd, void (*entry)(void), void *stack_addr, sigmask_t sigmas
 
 void yield_thread(void);
 
-int get_set_signal_mask(int how, sigmask_t set, jinue_sigset_t *oset);
+int get_set_signal_mask(int how, const jinue_sigset_t *set, jinue_sigset_t *oset);
 
 void set_signal_handler(jinue_sighandler_t handler);
 

@@ -44,7 +44,7 @@ static void with_process(process_t *process, int signo) {
 
     spin_lock(&process->signal_lock);
 
-    sigmask_t onemask = 1<<(signo - 1);
+    sigmask_t onemask = (sigmask_t)1<<(signo - 1);
     process->pending_signals |= onemask;
 
     spin_unlock(&process->signal_lock);

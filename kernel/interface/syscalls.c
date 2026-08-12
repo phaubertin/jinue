@@ -601,10 +601,6 @@ static void sys_get_set_signal_mask(trapframe_t *trapframe) {
     const jinue_sigset_t *set   = (const jinue_sigset_t *)msg_arg2(trapframe);
     jinue_sigset_t *oset        = (jinue_sigset_t *)msg_arg3(trapframe);
 
-    if(set == NULL) {
-        how = JINUE_SIG_NONE;
-    }
-
     if(set != NULL && !check_userspace_buffer(set, sizeof(jinue_sigset_t))) {
         set_error(trapframe, JINUE_EINVAL);
         return;
@@ -615,7 +611,7 @@ static void sys_get_set_signal_mask(trapframe_t *trapframe) {
         return;
     }
 
-    int retval = get_set_signal_mask(how, set != NULL ? set->sa_sigbits[0] : 0, oset);
+    int retval = get_set_signal_mask(how, set, oset);
 
     if(retval < 0) {
         set_error(trapframe, -retval);
