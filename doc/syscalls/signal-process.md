@@ -2,9 +2,10 @@
 
 ## Description
 
-Send an asynchronous signal to a process.
+Send a signal to a process.
 
-For this operation to succeed, the process descriptor must have the
+For this operation to succeed, either the signal must be sent to the current
+process or the process descriptor must have the
 [JINUE_PERM_SIGNAL](../../include/jinue/shared/asm/permissions.h) permission.
 
 ## Arguments
@@ -15,7 +16,7 @@ The descriptor that references the process is passed in `arg1`. Alternatively,
 the value -1 may be passed in `arg1` to refer to the current thread.
 
 The signal number is passed in `arg2`. The signal number must be between 1 and
-32 inclusive, or zero. If zero is specified (the null signal), error checking
+64 inclusive, or zero. If zero is specified (the null signal), error checking
 is performed but no signal is actually sent.
 
 ```
@@ -50,6 +51,6 @@ returns -1 and an error number is set (in `arg1`).
 * JINUE_EINVAL if the signal number is invalid.
 * JINUE_EBADF if the specified descriptor is invalid, or does not refer to a
 process, or is closed.
-* JINUE_EPERM if the descriptor does not have the signal permission on the
-process.
+* JINUE_EPERM if the descriptor does not refer to the current process and does
+not have the signal permission on the process.
 * JINUE_ESRCH if the process no longer exists.

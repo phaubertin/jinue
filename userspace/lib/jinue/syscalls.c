@@ -344,13 +344,13 @@ int jinue_signal_process(int fd, int signo, int *perrno) {
     return call_with_usual_convention(&args, perrno);
 }
 
-int jinue_signal_thread(int fd, int signo, int flags, int *perrno) {
+int jinue_signal_thread(int fd, int signo, int *perrno) {
     jinue_syscall_args_t args;
 
     args.arg0 = JINUE_SYS_SIGNAL_THREAD;
     args.arg1 = fd;
     args.arg2 = signo;
-    args.arg3 = (uintptr_t)flags;
+    args.arg3 = 0;
 
     return call_with_usual_convention(&args, perrno);
 }

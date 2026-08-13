@@ -75,7 +75,7 @@ void set_thread_local(void *addr, size_t size);
 
 int signal_process(int fd, int signo);
 
-int signal_thread(int fd, int signo, int flags);
+int signal_thread(int fd, int signo);
 
 int start_thread(int fd, void (*entry)(void), void *stack_addr, sigmask_t sigmask);
 

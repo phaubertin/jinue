@@ -40,25 +40,18 @@
 #include <stdbool.h>
 
 
-static void with_thread(thread_t *thread, int signo, int flags) {
+static void with_thread(thread_t *thread, int signo) {
     process_t *process = thread->process;
 
     spin_lock(&process->signal_lock);
 
     sigmask_t onemask = (sigmask_t)1<<(signo - 1);
-    bool blocked = !!(thread->blocked_signals & onemask);
-
-    if((flags & JINUE_SIG_FLAG_SYNC) && !blocked) {
-        thread->sync_signo = signo;
-    }
-    else {
-        thread->pending_signals |= onemask;
-    }
+    thread->pending_signals |= onemask;
 
     spin_unlock(&process->signal_lock);
 }
 
-int signal_thread(int fd, int signo, int flags) {
+int signal_thread(int fd, int signo) {
     if(signo < 1 || signo > JINUE_SIGNAL_MAX) {
         return -JINUE_EINVAL;
     }
@@ -83,13 +76,13 @@ int signal_thread(int fd, int signo, int flags) {
             return -JINUE_EBADF;
         }
 
-        if(!descriptor_has_permissions(&desc, JINUE_PERM_SIGNAL)) {
+        if(thread != get_current_thread() && !descriptor_has_permissions(&desc, JINUE_PERM_SIGNAL)) {
             descriptor_unreference_object(&desc);
             return -JINUE_EPERM;
         }
     }
 
-    with_thread(thread, signo, flags);
+    with_thread(thread, signo);
 
     if(fd != -1) {
         descriptor_unreference_object(&desc);

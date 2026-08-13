@@ -77,13 +77,7 @@ int __signal_init(void) {
 }
 
 int raise(int sig) {
-    /* The JINUE_SIG_FLAG_SYNC flag is needed in order to meet this POSIX
-     * requirement:
-     *
-     *  " If a signal handler is called, the raise() function shall not return
-     *    until after the signal handler does."
-     */
-    return jinue_signal_thread(-1, sig, JINUE_SIG_FLAG_SYNC, &errno);
+    return jinue_signal_thread(-1, sig, &errno);
 }
 
 static int update_sighandler_entry(struct sighandler_entry *entry, const struct sigaction *act) {

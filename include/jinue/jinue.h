@@ -139,7 +139,7 @@ int jinue_reply_error(uintptr_t errcode, int *perrno);
 
 int jinue_signal_process(int fd, int signo, int *perrno);
 
-int jinue_signal_thread(int fd, int signo, int flags, int *perrno);
+int jinue_signal_thread(int fd, int signo, int *perrno);
 
 int jinue_return_from_signal(const jinue_ucontext_t *ucontext, int *perrno);
 

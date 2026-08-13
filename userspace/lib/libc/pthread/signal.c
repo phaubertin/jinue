@@ -38,7 +38,7 @@
 int pthread_kill(pthread_t thread, int sig) {
     int errno_retval;
     
-    int status = jinue_signal_thread(thread->fd, sig, JINUE_SIG_FLAG_NONE, &errno_retval);
+    int status = jinue_signal_thread(thread->fd, sig, &errno_retval);
 
     if(status < 0) {
         return errno_retval;
