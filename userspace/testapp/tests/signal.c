@@ -413,6 +413,25 @@ static bool test_jinue_get_set_signal_mask_how_none_invalid_set(void) {
     CHECK_TRUE(sigismember(&set, 44));
     CHECK_FALSE(sigismember(&set, 64));
 
+    jinue_sigemptyset(&set);
+
+    CHECK_FALSE(sigismember(&set, 1));
+    CHECK_FALSE(sigismember(&set, 12));
+    CHECK_FALSE(sigismember(&set, 44));
+    CHECK_FALSE(sigismember(&set, 64));
+
+    CHECK_ZERO(jinue_get_set_signal_mask(
+        JINUE_SIG_NONE,
+        (const jinue_sigset_t *)(JINUE_KLIMIT + 40),
+        &set,
+        NULL)
+    );
+
+    CHECK_FALSE(sigismember(&set, 1));
+    CHECK_TRUE(sigismember(&set, 12));
+    CHECK_TRUE(sigismember(&set, 44));
+    CHECK_FALSE(sigismember(&set, 64));
+
     return true;
 }
 
@@ -454,9 +473,9 @@ static void *thread_func(void *arg) {
     jinue_info("Thread: unblocking signal 1");
 
     sigset_t set;
-    CHECK_ZERO(sigemptyset(&set));
-    CHECK_ZERO(sigaddset(&set, 1));
-    CHECK_ZERO(sigprocmask(SIG_UNBLOCK, &set, NULL));
+    sigemptyset(&set);
+    sigaddset(&set, 1);
+    sigprocmask(SIG_UNBLOCK, &set, NULL);
 
     return NULL;
 }
@@ -538,15 +557,13 @@ static bool test_same_signal_nested_blocked(void) {
 
     CHECK_ZERO(sigaction(1, &act, NULL));
 
-    raise(1);
+    CHECK_ZERO(raise(1));
 
     jinue_info("Checking signal 1 was blocked while within the signal handler");
 
     CHECK_TRUE(nested_signal_1_flag == 0);
 
     jinue_info("Checking signal 1 was unblocked while returning from the signal handler");
-
-    jinue_yield_thread();
 
     CHECK_TRUE(signal_1_flag == 2);
 

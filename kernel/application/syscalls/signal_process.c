@@ -75,7 +75,9 @@ int signal_process(int fd, int signo) {
             return -JINUE_EBADF;
         }
 
-        if(process != get_current_process() && !descriptor_has_permissions(&desc, JINUE_PERM_SIGNAL)) {
+        const process_t *current = get_current_process();
+
+        if(process != current && !descriptor_has_permissions(&desc, JINUE_PERM_SIGNAL)) {
             descriptor_unreference_object(&desc);
             return -JINUE_EPERM;
         }

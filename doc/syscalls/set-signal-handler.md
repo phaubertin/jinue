@@ -2,7 +2,10 @@
 
 ## Description
 
-Set the current process' signal handling function.
+Set the current process' user space signal handling function.
+
+The address of the signal handling function must be set with this function
+before any signal can be delivered to any of the process' threads.
 
 ## Arguments
 

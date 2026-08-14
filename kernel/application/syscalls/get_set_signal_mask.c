@@ -47,6 +47,9 @@ int get_set_signal_mask(int how, const jinue_sigset_t *set, jinue_sigset_t *oset
         how = JINUE_SIG_NONE;
     }
     else if (how != JINUE_SIG_NONE) {
+        /* Make sure to not dereference set when how is JINUE_SIG_NONE since it
+         * is allowed to have any value (e.g. NULL, uninitialized memory) in
+         * that case. */
         sigmask = (sigmask_t)set->sa_sigbits[1] << 32 | set->sa_sigbits[0];
     }
 

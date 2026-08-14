@@ -52,9 +52,9 @@ int jinue_sigaddset(jinue_sigset_t *set, int signo, int *perrno);
 
 int jinue_sigdelset(jinue_sigset_t *set, int signo, int *perrno);
 
-int jinue_sigemptyset(jinue_sigset_t *set);
+void jinue_sigemptyset(jinue_sigset_t *set);
 
-int jinue_sigfillset(jinue_sigset_t *set);
+void jinue_sigfillset(jinue_sigset_t *set);
 
 int jinue_sigismember(const jinue_sigset_t *set, int signo, int *perrno);
 

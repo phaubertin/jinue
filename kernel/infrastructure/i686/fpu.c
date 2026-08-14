@@ -176,7 +176,7 @@ void prepare_fpu_area(thread_t *thread) {
  * 
  * We use a lazy initialization scheme where the very first time a thread uses
  * the FPU, it is marked as using the FPU, which makes it subject to FPU state
- * save/restore on context switches. If a thread never uses the FPU, it's FPU
+ * save/restore on context switches. If a thread never uses the FPU, its FPU
  * state never has to be saved or restored.
  * 
  * CVE-2018-3665: recent Intel CPUs leak FPU state through speculative
@@ -209,6 +209,11 @@ bool use_fpu(thread_t *thread) {
     return true;
 }
 
+/**
+ * Save the current FPU state to specified destination buffer
+ * 
+ * @param dest address where to save state
+*/
 static void do_save_state(void *dest) {
     if(cpu_has_feature(CPU_FEATURE_FXSR)) {
         fxsave(dest);
@@ -219,7 +224,23 @@ static void do_save_state(void *dest) {
 }
 
 /**
+ * Restore the FPU state from the specified source buffer
+ * 
+ * @param src address from where to restore state
+ */
+static void do_restore_state(const void *src) {
+    if(cpu_has_feature(CPU_FEATURE_FXSR)) {
+        fxrstor(src);
+    }
+    else {
+        frstor(src);
+    }
+}
+
+/**
  * Save the FPU state of a thread
+ * 
+ * This function is called just before switching to another thread.
  * 
  * @param thread the thread
  */
@@ -232,7 +253,9 @@ void save_fpu_state(thread_t *thread) {
 
     if(has_cve) {
         /* CVE-2018-3665 mitigation: force state to be restored even if FPU is
-         * not in use to prevent speculation-based information leak attacks. */
+         * not in use to prevent speculation-based information leak attacks.
+         * The state that will be restored in the case a thread is not using
+         * the FPU is the initialization state. */
         machine_thread->flags |= THREAD_FLAG_FPU_STATE_SAVED;
     }
 
@@ -246,7 +269,11 @@ void save_fpu_state(thread_t *thread) {
     machine_thread->flags |= THREAD_FLAG_FPU_STATE_SAVED;
 }
 
-/** Restore the FPU state of the current thread */
+/**
+ * Restore the FPU state of the current thread
+ * 
+ * This function is called just before returning to user space.
+ */
 void restore_fpu_state(void) {
     thread_t *thread = get_current_thread();
     machine_thread_t *machine_thread = &thread->machine_thread;
@@ -258,58 +285,104 @@ void restore_fpu_state(void) {
         clts();
     } else {
         /* If the thread is not yet marked as using the FPU, we want to set the
-         * TS flag to cause a trap when it does so for the first time. Note
-         * that a thread not using the FPU (uses_fpu false) does not imply it
-         * does not have saved state to restore (has_saved_state false) because
-         * of the CVE-2018-3665 mitigation. */
+         * TS flag to cause a trap when it does so for the first time. */
         uint32_t cr0 = get_cr0();
         cr0 |= X86_CR0_TS;
         set_cr0(cr0);
+
+        /* Do no return here: a thread not using the FPU (uses_fpu false) does
+         * not imply it does not have saved state to restore (has_saved_state
+         * false) because of the CVE-2018-3665 mitigation. */
     }
 
     if(!has_saved_state) {
         return;
     }
 
-    if(cpu_has_feature(CPU_FEATURE_FXSR)) {
-        fxrstor(get_thread_fpu_area(thread));
-    }
-    else {
-        frstor(get_thread_fpu_area(thread));
-    }
+    do_restore_state(get_thread_fpu_area(thread));
 
     /* saved state consumed */
     machine_thread->flags &= ~THREAD_FLAG_FPU_STATE_SAVED;
 }
 
+/**
+ * Get the format type of the saved FPU state
+ * 
+ * Used by the signal state save/restore code.
+ * 
+ * @return format type
+ */
 int get_fpu_fpregs_type(void) {
     return cpu_has_feature(CPU_FEATURE_FXSR) ? JINUE_FPREGS_FXSAVE : JINUE_FPREGS_FSAVE;
 }
 
+/**
+ * Get the size of the saved FPU state
+ * 
+ * Used by the signal state save/restore code.
+ * 
+ * @return FPU state size
+ */
 size_t get_fpu_fpregs_size(void) {
     return cpu_has_feature(CPU_FEATURE_FXSR) ? 512 : 108;
 }
 
+/**
+ * Save FPU state before handling signal
+ * 
+ * The signal delivering code is responsible for allocating a buffer of the
+ * right size, which is the size returned by get_fpu_fpregs_size().
+ * 
+ * @param dest buffer where to save the state
+ */
 void save_fpu_fpregs_for_signal(void *dest) {
     thread_t *thread = get_current_thread();
     machine_thread_t *machine_thread = &thread->machine_thread;
 
     const bool uses_fpu = !!(machine_thread->flags & THREAD_FLAG_USES_FPU);
     const bool has_saved_state = !!(machine_thread->flags & THREAD_FLAG_FPU_STATE_SAVED);
-    const bool has_cve = cpu_needs_workaround(CPU_WORKAROUND_CVE2018_3665);
 
-    if(has_saved_state || (!uses_fpu && has_cve)) {
+    /* If a thread is not using the FPU, its FPU area buffer contains the
+     * initialization state. We want to save this on the stack rather than
+     * nothing because the kernel not saving/restoring FPU state for threads
+     * not using the FPU is an internal optimization that we do not want to
+     * make visible to user space.
+     * 
+     * Not saving anything wouldn't be great for this reason, saving the actual
+     * current FPU state would be much worse because it might be the FPU state
+     * of a thread from another process. */
+    if(has_saved_state || !uses_fpu) {
         const void *src = get_thread_fpu_area(thread);
         memcpy(dest, src, get_fpu_fpregs_size());
         return;
     }
 
-    do_save_state(dest);       
+    do_save_state(dest);
 }
 
-void restore_fpu_fpregs_for_signal(void) {
+/**
+ * Restore FPU state after handling signal
+ * 
+ * @param src buffer from where to restore the state
+ */
+void restore_fpu_fpregs_for_signal(const void *src) {
     thread_t *thread = get_current_thread();
     machine_thread_t *machine_thread = &thread->machine_thread;
-    
-    machine_thread->flags |= THREAD_FLAG_FPU_STATE_SAVED;
+
+    const bool uses_fpu = !!(machine_thread->flags & THREAD_FLAG_USES_FPU);
+
+    /* If a thread is not using the FPU, the signal handler is still allowed to
+     * modify the FPU state pushed on stack, and that should be the FPU state
+     * once the thread does start using it. */
+    if(!uses_fpu) {
+        void *dest = get_thread_fpu_area(thread);
+        memcpy(dest, src, get_fpu_fpregs_size());
+        return;
+    }
+
+    do_restore_state(src);
+
+    /* We just restored in the FPU itself, invalidate the FPU area if anything
+     * is saved there. */
+    machine_thread->flags &= ~THREAD_FLAG_FPU_STATE_SAVED;
 }

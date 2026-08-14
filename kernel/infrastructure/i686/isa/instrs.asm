@@ -186,7 +186,7 @@ fnsave:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: frstor
-; C PROTOTYPE: void frstor(void *area)
+; C PROTOTYPE: void frstor(const void *area)
 ; ------------------------------------------------------------------------------
     global frstor:function (frstor.end - frstor)
 frstor:
@@ -208,7 +208,7 @@ fxsave:
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: fxrstor
-; C PROTOTYPE: void fxrstor(void *area)
+; C PROTOTYPE: void fxrstor(const void *area)
 ; ------------------------------------------------------------------------------
     global fxrstor:function (fxrstor.end - fxrstor)
 fxrstor:

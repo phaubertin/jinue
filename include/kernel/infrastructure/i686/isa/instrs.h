@@ -62,11 +62,11 @@ void fninit(void);
 
 void fnsave(void *area);
 
-void frstor(void *area);
+void frstor(const void *area);
 
 void fxsave(void *area);
 
-void fxrstor(void *area);
+void fxrstor(const void *area);
 
 void clts(void);
 

@@ -4,8 +4,8 @@
 
 Send a signal to a thread.
 
-For this operation to succeed, either the signal must be sent to the current
-thread or the thread descriptor must have the
+For this operation to succeed, either the signal must be sent to a thread in
+the current process or the thread descriptor must have the
 [JINUE_PERM_SIGNAL](../../include/jinue/shared/asm/permissions.h) permission.
 
 ## Arguments

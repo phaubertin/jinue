@@ -16,17 +16,17 @@ argument must be one of the following values:
 | Value | Name              | Description                                                         |
 |-------|-------------------|---------------------------------------------------------------------|
 | 0     | JINUE_SIG_NONE    | The thread's signal mask is left unmodified.                        |
-| 1     | JINUE_SIG_BLOCK   | New signal mask is the union the current one and `set `.            |
-| 2     | JINUE_SIG_SETMASK | Ner signal mask set to exactly `set `.                              |
+| 1     | JINUE_SIG_BLOCK   | New signal mask is the union of the current one and `set `.         |
+| 2     | JINUE_SIG_SETMASK | New signal mask is set to exactly `set `.                           |
 | 3     | JINUE_SIG_UNBLOCK | New signal mask is intersection of current and `set`'s complement.  |
 
 A pointer to the input set, used to modify the thread's blocked signals, is set
 in `args2`. If this argument is null, the thread's signal mask is left
 unmodified.
 
-A pointer to the output may be set in `args3`. If non-null, the thread' blocked
-signal set before any modification is performed is written there by this
-function. It can be left null if getting the current signal set is not
+A pointer to the output set may be set in `args3`. If non-null, the thread'
+blocked signal set before any modification is performed is written there by
+this function. It can be left null if getting the current signal set is not
 necessary.
 
 ```

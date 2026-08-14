@@ -76,7 +76,10 @@ int signal_thread(int fd, int signo) {
             return -JINUE_EBADF;
         }
 
-        if(thread != get_current_thread() && !descriptor_has_permissions(&desc, JINUE_PERM_SIGNAL)) {
+        const process_t *process = thread->process;
+        const process_t *current = get_current_process();
+
+        if(process != current && !descriptor_has_permissions(&desc, JINUE_PERM_SIGNAL)) {
             descriptor_unreference_object(&desc);
             return -JINUE_EPERM;
         }

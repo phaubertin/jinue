@@ -77,20 +77,18 @@ int jinue_sigdelset(jinue_sigset_t *set, int signo, int *perrno) {
     return 0;
 }
 
-int jinue_sigemptyset(jinue_sigset_t *set) {
+void jinue_sigemptyset(jinue_sigset_t *set) {
     set->sa_sigbits[0] = 0;
     set->sa_sigbits[1] = 0;
     set->sa_sigbits[2] = 0;
     set->sa_sigbits[3] = 0;
-    return 0;
 }
 
-int jinue_sigfillset(jinue_sigset_t *set) {
+void jinue_sigfillset(jinue_sigset_t *set) {
     set->sa_sigbits[0] = -1;
     set->sa_sigbits[1] = -1;
     set->sa_sigbits[2] = -1;
     set->sa_sigbits[3] = -1;
-    return 0;
 }
 
 int jinue_sigismember(const jinue_sigset_t *set, int signo, int *perrno) {

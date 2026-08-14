@@ -52,6 +52,6 @@ size_t get_fpu_fpregs_size(void);
 
 void save_fpu_fpregs_for_signal(void *dest);
 
-void restore_fpu_fpregs_for_signal(void);
+void restore_fpu_fpregs_for_signal(const void *src);
 
 #endif

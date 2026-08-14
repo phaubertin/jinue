@@ -2,14 +2,15 @@
 
 ## Description
 
-Return from an asynchronous signal handler.
+Return from the user space signal handling function.
 
 ## Arguments
 
 The function number (`arg0`) is 25.
 
 The address of the context is passed in `arg1`. The context is an object of
-CPU architecture-dependent type `jinue_ucontext_t`.
+CPU architecture-dependent type `jinue_ucontext_t`. It is passed as the third
+argument to the user space signal handling function.
 
 ```
     +----------------------------------------------------------------+

@@ -70,7 +70,7 @@ typedef jinue_greg_t jinue_gregset_t[JINUE_NGREG];
 typedef struct {
     int      type;
     void    *regs;
-} jinue_fpregs_t;
+} jinue_fpregset_t;
 
 #define JINUE_FPREGS_NONE   0
 
@@ -79,8 +79,8 @@ typedef struct {
 #define JINUE_FPREGS_FXSAVE 2
 
 typedef struct {
-    jinue_gregset_t gregs;
-    jinue_fpregs_t  fpregs;
+    jinue_gregset_t     gregs;
+    jinue_fpregset_t    fpregs;
 } jinue_mcontext_t;
 
 typedef struct jinue_ucontext {

@@ -106,7 +106,7 @@ static int update_sighandler_entry(struct sighandler_entry *entry, const struct 
 int sigaction(int sig, const struct sigaction *restrict act, struct sigaction *restrict oact) {
     /* The implementation of signals in the kernel is currently incomplete.
      * This function is similarly incomplete and only allows setting a signal
-     * handler which is the only action the kernel supports. */
+     * handler, which is the only action the kernel supports. */
 
     if(sig < 1 || sig > JINUE_SIGNAL_MAX) {
         errno = EINVAL;
@@ -151,11 +151,13 @@ int sigdelset(sigset_t *set, int signo) {
 }
 
 int sigemptyset(sigset_t *set) {
-    return jinue_sigemptyset(set);
+    jinue_sigemptyset(set);
+    return 0;
 }
 
 int sigfillset(sigset_t *set) {
-    return jinue_sigfillset(set);
+    jinue_sigfillset(set);
+    return 0;
 }
 
 int sigismember(const sigset_t *set, int signo) {

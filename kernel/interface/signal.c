@@ -72,9 +72,8 @@ void check_for_signal(trapframe_t *trapframe) {
     sigmask_t onemask;
 
     if(thread->sync_signo != 0) {
-        /* If a signal is generated synchronously, i.e. by a CPU exception or
-         * in support of the POSIX raise() function, this signal bypasses all
-         * others and is delivered immediately. */
+        /* If a signal is generated synchronously, i.e. by a CPU exception,
+         * this signal bypasses all others and is delivered immediately. */
         signo = thread->sync_signo;        
         onemask = (sigmask_t)1<<(signo - 1);
 
@@ -85,7 +84,7 @@ void check_for_signal(trapframe_t *trapframe) {
         onemask = 1;
 
         /* This loop condition is potentially dangerous but we checked signals is
-        * not zero above, so the loop is guaranteed to terminte. */
+         * not zero above, so the loop is guaranteed to terminate. */
         while((signals & onemask) == 0) {
             signo += 1;
             onemask <<= 1;

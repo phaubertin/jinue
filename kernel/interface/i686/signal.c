@@ -29,6 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <jinue/shared/asm/errno.h>
 #include <jinue/shared/types.h>
 #include <kernel/infrastructure/i686/asm/eflags.h>
 #include <kernel/infrastructure/i686/fpu.h>
@@ -158,20 +159,18 @@ void deliver_signal(trapframe_t *trapframe, int signo, sigmask_t sigmask) {
  * @param ucontext user space context
  */
 int return_from_signal(trapframe_t *trapframe, const jinue_ucontext_t *ucontext) {
-    thread_t *thread = get_current_thread();
-    process_t *process = thread->process;
-
-    spin_lock(&process->signal_lock);
-
-    thread->blocked_signals = ucontext->uc_sigmask.sa_sigbits[0];
-    
-    spin_unlock(&process->signal_lock);
-
     const jinue_mcontext_t *mcontext = &ucontext->uc_mcontext;
+
+    const void *fpregs = mcontext->fpregs.regs;
+
+    if(!check_userspace_buffer(fpregs, get_fpu_fpregs_size())) {
+        return -JINUE_EINVAL;
+    }
+
+    restore_fpu_fpregs_for_signal(fpregs);
 
     /* These are the flags that user space can control directly, e.g. using the
      * POPF instruction or some specialized instruction such as cld/std. */
-    /* TODO figure out the correct mask here */
     const uint32_t eflags_mask =
           EFLAGS_CF
         | EFLAGS_PF
@@ -205,7 +204,14 @@ int return_from_signal(trapframe_t *trapframe, const jinue_ucontext_t *ucontext)
     trapframe->esp = mcontext->gregs[JINUE_GREG_UESP];
     trapframe->ss = mcontext->gregs[JINUE_GREG_SS];
 
-    restore_fpu_fpregs_for_signal();
+    thread_t *thread = get_current_thread();
+    process_t *process = thread->process;
+
+    spin_lock(&process->signal_lock);
+
+    thread->blocked_signals = ucontext->uc_sigmask.sa_sigbits[0];
+    
+    spin_unlock(&process->signal_lock);
 
     return 0;
 }

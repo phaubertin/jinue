@@ -58,6 +58,7 @@
 
 #define SA_NODEFER      (1<<6)
 
+
 #define SIG_DFL         (void (*)(int))-1
 
 #define SIG_ERR         (void (*)(int))-2
