@@ -22,6 +22,10 @@ jobs:
 
     steps:
 
+    - name: Check 429 duration
+      run: |
+        curl -I https://sourceware.org/git/bzip2.git
+
     # Let's keep this step first, before installing the dependencies: sometimes
     # pulling bzip2 as a submodule fails because the sourceware.org git server
     # is down. Keeping this step first lets the workflow fail faster. The next
