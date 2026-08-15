@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2026 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -30,62 +30,72 @@
  */
 
 #include <jinue/jinue.h>
-#include <jinue/loader.h>
-#include <jinue/utils.h>
-#include <errno.h>
+#include <stdbool.h>
 #include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include "tests/abcd.h"
-#include "tests/aes.h"
-#include "tests/cancel_thread.h"
-#include "tests/exit_thread.h"
-#include "tests/ipc.h"
-#include "tests/scroll.h"
-#include "tests/signal.h"
-#include "tests/sse.h"
-#include "debug.h"
-#include "utils.h"
 
-int main(int argc, char *argv[]) {
-    /* Say hello. */
-    jinue_info("Jinue test app (%s) started.", argv[0]);
+static inline bool signo_is_invalid(int signo) {
+    return signo < 1 || signo > 64;
+}
 
-    dump_cmdline_arguments(argc, argv);
-    dump_environ();
-    dump_auxvec();
-    dump_syscall_implementation();
-    dump_address_map();
-    dump_loader_memory_info();
-    dump_loader_ramdisk();
+static inline unsigned int signo_index(int signo) {
+    return signo < 33 ? 0 : 1;
+}
 
-    jinue_info("Blocking until loader exits...");
-
-    int status = jinue_exit_loader();
-
-    if(status < 0) {
-        return EXIT_FAILURE;
+static inline uint32_t signo_mask(int signo) {
+    if(signo > 32) {
+        return (1 << (signo - 33));
     }
 
-    jinue_info("Loader has exited.");
+    return (1 << (signo - 1));
+}
 
-    run_abcd_test();
-    run_aes_test();
-    run_cancel_thread_test();
-    run_exit_thread_test();
-    run_ipc_test();
-    run_scroll_test();
-    run_signal_test();
-    run_sse_test();
-
-    if(bool_getenv("DEBUG_DO_REBOOT")) {
-        jinue_info("Rebooting.");
-        jinue_reboot();
+static void set_perrno_invalid(int *perrno) {
+    if(perrno != NULL)  {
+        *perrno = JINUE_EINVAL;
     }
+}
 
-    while (1) {
-        jinue_yield_thread();
+int jinue_sigaddset(jinue_sigset_t *set, int signo, int *perrno) {
+    if(signo_is_invalid(signo)) {
+        set_perrno_invalid(perrno);
+        return -1;
     }
     
-    return EXIT_SUCCESS;
+    set->sa_sigbits[signo_index(signo)] |= signo_mask(signo);
+    
+    return 0;
+}
+
+int jinue_sigdelset(jinue_sigset_t *set, int signo, int *perrno) {
+    if(signo_is_invalid(signo)) {
+        set_perrno_invalid(perrno);
+        return -1;
+    }
+    
+    set->sa_sigbits[signo_index(signo)] &= ~signo_mask(signo);
+    
+    return 0;
+}
+
+void jinue_sigemptyset(jinue_sigset_t *set) {
+    set->sa_sigbits[0] = 0;
+    set->sa_sigbits[1] = 0;
+    set->sa_sigbits[2] = 0;
+    set->sa_sigbits[3] = 0;
+}
+
+void jinue_sigfillset(jinue_sigset_t *set) {
+    set->sa_sigbits[0] = -1;
+    set->sa_sigbits[1] = -1;
+    set->sa_sigbits[2] = -1;
+    set->sa_sigbits[3] = -1;
+}
+
+int jinue_sigismember(const jinue_sigset_t *set, int signo, int *perrno) {
+    if(signo_is_invalid(signo)) {
+        set_perrno_invalid(perrno);
+        return -1;
+    }
+    
+    return !!(set->sa_sigbits[signo_index(signo)] & signo_mask(signo));
 }

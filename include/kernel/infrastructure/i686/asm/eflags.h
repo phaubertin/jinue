@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2019-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -32,9 +32,37 @@
 #ifndef JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_EFLAGS_H
 #define JINUE_KERNEL_INFRASTRUCTURE_I686_ASM_EFLAGS_H
 
+#define EFLAGS_CF       (1<<0)
+
 #define EFLAGS_ALWAYS_1 (1<<1)
 
+#define EFLAGS_PF       (1<<2)
+
+#define EFLAGS_AF       (1<<4)
+
+#define EFLAGS_ZF       (1<<6)
+
+#define EFLAGS_SF       (1<<7)
+
+#define EFLAGS_TF       (1<<8)
+
 #define EFLAGS_IF       (1<<9)
+
+#define EFLAGS_DF       (1<<10)
+
+#define EFLAGS_OF       (1<<11)
+
+#define EFLAGS_NT       (1<<14)
+
+#define EFLAGS_RF       (1<<16)
+
+#define EFLAGS_VM86     (1<<17)
+
+#define EFLAGS_AC       (1<<18)
+
+#define EFLAGS_VIF      (1<<19)
+
+#define EFLAGS_VIP      (1<<20)
 
 #define EFLAGS_ID       (1<<21)
 

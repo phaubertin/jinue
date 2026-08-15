@@ -162,10 +162,27 @@ int pthread_create(
         candidate->flags |= THREAD_FLAG_DETACHED;
     }
 
+    /* From the POSIX specification of this function: "The signal mask
+     * shall be inherited from the creating thread." */
+    jinue_sigset_t sigset;
+
+    status = jinue_get_set_signal_mask(
+        JINUE_SIG_NONE,
+        NULL,
+        &sigset,
+        &errno_retval
+    );
+
+    if(status < 0) {
+        free_thread_to_pool(candidate);
+        return errno_retval;
+    }
+
     status = jinue_start_thread(
         candidate->fd,
         __pthread_entry,
         __pthread_initialize_stack(candidate, start_routine, arg),
+        &sigset,
         &errno_retval
     );
 
@@ -249,4 +266,8 @@ int pthread_setcancelstate(int state, int *oldstate) {
     }
 
     return 0;
+}
+
+int __get_thread_descriptor(pthread_t thread) {
+    return thread->fd;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,41 +29,65 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/jinue.h>
-#include <sys/auxv.h>
-#include <stdlib.h>
-#include "pthread/libc.h"
-#include "brk.h"
-#include "physmem.h"
-#include "signal.h"
+#include <jinue/shared/asm/errno.h>
+#include <jinue/shared/asm/signal.h>
+#include <jinue/shared/asm/permissions.h>
+#include <kernel/application/syscalls.h>
+#include <kernel/domain/entities/descriptor.h>
+#include <kernel/domain/entities/process.h>
+#include <kernel/machine/spinlock.h>
 
-/* This function is called by assembly language code. */
-int __libc_init(void) {
-    int ret = jinue_init(getauxval(JINUE_AT_HOWSYSCALL), NULL);
-
-    if(ret < 0) {
-        return EXIT_FAILURE;
+static void with_process(process_t *process, int signo) {
+    if(signo == 0) {
+        return;
     }
 
-    __pthread_set_current(__pthread_main_thread);
+    spin_lock(&process->signal_lock);
 
-    ret = __signal_init();
+    sigmask_t onemask = (sigmask_t)1<<(signo - 1);
+    process->pending_signals |= onemask;
 
-    if(ret < 0) {
-        return EXIT_FAILURE;
+    spin_unlock(&process->signal_lock);
+}
+
+int signal_process(int fd, int signo) {
+    if(signo < 0 || signo > JINUE_SIGNAL_MAX) {
+        return -JINUE_EINVAL;
     }
 
-    ret = __physmem_init();
+    process_t *process;
+    descriptor_t desc;
 
-    if(ret != EXIT_SUCCESS) {
-        return EXIT_FAILURE;
+    if(fd == -1) {
+        process = get_current_process();
+    }
+    else {
+        int status = descriptor_access_object(&desc, get_current_process(), fd);
+
+        if(status < 0) {
+            return status == JINUE_EIO ? -JINUE_ESRCH : status;
+        }
+
+        process = descriptor_get_process(&desc);
+
+        if(process == NULL) {
+            descriptor_unreference_object(&desc);
+            return -JINUE_EBADF;
+        }
+
+        const process_t *current = get_current_process();
+
+        if(process != current && !descriptor_has_permissions(&desc, JINUE_PERM_SIGNAL)) {
+            descriptor_unreference_object(&desc);
+            return -JINUE_EPERM;
+        }
     }
 
-    ret = __brk_init();
+    with_process(process, signo);
 
-    if(ret != EXIT_SUCCESS) {
-        return EXIT_FAILURE;
+    if(fd != -1) {
+        descriptor_unreference_object(&desc);
     }
 
-    return EXIT_SUCCESS;
+    return 0;
 }

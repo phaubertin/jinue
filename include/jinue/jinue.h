@@ -41,9 +41,24 @@
 #include <jinue/shared/asm/permissions.h>
 #include <jinue/shared/asm/stack.h>
 #include <jinue/shared/asm/syscalls.h>
+#include <jinue/shared/asm/signal.h>
 #include <jinue/shared/types.h>
 #include <stddef.h>
 #include <stdint.h>
+
+/* sigset.c */
+
+int jinue_sigaddset(jinue_sigset_t *set, int signo, int *perrno);
+
+int jinue_sigdelset(jinue_sigset_t *set, int signo, int *perrno);
+
+void jinue_sigemptyset(jinue_sigset_t *set);
+
+void jinue_sigfillset(jinue_sigset_t *set);
+
+int jinue_sigismember(const jinue_sigset_t *set, int signo, int *perrno);
+
+/* syscalls.c */
 
 int jinue_init(int implementation, int *perrno);
 
@@ -111,10 +126,29 @@ int jinue_mint(
         uintptr_t    cookie,
         int         *perrno);
 
-int jinue_start_thread(int fd, void (*entry)(void), void *stack, int *perrno);
+int jinue_start_thread(
+    int                       fd,
+    void                    (*entry)(void),
+    void                     *stack_addr,
+    const jinue_sigset_t     *sigset,
+    int                      *perrno);
 
 int jinue_await_thread(int fd, int *perrno);
 
 int jinue_reply_error(uintptr_t errcode, int *perrno);
+
+int jinue_signal_process(int fd, int signo, int *perrno);
+
+int jinue_signal_thread(int fd, int signo, int *perrno);
+
+int jinue_return_from_signal(const jinue_ucontext_t *ucontext, int *perrno);
+
+int jinue_get_set_signal_mask(
+        int                      how,
+        const jinue_sigset_t    *set,
+        jinue_sigset_t          *oset,
+        int                     *perrno);
+
+int jinue_set_signal_handler(jinue_sighandler_t handler, int *perrno);
 
 #endif

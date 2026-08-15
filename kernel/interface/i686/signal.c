@@ -1,0 +1,220 @@
+/*
+ * Copyright (C) 2026 Philippe Aubertin.
+ * All rights reserved.
+
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 
+ * 3. Neither the name of the author nor the names of other contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE FOR ANY
+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include <jinue/shared/asm/errno.h>
+#include <jinue/shared/types.h>
+#include <kernel/domain/entities/process.h>
+#include <kernel/infrastructure/i686/asm/eflags.h>
+#include <kernel/infrastructure/i686/fpu.h>
+#include <kernel/infrastructure/i686/thread.h>
+#include <kernel/interface/machine/signal.h>
+#include <kernel/machine/thread.h>
+#include <kernel/machine/spinlock.h>
+#include <kernel/utils/pmap.h>
+#include <kernel/types.h>
+#include <stddef.h>
+#include <stdint.h>
+
+/**
+ * Deliver a signal to the current thread
+ * 
+ * This function is called when the thread is returning to userspace from a
+ * system call or an interrupt when it has been determined that a signal needs
+ * to be delivered.
+ * 
+ * @param trapframe trap frame
+ * @param signo signal number of signal to deliver
+ * @param sigmask original signal mask to save along with context
+ */
+void deliver_signal(trapframe_t *trapframe, int signo, sigmask_t sigmask) {
+    unsigned char *stack            = (unsigned char *)trapframe->esp;
+    unsigned char *stack_on_entry   = stack;
+
+#define push(s, a) stack = (a == 0) ? stack - s: ALIGN_START_PTR(stack - s, a)
+    push(get_fpu_fpregs_size(), 16);
+    void *fpregs = stack;
+
+    push(sizeof(jinue_ucontext_t), 16);
+    jinue_ucontext_t *ucontext = (jinue_ucontext_t *)stack;
+    
+    push(sizeof(jinue_siginfo_t), 16);
+    jinue_siginfo_t *siginfo = (jinue_siginfo_t *)stack;
+
+    /* The padding takes into account the handler arguments written below and
+     * ensures the handling function has some stack space to work with. */
+    const size_t padding = 64;
+    if(!check_userspace_buffer(stack - padding, stack_on_entry - stack + padding)) {
+        /* TODO instead of silently dropping the signal, improve handling by:
+         *  - Switching to alternate stack, if possible and it helps.
+         *  - Terminating the process, once the infrastructure is in place to
+         *    do this. */
+        return;
+    }
+
+    /* handler arguments */
+    push(sizeof(jinue_ucontext_t *), 0);
+    *(jinue_ucontext_t **)stack = ucontext;
+    push(sizeof(jinue_siginfo_t *), 0);
+    *(jinue_siginfo_t **)stack = siginfo;
+    push(sizeof(int), 0);
+    *(int *)stack = signo;
+
+    /* NULL return address: the handler has the responsibility to call the
+     * appropriate system call when it is done and shouldn't just return. */
+    push(sizeof(void *), 0);
+    *(void **)stack = NULL;
+
+    const process_t *process = get_current_process();
+
+    ucontext->uc_flags = 0;
+    ucontext->uc_link = NULL;
+
+    ucontext->uc_sigmask.sa_sigbits[0] = sigmask & 0xffffffff;
+    ucontext->uc_sigmask.sa_sigbits[1] = sigmask >> 32;
+    /* These are unused. */
+    ucontext->uc_sigmask.sa_sigbits[2] = 0;
+    ucontext->uc_sigmask.sa_sigbits[3] = 0;
+    
+    /* unused for now */
+    ucontext->uc_stack.ss_flags = 0;
+    ucontext->uc_stack.ss_size = 0;
+    ucontext->uc_stack.ss_sp = 0;
+
+    jinue_mcontext_t *mcontext = &ucontext->uc_mcontext;
+
+    mcontext->gregs[JINUE_GREG_GS] = trapframe->gs;
+    mcontext->gregs[JINUE_GREG_FS] = trapframe->fs;
+    mcontext->gregs[JINUE_GREG_ES] = trapframe->es;
+    mcontext->gregs[JINUE_GREG_DS] = trapframe->ds;
+    mcontext->gregs[JINUE_GREG_EDI] = trapframe->edi;
+    mcontext->gregs[JINUE_GREG_ESI] = trapframe->esi;
+    mcontext->gregs[JINUE_GREG_EBP] = trapframe->ebp;
+    mcontext->gregs[JINUE_GREG_ESP] = 0;
+    mcontext->gregs[JINUE_GREG_EBX] = trapframe->ebx;
+    mcontext->gregs[JINUE_GREG_EDX] = trapframe->edx;
+    mcontext->gregs[JINUE_GREG_ECX] = trapframe->ecx;
+    mcontext->gregs[JINUE_GREG_EAX] = trapframe->eax;
+    mcontext->gregs[JINUE_GREG_TRAPNO] = trapframe->trapno;
+    mcontext->gregs[JINUE_GREG_ERR] = trapframe->errcode;
+    mcontext->gregs[JINUE_GREG_EIP] = trapframe->eip;
+    mcontext->gregs[JINUE_GREG_CS] = trapframe->cs;
+    mcontext->gregs[JINUE_GREG_EFL] = trapframe->eflags;
+    mcontext->gregs[JINUE_GREG_UESP] = trapframe->esp;
+    mcontext->gregs[JINUE_GREG_SS] = trapframe->ss;
+
+    save_fpu_fpregs_for_signal(fpregs);
+
+    mcontext->fpregs.type = get_fpu_fpregs_type();
+    mcontext->fpregs.regs = fpregs;
+
+    siginfo->si_signo = signo;
+    siginfo->si_code = 0;
+    siginfo->si_errno = 0;
+    siginfo->si_pid = 0;
+    siginfo->si_uid = 0;
+    siginfo->si_addr = NULL;
+    siginfo->si_status = 0;
+    siginfo->si_value.sival_ptr = NULL;
+
+    /* This modification of the trap frame must be done after we are done
+     * copying the general register values into the context. */
+    trapframe->esp = (uintptr_t)stack;
+    trapframe->eip = (uintptr_t)process->signal_handler;
+}
+
+/**
+ * Return from as signal
+ * 
+ * We need to take some care here since it's not safe to allow userspace
+ * direct control over some parts of the trap frame.
+ * 
+ * @param trapframe trap frame
+ * @param ucontext user space context
+ */
+int return_from_signal(trapframe_t *trapframe, const jinue_ucontext_t *ucontext) {
+    const jinue_mcontext_t *mcontext = &ucontext->uc_mcontext;
+
+    const void *fpregs = mcontext->fpregs.regs;
+
+    if(!check_userspace_buffer(fpregs, get_fpu_fpregs_size())) {
+        return -JINUE_EINVAL;
+    }
+
+    restore_fpu_fpregs_for_signal(fpregs);
+
+    /* These are the flags that user space can control directly, e.g. using the
+     * POPF instruction or some specialized instruction such as cld/std. */
+    const uint32_t eflags_mask =
+          EFLAGS_CF
+        | EFLAGS_PF
+        | EFLAGS_AF
+        | EFLAGS_ZF
+        | EFLAGS_SF
+        | EFLAGS_TF
+        | EFLAGS_DF
+        | EFLAGS_OF
+        | EFLAGS_NT
+        | EFLAGS_AC
+        | EFLAGS_ID;
+
+    trapframe->gs = mcontext->gregs[JINUE_GREG_GS];
+    trapframe->fs = mcontext->gregs[JINUE_GREG_FS];
+    trapframe->es = mcontext->gregs[JINUE_GREG_ES];
+    trapframe->ds = mcontext->gregs[JINUE_GREG_DS];
+    trapframe->edi = mcontext->gregs[JINUE_GREG_EDI];
+    trapframe->esi = mcontext->gregs[JINUE_GREG_ESI];
+    trapframe->ebp = mcontext->gregs[JINUE_GREG_EBP];
+    trapframe->ebx = mcontext->gregs[JINUE_GREG_EBX];
+    trapframe->edx = mcontext->gregs[JINUE_GREG_EDX];
+    trapframe->ecx = mcontext->gregs[JINUE_GREG_ECX];
+    trapframe->eax = mcontext->gregs[JINUE_GREG_EAX];
+    trapframe->trapno = mcontext->gregs[JINUE_GREG_TRAPNO];
+    /* We don't care about restoring the error code. */
+    trapframe->eip = mcontext->gregs[JINUE_GREG_EIP];
+    /* Do not let the code segment be controlled from userspace. */
+    trapframe->eflags &= ~eflags_mask;
+    trapframe->eflags |= (mcontext->gregs[JINUE_GREG_EFL] & eflags_mask);
+    trapframe->esp = mcontext->gregs[JINUE_GREG_UESP];
+    trapframe->ss = mcontext->gregs[JINUE_GREG_SS];
+
+    thread_t *thread = get_current_thread();
+    process_t *process = thread->process;
+
+    spin_lock(&process->signal_lock);
+
+    const jinue_sigset_t *sigset = &ucontext->uc_sigmask;
+
+    thread->blocked_signals = (sigmask_t)sigset->sa_sigbits[1] << 32 | sigset->sa_sigbits[0];
+    
+    spin_unlock(&process->signal_lock);
+
+    return 0;
+}

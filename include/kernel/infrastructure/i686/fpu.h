@@ -34,6 +34,7 @@
 
 #include <kernel/types.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 void initialize_fpu(void);
 
@@ -44,5 +45,13 @@ bool use_fpu(thread_t *thread);
 void save_fpu_state(thread_t *thread);
 
 void restore_fpu_state(void);
+
+int get_fpu_fpregs_type(void);
+
+size_t get_fpu_fpregs_size(void);
+
+void save_fpu_fpregs_for_signal(void *dest);
+
+void restore_fpu_fpregs_for_signal(const void *src);
 
 #endif

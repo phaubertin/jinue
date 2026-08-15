@@ -43,7 +43,7 @@
 static void free_op(object_header_t *object);
 
 static const object_type_t object_type = {
-    .all_permissions    = JINUE_PERM_START | JINUE_PERM_AWAIT,
+    .all_permissions    = JINUE_PERM_START | JINUE_PERM_AWAIT | JINUE_PERM_SIGNAL,
     .name               = "thread",
     .size               = sizeof(thread_t),
     .open               = NULL,
@@ -123,15 +123,25 @@ static void free_op(object_header_t *object) {
  *
  */
 void thread_prepare(thread_t *thread, const thread_params_t *params) {
-    thread->sender  = NULL;
+    thread->sender      = NULL;
+    thread->cpu_credits = 0;
     
     spin_lock(&thread->await_lock);
     
     thread->awaiter     = NULL;
     thread->state       = THREAD_STATE_STARTING;
-    thread->cpu_credits = 0;
 
-    spin_unlock(&thread->await_lock);    
+    spin_unlock(&thread->await_lock);
+
+    process_t *process = thread->process;
+
+    spin_lock(&process->signal_lock);
+
+    thread->pending_signals = 0;
+    thread->blocked_signals = params->sigmask;
+    thread->sync_signo      = 0;
+
+    spin_unlock(&process->signal_lock);
     
     machine_prepare_thread(thread, params);
 }

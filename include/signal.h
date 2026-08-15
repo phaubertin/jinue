@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2026 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,38 +29,75 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_INTERFACE_I686_TRAP_H
-#define JINUE_KERNEL_INTERFACE_I686_TRAP_H
+#ifndef _JINUE_LIBC_SIGNAL_H
+#define _JINUE_LIBC_SIGNAL_H
 
+#include <jinue/shared/asm/signal.h>
 #include <jinue/shared/types.h>
-#include <kernel/interface/i686/asm/trap.h>
-#include <kernel/interface/i686/exports/types.h>
-#include <kernel/interface/i686/types.h>
-#include <stdbool.h>
+#include <pthread.h>
+#include <stdint.h>
 
-extern int syscall_implementation;
+#define SIG_BLOCK   JINUE_SIG_BLOCK
 
-void handle_trap(trapframe_t *trapframe);
+#define SIG_SETMASK JINUE_SIG_SETMASK
 
-/** entry point for Intel fast system call implementation (SYSENTER/SYSEXIT) */
-void fast_intel_entry(void);
+#define SIG_UNBLOCK JINUE_SIG_UNBLOCK
 
-/** entry point for AMD fast system call implementation (SYSCALL/SYSRET) */
-void fast_amd_entry(void);
 
-/* do not call - used by new user threads to "return" to user space for the
- * first time. See machine_prepare_thread(). */
-void return_from_interrupt(void);
+#define SA_NOCLDSTOP    (1<<0)
 
-static inline bool is_trap_from_kernel(const trapframe_t *trapframe) {
-    return (trapframe->cs & 3) == 0;
-}
+#define SA_ONSTACK      (1<<1)
 
-static inline bool is_system_call(const trapframe_t *trapframe) {
-    return
-           trapframe->trapno == TRAPNO_SYSCALL_INTERRUPT
-        || trapframe->trapno == TRAPNO_SYSCALL_INSTRUCTION
-        || trapframe->trapno == TRAPNO_SYSENTER_INSTRUCTION;
-}
+#define SA_RESETHAND    (1<<2)
+
+#define SA_RESTART      (1<<3)
+
+#define SA_SIGINFO      (1<<4)
+
+#define SA_NOCLDWAIT    (1<<5)
+
+#define SA_NODEFER      (1<<6)
+
+
+#define SIG_DFL         (void (*)(int))-1
+
+#define SIG_ERR         (void (*)(int))-2
+
+#define SIG_IGN         (void (*)(int))-3
+
+
+typedef int sig_atomic_t;
+
+typedef jinue_sigset_t sigset_t;
+
+typedef jinue_siginfo_t siginfo_t;
+
+struct sigaction {
+    void   (*sa_handler)(int);
+    sigset_t sa_mask;
+    int      sa_flags;
+    void   (*sa_sigaction)(int, siginfo_t *, void *);
+};
+
+
+int pthread_kill(pthread_t thread, int sig);
+
+int pthread_sigmask(int how, const sigset_t *restrict set, sigset_t *restrict oset);
+
+int raise(int sig);
+
+int sigaction(int sig, const struct sigaction *restrict act, struct sigaction *restrict oact);
+
+int sigaddset(sigset_t *set, int signo);
+
+int sigdelset(sigset_t *set, int signo);
+
+int sigemptyset(sigset_t *set);
+
+int sigfillset(sigset_t *set);
+
+int sigismember(const sigset_t *set, int signo);
+
+int sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict oset);
 
 #endif

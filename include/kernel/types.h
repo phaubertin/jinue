@@ -75,12 +75,17 @@ struct descriptor_t {
     uintptr_t        cookie;
 };
 
+typedef uint64_t sigmask_t;
+
 typedef struct {
-    object_header_t header;
-    addr_space_t    addr_space;
-    int             running_threads_count;
-    spinlock_t      descriptors_lock;
-    descriptor_t    descriptors[JINUE_DESC_NUM];
+    object_header_t     header;
+    addr_space_t        addr_space;
+    int                 running_threads_count;
+    spinlock_t          descriptors_lock;
+    spinlock_t          signal_lock;
+    sigmask_t           pending_signals;
+    jinue_sighandler_t  signal_handler;
+    descriptor_t        descriptors[JINUE_DESC_NUM];
 } process_t;
 
 typedef enum {
@@ -93,31 +98,35 @@ typedef enum {
 } thread_state_t;
 
 struct thread_t {
-    object_header_t          header;
-    machine_thread_t         machine_thread;
-    list_node_t              thread_list;
-    thread_state_t           state;
-    int                      cpu_credits;
-    process_t               *process;
-    struct thread_t         *sender;
-    struct thread_t         *awaiter;
-    spinlock_t               await_lock;
-    addr_t                   local_storage_addr;
-    size_t                   local_storage_size;
-    size_t                   recv_buffer_size;
-    int                      message_errno;
-    uintptr_t                message_reply_errcode;
-    uintptr_t                message_function;
-    uintptr_t                message_cookie;
-    size_t                   message_size;
-    char                     message_buffer[JINUE_MAX_MESSAGE_SIZE];
+    object_header_t      header;
+    machine_thread_t     machine_thread;
+    list_node_t          thread_list;
+    thread_state_t       state;
+    int                  cpu_credits;
+    process_t           *process;
+    struct thread_t     *sender;
+    struct thread_t     *awaiter;
+    spinlock_t           await_lock;
+    sigmask_t            pending_signals;
+    sigmask_t            blocked_signals;
+    int                  sync_signo;
+    addr_t               local_storage_addr;
+    size_t               local_storage_size;
+    size_t               recv_buffer_size;
+    int                  message_errno;
+    uintptr_t            message_reply_errcode;
+    uintptr_t            message_function;
+    uintptr_t            message_cookie;
+    size_t               message_size;
+    char                 message_buffer[JINUE_MAX_MESSAGE_SIZE];
 };
 
 typedef struct thread_t thread_t;
 
 typedef struct {
-    void *entry;
-    void *stack_addr;
+    void        (*entry)(void);
+    void        *stack_addr;
+    sigmask_t    sigmask;
 } thread_params_t;
 
 typedef struct {

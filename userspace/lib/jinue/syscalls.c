@@ -288,13 +288,24 @@ int jinue_mint(
     return call_with_usual_convention(&args, perrno);
 }
 
-int jinue_start_thread(int fd, void (*entry)(void), void *stack, int *perrno) {
+int jinue_start_thread(
+    int                       fd,
+    void                    (*entry)(void),
+    void                     *stack_addr,
+    const jinue_sigset_t     *sigset,
+    int                      *perrno) {
+
     jinue_syscall_args_t args;
+    jinue_start_thread_args_t start_args;
+
+    start_args.entry = entry;
+    start_args.stack_addr = stack_addr;
+    start_args.sigset = sigset;
 
     args.arg0 = JINUE_SYS_START_THREAD;
     args.arg1 = fd;
-    args.arg2 = (uintptr_t)entry;
-    args.arg3 = (uintptr_t)stack;
+    args.arg2 = (uintptr_t)&start_args;
+    args.arg3 = 0;
 
     return call_with_usual_convention(&args, perrno);
 }
@@ -315,6 +326,67 @@ int jinue_reply_error(uintptr_t errcode, int *perrno) {
 
     args.arg0 = JINUE_SYS_REPLY_ERROR;
     args.arg1 = errcode;
+    args.arg2 = 0;
+    args.arg3 = 0;
+
+    return call_with_usual_convention(&args, perrno);
+}
+
+
+int jinue_signal_process(int fd, int signo, int *perrno) {
+    jinue_syscall_args_t args;
+
+    args.arg0 = JINUE_SYS_SIGNAL_PROCESS;
+    args.arg1 = fd;
+    args.arg2 = signo;
+    args.arg3 = 0;
+
+    return call_with_usual_convention(&args, perrno);
+}
+
+int jinue_signal_thread(int fd, int signo, int *perrno) {
+    jinue_syscall_args_t args;
+
+    args.arg0 = JINUE_SYS_SIGNAL_THREAD;
+    args.arg1 = fd;
+    args.arg2 = signo;
+    args.arg3 = 0;
+
+    return call_with_usual_convention(&args, perrno);
+}
+
+int jinue_return_from_signal(const jinue_ucontext_t *ucontext, int *perrno) {
+    jinue_syscall_args_t args;
+
+    args.arg0 = JINUE_SYS_RETURN_FROM_SIGNAL;
+    args.arg1 = (uintptr_t)ucontext;
+    args.arg2 = 0;
+    args.arg3 = 0;
+
+    return call_with_usual_convention(&args, perrno);
+}
+
+int jinue_get_set_signal_mask(
+        int                      how,
+        const jinue_sigset_t    *set,
+        jinue_sigset_t          *oset,
+        int                     *perrno) {
+
+    jinue_syscall_args_t args;
+
+    args.arg0 = JINUE_SYS_GET_SET_SIGNAL_MASK;
+    args.arg1 = (uintptr_t)how;
+    args.arg2 = (uintptr_t)set;
+    args.arg3 = (uintptr_t)oset;
+
+    return call_with_usual_convention(&args, perrno);
+}
+
+int jinue_set_signal_handler(jinue_sighandler_t handler, int *perrno) {
+    jinue_syscall_args_t args;
+
+    args.arg0 = JINUE_SYS_SET_SIGNAL_HANDLER;
+    args.arg1 = (uintptr_t)handler;
     args.arg2 = 0;
     args.arg3 = 0;
 

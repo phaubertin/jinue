@@ -80,8 +80,12 @@ sources.kernel.c = \
 	application/syscalls/reply.c \
 	application/syscalls/reply_error.c \
 	application/syscalls/send.c \
+	application/syscalls/set_signal_handler.c \
 	application/syscalls/set_thread_local.c \
+	application/syscalls/signal_process.c \
+	application/syscalls/signal_thread.c \
 	application/syscalls/start_thread.c \
+	application/syscalls/get_set_signal_mask.c \
 	application/syscalls/yield_thread.c \
 	application/kmain.c \
 	domain/alloc/page_alloc.c \
@@ -137,7 +141,9 @@ sources.kernel.c = \
 	interface/i686/auxv.c \
 	interface/i686/bootinfo.c \
 	interface/i686/interrupts.c \
+	interface/i686/signal.c \
 	interface/i686/trap.c \
+	interface/signal.c \
 	interface/syscalls.c
 
 sources.kernel.nasm = \

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Philippe Aubertin.
+ * Copyright (C) 2019-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -88,6 +88,21 @@
 
 /** reply to current message with an error code */
 #define JINUE_SYS_REPLY_ERROR           22
+
+/** send a signal to a process */
+#define JINUE_SYS_SIGNAL_PROCESS        23
+
+/** send a signal to a thread */
+#define JINUE_SYS_SIGNAL_THREAD         24
+
+/** return from a signal */
+#define JINUE_SYS_RETURN_FROM_SIGNAL    25
+
+/** examine and change a thread's blocked signals */
+#define JINUE_SYS_GET_SET_SIGNAL_MASK   26
+
+/** set the current process' signal handling function */
+#define JINUE_SYS_SET_SIGNAL_HANDLER    27
 
 /** start of function numbers for user space messages */
 #define JINUE_SYS_USER_BASE             4096

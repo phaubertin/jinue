@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -30,46 +30,58 @@
  */
 
 #include <jinue/shared/asm/errno.h>
+#include <jinue/shared/asm/signal.h>
 #include <kernel/application/syscalls.h>
 #include <kernel/domain/entities/descriptor.h>
 #include <kernel/domain/entities/process.h>
-#include <kernel/domain/entities/thread.h>
+#include <kernel/machine/spinlock.h>
+#include <kernel/machine/thread.h>
 
-int start_thread(int fd, void (*entry)(void), void *stack_addr, sigmask_t sigmask) {
-    descriptor_t desc;
-    int status = descriptor_access_object(&desc, get_current_process(), fd);
+int get_set_signal_mask(int how, const jinue_sigset_t *set, jinue_sigset_t *oset) {
+    thread_t *thread    = get_current_thread();
+    process_t *process  = thread->process;
 
-    if(status < 0) {
-        return -JINUE_EBADF;
+    sigmask_t sigmask;
+
+    if(set == NULL) {
+        how = JINUE_SIG_NONE;
+    }
+    else if (how != JINUE_SIG_NONE) {
+        /* Make sure to not dereference set when how is JINUE_SIG_NONE since it
+         * is allowed to have any value (e.g. NULL, uninitialized memory) in
+         * that case. */
+        sigmask = (sigmask_t)set->sa_sigbits[1] << 32 | set->sa_sigbits[0];
     }
 
-    thread_t *thread = descriptor_get_thread(&desc);
+    spin_lock(&process->signal_lock);
 
-    if(thread == NULL) {
-        descriptor_unreference_object(&desc);
-        return -JINUE_EBADF;
+    sigmask_t original = thread->blocked_signals;
+
+    switch(how) {
+        case JINUE_SIG_NONE:
+            break;
+        case JINUE_SIG_BLOCK:
+            thread->blocked_signals |= sigmask;
+            break;
+        case JINUE_SIG_SETMASK:
+            thread->blocked_signals = sigmask;
+            break;
+        case JINUE_SIG_UNBLOCK:
+            thread->blocked_signals &= ~sigmask;
+            break;
+        default:
+            spin_unlock(&process->signal_lock);
+            return -JINUE_EINVAL;
     }
 
-    if(!descriptor_has_permissions(&desc, JINUE_PERM_START)) {
-        descriptor_unreference_object(&desc);
-        return -JINUE_EPERM;
+    if(oset != NULL) {
+        oset->sa_sigbits[0] = original & 0xffffffff;
+        oset->sa_sigbits[1] = original >> 32;
+        oset->sa_sigbits[2] = 0;
+        oset->sa_sigbits[3] = 0;
     }
 
-    if(thread->state != THREAD_STATE_CREATED && thread->state != THREAD_STATE_ZOMBIE) {
-        descriptor_unreference_object(&desc);
-        return -JINUE_EBUSY;
-    }
-
-    thread_params_t thread_params;
-    thread_params.entry         = entry;
-    thread_params.stack_addr    = stack_addr;
-    thread_params.sigmask       = sigmask;
-
-    thread_prepare(thread, &thread_params);
-
-    thread_run(thread);
-
-    descriptor_unreference_object(&desc);
+    spin_unlock(&process->signal_lock);
 
     return 0;
 }
