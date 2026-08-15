@@ -38,14 +38,13 @@
 
 #define THREAD_FLAG_DETACHED    (1<<0)
 
-#define THREAD_FLAG_CANCELLED   (1<<1)
-
 struct __pthread {
     struct __pthread                    *self;
     struct __pthread                    *next;
     int                                  fd;
     int                                  flags;
     volatile sig_atomic_t                cancel_state;
+    volatile sig_atomic_t                is_cancel_requested;
     int                                  local_errno;
     void                                *stackaddr;
     size_t                               stacksize;

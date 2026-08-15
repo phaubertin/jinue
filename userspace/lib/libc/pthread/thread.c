@@ -153,10 +153,11 @@ int pthread_create(
         return errno_retval;
     }
 
-    candidate->local_errno      = 0;
-    candidate->cancel_handlers  = NULL;
-    candidate->flags            = 0;
-    candidate->cancel_state     = PTHREAD_CANCEL_ENABLE;
+    candidate->local_errno          = 0;
+    candidate->cancel_handlers      = NULL;
+    candidate->flags                = 0;
+    candidate->cancel_state         = PTHREAD_CANCEL_ENABLE;
+    candidate->is_cancel_requested  = false;
 
     if(attr->detachstate == PTHREAD_CREATE_DETACHED) {
         candidate->flags |= THREAD_FLAG_DETACHED;
@@ -226,7 +227,7 @@ void pthread_exit(void *exit_status) {
 }
 
 int pthread_cancel(pthread_t thread) {
-    thread->flags |= THREAD_FLAG_CANCELLED;
+    thread->is_cancel_requested = true;
     return 0;
 }
 
@@ -237,7 +238,7 @@ void pthread_testcancel(void) {
         return;
     }
 
-    if(!(thread->flags & THREAD_FLAG_CANCELLED)) {
+    if(!thread->is_cancel_requested) {
         return;
     }
 
