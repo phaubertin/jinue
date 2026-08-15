@@ -31,6 +31,7 @@
 
 #include <jinue/shared/asm/errno.h>
 #include <jinue/shared/types.h>
+#include <kernel/domain/entities/process.h>
 #include <kernel/infrastructure/i686/asm/eflags.h>
 #include <kernel/infrastructure/i686/fpu.h>
 #include <kernel/infrastructure/i686/thread.h>
@@ -57,19 +58,18 @@ void deliver_signal(trapframe_t *trapframe, int signo, sigmask_t sigmask) {
     unsigned char *stack            = (unsigned char *)trapframe->esp;
     unsigned char *stack_on_entry   = stack;
 
-#define push(s, a) stack = (a == 0) ? stack - s: ALIGN_START_PTR(stack - s, 16)
+#define push(s, a) stack = (a == 0) ? stack - s: ALIGN_START_PTR(stack - s, a)
+    push(get_fpu_fpregs_size(), 16);
+    void *fpregs = stack;
+
     push(sizeof(jinue_ucontext_t), 16);
     jinue_ucontext_t *ucontext = (jinue_ucontext_t *)stack;
-
-    size_t fpu_area_size = get_fpu_fpregs_size();
-    push(fpu_area_size, 16);
-    unsigned char *fpu_area = stack;
     
     push(sizeof(jinue_siginfo_t), 16);
     jinue_siginfo_t *siginfo = (jinue_siginfo_t *)stack;
 
     /* The padding takes into account the handler arguments written below and
-     * ensures the handler function has some stack space to work with. */
+     * ensures the handling function has some stack space to work with. */
     const size_t padding = 64;
     if(!check_userspace_buffer(stack - padding, stack_on_entry - stack + padding)) {
         /* TODO instead of silently dropping the signal, improve handling by:
@@ -92,15 +92,14 @@ void deliver_signal(trapframe_t *trapframe, int signo, sigmask_t sigmask) {
     push(sizeof(void *), 0);
     *(void **)stack = NULL;
 
-    const thread_t *thread = get_current_thread();
-    const process_t *process = thread->process;
+    const process_t *process = get_current_process();
 
     ucontext->uc_flags = 0;
     ucontext->uc_link = NULL;
 
-    ucontext->uc_sigmask.sa_sigbits[0] = sigmask;
+    ucontext->uc_sigmask.sa_sigbits[0] = sigmask & 0xffffffff;
+    ucontext->uc_sigmask.sa_sigbits[1] = sigmask >> 32;
     /* These are unused. */
-    ucontext->uc_sigmask.sa_sigbits[1] = 0;
     ucontext->uc_sigmask.sa_sigbits[2] = 0;
     ucontext->uc_sigmask.sa_sigbits[3] = 0;
     
@@ -131,10 +130,10 @@ void deliver_signal(trapframe_t *trapframe, int signo, sigmask_t sigmask) {
     mcontext->gregs[JINUE_GREG_UESP] = trapframe->esp;
     mcontext->gregs[JINUE_GREG_SS] = trapframe->ss;
 
-    mcontext->fpregs.type = get_fpu_fpregs_type();
-    mcontext->fpregs.regs = fpu_area;
+    save_fpu_fpregs_for_signal(fpregs);
 
-    save_fpu_fpregs_for_signal(fpu_area);
+    mcontext->fpregs.type = get_fpu_fpregs_type();
+    mcontext->fpregs.regs = fpregs;
 
     siginfo->si_signo = signo;
     siginfo->si_code = 0;
@@ -145,6 +144,8 @@ void deliver_signal(trapframe_t *trapframe, int signo, sigmask_t sigmask) {
     siginfo->si_status = 0;
     siginfo->si_value.sival_ptr = NULL;
 
+    /* This modification of the trap frame must be done after we are done
+     * copying the general register values into the context. */
     trapframe->esp = (uintptr_t)stack;
     trapframe->eip = (uintptr_t)process->signal_handler;
 }
@@ -209,7 +210,9 @@ int return_from_signal(trapframe_t *trapframe, const jinue_ucontext_t *ucontext)
 
     spin_lock(&process->signal_lock);
 
-    thread->blocked_signals = ucontext->uc_sigmask.sa_sigbits[0];
+    const jinue_sigset_t *sigset = &ucontext->uc_sigmask;
+
+    thread->blocked_signals = (sigmask_t)sigset->sa_sigbits[1] << 32 | sigset->sa_sigbits[0];
     
     spin_unlock(&process->signal_lock);
 

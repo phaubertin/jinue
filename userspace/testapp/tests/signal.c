@@ -312,34 +312,85 @@ static bool test_sigprocmask_block_signal(void) {
 
     /* Cleared by setup() */
     CHECK_FALSE(sigismember(&set, 1));
+    CHECK_FALSE(sigismember(&set, 32));
+    CHECK_FALSE(sigismember(&set, 33));
+    CHECK_FALSE(sigismember(&set, 64));
 
-    jinue_info("Blocking signal 1");
+    jinue_info("Blocking signals 1, 32 and 64");
 
     CHECK_ZERO(sigaddset(&set, 1));
+    CHECK_ZERO(sigaddset(&set, 32));
+    CHECK_ZERO(sigaddset(&set, 64));
     CHECK_ZERO(sigprocmask(SIG_BLOCK, &set, NULL));
 
+    /* Should leave the signals pending since they are blocked. */
     jinue_info("raise(1)");
-
-    /* Should leave the signal pending since it is blocked. */
     CHECK_ZERO(raise(1));
 
-    jinue_info("Signal 1 should remain pending");
+    jinue_info("raise(32)");
+    CHECK_ZERO(raise(32));
+
+    jinue_info("raise(64)");
+    CHECK_ZERO(raise(64));
+
+    jinue_info("Signals should remain pending");
 
     CHECK_TRUE(signal_1_flag == 0);
+    CHECK_TRUE(signal_32_flag == 0);
+    CHECK_TRUE(signal_33_flag == 0);
+    CHECK_TRUE(signal_64_flag == 0);
 
     jinue_yield_thread();
 
     /* still blocked */
     CHECK_TRUE(signal_1_flag == 0);
+    CHECK_TRUE(signal_32_flag == 0);
+    CHECK_TRUE(signal_33_flag == 0);
+    CHECK_TRUE(signal_64_flag == 0);
 
     jinue_info("Unblocking signal 1");
 
+    CHECK_ZERO(sigemptyset(&set));
+    CHECK_ZERO(sigaddset(&set, 1));
     CHECK_ZERO(sigprocmask(SIG_UNBLOCK, &set, NULL));
 
     jinue_info("Signal 1 should have been delivered");
 
     /* signal delivered once unblocked */
     CHECK_TRUE(signal_1_flag == 1);
+
+    jinue_info("Signals 32 and 64 should remain pending");
+
+    CHECK_TRUE(signal_32_flag == 0);
+    CHECK_TRUE(signal_33_flag == 0);
+    CHECK_TRUE(signal_64_flag == 0);
+
+    jinue_info("Unblocking signal 64");
+
+    CHECK_ZERO(sigemptyset(&set));
+    CHECK_ZERO(sigaddset(&set, 64));
+    CHECK_ZERO(sigprocmask(SIG_UNBLOCK, &set, NULL));
+
+    jinue_info("Signal 64 should have been delivered");
+
+    /* signal delivered once unblocked */
+    CHECK_TRUE(signal_64_flag == 1);
+
+    jinue_info("Signals 32 should remain pending");
+
+    CHECK_TRUE(signal_32_flag == 0);
+    CHECK_TRUE(signal_33_flag == 0);
+
+    jinue_info("Unblocking all signals");
+
+    CHECK_ZERO(sigemptyset(&set));
+    CHECK_ZERO(sigprocmask(SIG_SETMASK, &set, NULL));
+
+    jinue_info("Signal 32 should have been delivered");
+
+    /* signal delivered once unblocked */
+    CHECK_TRUE(signal_32_flag == 1);
+    CHECK_TRUE(signal_33_flag == 0);
 
     return true;
 }
