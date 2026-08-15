@@ -71,6 +71,12 @@ void pthread_testcancel(void);
 
 int pthread_setcancelstate(int state, int *oldstate);
 
+#define PTHREAD_CANCEL_DEFERRED     0
+
+#define PTHREAD_CANCEL_ASYNCHRONOUS 1
+
+int pthread_setcanceltype(int type, int *oldtype);
+
 /* -------------------------------------------------------------------------
  * Threads Attributes
  * ------------------------------------------------------------------------- */

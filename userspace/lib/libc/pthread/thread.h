@@ -44,6 +44,7 @@ struct __pthread {
     int                                  fd;
     int                                  flags;
     volatile sig_atomic_t                cancel_state;
+    volatile sig_atomic_t                cancel_type;
     volatile sig_atomic_t                is_cancel_requested;
     int                                  local_errno;
     void                                *stackaddr;

@@ -157,6 +157,7 @@ int pthread_create(
     candidate->cancel_handlers      = NULL;
     candidate->flags                = 0;
     candidate->cancel_state         = PTHREAD_CANCEL_ENABLE;
+    candidate->cancel_type          = PTHREAD_CANCEL_DEFERRED;
     candidate->is_cancel_requested  = false;
 
     if(attr->detachstate == PTHREAD_CREATE_DETACHED) {
@@ -248,9 +249,13 @@ void pthread_testcancel(void) {
 int pthread_setcancelstate(int state, int *oldstate) {
     pthread_t thread = pthread_self();
 
-    if(state != PTHREAD_CANCEL_DISABLE && state != PTHREAD_CANCEL_ENABLE) {
-        thread->local_errno = EINVAL;
-        return -1;
+    switch(state) {
+        case PTHREAD_CANCEL_DISABLE:
+        case PTHREAD_CANCEL_ENABLE:
+            break;
+        default:
+            thread->local_errno = EINVAL;
+            return -1;
     }
 
     if(oldstate) {
@@ -258,6 +263,27 @@ int pthread_setcancelstate(int state, int *oldstate) {
     }
 
     thread->cancel_state = state;
+
+    return 0;
+}
+
+int pthread_setcanceltype(int type, int *oldtype) {
+    pthread_t thread = pthread_self();
+
+    switch(type) {
+        case PTHREAD_CANCEL_DEFERRED:
+        case PTHREAD_CANCEL_ASYNCHRONOUS:
+            break;
+        default:
+            thread->local_errno = EINVAL;
+            return -1;
+    }
+
+    if(oldtype) {
+        *oldtype = thread->cancel_type;
+    }
+
+    thread->cancel_type = type;
 
     return 0;
 }

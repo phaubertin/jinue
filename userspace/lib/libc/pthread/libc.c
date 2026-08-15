@@ -46,6 +46,7 @@ static struct __pthread main_thread = {
     .fd                     = JINUE_DESC_MAIN_THREAD,
     .flags                  = 0,
     .cancel_state           = PTHREAD_CANCEL_ENABLE,
+    .cancel_type            = PTHREAD_CANCEL_DEFERRED,
     .is_cancel_requested    = false,
     .local_errno            = 0,
     .stackaddr              = (void *)JINUE_STACK_START,
