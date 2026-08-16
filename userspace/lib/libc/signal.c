@@ -33,7 +33,9 @@
 #include <errno.h>
 #include <signal.h>
 #include <stdbool.h>
-#include <stddef.h>
+#include <stdlib.h>
+#include "pthread/libc.h"
+#include "signal.h"
 
 struct sighandler_entry {
     bool is_sigaction;
@@ -72,8 +74,42 @@ static void handle_signal(int signo, jinue_siginfo_t *info, jinue_ucontext_t *co
     return_from_signal(context);
 }
 
+static void handle_sigcancel(int signo) {
+    /* This solves a dependency issue where the C library needs to set up the
+     * SIGCANCEL handler during initialization but the POSIX thread library is
+     * a separate static library that isn't guaranteed to have been linked in.
+     *  __pthread_handle_sigcancel is a function pointer in libc that is called
+     * by this signal handler stub and it gets assigned by the POSIX thread
+     * ibrary (more specifically ptthread_cancel()) on first use. */
+    if(__pthread_handle_sigcancel != NULL) {
+        __pthread_handle_sigcancel();
+    }
+}
+
 int __signal_init(void) {
-    return jinue_set_signal_handler(handle_signal, NULL);
+    int status = jinue_set_signal_handler(handle_signal, NULL);
+
+    if(status < 0) {
+        return EXIT_FAILURE;
+    }
+
+    struct sigaction act;
+    act.sa_flags    = 0;
+    act.sa_handler  = handle_sigcancel;
+    
+    status = sigemptyset(&act.sa_mask);
+
+    if(status != 0) {
+        return EXIT_FAILURE;
+    }
+
+    status = sigaction(SIGCANCEL, &act, NULL);
+
+    if(status != 0) {
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
 }
 
 int raise(int sig) {

@@ -49,7 +49,7 @@ int __libc_init(void) {
 
     ret = __signal_init();
 
-    if(ret < 0) {
+    if(ret != EXIT_SUCCESS) {
         return EXIT_FAILURE;
     }
 

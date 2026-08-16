@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2026 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,42 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jinue/jinue.h>
-#include <pthread.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include "libc.h"
-#include "thread.h"
+#ifndef TESTAPP_TEST_CANCEL_THREAD_ASYNC_H_
+#define TESTAPP_TEST_CANCEL_THREAD_ASYNC_H_
 
-/* This file contains the subset of the POSIX threads implementation that is in
- * libc instead of libpthread because of dependencies in the libc
- initialization code.*/
+void run_cancel_thread_async_test(void);
 
-static struct __pthread main_thread = {
-    .self                   = &main_thread,
-    .next                   = NULL,
-    .fd                     = JINUE_DESC_MAIN_THREAD,
-    .flags                  = 0,
-    .cancel_state           = PTHREAD_CANCEL_ENABLE,
-    .cancel_type            = PTHREAD_CANCEL_DEFERRED,
-    .is_cancel_requested    = false,
-    .local_errno            = 0,
-    .stackaddr              = (void *)JINUE_STACK_START,
-    .stacksize              = JINUE_STACK_SIZE,
-    .alloc_stackaddr        = (void *)JINUE_STACK_START,
-    .alloc_stacksize        = JINUE_STACK_SIZE,
-    .exit_status            = NULL,
-    .cancel_handlers        = NULL
-};
-
-pthread_t __pthread_main_thread = &main_thread;
-
-void (*__pthread_handle_sigcancel)(void) = NULL;
-
-void __pthread_set_current(pthread_t thread) {
-    jinue_set_thread_local(thread, sizeof(struct __pthread));
-}
-
-pthread_t pthread_self(void) {
-    return jinue_get_thread_local();
-}
+#endif

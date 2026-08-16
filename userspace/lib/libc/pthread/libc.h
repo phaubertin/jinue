@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2024-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -33,8 +33,11 @@
 #define LIBC_PTHREAD_LIBC_H
 
 #include <pthread.h>
+#include <stdbool.h>
 
 extern pthread_t __pthread_main_thread;
+
+extern void (*__pthread_handle_sigcancel)(void);
 
 void __pthread_set_current(pthread_t thread);
 

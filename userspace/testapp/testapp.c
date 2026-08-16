@@ -39,6 +39,7 @@
 #include "tests/abcd.h"
 #include "tests/aes.h"
 #include "tests/cancel_thread.h"
+#include "tests/cancel_thread_async.h"
 #include "tests/exit_thread.h"
 #include "tests/ipc.h"
 #include "tests/scroll.h"
@@ -72,6 +73,7 @@ int main(int argc, char *argv[]) {
     run_abcd_test();
     run_aes_test();
     run_cancel_thread_test();
+    run_cancel_thread_async_test();
     run_exit_thread_test();
     run_ipc_test();
     run_scroll_test();

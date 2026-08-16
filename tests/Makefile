@@ -53,6 +53,7 @@ tests = \
 	test_boot_nx \
 	test_boot_pentium \
 	test_cancel_thread \
+	test_cancel_thread_async \
 	test_exit_thread \
 	test_detect_qemu \
 	test_ipc \

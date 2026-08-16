@@ -34,6 +34,8 @@
 
 #include <signal.h>
 
+#define SIGCANCEL 57
+
 int __signal_init(void);
 
 #endif

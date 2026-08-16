@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2024-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -225,67 +225,6 @@ void pthread_exit(void *exit_status) {
     }
     
     jinue_exit_thread();
-}
-
-int pthread_cancel(pthread_t thread) {
-    thread->is_cancel_requested = true;
-    return 0;
-}
-
-void pthread_testcancel(void) {
-    pthread_t thread = pthread_self();
-
-    if(thread->cancel_state == PTHREAD_CANCEL_DISABLE) {
-        return;
-    }
-
-    if(!thread->is_cancel_requested) {
-        return;
-    }
-
-    pthread_exit(PTHREAD_CANCELED);
-}
-
-int pthread_setcancelstate(int state, int *oldstate) {
-    pthread_t thread = pthread_self();
-
-    switch(state) {
-        case PTHREAD_CANCEL_DISABLE:
-        case PTHREAD_CANCEL_ENABLE:
-            break;
-        default:
-            thread->local_errno = EINVAL;
-            return -1;
-    }
-
-    if(oldstate) {
-        *oldstate = thread->cancel_state;
-    }
-
-    thread->cancel_state = state;
-
-    return 0;
-}
-
-int pthread_setcanceltype(int type, int *oldtype) {
-    pthread_t thread = pthread_self();
-
-    switch(type) {
-        case PTHREAD_CANCEL_DEFERRED:
-        case PTHREAD_CANCEL_ASYNCHRONOUS:
-            break;
-        default:
-            thread->local_errno = EINVAL;
-            return -1;
-    }
-
-    if(oldtype) {
-        *oldtype = thread->cancel_type;
-    }
-
-    thread->cancel_type = type;
-
-    return 0;
 }
 
 int __get_thread_descriptor(pthread_t thread) {
