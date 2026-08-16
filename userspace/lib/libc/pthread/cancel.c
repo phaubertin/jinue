@@ -72,7 +72,7 @@ int pthread_cancel(pthread_t thread) {
      * here on first use. */
     __pthread_handle_sigcancel = handle_sigcancel;
 
-    /* TODO do we need as barrier here? */
+    /* TODO do we need a barrier here? */
     
     return pthread_kill(thread, SIGCANCEL);
 }
