@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2024-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -153,10 +153,12 @@ int pthread_create(
         return errno_retval;
     }
 
-    candidate->local_errno      = 0;
-    candidate->cancel_handlers  = NULL;
-    candidate->flags            = 0;
-    candidate->own_flags        = 0;
+    candidate->local_errno          = 0;
+    candidate->cancel_handlers      = NULL;
+    candidate->flags                = 0;
+    candidate->cancel_state         = PTHREAD_CANCEL_ENABLE;
+    candidate->cancel_type          = PTHREAD_CANCEL_DEFERRED;
+    candidate->is_cancel_requested  = false;
 
     if(attr->detachstate == PTHREAD_CREATE_DETACHED) {
         candidate->flags |= THREAD_FLAG_DETACHED;
@@ -223,49 +225,6 @@ void pthread_exit(void *exit_status) {
     }
     
     jinue_exit_thread();
-}
-
-int pthread_cancel(pthread_t thread) {
-    thread->flags |= THREAD_FLAG_CANCELLED;
-    return 0;
-}
-
-void pthread_testcancel(void) {
-    pthread_t thread = pthread_self();
-
-    if(thread->own_flags & THREAD_OWN_FLAG_CANCELLATION_DISABLED) {
-        return;
-    }
-
-    if(!(thread->flags & THREAD_FLAG_CANCELLED)) {
-        return;
-    }
-
-    pthread_exit(PTHREAD_CANCELED);
-}
-
-int pthread_setcancelstate(int state, int *oldstate) {
-    pthread_t thread = pthread_self();
-
-    if(state != PTHREAD_CANCEL_DISABLE && state != PTHREAD_CANCEL_ENABLE) {
-        thread->local_errno = EINVAL;
-        return -1;
-    }
-
-    if(oldstate) {
-        *oldstate = !!(thread->own_flags & THREAD_OWN_FLAG_CANCELLATION_DISABLED)
-            ? PTHREAD_CANCEL_DISABLE
-            : PTHREAD_CANCEL_ENABLE;
-    }
-
-    if(state == PTHREAD_CANCEL_DISABLE) {
-        thread->own_flags |= THREAD_OWN_FLAG_CANCELLATION_DISABLED;
-    }
-    else {
-        thread->own_flags &= ~THREAD_OWN_FLAG_CANCELLATION_DISABLED;
-    }
-
-    return 0;
 }
 
 int __get_thread_descriptor(pthread_t thread) {

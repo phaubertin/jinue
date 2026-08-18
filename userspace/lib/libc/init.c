@@ -47,9 +47,9 @@ int __libc_init(void) {
 
     __pthread_set_current(__pthread_main_thread);
 
-    ret = __signal_init();
+    ret = __libc_signal_init();
 
-    if(ret < 0) {
+    if(ret != EXIT_SUCCESS) {
         return EXIT_FAILURE;
     }
 

@@ -1,4 +1,5 @@
-# Copyright (C) 2022 Philippe Aubertin.
+#!/bin/bash
+# Copyright (C) 2026 Philippe Aubertin.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,70 +28,35 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-jinue_root = ../../..
-include $(jinue_root)/header.mk
+CMDLINE="RUN_TEST_CANCEL_THREAD_ASYNC=1"
 
-sources.c        = \
-	i686/stack.c \
-	pthread/attr.c \
-	pthread/cancel.c \
-	pthread/cleanup.c \
-	pthread/libc.c \
-	pthread/signal.c \
-	pthread/thread.c \
-	assert-kernel.c \
-	brk.c \
-	descriptors.c \
-	errno.c \
-	getauxval.c \
-	getenv.c \
-	init.c \
-	malloc.c \
-	mmap.c \
-	physmem.c \
-	rand.c \
-	snprintf.c \
-	signal.c \
-	string.c \
-	vsnprintf.c
-sources.nasm     = i686/crt.asm i686/pthread.asm
+run
 
-target.user      = libc.a
-target.pthread	 = libpthread.a
-target.kernel    = libc-kernel.a
-targets          = $(target.user) $(target.pthread) $(target.kernel)
+check_kernel_start
 
-objects.generic  = string.o snprintf.o vsnprintf.o
-objects.user     = \
-	i686/crt-nasm.o \
-	pthread/libc.o \
-	brk.o \
-	descriptors.o \
-	errno.o \
-	getauxval.o \
-	getenv.o init.o \
-	malloc.o \
-	mmap.o \
-	physmem.o \
-	rand.o \
-	signal.o
-objects.pthread  = \
-	i686/pthread-nasm.o \
-	i686/stack.o \
-	pthread/attr.o \
-	pthread/cancel.o \
-	pthread/cleanup.o \
-	pthread/signal.o \
-	pthread/thread.o
-objects.kernel   = assert-kernel.o
+# If check_no_panic fails, check_no_error would also fail, but check_no_panic
+# provides more relevant context in the log.
+check_no_panic
 
-include $(common)
+check_no_error
 
-$(target.user): $(objects.generic) $(objects.user)
+check_no_warning
 
-$(target.pthread): $(objects.pthread)
+echo "* Check test has started"
+grep -F "Running thread cancellation test..." $LOG || fail
 
-$(target.kernel): $(objects.generic) $(objects.kernel)
+echo "* Check the thread started"
+grep -E "Thread started" $LOG || fail
 
-%.a:
-	ar rcs $@ $^
+echo "* Check the inner cancellation handler ran"
+grep -F "Running cancellation handler: inner" $LOG || fail
+
+AFTER=`grep -F -A 5 "Running cancellation handler: inner" $LOG`
+
+echo "* Check the outer cancellation handler ran after the inner one"
+echo "$AFTER" | grep -F 'Running cancellation handler: outer' || fail
+
+echo "* Check the thread exit value was PTHREAD_CANCELED"
+grep -F "Thread exit value is PTHREAD_CANCELED" $LOG || fail
+
+check_reboot

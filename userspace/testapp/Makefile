@@ -34,6 +34,7 @@ sources.c = \
 	tests/abcd.c \
 	tests/aes.c \
 	tests/cancel_thread.c \
+	tests/cancel_thread_async.c \
 	tests/exit_thread.c \
 	tests/ipc.c \
 	tests/scroll.c \

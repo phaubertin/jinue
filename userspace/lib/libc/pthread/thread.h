@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2024-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -33,26 +33,19 @@
 #define LIBC_PTHREAD_THREAD_H
 
 #include <pthread.h>
+#include <signal.h>
 #include <stddef.h>
 
 #define THREAD_FLAG_DETACHED    (1<<0)
-
-#define THREAD_FLAG_CANCELLED   (1<<1)
-
-
-#define THREAD_OWN_FLAG_CANCELLATION_DISABLED   (1<<0)
 
 struct __pthread {
     struct __pthread                    *self;
     struct __pthread                    *next;
     int                                  fd;
-    /* We don't yet have synchonization primitives implemented, which makes
-     * this not thread safe. As a temporary measure to address the most
-     * egregious issues, we segregate the flags expected to be updated by the
-     * thread itself (self_flags) from the ones set by other threads
-     * (flags). */
     int                                  flags;
-    int                                  own_flags;
+    volatile sig_atomic_t                cancel_state;
+    volatile sig_atomic_t                cancel_type;
+    volatile sig_atomic_t                is_cancel_requested;
     int                                  local_errno;
     void                                *stackaddr;
     size_t                               stacksize;

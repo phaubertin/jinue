@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2024-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -31,6 +31,7 @@
 
 #include <jinue/jinue.h>
 #include <pthread.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include "libc.h"
 #include "thread.h"
@@ -40,21 +41,25 @@
  initialization code.*/
 
 static struct __pthread main_thread = {
-    .self               = &main_thread,
-    .next               = NULL,
-    .fd                 = JINUE_DESC_MAIN_THREAD,
-    .flags              = 0,
-    .own_flags          = 0,
-    .local_errno        = 0,
-    .stackaddr          = (void *)JINUE_STACK_START,
-    .stacksize          = JINUE_STACK_SIZE,
-    .alloc_stackaddr    = (void *)JINUE_STACK_START,
-    .alloc_stacksize    = JINUE_STACK_SIZE,
-    .exit_status        = NULL,
-    .cancel_handlers    = NULL
+    .self                   = &main_thread,
+    .next                   = NULL,
+    .fd                     = JINUE_DESC_MAIN_THREAD,
+    .flags                  = 0,
+    .cancel_state           = PTHREAD_CANCEL_ENABLE,
+    .cancel_type            = PTHREAD_CANCEL_DEFERRED,
+    .is_cancel_requested    = false,
+    .local_errno            = 0,
+    .stackaddr              = (void *)JINUE_STACK_START,
+    .stacksize              = JINUE_STACK_SIZE,
+    .alloc_stackaddr        = (void *)JINUE_STACK_START,
+    .alloc_stacksize        = JINUE_STACK_SIZE,
+    .exit_status            = NULL,
+    .cancel_handlers        = NULL
 };
 
 pthread_t __pthread_main_thread = &main_thread;
+
+void (*volatile __pthread_handle_sigcancel)(int) = NULL;
 
 void __pthread_set_current(pthread_t thread) {
     jinue_set_thread_local(thread, sizeof(struct __pthread));

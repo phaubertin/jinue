@@ -33,7 +33,9 @@
 #include <errno.h>
 #include <signal.h>
 #include <stdbool.h>
-#include <stddef.h>
+#include <stdlib.h>
+#include "pthread/libc.h"
+#include "signal.h"
 
 struct sighandler_entry {
     bool is_sigaction;
@@ -44,6 +46,19 @@ struct sighandler_entry {
 };
 
 static struct sighandler_entry sighandlers[JINUE_SIGNAL_MAX] = {NULL};
+
+static bool is_reserved_signal(int signo) {
+    switch(signo) {
+        case SIGCANCEL:
+            return true;
+        default:
+            return false;
+    }
+}
+
+void __libc_clear_reserved_signals(sigset_t *set) {
+    sigdelset(set, SIGCANCEL);
+}
 
 static void return_from_signal(void *context) {
     (void)jinue_return_from_signal(context, NULL);
@@ -72,10 +87,17 @@ static void handle_signal(int signo, jinue_siginfo_t *info, jinue_ucontext_t *co
     return_from_signal(context);
 }
 
-int __signal_init(void) {
-    return jinue_set_signal_handler(handle_signal, NULL);
+static void handle_sigcancel(int signo) {
+    /* This solves a dependency issue where the C library needs to set up the
+     * SIGCANCEL handler during initialization but the POSIX thread library is
+     * a separate static library that isn't guaranteed to have been linked in.
+     *  __pthread_handle_sigcancel is a function pointer in libc that is called
+     * by this signal handler stub and it gets assigned by the POSIX thread
+     * ibrary (more specifically ptthread_cancel()) on first use. */
+    if(__pthread_handle_sigcancel != NULL) {
+        __pthread_handle_sigcancel(signo);
+    }
 }
-
 int raise(int sig) {
     return jinue_signal_thread(-1, sig, &errno);
 }
@@ -103,11 +125,10 @@ static int update_sighandler_entry(struct sighandler_entry *entry, const struct 
     return 0;
 }
 
-int sigaction(int sig, const struct sigaction *restrict act, struct sigaction *restrict oact) {
+static int do_sigaction(int sig, const struct sigaction *restrict act, struct sigaction *restrict oact) {
     /* The implementation of signals in the kernel is currently incomplete.
      * This function is similarly incomplete and only allows setting a signal
      * handler, which is the only action the kernel supports. */
-
     if(sig < 1 || sig > JINUE_SIGNAL_MAX) {
         errno = EINVAL;
         return -1;
@@ -142,6 +163,14 @@ int sigaction(int sig, const struct sigaction *restrict act, struct sigaction *r
     return 0;
 }
 
+int sigaction(int sig, const struct sigaction *restrict act, struct sigaction *restrict oact) {
+    if(is_reserved_signal(sig)) {
+        act = NULL;
+    }
+
+    return do_sigaction(sig, act, oact);
+}
+
 int sigaddset(sigset_t *set, int signo) {
     return jinue_sigaddset(set, signo, &errno);
 }
@@ -173,5 +202,43 @@ int sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict oset) 
         return EINVAL;
     }
 
-    return jinue_get_set_signal_mask(how, set, oset, &errno);
+    sigset_t local_set;
+    const sigset_t *iset;
+
+    if(set == NULL || how == SIG_UNBLOCK) {
+        iset = set;
+    }
+    else {
+        iset = &local_set;
+        local_set = *set;
+        __libc_clear_reserved_signals(&local_set);
+    }
+
+    return jinue_get_set_signal_mask(how, iset, oset, &errno);
+}
+
+int __libc_signal_init(void) {
+    int status = jinue_set_signal_handler(handle_signal, NULL);
+
+    if(status < 0) {
+        return EXIT_FAILURE;
+    }
+
+    struct sigaction act;
+    act.sa_flags    = 0;
+    act.sa_handler  = handle_sigcancel;
+    
+    status = sigemptyset(&act.sa_mask);
+
+    if(status != 0) {
+        return EXIT_FAILURE;
+    }
+
+    status = do_sigaction(SIGCANCEL, &act, NULL);
+
+    if(status != 0) {
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
 }

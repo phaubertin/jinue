@@ -29,15 +29,21 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LIBC_PTHREAD_LIBC_H
-#define LIBC_PTHREAD_LIBC_H
+#ifndef _JINUE_LIBC_ASM_PTHREAD_H
+#define _JINUE_LIBC_ASM_PTHREAD_H
 
-#include <pthread.h>
+#define PTHREAD_CREATE_JOINABLE     0
 
-extern pthread_t __pthread_main_thread;
+#define PTHREAD_CREATE_DETACHED     1
 
-extern void (*volatile __pthread_handle_sigcancel)(int);
 
-void __pthread_set_current(pthread_t thread);
+#define PTHREAD_CANCEL_DISABLE      0
+
+#define PTHREAD_CANCEL_ENABLE       1
+
+
+#define PTHREAD_CANCEL_DEFERRED     0
+
+#define PTHREAD_CANCEL_ASYNCHRONOUS 1
 
 #endif

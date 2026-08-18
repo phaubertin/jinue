@@ -34,12 +34,17 @@
 
 #include <jinue/shared/asm/machine.h>
 
-#define INT_MAX 2147483647
+#define INT_MAX             2147483647
 
-#define PAGE_SIZE JINUE_PAGE_SIZE
+#define PAGE_SIZE           JINUE_PAGE_SIZE
 
-#define PAGESIZE PAGE_SIZE
+#define PAGESIZE            PAGE_SIZE
 
-#define PTHREAD_STACK_MIN 16384
+#define PTHREAD_STACK_MIN   16384
+
+/* The kernel supports 64 signals but signal numbers starting at this value are
+ * reserved by the implementation for internal signals (such as SIGCANCEL used
+ * for thread cancellation). */
+#define NSIG_MAX            57
 
 #endif

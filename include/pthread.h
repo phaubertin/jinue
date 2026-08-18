@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2024-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -32,16 +32,40 @@
 #ifndef _JINUE_LIBC_PTHREAD_H
 #define _JINUE_LIBC_PTHREAD_H
 
+#include <asm/pthread.h>
 #include <stddef.h>
 
 typedef struct __pthread *pthread_t;
 
-typedef struct {
+/* -------------------------------------------------------------------------
+ * Threads Attributes
+ * ------------------------------------------------------------------------- */
+
+ typedef struct {
     int      flags;
     int      detachstate;
     size_t   stacksize;
     void    *stackaddr;
 } pthread_attr_t;
+
+int pthread_attr_destroy(pthread_attr_t *attr);
+
+int pthread_attr_init(pthread_attr_t *attr);
+
+int pthread_attr_getdetachstate(const pthread_attr_t *attr, int *detachstate);
+
+int pthread_attr_setdetachstate(pthread_attr_t *attr, int detachstate);
+
+int pthread_attr_getstacksize(const pthread_attr_t *restrict attr, size_t *restrict stacksize);
+
+int pthread_attr_setstacksize(pthread_attr_t *attr, size_t stacksize);
+
+int pthread_attr_getstack(
+        const pthread_attr_t     *restrict attr,
+        void                    **restrict stackaddr,
+        size_t                   *restrict stacksize);
+
+int pthread_attr_setstack(pthread_attr_t *attr, void *stackaddr, size_t stacksize);
 
 /* -------------------------------------------------------------------------
  * Threads
@@ -59,44 +83,19 @@ int pthread_join(pthread_t thread, void **exit_status);
 
 void pthread_exit(void *exit_status);
 
-int pthread_cancel(pthread_t thread);
+/* -------------------------------------------------------------------------
+ * Thread cancellation
+ * ------------------------------------------------------------------------- */
 
 #define PTHREAD_CANCELED ((void *)-1)
 
+int pthread_cancel(pthread_t thread);
+
 void pthread_testcancel(void);
-
-#define PTHREAD_CANCEL_DISABLE  0
-
-#define PTHREAD_CANCEL_ENABLE   1
 
 int pthread_setcancelstate(int state, int *oldstate);
 
-/* -------------------------------------------------------------------------
- * Threads Attributes
- * ------------------------------------------------------------------------- */
-
-int pthread_attr_destroy(pthread_attr_t *attr);
-
-int pthread_attr_init(pthread_attr_t *attr);
-
-#define PTHREAD_CREATE_JOINABLE 0
-
-#define PTHREAD_CREATE_DETACHED 1
-
-int pthread_attr_getdetachstate(const pthread_attr_t *attr, int *detachstate);
-
-int pthread_attr_setdetachstate(pthread_attr_t *attr, int detachstate);
-
-int pthread_attr_getstacksize(const pthread_attr_t *restrict attr, size_t *restrict stacksize);
-
-int pthread_attr_setstacksize(pthread_attr_t *attr, size_t stacksize);
-
-int pthread_attr_getstack(
-        const pthread_attr_t     *restrict attr,
-        void                    **restrict stackaddr,
-        size_t                   *restrict stacksize);
-
-int pthread_attr_setstack(pthread_attr_t *attr, void *stackaddr, size_t stacksize);
+int pthread_setcanceltype(int type, int *oldtype);
 
 /* -------------------------------------------------------------------------
  * Cancellation Handlers

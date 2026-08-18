@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2026 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,15 +29,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LIBC_PTHREAD_LIBC_H
-#define LIBC_PTHREAD_LIBC_H
+#ifndef TESTAPP_TEST_CANCEL_THREAD_ASYNC_H_
+#define TESTAPP_TEST_CANCEL_THREAD_ASYNC_H_
 
-#include <pthread.h>
-
-extern pthread_t __pthread_main_thread;
-
-extern void (*volatile __pthread_handle_sigcancel)(int);
-
-void __pthread_set_current(pthread_t thread);
+void run_cancel_thread_async_test(void);
 
 #endif
