@@ -33,7 +33,6 @@
 #define LIBC_PTHREAD_LIBC_H
 
 #include <pthread.h>
-#include <stdbool.h>
 
 extern pthread_t __pthread_main_thread;
 

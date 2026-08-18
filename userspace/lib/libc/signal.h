@@ -32,9 +32,10 @@
 #ifndef LIBC_SIGNAL_H
 #define LIBC_SIGNAL_H
 
+#include <limits.h>
 #include <signal.h>
 
-#define SIGCANCEL 57
+#define SIGCANCEL   (NSIG_MAX + 0)
 
 void __libc_clear_reserved_signals(sigset_t *set);
 
