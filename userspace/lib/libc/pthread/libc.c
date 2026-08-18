@@ -59,7 +59,7 @@ static struct __pthread main_thread = {
 
 pthread_t __pthread_main_thread = &main_thread;
 
-void (*__pthread_handle_sigcancel)(int) = NULL;
+void (*volatile __pthread_handle_sigcancel)(int) = NULL;
 
 void __pthread_set_current(pthread_t thread) {
     jinue_set_thread_local(thread, sizeof(struct __pthread));

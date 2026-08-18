@@ -75,8 +75,6 @@ int pthread_cancel(pthread_t thread) {
      * by a signal handler stub set up during initialization and we assign it
      * here on first use. */
     __pthread_handle_sigcancel = handle_sigcancel;
-
-    /* TODO do we need a barrier here? */
     
     return pthread_kill(thread, SIGCANCEL);
 }
