@@ -45,8 +45,8 @@ check_no_warning
 echo "* Check test has started"
 grep -F "Running thread cancellation test..." $LOG || fail
 
-echo "* Check thread re-enabled cancellability"
-grep -E "Thread re-enabling cancellability" $LOG || fail
+echo "* Check the thread started"
+grep -E "Thread started" $LOG || fail
 
 echo "* Check the inner cancellation handler ran"
 grep -F "Running cancellation handler: inner" $LOG || fail
@@ -55,5 +55,8 @@ AFTER=`grep -F -A 5 "Running cancellation handler: inner" $LOG`
 
 echo "* Check the outer cancellation handler ran after the inner one"
 echo "$AFTER" | grep -F 'Running cancellation handler: outer' || fail
+
+echo "* Check the thread exit value was PTHREAD_CANCELED"
+grep -F "Thread exit value is PTHREAD_CANCELED" $LOG || fail
 
 check_reboot

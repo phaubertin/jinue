@@ -37,7 +37,7 @@
 
 extern pthread_t __pthread_main_thread;
 
-extern void (*__pthread_handle_sigcancel)(void);
+extern void (*__pthread_handle_sigcancel)(int);
 
 void __pthread_set_current(pthread_t thread);
 

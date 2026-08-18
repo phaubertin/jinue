@@ -36,6 +36,8 @@
 
 #define SIGCANCEL 57
 
-int __signal_init(void);
+void __libc_clear_reserved_signals(sigset_t *set);
+
+int __libc_signal_init(void);
 
 #endif

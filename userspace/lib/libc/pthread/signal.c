@@ -33,6 +33,7 @@
 #include <errno.h>
 #include <pthread.h>
 #include <signal.h>
+#include "../signal.h"
 #include "thread.h"
 
 int pthread_kill(pthread_t thread, int sig) {
@@ -56,9 +57,21 @@ int pthread_sigmask(int how, const sigset_t *restrict set, sigset_t *restrict os
         return EINVAL;
     }
 
+    sigset_t local_set;
+    const sigset_t *iset;
+
+    if(set == NULL || how == SIG_UNBLOCK) {
+        iset = set;
+    }
+    else {
+        iset = &local_set;
+        jinue_sigcopyset(&local_set, set);
+        __libc_clear_reserved_signals(&local_set);
+    }
+
     int errno_retval;
 
-    int status = jinue_get_set_signal_mask(how, set, oset, &errno_retval);
+    int status = jinue_get_set_signal_mask(how, iset, oset, &errno_retval);
 
     if(status < 0) {
         return errno_retval;

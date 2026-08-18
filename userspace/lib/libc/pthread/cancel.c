@@ -55,7 +55,11 @@ static void do_testcancel(bool async_only) {
     pthread_exit(PTHREAD_CANCELED);
 }
 
-static void handle_sigcancel(void) {
+static void handle_sigcancel(int signo) {
+    if(signo != SIGCANCEL) {
+        return;
+    }
+
     pthread_t thread = pthread_self();
     
     thread->is_cancel_requested = true;

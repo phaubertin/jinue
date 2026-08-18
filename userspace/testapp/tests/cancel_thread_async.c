@@ -51,15 +51,6 @@ static void cleanup_routine(void *str) {
 static void inner_func(void) {
     pthread_cleanup_push(cleanup_routine, "inner handler");
 
-    pthread_testcancel();
-
-    int oldstate;
-    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
-
-    if(oldstate != PTHREAD_CANCEL_ENABLE) {
-        jinue_warning("warning: pthread_setcancelstate(): oldstate was not PTHREAD_CANCEL_ENABLE");
-    }
-
     int oldtype;
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &oldtype);
 
@@ -71,25 +62,13 @@ static void inner_func(void) {
     message.send_buffers_length = 0;
     message.recv_buffers_length = 0;
 
-    jinue_info("Thread: wait 1");
+    jinue_info("Thread: synchronizing with main thread");
 
     intptr_t ret = jinue_send(endpoint, MSG_SYNCHRONIZE, &message, &errno, NULL);
 
     if(ret < 0) {
         jinue_error("error: jinue_send() failed: %s.", strerror(errno));
     }
-
-    jinue_info("Thread: wait 2");
-
-    ret = jinue_send(endpoint, MSG_SYNCHRONIZE, &message, &errno, NULL);
-
-    if(ret < 0) {
-        jinue_error("error: jinue_send() failed: %s.", strerror(errno));
-    }
-
-    jinue_info("Thread re-enabling cancellability");
-
-    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 
     jinue_warning("warning: this should not be logged");
 
@@ -146,6 +125,15 @@ void run_cancel_thread_async_test(void) {
         return;
     }
 
+    jinue_info("Cancelling the thread...");
+
+    status = pthread_cancel(thread);
+
+    if(status < 0) {
+        jinue_error("error: could not cancel thread: %s", strerror(errno));
+        return;
+    }
+
     jinue_message_t reply;
     reply.send_buffers_length = 0;
 
@@ -156,28 +144,21 @@ void run_cancel_thread_async_test(void) {
         return;
     }
 
-    jinue_info("Cancelling the thread...");
+    jinue_info("Joining the thread...");
 
-    status = pthread_cancel(thread);
-
-    if(status < 0) {
-        jinue_error("error: could not cancel thread: %s", strerror(errno));
+    void *thread_exit_value;
+    status = pthread_join(thread, &thread_exit_value);
+    
+    if(status != 0) {
+        jinue_error("error: failed to join the thread: %s", strerror(status));
         return;
     }
 
-    jinue_info("Letting the thread proceed after cancellation request...");
-
-    ret = jinue_receive(endpoint, &message, &errno);
-
-    if(ret < 0) {
-        jinue_error("error: jinue_receive() failed: %s.", strerror(errno));
-        return;
+    if(thread_exit_value == PTHREAD_CANCELED) {
+        jinue_info("Thread exit value is PTHREAD_CANCELED");
     }
-
-    ret = jinue_reply(&reply, &errno);
-
-    if(ret < 0) {
-        jinue_error("error: jinue_reply() failed: %s", strerror(errno));
+    else {
+        jinue_error("error: unexpected thread exit value is %#p", thread_exit_value);
         return;
     }
 

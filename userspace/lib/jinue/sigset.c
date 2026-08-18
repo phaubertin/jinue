@@ -91,6 +91,10 @@ void jinue_sigfillset(jinue_sigset_t *set) {
     set->sa_sigbits[3] = -1;
 }
 
+void jinue_sigcopyset(jinue_sigset_t *dest, const jinue_sigset_t *src) {
+    *dest = *src;
+}
+
 int jinue_sigismember(const jinue_sigset_t *set, int signo, int *perrno) {
     if(signo_is_invalid(signo)) {
         set_perrno_invalid(perrno);
