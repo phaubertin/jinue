@@ -65,7 +65,7 @@ int pthread_sigmask(int how, const sigset_t *restrict set, sigset_t *restrict os
     }
     else {
         iset = &local_set;
-        jinue_sigcopyset(&local_set, set);
+        local_set = *set;
         __libc_clear_reserved_signals(&local_set);
     }
 

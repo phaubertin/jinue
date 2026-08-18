@@ -56,8 +56,6 @@ void jinue_sigemptyset(jinue_sigset_t *set);
 
 void jinue_sigfillset(jinue_sigset_t *set);
 
-void jinue_sigcopyset(jinue_sigset_t *dest, const jinue_sigset_t *src);
-
 int jinue_sigismember(const jinue_sigset_t *set, int signo, int *perrno);
 
 /* syscalls.c */
