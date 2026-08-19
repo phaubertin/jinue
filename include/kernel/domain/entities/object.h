@@ -50,6 +50,10 @@ static inline void object_init_header(object_header_t *object, const object_type
     object->flags       = OBJECT_FLAG_NONE;
 }
 
+static inline void object_reset_header(object_header_t *object) {
+    object->flags = OBJECT_FLAG_NONE;
+}
+
 void init_object_cache(slab_cache_t *cache, const object_type_t *type);
 
 void object_open(object_header_t *object, const descriptor_t *desc);

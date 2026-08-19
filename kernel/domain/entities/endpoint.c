@@ -156,7 +156,13 @@ void initialize_endpoint_cache(void) {
  * @return endpoint on success, NULL on allocation failure
  */
 ipc_endpoint_t *endpoint_new(void) {
-    return slab_cache_alloc(&ipc_endpoint_cache);
+    ipc_endpoint_t *endpoint = slab_cache_alloc(&ipc_endpoint_cache);
+
+    if(endpoint != NULL) {
+        object_reset_header(&endpoint->header);
+    }
+
+    return endpoint;
 }
 
 /**
