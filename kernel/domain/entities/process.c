@@ -125,6 +125,7 @@ process_t *process_new(void) {
     process_t *process = slab_cache_alloc(&process_cache);
 
     if(process != NULL) {
+        object_reset_header(&process->header);
         process->running_threads_count  = 0;
         process->signal_handler         = NULL;
         process->pending_signals        = 0;
