@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2019-2026 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -30,55 +30,41 @@
  */
 
 #include <jinue/jinue.h>
-#include <jinue/loader.h>
-#include <jinue/utils.h>
 #include <srv/system.h>
 #include <errno.h>
+#include <internals.h>
 #include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include "tests/abcd.h"
-#include "tests/aes.h"
-#include "tests/cancel_thread.h"
-#include "tests/cancel_thread_async.h"
-#include "tests/exit_thread.h"
-#include "tests/ipc.h"
-#include "tests/scroll.h"
-#include "tests/signal.h"
-#include "tests/sse.h"
-#include "utils.h"
+#include "../utils.h"
+#include "handlers.h"
 
-int do_exit() {
-    jinue_message_t message;
-    message.send_buffers        = NULL;
-    message.send_buffers_length = 0;
-    message.recv_buffers        = NULL;
-    message.recv_buffers_length = 0;
-
-    /* TODO define a constant for the endpoint descriptor */
-    intptr_t retval = jinue_send(JINUE_DESC_LOADER_ENDPOINT, SYS_MSG_EXIT, &message, &errno, NULL);
-
-    if(retval < 0) {
-        jinue_error("error: jinue_send() failed on exit: %s.", strerror(errno));
-        return EXIT_FAILURE;
+void handle_map_anon(const message_context_t *ctx, void *msg, size_t len) {
+    if(len < sizeof(sys_msg_map_anon_params_t)) {
+        reply_error(EINVAL);
     }
-    
-    return EXIT_SUCCESS;
-}
 
-int main(int argc, char *argv[]) {
-    /* Say hello. */
-    jinue_info("Jinue test app (%s) started.", argv[0]);
+    const sys_msg_map_anon_params_t *params = (const sys_msg_map_anon_params_t *)msg;
 
-    run_abcd_test();
-    run_aes_test();
-    run_cancel_thread_test();
-    run_cancel_thread_async_test();
-    run_exit_thread_test();
-    run_ipc_test();
-    run_scroll_test();
-    run_signal_test();
-    run_sse_test();
+    uint64_t paddr = libc_physmem_alloc(params->length);
 
-    return do_exit();
+    if(paddr < 0) {
+        reply_error(ENOMEM);
+        return;
+    }
+
+    int status = jinue_mmap(
+        ctx->process.fd,
+        params->addr,
+        params->length,
+        params->prot,
+        JINUE_MAP_NONE,
+        paddr,
+        &errno
+    );
+
+    if(status < 0) {
+        reply_error(errno);
+        return;
+    }
+
+    reply_success();
 }

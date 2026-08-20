@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2019-2026 Philippe Aubertin.
+ * Copyright (C) 2024-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -32,53 +32,65 @@
 #include <jinue/jinue.h>
 #include <jinue/loader.h>
 #include <jinue/utils.h>
-#include <srv/system.h>
+#include <sys/mman.h>
 #include <errno.h>
+#include <internals.h>
 #include <stdint.h>
-#include <stdlib.h>
 #include <string.h>
-#include "tests/abcd.h"
-#include "tests/aes.h"
-#include "tests/cancel_thread.h"
-#include "tests/cancel_thread_async.h"
-#include "tests/exit_thread.h"
-#include "tests/ipc.h"
-#include "tests/scroll.h"
-#include "tests/signal.h"
-#include "tests/sse.h"
-#include "utils.h"
+#include "mappings.h"
 
-int do_exit() {
-    jinue_message_t message;
-    message.send_buffers        = NULL;
-    message.send_buffers_length = 0;
-    message.recv_buffers        = NULL;
-    message.recv_buffers_length = 0;
+int map_file(
+    const process_t *process,
+    const file_t    *file,
+    void            *vaddr,
+    size_t           size,
+    size_t           offset,
+    int              perms
+) {
+    int status = jinue_mmap(
+        process->fd,
+        vaddr,
+        size,
+        perms,
+        JINUE_MAP_NONE,
+        file->paddr + offset,
+        &errno
+    );
 
-    /* TODO define a constant for the endpoint descriptor */
-    intptr_t retval = jinue_send(JINUE_DESC_LOADER_ENDPOINT, SYS_MSG_EXIT, &message, &errno, NULL);
-
-    if(retval < 0) {
-        jinue_error("error: jinue_send() failed on exit: %s.", strerror(errno));
-        return EXIT_FAILURE;
+    if(status < 0) {
+        jinue_error("error: jinue_mmap() failed: %s", strerror(errno));
+        return status;
     }
-    
-    return EXIT_SUCCESS;
+
+    return 0;
 }
 
-int main(int argc, char *argv[]) {
-    /* Say hello. */
-    jinue_info("Jinue test app (%s) started.", argv[0]);
+void *map_anonymous(const process_t *process, void *vaddr, size_t size, int perms) {
+    uint64_t paddr = libc_get_physmem_alloc_addr();
 
-    run_abcd_test();
-    run_aes_test();
-    run_cancel_thread_test();
-    run_cancel_thread_async_test();
-    run_exit_thread_test();
-    run_ipc_test();
-    run_scroll_test();
-    run_signal_test();
-    run_sse_test();
+    /* Map into this process so we can set the contents. */
+    void *segment = mmap_anonymous(NULL, size);
 
-    return do_exit();
+    if(segment == MAP_FAILED) {
+        jinue_error("error: mmap() failed: %s", strerror(errno));
+        return NULL;
+    }
+
+    /* Map into the target process. */
+    int status = jinue_mmap(
+        process->fd,
+        vaddr,
+        size,
+        perms,
+        JINUE_MAP_NONE,
+        paddr,
+        &errno
+    );
+
+    if(status < 0) {
+        jinue_error("error: jinue_mmap() failed: %s", strerror(errno));
+        return NULL;
+    }
+
+    return segment;
 }

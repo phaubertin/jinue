@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2019-2026 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -32,53 +32,69 @@
 #include <jinue/jinue.h>
 #include <jinue/loader.h>
 #include <jinue/utils.h>
-#include <srv/system.h>
+#include <sys/mman.h>
 #include <errno.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include "tests/abcd.h"
-#include "tests/aes.h"
-#include "tests/cancel_thread.h"
-#include "tests/cancel_thread_async.h"
-#include "tests/exit_thread.h"
-#include "tests/ipc.h"
-#include "tests/scroll.h"
-#include "tests/signal.h"
-#include "tests/sse.h"
-#include "utils.h"
+#include "ramdisk.h"
 
-int do_exit() {
-    jinue_message_t message;
-    message.send_buffers        = NULL;
-    message.send_buffers_length = 0;
-    message.recv_buffers        = NULL;
-    message.recv_buffers_length = 0;
+#define BUFFER_SIZE 16384
 
-    /* TODO define a constant for the endpoint descriptor */
-    intptr_t retval = jinue_send(JINUE_DESC_LOADER_ENDPOINT, SYS_MSG_EXIT, &message, &errno, NULL);
+int get_ramdisk(ramdisk_t *ramdisk) {
+    char buffer[BUFFER_SIZE];
 
-    if(retval < 0) {
-        jinue_error("error: jinue_send() failed on exit: %s.", strerror(errno));
+    const jinue_meminfo_t *meminfo = jinue_get_meminfo(buffer, sizeof(buffer));
+
+    if(meminfo == NULL) {
         return EXIT_FAILURE;
     }
+
+    const jinue_segment_t *segment = jinue_get_ramdisk(meminfo);
+
+    if(segment == NULL) {
+        return EXIT_FAILURE;
+    }
+
+    const jinue_dirent_t *root = mmap(
+        NULL,
+        segment->size,
+        PROT_READ,
+        MAP_SHARED,
+        -1,
+        segment->addr
+    );
+
+    if(root == MAP_FAILED) {
+        jinue_error("error: mmap() failed: %s.", strerror(errno));
+        return EXIT_FAILURE;
+    }
+
+    ramdisk->root   = root;
+    ramdisk->paddr  = segment->addr;
+    ramdisk->size   = segment->size;
     
     return EXIT_SUCCESS;
 }
 
-int main(int argc, char *argv[]) {
-    /* Say hello. */
-    jinue_info("Jinue test app (%s) started.", argv[0]);
+int open_ramdisk_file(file_t *file, const ramdisk_t *ramdisk, const char *filename) {
+    const jinue_dirent_t *dirent = jinue_dirent_find_by_name(ramdisk->root, filename);
 
-    run_abcd_test();
-    run_aes_test();
-    run_cancel_thread_test();
-    run_cancel_thread_async_test();
-    run_exit_thread_test();
-    run_ipc_test();
-    run_scroll_test();
-    run_signal_test();
-    run_sse_test();
+    if(dirent == NULL) {
+        jinue_error("error: file not found: %s", filename);
+        return EXIT_FAILURE;
+    }
 
-    return do_exit();
+    if(dirent->type != JINUE_DIRENT_TYPE_FILE) {
+        jinue_error("error: not a regular file: %s", filename);
+        return EXIT_FAILURE;
+    }
+
+    uint64_t offset = (const char *)jinue_dirent_file(dirent) - (const char *)ramdisk->root;
+
+    file->name      = jinue_dirent_name(dirent);
+    file->contents  = jinue_dirent_file(dirent);
+    file->size      = dirent->size;
+    file->paddr     = ramdisk->paddr + offset;
+
+    return EXIT_SUCCESS;
 }

@@ -31,8 +31,10 @@
 
 #include <jinue/jinue.h>
 #include <jinue/loader.h>
+#include <sys/auxv.h>
 #include <errno.h>
 #include <internals.h>
+#include <limits.h>
 #include <stdlib.h>
 #include "physmem.h"
 
@@ -70,15 +72,14 @@ static int initialize_range_from_loader_info(void) {
     );
 
     if(status < 0) {
-        /* errno is set by call to jinue_send(). */
-        return status;
+        return EXIT_FAILURE;
     }
 
     const jinue_meminfo_t *meminfo = (const jinue_meminfo_t *)buffer;
 
     initialize_range(meminfo->hints.physaddr, meminfo->hints.physlimit);
 
-    return status;
+    return EXIT_SUCCESS;
 }
 
 static const jinue_addr_map_entry_t *find_range_by_type(const jinue_addr_map_t *map, int type) {
@@ -119,25 +120,24 @@ static int initialize_range_from_kernel_info(void) {
 }
 
 int __physmem_init(void) {
-    int status = initialize_range_from_loader_info();
+    /* defaults, possibly overwritten below */
+    initialize_range(0, 0);
 
-    if(status >= 0) {
-        return EXIT_SUCCESS;
+    switch (getauxval(JINUE_AT_PROTOCOL)) {
+        case JINUE_PROTOCOL_LOADER:
+            return initialize_range_from_kernel_info();
+        case JINUE_PROTOCOL_INIT:
+            return initialize_range_from_loader_info();
+        default:
+            /* Physical address allocation will not be supported, the system
+             * service will be responsible to manage this. This is not a
+             * failure. */
+            return EXIT_SUCCESS;
     }
-
-    if(errno != JINUE_EBADF) {
-        return EXIT_FAILURE;
-    }
-
-    /* We weren't able to get the memory usage information from the loader, most likely because
-     * we *are* the loader. Fall back to the kernel call, which provides information about memory
-     * available to user space, but not about which parts of that user space memory have already
-     * been allocated. */
-    return initialize_range_from_kernel_info();
 }
 
 int64_t __physmem_alloc(size_t size) {
-    uint64_t top = alloc_range.addr + size;
+    uint64_t top = (alloc_range.addr + size + PAGE_SIZE - 1) & ~((uint64_t)PAGE_SIZE - 1);
 
     if(top > alloc_range.limit) {
         return -1;

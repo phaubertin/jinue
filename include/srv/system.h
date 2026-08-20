@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2026 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,56 +29,20 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifndef _JINUE_LIBC_SRV_SYSTEM_H
+#define _JINUE_LIBC_SRV_SYSTEM_H
+
 #include <jinue/jinue.h>
-#include <jinue/loader.h>
-#include <jinue/utils.h>
-#include <srv/system.h>
-#include <errno.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include "tests/abcd.h"
-#include "tests/aes.h"
-#include "tests/cancel_thread.h"
-#include "tests/cancel_thread_async.h"
-#include "tests/exit_thread.h"
-#include "tests/ipc.h"
-#include "tests/scroll.h"
-#include "tests/signal.h"
-#include "tests/sse.h"
-#include "utils.h"
+#include <stddef.h>
 
-int do_exit() {
-    jinue_message_t message;
-    message.send_buffers        = NULL;
-    message.send_buffers_length = 0;
-    message.recv_buffers        = NULL;
-    message.recv_buffers_length = 0;
+#define SYS_MSG_EXIT        (JINUE_SYS_USER_BASE + 0)
 
-    /* TODO define a constant for the endpoint descriptor */
-    intptr_t retval = jinue_send(JINUE_DESC_LOADER_ENDPOINT, SYS_MSG_EXIT, &message, &errno, NULL);
+#define SYS_MSG_MAP_ANON    (JINUE_SYS_USER_BASE + 1)
 
-    if(retval < 0) {
-        jinue_error("error: jinue_send() failed on exit: %s.", strerror(errno));
-        return EXIT_FAILURE;
-    }
-    
-    return EXIT_SUCCESS;
-}
+typedef struct {
+    void    *addr;
+    size_t   length;
+    int      prot;
+} sys_msg_map_anon_params_t;
 
-int main(int argc, char *argv[]) {
-    /* Say hello. */
-    jinue_info("Jinue test app (%s) started.", argv[0]);
-
-    run_abcd_test();
-    run_aes_test();
-    run_cancel_thread_test();
-    run_cancel_thread_async_test();
-    run_exit_thread_test();
-    run_ipc_test();
-    run_scroll_test();
-    run_signal_test();
-    run_sse_test();
-
-    return do_exit();
-}
+#endif

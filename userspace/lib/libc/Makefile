@@ -68,7 +68,8 @@ objects.user     = \
 	descriptors.o \
 	errno.o \
 	getauxval.o \
-	getenv.o init.o \
+	getenv.o \
+	init.o \
 	malloc.o \
 	mmap.o \
 	physmem.o \

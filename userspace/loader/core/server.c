@@ -50,7 +50,7 @@ int reply_error(int error_number) {
     return EXIT_SUCCESS;
 }
 
-int receive_message(jinue_message_t *message) {
+static int receive_message(jinue_message_t *message) {
     message->recv_buffers           = NULL;
     message->recv_buffers_length    = 0;
 

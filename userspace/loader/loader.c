@@ -44,7 +44,7 @@
 #include "types.h"
 #include "utils.h"
 
-#define MAP_BUFFER_SIZE 16384
+#define BUFFER_SIZE 16384
 
 static jinue_addr_map_t *get_address_map(void *buffer, size_t bufsize) {
     jinue_buffer_t call_buffer;
@@ -205,7 +205,7 @@ int main(int argc, char *argv[]) {
 
     initialize_meminfo();
 
-    char map_buffer[MAP_BUFFER_SIZE];
+    char map_buffer[BUFFER_SIZE];
     jinue_addr_map_t *map = get_address_map(map_buffer, sizeof(map_buffer));
 
     if(map == NULL) {

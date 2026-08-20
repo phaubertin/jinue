@@ -30,6 +30,8 @@
  */
 
 #include <jinue/jinue.h>
+#include <srv/system.h>
+#include <sys/auxv.h>
 #include <sys/mman.h>
 #include <errno.h>
 #include <internals.h>
@@ -41,6 +43,91 @@ static void *alloc_addr = (void *)MMAP_BASE;
 
 void *mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off) {
     return __mmap_perrno(addr, len, prot, flags, fildes, off, &errno);
+}
+
+static int do_mmap(
+        void    *addr,
+        size_t   len,
+        int      prot,
+        int      flags,
+        int      fildes,
+        off_t    off,
+        int     *perrno) {
+    
+    uint32_t protocol = getauxval(JINUE_AT_PROTOCOL);
+
+    if(protocol == JINUE_PROTOCOL_INIT || protocol == JINUE_PROTOCOL_LOADER) {
+        int64_t paddr;
+
+        if(flags & MAP_ANONYMOUS) {
+            paddr = __physmem_alloc(len);
+
+            if(paddr < 0) {
+                *perrno = ENOMEM;
+                return -1;
+            }
+        }
+        else {
+            paddr = off;
+        }
+
+        const int syscall_flags_mask = MAP_UNCACHEABLE | MAP_WRITE_COMBINE;
+
+        return jinue_mmap(
+            JINUE_DESC_SELF_PROCESS,
+            addr,
+            len,
+            prot,
+            flags & syscall_flags_mask,
+            paddr,
+            perrno
+        );
+    }
+
+    if(!(flags & MAP_ANONYMOUS)) {
+        *perrno = ENOTSUP;
+        return -1;
+    }
+
+    const int noperm_flags_mask = MAP_UNCACHEABLE | MAP_WRITE_COMBINE;
+
+    if((flags & noperm_flags_mask) != 0) {
+        *perrno = EPERM;
+        return -1;
+    }
+
+    sys_msg_map_anon_params_t params;
+    params.addr     = addr;
+    params.length   = len;
+    params.prot     = prot;
+
+    jinue_const_buffer_t params_buf;
+    params_buf.addr = &params;
+    params_buf.size = sizeof(sys_msg_map_anon_params_t);
+    
+    jinue_message_t message;
+    message.send_buffers        = &params_buf;
+    message.send_buffers_length = 1;
+    message.recv_buffers        = NULL;
+    message.recv_buffers_length = 0;
+
+    int errnum;
+    uintptr_t errcode;
+
+    /* TODO define a constant for the IPC endpoint */
+    int status = jinue_send(
+        JINUE_DESC_LOADER_ENDPOINT,
+        SYS_MSG_MAP_ANON,
+        &message,
+        &errnum,
+        &errcode
+    );
+
+    if(status < 0) {
+        *perrno = errnum == JINUE_EPROTO ? errcode : errnum;
+    }
+
+    return status;
 }
 
 void *__mmap_perrno(
@@ -127,29 +214,13 @@ void *__mmap_perrno(
         return MAP_FAILED;
     }
 
-    int64_t paddr;
-
-    if(flags & MAP_ANONYMOUS) {
-        paddr = __physmem_alloc(aligned_length);
-
-        if(paddr < 0) {
-            *perrno = ENOMEM;
-            return MAP_FAILED;
-        }
-    }
-    else {
-        paddr = off;
-    }
-
-    const int syscall_flags_mask = MAP_UNCACHEABLE | MAP_WRITE_COMBINE;
-
-    int ret = jinue_mmap(
-        JINUE_DESC_SELF_PROCESS,
+    int ret = do_mmap(
         addr,
         aligned_length,
         prot,
-        flags & syscall_flags_mask,
-        paddr,
+        flags,
+        fildes,
+        off,
         perrno
     );
 

@@ -29,8 +29,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TESTAPP_DEBUG_H_
-#define TESTAPP_DEBUG_H_
+#ifndef TESTAPP_SERVER_DEBUG_H_
+#define TESTAPP_SERVER_DEBUG_H_
+
+#include "types.h"
 
 void dump_cmdline_arguments(int argc, char *argv[]);
 
@@ -44,6 +46,6 @@ void dump_address_map(void);
 
 void dump_loader_memory_info(void);
 
-void dump_loader_ramdisk(void);
+void dump_ramdisk(const ramdisk_t *ramdisk);
 
 #endif
