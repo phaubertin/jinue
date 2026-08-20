@@ -40,7 +40,7 @@
 #include "tests/tests.h"
 #include "utils.h"
 
-int do_exit() {
+int do_exit(void) {
     jinue_message_t message;
     message.send_buffers        = NULL;
     message.send_buffers_length = 0;
