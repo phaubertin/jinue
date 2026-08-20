@@ -38,7 +38,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../utils.h"
-#include "exit_thread.h"
+#include "tests.h"
 
 #define THREAD_EXIT_VALUE ((void *)0xdeadbeef)
 

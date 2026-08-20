@@ -34,8 +34,6 @@
 
 #include <stdint.h>
 
-void run_aes_test(void);
-
 /* in aes.asm */
 void aes128_round_key(
     const uint8_t   *current,

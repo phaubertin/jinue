@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Philippe Aubertin.
+ * Copyright (C) 2023-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,9 +29,25 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TESTAPP_TEST_IPC_H_
-#define TESTAPP_TEST_IPC_H_
+#ifndef TESTAPP_TEST_TESTS_H_
+#define TESTAPP_TEST_TESTS_H_
+
+void run_abcd_test(void);
+
+void run_aes_test(void);
+
+void run_cancel_thread_async_test(void);
+
+void run_cancel_thread_test(void);
+
+void run_exit_thread_test(void);
 
 void run_ipc_test(void);
+
+void run_scroll_test(void);
+
+void run_signal_test(void);
+
+void run_sse_test(void);
 
 #endif

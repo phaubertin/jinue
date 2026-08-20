@@ -37,15 +37,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include "tests/abcd.h"
-#include "tests/aes.h"
-#include "tests/cancel_thread.h"
-#include "tests/cancel_thread_async.h"
-#include "tests/exit_thread.h"
-#include "tests/ipc.h"
-#include "tests/scroll.h"
-#include "tests/signal.h"
-#include "tests/sse.h"
+#include "tests/tests.h"
 #include "utils.h"
 
 int do_exit() {

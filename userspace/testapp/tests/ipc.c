@@ -38,7 +38,7 @@
 #include <pthread.h>
 #include <string.h>
 #include "../utils.h"
-#include "ipc.h"
+#include "tests.h"
 
 #define MSG_FUNC_TEST   (JINUE_SYS_USER_BASE + 42)
 

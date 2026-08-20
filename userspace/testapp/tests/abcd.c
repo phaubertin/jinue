@@ -36,7 +36,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../utils.h"
-#include "abcd.h"
+#include "tests.h"
 
 #define THREADS_NUM 8
 

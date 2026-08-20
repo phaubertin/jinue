@@ -38,7 +38,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../utils.h"
-#include "cancel_thread.h"
+#include "tests.h"
 
 #define MSG_SYNCHRONIZE JINUE_SYS_USER_BASE
 

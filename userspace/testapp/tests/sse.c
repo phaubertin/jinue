@@ -37,6 +37,7 @@
 #include <string.h>
 #include "../utils.h"
 #include "sse.h"
+#include "tests.h"
 
 #define PASS            0
 
