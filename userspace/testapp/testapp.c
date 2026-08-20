@@ -48,7 +48,7 @@ int do_exit() {
     message.recv_buffers_length = 0;
 
     /* TODO define a constant for the endpoint descriptor */
-    intptr_t retval = jinue_send(JINUE_DESC_LOADER_ENDPOINT, SYS_MSG_EXIT, &message, &errno, NULL);
+    intptr_t retval = jinue_send(SYS_DESC_ENDPOINT, SYS_MSG_EXIT, &message, &errno, NULL);
 
     if(retval < 0) {
         jinue_error("error: jinue_send() failed on exit: %s.", strerror(errno));

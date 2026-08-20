@@ -32,6 +32,7 @@
 #include <jinue/jinue.h>
 #include <jinue/loader.h>
 #include <jinue/utils.h>
+#include <srv/system.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,7 +44,7 @@ static int initialize_descriptors(const process_t *process, const thread_t *thre
     int status = jinue_mint(
         process->fd,
         process->fd,
-        JINUE_DESC_SELF_PROCESS,
+        SYS_DESC_SELF_PROCESS,
         JINUE_PERM_CREATE_THREAD | JINUE_PERM_MAP | JINUE_PERM_OPEN,
         0,
         &errno
@@ -57,7 +58,7 @@ static int initialize_descriptors(const process_t *process, const thread_t *thre
     status = jinue_mint(
         thread->fd,
         process->fd,
-        JINUE_DESC_MAIN_THREAD,
+        SYS_DESC_MAIN_THREAD,
         JINUE_PERM_START | JINUE_PERM_AWAIT,
         0,
         &errno
@@ -71,7 +72,7 @@ static int initialize_descriptors(const process_t *process, const thread_t *thre
     status = jinue_mint(
         endpoint,
         process->fd,
-        JINUE_DESC_LOADER_ENDPOINT,
+        SYS_DESC_ENDPOINT,
         JINUE_PERM_SEND,
         0,
         &errno

@@ -114,9 +114,8 @@ static int do_mmap(
     int errnum;
     uintptr_t errcode;
 
-    /* TODO define a constant for the IPC endpoint */
     int status = jinue_send(
-        JINUE_DESC_LOADER_ENDPOINT,
+        SYS_DESC_ENDPOINT,
         SYS_MSG_MAP_ANON,
         &message,
         &errnum,

@@ -31,6 +31,7 @@
 
 #include <jinue/jinue.h>
 #include <jinue/utils.h>
+#include <srv/system.h>
 #include <errno.h>
 #include <internals.h>
 #include <inttypes.h>
@@ -153,7 +154,7 @@ void run_ipc_test(void) {
 
     status = jinue_mint(
         endpoint,
-        JINUE_DESC_SELF_PROCESS,
+        SYS_DESC_SELF_PROCESS,
         client_endpoint,
         JINUE_PERM_SEND,
         0xca11ab1e,

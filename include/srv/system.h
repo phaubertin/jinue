@@ -35,9 +35,21 @@
 #include <jinue/jinue.h>
 #include <stddef.h>
 
+/* Descriptors */
+
+#define SYS_DESC_SELF_PROCESS   JINUE_DESC_SELF_PROCESS
+
+#define SYS_DESC_MAIN_THREAD    JINUE_DESC_MAIN_THREAD
+
+#define SYS_DESC_ENDPOINT       JINUE_DESC_LOADER_ENDPOINT
+
+/* Message types */
+
 #define SYS_MSG_EXIT        (JINUE_SYS_USER_BASE + 0)
 
 #define SYS_MSG_MAP_ANON    (JINUE_SYS_USER_BASE + 1)
+
+/* Message structures */
 
 typedef struct {
     void    *addr;
