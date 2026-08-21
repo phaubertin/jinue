@@ -35,7 +35,7 @@
 #include <internals.h>
 #include <signal.h>
 #include "../utils.h"
-#include "signal.h"
+#include "tests.h"
 
 volatile sig_atomic_t signal_1_flag;
 

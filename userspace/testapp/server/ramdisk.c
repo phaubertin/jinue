@@ -5,18 +5,18 @@
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -30,75 +30,71 @@
  */
 
 #include <jinue/jinue.h>
+#include <jinue/loader.h>
 #include <jinue/utils.h>
+#include <sys/mman.h>
 #include <errno.h>
-#include <internals.h>
-#include <stdbool.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../utils.h"
-#include "tests.h"
+#include "ramdisk.h"
 
-#define THREAD_EXIT_VALUE ((void *)0xdeadbeef)
+#define BUFFER_SIZE 16384
 
-static void cleanup_routine(void *str) {
-    jinue_info("Running cancellation handler: %s", str);
-}
+int get_ramdisk(ramdisk_t *ramdisk) {
+    char buffer[BUFFER_SIZE];
 
-static void inner_func(void) {
-    pthread_cleanup_push(cleanup_routine, "inner handler");
+    const jinue_meminfo_t *meminfo = jinue_get_meminfo(buffer, sizeof(buffer));
 
-    pthread_exit(THREAD_EXIT_VALUE);
+    if(meminfo == NULL) {
+        return EXIT_FAILURE;
+    }
 
-    pthread_cleanup_pop(0);
+    const jinue_segment_t *segment = jinue_get_ramdisk(meminfo);
+
+    if(segment == NULL) {
+        return EXIT_FAILURE;
+    }
+
+    const jinue_dirent_t *root = mmap(
+        NULL,
+        segment->size,
+        PROT_READ,
+        MAP_SHARED,
+        -1,
+        segment->addr
+    );
+
+    if(root == MAP_FAILED) {
+        jinue_error("error: mmap() failed: %s.", strerror(errno));
+        return EXIT_FAILURE;
+    }
+
+    ramdisk->root   = root;
+    ramdisk->paddr  = segment->addr;
+    ramdisk->size   = segment->size;
     
+    return EXIT_SUCCESS;
 }
 
-static void *thread_func(void *arg) {
-    jinue_info("Thread started");
+int open_ramdisk_file(file_t *file, const ramdisk_t *ramdisk, const char *filename) {
+    const jinue_dirent_t *dirent = jinue_dirent_find_by_name(ramdisk->root, filename);
 
-    pthread_cleanup_push(cleanup_routine, "outer handler");
-
-    inner_func();
-
-    pthread_cleanup_pop(0);
-
-    return NULL;
-}
-
-void run_exit_thread_test(void) {
-    if(! bool_getenv("RUN_TEST_EXIT_THREAD")) {
-        return;
+    if(dirent == NULL) {
+        jinue_error("error: file not found: %s", filename);
+        return EXIT_FAILURE;
     }
 
-    jinue_info("Running thread exit test...");
-
-    pthread_t thread;
-    int status = start_thread(&thread, thread_func, NULL);
-
-    if(status != EXIT_SUCCESS) {
-        /* start_thread() does the error logging. */
-        return;
+    if(dirent->type != JINUE_DIRENT_TYPE_FILE) {
+        jinue_error("error: not a regular file: %s", filename);
+        return EXIT_FAILURE;
     }
 
-    jinue_info("Joining the thread...");
+    uint64_t offset = (const char *)jinue_dirent_file(dirent) - (const char *)ramdisk->root;
 
-    void *thread_exit_value;
-    status = pthread_join(thread, &thread_exit_value);
-    
-    if(status != 0) {
-        jinue_error("error: failed to join the thread: %s", strerror(status));
-        return;
-    }
+    file->name      = jinue_dirent_name(dirent);
+    file->contents  = jinue_dirent_file(dirent);
+    file->size      = dirent->size;
+    file->paddr     = ramdisk->paddr + offset;
 
-    if(thread_exit_value == THREAD_EXIT_VALUE) {
-        jinue_info("Thread exit value is %#p", thread_exit_value);
-    }
-    else {
-        jinue_error("error: unexpected thread exit value is %#p", thread_exit_value);
-        return;
-    }
-
-    jinue_info("Main thread is running.");
+    return EXIT_SUCCESS;
 }

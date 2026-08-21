@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,9 +29,42 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TESTAPP_TEST_IPC_H_
-#define TESTAPP_TEST_IPC_H_
+#include <jinue/jinue.h>
+#include <srv/system.h>
+#include <errno.h>
+#include <internals.h>
+#include <stdint.h>
+#include "../utils.h"
+#include "handlers.h"
 
-void run_ipc_test(void);
+void handle_map_anon(const message_context_t *ctx, void *msg, size_t len) {
+    if(len != sizeof(sys_msg_map_anon_params_t)) {
+        reply_error(EINVAL);
+    }
 
-#endif
+    const sys_msg_map_anon_params_t *params = (const sys_msg_map_anon_params_t *)msg;
+
+    uint64_t paddr = libc_physmem_alloc(params->length);
+
+    if(paddr < 0) {
+        reply_error(ENOMEM);
+        return;
+    }
+
+    int status = jinue_mmap(
+        ctx->process.fd,
+        params->addr,
+        params->length,
+        params->prot,
+        JINUE_MAP_NONE,
+        paddr,
+        &errno
+    );
+
+    if(status < 0) {
+        reply_error(errno);
+        return;
+    }
+
+    reply_success();
+}

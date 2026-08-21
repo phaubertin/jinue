@@ -347,12 +347,12 @@ static void sys_mmap(trapframe_t *trapframe) {
         return;
     }
 
-    if((mmap_args.length & (PAGE_SIZE -1)) != 0) {
+    if((mmap_args.length & (PAGE_SIZE - 1)) != 0) {
         set_error(trapframe, JINUE_EINVAL);
         return;
     }
 
-    if((mmap_args.paddr & (PAGE_SIZE -1)) != 0) {
+    if((mmap_args.paddr & (PAGE_SIZE - 1)) != 0) {
         set_error(trapframe, JINUE_EINVAL);
         return;
     }

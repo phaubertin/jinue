@@ -30,6 +30,7 @@
  */
 
 #include <jinue/jinue.h>
+#include <srv/system.h>
 #include <sys/mman.h>
 #include <errno.h>
 #include <internals.h>
@@ -81,7 +82,7 @@ static pthread_t allocate_thread(int *perrno) {
         return NULL;
     }
 
-    int status = jinue_create_thread(fd, JINUE_DESC_SELF_PROCESS, perrno);
+    int status = jinue_create_thread(fd, SYS_DESC_SELF_PROCESS, perrno);
 
     if(status < 0) {
         __free_descriptor(fd);

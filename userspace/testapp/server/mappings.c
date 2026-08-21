@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 Philippe Aubertin.
+ * Copyright (C) 2024-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,9 +29,68 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TESTAPP_TEST_SCROLL_H_
-#define TESTAPP_TEST_SCROLL_H_
+#include <jinue/jinue.h>
+#include <jinue/loader.h>
+#include <jinue/utils.h>
+#include <sys/mman.h>
+#include <errno.h>
+#include <internals.h>
+#include <stdint.h>
+#include <string.h>
+#include "mappings.h"
 
-void run_scroll_test(void);
+int map_file(
+    const process_t *process,
+    const file_t    *file,
+    void            *vaddr,
+    size_t           size,
+    size_t           offset,
+    int              perms
+) {
+    int status = jinue_mmap(
+        process->fd,
+        vaddr,
+        size,
+        perms,
+        JINUE_MAP_NONE,
+        file->paddr + offset,
+        &errno
+    );
 
-#endif
+    if(status < 0) {
+        jinue_error("error: jinue_mmap() failed: %s", strerror(errno));
+        return status;
+    }
+
+    return 0;
+}
+
+void *map_anonymous(const process_t *process, void *vaddr, size_t size, int perms) {
+    uint64_t paddr = libc_get_physmem_alloc_addr();
+
+    /* Map into this process so we can set the contents. */
+    void *segment = mmap_anonymous(NULL, size);
+
+    if(segment == MAP_FAILED) {
+        jinue_error("error: mmap() failed: %s", strerror(errno));
+        return NULL;
+    }
+
+    /* Map into the target process. */
+    int status = jinue_mmap(
+        process->fd,
+        vaddr,
+        size,
+        perms,
+        JINUE_MAP_NONE,
+        paddr,
+        &errno
+    );
+
+    if(status < 0) {
+        jinue_error("error: jinue_mmap() failed: %s", strerror(errno));
+        return NULL;
+    }
+
+    return segment;
+}

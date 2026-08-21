@@ -32,12 +32,14 @@
 #include <jinue/jinue.h>
 #include <sys/auxv.h>
 #include <sys/elf.h>
+#include <sys/mman.h>
 #include <errno.h>
 #include <internals.h>
 #include <limits.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include "brk.h"
+#include "mmap.h"
 #include "physmem.h"
 
 /* Original value of the program break, i.e. just after the data segment. We
@@ -114,23 +116,18 @@ int __brk_perrno(void *addr, int *perrno) {
     if((uintptr_t)addr > (uintptr_t)allocated_break) {
         uintptr_t new_allocated = ((uintptr_t)addr + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
         size_t size             = new_allocated - (uintptr_t)allocated_break;
-        intptr_t physaddr       = __physmem_alloc(size);
 
-        if(physaddr < 0) {
-            *perrno = ENOMEM;
-            return -1;
-        }
+        void *ret = __mmap_perrno(
+            allocated_break,
+            size,
+            PROT_READ | PROT_WRITE,
+            MAP_ANONYMOUS | MAP_FIXED | MAP_SHARED,
+            -1,
+            0,
+            perrno
+        );
 
-        int ret = jinue_mmap(
-                JINUE_DESC_SELF_PROCESS,
-                allocated_break,
-                size,
-                JINUE_PROT_READ | JINUE_PROT_WRITE,
-                JINUE_MAP_NONE,
-                physaddr,
-                perrno);
-
-        if(ret < 0) {
+        if(ret == MAP_FAILED) {
             return -1;
         }
 

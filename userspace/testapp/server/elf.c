@@ -39,9 +39,9 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../core/mappings.h"
 #include "../utils.h"
 #include "elf.h"
+#include "mappings.h"
 
 typedef struct {
     void    (*entry)(void);
@@ -210,7 +210,7 @@ static int map_protection_flags(Elf32_Word p_flags) {
  * @return EXIT_SUCCESS on success, EXIT_FAILURE on failure
  *
  * */
-static int load_segments(elf_info_t *elf_info, const file_t *exec_file) {
+static int load_segments(elf_info_t *elf_info, const process_t *process, const file_t *exec_file) {
     const Elf32_Ehdr *ehdr = exec_file->contents;
 
     /* program header table */
@@ -241,9 +241,10 @@ static int load_segments(elf_info_t *elf_info, const file_t *exec_file) {
 
         if(! (is_writable || needs_padding)) {
             int status = map_file(
+                process,
+                exec_file,
                 (void *)vaddr,
                 memsize,
-                exec_file->segment_index,
                 phdr->p_offset - diff,
                 map_protection_flags(phdr->p_flags)
             );
@@ -252,7 +253,12 @@ static int load_segments(elf_info_t *elf_info, const file_t *exec_file) {
                 return EXIT_FAILURE;
             }
         } else {
-            char *segment = map_anonymous((void *)vaddr, memsize, map_protection_flags(phdr->p_flags));
+            char *segment = map_anonymous(
+                process,
+                (void *)vaddr,
+                memsize,
+                map_protection_flags(phdr->p_flags)
+            );
 
             if(segment == NULL) {
                 return EXIT_FAILURE;
@@ -280,10 +286,11 @@ static int load_segments(elf_info_t *elf_info, const file_t *exec_file) {
  * @return start of stack in loader address space
  *
  * */
-static void *allocate_stack(void) {
+static void *allocate_stack(const process_t *process) {
     /** TODO: check for overlap of stack with loaded segments */
 
     char *stack = map_anonymous(
+        process,
         (void *)JINUE_STACK_START,
         JINUE_STACK_SIZE,
         PROT_READ | PROT_WRITE
@@ -443,7 +450,7 @@ static void initialize_stack(
 
     /* Auxiliary vectors */
     Elf32_auxv_t *auxvp = (Elf32_auxv_t *)&wlocal[index];
-    index += 10 * sizeof(auxvp[0]) / sizeof(wlocal[0]);
+    index += 9 * sizeof(auxvp[0]) / sizeof(wlocal[0]);
 
     auxvp[0].a_type     = JINUE_AT_PHDR;
     auxvp[0].a_un.a_val = (uint32_t)elf_info->at_phdr;
@@ -469,11 +476,11 @@ static void initialize_stack(
     auxvp[7].a_type     = JINUE_AT_ACPI_RSDP;
     auxvp[7].a_un.a_val = getauxval(JINUE_AT_ACPI_RSDP);
 
-    auxvp[8].a_type     = JINUE_AT_PROTOCOL;
-    auxvp[8].a_un.a_val = JINUE_PROTOCOL_INIT;
+    /* We purposely omit JINUE_AT_PROTOCOL here: the process we are setting up
+     * is neither the user space loader nor the initial process. */
 
-    auxvp[9].a_type     = JINUE_AT_NULL;
-    auxvp[9].a_un.a_val = 0;
+    auxvp[8].a_type     = JINUE_AT_NULL;
+    auxvp[8].a_un.a_val = 0;
 
     char *const args = (char *)&wlocal[index];
 
@@ -504,6 +511,7 @@ static void initialize_stack(
  * */
 int load_elf(
         thread_params_t *thread_params,
+        const process_t *process,
         const file_t    *exec_file,
         int              argc,
         char            *argv[]) {
@@ -517,13 +525,13 @@ int load_elf(
     }
 
     elf_info_t elf_info;
-    status = load_segments(&elf_info, exec_file);
+    status = load_segments(&elf_info, process, exec_file);
 
     if(status != EXIT_SUCCESS) {
         return status;
     }
 
-    void *stack = allocate_stack();
+    void *stack = allocate_stack(process);
     
     if(stack == NULL) {
         return EXIT_FAILURE;

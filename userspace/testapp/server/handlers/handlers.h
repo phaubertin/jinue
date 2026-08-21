@@ -29,9 +29,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TESTAPP_TEST_CANCEL_THREAD_H_
-#define TESTAPP_TEST_CANCEL_THREAD_H_
+#ifndef TESTAPP_SERVER_HANDLERS_HANDLERS_H_
+#define TESTAPP_SERVER_HANDLERS_HANDLERS_H_
 
-void run_cancel_thread_test(void);
+#include <stddef.h>
+#include "../types.h"
+
+void handle_map_anon(const message_context_t *ctx, void *msg, size_t len);
 
 #endif

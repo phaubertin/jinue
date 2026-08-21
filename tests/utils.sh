@@ -63,8 +63,11 @@ check_loader_start () {
 }
 
 check_testapp_start () {
-    echo "* Check test application started"
-    grep -F "Jinue test app (/sbin/init) started." $LOG || fail
+    echo "* Check test application server started"
+    grep -F "Jinue test app server (/sbin/init) started." $LOG || fail
+
+    echo "* Check test application client started"
+    grep -F "Jinue test app (/sbin/testapp) started." $LOG || fail
 }
 
 report_fail () {

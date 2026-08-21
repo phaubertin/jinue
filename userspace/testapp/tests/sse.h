@@ -34,8 +34,6 @@
 
 #include "asm/sse.h"
 
-void run_sse_test(void);
-
 /* in sse.asm */
 void compute_sse(const void *tbuffer, void *result);
 

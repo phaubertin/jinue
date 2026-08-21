@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Philippe Aubertin.
+ * Copyright (C) 2019-2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -61,5 +61,15 @@
 
 /** Address of RSDP (ACPI) */
 #define JINUE_AT_ACPI_RSDP      9
+
+/** User space protocol */
+#define JINUE_AT_PROTOCOL       10
+
+
+/** User space protocol (JINUE_AT_PROTOCOL value) for user space loader */
+#define JINUE_PROTOCOL_LOADER   1
+
+/** User space protocol (JINUE_AT_PROTOCOL value) for initial process */
+#define JINUE_PROTOCOL_INIT     2
 
 #endif

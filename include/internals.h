@@ -52,6 +52,8 @@ void *__mmap_anonymous(void *addr, size_t len);
 
 int __get_thread_descriptor(pthread_t thread);
 
+int64_t __physmem_alloc(size_t size);
+
 
 #define libc_init __libc_init
 
@@ -66,5 +68,7 @@ int __get_thread_descriptor(pthread_t thread);
 #define mmap_anonymous __mmap_anonymous
 
 #define get_thread_descriptor __get_thread_descriptor
+
+#define libc_physmem_alloc __physmem_alloc
 
 #endif

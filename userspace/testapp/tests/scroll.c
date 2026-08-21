@@ -35,7 +35,7 @@
 #include <stdint.h>
 #include <string.h>
 #include "../utils.h"
-#include "scroll.h"
+#include "tests.h"
 
 static char sequence[16][20];
 

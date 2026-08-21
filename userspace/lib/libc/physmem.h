@@ -37,6 +37,4 @@
 
 int __physmem_init(void);
 
-int64_t __physmem_alloc(size_t size);
-
 #endif

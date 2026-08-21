@@ -38,7 +38,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../utils.h"
-#include "cancel_thread.h"
+#include "tests.h"
 
 #define MSG_SYNCHRONIZE JINUE_SYS_USER_BASE
 
@@ -119,7 +119,7 @@ void run_cancel_thread_test(void) {
     int status = jinue_create_endpoint(endpoint, &errno);
 
     if(status < 0) {
-        jinue_error("error: could not create IPC object: %s", strerror(errno));
+        jinue_error("error: could not create IPC endpoint: %s", strerror(errno));
         return;
     }
 

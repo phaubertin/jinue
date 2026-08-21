@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,9 +29,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TESTAPP_TEST_ABCD_H_
-#define TESTAPP_TEST_ABCD_H_
+#ifndef TESTAPP_SERVER_EXEC_H_
+#define TESTAPP_SERVER_EXEC_H_
 
-void run_abcd_test(void);
+#include "types.h"
+
+int exec(
+    const process_t *process,
+    const thread_t  *thread,
+    const file_t    *exec_file,
+    int              argc,
+    char            *argv[],
+    int              endpoint);
 
 #endif

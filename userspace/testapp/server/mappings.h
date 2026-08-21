@@ -29,9 +29,20 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TESTAPP_TEST_SIGNAL_H_
-#define TESTAPP_TEST_SIGNAL_H_
+#ifndef TESTAPP_SERVER_MAPPINGS_H_
+#define TESTAPP_SERVER_MAPPINGS_H_
 
-void run_signal_test(void);
+#include <stddef.h>
+#include "types.h"
+
+int map_file(
+    const process_t *process,
+    const file_t    *file,
+    void            *vaddr,
+    size_t           size,
+    size_t           offset,
+    int              perms);
+
+void *map_anonymous(const process_t *process, void *vaddr, size_t size, int perms);
 
 #endif

@@ -32,43 +32,34 @@
 #include <jinue/jinue.h>
 #include <jinue/loader.h>
 #include <jinue/utils.h>
+#include <srv/system.h>
 #include <errno.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include "tests/abcd.h"
-#include "tests/aes.h"
-#include "tests/cancel_thread.h"
-#include "tests/cancel_thread_async.h"
-#include "tests/exit_thread.h"
-#include "tests/ipc.h"
-#include "tests/scroll.h"
-#include "tests/signal.h"
-#include "tests/sse.h"
-#include "debug.h"
+#include "tests/tests.h"
 #include "utils.h"
+
+int do_exit(void) {
+    jinue_message_t message;
+    message.send_buffers        = NULL;
+    message.send_buffers_length = 0;
+    message.recv_buffers        = NULL;
+    message.recv_buffers_length = 0;
+
+    intptr_t retval = jinue_send(SYS_DESC_ENDPOINT, SYS_MSG_EXIT, &message, &errno, NULL);
+
+    if(retval < 0) {
+        jinue_error("error: jinue_send() failed on exit: %s.", strerror(errno));
+        return EXIT_FAILURE;
+    }
+    
+    return EXIT_SUCCESS;
+}
 
 int main(int argc, char *argv[]) {
     /* Say hello. */
     jinue_info("Jinue test app (%s) started.", argv[0]);
-
-    dump_cmdline_arguments(argc, argv);
-    dump_environ();
-    dump_auxvec();
-    dump_syscall_implementation();
-    dump_address_map();
-    dump_loader_memory_info();
-    dump_loader_ramdisk();
-
-    jinue_info("Blocking until loader exits...");
-
-    int status = jinue_exit_loader();
-
-    if(status < 0) {
-        return EXIT_FAILURE;
-    }
-
-    jinue_info("Loader has exited.");
 
     run_abcd_test();
     run_aes_test();
@@ -80,14 +71,5 @@ int main(int argc, char *argv[]) {
     run_signal_test();
     run_sse_test();
 
-    if(bool_getenv("DEBUG_DO_REBOOT")) {
-        jinue_info("Rebooting.");
-        jinue_reboot();
-    }
-
-    while (1) {
-        jinue_yield_thread();
-    }
-    
-    return EXIT_SUCCESS;
+    return do_exit();
 }

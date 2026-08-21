@@ -67,3 +67,4 @@ wrk/
 # Userspace executables
 userspace/loader/loader
 userspace/testapp/testapp
+userspace/testapp/test-server

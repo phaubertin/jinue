@@ -31,6 +31,7 @@
 
 #include <jinue/jinue.h>
 #include <jinue/utils.h>
+#include <srv/system.h>
 #include <errno.h>
 #include <internals.h>
 #include <inttypes.h>
@@ -38,7 +39,7 @@
 #include <pthread.h>
 #include <string.h>
 #include "../utils.h"
-#include "ipc.h"
+#include "tests.h"
 
 #define MSG_FUNC_TEST   (JINUE_SYS_USER_BASE + 42)
 
@@ -140,7 +141,7 @@ void run_ipc_test(void) {
     int status = jinue_create_endpoint(endpoint, &errno);
 
     if(status < 0) {
-        jinue_error("error: could not create IPC object: %s", strerror(errno));
+        jinue_error("error: could not create IPC endpoint: %s", strerror(errno));
         return;
     }
 
@@ -153,7 +154,7 @@ void run_ipc_test(void) {
 
     status = jinue_mint(
         endpoint,
-        JINUE_DESC_SELF_PROCESS,
+        SYS_DESC_SELF_PROCESS,
         client_endpoint,
         JINUE_PERM_SEND,
         0xca11ab1e,

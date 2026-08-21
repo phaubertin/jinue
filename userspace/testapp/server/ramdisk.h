@@ -29,9 +29,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TESTAPP_TEST_EXIT_THREAD_H_
-#define TESTAPP_TEST_EXIT_THREAD_H_
+#ifndef TESTAPP_SERVER_RAMDISK_H_
+#define TESTAPP_SERVER_RAMDISK_H_
 
-void run_exit_thread_test(void);
+#include "types.h"
+
+int get_ramdisk(ramdisk_t *ramdisk);
+
+int open_ramdisk_file(file_t *file, const ramdisk_t *ramdisk, const char *filename);
 
 #endif

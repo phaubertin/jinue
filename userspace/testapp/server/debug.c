@@ -37,14 +37,15 @@
 #include <sys/mman.h>
 #include <errno.h>
 #include <inttypes.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include "debug.h"
-#include "utils.h"
+#include "../utils.h"
 
-#define MAP_BUFFER_SIZE 16384
+#define BUFFER_SIZE         16384
 
-#define PRETTY_MODE_SIZE 11
+#define PRETTY_MODE_SIZE    11
 
 extern char **environ;
 
@@ -89,6 +90,7 @@ static const char *auxv_type_name(int type) {
             {"AT_STACKBASE",    JINUE_AT_STACKBASE},
             {"AT_HOWSYSCALL",   JINUE_AT_HOWSYSCALL},
             {"AT_ACPI_RSDP",    JINUE_AT_ACPI_RSDP},
+            {"AT_PROTOCOL",     JINUE_AT_PROTOCOL},
             {NULL, 0}
     };
 
@@ -212,7 +214,7 @@ static void dump_phys_memory_map(const jinue_addr_map_t *map) {
 }
 
 void dump_address_map(void) {
-    char map_buffer[MAP_BUFFER_SIZE];
+    char map_buffer[BUFFER_SIZE];
 
     jinue_buffer_t call_buffer;
     call_buffer.addr = map_buffer;
@@ -303,7 +305,7 @@ static void dump_meminfo(const jinue_meminfo_t *meminfo) {
 }
 
 void dump_loader_memory_info(void) {
-    char buffer[MAP_BUFFER_SIZE];
+    char buffer[BUFFER_SIZE];
 
     const jinue_meminfo_t *meminfo = jinue_get_meminfo(buffer, sizeof(buffer));
 
@@ -368,7 +370,7 @@ static const char *pretty_mode(char *mode, const jinue_dirent_t *dirent) {
     return mode;
 }
 
-static void dump_ramdisk(const jinue_dirent_t *root) {
+void dump_ramdisk(const ramdisk_t *ramdisk) {
     char mode_buffer[PRETTY_MODE_SIZE];
 
     if(! bool_getenv("DEBUG_DUMP_RAMDISK")) {
@@ -377,7 +379,7 @@ static void dump_ramdisk(const jinue_dirent_t *root) {
 
     jinue_info("RAM disk dump:");
 
-    const jinue_dirent_t *dirent = jinue_dirent_get_first(root);
+    const jinue_dirent_t *dirent = jinue_dirent_get_first(ramdisk->root);
 
     while(dirent != NULL) {
         jinue_info(
@@ -391,29 +393,4 @@ static void dump_ramdisk(const jinue_dirent_t *root) {
 
         dirent = jinue_dirent_get_next(dirent);
     }
-}
-
-void dump_loader_ramdisk(void) {
-    static const jinue_dirent_t *root = MAP_FAILED;
-
-    if(root == MAP_FAILED) {
-        char buffer[MAP_BUFFER_SIZE];
-
-        const jinue_meminfo_t *meminfo = jinue_get_meminfo(buffer, sizeof(buffer));
-
-        if(meminfo == NULL) {
-            return;
-        }
-
-        const jinue_segment_t *ramdisk = jinue_get_ramdisk(meminfo);
-
-        root = mmap(NULL, ramdisk->size, PROT_READ, MAP_SHARED, -1, ramdisk->addr);
-    }
-
-    if(root == MAP_FAILED) {
-        jinue_error("error: mmap() failed: %s.", strerror(errno));
-        return;
-    }
-
-    dump_ramdisk(root);
 }

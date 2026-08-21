@@ -33,6 +33,7 @@
 #include <string.h>
 #include "../utils.h"
 #include "aes.h"
+#include "tests.h"
 
 void run_aes_test(void) {
     if(! bool_getenv("RUN_TEST_AES")) {
