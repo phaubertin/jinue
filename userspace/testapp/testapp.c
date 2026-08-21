@@ -47,7 +47,6 @@ int do_exit(void) {
     message.recv_buffers        = NULL;
     message.recv_buffers_length = 0;
 
-    /* TODO define a constant for the endpoint descriptor */
     intptr_t retval = jinue_send(SYS_DESC_ENDPOINT, SYS_MSG_EXIT, &message, &errno, NULL);
 
     if(retval < 0) {

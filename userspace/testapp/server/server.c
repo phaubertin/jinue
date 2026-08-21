@@ -48,9 +48,7 @@
 
 #define RECV_BUFFER_SIZE 512
 
-static message_context_t message_context;
-
-static int run_server(int fd) {
+static int run_server(int fd, const message_context_t *message_context) {
     while(true) {
         unsigned char buffer[RECV_BUFFER_SIZE];
 
@@ -74,7 +72,7 @@ static int run_server(int fd) {
                 /* At this point, the remote process is done. No need to send a reply. */
                 return EXIT_SUCCESS;
             case SYS_MSG_MAP_ANON:
-                handle_map_anon(&message_context, buffer, len);
+                handle_map_anon(message_context, buffer, len);
                 break;
             default:
                 reply_error(ENOSYS);
@@ -130,6 +128,7 @@ static int do_main(int argc, char *argv[]) {
 
     jinue_info("Creating client process.");
 
+    message_context_t message_context;
     process_t *process = &message_context.process;
     process->fd = libc_allocate_descriptor();
 
@@ -181,7 +180,7 @@ static int do_main(int argc, char *argv[]) {
         return status;
     }
 
-    return run_server(endpoint);
+    return run_server(endpoint, &message_context);
 }
 
 int main(int argc, char *argv[]) {

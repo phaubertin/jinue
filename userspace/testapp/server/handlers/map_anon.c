@@ -38,7 +38,7 @@
 #include "handlers.h"
 
 void handle_map_anon(const message_context_t *ctx, void *msg, size_t len) {
-    if(len < sizeof(sys_msg_map_anon_params_t)) {
+    if(len != sizeof(sys_msg_map_anon_params_t)) {
         reply_error(EINVAL);
     }
 
