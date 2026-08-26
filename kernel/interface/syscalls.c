@@ -32,6 +32,7 @@
 #include <jinue/shared/asm/errno.h>
 #include <jinue/shared/asm/signal.h>
 #include <jinue/shared/asm/syscalls.h>
+#include <jinue/shared/asm/thread.h>
 #include <jinue/shared/asm/mman.h>
 #include <jinue/shared/types.h>
 #include <kernel/application/syscalls.h>
@@ -491,9 +492,10 @@ static void sys_start_thread(trapframe_t *trapframe) {
         return;
     }
 
-    void (*entry)(void) = userspace_start_args->entry;
-    void *stack_addr = userspace_start_args->stack_addr;
-    const jinue_sigset_t *sigset = userspace_start_args->sigset;
+    void (*entry)(void)             = userspace_start_args->entry;
+    void *stack_addr                = userspace_start_args->stack_addr;
+    const jinue_sigset_t *sigset    = userspace_start_args->sigset;
+    int flags                       = userspace_start_args->flags;
 
     if(!is_userspace_pointer((void *)(uintptr_t)entry)) {
         set_error(trapframe, JINUE_EINVAL);
@@ -510,7 +512,14 @@ static void sys_start_thread(trapframe_t *trapframe) {
         return;
     }
 
-    int retval = start_thread(fd, entry, stack_addr, sigset->sa_sigbits[0]);
+    const int all_flags = JINUE_START_FLAG_DETACHED;
+
+    if((flags & ~all_flags) != 0) {
+        set_error(trapframe, JINUE_EINVAL);
+        return;
+    }
+
+    int retval = start_thread(fd, entry, stack_addr, sigset, flags);
     set_return_value_or_error(trapframe, retval);
 }
 

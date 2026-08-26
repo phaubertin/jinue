@@ -293,6 +293,7 @@ int jinue_start_thread(
     void                    (*entry)(void),
     void                     *stack_addr,
     const jinue_sigset_t     *sigset,
+    int                       flags,
     int                      *perrno) {
 
     jinue_syscall_args_t args;
@@ -301,6 +302,7 @@ int jinue_start_thread(
     start_args.entry = entry;
     start_args.stack_addr = stack_addr;
     start_args.sigset = sigset;
+    start_args.flags = flags;
 
     args.arg0 = JINUE_SYS_START_THREAD;
     args.arg1 = fd;

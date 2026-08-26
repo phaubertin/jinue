@@ -42,6 +42,7 @@
 #include <jinue/shared/asm/stack.h>
 #include <jinue/shared/asm/syscalls.h>
 #include <jinue/shared/asm/signal.h>
+#include <jinue/shared/asm/thread.h>
 #include <jinue/shared/types.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -131,6 +132,7 @@ int jinue_start_thread(
     void                    (*entry)(void),
     void                     *stack_addr,
     const jinue_sigset_t     *sigset,
+    int                       flags,
     int                      *perrno);
 
 int jinue_await_thread(int fd, int *perrno);

@@ -117,6 +117,7 @@ int exec(
         thread_params.entry,
         thread_params.stack_addr,
         &sigset,
+        JINUE_START_FLAG_NONE,
         &errno
     );
 

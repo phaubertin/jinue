@@ -186,6 +186,9 @@ int pthread_create(
         __pthread_entry,
         __pthread_initialize_stack(candidate, start_routine, arg),
         &sigset,
+        (candidate->flags & THREAD_FLAG_DETACHED)
+            ? JINUE_START_FLAG_DETACHED
+            : JINUE_START_FLAG_NONE,
         &errno_retval
     );
 
@@ -209,6 +212,8 @@ int pthread_join(pthread_t thread, void **exit_status) {
     if(exit_status != NULL) {
         *exit_status = thread->exit_status;
     }
+
+    free_thread_to_pool(thread);
 
     return 0;
 }

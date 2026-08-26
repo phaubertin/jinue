@@ -35,7 +35,13 @@
 #include <kernel/domain/entities/process.h>
 #include <kernel/domain/entities/thread.h>
 
-int start_thread(int fd, void (*entry)(void), void *stack_addr, sigmask_t sigmask) {
+int start_thread(
+    int                       fd,
+    void                    (*entry)(void),
+    void                     *stack_addr,
+    const jinue_sigset_t     *sigset,
+    int                       flags
+) {
     descriptor_t desc;
     int status = descriptor_access_object(&desc, get_current_process(), fd);
 
@@ -55,15 +61,18 @@ int start_thread(int fd, void (*entry)(void), void *stack_addr, sigmask_t sigmas
         return -JINUE_EPERM;
     }
 
-    if(thread->state != THREAD_STATE_CREATED && thread->state != THREAD_STATE_ZOMBIE) {
+    if(thread->state != THREAD_STATE_STOPPED) {
         descriptor_unreference_object(&desc);
         return -JINUE_EBUSY;
     }
+
+    sigmask_t sigmask = (sigmask_t)sigset->sa_sigbits[1] << 32 | sigset->sa_sigbits[0];
 
     thread_params_t thread_params;
     thread_params.entry         = entry;
     thread_params.stack_addr    = stack_addr;
     thread_params.sigmask       = sigmask;
+    thread_params.flags         = flags;
 
     thread_prepare(thread, &thread_params);
 
