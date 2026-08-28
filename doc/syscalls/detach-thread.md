@@ -1,25 +1,22 @@
-# AWAIT_THREAD - Wait for a Thread to Exit
+# DETACH_THREAD - Detach a thread
 
 ## Description
 
-Wait for a thread to terminate, if it hasn't already.
+Detach a thread. If a thread was [started](start-thread.md) in the joinable
+state, it can be detached by calling this function.
 
-The target thread must have been started with [START_THREAD](start-thread.md)
-and must not be the calling thread. Furthermore, this function must be called
-at most once on a given thread since it has been started.
-
-For this operation to succeed, the thread descriptor must have the
+For this operation to succeed, the target thread descriptor must have the
 [JINUE_PERM_AWAIT](../../include/jinue/shared/asm/permissions.h) permission.
 
 ## Arguments
 
-Function number (`arg0`) is 21.
+Function number (`arg0`) is 28.
 
-The descriptor number for the thread is set in `arg1`.
+The descriptor number for the target thread is set in `arg1`.
 
 ```
     +----------------------------------------------------------------+
-    |                         function = 21                          |  arg0
+    |                         function = 28                          |  arg0
     +----------------------------------------------------------------+
     31                                                               0
     
@@ -29,12 +26,12 @@ The descriptor number for the thread is set in `arg1`.
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                          reserved (0)                          |  arg2
+    |                         reserved (0)                           |  arg2
     +----------------------------------------------------------------+
     31                                                               0
 
     +----------------------------------------------------------------+
-    |                          reserved (0)                          |  arg3
+    |                         reserved (0)                           |  arg3
     +----------------------------------------------------------------+
     31                                                               0
 ```
@@ -50,8 +47,6 @@ returns -1 and an error number is set (in `arg1`).
 thread, or is closed.
 * JINUE_ESRCH if the thread has not been started or has terminated and has
 already been awaited.
-* JINUE_EINVAL if the thread is already being awaited by another thread.
-* JINUE_EINVAL if the thread is detached.
-* JINUE_EDEADLK if a thread attempts to await itself.
-* JINUE_EPERM if the specified thread descriptor does not have the permission
-to await the thread.
+* JINUE_EINVAL if the thread is already detached.
+* JINUE_EPERM if the thread descriptor does not have the permission to detach
+the thread.

@@ -216,6 +216,11 @@ void thread_terminate_current(void) {
         ? THREAD_STATE_STOPPED
         : THREAD_STATE_ZOMBIE;
 
+    /* No condition on detached flag here: There may be an awaiting thread even
+     * if the current thread is detached if it was detached after a thread was
+     * already awaiting. If this happens, we simply wake the awaiting thread as
+     * if the current thread hadn't be detached. This case is undefined
+     * behaviour according to POSIX. */
     if(current->awaiter != NULL) {
         ready_thread(current->awaiter);
     }
@@ -246,23 +251,59 @@ int thread_await(thread_t *thread) {
 
     spin_lock(&thread->await_lock);
 
+    if(thread->state == THREAD_STATE_STOPPED) {
+        spin_unlock(&thread->await_lock);
+        return -JINUE_ESRCH;
+    }
+
     if(thread->flags & JINUE_START_FLAG_DETACHED) {
         spin_unlock(&thread->await_lock);
         return -JINUE_EINVAL;
     }
 
-    if(thread->state == THREAD_STATE_STOPPED || thread->awaiter != NULL) {
+    if(thread->awaiter != NULL) {
+        spin_unlock(&thread->await_lock);
+        return -JINUE_EINVAL;
+    }
+
+    if(thread->state == THREAD_STATE_ZOMBIE) {
+        thread->state = THREAD_STATE_STOPPED;
+        spin_unlock(&thread->await_lock);
+    } else {
+        thread->awaiter = current;
+        block_current_thread_and_unlock(&thread->await_lock);
+    }
+
+    return 0;
+}
+
+/**
+ * Detach a thread
+ * 
+ * @param thread thread to detach
+ * @return zero on success, negated error code on failure
+ *
+ */
+int thread_detach(thread_t *thread) {
+    spin_lock(&thread->await_lock);
+
+    if(thread->state == THREAD_STATE_STOPPED) {
         spin_unlock(&thread->await_lock);
         return -JINUE_ESRCH;
     }
 
-    thread->awaiter = current;
+    if(thread->flags & JINUE_START_FLAG_DETACHED) {
+        spin_unlock(&thread->await_lock);
+        return -JINUE_EINVAL;
+    }
+
+    thread->flags |= JINUE_START_FLAG_DETACHED;
 
     if(thread->state == THREAD_STATE_ZOMBIE) {
-        spin_unlock(&thread->await_lock);
-    } else {
-        block_current_thread_and_unlock(&thread->await_lock);
+        thread->state = THREAD_STATE_STOPPED;
     }
+
+    spin_unlock(&thread->await_lock);
 
     return 0;
 }

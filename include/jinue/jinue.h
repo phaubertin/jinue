@@ -153,4 +153,6 @@ int jinue_get_set_signal_mask(
 
 int jinue_set_signal_handler(jinue_sighandler_t handler, int *perrno);
 
+int jinue_detach_thread(int fd, int *perrno);
+
 #endif

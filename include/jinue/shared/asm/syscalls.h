@@ -104,6 +104,9 @@
 /** set the current process' signal handling function */
 #define JINUE_SYS_SET_SIGNAL_HANDLER    27
 
+/** detach a thread */
+#define JINUE_SYS_DETACH_THREAD         28
+
 /** start of function numbers for user space messages */
 #define JINUE_SYS_USER_BASE             4096
 

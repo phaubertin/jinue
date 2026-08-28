@@ -68,6 +68,7 @@ sources.kernel.c = \
 	application/syscalls/create_process.c \
 	application/syscalls/create_thread.c \
 	application/syscalls/destroy.c \
+	application/syscalls/detach_thread.c \
 	application/syscalls/dup.c \
 	application/syscalls/exit_thread.c \
 	application/syscalls/get_address_map.c \

@@ -524,7 +524,7 @@ static void sys_start_thread(trapframe_t *trapframe) {
 }
 
 static void sys_await_thread(trapframe_t *trapframe) {
-    int fd                      = get_descriptor(msg_arg1(trapframe));
+    int fd = get_descriptor(msg_arg1(trapframe));
 
     if(fd < 0) {
         set_return_value_or_error(trapframe, fd);
@@ -630,6 +630,18 @@ static void sys_set_signal_handler(trapframe_t *trapframe) {
     set_signal_handler(handler);
 }
 
+static void sys_detach_thread(trapframe_t *trapframe) {
+    int fd = get_descriptor(msg_arg1(trapframe));
+
+    if(fd < 0) {
+        set_return_value_or_error(trapframe, fd);
+        return;
+    }
+
+    int retval = detach_thread(fd);
+    set_return_value_or_error(trapframe, retval);
+}
+
 /**
  * System call dispatching function
  *
@@ -718,6 +730,9 @@ void handle_syscall(trapframe_t *trapframe) {
             break;
         case JINUE_SYS_SET_SIGNAL_HANDLER:
             sys_set_signal_handler(trapframe);
+            break;
+        case JINUE_SYS_DETACH_THREAD:
+            sys_detach_thread(trapframe);
             break;
         default:
             sys_nosys(trapframe);

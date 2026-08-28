@@ -1,22 +1,23 @@
+
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of other contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,68 +30,37 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_APPLICATION_SYSCALLS_H
-#define JINUE_KERNEL_APPLICATION_SYSCALLS_H
+#include <jinue/shared/asm/errno.h>
+#include <kernel/application/syscalls.h>
+#include <kernel/domain/entities/descriptor.h>
+#include <kernel/domain/entities/process.h>
+#include <kernel/domain/entities/thread.h>
 
-#include <jinue/shared/types.h>
-#include <kernel/types.h>
+static int with_thread(descriptor_t *thread_desc) {
+    thread_t *thread = descriptor_get_thread(thread_desc);
 
-int await_thread(int fd);
+    if(thread == NULL) {
+        return -JINUE_EBADF;
+    }
 
-int close(int fd);
+    if(!descriptor_has_permissions(thread_desc, JINUE_PERM_AWAIT)) {
+        return -JINUE_EPERM;
+    }
 
-int create_endpoint(int fd);
+    return thread_detach(thread);
+}
 
-int create_process(int fd);
+int detach_thread(int fd) {
+    descriptor_t thread_desc;
+    int status = descriptor_access_object(&thread_desc, get_current_process(), fd);
 
-int create_thread(int fd, int process_fd);
+    if(status < 0) {
+        return -JINUE_EBADF;
+    }
 
-int destroy(int fd);
+    status = with_thread(&thread_desc);
 
-int dup(int process_fd, int src, int dest);
+    descriptor_unreference_object(&thread_desc);
 
-void exit_thread(void);
-
-void *get_thread_local(void);
-
-int get_address_map(const jinue_buffer_t *buffer);
-
-int mint(int owner, const jinue_mint_args_t *args);
-
-int mmap(int process_fd, const jinue_mmap_args_t *args);
-
-int puts(uint8_t loglevel, uint8_t facility, const char *str, size_t length);
-
-void reboot(void);
-
-int receive(int fd, jinue_message_t *message);
-
-int reply(const jinue_message_t *message);
-
-int reply_error(uintptr_t errcode);
-
-int send(uintptr_t *errcode, int fd, int function, const jinue_message_t *message);
-
-void set_thread_local(void *addr, size_t size);
-
-int signal_process(int fd, int signo);
-
-int signal_thread(int fd, int signo);
-
-int start_thread(
-    int                       fd,
-    void                    (*entry)(void),
-    void                     *stack_addr,
-    const jinue_sigset_t     *sigset,
-    int                       flags
-);
-
-void yield_thread(void);
-
-int get_set_signal_mask(int how, const jinue_sigset_t *set, jinue_sigset_t *oset);
-
-void set_signal_handler(jinue_sighandler_t handler);
-
-int detach_thread(int fd);
-
-#endif
+    return status;
+}
