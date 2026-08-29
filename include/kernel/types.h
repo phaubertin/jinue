@@ -89,7 +89,7 @@ typedef struct {
 } process_t;
 
 typedef enum {
-    THREAD_STATE_CREATED,
+    THREAD_STATE_STOPPED,
     THREAD_STATE_STARTING,
     THREAD_STATE_READY,
     THREAD_STATE_RUNNING,
@@ -101,6 +101,7 @@ struct thread_t {
     object_header_t      header;
     machine_thread_t     machine_thread;
     list_node_t          thread_list;
+    int                  flags;
     thread_state_t       state;
     int                  cpu_credits;
     process_t           *process;
@@ -127,6 +128,7 @@ typedef struct {
     void        (*entry)(void);
     void        *stack_addr;
     sigmask_t    sigmask;
+    int          flags;
 } thread_params_t;
 
 typedef struct {

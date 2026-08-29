@@ -52,6 +52,8 @@ void thread_terminate_current(void);
 
 int thread_await(thread_t *thread);
 
+int thread_detach(thread_t *thread);
+
 void thread_set_local_storage(thread_t *thread, addr_t addr, size_t size);
 
 #endif

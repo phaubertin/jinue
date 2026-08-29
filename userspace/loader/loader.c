@@ -182,6 +182,7 @@ static int start_initial_thread(thread_params_t *thread_params) {
         thread_params->entry,
         thread_params->stack_addr,
         &sigset,
+        JINUE_START_FLAG_NONE,
         &errno
     );
 

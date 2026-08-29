@@ -115,6 +115,7 @@ typedef struct {
     void                    (*entry)(void);
     void                     *stack_addr;
     const jinue_sigset_t     *sigset;
+    int                       flags;
 } jinue_start_thread_args_t;
 
 typedef union {

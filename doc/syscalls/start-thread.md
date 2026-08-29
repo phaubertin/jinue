@@ -46,6 +46,15 @@ The start thread arguments structure contains the following fields:
 * `entry` is the address where code execution will start.
 * `stack_addr` is the initial stack pointer.
 * `sigset` is the initial set of blocked signals for the thread.
+* `flags` is a set of flags
+
+`flags` must be set to either `JINUE_START_FLAG_NONE` or to
+`JINUE_START_FLAG_DETACHED` as described in he following table::
+
+| Value | Name                      | Description                           |
+|-------|---------------------------|---------------------------------------|
+| 0     | JINUE_START_FLAG_NONE     | No flag                               |
+| 1     | JINUE_START_FLAG_DETACHED | Start thread in the detached state    |
 
 ## Return Value
 
@@ -59,6 +68,8 @@ a kernel address.
 * JINUE_EINVAL if the code entry point is set to a kernel address.
 * JINUE_EINVAL if the user stack address is set to a kernel address.
 * JINUE_EINVAL if the signal set pointer is set to a kernel address.
+* JINUE_EINVAL if the flags are not set to either `JINUE_START_FLAG_NONE` or
+`JINUE_START_FLAG_DETACHED`.
 * JINUE_EBADF if the thread descriptor is invalid, or does not refer to a
 thread, or is closed.
 * JINUE_EPERM if the thread descriptor does not have the permission to start

@@ -519,6 +519,7 @@ void machine_load_exec(
     thread_params->stack_addr   = elf_info.stack_addr;
     /* All signals are unblocked initially. */
     thread_params->sigmask      = 0;
+    thread_params->flags        = 0;
 }
 
 /**

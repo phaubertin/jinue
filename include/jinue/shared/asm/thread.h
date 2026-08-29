@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Philippe Aubertin.
+ * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -29,68 +29,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JINUE_KERNEL_APPLICATION_SYSCALLS_H
-#define JINUE_KERNEL_APPLICATION_SYSCALLS_H
+#ifndef _JINUE_SHARED_ASM_THREAD_H
+#define _JINUE_SHARED_ASM_THREAD_H
 
-#include <jinue/shared/types.h>
-#include <kernel/types.h>
 
-int await_thread(int fd);
+/** start thread with no set flag */
+#define JINUE_START_FLAG_NONE       0
 
-int close(int fd);
-
-int create_endpoint(int fd);
-
-int create_process(int fd);
-
-int create_thread(int fd, int process_fd);
-
-int destroy(int fd);
-
-int dup(int process_fd, int src, int dest);
-
-void exit_thread(void);
-
-void *get_thread_local(void);
-
-int get_address_map(const jinue_buffer_t *buffer);
-
-int mint(int owner, const jinue_mint_args_t *args);
-
-int mmap(int process_fd, const jinue_mmap_args_t *args);
-
-int puts(uint8_t loglevel, uint8_t facility, const char *str, size_t length);
-
-void reboot(void);
-
-int receive(int fd, jinue_message_t *message);
-
-int reply(const jinue_message_t *message);
-
-int reply_error(uintptr_t errcode);
-
-int send(uintptr_t *errcode, int fd, int function, const jinue_message_t *message);
-
-void set_thread_local(void *addr, size_t size);
-
-int signal_process(int fd, int signo);
-
-int signal_thread(int fd, int signo);
-
-int start_thread(
-    int                       fd,
-    void                    (*entry)(void),
-    void                     *stack_addr,
-    const jinue_sigset_t     *sigset,
-    int                       flags
-);
-
-void yield_thread(void);
-
-int get_set_signal_mask(int how, const jinue_sigset_t *set, jinue_sigset_t *oset);
-
-void set_signal_handler(jinue_sighandler_t handler);
-
-int detach_thread(int fd);
+/** start thread in the detached state */
+#define JINUE_START_FLAG_DETACHED   (1<<0)
 
 #endif

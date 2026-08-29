@@ -30,6 +30,7 @@
  */
 
 #include <jinue/shared/asm/errno.h>
+#include <jinue/shared/asm/thread.h>
 #include <kernel/domain/alloc/page_alloc.h>
 #include <kernel/domain/entities/object.h>
 #include <kernel/domain/entities/process.h>
@@ -82,7 +83,7 @@ thread_t *thread_new(process_t *process) {
 
     init_spinlock(&thread->await_lock);
 
-    thread->state               = THREAD_STATE_CREATED;
+    thread->state               = THREAD_STATE_STOPPED;
     thread->process             = process;
     thread->awaiter             = NULL;
     thread->local_storage_addr  = NULL;
@@ -125,6 +126,7 @@ static void free_op(object_header_t *object) {
 void thread_prepare(thread_t *thread, const thread_params_t *params) {
     thread->sender      = NULL;
     thread->cpu_credits = 0;
+    thread->flags       = params->flags;
     
     spin_lock(&thread->await_lock);
     
@@ -210,8 +212,15 @@ void thread_terminate_current(void) {
 
     /* This state transition must be done under lock to avoid a race condition
      * with await_thread(). */
-    current->state = THREAD_STATE_ZOMBIE;
+    current->state = (current->flags & JINUE_START_FLAG_DETACHED)
+        ? THREAD_STATE_STOPPED
+        : THREAD_STATE_ZOMBIE;
 
+    /* No condition on detached flag here: There may be an awaiting thread even
+     * if the current thread is detached if it was detached after a thread was
+     * already awaiting. If this happens, we simply wake the awaiting thread as
+     * if the current thread hadn't be detached. This case is undefined
+     * behaviour according to POSIX. */
     if(current->awaiter != NULL) {
         ready_thread(current->awaiter);
     }
@@ -242,18 +251,59 @@ int thread_await(thread_t *thread) {
 
     spin_lock(&thread->await_lock);
 
-    if(thread->state == THREAD_STATE_CREATED || thread->awaiter != NULL) {
+    if(thread->state == THREAD_STATE_STOPPED) {
         spin_unlock(&thread->await_lock);
         return -JINUE_ESRCH;
     }
 
-    thread->awaiter = current;
+    if(thread->flags & JINUE_START_FLAG_DETACHED) {
+        spin_unlock(&thread->await_lock);
+        return -JINUE_EINVAL;
+    }
+
+    if(thread->awaiter != NULL) {
+        spin_unlock(&thread->await_lock);
+        return -JINUE_EINVAL;
+    }
 
     if(thread->state == THREAD_STATE_ZOMBIE) {
+        thread->state = THREAD_STATE_STOPPED;
         spin_unlock(&thread->await_lock);
     } else {
+        thread->awaiter = current;
         block_current_thread_and_unlock(&thread->await_lock);
     }
+
+    return 0;
+}
+
+/**
+ * Detach a thread
+ * 
+ * @param thread thread to detach
+ * @return zero on success, negated error code on failure
+ *
+ */
+int thread_detach(thread_t *thread) {
+    spin_lock(&thread->await_lock);
+
+    if(thread->state == THREAD_STATE_STOPPED) {
+        spin_unlock(&thread->await_lock);
+        return -JINUE_ESRCH;
+    }
+
+    if(thread->flags & JINUE_START_FLAG_DETACHED) {
+        spin_unlock(&thread->await_lock);
+        return -JINUE_EINVAL;
+    }
+
+    thread->flags |= JINUE_START_FLAG_DETACHED;
+
+    if(thread->state == THREAD_STATE_ZOMBIE) {
+        thread->state = THREAD_STATE_STOPPED;
+    }
+
+    spin_unlock(&thread->await_lock);
 
     return 0;
 }
