@@ -1,4 +1,3 @@
-
 /*
  * Copyright (C) 2026 Philippe Aubertin.
  * All rights reserved.
